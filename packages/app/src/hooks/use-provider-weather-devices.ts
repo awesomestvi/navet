@@ -11,10 +11,12 @@ import { useSettingsStore } from '@navet/app/stores/settings-store';
 import type { IntegrationProviderId } from '@navet/app/types/provider';
 import { UNKNOWN_ROOM_LABEL } from '@navet/app/utils/device-location';
 import { createProviderScopedId } from '@navet/app/utils/provider-ids';
-import { areDataEqual } from '@navet/app/utils/structural-equality';
-import { subscribeVisibilityAwareAsyncTask } from '@navet/app/utils/visibility-aware-scheduler';
-import { startTransition, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useIntegrationStore } from './use-integration-store';
+import {
+  useHydratingProviderCollection,
+  useProviderCollectionData,
+} from './use-provider-collection-lifecycle';
 import {
   useProviderEntityRegistryEntries,
   useProviderEntitySnapshotsByPrefix,
@@ -31,6 +33,12 @@ type WeatherForecastState = Record<
     hourly: PlatformWeatherForecastEntry[];
   }
 >;
+
+const EMPTY_WEATHER_FORECASTS: WeatherForecastState = {};
+const mergeForecasts = (previous: WeatherForecastState, next: WeatherForecastState) => ({
+  ...previous,
+  ...next,
+});
 
 function resolveEntityName(
   entityId: string,
@@ -99,58 +107,23 @@ export function useProviderWeatherDevices(
     () => new Map(entityRegistry.map((entry) => [entry.entityId, entry])),
     [entityRegistry]
   );
-  const [weatherForecasts, setWeatherForecasts] = useState<WeatherForecastState>({});
-  const deferredWeatherForecasts = useDeferredValue(weatherForecasts);
-  const lastResolvedDevicesRef = useRef<PlatformWeatherDevice[]>(EMPTY_WEATHER_DEVICES);
-
-  useEffect(() => {
-    if (!supportsWeather || !primaryWeatherEntityId) {
-      startTransition(() => {
-        setWeatherForecasts({});
-      });
-      return;
-    }
-
-    let cancelled = false;
-    const refreshForecasts = async () => {
-      try {
-        const scopedEntityId = createProviderScopedId(resolvedProviderId, primaryWeatherEntityId);
-        const [daily, hourly] = await Promise.all([
-          integrationWeatherFeatureService.getForecast(scopedEntityId, 'daily'),
-          integrationWeatherFeatureService.getForecast(scopedEntityId, 'hourly'),
-        ]);
-
-        if (!cancelled) {
-          startTransition(() => {
-            setWeatherForecasts((prev) => {
-              const nextEntry = { daily, hourly };
-              if (areDataEqual(prev[primaryWeatherEntityId], nextEntry)) {
-                return prev;
-              }
-
-              return {
-                ...prev,
-                [primaryWeatherEntityId]: nextEntry,
-              };
-            });
-          });
-        }
-      } catch {
-        // Keep existing data if the refresh fails.
-      }
-    };
-
-    const unsubscribe = subscribeVisibilityAwareAsyncTask(
-      refreshForecasts,
-      WEATHER_FORECAST_REFRESH_INTERVAL,
-      { runImmediately: true }
-    );
-
-    return () => {
-      cancelled = true;
-      unsubscribe();
-    };
-  }, [resolvedProviderId, primaryWeatherEntityId, supportsWeather]);
+  const loadForecasts = useCallback(async (): Promise<WeatherForecastState> => {
+    if (!primaryWeatherEntityId) return EMPTY_WEATHER_FORECASTS;
+    const scopedEntityId = createProviderScopedId(resolvedProviderId, primaryWeatherEntityId);
+    const [daily, hourly] = await Promise.all([
+      integrationWeatherFeatureService.getForecast(scopedEntityId, 'daily'),
+      integrationWeatherFeatureService.getForecast(scopedEntityId, 'hourly'),
+    ]);
+    return { [primaryWeatherEntityId]: { daily, hourly } };
+  }, [resolvedProviderId, primaryWeatherEntityId]);
+  const deferredWeatherForecasts = useProviderCollectionData({
+    providerId: resolvedProviderId,
+    enabled: supportsWeather && primaryWeatherEntityId !== null,
+    interval: WEATHER_FORECAST_REFRESH_INTERVAL,
+    empty: EMPTY_WEATHER_FORECASTS,
+    load: loadForecasts,
+    merge: mergeForecasts,
+  });
 
   const resolvedDevices = useMemo(() => {
     if (!entities || !primaryWeatherEntityId) {
@@ -196,37 +169,13 @@ export function useProviderWeatherDevices(
     weatherForecastMode,
   ]);
 
-  useEffect(() => {
-    if (resolvedDevices.length > 0) {
-      lastResolvedDevicesRef.current = resolvedDevices;
-      return;
-    }
-
-    if (!supportsWeather) {
-      lastResolvedDevicesRef.current = EMPTY_WEATHER_DEVICES;
-      return;
-    }
-
-    if (entitiesHydrated) {
-      lastResolvedDevicesRef.current = EMPTY_WEATHER_DEVICES;
-    }
-  }, [entitiesHydrated, resolvedDevices, supportsWeather]);
-
-  return useMemo(() => {
-    if (resolvedDevices.length > 0) {
-      return resolvedDevices;
-    }
-
-    if (!supportsWeather) {
-      return EMPTY_WEATHER_DEVICES;
-    }
-
-    if (!entitiesHydrated) {
-      return lastResolvedDevicesRef.current;
-    }
-
-    return EMPTY_WEATHER_DEVICES;
-  }, [entitiesHydrated, resolvedDevices, supportsWeather]);
+  return useHydratingProviderCollection(
+    resolvedProviderId,
+    resolvedDevices,
+    supportsWeather,
+    entitiesHydrated,
+    EMPTY_WEATHER_DEVICES
+  );
 }
 
 export const useProviderWeatherDevicesCollection = useProviderWeatherDevices;

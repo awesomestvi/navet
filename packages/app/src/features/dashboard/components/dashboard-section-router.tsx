@@ -646,12 +646,6 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
                 onNavigate={controller.setActiveSection}
                 ariaLabel={t('settings.dashboard.homeSummaryBar.title')}
               />
-              {/* Note: Will be added later */}
-              {/* <RoomOverviewPanel
-                room={activeRoom}
-                orderedCardIds={orderedCardIds}
-                deviceMap={deviceMap}
-              /> */}
               <DeviceGrid
                 key={`room-grid-${activeRoom}`}
                 orderedCardIds={orderedCardIds}

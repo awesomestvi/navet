@@ -1,4 +1,4 @@
-import type { HomeySnapshot } from '../types/homey';
+import type { HomeySnapshot } from '@navet/provider-homey';
 import { subscribeVisibilityAwareAsyncTask } from '../utils/visibility-aware-scheduler';
 import type { HomeyCapabilityCommand, HomeySnapshotClient } from './homey.service';
 import { homeyService } from './homey.service';

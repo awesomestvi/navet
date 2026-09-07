@@ -3,15 +3,6 @@ import { DASHBOARD_CONFIG_VERSION } from '@navet/app/constants/dashboard-config-
 import { ALL_ROOMS_ID, HOME_WIDGET_ROOM, isAllRooms } from '@navet/app/constants/rooms';
 import { STORAGE_KEYS, STORE_STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import {
-  type CardType,
-  type HomeDashboardLayoutState,
-  normalizeLayout,
-  useCardZonesStore,
-  useCustomCardsStore,
-  useDashboardEntitiesStore,
-  useHomeDashboardLayoutStore,
-} from '@navet/app/features/dashboard';
-import {
   createLegacyDashboardCollection,
   type NavetDashboardCollection,
   sanitizeDashboardCollection,
@@ -26,10 +17,21 @@ import {
   sanitizeLegacyRoomOrganization,
   writeRoomWorkspaceV2,
 } from '@navet/app/features/dashboard/rooms';
+import { useCardZonesStore } from '@navet/app/features/dashboard/stores/card-zones-store';
+import {
+  type CardType,
+  useCustomCardsStore,
+} from '@navet/app/features/dashboard/stores/custom-cards-store';
+import { useDashboardEntitiesStore } from '@navet/app/features/dashboard/stores/dashboard-entities-store';
+import {
+  type HomeDashboardLayoutState,
+  useHomeDashboardLayoutStore,
+} from '@navet/app/features/dashboard/stores/home-dashboard-layout-store';
 import {
   parseButtonServiceCall,
   sanitizeButtonEntityId,
 } from '@navet/app/features/dashboard/utils/button-widget-security';
+import { normalizeLayout } from '@navet/app/features/dashboard/utils/layout-migration';
 import { useLightPresetStore } from '@navet/app/features/lighting/stores/light-preset-store';
 import { isSection } from '@navet/app/navigation/sections';
 import { useEntityRoomOverridesStore } from '@navet/app/stores/entity-room-overrides-store';

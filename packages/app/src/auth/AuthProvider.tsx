@@ -12,15 +12,15 @@ import {
   useRef,
   useState,
 } from 'react';
+import {
+  type IntegrationSessionSnapshot,
+  integrationSessionRuntime,
+} from '../integration-session-runtime';
 import { removeLocalStorageItem } from '../utils/storage';
 import {
   invalidateStandaloneOAuthSession,
   isInvalidStandaloneOAuthAuthError,
 } from './adapters/standaloneOAuthAuth';
-import {
-  type IntegrationSessionSnapshot,
-  integrationSessionRuntime,
-} from './integration-session-runtime';
 import type { AuthRuntime } from './runtime';
 import { isDurableAuthSessionUnavailableError } from './session-errors';
 import { dispatchAuthSessionRefreshed } from './session-events';

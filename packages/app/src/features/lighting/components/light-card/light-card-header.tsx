@@ -4,6 +4,7 @@ import {
   type CardSize,
   isExtraSmallCardSize,
 } from '@navet/app/components/shared/card-size-selector';
+import { getCardReadableTextTokens } from '@navet/app/components/shared/theme/card-readable-text-tokens';
 import { getCardStateSurfaceTokens } from '@navet/app/components/shared/theme/card-state-surface-tokens';
 import { useI18n, useTheme } from '@navet/app/hooks';
 import type { ThemeType } from '@navet/app/hooks/use-theme';
@@ -40,12 +41,18 @@ export const LightCardHeader = memo(function LightCardHeader({
   themeOverride,
   trailing,
 }: LightCardHeaderProps) {
-  const { theme: activeTheme } = useTheme();
+  const { theme: activeTheme, accentColor } = useTheme();
   const { t } = useI18n();
   const theme = themeOverride ?? activeTheme;
   const effectiveTheme = theme === 'light' && isOn ? 'dark' : theme;
   const stateSurface = getCardStateSurfaceTokens(theme, isOn);
   const useInverseForeground = theme === 'light' && isOn;
+  const readable = getCardReadableTextTokens({
+    theme,
+    tone: 'primary',
+    baseColor: activeColor ?? accentColor,
+    backgroundColor: activeColor ?? accentColor,
+  });
   const isExtraSmall = isExtraSmallCardSize(size);
   const cardType = t('lighting.type.light');
   const subtitle = currentEffect
@@ -79,8 +86,8 @@ export const LightCardHeader = memo(function LightCardHeader({
         accentColor={activeColor}
         titleClassName={stateSurface.primaryTextClassName}
         subtitleClassName={stateSurface.mutedTextClassName}
-        titleStyle={useInverseForeground ? { color: '#ffffff' } : undefined}
-        subtitleStyle={useInverseForeground ? { color: 'rgba(255,255,255,0.76)' } : undefined}
+        titleStyle={useInverseForeground ? { color: readable.titleColor } : undefined}
+        subtitleStyle={useInverseForeground ? { color: readable.subtitleColor } : undefined}
         leading={headerIcon}
         trailing={trailing}
       />
@@ -97,8 +104,8 @@ export const LightCardHeader = memo(function LightCardHeader({
       accentColor={activeColor}
       titleClassName={stateSurface.primaryTextClassName}
       subtitleClassName={stateSurface.mutedTextClassName}
-      titleStyle={useInverseForeground ? { color: '#ffffff' } : undefined}
-      subtitleStyle={useInverseForeground ? { color: 'rgba(255,255,255,0.76)' } : undefined}
+      titleStyle={useInverseForeground ? { color: readable.titleColor } : undefined}
+      subtitleStyle={useInverseForeground ? { color: readable.subtitleColor } : undefined}
       leading={headerIcon}
     />
   );

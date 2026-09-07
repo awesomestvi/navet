@@ -280,7 +280,7 @@ ${PROXY_AUTH_DIRECTIVE}
     proxy_send_timeout 60s;
   }
 
-  include /etc/nginx/snippets/navet-rss-proxy.conf;
+  include /etc/nginx/snippets/navet-rss-proxy-ingress.conf;
 
   location = /config.js {
     include /etc/nginx/snippets/navet-security-headers.conf;
@@ -307,4 +307,4 @@ ${PROXY_AUTH_DIRECTIVE}
 }
 EOF
 
-nginx -g 'daemon off;'
+exec /usr/local/bin/navet-runtime nginx -g 'daemon off;'

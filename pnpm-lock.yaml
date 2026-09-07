@@ -231,11 +231,7 @@ importers:
 
   packages/provider-homey: {}
 
-  packages/provider-hubitat: {}
-
   packages/provider-openhab: {}
-
-  packages/provider-smartthings: {}
 
   packages/ui: {}
 

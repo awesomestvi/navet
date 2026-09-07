@@ -4,6 +4,7 @@ import {
   type PortalActionDockAnchorRect,
 } from '@navet/app/components/patterns/portal-action-dock';
 import { isCompactCardSize } from '@navet/app/components/shared/card-size-selector';
+import { getCardReadableTextTokens } from '@navet/app/components/shared/theme/card-readable-text-tokens';
 import { useI18n, useTheme } from '@navet/app/hooks';
 import type { LucideIcon } from 'lucide-react';
 import { MoreHorizontal } from 'lucide-react';
@@ -62,6 +63,14 @@ export const BrightnessPresetsInline = memo(function BrightnessPresetsInline({
   const visiblePresets = maxVisible !== undefined ? presets.slice(0, maxVisible) : presets;
   const overflowPresets = maxVisible !== undefined ? presets.slice(maxVisible) : [];
   const activeColor = activeColorOverride ?? getBrightnessPresetAccentColor(primaryColor);
+  const foregroundColor = useInverseActiveLightSurface
+    ? getCardReadableTextTokens({
+        theme,
+        tone: 'primary',
+        baseColor: activeColor,
+        backgroundColor: activeColor,
+      }).titleColor
+    : undefined;
   const selectedClasses = roundControl.selectedText;
   const disabledSelectedClasses = 'cursor-not-allowed text-white opacity-70';
   const unselectedClasses =
@@ -106,10 +115,12 @@ export const BrightnessPresetsInline = memo(function BrightnessPresetsInline({
                   ? {
                       backgroundColor: 'rgba(255,255,255,0.24)',
                       borderColor: 'rgba(255,255,255,0.44)',
-                      color: '#ffffff',
+                      color: foregroundColor,
                     }
                   : getBrightnessPresetSelectedStyle(theme, activeColor, isOn)
-                : undefined
+                : foregroundColor
+                  ? { color: foregroundColor }
+                  : undefined
             }
             className={`${buttonSize} relative isolate overflow-hidden rounded-full transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] duration-300 flex items-center justify-center ${
               !isOn
@@ -180,6 +191,14 @@ const BrightnessOverflowMenu = memo(function BrightnessOverflowMenu({
   const useInverseActiveLightSurface = theme === 'light' && isOn && Boolean(activeColorOverride);
   const activeColor = activeColorOverride ?? getBrightnessPresetAccentColor(primaryColor);
   const roundControl = getRoundControlStyles(useInverseActiveLightSurface ? 'dark' : theme);
+  const foregroundColor = useInverseActiveLightSurface
+    ? getCardReadableTextTokens({
+        theme,
+        tone: 'primary',
+        baseColor: activeColor,
+        backgroundColor: activeColor,
+      }).titleColor
+    : undefined;
   const selectedClasses = roundControl.selectedText;
   const unselectedClasses =
     buttonVariant === 'soft' ? roundControl.softButton : roundControl.defaultButton;
@@ -282,6 +301,7 @@ const BrightnessOverflowMenu = memo(function BrightnessOverflowMenu({
               ? disabledTriggerClasses
               : `cursor-pointer ${unselectedClasses} hover:scale-105 active:scale-95`
           }`}
+          style={foregroundColor ? { color: foregroundColor } : undefined}
           onClick={handleOpen}
         >
           <MoreHorizontal className={iconSize} aria-hidden="true" />

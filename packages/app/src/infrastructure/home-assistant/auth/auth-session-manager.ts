@@ -3,13 +3,13 @@ import { haPanelAuth } from '@navet/app/auth/adapters/haPanelAuth';
 import { homeyOAuthAuth } from '@navet/app/auth/adapters/homeyOAuthAuth';
 import { openhabUrlSessionAuth } from '@navet/app/auth/adapters/openhabUrlSessionAuth';
 import { standaloneOAuthAuth } from '@navet/app/auth/adapters/standaloneOAuthAuth';
-import type { AuthSessionSnapshot } from '@navet/app/auth/session-runtime-types';
 import {
   type AuthAdapter,
   type AuthSession,
   type AuthSessionMap,
   toAuthCompatibleSessionMap,
 } from '@navet/app/auth/types';
+import type { AuthSessionSnapshot } from '@navet/app/session-runtime-types';
 import {
   INTEGRATION_PROVIDER_IDS,
   type IntegrationProviderId,

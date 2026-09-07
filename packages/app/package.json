@@ -6,7 +6,6 @@
     ".": "./src/index.ts",
     "./*": "./src/*",
     "./commands": "./src/commands.ts",
-    "./internal/compat": "./src/internal/compat.ts",
     "./integration-session-runtime": "./src/integration-session-runtime.ts",
     "./provider-contract": "./src/provider-contract.ts",
     "./provider-contract-registry": "./src/provider-contract-registry.ts",

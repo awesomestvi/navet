@@ -41,14 +41,17 @@ describe('demo chore actions', () => {
       (item) =>
         item.status === 'available' &&
         data.definitionsById[item.definitionId]?.title === copy.dishwasher
-    )!;
+    );
+    if (!occurrence) throw new Error('Expected available dishwasher chore');
+    const participantId = occurrence.assigneeIds[0];
+    if (!participantId) throw new Error('Expected assigned participant');
     const original = useChoreWorkspaceStore.getState().execute;
     useChoreWorkspaceStore.getState().setPreviewDocument({ data });
     restore = installDemoChoreActions();
     const saved = await useChoreWorkspaceStore.getState().execute({
       type: 'occurrence_action',
       occurrenceId: occurrence.id,
-      action: { type: 'complete', participantId: occurrence.assigneeIds[0]! },
+      action: { type: 'complete', participantId },
     });
     const state = useChoreWorkspaceStore.getState();
     expect(saved).toBe(true);

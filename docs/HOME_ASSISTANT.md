@@ -79,6 +79,9 @@ below if you need a separate dashboard URL.
 
 ## Option 3: Install with Docker
 
+RSS cards load public HTTPS feeds through Navet's authenticated endpoint. Local-network feed
+addresses are rejected, including public hostnames that resolve to private addresses.
+
 Choose this option only if you are comfortable using Docker.
 
 ### What you need

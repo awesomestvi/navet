@@ -120,7 +120,9 @@ describe('HumidifierCard', () => {
       />
     );
 
-    const card = screen.getByRole('button', { name: 'Bedroom Humidifier' });
+    const card = screen
+      .getByRole('button', { name: 'Bedroom Humidifier' })
+      .closest('[data-effective-effects-quality]');
 
     expect(card).toHaveClass('from-zinc-800', 'to-zinc-900');
     expect(card).not.toHaveClass('from-white/[0.08]', 'via-white/[0.03]');

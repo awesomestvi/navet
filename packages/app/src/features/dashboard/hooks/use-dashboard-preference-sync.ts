@@ -36,6 +36,7 @@ import {
   type SettingsPreferenceProjection,
 } from '@navet/app/utils/settings-profile-scope';
 import { useEffect, useRef, useState } from 'react';
+import { createDashboardSyncBrowserLifecycle } from './dashboard-sync-browser-lifecycle';
 
 const PREFERENCE_SAVE_DEBOUNCE_MS = 750;
 const PREFERENCE_POLL_INTERVAL_MS = 60_000;
@@ -148,15 +149,13 @@ export function useDashboardPreferenceSync({
     setPreferencesLoadCompleted(false);
 
     let activeClient = initialClient;
-    let cancelled = false;
+    const browserLifecycle = createDashboardSyncBrowserLifecycle();
     let applying = false;
     let clientBindingRecoveryStarted = false;
     let initialized = false;
     let pollTimer: number | null = null;
     let refreshPending = false;
     let refreshInFlight = false;
-    let online = typeof navigator === 'undefined' ? true : navigator.onLine;
-    let visible = typeof document === 'undefined' || document.visibilityState === 'visible';
     const states: Record<PreferenceLayer, PreferenceLayerState> = {
       account: {
         available: false,
@@ -187,14 +186,14 @@ export function useDashboardPreferenceSync({
 
     function clearLayerTimer(state: PreferenceLayerState) {
       if (state.saveTimer !== null) {
-        window.clearTimeout(state.saveTimer);
+        browserLifecycle.clear(state.saveTimer);
         state.saveTimer = null;
       }
     }
 
     function clearPollTimer() {
       if (pollTimer !== null) {
-        window.clearTimeout(pollTimer);
+        browserLifecycle.clear(pollTimer);
         pollTimer = null;
       }
     }
@@ -449,7 +448,13 @@ export function useDashboardPreferenceSync({
     }
 
     function drainPendingRefresh() {
-      if (!refreshPending || cancelled || !initialized || refreshInFlight || hasSaveInFlight()) {
+      if (
+        !refreshPending ||
+        browserLifecycle.disposed ||
+        !initialized ||
+        refreshInFlight ||
+        hasSaveInFlight()
+      ) {
         return false;
       }
 
@@ -460,8 +465,13 @@ export function useDashboardPreferenceSync({
 
     function schedulePoll() {
       clearPollTimer();
-      if (!cancelled && initialized && online && visible) {
-        pollTimer = window.setTimeout(() => {
+      if (
+        !browserLifecycle.disposed &&
+        initialized &&
+        browserLifecycle.online &&
+        browserLifecycle.visible
+      ) {
+        pollTimer = browserLifecycle.schedule(() => {
           pollTimer = null;
           void refreshAllLayers();
         }, PREFERENCE_POLL_INTERVAL_MS);
@@ -483,7 +493,7 @@ export function useDashboardPreferenceSync({
       projection = projectLayer(state.layer),
       allowStaleRetry = true
     ) {
-      if (cancelled || !state.available) {
+      if (browserLifecycle.disposed || !state.available) {
         return;
       }
       if (state.saving) {
@@ -512,7 +522,7 @@ export function useDashboardPreferenceSync({
         state.saving = false;
         const hadPendingSave = state.pendingSave;
         state.pendingSave = false;
-        if (cancelled) {
+        if (browserLifecycle.disposed) {
           return;
         }
 
@@ -568,7 +578,7 @@ export function useDashboardPreferenceSync({
 
     function scheduleLayerSave(state: PreferenceLayerState) {
       clearLayerTimer(state);
-      state.saveTimer = window.setTimeout(() => {
+      state.saveTimer = browserLifecycle.schedule(() => {
         state.saveTimer = null;
         void saveLayer(state);
       }, PREFERENCE_SAVE_DEBOUNCE_MS);
@@ -714,7 +724,7 @@ export function useDashboardPreferenceSync({
       const result = await loadDashboardPreferences(preferenceScope(state.layer), {
         author: getActiveClient(),
       });
-      if (cancelled) {
+      if (browserLifecycle.disposed) {
         return;
       }
       if (recoverClientBinding(result.failureCode)) {
@@ -736,7 +746,7 @@ export function useDashboardPreferenceSync({
     }
 
     async function refreshAllLayers() {
-      if (cancelled || !online || !visible) {
+      if (browserLifecycle.disposed || !browserLifecycle.online || !browserLifecycle.visible) {
         return;
       }
       if (refreshInFlight) {
@@ -756,7 +766,7 @@ export function useDashboardPreferenceSync({
     }
 
     function handleSettingsChange() {
-      if (!initialized || applying || cancelled) {
+      if (!initialized || applying || browserLifecycle.disposed) {
         return;
       }
       for (const state of activeStates) {
@@ -774,16 +784,13 @@ export function useDashboardPreferenceSync({
 
     const unsubscribe = useSettingsStore.subscribe(handleSettingsChange);
     const handleOnline = () => {
-      online = true;
       void refreshAllLayers();
     };
     const handleOffline = () => {
-      online = false;
       clearPollTimer();
     };
     const handleVisibility = () => {
-      visible = document.visibilityState === 'visible';
-      if (visible) {
+      if (browserLifecycle.visible) {
         void refreshAllLayers();
       } else {
         clearPollTimer();
@@ -820,17 +827,19 @@ export function useDashboardPreferenceSync({
       }
       void refreshAllLayers();
     };
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    window.addEventListener('pagehide', handlePageHide);
+    browserLifecycle.listen({
+      online: handleOnline,
+      offline: handleOffline,
+      pagehide: handlePageHide,
+      visibility: handleVisibility,
+    });
     window.addEventListener(
       AUTH_SESSION_REFRESHED_EVENT,
       handleAuthSessionRefreshed as EventListener
     );
-    document.addEventListener('visibilitychange', handleVisibility);
 
     async function initialize() {
-      if (!online) {
+      if (!browserLifecycle.online) {
         initialized = true;
         setPreferencesLoadCompleted(true);
         return;
@@ -841,7 +850,7 @@ export function useDashboardPreferenceSync({
           const result = await loadDashboardPreferences(preferenceScope(state.layer), {
             author: getActiveClient(),
           });
-          if (cancelled) {
+          if (browserLifecycle.disposed) {
             return;
           }
 
@@ -865,7 +874,7 @@ export function useDashboardPreferenceSync({
         }
       } finally {
         initialized = true;
-        if (!cancelled) {
+        if (!browserLifecycle.disposed) {
           setPreferencesLoadCompleted(true);
         }
       }
@@ -878,19 +887,15 @@ export function useDashboardPreferenceSync({
     void initialize();
 
     return () => {
-      cancelled = true;
+      browserLifecycle.dispose();
       unsubscribe();
       clearPollTimer();
       clearLayerTimer(states.account);
       clearLayerTimer(states.device);
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-      window.removeEventListener('pagehide', handlePageHide);
       window.removeEventListener(
         AUTH_SESSION_REFRESHED_EVENT,
         handleAuthSessionRefreshed as EventListener
       );
-      document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, [accountEnabled, clientId, enabled]);
 

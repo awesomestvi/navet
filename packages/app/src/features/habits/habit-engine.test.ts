@@ -12,7 +12,7 @@ const { dispatchEntityCommandMock } = vi.hoisted(() => ({
   }),
 }));
 
-vi.mock('@navet/app/services/integration-action.service', () => ({
+vi.mock('@navet/app/commands', () => ({
   dispatchEntityCommand: dispatchEntityCommandMock,
 }));
 

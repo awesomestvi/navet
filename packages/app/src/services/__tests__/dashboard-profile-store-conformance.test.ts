@@ -272,6 +272,31 @@ describe('dashboard profile backend conformance', () => {
     }
   });
 
+  it('preserves shared chore enablement and strips device settings and credentials in both runtimes', async () => {
+    const njsFs = createMockFs();
+    profileStore.setProfileStoreFsForTests(njsFs);
+    const directory = mkdtempSync(join(tmpdir(), 'navet-profile-policy-conformance-'));
+    tempDirectories.push(directory);
+    const viteStore = createViteDashboardProfileStore(join(directory, 'profile.json'));
+    const viteHandler = createViteDashboardProfileRequestHandler({
+      store: viteStore,
+      resolvePrincipal: () => PRINCIPAL,
+    });
+    const body = JSON.stringify({
+      ...JSON.parse(PROFILE),
+      settings: { choresEnabled: true, kioskMode: true, accessToken: 'must-not-sync' },
+    });
+    const headers = { ...CLIENT_HEADERS, 'X-Navet-Base-Revision': '0' };
+    const njsWrite = runNjs('PUT', headers, body);
+    const viteWrite = createViteResponse();
+    await viteHandler(createViteRequest('PUT', headers, body), viteWrite.response);
+    expect([njsWrite.status, viteWrite.status]).toEqual([200, 200]);
+    const njsSaved = JSON.parse(njsFs.files.get(PROFILE_PATH) ?? '{}');
+    const viteSaved = JSON.parse(readFileSync(viteStore.getPaths().profile, 'utf8'));
+    expect(njsSaved.settings).toEqual({ choresEnabled: true });
+    expect(viteSaved.settings).toEqual(njsSaved.settings);
+  });
+
   it('keeps NJS and Vite security, revision, attribution, stale-write, and reset semantics aligned', async () => {
     profileStore.setProfileStoreFsForTests(createMockFs());
     const directory = mkdtempSync(join(tmpdir(), 'navet-profile-conformance-'));

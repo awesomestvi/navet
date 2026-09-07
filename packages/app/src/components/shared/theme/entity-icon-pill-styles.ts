@@ -104,7 +104,11 @@ export function getEntityIconPillStyles({
       },
       iconClassName: iconSizeClass,
       iconStyle: {
-        color: resolvedBaseColor,
+        color: getCardReadableTextTokens({
+          theme: 'light',
+          baseColor: resolvedBaseColor,
+          backgroundColor: '#ffffff',
+        }).titleColor,
       },
     };
   }

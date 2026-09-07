@@ -1,4 +1,4 @@
-import { integrationSessionRuntime } from './integration-session-runtime';
+import { integrationSessionRuntime } from '../integration-session-runtime';
 import type { AuthRuntime } from './runtime-types';
 
 export type { AuthRuntime } from './runtime-types';

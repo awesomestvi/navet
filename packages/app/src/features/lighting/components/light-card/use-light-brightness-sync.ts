@@ -2,8 +2,9 @@ import type { NavetLightState } from '@navet/app/core/navet-device-state';
 import { useLightMemoryStore } from '@navet/app/features/lighting/stores/light-memory-store';
 import { useHaCommandQueue } from '@navet/app/hooks';
 import type { PlatformEntitySnapshot } from '@navet/app/platform/provider-feature-models';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { clampPercentage, getBrightnessPercent } from './light-card-utils';
+import { usePendingLightValue } from './use-pending-light-value';
 
 type SyncLightOptions = {
   state?: 'on' | 'off';
@@ -39,136 +40,41 @@ export function useLightBrightnessSync({
   const lastBrightnessRef = useRef(
     rememberedState?.brightness ?? (initialBrightness > 0 ? initialBrightness : 100)
   );
-  const pendingBrightnessRef = useRef<number | null>(null);
-  const brightnessSyncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingBrightness = usePendingLightValue(1);
 
+  // Normalize the observation before applying optimistic acknowledgement rules.
   useLayoutEffect(() => {
-    if (liveEntity) return;
+    if (isAdjustingBrightness) return;
+    const observedState = liveEntity?.state ?? providerState?.value;
     if (
       pendingOnStateRef.current !== null &&
-      providerState?.value &&
-      (providerState.value === 'on') !== pendingOnStateRef.current
-    ) {
+      observedState &&
+      (observedState === 'on') !== pendingOnStateRef.current
+    )
       return;
-    }
-    const nextBrightness =
-      typeof providerState?.brightnessPct === 'number'
+    const observedBrightness = liveEntity
+      ? getBrightnessPercent(liveEntity)
+      : typeof providerState?.brightnessPct === 'number'
         ? providerState.brightnessPct
         : initialBrightness;
-    if (nextBrightness > 0) {
-      lastBrightnessRef.current = nextBrightness;
-      rememberLightState(id, { brightness: nextBrightness });
+    if (observedState === 'on' && !pendingBrightness.accept(observedBrightness)) return;
+    if (observedBrightness > 0) {
+      lastBrightnessRef.current = observedBrightness;
+      rememberLightState(id, { brightness: observedBrightness });
     }
-    if (providerState?.value === 'on') {
-      setBrightness(nextBrightness);
-      return;
-    }
-    if (providerState?.value === 'off') {
-      setBrightness(0);
-      return;
-    }
-    setBrightness(nextBrightness);
+    const observedOff = liveEntity ? observedState !== 'on' : observedState === 'off';
+    setBrightness(observedOff ? 0 : observedBrightness);
   }, [
     id,
     initialBrightness,
-    liveEntity,
-    pendingOnStateRef,
-    providerState?.brightnessPct,
-    providerState?.value,
-    rememberLightState,
-  ]);
-
-  useLayoutEffect(() => {
-    if (!liveEntity && typeof providerState?.brightnessPct === 'number' && !isAdjustingBrightness) {
-      if (
-        pendingOnStateRef.current !== null &&
-        providerState?.value &&
-        (providerState.value === 'on') !== pendingOnStateRef.current
-      ) {
-        return;
-      }
-      const brightnessFromProvider = providerState.brightnessPct;
-      if (providerState.value !== 'on') {
-        if (brightnessFromProvider > 0) {
-          lastBrightnessRef.current = brightnessFromProvider;
-          rememberLightState(id, { brightness: brightnessFromProvider });
-        }
-        return;
-      }
-
-      if (
-        pendingBrightnessRef.current !== null &&
-        Math.abs(brightnessFromProvider - pendingBrightnessRef.current) > 1
-      ) {
-        return;
-      }
-
-      if (pendingBrightnessRef.current !== null) {
-        pendingBrightnessRef.current = null;
-        if (brightnessSyncTimeoutRef.current) {
-          clearTimeout(brightnessSyncTimeoutRef.current);
-          brightnessSyncTimeoutRef.current = null;
-        }
-      }
-
-      if (brightnessFromProvider > 0) {
-        lastBrightnessRef.current = brightnessFromProvider;
-        rememberLightState(id, { brightness: brightnessFromProvider });
-      }
-
-      setBrightness(brightnessFromProvider);
-      return;
-    }
-
-    if (!liveEntity || isAdjustingBrightness) return;
-    if (
-      pendingOnStateRef.current !== null &&
-      (liveEntity.state === 'on') !== pendingOnStateRef.current
-    ) {
-      return;
-    }
-    const brightnessFromEntity = getBrightnessPercent(liveEntity);
-    if (liveEntity.state !== 'on') {
-      if (brightnessFromEntity > 0) {
-        lastBrightnessRef.current = brightnessFromEntity;
-        rememberLightState(id, { brightness: brightnessFromEntity });
-      }
-      setBrightness(0);
-      return;
-    }
-    if (
-      pendingBrightnessRef.current !== null &&
-      Math.abs(brightnessFromEntity - pendingBrightnessRef.current) > 1
-    ) {
-      return;
-    }
-    if (pendingBrightnessRef.current !== null) {
-      pendingBrightnessRef.current = null;
-      if (brightnessSyncTimeoutRef.current) {
-        clearTimeout(brightnessSyncTimeoutRef.current);
-        brightnessSyncTimeoutRef.current = null;
-      }
-    }
-    if (brightnessFromEntity > 0) {
-      lastBrightnessRef.current = brightnessFromEntity;
-      rememberLightState(id, { brightness: brightnessFromEntity });
-    }
-    setBrightness(brightnessFromEntity);
-  }, [
-    id,
     isAdjustingBrightness,
     liveEntity,
+    pendingBrightness,
     pendingOnStateRef,
     providerState?.brightnessPct,
     providerState?.value,
     rememberLightState,
   ]);
-
-  useEffect(() => {
-    return () => {
-      if (brightnessSyncTimeoutRef.current) clearTimeout(brightnessSyncTimeoutRef.current);
-    };
-  }, []);
 
   useLayoutEffect(() => {
     if (isAdjustingBrightness) {
@@ -229,24 +135,18 @@ export function useLightBrightnessSync({
       lastBrightnessRef.current = nextBrightness;
       rememberLightState(id, { brightness: nextBrightness });
       setIsAdjustingBrightness(false);
-      pendingBrightnessRef.current = nextBrightness;
-      if (brightnessSyncTimeoutRef.current) clearTimeout(brightnessSyncTimeoutRef.current);
-      brightnessSyncTimeoutRef.current = setTimeout(() => {
-        pendingBrightnessRef.current = null;
-        brightnessSyncTimeoutRef.current = null;
-      }, 1500);
+      pendingBrightness.expect(nextBrightness);
       if (!isOn) setIsOn(true);
       queueBrightnessSync(nextBrightness, true);
     },
-    [id, isOn, queueBrightnessSync, rememberLightState, setIsOn]
+    [id, isOn, pendingBrightness, queueBrightnessSync, rememberLightState, setIsOn]
   );
 
   return {
     brightness,
     isAdjustingBrightness,
     lastBrightnessRef,
-    pendingBrightnessRef,
-    brightnessSyncTimeoutRef,
+    expectBrightness: pendingBrightness.expect,
     onBrightnessChange,
     onBrightnessCommit,
   };

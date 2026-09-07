@@ -124,6 +124,14 @@ export const Playground: Story = {
       await userEvent.click(lightCard);
       await expect(lightCard).toHaveAttribute('aria-pressed', 'true');
     });
+
+    await step('supports the primary action with Enter and Space', async () => {
+      lightCard.focus();
+      await userEvent.keyboard('{Enter}');
+      await expect(lightCard).toHaveAttribute('aria-pressed', 'false');
+      await userEvent.keyboard(' ');
+      await expect(lightCard).toHaveAttribute('aria-pressed', 'true');
+    });
   },
 };
 

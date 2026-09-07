@@ -401,147 +401,168 @@ export function useProviderEntityRegistryEntries(options?: {
   return useProviderEntityRuntimeRegistry(resolvedProviderId, enabled);
 }
 
+// Runtime snapshots are immutable external-store values. Weak keys let obsolete
+// registries be collected while sharing one index across mounted consumers.
+const registryIndexes = new WeakMap<
+  PlatformEntityRegistryEntry[],
+  {
+    byId: Map<string, PlatformEntityRegistryEntry>;
+    byDevice: Map<string, PlatformEntityRegistryEntry[]>;
+  }
+>();
+
+function getRegistryIndex(entries: PlatformEntityRegistryEntry[]) {
+  const cached = registryIndexes.get(entries);
+  if (cached) return cached;
+  const byId = new Map<string, PlatformEntityRegistryEntry>();
+  const byDevice = new Map<string, PlatformEntityRegistryEntry[]>();
+  for (const entry of entries) {
+    byId.set(entry.entityId, entry);
+    if (entry.deviceId) {
+      const siblings = byDevice.get(entry.deviceId);
+      if (siblings) siblings.push(entry);
+      else byDevice.set(entry.deviceId, [entry]);
+    }
+  }
+  for (const siblings of byDevice.values()) {
+    siblings.sort((left, right) => left.entityId.localeCompare(right.entityId));
+  }
+  const index = { byId, byDevice };
+  registryIndexes.set(entries, index);
+  return index;
+}
+
+function areRegistrySelectionsEqual(
+  previous: PlatformEntityRegistryEntry[],
+  next: PlatformEntityRegistryEntry[]
+) {
+  return previous.length === next.length && previous.every((entry, index) => entry === next[index]);
+}
+
+function areSnapshotRecordsEqual(
+  previous: Record<string, PlatformEntitySnapshot | undefined>,
+  next: Record<string, PlatformEntitySnapshot | undefined>
+) {
+  const ids = Object.keys(next);
+  return (
+    Object.keys(previous).length === ids.length &&
+    ids.every((id) => Object.hasOwn(previous, id) && previous[id] === next[id])
+  );
+}
+
+function useRuntimeSelection<Source, Selection>(
+  subscribe: (listener: () => void) => () => void,
+  getSource: (() => Source) | null,
+  select: (source: Source) => Selection,
+  empty: Selection,
+  equal: (previous: Selection, next: Selection) => boolean
+): Selection {
+  const cache = useRef<{
+    source: Source;
+    select: typeof select;
+    value: Selection;
+  } | null>(null);
+  return useSyncExternalStore(
+    getSource ? subscribe : subscribeNoop,
+    () => {
+      if (!getSource) {
+        cache.current = null;
+        return empty;
+      }
+      const source = getSource();
+      const previous = cache.current;
+      if (previous && previous.source === source && previous.select === select) {
+        return previous.value;
+      }
+      const next = select(source);
+      const value = previous && equal(previous.value, next) ? previous.value : next;
+      cache.current = { source, select, value };
+      return value;
+    },
+    () => empty
+  );
+}
+
 export function useProviderEntityRegistryEntriesByIds(
   entityIds: string[],
-  options?: {
-    providerId?: IntegrationProviderId;
-    enabled?: boolean;
-  }
+  options?: { providerId?: IntegrationProviderId; enabled?: boolean }
 ): PlatformEntityRegistryEntry[] {
   const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
   const resolvedProviderId = options?.providerId ?? currentProviderId;
-  const enabled = options?.enabled ?? true;
   const resolvedEntityIds = useMemo(
     () => resolveUniqueRuntimeEntityIds(entityIds, resolvedProviderId),
     [entityIds, resolvedProviderId]
   );
-  const runtimeService = resolvedProviderId
-    ? (getProviderRuntimeRegistration(resolvedProviderId).entityRuntimeService ?? null)
-    : null;
-  const previousEntriesRef = useRef<PlatformEntityRegistryEntry[]>(EMPTY_ENTITY_REGISTRY);
-
-  return useSyncExternalStore(
-    enabled && runtimeService ? runtimeService.subscribeEntityRegistryEntries : subscribeNoop,
-    () => {
-      if (!enabled || !runtimeService || resolvedEntityIds.length === 0) {
-        previousEntriesRef.current = EMPTY_ENTITY_REGISTRY;
-        return EMPTY_ENTITY_REGISTRY;
-      }
-
-      const registryEntriesById = new Map(
-        runtimeService.getEntityRegistryEntries().map((entry) => [entry.entityId, entry])
-      );
-      const nextEntries = resolvedEntityIds
-        .map((entityId) => registryEntriesById.get(entityId))
+  const runtimeService = getProviderRuntimeRegistration(resolvedProviderId).entityRuntimeService;
+  const select = useMemo(
+    () => (entries: PlatformEntityRegistryEntry[]) => {
+      const { byId } = getRegistryIndex(entries);
+      return resolvedEntityIds
+        .map((id) => byId.get(id))
         .filter((entry): entry is PlatformEntityRegistryEntry => entry !== undefined);
-      const previousEntries = previousEntriesRef.current;
-      if (
-        previousEntries.length === nextEntries.length &&
-        previousEntries.every((entry, index) => entry === nextEntries[index])
-      ) {
-        return previousEntries;
-      }
-
-      previousEntriesRef.current = nextEntries;
-      return nextEntries;
     },
-    () => EMPTY_ENTITY_REGISTRY
+    [resolvedEntityIds]
+  );
+  return useRuntimeSelection(
+    runtimeService?.subscribeEntityRegistryEntries ?? subscribeNoop,
+    options?.enabled !== false && resolvedEntityIds.length > 0 && runtimeService
+      ? runtimeService.getEntityRegistryEntries
+      : null,
+    select,
+    EMPTY_ENTITY_REGISTRY,
+    areRegistrySelectionsEqual
   );
 }
 
 export function useProviderEntityRegistryEntriesByDeviceId(
   deviceId: string | null,
-  options?: {
-    providerId?: IntegrationProviderId;
-    enabled?: boolean;
-  }
+  options?: { providerId?: IntegrationProviderId; enabled?: boolean }
 ): PlatformEntityRegistryEntry[] {
   const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
   const resolvedProviderId = options?.providerId ?? currentProviderId;
-  const enabled = options?.enabled ?? true;
-  const runtimeService = resolvedProviderId
-    ? (getProviderRuntimeRegistration(resolvedProviderId).entityRuntimeService ?? null)
-    : null;
-  const previousEntriesRef = useRef<PlatformEntityRegistryEntry[]>(EMPTY_ENTITY_REGISTRY);
-
-  return useSyncExternalStore(
-    enabled && runtimeService ? runtimeService.subscribeEntityRegistryEntries : subscribeNoop,
-    () => {
-      if (!enabled || !runtimeService || !deviceId) {
-        previousEntriesRef.current = EMPTY_ENTITY_REGISTRY;
-        return EMPTY_ENTITY_REGISTRY;
-      }
-
-      const nextEntries = runtimeService
-        .getEntityRegistryEntries()
-        .filter((entry) => entry.deviceId === deviceId)
-        .sort((left, right) => left.entityId.localeCompare(right.entityId));
-      const previousEntries = previousEntriesRef.current;
-      if (
-        previousEntries.length === nextEntries.length &&
-        previousEntries.every((entry, index) => entry === nextEntries[index])
-      ) {
-        return previousEntries;
-      }
-
-      previousEntriesRef.current = nextEntries;
-      return nextEntries;
-    },
-    () => EMPTY_ENTITY_REGISTRY
+  const runtimeService = getProviderRuntimeRegistration(resolvedProviderId).entityRuntimeService;
+  const select = useMemo(
+    () => (entries: PlatformEntityRegistryEntry[]) =>
+      (deviceId && getRegistryIndex(entries).byDevice.get(deviceId)) || EMPTY_ENTITY_REGISTRY,
+    [deviceId]
+  );
+  return useRuntimeSelection(
+    runtimeService?.subscribeEntityRegistryEntries ?? subscribeNoop,
+    options?.enabled !== false && deviceId && runtimeService
+      ? runtimeService.getEntityRegistryEntries
+      : null,
+    select,
+    EMPTY_ENTITY_REGISTRY,
+    areRegistrySelectionsEqual
   );
 }
 
 export function useProviderEntitySnapshotRecord(
   entityIds: string[],
-  options?: {
-    providerId?: IntegrationProviderId;
-    enabled?: boolean;
-  }
+  options?: { providerId?: IntegrationProviderId; enabled?: boolean }
 ): Record<string, PlatformEntitySnapshot | undefined> {
   const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
   const resolvedProviderId = options?.providerId ?? currentProviderId;
-  const enabled = options?.enabled ?? true;
   const resolvedEntityIds = useMemo(
     () => resolveUniqueRuntimeEntityIds(entityIds, resolvedProviderId),
     [entityIds, resolvedProviderId]
   );
-  const runtimeService = resolvedProviderId
-    ? (getProviderRuntimeRegistration(resolvedProviderId).entityRuntimeService ?? null)
-    : null;
-  const previousRecordRef = useRef<Record<string, PlatformEntitySnapshot | undefined>>(
-    EMPTY_ENTITY_SNAPSHOT_RECORD
+  const runtimeService = getProviderRuntimeRegistration(resolvedProviderId).entityRuntimeService;
+  const select = useMemo(
+    () => (snapshots: PlatformEntitySnapshotMap | null) =>
+      snapshots
+        ? Object.fromEntries(resolvedEntityIds.map((id) => [id, snapshots[id]]))
+        : EMPTY_ENTITY_SNAPSHOT_RECORD,
+    [resolvedEntityIds]
   );
-
-  return useSyncExternalStore(
-    enabled && runtimeService ? runtimeService.subscribeEntitySnapshots : subscribeNoop,
-    () => {
-      if (!enabled || !runtimeService || resolvedEntityIds.length === 0) {
-        previousRecordRef.current = EMPTY_ENTITY_SNAPSHOT_RECORD;
-        return EMPTY_ENTITY_SNAPSHOT_RECORD;
-      }
-
-      const snapshotMap = runtimeService.getEntitySnapshots();
-      if (!snapshotMap) {
-        previousRecordRef.current = EMPTY_ENTITY_SNAPSHOT_RECORD;
-        return EMPTY_ENTITY_SNAPSHOT_RECORD;
-      }
-
-      const previousRecord = previousRecordRef.current;
-      const nextRecord = Object.fromEntries(
-        resolvedEntityIds.map((entityId) => [entityId, snapshotMap[entityId]])
-      );
-      const unchanged =
-        Object.keys(previousRecord).length === resolvedEntityIds.length &&
-        resolvedEntityIds.every((entityId) => previousRecord[entityId] === nextRecord[entityId]);
-
-      if (unchanged) {
-        return previousRecord;
-      }
-
-      previousRecordRef.current = nextRecord;
-      return nextRecord;
-    },
-    () => EMPTY_ENTITY_SNAPSHOT_RECORD
+  return useRuntimeSelection(
+    runtimeService?.subscribeEntitySnapshots ?? subscribeNoop,
+    options?.enabled !== false && resolvedEntityIds.length > 0 && runtimeService
+      ? runtimeService.getEntitySnapshots
+      : null,
+    select,
+    EMPTY_ENTITY_SNAPSHOT_RECORD,
+    areSnapshotRecordsEqual
   );
 }
 

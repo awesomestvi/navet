@@ -71,7 +71,7 @@ export const BrightnessSlider = memo(function BrightnessSlider({
       : 'bg-white/10';
   const rangeBg = isOn
     ? useInverseActiveLightSurface
-      ? 'linear-gradient(to right, rgba(255,255,255,0.5), rgba(255,255,255,0.96))'
+      ? `linear-gradient(to right, ${textTokens.titleColor}, ${textTokens.titleColor})`
       : theme === 'glass'
         ? `linear-gradient(to right, rgba(255,255,255,0.42), ${activeColor}cc)`
         : theme === 'light'
@@ -97,7 +97,7 @@ export const BrightnessSlider = memo(function BrightnessSlider({
         : '#3a3a42';
   const thumbRing = isOn
     ? useInverseActiveLightSurface
-      ? 'rgba(255,255,255,0.42)'
+      ? textTokens.titleColor
       : theme === 'glass'
         ? `${activeColor}aa`
         : `${activeColor}66`
@@ -135,9 +135,7 @@ export const BrightnessSlider = memo(function BrightnessSlider({
               isDialogPresentation
                 ? undefined
                 : {
-                    color: useInverseActiveLightSurface
-                      ? 'rgba(255,255,255,0.78)'
-                      : textTokens.subtitleColor,
+                    color: textTokens.subtitleColor,
                   }
             }
           >
@@ -149,11 +147,7 @@ export const BrightnessSlider = memo(function BrightnessSlider({
                 ? `text-sm font-semibold ${editorSurface.sectionValueClassName}`
                 : `text-sm font-bold ${editorSurface.sectionValueClassName}`
             }
-            style={
-              isDialogPresentation
-                ? undefined
-                : { color: useInverseActiveLightSurface ? '#ffffff' : textTokens.titleColor }
-            }
+            style={isDialogPresentation ? undefined : { color: textTokens.titleColor }}
           >
             {value}%
           </span>
@@ -176,6 +170,11 @@ export const BrightnessSlider = memo(function BrightnessSlider({
           useDialogControlSize ? 'border-2' : ''
         } ${thumbShadowClass} focus:outline-none cursor-pointer touch-none`}
         touchThumbClassName={`block h-6 w-6 rounded-full ${thumbShadowClass} focus:outline-none cursor-pointer touch-none`}
+        trackStyle={
+          useInverseActiveLightSurface
+            ? { boxShadow: `inset 0 0 0 1px ${textTokens.titleColor}` }
+            : undefined
+        }
         rangeStyle={{
           backgroundImage: rangeBg,
         }}

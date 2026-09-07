@@ -61,7 +61,7 @@ registered as openHAB feature services in Navet.
 
 ### Planned providers
 
-Hubitat and SmartThings have package and registration surfaces only. They are not available as
+Hubitat and SmartThings have catalog metadata only. They are not available as
 runtime providers yet.
 
 ## Multiple Providers

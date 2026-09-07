@@ -25,9 +25,7 @@ COPY packages/app/package.json packages/app/package.json
 COPY packages/core/package.json packages/core/package.json
 COPY packages/provider-homeassistant/package.json packages/provider-homeassistant/package.json
 COPY packages/provider-homey/package.json packages/provider-homey/package.json
-COPY packages/provider-hubitat/package.json packages/provider-hubitat/package.json
 COPY packages/provider-openhab/package.json packages/provider-openhab/package.json
-COPY packages/provider-smartthings/package.json packages/provider-smartthings/package.json
 COPY packages/ui/package.json packages/ui/package.json
 RUN corepack enable && pnpm install --frozen-lockfile
 
@@ -36,19 +34,31 @@ COPY apps/standalone apps/standalone
 COPY packages packages
 COPY assets assets
 COPY scripts scripts
-RUN NAVET_ENABLE_DEMO=$NAVET_ENABLE_DEMO pnpm build
+COPY docker/shared docker/shared
+RUN node scripts/build-rss-transport.mjs \
+  && NAVET_ENABLE_DEMO=$NAVET_ENABLE_DEMO pnpm build
+
+# Runtime binaries must match the target architecture, independently of the build host.
+FROM node:22-alpine AS rss-node-runtime
 
 FROM ${BUILD_FROM}
 ARG BUILD_VERSION
 ARG BUILD_ARCH
 
-RUN apk add --no-cache bash nginx nginx-mod-http-js
+RUN apk add --no-cache bash nginx nginx-mod-http-js libstdc++ su-exec
+COPY --from=rss-node-runtime /usr/local/bin/node /usr/local/bin/node
 
 COPY platform/home-assistant/addons/navet/run.sh /run.sh
+COPY docker/navet-runtime.sh /usr/local/bin/navet-runtime
+COPY --from=build /app/docker/runtime/rss-transport.mjs /etc/navet/rss-transport.mjs
 COPY platform/home-assistant/addons/navet/rootfs/ /
 COPY docker/njs/rss-proxy.js /etc/nginx/njs/rss-proxy.js
+COPY docker/njs/resource-host-policy.js /etc/nginx/njs/resource-host-policy.js
 COPY docker/njs/profile-store.js /etc/nginx/njs/profile-store.js
+COPY docker/shared /etc/nginx/shared
 COPY docker/njs/chore-store.js /etc/nginx/njs/chore-store.js
+COPY docker/njs/chore-occurrence-policy.js /etc/nginx/njs/chore-occurrence-policy.js
+COPY docker/njs/chore-calendar-policy.js /etc/nginx/njs/chore-calendar-policy.js
 COPY docker/njs/auth-store.js /etc/nginx/njs/auth-store.js
 COPY docker/njs/provider-session-store.js /etc/nginx/njs/provider-session-store.js
 COPY docker/njs/installation-authority.js /etc/nginx/njs/installation-authority.js
@@ -58,6 +68,8 @@ COPY docker/njs/openhab-proxy.js /etc/nginx/njs/openhab-proxy.js
 COPY docker/njs/homey-store.js /etc/nginx/njs/homey-store.js
 COPY docker/njs/homey-proxy.js /etc/nginx/njs/homey-proxy.js
 COPY docker/snippets/navet-rss-proxy.conf /etc/nginx/snippets/navet-rss-proxy.conf
+COPY docker/snippets/navet-rss-proxy-ingress.conf /etc/nginx/snippets/navet-rss-proxy-ingress.conf
+COPY docker/snippets/navet-rss-transport.conf /etc/nginx/snippets/navet-rss-transport.conf
 COPY docker/snippets/navet-profile-store.conf /etc/nginx/snippets/navet-profile-store.conf
 COPY docker/snippets/navet-profile-store-ingress.conf /etc/nginx/snippets/navet-profile-store-ingress.conf
 COPY docker/snippets/navet-chore-store.conf /etc/nginx/snippets/navet-chore-store.conf
@@ -71,7 +83,7 @@ COPY --from=build /app/apps/standalone/dist /usr/share/nginx/html
 
 RUN mkdir -p /data \
   && chown -R nginx:nginx /data \
-  && chmod a+x /run.sh
+  && chmod a+x /run.sh /usr/local/bin/navet-runtime
 
 LABEL \
   io.hass.version="${BUILD_VERSION}" \

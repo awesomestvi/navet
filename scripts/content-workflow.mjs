@@ -6,8 +6,16 @@ import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 
 const scriptsDir = path.dirname(fileURLToPath(import.meta.url));
 export const repoRoot = path.resolve(scriptsDir, '..');
-export const contentRoot = path.join(repoRoot, 'marketing', 'content');
-export const channelConfigPath = path.join(contentRoot, 'channels.yml');
+export const marketingWipRoot = path.join(repoRoot, 'marketing', 'wip');
+export const communityWipRoot = path.join(marketingWipRoot, 'community');
+export const communityPublishedRoot = path.join(
+  repoRoot,
+  'marketing',
+  'deliverables',
+  'community',
+  'publications'
+);
+export const channelConfigPath = path.join(repoRoot, 'scripts', 'config', 'marketing-channels.yml');
 
 export const CONTENT_KINDS = new Set([
   'feature',
@@ -521,7 +529,7 @@ export function createFallbackDrafts(brief, selectedChannels) {
 export function loadPublishedVoiceExamples(
   channelIds,
   limitPerChannel = 3,
-  publishedRoot = path.join(contentRoot, 'published')
+  publishedRoot = communityPublishedRoot
 ) {
   if (!fs.existsSync(publishedRoot)) return [];
   const selected = new Set(channelIds);
@@ -795,7 +803,7 @@ export async function generateContentPack({
 
   const resolvedOutput = outputPath
     ? path.resolve(repoRoot, outputPath)
-    : path.join(repoRoot, '.cache', 'navet-content', brief.id);
+    : path.join(communityWipRoot, brief.id);
   writePack(pack, resolvedOutput);
   return { pack, outputPath: resolvedOutput };
 }

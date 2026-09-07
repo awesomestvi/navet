@@ -12,7 +12,10 @@ const DEFAULT_BASE_URL = `http://${CAPTURE_HOST}:${CAPTURE_PORT}`;
 const CAPTURE_CACHE_DIR = resolve(repoRoot, '.cache/marketing-media-capture');
 const SCREENSHOT_TEMP_DIR = resolve(CAPTURE_CACHE_DIR, 'screenshots');
 const VIDEO_TEMP_DIR = resolve(CAPTURE_CACHE_DIR, 'videos');
-const COMMUNITY_MEDIA_OUTPUT_DIR = resolve(repoRoot, '.cache/navet-content/media');
+const COMMUNITY_MEDIA_OUTPUT_DIR = resolve(
+  repoRoot,
+  'marketing/wip/community/captures'
+);
 const WALKTHROUGH_OUTPUT_DIR = resolve(
   assetPaths.marketingRoot,
   'campaigns/live-product-tutorials/recordings/final'

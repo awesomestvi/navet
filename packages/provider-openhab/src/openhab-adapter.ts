@@ -6,8 +6,8 @@ import {
 } from '@navet/core';
 import { UnsupportedProviderCommandError } from '@navet/core/errors';
 import { createSnapshotBackedProviderAdapter } from '@navet/core/snapshot-backed-adapter';
-import type { NavetCommand, NavetEntity, NavetProviderState } from '@navet/core/types';
-import { buildOpenHABProviderRooms, mapOpenHABSnapshotToNavetEntities } from './openhab-mappers';
+import type { NavetCommand, NavetEntity } from '@navet/core/types';
+import { buildOpenHABProviderState } from './openhab-provider-state';
 import { createOpenHABSnapshotClient, openhabService } from './openhab-service';
 
 interface OpenHABProviderSessionInput extends NavetProviderSessionInput {
@@ -143,15 +143,4 @@ export function createOpenHABContractAdapter(
     executeCommand: executeOpenHABCommand,
     getSession: options.getSession,
   });
-}
-
-function buildOpenHABProviderState(
-  snapshot: Parameters<typeof mapOpenHABSnapshotToNavetEntities>[0]
-): NavetProviderState {
-  return {
-    providerId: 'openhab',
-    connected: snapshot.connected,
-    entities: mapOpenHABSnapshotToNavetEntities(snapshot),
-    rooms: buildOpenHABProviderRooms(snapshot),
-  };
 }

@@ -176,6 +176,7 @@ export function MarketingWebsiteShell({
   const isHomePage = currentPathname === '/';
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const headerRef = useRef<HTMLElement | null>(null);
+  const mobileNavToggleRef = useRef<HTMLButtonElement | null>(null);
   const mobileNavId = useId();
   const [githubStarCount, setGithubStarCount] = useState<string | null>(() => {
     const cached = storage.get<{ count: number; expiresAt: number } | null>(
@@ -287,6 +288,7 @@ export function MarketingWebsiteShell({
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setIsMobileNavOpen(false);
+        mobileNavToggleRef.current?.focus();
       }
     };
 
@@ -356,6 +358,7 @@ export function MarketingWebsiteShell({
             </nav>
 
             <button
+              ref={mobileNavToggleRef}
               type="button"
               onClick={() => setIsMobileNavOpen((open) => !open)}
               aria-label={isMobileNavOpen ? 'Close navigation menu' : 'Open navigation menu'}

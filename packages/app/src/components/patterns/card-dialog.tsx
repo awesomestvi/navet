@@ -1,4 +1,6 @@
-import { Button, Input, InteractivePill } from '@navet/app/components/primitives';
+import { Button } from '@navet/app/components/primitives/button';
+import { Input } from '@navet/app/components/primitives/input';
+import { InteractivePill } from '@navet/app/components/primitives/interactive-pill';
 import { EntityRoomSelector } from '@navet/app/components/shared/entity-room-selector';
 import { navetTypographyTokens } from '@navet/app/components/system/tokens';
 import { cn } from '@navet/app/components/ui/utils';

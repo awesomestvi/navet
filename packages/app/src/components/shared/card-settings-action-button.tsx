@@ -17,6 +17,7 @@ interface CardSettingsActionButtonProps extends ButtonHTMLAttributes<HTMLButtonE
   tone?: 'default' | 'muted';
   variant?: 'neutral' | 'soft' | 'emphasis';
   accentColor?: string;
+  iconStyle?: CSSProperties;
   disableHoverEffects?: boolean;
 }
 
@@ -70,6 +71,7 @@ export function CardSettingsActionButton({
   accentColor,
   disableHoverEffects = false,
   style,
+  iconStyle,
   ...props
 }: CardSettingsActionButtonProps) {
   const { t } = useI18n();
@@ -90,7 +92,7 @@ export function CardSettingsActionButton({
             : 'hover:scale-105 active:scale-95'
       } ${accentStyle?.className ?? ''} ${className}`}
       iconClassName={tone === 'muted' ? 'text-current/60' : ''}
-      iconStyle={accentStyle?.iconStyle}
+      iconStyle={{ ...accentStyle?.iconStyle, ...iconStyle }}
       style={{
         ...(accentStyle?.style ?? {}),
         ...(style ?? {}),

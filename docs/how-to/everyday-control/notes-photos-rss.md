@@ -29,6 +29,10 @@ display and that the browser can reach.
 3. Choose how many items to show where available.
 4. Save and wait for Navet's same-origin proxy to load the feed.
 
+Live feeds require a public HTTPS address and a signed-in Navet session. The Home Assistant add-on
+uses your authenticated Ingress session. If feed loading stops after signing out, reconnect your
+provider or reopen Navet through Home Assistant.
+
 ![A note, photo frame, and RSS card together on Home.](/docs/how-to/everyday-control/content-widgets-result.webp)
 
 ## If an external source fails

@@ -322,7 +322,8 @@ export function mapPrefsToConfig(prefs: HaEnergyPrefs): EnergySourceConfig {
       case 'grid':
         config.gridImportEnergyEntityId =
           source.stat_energy_from ?? source.flow_from?.[0]?.stat_energy_from;
-        config.gridExportEnergyEntityId = source.stat_energy_to ?? undefined;
+        config.gridExportEnergyEntityId =
+          source.stat_energy_to ?? source.flow_to?.[0]?.stat_energy_to;
         config.gridImportPowerEntityId = source.stat_rate ?? source.flow_from?.[0]?.stat_rate;
         break;
       case 'battery':

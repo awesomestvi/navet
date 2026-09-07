@@ -675,12 +675,3 @@ export function useClimateCardController({
     theme,
   };
 }
-
-/** @deprecated Use ClimateSiblingEntity. */
-export type HVACSiblingEntity = ClimateSiblingEntity;
-
-/** @deprecated Use ClimateCardController. */
-export type HVACCardController = ClimateCardController;
-
-/** @deprecated Use useClimateCardController. */
-export const useHVACCardController = useClimateCardController;

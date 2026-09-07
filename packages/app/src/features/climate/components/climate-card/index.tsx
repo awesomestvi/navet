@@ -299,6 +299,3 @@ export const ClimateCard = memo(function ClimateCard({
     </>
   );
 });
-
-/** @deprecated Use ClimateCard. */
-export const HVACCard = ClimateCard;

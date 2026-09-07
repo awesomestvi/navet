@@ -209,7 +209,7 @@ export const LightCard = memo(function LightCard({
           <div
             data-ambient-light-bleed="true"
             aria-hidden="true"
-            className={`pointer-events-none absolute -inset-full z-0 blur-3xl transition-[background,opacity,filter] duration-500 ${
+            className={`pointer-events-none absolute inset-0 z-0 blur-3xl transition-[background,opacity,filter] duration-500 ${
               theme !== 'light' ? 'opacity-20' : 'opacity-40'
             }`}
             style={{

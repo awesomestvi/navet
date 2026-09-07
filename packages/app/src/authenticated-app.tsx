@@ -7,6 +7,7 @@ import {
 } from '@navet/app/auth/types';
 import { getRegisteredProviderContract } from '@navet/app/provider-contract-registry';
 import type { IntegrationProviderId } from '@navet/app/types/provider';
+import { isImplementedIntegrationProviderId } from '@navet/core/integration-providers';
 import type { NavetProviderSession } from '@navet/core/provider-contract';
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { PwaUpdatePrompt } from './components/shared/pwa-update-prompt';
@@ -109,7 +110,7 @@ function AppContent() {
     typeof navigator === 'undefined' ? true : navigator.onLine
   );
   const failedConnectionAttemptKeys = useRef<Partial<Record<IntegrationProviderId, string>>>({});
-  const previousSessionProviderIds = useRef<IntegrationProviderId[]>([]);
+  const previousSessionProviderIds = useRef<AuthSession['providerId'][]>([]);
   const ingressInvalidAuthRecoveryInFlight = useRef(false);
   const standaloneInvalidAuthRecoveryInFlight = useRef(false);
   const isInvalidHomeAssistantAuth = appError?.message === INVALID_HOME_ASSISTANT_AUTH_MESSAGE;
@@ -220,14 +221,15 @@ function AppContent() {
 
   useEffect(() => {
     const nextSessions = Object.fromEntries(
-      (Object.keys(sessions) as IntegrationProviderId[])
+      Object.keys(sessions)
+        .filter(isImplementedIntegrationProviderId)
         .map((providerId) => [
           providerId,
           getRegisteredProviderContract(providerId).bootstrapSession?.(
             toAuthCompatibleSessionMap(sessions)
           ) ?? null,
         ])
-        .filter((entry): entry is [IntegrationProviderId, NavetProviderSession] =>
+        .filter((entry): entry is [AuthSession['providerId'], NavetProviderSession] =>
           Boolean(entry[1])
         )
     ) as Record<IntegrationProviderId, NavetProviderSession>;
@@ -236,12 +238,14 @@ function AppContent() {
   }, [sessions, setProviderSessions]);
 
   useEffect(() => {
-    const currentProviderIds = Object.keys(sessions) as IntegrationProviderId[];
+    const currentProviderIds = Object.keys(sessions).filter(isImplementedIntegrationProviderId);
     const removedProviderIds = previousSessionProviderIds.current.filter(
       (previousProviderId) => !currentProviderIds.includes(previousProviderId)
     );
     const nextSelectedProviderIds = [
-      ...selectedProviderIds.filter((providerId) => currentProviderIds.includes(providerId)),
+      ...selectedProviderIds.filter((providerId) =>
+        currentProviderIds.some((id) => id === providerId)
+      ),
       ...currentProviderIds.filter(
         (providerId) =>
           !selectedProviderIds.includes(providerId) &&

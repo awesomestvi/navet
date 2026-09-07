@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { request as httpRequest } from 'node:http';
 import { setTimeout as delay } from 'node:timers/promises';
+import { startRssFixture } from './docker-rss-fixture.mjs';
 
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, {
@@ -137,6 +138,7 @@ function ensureSerializedProfileRuntime() {
     'docker/snippets/navet-profile-store.conf',
     'docker/snippets/navet-profile-store-ingress.conf',
     'docker/snippets/navet-rss-proxy.conf',
+    'docker/snippets/navet-rss-proxy-ingress.conf',
   ];
   const runtimeConfigs = [
     {
@@ -828,6 +830,86 @@ async function waitForProvider(containerName) {
   throw new Error(`Timed out waiting for the fake provider container: ${lastError.trim()}`);
 }
 
+function rssFixtureContainerArgs() {
+  return rssFixture ? [
+    '--mount', `type=bind,source=${rssFixture.caFile},target=/etc/navet/rss-test-ca.pem,readonly`,
+    '-e', 'NODE_EXTRA_CA_CERTS=/etc/navet/rss-test-ca.pem',
+  ] : [];
+}
+
+async function verifyRssBoundary(baseUrl, headers, privateHostname, fixtureUrl) {
+  const path = (target) => '/__navet_rss_proxy__?url=' + encodeURIComponent(target);
+  const cases = [
+    ['/__navet_rss_transport__', headers, 404],
+    [path(fixtureUrl + '/feed'), {}, 401],
+    [path('https://127.0.0.1/feed'), headers, 400],
+    [path('https://' + privateHostname + '/feed'), headers, 400],
+    [path(fixtureUrl + '/feed'), headers, 200],
+    [path(fixtureUrl + '/large'), headers, 200],
+    [path(fixtureUrl + '/oversized'), headers, 502],
+    [path(fixtureUrl + '/wrong-type'), headers, 502],
+    [path(fixtureUrl + '/redirect'), headers, 502],
+    // Error responses must leave the transport able to serve the next valid feed.
+    [path(fixtureUrl + '/feed'), headers, 200],
+  ];
+  for (const [route, requestHeaders, expected] of cases) {
+    const response = await fetch(baseUrl + route, {
+      headers: requestHeaders, signal: AbortSignal.timeout(20_000),
+    }).catch((error) => { throw new Error('RSS request failed for ' + route + ': ' + error.message); });
+    const body = await response.text();
+    if (response.status !== expected) {
+      throw new Error('RSS boundary ' + route + ': expected ' + expected + ', got ' +
+        response.status + ': ' + body.slice(0, 200));
+    }
+    if (expected === 200) {
+      if (route.includes(encodeURIComponent('/large'))) {
+        if (body.length !== 1024 * 1024) throw new Error('RSS subrequest truncated the bounded XML response');
+      } else if (!body.includes('<title>Navet fixture</title>')) {
+        throw new Error('RSS transport did not return the verified TLS fixture');
+      }
+      if (!response.headers.get('content-type')?.includes('application/rss+xml')) {
+        throw new Error('RSS transport lost the XML content type');
+      }
+    }
+  }
+}
+
+function verifyAddonRssBoundary(probeContainerName) {
+  const headers = {
+    'X-Forwarded-Proto': 'https',
+    'X-Ingress-Path': addonIngressPath,
+    'X-Remote-User-Id': 'actual-addon-user',
+    'X-Remote-User-Name': 'Actual add-on user',
+    'Authorization': 'Bearer must-not-reach-feed',
+    'X-Navet-Installation-Key': 'must-not-reach-feed',
+  };
+  run('docker', ['exec', probeContainerName, 'node', '-e',
+    '(' + verifyRssBoundary.toString() + ')(' + JSON.stringify('http://navet-addon-check:8099') +
+    ',' + JSON.stringify(headers) + ',' + JSON.stringify('supervisor') + ',' +
+    JSON.stringify(rssFixture.url) + ').catch((error) => { console.error(error); process.exit(1); })',
+  ]);
+}
+
+async function verifyRssServiceSupervision(containerName) {
+  const identity = spawnSync('docker', ['exec', containerName, 'stat', '-c', '%U:%G:%a',
+    '/run/navet/rss-transport.sock'], { encoding: 'utf8' });
+  if (identity.status !== 0 || identity.stdout.trim() !== 'nginx:nginx:660') {
+    throw new Error('RSS Unix socket must be private to the nginx identity');
+  }
+  run('docker', ['exec', containerName, 'pkill', '-KILL', '-x', 'node']);
+  for (let attempt = 0; attempt < 40; attempt++) {
+    const result = spawnSync('docker', ['inspect', '--format', '{{.State.Running}} {{.State.ExitCode}}',
+      containerName], { encoding: 'utf8' });
+    if (result.status === 0 && result.stdout.startsWith('false ')) {
+      if (result.stdout.trim() === 'false 0') throw new Error('Transport failure reported a clean container exit');
+      return;
+    }
+    await delay(100);
+  }
+  const processes = spawnSync('docker', ['exec', containerName, 'ps', '-o', 'pid,ppid,comm,args'], { encoding: 'utf8' });
+  throw new Error('nginx remained running after the RSS transport failed\n' + processes.stdout);
+}
+
 function startNavetContainer(containerName, networkName, volumeName, imageTag) {
   run('docker', [
     'run',
@@ -844,8 +926,11 @@ function startNavetContainer(containerName, networkName, volumeName, imageTag) {
     'NAVET_HOMEY_CLIENT_ID=actual-image-homey-client',
     '-e',
     'NAVET_HOMEY_CLIENT_SECRET=actual-image-homey-secret',
+    ...rssFixtureContainerArgs(),
     imageTag,
   ]);
+
+  rssFixture?.attach(containerName);
 
   const portResult = spawnSync('docker', ['port', containerName, '80/tcp'], {
     stdio: 'pipe',
@@ -928,11 +1013,12 @@ function startHomeAssistantAddonContainer({
       '/bin/bash'
     );
   }
-  args.push(imageTag);
+  args.push(...rssFixtureContainerArgs(), imageTag);
   if (compatibilityEntrypoint) {
     args.push('/run.sh');
   }
   run('docker', args);
+  rssFixture?.attach(containerName);
 }
 
 const addonIngressPath = '/api/hassio_ingress/navet-runtime-check';
@@ -1908,6 +1994,7 @@ async function verifyPersistedStateAfterReplacement({
   }
 }
 
+let rssFixture = null;
 const imageTag = `navet-docker-runtime-check:${Date.now()}`;
 const addonImageTag = `navet-addon-runtime-check:${Date.now()}`;
 const expectedBuildVersion = '0.0.0-dev.20990101010101';
@@ -2034,6 +2121,7 @@ try {
       cwd: process.cwd(),
     }
   );
+  rssFixture = await startRssFixture(containerName);
   run('docker', ['volume', 'create', addonVolumeName]);
   seedHomeAssistantAddonOptions(addonImageTag, addonVolumeName);
   run('docker', [
@@ -2116,6 +2204,12 @@ try {
     addonChoreRevision
   );
 
+  verifyAddonRssBoundary(addonProbeContainerName);
+  await verifyRssServiceSupervision(addonContainerName);
+  run('docker', ['start', addonContainerName]);
+  await waitForHomeAssistantAddonIngressProfile(addonContainerName, addonProbeContainerName, addonCookie);
+  verifyAddonRssBoundary(addonProbeContainerName);
+
   run('docker', ['volume', 'create', volumeName]);
   run('docker', ['network', 'create', networkName]);
   run('docker', [
@@ -2194,6 +2288,10 @@ try {
     firstBrowser,
     state
   );
+  await verifyRssBoundary(baseUrl, { Cookie: authenticatedCookie,
+    Authorization: 'Bearer must-not-reach-feed',
+    'X-Navet-Installation-Key': 'must-not-reach-feed',
+  }, 'provider-check', rssFixture.url);
   const alternateState = await startHomeAssistantOAuthThroughAlternateBrowserRoute(
     baseUrl,
     containerName,
@@ -2365,6 +2463,7 @@ try {
     );
   }
 
+  await verifyRssServiceSupervision(containerName);
   run('docker', ['rm', '-f', containerName]);
   assertConfiguredInstallationKeyMismatchRejected({
     imageTag,
@@ -2389,17 +2488,26 @@ try {
     profileCookie,
   });
 
+  await verifyRssBoundary(replacementBaseUrl, { Cookie: authenticatedCookie }, 'provider-check', rssFixture.url);
+
   console.log(
     `Docker NJS auth smoke check passed with a Home Assistant add-on startup/replacement cycle using ${
       addonTarget.exactBase
         ? 'the exact Home Assistant base image'
         : 'the explicit Alpine with-contenv/bashio compatibility fallback'
-    }, exact standalone build metadata, no anonymous record minting, OAuth rotation, proxied token renewal, verified alternate browser routes, two-installation host cookie isolation, runtime hostname resolution, provider confinement, stable parallel profile binding, njs-safe two-client profile ordering, cross-request chore management PIN sessions, and persisted auth/profile state after container replacement.`
+    }, exact standalone build metadata, no anonymous record minting, OAuth rotation, proxied token renewal, verified alternate browser routes, two-installation host cookie isolation, runtime hostname resolution, pinned RSS HTTPS with private-DNS rejection and isolated credentials, bounded XML, transport supervision/recovery, provider confinement, stable parallel profile binding, njs-safe two-client profile ordering, cross-request chore management PIN sessions, and persisted auth/profile state after container replacement.`
   );
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));
+  for (const name of [containerName, addonContainerName]) {
+    const logs = spawnSync('docker', ['logs', '--tail', '60', name], { encoding: 'utf8' });
+    if (logs.status === 0) console.error(logs.stdout + logs.stderr);
+    const nginxLog = spawnSync('docker', ['exec', name, 'tail', '-60', '/var/log/nginx/error.log'], { encoding: 'utf8', timeout: 2000 });
+    if (nginxLog.status === 0) console.error(nginxLog.stdout);
+  }
   process.exitCode = 1;
 } finally {
+  await rssFixture?.cleanup();
   spawnSync('docker', ['rm', '-f', containerName], {
     stdio: 'ignore',
   });

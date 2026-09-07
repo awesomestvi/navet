@@ -23,8 +23,8 @@ Current implementation note:
 - those app-owned surfaces are migration seams and stable import surfaces, not proof that the UI
   extraction is complete
 
-Hubitat and SmartThings have planned provider contracts and registration entries, but full runtime
-support is not implemented yet.
+Hubitat and SmartThings have planned catalog metadata, but no runtime adapters or authentication
+flows.
 
 The existing implemented providers are not feature-identical. Home Assistant owns the current
 advanced feature-service set. Homey and openHAB currently contribute rooms, realtime entities,

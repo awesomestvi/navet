@@ -1,4 +1,4 @@
-import { integrationSessionRuntime } from '@navet/app/auth/integration-session-runtime';
+import { integrationSessionRuntime } from '@navet/app/integration-session-runtime';
 import type { ProviderHealth } from '@navet/app/platform/types';
 import { getRegisteredProviderContract } from '@navet/app/provider-contract-registry';
 import { homeyService } from '@navet/app/services/homey.service';

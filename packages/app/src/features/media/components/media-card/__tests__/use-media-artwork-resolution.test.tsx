@@ -17,7 +17,7 @@ vi.mock('@navet/app/services/home-assistant.service', () => ({
 
 import { useMediaArtworkResolution } from '@navet/app/features/media/components/media-card/use-media-artwork-resolution';
 import * as mediaArtworkHookModule from '@navet/app/features/media/hooks/use-media-artwork';
-import { mediaArtworkService } from '@navet/app/infrastructure/home-assistant/home-assistant-infrastructure';
+import { mediaArtworkService } from '@navet/app/infrastructure/home-assistant/home-assistant-shared-infrastructure';
 import { resetRuntimeContextForTests } from '@navet/app/infrastructure/home-assistant/runtime/runtime-detector';
 
 const ARTWORK_CLEAR_TEST_DELAY_MS = 700;

@@ -1,4 +1,4 @@
-import { CardDialogHeader } from '@navet/app/components/patterns';
+import { CardDialogHeader } from '@navet/app/components/patterns/card-dialog';
 import { memo, type ReactNode } from 'react';
 
 interface DialogHeaderProps {

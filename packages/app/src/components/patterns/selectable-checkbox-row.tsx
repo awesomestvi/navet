@@ -1,4 +1,4 @@
-import { Checkbox, type CheckboxProps } from '@navet/app/components/primitives';
+import { Checkbox, type CheckboxProps } from '@navet/app/components/primitives/checkbox';
 import { cn } from '@navet/app/components/ui/utils';
 import type { CheckedState } from '@radix-ui/react-checkbox';
 import { type CSSProperties, type ReactNode, useId } from 'react';

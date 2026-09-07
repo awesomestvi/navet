@@ -109,9 +109,6 @@ export function generateClimateTheme(
   };
 }
 
-/** @deprecated Use generateClimateTheme. */
-export const generateHvacTheme = generateClimateTheme;
-
 export function generateMediaTheme(
   themeType: ThemeType,
   color: PresetPrimaryColor,

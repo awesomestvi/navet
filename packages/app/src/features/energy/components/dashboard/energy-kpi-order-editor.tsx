@@ -2,7 +2,7 @@ import { CardDialogSection } from '@navet/app/components/patterns';
 import { EntityCardHeaderIcon } from '@navet/app/components/primitives/entity-card-header-icon';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { cn } from '@navet/app/components/ui/utils';
-import { useTheme } from '@navet/app/hooks';
+import { useI18n, useTheme } from '@navet/app/hooks';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import type { EnergyUsageMetric } from './energy-detailed-history-workspace';
 
@@ -58,6 +58,7 @@ function EnergyKpiOrderRow({
   onMoveUp: () => void;
 }) {
   const { theme } = useTheme();
+  const { t } = useI18n();
   const surface = getThemeSurfaceTokens(theme);
 
   return (
@@ -86,7 +87,7 @@ function EnergyKpiOrderRow({
       <span className="flex shrink-0 items-center gap-1">
         <button
           type="button"
-          aria-label={`Move ${metric.label} earlier`}
+          aria-label={t('energy.kpiOrder.earlier', { name: metric.label })}
           disabled={!canMoveUp}
           onClick={onMoveUp}
           className={cn(
@@ -99,7 +100,7 @@ function EnergyKpiOrderRow({
         </button>
         <button
           type="button"
-          aria-label={`Move ${metric.label} later`}
+          aria-label={t('energy.kpiOrder.later', { name: metric.label })}
           disabled={!canMoveDown}
           onClick={onMoveDown}
           className={cn(

@@ -19,7 +19,7 @@ Navet currently runs in:
   Home Assistant add-on exposes corresponding optional client settings
 - openHAB is implemented through the base-URL and username/password flow and can be added from
   provider management when the browser can reach the server
-- Hubitat and SmartThings are planned provider packages with contract + registration entries, but full runtime support is not implemented yet
+- Hubitat and SmartThings are planned provider metadata only; they have no auth flow or runtime adapter
 - standalone auth state can retain multiple implemented provider sessions; selected provider
   collections may be aggregated while one provider remains active for single-provider operations
 

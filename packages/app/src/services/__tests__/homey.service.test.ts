@@ -1,4 +1,4 @@
-import type { HomeySnapshot } from '@navet/app/types/homey';
+import type { HomeySnapshot } from '@navet/provider-homey';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { homeyService, translateHomeyServiceAction } from '../homey.service';
 

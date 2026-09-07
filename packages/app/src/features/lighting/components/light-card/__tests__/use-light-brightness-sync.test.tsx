@@ -1,4 +1,4 @@
-import { renderHook } from '@testing-library/react';
+import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useLightBrightnessSync } from '../use-light-brightness-sync';
 
@@ -64,5 +64,30 @@ describe('useLightBrightnessSync', () => {
     });
 
     expect(result.current.brightness).toBe(100);
+  });
+
+  it('keeps committed brightness while a normalized provider reports a stale value', () => {
+    let providerState = { value: 'on' as const, brightnessPct: 100 };
+    const pendingOnStateRef = { current: null as boolean | null };
+    const { result, rerender } = renderHook(() =>
+      useLightBrightnessSync({
+        id: 'light.test',
+        isOn: true,
+        setIsOn,
+        initialBrightness: 100,
+        liveEntity: undefined,
+        providerState: providerState as never,
+        syncLight,
+        rememberLightState,
+        pendingOnStateRef,
+      })
+    );
+    act(() => result.current.onBrightnessCommit(70));
+    providerState = { value: 'on', brightnessPct: 20 };
+    rerender();
+    expect(result.current.brightness).toBe(70);
+    providerState = { value: 'on', brightnessPct: 70 };
+    rerender();
+    expect(result.current.brightness).toBe(70);
   });
 });

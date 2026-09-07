@@ -1,5 +1,6 @@
 import type { IntegrationServiceTarget } from '@navet/core/integration-service-target';
 import type { ProviderEntityRuntimeService } from '@navet/core/provider-feature-services';
+import type { NavetCommand, NavetEntity } from '@navet/core/types';
 import type { HomeySnapshot } from './homey-types';
 
 export interface HomeyBridge {
@@ -15,6 +16,7 @@ export interface HomeyBridge {
     serviceData?: Record<string, unknown>,
     target?: IntegrationServiceTarget
   ): Promise<void>;
+  executeCommand(entity: NavetEntity, command: NavetCommand): Promise<void>;
   entityRuntimeService: ProviderEntityRuntimeService;
 }
 
@@ -67,4 +69,8 @@ export function callHomeyService(
 
 export function getHomeyEntityRuntimeService(): ProviderEntityRuntimeService {
   return getBridge().entityRuntimeService;
+}
+
+export function executeHomeyCommand(entity: NavetEntity, command: NavetCommand) {
+  return getBridge().executeCommand(entity, command);
 }

@@ -318,13 +318,6 @@ function useSelectedProviderFeatureCollections({
   const openhabCalendars = useProviderCalendarDevicesCollection('openhab', {
     enabled: enabled && includeCalendars && selectedProviderIdSet.has('openhab'),
   });
-  const hubitatCalendars = useProviderCalendarDevicesCollection('hubitat', {
-    enabled: enabled && includeCalendars && selectedProviderIdSet.has('hubitat'),
-  });
-  const smartthingsCalendars = useProviderCalendarDevicesCollection('smartthings', {
-    enabled: enabled && includeCalendars && selectedProviderIdSet.has('smartthings'),
-  });
-
   const homeAssistantWeather = useProviderWeatherDevicesCollection('home_assistant', {
     enabled: enabled && includeWeather && selectedProviderIdSet.has('home_assistant'),
   });
@@ -334,38 +327,13 @@ function useSelectedProviderFeatureCollections({
   const openhabWeather = useProviderWeatherDevicesCollection('openhab', {
     enabled: enabled && includeWeather && selectedProviderIdSet.has('openhab'),
   });
-  const hubitatWeather = useProviderWeatherDevicesCollection('hubitat', {
-    enabled: enabled && includeWeather && selectedProviderIdSet.has('hubitat'),
-  });
-  const smartthingsWeather = useProviderWeatherDevicesCollection('smartthings', {
-    enabled: enabled && includeWeather && selectedProviderIdSet.has('smartthings'),
-  });
-
   const calendars = useMemo(
-    () => [
-      ...homeAssistantCalendars,
-      ...homeyCalendars,
-      ...openhabCalendars,
-      ...hubitatCalendars,
-      ...smartthingsCalendars,
-    ],
-    [
-      homeAssistantCalendars,
-      homeyCalendars,
-      hubitatCalendars,
-      openhabCalendars,
-      smartthingsCalendars,
-    ]
+    () => [...homeAssistantCalendars, ...homeyCalendars, ...openhabCalendars],
+    [homeAssistantCalendars, homeyCalendars, openhabCalendars]
   );
   const weather = useMemo(
-    () => [
-      ...homeAssistantWeather,
-      ...homeyWeather,
-      ...openhabWeather,
-      ...hubitatWeather,
-      ...smartthingsWeather,
-    ],
-    [homeAssistantWeather, homeyWeather, hubitatWeather, openhabWeather, smartthingsWeather]
+    () => [...homeAssistantWeather, ...homeyWeather, ...openhabWeather],
+    [homeAssistantWeather, homeyWeather, openhabWeather]
   );
 
   return { calendars, weather };

@@ -7,6 +7,7 @@ import { memo } from 'react';
 interface KelvinColorTriggerProps {
   size: 'small' | 'medium';
   isOn: boolean;
+  foregroundColor?: string;
   currentTempColor: string;
   isActive: boolean;
   onClick: () => void;
@@ -15,6 +16,7 @@ interface KelvinColorTriggerProps {
 export const KelvinColorTrigger = memo(function KelvinColorTrigger({
   size,
   isOn,
+  foregroundColor,
   currentTempColor,
   isActive,
   onClick,
@@ -35,7 +37,13 @@ export const KelvinColorTrigger = memo(function KelvinColorTrigger({
       disabled={!isOn}
       className={!isOn ? 'opacity-50' : undefined}
       iconClassName={!isOn ? 'text-current/60' : undefined}
-      iconStyle={isActive && isOn ? { color: currentTempColor } : undefined}
+      iconStyle={
+        foregroundColor
+          ? { color: foregroundColor }
+          : isActive && isOn
+            ? { color: currentTempColor }
+            : undefined
+      }
       onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => {
         e.stopPropagation();

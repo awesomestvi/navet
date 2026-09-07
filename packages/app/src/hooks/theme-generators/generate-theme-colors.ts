@@ -32,7 +32,6 @@ export function generateThemeColors(
   return {
     light: generateLightTheme(themeType, color),
     climate: generateClimateTheme(themeType, inactiveTone),
-    hvac: generateClimateTheme(themeType, inactiveTone),
     media: generateMediaTheme(themeType, color, inactiveTone),
     switch: generateSwitchTheme(themeType, color, inactiveTone),
     cover: generateCoverTheme(themeType, color, inactiveTone),

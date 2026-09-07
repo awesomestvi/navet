@@ -1,5 +1,8 @@
 # Navet
 
+RSS cards use authenticated feed retrieval with verified HTTPS and public destination checks.
+Hostnames resolving to private network addresses are rejected.
+
 Navet is installed and ready to use through Home Assistant. It reuses your Home Assistant session,
 so there is no separate Home Assistant URL or access token to enter.
 

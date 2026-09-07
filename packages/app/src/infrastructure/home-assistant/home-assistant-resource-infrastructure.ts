@@ -1,5 +1,5 @@
-import { integrationSessionRuntime } from '@navet/app/auth/integration-session-runtime';
 import { fromProviderSessionInput } from '@navet/app/auth/types';
+import { integrationSessionRuntime } from '@navet/app/integration-session-runtime';
 import { homeAssistantService } from '@navet/app/services/home-assistant.service';
 import { HomeAssistantResourceResolver } from './resources/resource-resolver';
 import { HomeAssistantHttpGateway } from './transport/http-gateway';

@@ -98,9 +98,6 @@ export interface ClimateDevice extends BaseDevice {
   serviceDomain?: 'climate' | 'water_heater';
 }
 
-/** @deprecated Use ClimateDevice. */
-export type HVACDevice = ClimateDevice;
-
 // Weather device
 export interface WeatherDevice extends BaseDevice {
   room: string;
@@ -354,7 +351,7 @@ export interface GroupedSensorDevice extends BaseDevice {
 export type Device =
   | LightDevice
   | FanDevice
-  | HVACDevice
+  | ClimateDevice
   | ClimateDevice
   | WeatherDevice
   | MediaDevice
@@ -374,7 +371,7 @@ export type Device =
 export interface DeviceCollection {
   lights: LightDevice[];
   fans: FanDevice[];
-  hvac: HVACDevice[];
+  hvac: ClimateDevice[];
   climate: ClimateDevice[];
   media: MediaDevice[];
   weather: WeatherDevice[];

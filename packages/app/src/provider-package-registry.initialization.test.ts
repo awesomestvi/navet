@@ -26,10 +26,6 @@ vi.mock('@navet/app/integration-session-runtime', () => ({
   integrationSessionRuntime: sessionRuntime,
 }));
 
-vi.mock('@navet/app/auth/integration-session-runtime', () => ({
-  integrationSessionRuntime: sessionRuntime,
-}));
-
 describe('provider-package-registry initialization', () => {
   it('loads with an existing provider session without re-entering the registry', async () => {
     vi.resetModules();

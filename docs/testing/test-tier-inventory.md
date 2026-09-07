@@ -25,7 +25,7 @@ These suites block release-oriented workflows and should stay intentionally smal
 | `packages/app/src/provider-package-registry.initialization.test.ts` | Provider package startup with existing sessions and cycle-safe registry initialization | Keep |
 | `packages/app/src/pwa/pwa-update-store.test.tsx`, `packages/app/src/pwa/standalone-manifest-http-config.test.ts` | Production service-worker update recovery, bounded prompts, and revalidated standalone manifest delivery | Keep |
 | `packages/app/src/stores/__tests__/integration-store.test.ts` | Core provider-to-app state wiring | Keep |
-| `packages/app/src/services/__tests__/integration-runtime.service.test.ts`, `integration-registry.service.test.ts`, `integration-action.service.test.ts` | Runtime wiring, provider registration, and shared command dispatch | Keep |
+| `packages/app/src/services/__tests__/integration-registry.service.test.ts`, `packages/app/src/commands.test.ts` | Provider registration and shared command dispatch | Keep |
 
 Tier 1 companion checks:
 
@@ -85,7 +85,6 @@ deliberately rather than silently decaying.
 | `packages/app/src/features/climate/components/climate-card/__tests__/use-climate-card-controller.test.tsx` | Needs documented Climate mode/range coverage | Rewrite |
 | `packages/app/src/features/tasks/components/__tests__/tasks-section.test.tsx` | Needs realistic automation/script/todo fixtures | Rewrite |
 | `packages/app/src/features/calendar/components/calendar/__tests__/calendar-event-visibility.test.ts` | Needs real all-day and timed event payloads | Rewrite |
-| `packages/app/src/hooks/__tests__/use-ha-devices.test.tsx` | Uses synthetic mixed-domain collections instead of realistic fixtures | Rewrite |
 | `packages/app/src/hooks/__tests__/ha-entity-utils.test.ts` | Needs malformed and unavailable fixture coverage | Rewrite |
 
 Default rule:

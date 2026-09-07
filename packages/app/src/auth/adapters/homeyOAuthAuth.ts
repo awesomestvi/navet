@@ -1,6 +1,6 @@
-import type { HomeyCloudHomey } from '@navet/app/types/homey';
 import type { IntegrationUser } from '@navet/app/types/integration-user';
 import { resolveAddonLocalEndpointUrl } from '@navet/app/utils/home-assistant-connection-target';
+import type { HomeyCloudHomey } from '@navet/provider-homey';
 import {
   clearInstallationPairingKey,
   getInstallationPairingHeaders,

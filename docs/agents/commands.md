@@ -33,6 +33,7 @@ pnpm preview
 pnpm storybook
 pnpm website:dev
 pnpm website:preview
+pnpm marketing:wip:clean -- --area <community|tutorials|videos> --id <task-id>
 pnpm docs:dev
 pnpm docs:build
 pnpm docs:preview

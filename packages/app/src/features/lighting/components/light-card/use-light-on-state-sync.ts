@@ -19,35 +19,24 @@ export function useLightOnStateSync({
   pendingOnStateRef,
   pendingOnStateTimeoutRef,
 }: UseLightOnStateSyncParams) {
-  const resolvePendingOnState = (nextIsOn: boolean) => {
-    const pendingOnState = pendingOnStateRef.current;
-    if (pendingOnState === null) {
-      return true;
-    }
-
-    if (pendingOnState !== nextIsOn) {
-      return false;
-    }
-
-    pendingOnStateRef.current = null;
-    if (pendingOnStateTimeoutRef.current) {
-      clearTimeout(pendingOnStateTimeoutRef.current);
-      pendingOnStateTimeoutRef.current = null;
-    }
-    return true;
-  };
-
   useLayoutEffect(() => {
-    if (liveEntity) return;
-    if (providerState?.value === 'on' || providerState?.value === 'off') {
-      const nextIsOn = providerState.value === 'on';
-      if (!resolvePendingOnState(nextIsOn)) {
-        return;
-      }
-      setIsOn(nextIsOn);
+    const hasObservedState =
+      liveEntity || providerState?.value === 'on' || providerState?.value === 'off';
+    if (!hasObservedState) {
+      setIsOn(initialState);
       return;
     }
-    setIsOn(initialState);
+    const nextIsOn = (liveEntity?.state ?? providerState?.value) === 'on';
+    const pendingOnState = pendingOnStateRef.current;
+    if (pendingOnState !== null && pendingOnState !== nextIsOn) return;
+    if (pendingOnState !== null) {
+      pendingOnStateRef.current = null;
+      if (pendingOnStateTimeoutRef.current) {
+        clearTimeout(pendingOnStateTimeoutRef.current);
+        pendingOnStateTimeoutRef.current = null;
+      }
+    }
+    setIsOn(nextIsOn);
   }, [
     initialState,
     liveEntity,
@@ -56,13 +45,4 @@ export function useLightOnStateSync({
     providerState?.value,
     setIsOn,
   ]);
-
-  useLayoutEffect(() => {
-    if (!liveEntity) return;
-    const nextIsOn = liveEntity.state === 'on';
-    if (!resolvePendingOnState(nextIsOn)) {
-      return;
-    }
-    setIsOn(nextIsOn);
-  }, [liveEntity, pendingOnStateRef, pendingOnStateTimeoutRef, setIsOn]);
 }

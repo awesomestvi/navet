@@ -45,12 +45,10 @@ interface UseLightHomeAssistantSyncParams {
   syncLightWithHomeAssistant: (options: LightUpdateOptions) => Promise<void>;
   lastBrightnessRef: React.MutableRefObject<number>;
   lastColorTempRef: React.MutableRefObject<number>;
-  pendingBrightnessRef: React.MutableRefObject<number | null>;
-  pendingTempRef: React.MutableRefObject<number | null>;
+  expectBrightness: (value: number, timeout?: number) => void;
+  expectTemp: (value: number, timeout?: number) => void;
   pendingOnStateRef: React.MutableRefObject<boolean | null>;
   pendingOnStateTimeoutRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>;
-  brightnessSyncTimeoutRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>;
-  tempSyncTimeoutRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>;
   setIsOn: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
@@ -64,12 +62,10 @@ export function useLightHomeAssistantSync({
   syncLightWithHomeAssistant,
   lastBrightnessRef,
   lastColorTempRef,
-  pendingBrightnessRef,
-  pendingTempRef,
+  expectBrightness,
+  expectTemp,
   pendingOnStateRef,
   pendingOnStateTimeoutRef,
-  brightnessSyncTimeoutRef,
-  tempSyncTimeoutRef,
   setIsOn,
 }: UseLightHomeAssistantSyncParams) {
   const toggleLightState = useCallback(
@@ -95,18 +91,8 @@ export function useLightHomeAssistantSync({
         pendingOnStateTimeoutRef.current = null;
       }, 2500);
       if (nextIsOn) {
-        pendingBrightnessRef.current = brightnessToRestore;
-        pendingTempRef.current = rememberedColorTemp;
-        if (brightnessSyncTimeoutRef.current) clearTimeout(brightnessSyncTimeoutRef.current);
-        if (tempSyncTimeoutRef.current) clearTimeout(tempSyncTimeoutRef.current);
-        brightnessSyncTimeoutRef.current = setTimeout(() => {
-          pendingBrightnessRef.current = null;
-          brightnessSyncTimeoutRef.current = null;
-        }, 2500);
-        tempSyncTimeoutRef.current = setTimeout(() => {
-          pendingTempRef.current = null;
-          tempSyncTimeoutRef.current = null;
-        }, 2500);
+        expectBrightness(brightnessToRestore, 2500);
+        expectTemp(rememberedColorTemp, 2500);
       }
       void syncLightWithHomeAssistant({
         state: nextIsOn ? 'on' : 'off',
@@ -117,21 +103,19 @@ export function useLightHomeAssistantSync({
     },
     [
       brightness,
-      brightnessSyncTimeoutRef,
       id,
       lastBrightnessRef,
       lastColorTempRef,
       maxColorTemp,
       minColorTemp,
-      pendingBrightnessRef,
+      expectBrightness,
       pendingOnStateRef,
       pendingOnStateTimeoutRef,
-      pendingTempRef,
+      expectTemp,
       selectedColor,
       setIsOn,
       supportsColorTemperature,
       syncLightWithHomeAssistant,
-      tempSyncTimeoutRef,
     ]
   );
 

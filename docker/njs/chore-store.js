@@ -1,3 +1,5 @@
+import choreCalendarPolicy from './chore-calendar-policy.js';
+import choreOccurrencePolicy from './chore-occurrence-policy.js';
 import fs from 'fs';
 import hashCrypto from 'crypto';
 import authStore from './auth-store.js';
@@ -702,7 +704,7 @@ function nextReminderDeliveryAt(timestamp, participant, fallbackTimeZone) {
   if (!insideQuietHours) return timestamp;
   let quietEndDate = parts.year + '-' + parts.month + '-' + parts.day;
   if (crossesMidnight && localMinutes >= startMinutes) {
-    quietEndDate = addCalendarDays(quietEndDate, 1);
+    quietEndDate = choreCalendarPolicy.addCalendarDays(quietEndDate, 1);
   }
   return localDateTimeToIso(quietEndDate, quietHours.end, timeZone);
 }
@@ -931,50 +933,6 @@ function runWorkspaceScheduler(data, timestamp) {
   };
 }
 
-function parseDateKey(dateKey) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) throw new Error('Invalid chore date');
-  const parts = dateKey.split('-').map(Number);
-  const candidate = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
-  if (
-    candidate.getUTCFullYear() !== parts[0] ||
-    candidate.getUTCMonth() !== parts[1] - 1 ||
-    candidate.getUTCDate() !== parts[2]
-  ) {
-    throw new Error('Invalid chore date');
-  }
-  return { year: parts[0], month: parts[1], day: parts[2] };
-}
-
-function formatDateKey(date) {
-  return (
-    String(date.getUTCFullYear()).padStart(4, '0') +
-    '-' +
-    String(date.getUTCMonth() + 1).padStart(2, '0') +
-    '-' +
-    String(date.getUTCDate()).padStart(2, '0')
-  );
-}
-
-function addCalendarDays(dateKey, days) {
-  const date = parseDateKey(dateKey);
-  return formatDateKey(new Date(Date.UTC(date.year, date.month - 1, date.day + days)));
-}
-
-function differenceInCalendarDays(left, right) {
-  const leftDate = parseDateKey(left);
-  const rightDate = parseDateKey(right);
-  return Math.round(
-    (Date.UTC(leftDate.year, leftDate.month - 1, leftDate.day) -
-      Date.UTC(rightDate.year, rightDate.month - 1, rightDate.day)) /
-      86400000
-  );
-}
-
-function getDayOfWeek(dateKey) {
-  const date = parseDateKey(dateKey);
-  return new Date(Date.UTC(date.year, date.month - 1, date.day)).getUTCDay();
-}
-
 function nthSundayUtc(year, month, ordinal) {
   const firstDay = new Date(Date.UTC(year, month, 1)).getUTCDay();
   return 1 + ((7 - firstDay) % 7) + (ordinal - 1) * 7;
@@ -1142,7 +1100,7 @@ function getTimeZoneParts(timestamp, timeZone) {
 }
 
 function localDateTimeToIso(dateKey, time, timeZone) {
-  const date = parseDateKey(dateKey);
+  const date = choreCalendarPolicy.parseDateKey(dateKey);
   const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(time);
   if (!match) throw new Error('Invalid chore time');
   const desiredUtc = Date.UTC(date.year, date.month - 1, date.day, Number(match[1]), Number(match[2]));
@@ -1167,68 +1125,6 @@ function getZonedDateKey(timestamp, timeZone) {
   return parts.year + '-' + parts.month + '-' + parts.day;
 }
 
-function scheduleStartDate(schedule) {
-  return schedule.frequency === 'once' ? schedule.date : schedule.startDate;
-}
-
-function isScheduledOnDate(schedule, dateKey) {
-  const startDate = scheduleStartDate(schedule);
-  if (
-    dateKey < startDate ||
-    (schedule.endDate !== undefined && dateKey > schedule.endDate) ||
-    includesValue(schedule.excludedDates, dateKey)
-  ) return false;
-  if (schedule.frequency === 'once') return dateKey === schedule.date;
-  if (schedule.frequency === 'daily') {
-    return (
-      differenceInCalendarDays(dateKey, startDate) % (schedule.intervalDays || 1) === 0 &&
-      (!Array.isArray(schedule.daysOfWeek) || includesValue(schedule.daysOfWeek, getDayOfWeek(dateKey)))
-    );
-  }
-  if (schedule.frequency === 'weekly') {
-    const weeks = Math.floor(differenceInCalendarDays(dateKey, startDate) / 7);
-    return weeks % (schedule.intervalWeeks || 1) === 0 && includesValue(schedule.daysOfWeek, getDayOfWeek(dateKey));
-  }
-  const date = parseDateKey(dateKey);
-  const lastDay = new Date(Date.UTC(date.year, date.month, 0)).getUTCDate();
-  if (isRecord(schedule.nthWeekday)) {
-    if (getDayOfWeek(dateKey) !== schedule.nthWeekday.weekday) return false;
-    return schedule.nthWeekday.ordinal === -1
-      ? date.day + 7 > lastDay
-      : Math.ceil(date.day / 7) === schedule.nthWeekday.ordinal;
-  }
-  return date.day === Math.min(schedule.dayOfMonth || 1, lastDay);
-}
-
-function rotationIndexForDate(dates, index, reset) {
-  if (!reset || reset === 'never') return index;
-  function group(dateKey) {
-    if (reset === 'monthly') return dateKey.slice(0, 7);
-    return addCalendarDays(dateKey, -((getDayOfWeek(dateKey) + 6) % 7));
-  }
-  const expected = group(dates[index]);
-  let first = index;
-  while (first > 0 && group(dates[first - 1]) === expected) first -= 1;
-  return index - first;
-}
-
-function resolveAssignmentSlots(assignment, participantsById, scheduledIndex) {
-  const ids = assignment.participantIds.filter(function (id) {
-    const participant = participantsById[id];
-    return isRecord(participant) && participant.pausedAt === undefined && includesValue(participant.capabilities, 'complete');
-  });
-  if (ids.length === 0) return [];
-  if (assignment.mode === 'everyone') {
-    return ids.map(function (id) { return { assignmentSlot: id, assigneeIds: [id] }; });
-  }
-  if (assignment.mode === 'rotation') {
-    const id = ids[(Math.max(0, assignment.rotationCursor || 0) + scheduledIndex) % ids.length];
-    return [{ assignmentSlot: id, assigneeIds: [id] }];
-  }
-  if (assignment.mode === 'person') return [{ assignmentSlot: ids[0], assigneeIds: [ids[0]] }];
-  return [{ assignmentSlot: 'shared', assigneeIds: ids }];
-}
-
 function materializeDefinition(definition, participantsById, rangeStart, rangeEnd, existing, latestCompletedAt) {
   if (!definition.enabled || definition.archivedAt !== undefined) return [];
   const startTime = Date.parse(rangeStart);
@@ -1239,7 +1135,7 @@ function materializeDefinition(definition, participantsById, rangeStart, rangeEn
   const dates = [];
   if (schedule.frequency === 'after_completion') {
     const anchor = latestCompletedAt ? getZonedDateKey(latestCompletedAt, schedule.timeZone) : schedule.startDate;
-    const nextDate = latestCompletedAt ? addCalendarDays(anchor, schedule.intervalDays) : anchor;
+    const nextDate = latestCompletedAt ? choreCalendarPolicy.addCalendarDays(anchor, schedule.intervalDays) : anchor;
     if (
       nextDate >= rangeStartDate &&
       nextDate <= finalDate &&
@@ -1247,18 +1143,18 @@ function materializeDefinition(definition, participantsById, rangeStart, rangeEn
       !includesValue(schedule.excludedDates, nextDate)
     ) dates.push(nextDate);
   } else {
-    let dateKey = scheduleStartDate(schedule);
+    let dateKey = choreCalendarPolicy.scheduleStartDate(schedule);
     while (dateKey <= finalDate) {
-      if (isScheduledOnDate(schedule, dateKey)) dates.push(dateKey);
-      dateKey = addCalendarDays(dateKey, 1);
+      if (choreCalendarPolicy.isScheduledOnDate(schedule, dateKey)) dates.push(dateKey);
+      dateKey = choreCalendarPolicy.addCalendarDays(dateKey, 1);
     }
   }
   const results = [];
   for (let dateIndex = 0; dateIndex < dates.length; dateIndex += 1) {
-    const slots = resolveAssignmentSlots(
+    const slots = choreCalendarPolicy.resolveAssignmentSlots(
       definition.assignment,
       participantsById,
-      rotationIndexForDate(dates, dateIndex, definition.assignment.rotationReset)
+      choreCalendarPolicy.rotationIndexForDate(dates, dateIndex, definition.assignment.rotationReset)
     );
     for (let slotIndex = 0; slotIndex < slots.length; slotIndex += 1) {
       const slot = slots[slotIndex];
@@ -1268,7 +1164,7 @@ function materializeDefinition(definition, participantsById, rangeStart, rangeEn
       const override = slot.assigneeIds.length === 1 && isRecord(overrides[slot.assigneeIds[0]])
         ? overrides[slot.assigneeIds[0]]
         : null;
-      if (override && Array.isArray(override.daysOfWeek) && !includesValue(override.daysOfWeek, getDayOfWeek(dates[dateIndex]))) continue;
+      if (override && Array.isArray(override.daysOfWeek) && !includesValue(override.daysOfWeek, choreCalendarPolicy.getDayOfWeek(dates[dateIndex]))) continue;
       const times = override && Array.isArray(override.times)
         ? override.times
         : Array.isArray(schedule.times) && schedule.times.length > 0
@@ -1400,12 +1296,6 @@ function compareStrings(left, right) {
   return 0;
 }
 
-function assertOccurrenceAssigned(occurrence, participantId) {
-  if (!includesValue(occurrence.assigneeIds, participantId)) {
-    throw new Error('Participant is not assigned to this chore occurrence');
-  }
-}
-
 function getExperiencePointBalances(data, experience) {
   const persisted = experience.earnedPointsByParticipant;
   if (isRecord(persisted) && Object.keys(persisted).length > 0) {
@@ -1534,149 +1424,15 @@ function applyOccurrenceAction(data, commandId, workspaceAction, timestamp) {
     }
   }
 
-  const nextOccurrence = Object.assign({}, occurrence);
-  let activityType = action.type === 'complete' ? 'completed' : action.type + 'd';
-
-  if (action.type === 'claim') {
-    assertOccurrenceAssigned(occurrence, action.participantId);
-    const claimPolicy = isRecord(definition.claimPolicy) ? definition.claimPolicy : {};
-    const canStealExpiredClaim =
-      occurrence.status === 'claimed' &&
-      claimPolicy.allowSteal === true &&
-      Number.isFinite(claimPolicy.expiresAfterMinutes) &&
-      typeof occurrence.claimedAt === 'string' &&
-      Date.parse(timestamp) >=
-        Date.parse(occurrence.claimedAt) + claimPolicy.expiresAfterMinutes * 60000;
-    if (occurrence.status !== 'available' && !canStealExpiredClaim) {
-      throw new Error('Only available chores can be claimed');
-    }
-    nextOccurrence.status = 'claimed';
-    nextOccurrence.claimedBy = action.participantId;
-    nextOccurrence.claimedAt = timestamp;
-    activityType = 'claimed';
-  } else if (action.type === 'complete') {
-    assertOccurrenceAssigned(occurrence, action.participantId);
-    if (
-      occurrence.status !== 'available' &&
-      occurrence.status !== 'claimed' &&
-      occurrence.status !== 'missed'
-    ) {
-      throw new Error('Only available, claimed, or missed chores can be completed');
-    }
-    if (
-      (occurrence.status === 'claimed' || occurrence.status === 'missed') &&
-      occurrence.claimedBy &&
-      occurrence.claimedBy !== action.participantId
-    ) {
-      throw new Error('A claimed chore can only be completed by its claimant');
-    }
-    const claimPolicy = isRecord(definition.claimPolicy) ? definition.claimPolicy : {};
-    if (occurrence.status === 'available' && claimPolicy.required === true) {
-      throw new Error('This chore must be claimed before it can be completed');
-    }
-    const approval = isRecord(definition.approval) ? definition.approval : {};
-    nextOccurrence.status = approval.required ? 'awaiting_approval' : 'done';
-    nextOccurrence.claimedBy = occurrence.claimedBy || action.participantId;
-    nextOccurrence.claimedAt = occurrence.claimedAt || timestamp;
-    nextOccurrence.completedBy = action.participantId;
-    nextOccurrence.completedAt = timestamp;
-    delete nextOccurrence.missedAt;
-    activityType = 'completed';
-  } else if (action.type === 'approve' || action.type === 'reject') {
-    const approval = isRecord(definition.approval) ? definition.approval : {};
-    if (
-      !approval.required ||
-      (!includesValue(approval.approverIds, action.participantId) && !action.managerOverride)
-    ) {
-      throw new Error('Participant cannot ' + action.type + ' this chore');
-    }
-    if (action.managerOverride && (!action.reason || action.reason.trim().length === 0)) {
-      throw new Error(
-        'A manager ' + (action.type === 'approve' ? 'approval' : 'rejection') +
-          ' override requires a reason'
-      );
-    }
-    if (occurrence.status !== 'awaiting_approval') {
-      throw new Error(
-        'Only completed chores awaiting approval can be ' +
-          (action.type === 'approve' ? 'approved' : 'rejected')
-      );
-    }
-    if (action.type === 'approve') {
-      nextOccurrence.status = 'done';
-      nextOccurrence.approvedBy = action.participantId;
-      nextOccurrence.approvedAt = timestamp;
-      activityType = 'approved';
-    } else {
-      nextOccurrence.status = 'available';
-      delete nextOccurrence.claimedBy;
-      delete nextOccurrence.claimedAt;
-      delete nextOccurrence.completedBy;
-      delete nextOccurrence.completedAt;
-      delete nextOccurrence.approvedBy;
-      delete nextOccurrence.approvedAt;
-      activityType = 'rejected';
-    }
-  } else if (action.type === 'skip') {
-    if (action.reason.trim().length === 0) throw new Error('Skipping a chore requires a reason');
-    if (occurrence.status === 'done' || occurrence.status === 'skipped') {
-      throw new Error('Completed or skipped chores cannot be skipped');
-    }
-    nextOccurrence.status = 'skipped';
-    nextOccurrence.skippedBy = action.participantId;
-    nextOccurrence.skippedAt = timestamp;
-    activityType = 'skipped';
-  } else if (action.type === 'reopen') {
-    if (action.reason.trim().length === 0) throw new Error('Reopening a chore requires a reason');
-    if (
-      occurrence.status !== 'done' &&
-      occurrence.status !== 'skipped' &&
-      occurrence.status !== 'missed'
-    ) {
-      throw new Error('Only completed, skipped, or missed chores can be reopened');
-    }
-    nextOccurrence.status = 'available';
-    delete nextOccurrence.claimedBy;
-    delete nextOccurrence.claimedAt;
-    delete nextOccurrence.completedBy;
-    delete nextOccurrence.completedAt;
-    delete nextOccurrence.approvedBy;
-    delete nextOccurrence.approvedAt;
-    delete nextOccurrence.skippedBy;
-    delete nextOccurrence.skippedAt;
-    delete nextOccurrence.missedAt;
-    delete nextOccurrence.carriedForwardTo;
-    activityType = 'reopened';
-  } else if (action.type === 'reassign') {
-    if (action.reason.trim().length === 0) throw new Error('Reassigning a chore requires a reason');
-    if (action.assigneeIds.length === 0) {
-      throw new Error('Reassigning a chore requires an eligible participant');
-    }
-    if (occurrence.status !== 'available' && occurrence.status !== 'claimed') {
-      throw new Error('Only available or claimed chores can be reassigned');
-    }
-    const assigneeIds = action.assigneeIds.filter(function (id, index, values) {
-      return values.indexOf(id) === index;
-    });
-    nextOccurrence.assigneeIds = assigneeIds;
-    nextOccurrence.assignmentSlot = 'manager:' + assigneeIds.slice().sort().join(',');
-    nextOccurrence.status = 'available';
-    delete nextOccurrence.claimedBy;
-    delete nextOccurrence.claimedAt;
-    activityType = 'reassigned';
-  }
-
-  nextOccurrence.updatedAt = timestamp;
-  const activity = {
-    id: 'activity:' + commandId,
+  const result = choreOccurrencePolicy.applyChoreOccurrenceCommand({
+    definition,
+    occurrence,
+    command: action,
     commandId,
-    occurrenceId: occurrence.id,
-    definitionId: definition.id,
-    type: activityType,
-    actorParticipantId: action.participantId,
-    participantId: action.participantId,
     timestamp,
-  };
+  });
+  const nextOccurrence = result.occurrence;
+  const activity = result.activity;
   const experience = updateExperiencePoints(data, occurrence, nextOccurrence);
   const pointRecipientId =
     occurrence.status !== 'done' && nextOccurrence.status === 'done'

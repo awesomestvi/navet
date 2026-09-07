@@ -32,9 +32,9 @@ Use `docs/testing/test-tier-inventory.md` for the grouped tier map.
 - cover `unknown`, `unavailable`, missing fields, malformed-but-plausible fields, and runtime/path
   edge cases when they matter
 
-## Routing
+## Deeper References
 
-Also read:
-
-- `docs/agents/testing.md`
-- `docs/testing/provider-testing-strategy.md`
+This guide is sufficient for ordinary test additions, rewrites, and deletions. Read
+`docs/agents/testing.md` only when choosing commands or changing tier membership. Read
+`docs/testing/provider-testing-strategy.md` only when changing provider test layers, contract
+conformance, or the overall testing policy.

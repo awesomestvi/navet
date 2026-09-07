@@ -6,7 +6,8 @@ import readline from 'node:readline/promises';
 import {
   CONTENT_KINDS,
   checkContentPack,
-  contentRoot,
+  communityPublishedRoot,
+  communityWipRoot,
   createPublishedRecord,
   generateContentPack,
   loadPack,
@@ -92,7 +93,7 @@ async function createBrief(options) {
         humanApprovalRequired: true,
       },
     };
-    const outputPath = path.join(contentRoot, 'briefs', `${id}.yml`);
+    const outputPath = path.join(communityWipRoot, id, 'brief.yml');
     if (fs.existsSync(outputPath)) {
       throw new Error(`${path.relative(repoRoot, outputPath)} already exists.`);
     }
@@ -132,9 +133,9 @@ function record(options) {
     }
     const recordPath = path.resolve(repoRoot, options['update-record']);
     assertInside(
-      path.join(contentRoot, 'published'),
+      communityPublishedRoot,
       recordPath,
-      'Published records must stay inside marketing/content/published/.'
+      'Community publication records must stay inside the local deliverables workspace.'
     );
     const recordValue = JSON.parse(fs.readFileSync(recordPath, 'utf8'));
     const metrics = readJson(options['metrics-file']);
@@ -187,7 +188,7 @@ function record(options) {
     metrics,
     asset,
   });
-  const outputDirectory = path.join(contentRoot, 'published', pack.id);
+  const outputDirectory = path.join(communityPublishedRoot, pack.id);
   const outputPath = path.join(outputDirectory, `${options.channel}.json`);
   fs.mkdirSync(outputDirectory, { recursive: true });
   fs.writeFileSync(outputPath, `${JSON.stringify(publishedRecord, null, 2)}\n`);

@@ -19,7 +19,7 @@ import type {
   ProviderRoomManagementCapability,
 } from '@navet/core/provider-feature-models';
 import type { IntegrationProviderDefinition, IntegrationProviderId } from '../types/provider';
-import { INTEGRATION_PROVIDERS } from '../types/provider';
+import { IMPLEMENTED_INTEGRATION_PROVIDER_IDS, INTEGRATION_PROVIDERS } from '../types/provider';
 
 interface IntegrationProviderAdapterBase {
   provider: IntegrationProviderDefinition;
@@ -159,18 +159,18 @@ export function hasIntegrationProviderRoomManagementCapability(
 }
 
 export function listAvailableIntegrationProviders(): IntegrationProviderDefinition[] {
-  return listIntegrationProviderAdapters().map((adapter) => adapter.provider);
+  return Object.values(INTEGRATION_PROVIDERS);
 }
 
 export function listImplementedIntegrationProviders(): IntegrationProviderDefinition[] {
-  return listIntegrationProviderAdapters()
-    .filter((adapter) => adapter.implementationStatus === 'implemented')
-    .map((adapter) => adapter.provider);
+  return IMPLEMENTED_INTEGRATION_PROVIDER_IDS.map(
+    (providerId) => INTEGRATION_PROVIDERS[providerId]
+  );
 }
 
 export function listIntegrationProviderAdapters(): IntegrationProviderAdapter[] {
-  return (['home_assistant', 'homey', 'openhab', 'hubitat', 'smartthings'] as const).map(
-    (providerId) => getIntegrationProviderAdapter(providerId)
+  return IMPLEMENTED_INTEGRATION_PROVIDER_IDS.map((providerId) =>
+    getIntegrationProviderAdapter(providerId)
   );
 }
 

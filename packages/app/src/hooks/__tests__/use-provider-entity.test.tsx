@@ -471,4 +471,65 @@ describe('useProviderEntity hooks', () => {
       'light.kitchen',
     ]);
   });
+
+  it('updates missing snapshot keys when the selection changes', () => {
+    let ids = ['sensor.missing_one'];
+    const { result, rerender } = renderHookWithProviders(() =>
+      useProviderEntitySnapshotRecord(ids)
+    );
+    expect(result.current).toEqual({ 'sensor.missing_one': undefined });
+    ids = ['sensor.missing_two'];
+    rerender();
+    expect(Object.keys(result.current)).toEqual(['sensor.missing_two']);
+  });
+
+  it('reselects registry entries when the device changes without a registry update', () => {
+    let deviceId = 'device-kitchen';
+    const registry = serviceMock.getEntityRegistryEntries();
+    const firstEntry = registry[0];
+    if (!firstEntry) throw new Error('Expected a registry entry');
+    const hallEntry = { ...firstEntry, entityId: 'light.hall', deviceId: 'device-hall' };
+    serviceMock.getEntityRegistryEntries.mockReturnValue([...registry, hallEntry]);
+    const { result, rerender } = renderHookWithProviders(() =>
+      useProviderEntityRegistryEntriesByDeviceId(deviceId)
+    );
+    expect(result.current).toHaveLength(2);
+    deviceId = 'device-hall';
+    rerender();
+    expect(result.current).toEqual([hallEntry]);
+  });
+
+  it('updates selections on provider changes and unsubscribes while disabled', () => {
+    let enabled = true;
+    const { result, rerender } = renderHookWithProviders(() => ({
+      registry: useProviderEntityRegistryEntriesByIds(['light.kitchen'], { enabled }),
+      device: useProviderEntityRegistryEntriesByDeviceId('device-kitchen', { enabled }),
+      snapshots: useProviderEntitySnapshotRecord(['light.kitchen'], { enabled }),
+    }));
+    expect(result.current.registry[0]?.name).toBe('Kitchen Light');
+    enabled = false;
+    rerender();
+    expect(result.current).toEqual({ registry: [], device: [], snapshots: {} });
+    expect(serviceMock.registryListeners.size).toBe(0);
+    expect(serviceMock.entityListeners.size).toBe(0);
+
+    const firstEntry = serviceMock.getEntityRegistryEntries()[0];
+    if (!firstEntry) throw new Error('Expected a registry entry');
+    const replacement = {
+      ...firstEntry,
+      name: 'New provider light',
+    };
+    serviceMock.getEntityRegistryEntries.mockReturnValue([replacement]);
+    serviceMock.getEntitySnapshots.mockReturnValue({
+      'light.kitchen': { entityId: 'light.kitchen', state: 'off', attributes: {} },
+    });
+    act(() => integrationStore.setState({ currentProviderId: 'homey' }));
+    enabled = true;
+    rerender();
+    expect(result.current.registry).toEqual([replacement]);
+    expect(result.current.device).toEqual([replacement]);
+    expect(result.current.snapshots['light.kitchen']?.state).toBe('off');
+    expect(serviceMock.registryListeners.size).toBe(2);
+    expect(serviceMock.entityListeners.size).toBe(1);
+  });
 });

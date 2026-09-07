@@ -1,4 +1,4 @@
-import { CardDialogSection } from '@navet/app/components/patterns';
+import { CardDialogSection } from '@navet/app/components/patterns/card-dialog';
 import { cn } from '@navet/app/components/ui/utils';
 import { memo, type ReactNode } from 'react';
 

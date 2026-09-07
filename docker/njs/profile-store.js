@@ -1,14 +1,27 @@
+import profilePolicy from '../shared/dashboard-profile-policy.js';
 import fs from 'fs';
 import hashCrypto from 'crypto';
 import authStore from './auth-store.js';
 import installationCookieScope from './installation-cookie-scope.js';
 import providerSessionStore from './provider-session-store.js';
 
+const isValidProfile = profilePolicy.isValidProfile;
+const sanitizeDashboardProfile = profilePolicy.sanitizeDashboardProfile;
+const areDashboardProfilesEquivalent = profilePolicy.areDashboardProfilesEquivalent;
+const pickDisplayProfileSettings = profilePolicy.pickDisplayProfileSettings;
+const sanitizePreferenceValues = profilePolicy.sanitizePreferenceValues;
+const sanitizeDisplayProfilePolicy = profilePolicy.sanitizeDisplayProfilePolicy;
+const applyDashboardProfilePatch = profilePolicy.applyDashboardProfilePatch;
+const DISPLAY_PROFILE_ID_PATTERN = profilePolicy.DISPLAY_PROFILE_ID_PATTERN;
+
+function cloneJson(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
 const isStrictSameOriginMutation =
   providerSessionStore.isStrictSameOriginMutation;
 
 const CONTRACT_VERSION = 1;
-const SETTINGS_PROFILE_SCHEMA_VERSION = 1;
 const PROFILE_ID = 'default';
 const HISTORY_LIMIT = 20;
 const MAX_HISTORY_BYTES = 4 * 1024 * 1024;
@@ -38,78 +51,6 @@ const CLIENT_STALE_AFTER_MS = 90 * 24 * 60 * 60 * 1000;
 const CLIENT_FUTURE_SKEW_MS = 5 * 60 * 1000;
 const CLIENT_BINDING_BOOTSTRAP_TTL_MS = 5 * 1000;
 const CLIENT_BINDING_BOOTSTRAP_LIMIT = 256;
-const SHARED_SETTING_KEYS = {
-  showWeatherInHeader: true,
-  showHomeSummaryBar: true,
-  weatherForecastMode: true,
-  weatherMetricIds: true,
-  advancedCustomizationEnabled: true,
-  customSidebarActions: true,
-  customSummaryPills: true,
-};
-const ACCOUNT_SETTING_KEYS = {
-  language: true,
-  showNotifications: true,
-  use24HourTime: true,
-  temperatureUnit: true,
-  defaultView: true,
-  entityInteractionMode: true,
-};
-const CLIENT_SETTING_KEYS = {
-  headerTitleMode: true,
-  headerCustomText: true,
-  keepDeviceAwake: true,
-  compactMode: true,
-  kioskMode: true,
-  kioskSwipeRooms: true,
-  dashboardProfileMode: true,
-  dashboardSpaceMode: true,
-  disableAnimations: true,
-  lowPowerMode: true,
-  effectsQuality: true,
-  effectsQualityUserOverride: true,
-  cameraDashboardViewMode: true,
-  cameraViewModes: true,
-  cameraStreamPreference: true,
-  cameraStreamPreferences: true,
-  cameraFitMode: true,
-  cameraFitModes: true,
-  ambientLightBleed: true,
-};
-const DISPLAY_PROFILE_SETTING_KEYS = {
-  headerTitleMode: true,
-  headerCustomText: true,
-  keepDeviceAwake: true,
-  compactMode: true,
-  kioskMode: true,
-  kioskSwipeRooms: true,
-  dashboardProfileMode: true,
-  dashboardSpaceMode: true,
-  disableAnimations: true,
-  lowPowerMode: true,
-  effectsQuality: true,
-  effectsQualityUserOverride: true,
-  ambientLightBleed: true,
-};
-const DISPLAY_PROFILE_ID_PATTERN = /^[A-Za-z0-9_-]{8,128}$/;
-const DISPLAY_PROFILE_LIMIT = 20;
-const BOOLEAN_DISPLAY_PROFILE_SETTING_KEYS = {
-  keepDeviceAwake: true,
-  compactMode: true,
-  kioskMode: true,
-  kioskSwipeRooms: true,
-  disableAnimations: true,
-  lowPowerMode: true,
-  effectsQualityUserOverride: true,
-  ambientLightBleed: true,
-};
-const DISPLAY_PROFILE_SETTING_VALUES = {
-  headerTitleMode: { auto_greeting: true, custom_text: true, clock: true },
-  dashboardProfileMode: { standard: true, wall_display: true, bedside: true, custom: true },
-  dashboardSpaceMode: { default: true, more_space: true },
-  effectsQuality: { high: true, medium: true, low: true },
-};
-
 const WORKSPACE_PATH = '/data/navet-dashboard-workspace.json';
 const PROFILE_PATH = '/data/navet-dashboard-profile.json';
 const PROFILE_STATE_PATH = '/data/navet-dashboard-profile-state.json';
@@ -720,421 +661,11 @@ function authorizeWorkspacePrincipal(principal) {
   return workspace;
 }
 
-function isValidProfile(value) {
-  return (
-    value &&
-    typeof value === 'object' &&
-    !Array.isArray(value) &&
-    value.app === 'navet' &&
-    (value.version === 3 || value.version === 4)
-  );
-}
-
-function isCredentialFieldName(value) {
-  const normalized = String(value || '')
-    .replace(/[^a-z0-9]/gi, '')
-    .toLowerCase();
-  return (
-    normalized.indexOf('token') >= 0 ||
-    normalized.indexOf('password') >= 0 ||
-    normalized.indexOf('passwd') >= 0 ||
-    normalized.indexOf('passcode') >= 0 ||
-    normalized.indexOf('jwt') >= 0 ||
-    normalized.indexOf('secret') >= 0 ||
-    normalized.indexOf('credential') >= 0 ||
-    normalized === 'key' ||
-    normalized === 'sig' ||
-    normalized === 'pin' ||
-    normalized === 'code' ||
-    normalized === 'authorization' ||
-    normalized === 'auth' ||
-    normalized === 'authsig' ||
-    normalized.indexOf('signature') >= 0 ||
-    normalized === 'bearer' ||
-    normalized === 'accesskey' ||
-    normalized === 'accesscode' ||
-    normalized === 'privatekey' ||
-    normalized.slice(Math.max(0, normalized.length - 6)) === 'apikey' ||
-    (normalized.indexOf('api') === 0 &&
-      normalized.slice(Math.max(0, normalized.length - 3)) === 'key')
-  );
-}
-
-function containsCredentialParameters(value) {
-  const parts = String(value || '').split(/[&;]/);
-  for (let index = 0; index < parts.length; index += 1) {
-    let parameterName = parts[index].split('=')[0] || '';
-    const questionIndex = parameterName.lastIndexOf('?');
-    if (questionIndex >= 0) {
-      parameterName = parameterName.slice(questionIndex + 1);
-    }
-    try {
-      parameterName = decodeURIComponent(parameterName.replace(/\+/g, ' '));
-    } catch (_error) {
-      // Keep the undecoded name and apply the same conservative check.
-    }
-    if (isCredentialFieldName(parameterName)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-function isCredentialBearingUrl(value) {
-  if (typeof value !== 'string') {
-    return false;
-  }
-
-  const candidate = value.trim();
-  if (/^(?:[a-z][a-z0-9+.-]*:)?\/\/[^/?#]*@/i.test(candidate)) {
-    return true;
-  }
-
-  const hashIndex = candidate.indexOf('#');
-  const queryIndex = candidate.indexOf('?');
-  if (queryIndex >= 0 && (hashIndex < 0 || queryIndex < hashIndex)) {
-    const queryEnd = hashIndex >= 0 ? hashIndex : candidate.length;
-    if (containsCredentialParameters(candidate.slice(queryIndex + 1, queryEnd))) {
-      return true;
-    }
-  }
-
-  if (hashIndex >= 0) {
-    let fragment = candidate.slice(hashIndex + 1);
-    const fragmentQueryIndex = fragment.indexOf('?');
-    if (fragmentQueryIndex >= 0) {
-      fragment = fragment.slice(fragmentQueryIndex + 1);
-    }
-    if (containsCredentialParameters(fragment)) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-function sanitizeCredentialBearingValue(value, depth) {
-  if (depth > 16) {
-    return undefined;
-  }
-  if (typeof value === 'string') {
-    return isCredentialBearingUrl(value) ? undefined : value;
-  }
-  if (Array.isArray(value)) {
-    const sanitizedItems = [];
-    for (let index = 0; index < value.length; index += 1) {
-      const sanitizedItem = sanitizeCredentialBearingValue(value[index], depth + 1);
-      if (sanitizedItem !== undefined) {
-        sanitizedItems.push(sanitizedItem);
-      }
-    }
-    return sanitizedItems;
-  }
-  if (value && typeof value === 'object') {
-    const sanitizedRecord = {};
-    for (const key in value) {
-      if (
-        !Object.prototype.hasOwnProperty.call(value, key) ||
-        isCredentialFieldName(key)
-      ) {
-        continue;
-      }
-      const sanitizedEntry = sanitizeCredentialBearingValue(value[key], depth + 1);
-      if (sanitizedEntry !== undefined) {
-        sanitizedRecord[key] = sanitizedEntry;
-      }
-    }
-    return sanitizedRecord;
-  }
-  return value;
-}
-
-function sanitizeSharedExtensionList(value, urlKey) {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-  return value
-    .filter(function (entry) {
-      return (
-        !entry ||
-        typeof entry !== 'object' ||
-        Array.isArray(entry) ||
-        !isCredentialBearingUrl(entry[urlKey])
-      );
-    })
-    .map(function (entry) {
-      return JSON.parse(JSON.stringify(entry));
-    });
-}
-
-function normalizeDashboardCollections(profile) {
-  delete profile.cardOrders;
-
-  const cardZonesSource =
-    profile.cardZones &&
-    typeof profile.cardZones === 'object' &&
-    !Array.isArray(profile.cardZones) &&
-    profile.cardZones.state &&
-    typeof profile.cardZones.state === 'object' &&
-    !Array.isArray(profile.cardZones.state) &&
-    profile.cardZones.state.cardZones &&
-    typeof profile.cardZones.state.cardZones === 'object' &&
-    !Array.isArray(profile.cardZones.state.cardZones)
-      ? profile.cardZones.state.cardZones
-      : profile.cardZones;
-  if (
-    cardZonesSource &&
-    typeof cardZonesSource === 'object' &&
-    !Array.isArray(cardZonesSource)
-  ) {
-    const cardZones = {};
-    const entityIds = Object.keys(cardZonesSource);
-    for (let index = 0; index < entityIds.length; index += 1) {
-      const entityId = entityIds[index];
-      const zone = cardZonesSource[entityId];
-      if (typeof zone === 'string' && zone.length > 0) {
-        cardZones[entityId] = zone;
-      }
-    }
-    if (Object.keys(cardZones).length > 0) {
-      profile.cardZones = cardZones;
-    } else {
-      delete profile.cardZones;
-    }
-  }
-}
-
-function sanitizeDashboardProfile(profile) {
-  if (!isValidProfile(profile)) {
-    return profile;
-  }
-
-  const sanitized = JSON.parse(JSON.stringify(profile));
-  normalizeDashboardCollections(sanitized);
-  const sourceSettings =
-    sanitized.settings &&
-    typeof sanitized.settings === 'object' &&
-    !Array.isArray(sanitized.settings)
-      ? sanitized.settings
-      : {};
-  const settings = {};
-  for (const key in SHARED_SETTING_KEYS) {
-    if (
-      Object.prototype.hasOwnProperty.call(SHARED_SETTING_KEYS, key) &&
-      Object.prototype.hasOwnProperty.call(sourceSettings, key)
-    ) {
-      settings[key] = JSON.parse(JSON.stringify(sourceSettings[key]));
-    }
-  }
-  if (Object.prototype.hasOwnProperty.call(settings, 'customSidebarActions')) {
-    settings.customSidebarActions = sanitizeSharedExtensionList(
-      settings.customSidebarActions,
-      'targetUrl'
-    );
-  }
-  if (Object.prototype.hasOwnProperty.call(settings, 'customSummaryPills')) {
-    settings.customSummaryPills = sanitizeSharedExtensionList(
-      settings.customSummaryPills,
-      'actionUrl'
-    );
-  }
-  if (Object.prototype.hasOwnProperty.call(sanitized, 'settings')) {
-    sanitized.settings = settings;
-  }
-  const credentialSafeProfile = sanitizeCredentialBearingValue(sanitized, 0);
-  return isValidProfile(credentialSafeProfile) ? credentialSafeProfile : sanitized;
-}
-
-const PROFILE_COMPARISON_IGNORED_ROOT_KEYS = {
-  cardOrders: true,
-  exportedAt: true,
-  navigation: true,
-};
-
-function stableSerializeProfileValue(value, root) {
-  if (Array.isArray(value)) {
-    return (
-      '[' +
-      value
-        .map(function (entry) {
-          return stableSerializeProfileValue(entry, false);
-        })
-        .join(',') +
-      ']'
-    );
-  }
-  if (value && typeof value === 'object') {
-    const keys = Object.keys(value)
-      .filter(function (key) {
-        return !root || !PROFILE_COMPARISON_IGNORED_ROOT_KEYS[key];
-      })
-      .sort();
-    return (
-      '{' +
-      keys
-        .map(function (key) {
-          return JSON.stringify(key) + ':' + stableSerializeProfileValue(value[key], false);
-        })
-        .join(',') +
-      '}'
-    );
-  }
-  const serialized = JSON.stringify(value);
-  return serialized === undefined ? 'null' : serialized;
-}
-
-function areDashboardProfilesEquivalent(current, candidate) {
-  return (
-    stableSerializeProfileValue(current, true) ===
-    stableSerializeProfileValue(candidate, true)
-  );
-}
-
 function hashDashboardProfile(profile) {
   return hashCrypto
     .createHash('sha256')
     .update(JSON.stringify(profile))
     .digest('hex');
-}
-
-function pickPreferenceSettings(value, allowedKeys) {
-  const source =
-    value && typeof value === 'object' && !Array.isArray(value) ? value : {};
-  const settings = {};
-  for (const key in allowedKeys) {
-    if (
-      Object.prototype.hasOwnProperty.call(allowedKeys, key) &&
-      Object.prototype.hasOwnProperty.call(source, key)
-    ) {
-      const sanitizedValue = sanitizeCredentialBearingValue(source[key], 0);
-      if (sanitizedValue !== undefined) {
-        settings[key] = sanitizedValue;
-      }
-    }
-  }
-  return settings;
-}
-
-function pickDisplayProfileSettings(value) {
-  const candidates = pickPreferenceSettings(value, DISPLAY_PROFILE_SETTING_KEYS);
-  const settings = {};
-  for (const key in candidates) {
-    if (!Object.prototype.hasOwnProperty.call(candidates, key)) {
-      continue;
-    }
-    const candidate = candidates[key];
-    if (BOOLEAN_DISPLAY_PROFILE_SETTING_KEYS[key]) {
-      if (typeof candidate === 'boolean') {
-        settings[key] = candidate;
-      }
-    } else if (key === 'headerCustomText') {
-      if (typeof candidate === 'string') {
-        settings[key] = candidate.trim().slice(0, 40);
-      }
-    } else if (
-      typeof candidate === 'string' &&
-      DISPLAY_PROFILE_SETTING_VALUES[key] &&
-      DISPLAY_PROFILE_SETTING_VALUES[key][candidate]
-    ) {
-      settings[key] = candidate;
-    }
-  }
-  if (settings.effectsQualityUserOverride === false) {
-    delete settings.effectsQuality;
-  }
-  return settings;
-}
-
-function sanitizePreferenceValues(value, scope) {
-  const source =
-    value && typeof value === 'object' && !Array.isArray(value) ? value : {};
-  const allowedKeys = scope === 'account' ? ACCOUNT_SETTING_KEYS : CLIENT_SETTING_KEYS;
-  if (
-    Object.prototype.hasOwnProperty.call(source, 'settings') &&
-    source.settings &&
-    typeof source.settings === 'object' &&
-    !Array.isArray(source.settings)
-  ) {
-    return {
-      schemaVersion: Number.isSafeInteger(source.schemaVersion)
-        ? source.schemaVersion
-        : SETTINGS_PROFILE_SCHEMA_VERSION,
-      settings: pickPreferenceSettings(source.settings, allowedKeys),
-    };
-  }
-  return pickPreferenceSettings(source, allowedKeys);
-}
-
-function sanitizeDisplayProfilePolicy(value) {
-  const source =
-    value && typeof value === 'object' && !Array.isArray(value) ? value : {};
-  const rawProfiles =
-    source.profilesById &&
-    typeof source.profilesById === 'object' &&
-    !Array.isArray(source.profilesById)
-      ? source.profilesById
-      : {};
-  const profilesById = {};
-  const profileIds = Object.keys(rawProfiles).slice(0, DISPLAY_PROFILE_LIMIT);
-  for (let index = 0; index < profileIds.length; index += 1) {
-    const profileId = profileIds[index];
-    const candidate = rawProfiles[profileId];
-    if (
-      !DISPLAY_PROFILE_ID_PATTERN.test(profileId) ||
-      !candidate ||
-      typeof candidate !== 'object' ||
-      Array.isArray(candidate)
-    ) {
-      continue;
-    }
-    const name = typeof candidate.name === 'string'
-      ? candidate.name.trim().slice(0, 64)
-      : '';
-    if (!name) {
-      continue;
-    }
-    const createdAt =
-      typeof candidate.createdAt === 'string' &&
-      Number.isFinite(Date.parse(candidate.createdAt))
-        ? candidate.createdAt
-        : new Date(0).toISOString();
-    const updatedAt =
-      typeof candidate.updatedAt === 'string' &&
-      Number.isFinite(Date.parse(candidate.updatedAt))
-        ? candidate.updatedAt
-        : createdAt;
-    profilesById[profileId] = {
-      id: profileId,
-      name: name,
-      settings: pickDisplayProfileSettings(candidate.settings),
-      createdAt: createdAt,
-      updatedAt: updatedAt,
-    };
-  }
-  const assignments =
-    source.profileIdByClientId &&
-    typeof source.profileIdByClientId === 'object' &&
-    !Array.isArray(source.profileIdByClientId)
-      ? source.profileIdByClientId
-      : {};
-  const profileIdByClientId = {};
-  const clientIds = Object.keys(assignments);
-  for (let index = 0; index < clientIds.length; index += 1) {
-    const clientId = clientIds[index];
-    const profileId = assignments[clientId];
-    if (
-      DISPLAY_PROFILE_ID_PATTERN.test(clientId) &&
-      typeof profileId === 'string' &&
-      Object.prototype.hasOwnProperty.call(profilesById, profileId)
-    ) {
-      profileIdByClientId[clientId] = profileId;
-    }
-  }
-  return {
-    schemaVersion: 1,
-    profilesById: profilesById,
-    profileIdByClientId: profileIdByClientId,
-  };
 }
 
 function readProfileFile() {
@@ -2526,103 +2057,6 @@ function writeProfile(r, principal, client, routedWorkspace, routedState) {
   }
 }
 
-function decodePointer(path) {
-  if (path === '') {
-    return [];
-  }
-  if (typeof path !== 'string' || path.charAt(0) !== '/') {
-    throw new Error('Invalid JSON pointer');
-  }
-  return path
-    .slice(1)
-    .split('/')
-    .map(function (segment) {
-      const decoded = segment.replace(/~1/g, '/').replace(/~0/g, '~');
-      if (decoded === '__proto__' || decoded === 'prototype' || decoded === 'constructor') {
-        throw new Error('Unsafe JSON pointer');
-      }
-      return decoded;
-    });
-}
-
-function cloneJson(value) {
-  return JSON.parse(JSON.stringify(value));
-}
-
-function applyPatchOperation(document, operation) {
-  if (
-    !operation ||
-    (operation.op !== 'add' && operation.op !== 'replace' && operation.op !== 'remove') ||
-    typeof operation.path !== 'string'
-  ) {
-    throw new Error('Unsupported patch operation');
-  }
-  const segments = decodePointer(operation.path);
-  if (segments.length === 0) {
-    if (operation.op === 'remove') {
-      throw new Error('The profile root cannot be removed');
-    }
-    return cloneJson(operation.value);
-  }
-
-  let parent = document;
-  for (let index = 0; index < segments.length - 1; index += 1) {
-    const segment = segments[index];
-    if (
-      parent === null ||
-      typeof parent !== 'object' ||
-      !Object.prototype.hasOwnProperty.call(parent, segment)
-    ) {
-      throw new Error('Patch path does not exist');
-    }
-    parent = parent[segment];
-  }
-
-  const key = segments[segments.length - 1];
-  if (Array.isArray(parent)) {
-    if (operation.op === 'add' && key === '-') {
-      parent.push(cloneJson(operation.value));
-      return document;
-    }
-    if (!/^\d+$/.test(key)) {
-      throw new Error('Invalid array index');
-    }
-    const arrayIndex = Number.parseInt(key, 10);
-    if (operation.op === 'add') {
-      if (arrayIndex > parent.length) {
-        throw new Error('Patch array index is out of range');
-      }
-      parent.splice(arrayIndex, 0, cloneJson(operation.value));
-      return document;
-    }
-    if (arrayIndex >= parent.length) {
-      throw new Error('Patch array index is out of range');
-    }
-    if (operation.op === 'remove') {
-      parent.splice(arrayIndex, 1);
-    } else {
-      parent[arrayIndex] = cloneJson(operation.value);
-    }
-    return document;
-  }
-
-  if (parent === null || typeof parent !== 'object') {
-    throw new Error('Patch parent is not an object');
-  }
-  if (operation.op === 'remove') {
-    if (!Object.prototype.hasOwnProperty.call(parent, key)) {
-      throw new Error('Patch path does not exist');
-    }
-    delete parent[key];
-  } else {
-    if (operation.op === 'replace' && !Object.prototype.hasOwnProperty.call(parent, key)) {
-      throw new Error('Patch path does not exist');
-    }
-    parent[key] = cloneJson(operation.value);
-  }
-  return document;
-}
-
 function patchProfile(r, principal, client, routedWorkspace, routedState) {
   try {
     const isRoutedRequest = arguments.length >= 5;
@@ -2660,10 +2094,7 @@ function patchProfile(r, principal, client, routedWorkspace, routedState) {
       sendJson(r, 400, { error: 'Unsupported dashboard patch' });
       return;
     }
-    let profile = cloneJson(profileResult.profile);
-    for (let index = 0; index < operations.length; index += 1) {
-      profile = applyPatchOperation(profile, operations[index]);
-    }
+    let profile = applyDashboardProfilePatch(profileResult.profile, operations);
     if (!isValidProfile(profile)) {
       sendJson(r, 422, { error: 'Dashboard patch produced an invalid profile' });
       return;
@@ -2708,6 +2139,10 @@ function patchProfile(r, principal, client, routedWorkspace, routedState) {
     }
     if (error && error.code === 'NAVET_PROFILE_WRITE_LIMIT') {
       sendJson(r, 413, { error: 'Dashboard profile is too large' });
+      return;
+    }
+    if (error && error.code === 'NAVET_INVALID_PROFILE_PATCH') {
+      sendJson(r, 422, { error: 'Dashboard patch produced an invalid profile' });
       return;
     }
     sendJson(r, 400, { error: 'Unable to patch dashboard profile' });

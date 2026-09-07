@@ -104,6 +104,11 @@ HTTP camera resources use Navet's same-origin proxy instead of requiring every b
 the container's Home Assistant address. If startup cannot restore that browser session, the
 recovery screen can retry the connection or return to login for a fresh sign-in.
 
+RSS retrieval uses an authenticated same-origin endpoint, validates resolved destination addresses,
+and pins verified HTTPS connections to public addresses. Provider credentials are never forwarded
+to feed servers. The [RSS runtime architecture](docs/architecture/rss-transport.md) documents the
+private local transport and container supervision.
+
 The Home Assistant add-on is Ingress-only so its trusted Home Assistant user headers are never
 accepted from a directly exposed add-on port. Use standalone Docker for direct browser access and
 per-browser OAuth sessions. If a direct add-on address shows **403 Forbidden**, open Navet through
@@ -142,8 +147,6 @@ packages/
   provider-homeassistant/     Home Assistant adapter
   provider-homey/             Homey adapter
   provider-openhab/           openHAB adapter
-  provider-hubitat/           planned provider surface
-  provider-smartthings/       planned provider surface
   app/                        dashboard and app composition
 
 apps/

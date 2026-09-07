@@ -414,7 +414,7 @@ describe('publication recording guardrails', () => {
       validatePublishedAsset({
         kind: 'image',
         publicUrl: 'file:///Users/example/community-climate.webp',
-        localPath: '.cache/navet-content/media/community-climate.webp',
+        localPath: 'marketing/wip/community/captures/community-climate.webp',
         sha256: 'not-a-digest',
         altText: '',
       })

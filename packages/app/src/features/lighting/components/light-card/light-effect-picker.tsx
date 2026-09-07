@@ -20,6 +20,7 @@ import type { LightEffectOption } from './light-card-types';
 interface LightEffectPickerProps {
   currentEffect: string | null;
   isOn: boolean;
+  foregroundColor?: string;
   activeColor?: string | null;
   onSelect: (effectValue: string) => void;
   options: LightEffectOption[];
@@ -30,6 +31,7 @@ interface LightEffectPickerProps {
 export const LightEffectPicker = memo(function LightEffectPicker({
   currentEffect,
   isOn,
+  foregroundColor,
   activeColor,
   onSelect,
   options,
@@ -119,7 +121,13 @@ export const LightEffectPicker = memo(function LightEffectPicker({
               : undefined
           }
           iconClassName={!isOn ? 'text-current/60' : ''}
-          iconStyle={isSelected && isOn ? { color: activeColor ?? '#f59e0b' } : undefined}
+          iconStyle={
+            foregroundColor
+              ? { color: foregroundColor }
+              : isSelected && isOn
+                ? { color: activeColor ?? '#f59e0b' }
+                : undefined
+          }
           onClick={(event) => event.stopPropagation()}
         >
           <Sparkles className={controlSizes.icon} />

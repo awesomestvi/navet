@@ -53,7 +53,7 @@ import {
   UserRound,
   UsersRound,
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { MediaCard } from '../media-card';
 
 type MediaDashboardDevice = MediaDevice & { type: 'media' };
@@ -2123,6 +2123,17 @@ export function MediaDashboard({
     [canBrowseMedia, mediaLibraryEntityId, runMediaCommand, setDefaultBrowseViews]
   );
 
+  const loadInitialBrowseView = useEffectEvent(() => {
+    if (!mediaLibraryEntityId) return;
+    const initialBrowseView = defaultBrowseViewsRef.current[mediaLibraryEntityId];
+    if (initialBrowseView) {
+      browseMedia(initialBrowseView, [initialBrowseView], true);
+      return;
+    }
+
+    browseMedia();
+  });
+
   useEffect(() => {
     setBrowseResult(null);
     setBrowseHistory([]);
@@ -2134,14 +2145,9 @@ export function MediaDashboard({
       return;
     }
 
-    const initialBrowseView = defaultBrowseViewsRef.current[mediaLibraryEntityId];
-    if (initialBrowseView) {
-      browseMedia(initialBrowseView, [initialBrowseView], true);
-      return;
-    }
-
-    browseMedia();
-  }, [browseMedia, canBrowseMedia, mediaLibraryEntityId, selectedDeviceId]);
+    // Reload for a different player, not when translated command feedback changes.
+    loadInitialBrowseView();
+  }, [canBrowseMedia, mediaLibraryEntityId, selectedDeviceId]);
 
   useEffect(() => {
     if (!mediaLibraryEntityId || !browseResult?.children) return;

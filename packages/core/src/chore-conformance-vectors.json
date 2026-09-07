@@ -34,15 +34,24 @@
           "daysOfWeek": [1]
         },
         "dueWindowMinutes": 120,
-        "approval": { "required": false, "approverIds": [] },
+        "approval": {
+          "required": false,
+          "approverIds": []
+        },
         "createdAt": "2026-10-01T08:00:00.000Z",
         "updatedAt": "2026-10-01T08:00:00.000Z"
       },
       "rangeStart": "2026-10-19T00:00:00.000Z",
       "rangeEnd": "2026-11-02T00:00:00.000Z",
       "expected": [
-        { "scheduledAt": "2026-10-19T16:00:00.000Z", "assigneeIds": ["alice"] },
-        { "scheduledAt": "2026-10-26T17:00:00.000Z", "assigneeIds": ["bob"] }
+        {
+          "scheduledAt": "2026-10-19T16:00:00.000Z",
+          "assigneeIds": ["alice"]
+        },
+        {
+          "scheduledAt": "2026-10-26T17:00:00.000Z",
+          "assigneeIds": ["bob"]
+        }
       ]
     },
     {
@@ -78,15 +87,24 @@
           "timeZone": "UTC"
         },
         "dueWindowMinutes": 30,
-        "approval": { "required": false, "approverIds": [] },
+        "approval": {
+          "required": false,
+          "approverIds": []
+        },
         "createdAt": "2026-08-28T00:00:00.000Z",
         "updatedAt": "2026-08-28T00:00:00.000Z"
       },
       "rangeStart": "2026-08-28T00:00:00.000Z",
       "rangeEnd": "2026-08-28T23:59:59.000Z",
       "expected": [
-        { "scheduledAt": "2026-08-28T08:00:00.000Z", "assigneeIds": ["alice"] },
-        { "scheduledAt": "2026-08-28T08:00:00.000Z", "assigneeIds": ["bob"] }
+        {
+          "scheduledAt": "2026-08-28T08:00:00.000Z",
+          "assigneeIds": ["alice"]
+        },
+        {
+          "scheduledAt": "2026-08-28T08:00:00.000Z",
+          "assigneeIds": ["bob"]
+        }
       ]
     },
     {
@@ -124,18 +142,447 @@
           "daysOfWeek": [1, 2]
         },
         "dueWindowMinutes": 30,
-        "approval": { "required": false, "approverIds": [] },
+        "approval": {
+          "required": false,
+          "approverIds": []
+        },
         "createdAt": "2026-08-24T00:00:00.000Z",
         "updatedAt": "2026-08-24T00:00:00.000Z"
       },
       "rangeStart": "2026-08-24T00:00:00.000Z",
       "rangeEnd": "2026-09-01T23:59:59.000Z",
       "expected": [
-        { "scheduledAt": "2026-08-24T08:00:00.000Z", "assigneeIds": ["alice"] },
-        { "scheduledAt": "2026-08-25T08:00:00.000Z", "assigneeIds": ["bob"] },
-        { "scheduledAt": "2026-08-31T08:00:00.000Z", "assigneeIds": ["alice"] },
-        { "scheduledAt": "2026-09-01T08:00:00.000Z", "assigneeIds": ["bob"] }
+        {
+          "scheduledAt": "2026-08-24T08:00:00.000Z",
+          "assigneeIds": ["alice"]
+        },
+        {
+          "scheduledAt": "2026-08-25T08:00:00.000Z",
+          "assigneeIds": ["bob"]
+        },
+        {
+          "scheduledAt": "2026-08-31T08:00:00.000Z",
+          "assigneeIds": ["alice"]
+        },
+        {
+          "scheduledAt": "2026-09-01T08:00:00.000Z",
+          "assigneeIds": ["bob"]
+        }
       ]
+    },
+    {
+      "name": "monthly last day clamps to leap day",
+      "participants": [
+        {
+          "id": "alice",
+          "displayName": "Alice",
+          "capabilities": ["complete", "approve", "manage"],
+          "createdAt": "2026-10-01T08:00:00.000Z",
+          "updatedAt": "2026-10-01T08:00:00.000Z"
+        },
+        {
+          "id": "bob",
+          "displayName": "Bob",
+          "capabilities": ["complete"],
+          "createdAt": "2026-10-01T08:00:00.000Z",
+          "updatedAt": "2026-10-01T08:00:00.000Z"
+        }
+      ],
+      "definition": {
+        "id": "recycling",
+        "title": "Take out recycling",
+        "enabled": true,
+        "assignment": {
+          "mode": "person",
+          "participantIds": ["alice"]
+        },
+        "schedule": {
+          "frequency": "monthly",
+          "startDate": "2028-01-01",
+          "time": "10:00",
+          "timeZone": "UTC",
+          "dayOfMonth": 31
+        },
+        "dueWindowMinutes": 120,
+        "approval": {
+          "required": false,
+          "approverIds": []
+        },
+        "createdAt": "2026-10-01T08:00:00.000Z",
+        "updatedAt": "2026-10-01T08:00:00.000Z"
+      },
+      "rangeStart": "2028-02-01T00:00:00.000Z",
+      "rangeEnd": "2028-03-02T00:00:00.000Z",
+      "expected": [
+        {
+          "scheduledAt": "2028-02-29T10:00:00.000Z",
+          "assigneeIds": ["alice"]
+        }
+      ]
+    },
+    {
+      "name": "monthly last weekday honors excluded dates",
+      "participants": [
+        {
+          "id": "alice",
+          "displayName": "Alice",
+          "capabilities": ["complete", "approve", "manage"],
+          "createdAt": "2026-10-01T08:00:00.000Z",
+          "updatedAt": "2026-10-01T08:00:00.000Z"
+        },
+        {
+          "id": "bob",
+          "displayName": "Bob",
+          "capabilities": ["complete"],
+          "createdAt": "2026-10-01T08:00:00.000Z",
+          "updatedAt": "2026-10-01T08:00:00.000Z"
+        }
+      ],
+      "definition": {
+        "id": "recycling",
+        "title": "Take out recycling",
+        "enabled": true,
+        "assignment": {
+          "mode": "person",
+          "participantIds": ["alice"]
+        },
+        "schedule": {
+          "frequency": "monthly",
+          "startDate": "2028-01-01",
+          "time": "10:00",
+          "timeZone": "UTC",
+          "nthWeekday": {
+            "ordinal": -1,
+            "weekday": 1
+          },
+          "excludedDates": ["2028-02-28"]
+        },
+        "dueWindowMinutes": 120,
+        "approval": {
+          "required": false,
+          "approverIds": []
+        },
+        "createdAt": "2026-10-01T08:00:00.000Z",
+        "updatedAt": "2026-10-01T08:00:00.000Z"
+      },
+      "rangeStart": "2028-01-01T00:00:00.000Z",
+      "rangeEnd": "2028-03-01T00:00:00.000Z",
+      "expected": [
+        {
+          "scheduledAt": "2028-01-31T10:00:00.000Z",
+          "assigneeIds": ["alice"]
+        }
+      ]
+    }
+  ],
+  "occurrenceFixture": {
+    "definition": {
+      "id": "dishes",
+      "title": "Dishes",
+      "enabled": true,
+      "assignment": {
+        "mode": "anyone",
+        "participantIds": ["alice", "bob"]
+      },
+      "schedule": {
+        "frequency": "daily",
+        "startDate": "2026-08-10",
+        "time": "10:00",
+        "timeZone": "UTC"
+      },
+      "dueWindowMinutes": 120,
+      "approval": {
+        "required": false,
+        "approverIds": []
+      },
+      "createdAt": "2026-08-10T10:30:00.000Z",
+      "updatedAt": "2026-08-10T10:30:00.000Z"
+    },
+    "occurrence": {
+      "id": "dishes:today",
+      "definitionId": "dishes",
+      "scheduledAt": "2026-08-10T10:00:00.000Z",
+      "dueAt": "2026-08-10T12:00:00.000Z",
+      "assignmentSlot": "shared",
+      "assigneeIds": ["alice", "bob"],
+      "status": "available",
+      "updatedAt": "2026-08-10T10:30:00.000Z"
+    },
+    "participants": [
+      {
+        "id": "alice",
+        "displayName": "alice",
+        "capabilities": ["complete", "approve", "manage"],
+        "createdAt": "2026-08-10T10:30:00.000Z",
+        "updatedAt": "2026-08-10T10:30:00.000Z"
+      },
+      {
+        "id": "bob",
+        "displayName": "bob",
+        "capabilities": ["complete", "approve", "manage"],
+        "createdAt": "2026-08-10T10:30:00.000Z",
+        "updatedAt": "2026-08-10T10:30:00.000Z"
+      },
+      {
+        "id": "manager",
+        "displayName": "manager",
+        "capabilities": ["complete", "approve", "manage"],
+        "createdAt": "2026-08-10T10:30:00.000Z",
+        "updatedAt": "2026-08-10T10:30:00.000Z"
+      }
+    ],
+    "timestamp": "2026-08-10T10:30:00.000Z"
+  },
+  "occurrenceTransitions": [
+    {
+      "name": "claim available occurrence",
+      "command": {
+        "type": "claim",
+        "participantId": "alice"
+      },
+      "occurrence": {},
+      "definition": {},
+      "expected": {
+        "status": "claimed",
+        "claimedBy": "alice",
+        "claimedAt": "2026-08-10T10:30:00.000Z"
+      },
+      "event": "claimed",
+      "error": null
+    },
+    {
+      "name": "complete without approval",
+      "command": {
+        "type": "complete",
+        "participantId": "alice"
+      },
+      "occurrence": {},
+      "definition": {},
+      "expected": {
+        "status": "done",
+        "completedBy": "alice",
+        "completedAt": "2026-08-10T10:30:00.000Z"
+      },
+      "event": "completed",
+      "error": null
+    },
+    {
+      "name": "claim required before completion",
+      "command": {
+        "type": "complete",
+        "participantId": "alice"
+      },
+      "occurrence": {},
+      "definition": {
+        "claimPolicy": {
+          "required": true
+        }
+      },
+      "expected": {},
+      "event": null,
+      "error": "This chore must be claimed before it can be completed"
+    },
+    {
+      "name": "complete requires claimant",
+      "command": {
+        "type": "complete",
+        "participantId": "bob"
+      },
+      "occurrence": {
+        "status": "claimed",
+        "claimedBy": "alice",
+        "claimedAt": "2026-08-10T10:00:00.000Z"
+      },
+      "definition": {},
+      "expected": {},
+      "event": null,
+      "error": "A claimed chore can only be completed by its claimant"
+    },
+    {
+      "name": "steal claim exactly at expiry",
+      "command": {
+        "type": "claim",
+        "participantId": "bob"
+      },
+      "occurrence": {
+        "status": "claimed",
+        "claimedBy": "alice",
+        "claimedAt": "2026-08-10T10:00:00.000Z"
+      },
+      "definition": {
+        "claimPolicy": {
+          "allowSteal": true,
+          "expiresAfterMinutes": 30
+        }
+      },
+      "expected": {
+        "status": "claimed",
+        "claimedBy": "bob",
+        "claimedAt": "2026-08-10T10:30:00.000Z"
+      },
+      "event": "claimed",
+      "error": null
+    },
+    {
+      "name": "cannot steal terminal completed occurrence",
+      "command": {
+        "type": "claim",
+        "participantId": "bob"
+      },
+      "occurrence": {
+        "status": "done",
+        "claimedBy": "alice",
+        "claimedAt": "2026-08-10T10:00:00.000Z"
+      },
+      "definition": {
+        "claimPolicy": {
+          "allowSteal": true,
+          "expiresAfterMinutes": 30
+        }
+      },
+      "expected": {},
+      "event": null,
+      "error": "Only available chores can be claimed"
+    },
+    {
+      "name": "approval required completion",
+      "command": {
+        "type": "complete",
+        "participantId": "alice"
+      },
+      "occurrence": {},
+      "definition": {
+        "approval": {
+          "required": true,
+          "approverIds": ["manager"]
+        }
+      },
+      "expected": {
+        "status": "awaiting_approval"
+      },
+      "event": "completed",
+      "error": null
+    },
+    {
+      "name": "manager override requires reason",
+      "command": {
+        "type": "approve",
+        "participantId": "manager",
+        "managerOverride": true
+      },
+      "occurrence": {
+        "status": "awaiting_approval"
+      },
+      "definition": {
+        "approval": {
+          "required": true,
+          "approverIds": ["bob"]
+        }
+      },
+      "expected": {},
+      "event": null,
+      "error": "A manager approval override requires a reason"
+    },
+    {
+      "name": "reject resets completion",
+      "command": {
+        "type": "reject",
+        "participantId": "manager"
+      },
+      "occurrence": {
+        "status": "awaiting_approval",
+        "claimedBy": "alice",
+        "completedBy": "alice"
+      },
+      "definition": {
+        "approval": {
+          "required": true,
+          "approverIds": ["manager"]
+        }
+      },
+      "expected": {
+        "status": "available",
+        "claimedBy": null,
+        "completedBy": null
+      },
+      "event": "rejected",
+      "error": null
+    },
+    {
+      "name": "reopen clears missed carry forward",
+      "command": {
+        "type": "reopen",
+        "participantId": "manager",
+        "reason": "Redo"
+      },
+      "occurrence": {
+        "status": "missed",
+        "missedAt": "2026-08-10T10:30:00.000Z",
+        "carriedForwardTo": "next"
+      },
+      "definition": {},
+      "expected": {
+        "status": "available",
+        "missedAt": null,
+        "carriedForwardTo": null
+      },
+      "event": "reopened",
+      "error": null
+    },
+    {
+      "name": "reassignment deduplicates and clears claimant",
+      "command": {
+        "type": "reassign",
+        "participantId": "manager",
+        "assigneeIds": ["bob", "alice", "bob"],
+        "reason": "Swap"
+      },
+      "occurrence": {
+        "status": "claimed",
+        "claimedBy": "alice"
+      },
+      "definition": {},
+      "expected": {
+        "status": "available",
+        "assigneeIds": ["bob", "alice"],
+        "assignmentSlot": "manager:alice,bob",
+        "claimedBy": null
+      },
+      "event": "reassigned",
+      "error": null
+    },
+    {
+      "name": "rejection override requires reason",
+      "command": {
+        "type": "reject",
+        "participantId": "manager",
+        "managerOverride": true
+      },
+      "occurrence": {
+        "status": "awaiting_approval"
+      },
+      "definition": {
+        "approval": {
+          "required": true,
+          "approverIds": ["bob"]
+        }
+      },
+      "expected": {},
+      "event": null,
+      "error": "A manager rejection override requires a reason"
+    },
+    {
+      "name": "skip requires reason",
+      "command": {
+        "type": "skip",
+        "participantId": "manager",
+        "reason": "  "
+      },
+      "occurrence": {},
+      "definition": {},
+      "expected": {},
+      "event": null,
+      "error": "Skipping a chore requires a reason"
     }
   ]
 }

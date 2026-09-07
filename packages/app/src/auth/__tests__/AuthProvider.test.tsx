@@ -23,7 +23,7 @@ const { integrationSessionRuntimeMock, invalidateStandaloneOAuthSessionMock } = 
   },
 }));
 
-vi.mock('../integration-session-runtime', () => ({
+vi.mock('../../integration-session-runtime', () => ({
   integrationSessionRuntime: integrationSessionRuntimeMock,
 }));
 

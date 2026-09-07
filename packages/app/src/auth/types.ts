@@ -1,10 +1,10 @@
-import type { HomeyCloudHomey, HomeySnapshot } from '@navet/app/types/homey';
 import type { IntegrationUser } from '@navet/app/types/integration-user';
 import type { IntegrationProviderId } from '@navet/app/types/provider';
 import type {
   NavetProviderSessionInput,
   NavetProviderSessionMap,
 } from '@navet/core/provider-contract';
+import type { HomeyCloudHomey, HomeySnapshot } from '@navet/provider-homey';
 import type { Auth } from 'home-assistant-js-websocket';
 import type { AuthRuntime } from './runtime-types';
 
@@ -49,20 +49,7 @@ export interface OpenHABAuthSession extends BaseAuthSession {
   proxyBaseUrl?: string;
 }
 
-export interface HubitatAuthSession extends BaseAuthSession {
-  providerId: 'hubitat';
-}
-
-export interface SmartThingsAuthSession extends BaseAuthSession {
-  providerId: 'smartthings';
-}
-
-export type AuthSession =
-  | HomeAssistantAuthSession
-  | HomeyAuthSession
-  | OpenHABAuthSession
-  | HubitatAuthSession
-  | SmartThingsAuthSession;
+export type AuthSession = HomeAssistantAuthSession | HomeyAuthSession | OpenHABAuthSession;
 
 export interface AuthAdapter {
   readonly providerId: IntegrationProviderId;
