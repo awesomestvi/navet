@@ -98,23 +98,9 @@ export const Temperature: Story = {
       { value: 21.8, timestampMs: 6, endTimestampMs: 7, minValue: 21.5, maxValue: 22 },
     ],
   },
-  play: async ({ canvas, canvasElement }) => {
-    expect(canvas.getByTestId('sensor-history-sparkline')).toBeInTheDocument();
-    expect(
-      canvasElement
-        .querySelector('[data-testid="sensor-history-sparkline"] svg')
-        ?.getBoundingClientRect().height
-    ).toBeGreaterThan(0);
-    expect(canvasElement.querySelectorAll('[data-chart-reference-line="true"]')).toHaveLength(2);
-
-    const header = canvasElement.querySelector<HTMLElement>('.navet-entity-card-header');
-    const metric = header?.nextElementSibling as HTMLElement | undefined;
-    const card = header?.closest<HTMLElement>('[data-effective-effects-quality]');
-    expect(metric?.getBoundingClientRect().right).toBeLessThanOrEqual(
-      card?.getBoundingClientRect().right ?? 0
-    );
-    expect(canvas.getByText('C')).not.toHaveClass('block');
-    expect(canvas.getByText('C')).not.toHaveTextContent('°');
+  play: async ({ canvas }) => {
+    expect(canvas.queryByTestId('sensor-history-sparkline')).not.toBeInTheDocument();
+    expect(canvas.getByTitle('21.8 °C')).toBeInTheDocument();
   },
 };
 

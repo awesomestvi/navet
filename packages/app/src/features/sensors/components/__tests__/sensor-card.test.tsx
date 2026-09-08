@@ -45,7 +45,7 @@ describe('InfoCard', () => {
     expect(screen.getByTestId('sensor-history-sparkline')).toBeInTheDocument();
   });
 
-  it('shows a compact temperature sparkline at the standard small size', () => {
+  it('keeps standard small temperature cards value-only', () => {
     useSensorStatisticsHistoryMock.mockReturnValue({
       points: [
         { value: 20.8, timestampMs: 1, endTimestampMs: 2, minValue: 20.1, maxValue: 21.1 },
@@ -70,7 +70,8 @@ describe('InfoCard', () => {
       />
     );
 
-    expect(screen.getByTestId('sensor-history-sparkline')).toBeInTheDocument();
+    expect(screen.queryByTestId('sensor-history-sparkline')).not.toBeInTheDocument();
+    expect(screen.getByTitle('21.4 °C')).toBeInTheDocument();
   });
 
   it('uses a quality bar instead of history for humidity', () => {
