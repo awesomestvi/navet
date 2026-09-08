@@ -885,17 +885,21 @@ async function verifyRssServiceSupervision(containerName) {
     throw new Error('RSS Unix socket must be private to the nginx identity');
   }
   run('docker', ['exec', containerName, 'pkill', '-KILL', '-x', 'node']);
-  for (let attempt = 0; attempt < 40; attempt++) {
+  // QEMU can take several seconds to propagate the child failure through the
+  // Home Assistant base image's s6 shutdown path. Keep polling so native runs
+  // still finish immediately, but give emulated release architectures a fair
+  // bounded window to prove that the container exits.
+  for (let attempt = 0; attempt < 120; attempt++) {
     const result = spawnSync('docker', ['inspect', '--format', '{{.State.Running}} {{.State.ExitCode}}',
       containerName], { encoding: 'utf8' });
     if (result.status === 0 && result.stdout.startsWith('false ')) {
       if (result.stdout.trim() === 'false 0') throw new Error('Transport failure reported a clean container exit');
       return;
     }
-    await delay(100);
+    await delay(250);
   }
   const processes = spawnSync('docker', ['exec', containerName, 'ps', '-o', 'pid,ppid,comm,args'], { encoding: 'utf8' });
-  throw new Error('nginx remained running after the RSS transport failed\n' + processes.stdout);
+  throw new Error('container remained running after the RSS transport failed\n' + processes.stdout);
 }
 
 function startNavetContainer(containerName, networkName, volumeName, imageTag) {

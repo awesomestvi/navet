@@ -76,11 +76,14 @@ function getCurrentBranch() {
   return currentBranch;
 }
 
-function ensureCleanWorkingTree() {
-  const status = runGit(['status', '--porcelain=v1', '--untracked-files=all']);
-  if (status) {
+function ensureOnlyStagedChanges() {
+  const hasUnstagedChanges = !gitSucceeds(['diff', '--quiet']);
+  const untrackedFiles = runGit(['ls-files', '--others', '--exclude-standard']);
+  const hasUnmergedChanges = !gitSucceeds(['diff', '--cached', '--quiet', '--diff-filter=U']);
+
+  if (hasUnstagedChanges || untrackedFiles || hasUnmergedChanges) {
     throw new Error(
-      'Navet Dev publish requires a clean working tree. Commit the intended product changes first.'
+      'Navet Dev publish accepts staged changes only. Stage the intended release files and clean or stash all unstaged and untracked work first.'
     );
   }
 }
@@ -321,7 +324,7 @@ function updateDevChangelog() {
   }
 }
 
-function stageMetadataCommit(devVersion) {
+function createReleaseCommit(devVersion) {
   updateAddonVersion(devVersion, `${homeAssistantPaths.addonNavetDev}/config.yaml`);
   updateDevChangelog();
   runGit(['add', 'platform/home-assistant/addons/navet-dev/config.yaml']);
@@ -381,7 +384,7 @@ function buildPublicationSummary({ devVersion, sourceBranch, tagName, remote, pu
   const lines = [
     `Prepared Navet Dev release ${devVersion}.`,
     `Source branch: ${sourceBranch}`,
-    'Created a metadata-only release commit.',
+    'Created one release commit containing the staged index and generated dev metadata.',
     `Created tag: ${tagName}`,
   ];
 
@@ -412,19 +415,19 @@ try {
   const options = parseArgs(process.argv.slice(2));
   const sourceBranch = getCurrentBranch();
 
-  ensureCleanWorkingTree();
+  ensureOnlyStagedChanges();
 
   if (options.push) {
     refreshRemoteReleaseContext(options.remote);
     ensureBranchContainsRemoteMain(options.remote);
-    ensureCleanWorkingTree();
+    ensureOnlyStagedChanges();
   }
 
   const packageVersion = getPackageVersion();
   const devVersion = buildDevAddonVersion(packageVersion);
   const tagName = `navet-dev-${devVersion}`;
 
-  stageMetadataCommit(devVersion);
+  createReleaseCommit(devVersion);
   createTag(tagName, sourceBranch);
 
   if (options.push) {

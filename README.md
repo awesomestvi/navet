@@ -90,40 +90,6 @@ Hubitat and SmartThings are planned and are not supported today. Follow the
 
 Not sure which route fits? [Compare every installation option](https://docs.navet.app/install/).
 
-## Local by default
-
-Navet is built for self-hosted smart homes. It does not require a Navet cloud account. Provider
-data, dashboard state, and credentials stay on your device or server rather than Navet servers.
-
-Standalone Home Assistant logins are isolated per browser profile. Navet keeps each OAuth session
-under `/data`, identifies the browser with an opaque `HttpOnly` cookie, and never reuses one wall
-panel's Home Assistant login for another phone or panel. Signing out removes only that browser's
-session; shared dashboard settings remain a separate concern from provider credentials. After the
-Home Assistant authorization page closes, dashboard requests, token renewal, and provider-managed
-HTTP camera resources use Navet's same-origin proxy instead of requiring every browser to reach
-the container's Home Assistant address. If startup cannot restore that browser session, the
-recovery screen can retry the connection or return to login for a fresh sign-in.
-
-Changing the Home Assistant address from Settings always starts a fresh OAuth login. Navet keeps
-the existing dashboard only when the new token proves that the old and new routes reach the same
-Home Assistant; otherwise it uses a separate dashboard workspace for the new address.
-
-RSS retrieval uses an authenticated same-origin endpoint, validates resolved destination addresses,
-and pins verified HTTPS connections to public addresses. Provider credentials are never forwarded
-to feed servers. The [RSS runtime architecture](docs/architecture/rss-transport.md) documents the
-private local transport and container supervision.
-
-The Home Assistant add-on is Ingress-only so its trusted Home Assistant user headers are never
-accepted from a directly exposed add-on port. Use standalone Docker for direct browser access and
-per-browser OAuth sessions. If a direct add-on address shows **403 Forbidden**, open Navet through
-**Open Web UI** or the Home Assistant sidebar. See the
-[recovery steps](https://docs.navet.app/install/home-assistant/#a-direct-app-address-shows-403-forbidden).
-
-A public deployment is still a sensitive control surface. Use HTTPS, least-privilege provider
-accounts, and the guidance in the [security policy](https://docs.navet.app/security/).
-
-Please report vulnerabilities privately to `security@navet.app` rather than opening a public issue.
-
 ## Contribute to Navet
 
 Navet is an AGPL-3.0 open-source project. Whether you want to fix a bug, improve a provider, refine

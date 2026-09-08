@@ -157,7 +157,13 @@ function readPublishedVersion(fixture) {
   return match[1];
 }
 
-function expectMetadataRelease(fixture, result, branch) {
+function expectMetadataRelease(
+  fixture,
+  result,
+  branch,
+  expectedFiles = [],
+  expectedChangelogText = 'Improve low-power rendering'
+) {
   expect(result.status, result.stderr || result.stdout).toBe(0);
 
   const version = readPublishedVersion(fixture);
@@ -184,9 +190,10 @@ function expectMetadataRelease(fixture, result, branch) {
       .filter(Boolean)
       .sort()
   ).toEqual([
+    ...expectedFiles,
     'platform/home-assistant/addons/navet-dev/CHANGELOG.md',
     'platform/home-assistant/addons/navet-dev/config.yaml',
-  ]);
+  ].sort());
   expect(
     runGit(fixture.remote, fixture.environment, [
       'for-each-ref',
@@ -199,7 +206,7 @@ function expectMetadataRelease(fixture, result, branch) {
       join(fixture.repository, 'platform/home-assistant/addons/navet-dev/CHANGELOG.md'),
       'utf8'
     )
-  ).toContain('Improve low-power rendering');
+  ).toContain(expectedChangelogText);
 
   return {
     branchHead,
@@ -242,7 +249,39 @@ describe('create-dev-release', () => {
     expect(readRemoteRef(fixture, `refs/tags/${release.tag}^{}`)).toBe(release.branchHead);
   });
 
-  it('rejects a dirty worktree without creating a commit or tag', () => {
+  it('includes pre-staged product work and release metadata in one commit', () => {
+    const fixture = createReleaseFixture();
+    const headBefore = runGit(fixture.repository, fixture.environment, ['rev-parse', 'HEAD']);
+    const stagedProductFile = 'scripts/product-change.mjs';
+    writeFileSync(
+      join(fixture.repository, stagedProductFile),
+      'export const releaseFixture = true;\n',
+      'utf8'
+    );
+    runGit(fixture.repository, fixture.environment, ['add', stagedProductFile]);
+
+    const result = runPublisher(fixture);
+    expectMetadataRelease(
+      fixture,
+      result,
+      'main',
+      [stagedProductFile],
+      'Current staged work includes Dev release tooling.'
+    );
+
+    expect(
+      runGit(fixture.repository, fixture.environment, [
+        'rev-list',
+        '--count',
+        `${headBefore}..HEAD`,
+      ])
+    ).toBe('1');
+    expect(result.stdout).toContain(
+      'Created one release commit containing the staged index and generated dev metadata.'
+    );
+  });
+
+  it('rejects unstaged work without creating a commit or tag', () => {
     const fixture = createReleaseFixture();
 
     commitProductChange(fixture, 'feature/performance');
@@ -256,7 +295,7 @@ describe('create-dev-release', () => {
     const result = runPublisher(fixture);
 
     expect(result.status).not.toBe(0);
-    expect(`${result.stdout}\n${result.stderr}`).toMatch(/clean|dirty|uncommitted/i);
+    expect(`${result.stdout}\n${result.stderr}`).toMatch(/unstaged|untracked/i);
     expect(runGit(fixture.repository, fixture.environment, ['rev-parse', 'HEAD'])).toBe(headBefore);
     expect(
       runGit(fixture.remote, fixture.environment, ['tag', '--list', 'navet-dev-*'])
