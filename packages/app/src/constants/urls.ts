@@ -26,6 +26,7 @@ export const GITHUB_REPO_URL = 'https://github.com/awesomestvi/navet';
 export const COMMUNITY_URLS = {
   discord: 'https://discord.com/channels/1540491864325623892',
   reddit: 'https://www.reddit.com/r/navet/',
+  youtube: 'https://www.youtube.com/@navetapp',
 } as const;
 
 /** Documentation URLs */

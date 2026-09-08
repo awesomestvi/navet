@@ -713,6 +713,11 @@
     border-radius: 16px;
   }
 
+  .marketing-hero-dashboard-image,
+  .marketing-hero-dashboard-off {
+    filter: contrast(1.1) saturate(1.08);
+  }
+
   .marketing-hero-light-hotspot {
     position: absolute;
     left: 7.9079%;

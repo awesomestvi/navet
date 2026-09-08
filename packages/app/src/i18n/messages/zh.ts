@@ -1497,6 +1497,7 @@ export const zhMessages = {
   'settings.project.community.description': '获取项目更新、分享反馈并与其他 Navet 用户交流。',
   'settings.project.community.discord': '加入 Discord',
   'settings.project.community.reddit': '访问 r/navet',
+  'settings.project.community.youtube': '访问 YouTube',
   'settings.project.license.description': '设置项目许可证说明',
   'settings.project.license.show': '设置项目许可证',
   'settings.project.license.hide': '设置项目许可证',

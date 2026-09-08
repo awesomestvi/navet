@@ -1,5 +1,5 @@
 import { AppReleaseBadge } from '@navet/app/components/shared/app-release-badge';
-import { DiscordMark, RedditMark } from '@navet/app/components/shared/social-marks';
+import { DiscordMark, RedditMark, YouTubeMark } from '@navet/app/components/shared/social-marks';
 import {
   APP_BUILD_METADATA,
   getAppBuildChannelLabel,
@@ -179,19 +179,40 @@ export function SettingsProjectSection({ controller }: SettingsProjectSectionPro
               href={COMMUNITY_URLS.discord}
               target="_blank"
               rel="noopener noreferrer"
-              className={`inline-flex h-9 items-center gap-2 rounded-full border px-3.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor} ${styles.ringClass}`}
+              className={`group inline-flex h-9 items-center gap-2 rounded-full border px-3.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor} ${styles.ringClass}`}
             >
-              <DiscordMark className="h-4 w-4" />
+              <DiscordMark className="h-4 w-4 transition-colors duration-200 group-hover:text-[#5865f2] group-focus-visible:text-[#5865f2] motion-reduce:transition-none" />
               <span>{t('settings.project.community.discord')}</span>
             </a>
             <a
               href={COMMUNITY_URLS.reddit}
               target="_blank"
               rel="noopener noreferrer"
-              className={`inline-flex h-9 items-center gap-2 rounded-full border px-3.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor} ${styles.ringClass}`}
+              className={`group inline-flex h-9 items-center gap-2 rounded-full border px-3.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor} ${styles.ringClass}`}
             >
-              <RedditMark className="h-4 w-4" />
+              <span className="relative h-4 w-4 transition-colors duration-200 group-hover:text-[#ff4500] group-focus-visible:text-[#ff4500] motion-reduce:transition-none">
+                <span
+                  className="absolute inset-[1px] rounded-full bg-transparent transition-colors duration-200 group-hover:bg-white group-focus-visible:bg-white motion-reduce:transition-none"
+                  aria-hidden="true"
+                />
+                <RedditMark className="relative h-4 w-4" />
+              </span>
               <span>{t('settings.project.community.reddit')}</span>
+            </a>
+            <a
+              href={COMMUNITY_URLS.youtube}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`group inline-flex h-9 items-center gap-2 rounded-full border px-3.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor} ${styles.ringClass}`}
+            >
+              <span className="relative h-4 w-4 transition-colors duration-200 group-hover:text-[#ff0000] group-focus-visible:text-[#ff0000] motion-reduce:transition-none">
+                <span
+                  className="absolute inset-[2px] rounded-sm bg-transparent transition-colors duration-200 group-hover:bg-white group-focus-visible:bg-white motion-reduce:transition-none"
+                  aria-hidden="true"
+                />
+                <YouTubeMark className="relative h-4 w-4" />
+              </span>
+              <span>{t('settings.project.community.youtube')}</span>
             </a>
           </div>
         </SettingsItem>

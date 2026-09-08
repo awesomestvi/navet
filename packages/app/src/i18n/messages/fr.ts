@@ -921,6 +921,7 @@ export const frMessages = {
     'Suivez le projet, partagez vos avis et échangez avec d’autres utilisateurs de Navet.',
   'settings.project.community.discord': 'Rejoindre Discord',
   'settings.project.community.reddit': 'Visiter r/navet',
+  'settings.project.community.youtube': 'Visiter YouTube',
   'settings.project.localData.title': 'Données locales',
   'settings.project.localData.description':
     'Efface les réglages Navet, l état local du tableau de bord, les préférences d interface en cache et les anciennes clés stockées sur cet appareil.',

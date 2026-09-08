@@ -1004,6 +1004,7 @@ export const noMessages = {
     'Få prosjektoppdateringer, del tilbakemeldinger og bli kjent med andre Navet-brukere.',
   'settings.project.community.discord': 'Bli med på Discord',
   'settings.project.community.reddit': 'Besøk r/navet',
+  'settings.project.community.youtube': 'Besøk YouTube',
   'settings.project.localData.title': 'Lokale data',
   'settings.project.localData.description':
     'Slett Navet-innstillinger, dashbordlayoutstatus, bufrede UI-preferanser og eldre lokale nøkler som er lagret på denne enheten.',

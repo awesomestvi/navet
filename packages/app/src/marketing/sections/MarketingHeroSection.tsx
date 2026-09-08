@@ -46,7 +46,7 @@ function MarketingHeroVisual({ mobile = false, lightOn, onToggleLight }: Marketi
               alt="Navet's Home dashboard with its sidebar, room navigation, summary, and device cards"
               width={999}
               height={791}
-              className="block h-auto w-full"
+              className="marketing-hero-dashboard-image block h-auto w-full"
               loading="eager"
               fetchPriority="high"
             />

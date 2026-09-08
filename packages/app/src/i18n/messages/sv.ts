@@ -912,6 +912,7 @@ export const svMessages = {
     'Få projektnyheter, dela feedback och kom i kontakt med andra Navet-användare.',
   'settings.project.community.discord': 'Gå med i Discord',
   'settings.project.community.reddit': 'Besök r/navet',
+  'settings.project.community.youtube': 'Besök YouTube',
   'settings.project.localData.title': 'Lokal data',
   'settings.project.localData.description':
     'Rensar Navet-installningar, lokal dashboard-layout, cachade gränssnittspreferenser och gamla lokala nycklar som lagras på den här enheten.',

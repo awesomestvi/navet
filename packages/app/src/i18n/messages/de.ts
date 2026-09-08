@@ -922,6 +922,7 @@ export const deMessages = {
     'Erhalte Projektneuigkeiten, teile Feedback und tausche dich mit anderen Navet-Nutzern aus.',
   'settings.project.community.discord': 'Discord beitreten',
   'settings.project.community.reddit': 'r/navet besuchen',
+  'settings.project.community.youtube': 'YouTube besuchen',
   'settings.project.localData.title': 'Lokale Daten',
   'settings.project.localData.description':
     'Entfernt Navet-Einstellungen, lokales Dashboard-Layout, zwischengespeicherte UI-Präferenzen und alte lokale Schlüssel auf diesem Gerät.',

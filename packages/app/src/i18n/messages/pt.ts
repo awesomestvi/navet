@@ -915,6 +915,7 @@ export const ptMessages = {
     'Receba novidades do projeto, partilhe feedback e conheça outros utilizadores do Navet.',
   'settings.project.community.discord': 'Junte-se ao Discord',
   'settings.project.community.reddit': 'Visite r/navet',
+  'settings.project.community.youtube': 'Visite o YouTube',
   'settings.project.localData.title': 'Dados locais',
   'settings.project.localData.description':
     'Limpa as configurações do Navet, o estado local do dashboard, preferências de interface em cache e chaves locais antigas armazenadas neste dispositivo.',

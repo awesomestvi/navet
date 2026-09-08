@@ -1005,6 +1005,7 @@ export const daMessages = {
     'Få projektnyheder, del feedback, og kom i kontakt med andre Navet-brugere.',
   'settings.project.community.discord': 'Deltag på Discord',
   'settings.project.community.reddit': 'Besøg r/navet',
+  'settings.project.community.youtube': 'Besøg YouTube',
   'settings.project.localData.title': 'Lokale data',
   'settings.project.localData.description':
     'Ryd Navet-indstillinger, dashboardlayouttilstand, cachelagrede UI-præferencer og ældre lokale nøgler, der er gemt på denne enhed.',

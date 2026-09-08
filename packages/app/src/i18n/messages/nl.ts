@@ -1011,6 +1011,7 @@ export const nlMessages = {
     'Ontvang projectupdates, deel feedback en kom in contact met andere Navet-gebruikers.',
   'settings.project.community.discord': 'Word lid van Discord',
   'settings.project.community.reddit': 'Bezoek r/navet',
+  'settings.project.community.youtube': 'Bezoek YouTube',
   'settings.project.localData.title': 'Lokale gegevens',
   'settings.project.localData.description':
     'Wis de Navet-instellingen, de status van de dashboardindeling, de in de cache opgeslagen UI-voorkeuren en oude lokale sleutels die op dit apparaat zijn opgeslagen.',

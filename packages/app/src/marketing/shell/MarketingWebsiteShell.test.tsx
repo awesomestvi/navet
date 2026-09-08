@@ -55,6 +55,10 @@ describe('MarketingWebsiteShell', () => {
       'href',
       'https://www.reddit.com/r/navet/'
     );
+    expect(within(communityLinks).getByRole('link', { name: 'Navet on YouTube' })).toHaveAttribute(
+      'href',
+      'https://www.youtube.com/@navetapp'
+    );
   });
 
   it('adds an explicit Home link on secondary marketing pages', () => {

@@ -927,6 +927,7 @@ export const itMessages = {
     'Ricevi aggiornamenti sul progetto, condividi feedback e incontra altri utenti Navet.',
   'settings.project.community.discord': 'Unisciti a Discord',
   'settings.project.community.reddit': 'Visita r/navet',
+  'settings.project.community.youtube': 'Visita YouTube',
   'settings.project.localData.title': 'Dati locali',
   'settings.project.localData.description':
     'Cancella le impostazioni di Navet, lo stato locale del dashboard, le preferenze UI in cache e le vecchie chiavi locali memorizzate su questo dispositivo.',

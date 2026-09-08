@@ -143,9 +143,57 @@ body {
   transition: color 140ms ease, background-color 140ms ease;
 }
 
-.navet-storybook-community-link:hover {
-  color: var(--navet-storybook-text);
+.navet-storybook-community-icon {
+  position: relative;
+  display: inline-flex;
+}
+
+.navet-storybook-community-icon::before {
+  position: absolute;
+  content: "";
+  background: transparent;
+  transition: background-color 140ms ease;
+}
+
+.navet-storybook-community-icon > svg {
+  position: relative;
+}
+
+.navet-storybook-community-link:hover,
+.navet-storybook-community-link:focus-visible {
   background: rgba(255, 255, 255, 0.06);
+}
+
+.navet-storybook-community-link[data-platform="discord"]:hover,
+.navet-storybook-community-link[data-platform="discord"]:focus-visible {
+  color: #5865f2;
+}
+
+.navet-storybook-community-link[data-platform="reddit"]:hover,
+.navet-storybook-community-link[data-platform="reddit"]:focus-visible {
+  color: #ff4500;
+}
+
+.navet-storybook-community-link[data-platform="reddit"] .navet-storybook-community-icon::before {
+  inset: 1px;
+  border-radius: 999px;
+}
+
+.navet-storybook-community-link[data-platform="youtube"]:hover,
+.navet-storybook-community-link[data-platform="youtube"]:focus-visible {
+  color: #f00;
+}
+
+.navet-storybook-community-link[data-platform="youtube"] .navet-storybook-community-icon::before {
+  inset: 2px;
+  border-radius: 2px;
+}
+
+.navet-storybook-community-link[data-platform="reddit"]:is(:hover, :focus-visible)
+  .navet-storybook-community-icon::before,
+.navet-storybook-community-link[data-platform="youtube"]:is(:hover, :focus-visible)
+  .navet-storybook-community-icon::before {
+  background: #fff;
 }
 
 button[title*="Theme"],
@@ -173,6 +221,10 @@ input:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   #storybook-explorer-tree [role="treeitem"],
   .navet-storybook-community-link {
+    transition: none;
+  }
+
+  .navet-storybook-community-icon::before {
     transition: none;
   }
 }

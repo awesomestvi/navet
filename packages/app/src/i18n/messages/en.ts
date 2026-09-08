@@ -555,6 +555,7 @@ export const enMessages = {
     'Get project updates, share feedback, and connect with other Navet users.',
   'settings.project.community.discord': 'Join Discord',
   'settings.project.community.reddit': 'Visit r/navet',
+  'settings.project.community.youtube': 'Visit YouTube',
   'settings.project.localData.title': 'Local data',
   'settings.project.localData.description':
     'Clear Navet settings, dashboard layout state, cached UI preferences, and legacy local keys stored on this device.',
