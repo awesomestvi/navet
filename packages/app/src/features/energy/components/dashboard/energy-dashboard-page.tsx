@@ -115,13 +115,13 @@ const ENERGY_CONSUMER_COLORS = [
 ] as const;
 const UNTRACKED_CONSUMPTION_COLOR = '#94a3b8';
 const ENERGY_INSIGHTS_RANGES: EnergyHistoryRange[] = ['today', 'week', 'month', 'year', 'custom'];
-const ENERGY_INSIGHTS_RANGE_LABELS: Record<EnergyHistoryRange, string> = {
-  today: 'Day',
-  week: 'Week',
-  month: 'Month',
-  year: 'Year',
-  custom: 'Custom',
-};
+const ENERGY_INSIGHTS_RANGE_LABELS = {
+  today: 'energy.range.day',
+  week: 'energy.range.week',
+  month: 'energy.range.month',
+  year: 'energy.range.year',
+  custom: 'common.custom',
+} as const;
 const EMPTY_ENERGY_SUMMARY_ITEMS: HomeStatusSummaryItem[] = [];
 interface EnergyCustomRange {
   start: string;
@@ -461,7 +461,9 @@ export const EnergyDashboardPage = memo(function EnergyDashboardPage({
                 )}
                 style={{ gridColumn: '1 / -1' }}
               >
-                <span className={`text-xs ${surface.textSecondary}`}>Hidden Energy modules</span>
+                <span className={`text-xs ${surface.textSecondary}`}>
+                  {t('energy.edit.hiddenModules')}
+                </span>
                 {normalizedOverviewLayout.hidden
                   .filter((moduleId) => availableOverviewModules.has(moduleId))
                   .map((moduleId) => (
@@ -470,7 +472,7 @@ export const EnergyDashboardPage = memo(function EnergyDashboardPage({
                       size="compact"
                       onClick={() => showOverviewModule(moduleId)}
                     >
-                      Add {energyOverviewModuleLabel(moduleId)}
+                      {t('energy.edit.addModule', { name: energyOverviewModuleLabel(moduleId, t) })}
                     </InteractivePill>
                   ))}
               </div>
@@ -495,6 +497,7 @@ function EnergyInsightsRangeControl({
   onRangeChange: (range: EnergyHistoryRange) => void;
   range: EnergyHistoryRange;
 }) {
+  const { t, locale } = useI18n();
   const { theme, accentColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const isPhone = useMediaQuery('(max-width: 639px)');
@@ -533,7 +536,7 @@ function EnergyInsightsRangeControl({
       className="flex min-w-0 shrink-0 items-center"
       data-testid="energy-insights-period-control"
     >
-      <fieldset className="flex min-w-0 gap-1.5" aria-label="Insights period">
+      <fieldset className="flex min-w-0 gap-1.5" aria-label={t('energy.range.insightsPeriod')}>
         {ENERGY_INSIGHTS_RANGES.filter((rangeId) => rangeId !== 'custom').map((rangeId) => (
           <InteractivePill
             key={rangeId}
@@ -542,7 +545,7 @@ function EnergyInsightsRangeControl({
             size="small"
             onClick={() => onRangeChange(rangeId)}
           >
-            {ENERGY_INSIGHTS_RANGE_LABELS[rangeId]}
+            {t(ENERGY_INSIGHTS_RANGE_LABELS[rangeId])}
           </InteractivePill>
         ))}
         {isPhone ? (
@@ -553,7 +556,7 @@ function EnergyInsightsRangeControl({
             size="small"
             onClick={openCustomRange}
           >
-            Custom
+            {t('common.custom')}
           </InteractivePill>
         ) : (
           <Popover.Root
@@ -570,7 +573,7 @@ function EnergyInsightsRangeControl({
                 aria-haspopup="dialog"
                 size="small"
               >
-                Custom
+                {t('common.custom')}
               </InteractivePill>
             </Popover.Trigger>
             <Popover.Portal>
@@ -594,11 +597,13 @@ function EnergyInsightsRangeControl({
         {range === 'custom' ? (
           <InteractivePill
             active
-            aria-label={`Clear custom range ${formatCustomRangeLabel(customRange)}`}
+            aria-label={t('energy.range.clearCustom', {
+              range: formatCustomRangeLabel(customRange, t, locale),
+            })}
             size="small"
             onClick={onClearCustomRange}
           >
-            <span>{formatCustomRangeLabel(customRange)}</span>
+            <span>{formatCustomRangeLabel(customRange, t, locale)}</span>
             <X className="h-4 w-4" aria-hidden="true" />
           </InteractivePill>
         ) : null}
@@ -607,18 +612,18 @@ function EnergyInsightsRangeControl({
         <SheetSurface
           isOpen={isCustomRangeOpen}
           onOpenChange={setIsCustomRangeOpen}
-          title="Custom range"
-          description="Choose the dates used across Energy insights."
-          closeLabel="Close custom range"
+          title={t('energy.range.customTitle')}
+          description={t('energy.range.customDescription')}
+          closeLabel={t('energy.range.closeCustom')}
           accentColor={accentColor}
           overlayClassName={`animate-in fade-in bg-black/45 backdrop-blur-[2px] sm:hidden ${surface.dialogBackdrop}`}
           contentClassName={`${surface.panel} ${surface.border}`}
           bodyClassName="pb-[max(1rem,env(safe-area-inset-bottom))]"
         >
           <SheetSurfaceHeader
-            title="Custom range"
-            description="Choose the dates used across Energy insights."
-            closeLabel="Close custom range"
+            title={t('energy.range.customTitle')}
+            description={t('energy.range.customDescription')}
+            closeLabel={t('energy.range.closeCustom')}
             onClose={closeCustomRange}
             className={cn('border-b', surface.border)}
           />
@@ -646,6 +651,7 @@ function EnergyCustomRangeForm({
   onCancel: () => void;
   onChange: (range: EnergyCustomRange) => void;
 }) {
+  const { t } = useI18n();
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
 
@@ -653,15 +659,17 @@ function EnergyCustomRangeForm({
     <div className="space-y-4">
       {showHeading ? (
         <div>
-          <div className={`text-sm font-semibold ${surface.textPrimary}`}>Custom range</div>
+          <div className={`text-sm font-semibold ${surface.textPrimary}`}>
+            {t('energy.range.customTitle')}
+          </div>
           <div className={`mt-0.5 text-xs ${surface.textSecondary}`}>
-            Choose the dates used across Energy insights.
+            {t('energy.range.customDescription')}
           </div>
         </div>
       ) : null}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <label className={`space-y-1.5 text-xs font-medium ${surface.textSecondary}`}>
-          <span>From</span>
+          <span>{t('energy.range.from')}</span>
           <input
             type="date"
             value={draftRange.start}
@@ -677,7 +685,7 @@ function EnergyCustomRangeForm({
           />
         </label>
         <label className={`space-y-1.5 text-xs font-medium ${surface.textSecondary}`}>
-          <span>To</span>
+          <span>{t('energy.range.to')}</span>
           <input
             type="date"
             value={draftRange.end}
@@ -696,10 +704,10 @@ function EnergyCustomRangeForm({
       </div>
       <div className="flex justify-end gap-2">
         <InteractivePill size="small" onClick={onCancel}>
-          Cancel
+          {t('common.cancel')}
         </InteractivePill>
         <InteractivePill active size="small" disabled={!isValid} onClick={onApply}>
-          Apply
+          {t('energy.range.apply')}
         </InteractivePill>
       </div>
     </div>
@@ -720,18 +728,22 @@ function toDateInputValue(date: Date) {
   return `${year}-${month}-${day}`;
 }
 
-function formatCustomRangeLabel(range: EnergyCustomRange) {
+function formatCustomRangeLabel(
+  range: EnergyCustomRange,
+  t: ReturnType<typeof useI18n>['t'],
+  locale: string
+) {
   const start = parseDateInputValue(range.start);
   const end = parseDateInputValue(range.end);
-  if (!start || !end) return 'Custom range';
+  if (!start || !end) return t('energy.range.customTitle');
 
   const sameYear = start.getFullYear() === end.getFullYear();
   const sameMonth = sameYear && start.getMonth() === end.getMonth();
   const currentYear = new Date().getFullYear();
-  const monthDay = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' });
+  const monthDay = new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' });
 
   if (sameMonth) {
-    const month = new Intl.DateTimeFormat(undefined, { month: 'short' }).format(start);
+    const month = new Intl.DateTimeFormat(locale, { month: 'short' }).format(start);
     const year = sameYear && start.getFullYear() !== currentYear ? `, ${start.getFullYear()}` : '';
     return `${month} ${start.getDate()}–${end.getDate()}${year}`;
   }
@@ -769,6 +781,7 @@ function EnergyOverviewModuleFrame({
   style?: CSSProperties;
   children: ReactNode;
 }) {
+  const { t } = useI18n();
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   return (
@@ -787,7 +800,7 @@ function EnergyOverviewModuleFrame({
           )}
         >
           <span className={`text-xs font-semibold ${surface.textSecondary}`}>
-            {energyOverviewModuleLabel(moduleId)}
+            {energyOverviewModuleLabel(moduleId, t)}
           </span>
           <div className="flex items-center gap-1">
             <button
@@ -795,7 +808,9 @@ function EnergyOverviewModuleFrame({
               disabled={index <= 1}
               onClick={() => onMove(moduleId, -1)}
               className={cn('rounded-full p-2 disabled:opacity-30', surface.hoverBg)}
-              aria-label={`Move ${energyOverviewModuleLabel(moduleId)} earlier`}
+              aria-label={t('energy.edit.moveEarlier', {
+                name: energyOverviewModuleLabel(moduleId, t),
+              })}
             >
               <ArrowUp className="h-3.5 w-3.5" />
             </button>
@@ -804,7 +819,9 @@ function EnergyOverviewModuleFrame({
               disabled={index === count - 1}
               onClick={() => onMove(moduleId, 1)}
               className={cn('rounded-full p-2 disabled:opacity-30', surface.hoverBg)}
-              aria-label={`Move ${energyOverviewModuleLabel(moduleId)} later`}
+              aria-label={t('energy.edit.moveLater', {
+                name: energyOverviewModuleLabel(moduleId, t),
+              })}
             >
               <ArrowDown className="h-3.5 w-3.5" />
             </button>
@@ -812,7 +829,7 @@ function EnergyOverviewModuleFrame({
               type="button"
               onClick={() => onHide(moduleId)}
               className={cn('rounded-full p-2', surface.hoverBg)}
-              aria-label={`Hide ${energyOverviewModuleLabel(moduleId)}`}
+              aria-label={t('energy.edit.hide', { name: energyOverviewModuleLabel(moduleId, t) })}
             >
               <EyeOff className="h-3.5 w-3.5" />
             </button>
@@ -824,10 +841,13 @@ function EnergyOverviewModuleFrame({
   );
 }
 
-function energyOverviewModuleLabel(moduleId: EnergyOverviewModuleId) {
+function energyOverviewModuleLabel(
+  moduleId: EnergyOverviewModuleId,
+  t: ReturnType<typeof useI18n>['t']
+) {
   return {
-    live: 'Live Energy',
-    devices: 'Device cards',
+    live: t('energy.dashboard.liveEnergy'),
+    devices: t('energy.edit.deviceCards'),
   }[moduleId];
 }
 

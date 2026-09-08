@@ -44,8 +44,7 @@ export function useLightRuntimeState({
   const {
     brightness,
     lastBrightnessRef,
-    pendingBrightnessRef,
-    brightnessSyncTimeoutRef,
+    expectBrightness,
     onBrightnessChange,
     onBrightnessCommit,
   } = useLightBrightnessSync({
@@ -65,8 +64,7 @@ export function useLightRuntimeState({
     selectedColor,
     customColor,
     lastColorTempRef,
-    pendingTempRef,
-    tempSyncTimeoutRef,
+    expectTemp,
     onTempChange,
     onTempCommit,
     onColorChange,
@@ -97,12 +95,10 @@ export function useLightRuntimeState({
     syncLightWithHomeAssistant: syncLight,
     lastBrightnessRef,
     lastColorTempRef,
-    pendingBrightnessRef,
-    pendingTempRef,
+    expectBrightness,
+    expectTemp,
     pendingOnStateRef,
     pendingOnStateTimeoutRef,
-    brightnessSyncTimeoutRef,
-    tempSyncTimeoutRef,
     setIsOn,
   });
 

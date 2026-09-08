@@ -30,20 +30,18 @@ export function useTaskRoutines(options?: { enabled?: boolean }): TaskRoutineDat
     enabled ? integrationTaskService.getTaskRuntimeSnapshot : () => EMPTY_TASK_RUNTIME_SNAPSHOT
   );
 
-  if (!enabled) {
-    return EMPTY_TASK_ROUTINE_DATA;
-  }
-
   const entities = useMemo(
     (): PlatformTaskEntityMap | null =>
-      filterTaskEntities(
-        taskRuntime.entities,
-        (entityId) =>
-          entityId.startsWith('automation.') ||
-          entityId.startsWith('scene.') ||
-          entityId.startsWith('script.')
-      ),
-    [taskRuntime.entities]
+      enabled
+        ? filterTaskEntities(
+            taskRuntime.entities,
+            (entityId) =>
+              entityId.startsWith('automation.') ||
+              entityId.startsWith('scene.') ||
+              entityId.startsWith('script.')
+          )
+        : null,
+    [enabled, taskRuntime.entities]
   );
   const taskRuntimeMetadata = useMemo(
     (): Pick<PlatformTaskRuntimeSnapshot, 'rooms' | 'devices' | 'entityReferences'> => ({
@@ -56,14 +54,17 @@ export function useTaskRoutines(options?: { enabled?: boolean }): TaskRoutineDat
 
   return useMemo(
     () =>
-      mapTaskRoutines({
-        entities,
-        rooms: taskRuntimeMetadata.rooms,
-        devices: taskRuntimeMetadata.devices,
-        entityReferences: taskRuntimeMetadata.entityReferences,
-        locale,
-      }),
+      enabled
+        ? mapTaskRoutines({
+            entities,
+            rooms: taskRuntimeMetadata.rooms,
+            devices: taskRuntimeMetadata.devices,
+            entityReferences: taskRuntimeMetadata.entityReferences,
+            locale,
+          })
+        : EMPTY_TASK_ROUTINE_DATA,
     [
+      enabled,
       entities,
       locale,
       taskRuntimeMetadata.devices,

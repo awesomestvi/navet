@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
+import { checkPackageImports } from './package-import-policy.mjs';
 
 const ROOT = process.cwd();
 const PACKAGE_SRC_REEXPORT_PATTERN = /^export\s+\*\s+from ['"](?:\.\.\/)+(?:src)\//m;
@@ -20,7 +21,6 @@ const SHARED_UI_DIRS = [
 const GUARDED_DIRS = [
   'packages/core/src',
   ...SHARED_UI_DIRS,
-  'packages/core/src',
 ];
 
 const FORBIDDEN_PATTERNS = [
@@ -109,7 +109,6 @@ const RAW_SERVICE_CALL_IMPORT_ALLOWLIST = new Set([
 const APP_PROVIDER_DEEP_IMPORT_ALLOWLIST = new Set([
   'packages/app/src/integration-camera-runtime.service.ts',
   'packages/app/src/services/integration-camera-runtime.service.ts',
-  'packages/app/src/types/homey.ts',
   'packages/app/src/types/openhab.ts',
 ]);
 
@@ -129,12 +128,6 @@ const COMPATIBILITY_MODEL_ALLOWLIST = new Set([
 const TARGETED_GUARDS = [
   {
     paths: [
-      'packages/provider-hubitat/src/hubitat-adapter.ts',
-      'packages/provider-hubitat/src/hubitat-runtime-registration.ts',
-      'packages/provider-hubitat/src/planned-provider-support.ts',
-      'packages/provider-smartthings/src/smartthings-adapter.ts',
-      'packages/provider-smartthings/src/smartthings-runtime-registration.ts',
-      'packages/provider-smartthings/src/planned-provider-support.ts',
       'packages/app/src/features/climate/components/hvac-card/use-hvac-card-controller.ts',
       'packages/app/src/features/climate/components/hvac-settings-dialog/index.tsx',
       'packages/app/src/features/climate/components/climate-card/use-climate-card-controller.ts',
@@ -145,7 +138,6 @@ const TARGETED_GUARDS = [
       'packages/app/src/features/lighting/components/use-switch-toggle-action.ts',
       'packages/app/src/features/media/components/media-card/use-media-card-controller.ts',
       'packages/app/src/features/media/components/media-card/use-media-entity-sync.ts',
-      'packages/app/src/features/media/components/media/media-spotify-playback.tsx',
       'packages/app/src/features/security/components/camera-card/use-provider-camera-live-data.ts',
       'packages/app/src/features/security/components/camera-card/container.tsx',
       'packages/app/src/features/security/components/cover-card/container.tsx',
@@ -159,7 +151,6 @@ const TARGETED_GUARDS = [
       'packages/app/src/features/media/components/media-card/use-media-playback.ts',
       'packages/app/src/features/media/components/media-card/use-media-grouping.ts',
       'packages/app/src/features/media/components/media-card/use-media-volume.ts',
-      'packages/app/src/features/media/components/media/media-spotify-playback.tsx',
       'packages/app/src/features/vacuum/components/vacuum-card/index.tsx',
       'packages/app/src/features/vacuum/components/vacuum/use-vacuum-control.ts',
       'packages/app/src/features/dashboard/components/widgets/button-widget.tsx',
@@ -175,11 +166,8 @@ const TARGETED_GUARDS = [
       'packages/app/src/hooks/use-provider-weather-devices.ts',
       'packages/app/src/hooks/use-aggregated-rooms.ts',
       'packages/app/src/hooks/index.ts',
-      'packages/app/src/services/integration-action.service.ts',
       'packages/app/src/services/integration-registry.service.ts',
       'packages/app/src/services/integration-camera-runtime.service.ts',
-      'packages/app/src/auth/integration-session-runtime.ts',
-      'packages/app/src/auth/session-runtime-registry.ts',
       'packages/app/src/provider-contract-registry.ts',
       'packages/app/src/provider-runtime-registry.ts',
       'packages/core/src/snapshot-backed-adapter.ts',
@@ -258,7 +246,7 @@ const TARGETED_GUARDS = [
       {
         pattern: /from ['"]@\/providers\/planned\//,
         message:
-          'package-ready files must not import planned provider helpers directly once package-shaped planned providers exist',
+          'planned providers are catalog metadata and must not expose implementation helpers',
       },
       {
         pattern: /from ['"]@\/providers\/provider-(?:contract|runtime)-registry['"]/,
@@ -424,18 +412,16 @@ function walk(dir) {
 
 const violations = [];
 
-for (const dir of [
-  'packages/app/src',
-  'packages/core/src',
-  'packages/provider-homeassistant/src',
-  'packages/provider-homey/src',
-  'packages/provider-openhab/src',
-  'packages/provider-hubitat/src',
-  'packages/provider-smartthings/src',
-  'packages/ui/src',
-]) {
+for (const entry of fs.readdirSync(path.join(ROOT, 'packages'), { withFileTypes: true })) {
+  if (!entry.isDirectory()) continue;
+  const dir = `packages/${entry.name}/src`;
+  if (!fs.existsSync(path.join(ROOT, dir))) continue;
   for (const relativePath of walk(dir)) {
     const source = fs.readFileSync(path.join(ROOT, relativePath), 'utf8');
+
+    if (!/\.(?:test|spec)\.[^.]+$/.test(relativePath)) {
+      violations.push(...checkPackageImports(relativePath, source));
+    }
 
     if (PACKAGE_SRC_REEXPORT_PATTERN.test(source)) {
       violations.push(

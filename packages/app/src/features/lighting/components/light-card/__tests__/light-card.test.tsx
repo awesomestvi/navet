@@ -218,7 +218,7 @@ describe('LightCard', () => {
       },
     });
 
-    renderWithProviders(
+    const { container } = renderWithProviders(
       <LightCard
         id="light.desk_lamp"
         name="Desk Lamp"
@@ -241,6 +241,13 @@ describe('LightCard', () => {
       'aria-pressed',
       'true'
     );
+    expect(container.querySelector('[data-light-row-icon-pill]')).toHaveClass(
+      'navet-card-header-control-dense',
+      'rounded-full',
+      'border'
+    );
+    expect(container.querySelector('[data-light-table-row]')).toHaveClass('rounded-xl', 'w-full');
+    expect(container.querySelector('[data-light-table-row]')).not.toHaveClass('px-2', 'mx-2');
 
     fireEvent.click(screen.getByRole('button', { name: 'Desk Lamp' }));
 
@@ -653,6 +660,40 @@ describe('LightCard', () => {
 
     expect(screen.queryByRole('slider', { name: 'Brightness' })).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Brightness presets')).not.toBeInTheDocument();
+  });
+
+  it('extends the ambient light bleed beyond an active card', () => {
+    homeAssistantStore.setState({
+      connected: true,
+      connection: {} as never,
+      entities: {
+        'light.desk_lamp': createColorLightEntity(),
+      },
+    });
+    useSettingsStore.getState().updateSettings({
+      ambientLightBleed: true,
+      effectsQuality: 'high',
+      lowPowerMode: false,
+    });
+
+    const { container } = renderWithProviders(
+      <LightCard
+        id="light.desk_lamp"
+        name="Desk Lamp"
+        room="Office"
+        initialState
+        initialBrightness={65}
+        initialTemp={3000}
+        size="medium"
+        onSizeChange={vi.fn()}
+        isEditMode={false}
+      />
+    );
+
+    expect(container.querySelector('[data-ambient-light-bleed="true"]')).toHaveClass(
+      '-inset-full',
+      'blur-3xl'
+    );
   });
 
   it('collapses the brightness slider to zero when turned off and restores it when turned back on', async () => {

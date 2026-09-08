@@ -78,18 +78,22 @@ architecture regression.
 - Home Assistant: implemented
 - Homey: implemented
 - openHAB: implemented
-- Hubitat: planned (contract + registration entry only)
-- SmartThings: planned (contract + registration entry only)
+- Hubitat: planned metadata only
+- SmartThings: planned metadata only
 
 Implemented does not mean feature-identical. Home Assistant registers Navet's climate, media,
 camera, energy, calendar, weather, notification, task, history, security, and administration
 services. Homey and openHAB currently register rooms, realtime entities, lighting, switches, and
 sensors. Keep that distinction visible in product and contributor documentation.
 
-## Read Next
+## Read Deeper Only When Needed
 
-- [../architecture/package-boundaries.md](../architecture/package-boundaries.md)
-- [../architecture/provider-contract.md](../architecture/provider-contract.md)
-- [../architecture/provider-neutral-ui.md](../architecture/provider-neutral-ui.md)
-- [../architecture/dashboard-profile-ownership.md](../architecture/dashboard-profile-ownership.md)
-- [../testing/provider-testing-strategy.md](../testing/provider-testing-strategy.md)
+This overview is sufficient for ordinary architecture work. Open one deeper document only when
+the change touches its interface:
+
+- package imports or ownership: [package boundaries](../architecture/package-boundaries.md)
+- adapter or command shape: [provider contract](../architecture/provider-contract.md)
+- shared rendering inputs: [provider-neutral UI](../architecture/provider-neutral-ui.md)
+- dashboard persistence and sync: [dashboard profile ownership](../architecture/dashboard-profile-ownership.md)
+- compatibility reads: [persisted-data migrations](../architecture/persisted-data-migrations.md)
+- provider test layers: [provider testing strategy](../testing/provider-testing-strategy.md)

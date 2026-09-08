@@ -250,6 +250,31 @@ class ChoreAuthorityTests(unittest.IsolatedAsyncioTestCase):
             "ha-user-1",
         )
 
+    async def test_shared_occurrence_transition_conformance_vectors(self):
+        path = pathlib.Path(__file__).parents[3] / "packages/core/src/chore-conformance-vectors.json"
+        vectors = json.loads(path.read_text(encoding="utf-8"))
+        fixture = vectors["occurrenceFixture"]
+        for vector in vectors["occurrenceTransitions"]:
+            with self.subTest(vector=vector["name"]):
+                data = chores._empty_data()
+                data["participantsById"] = {p["id"]: p for p in fixture["participants"]}
+                definition = {**fixture["definition"], **vector["definition"]}
+                occurrence = {**fixture["occurrence"], **vector["occurrence"]}
+                data["definitionsById"] = {definition["id"]: definition}
+                data["occurrencesById"] = {occurrence["id"]: occurrence}
+                def apply():
+                    return chores._apply_occurrence(data, occurrence["id"], vector["command"], fixture["timestamp"], "conformance")
+                if vector["error"]:
+                    with self.assertRaises(chores.ChoreAuthorityError) as caught:
+                        apply()
+                    self.assertEqual(str(caught.exception), vector["error"])
+                else:
+                    updated, activity = apply()
+                    self.assertEqual(activity["type"], vector["event"])
+                    actual = updated["occurrencesById"][occurrence["id"]]
+                    for key, expected in vector["expected"].items():
+                        self.assertEqual(actual.get(key), expected)
+
     async def test_shared_materialization_conformance_vectors(self):
         vector_path = (
             pathlib.Path(__file__).parents[3]

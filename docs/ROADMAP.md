@@ -44,7 +44,6 @@ services. Homey and openHAB currently supply rooms, lighting, switches, sensors,
 
 ### Layout And Navigation
 
-- [ ] Multiple dashboards
 - [ ] Multiple views per dashboard
 - [ ] User-configurable full-width views
 - [ ] Per-view column count
@@ -80,6 +79,11 @@ services. Homey and openHAB currently supply rooms, lighting, switches, sensors,
 - [ ] Per-user dashboards
 - [ ] User profile editing
 
+### Household
+
+- [ ] Community chore templates
+- [ ] Optional explainable chore-assignment suggestions without automatic scoring or reassignment
+
 ### More Providers
 
 - [ ] Hubitat
@@ -92,5 +96,5 @@ services. Homey and openHAB currently supply rooms, lighting, switches, sensors,
   Assistant.
 - Navet Music Engine is planned work and is not included in current releases. Supported music
   services and playback targets will be documented as they are confirmed.
-- Hubitat and SmartThings have planned provider contracts and registration entries, but full runtime
-  support is not implemented yet.
+- Hubitat and SmartThings have planned catalog entries, but no runtime adapters or authentication
+  flows.

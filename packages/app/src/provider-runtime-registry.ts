@@ -11,7 +11,29 @@ import type {
   IntegrationProviderFeatureMatrix,
   IntegrationProviderRuntimeRegistration,
 } from './provider-runtime-types';
-import { INTEGRATION_PROVIDER_IDS, type IntegrationProviderId } from './types/provider';
+import {
+  IMPLEMENTED_INTEGRATION_PROVIDER_IDS,
+  type IntegrationProviderId,
+  isImplementedIntegrationProviderId,
+} from './types/provider';
+
+const PLANNED_PROVIDER_FEATURE_MATRIX: IntegrationProviderFeatureMatrix = Object.freeze({
+  rooms: false,
+  lighting: false,
+  sensors: false,
+  climate: false,
+  mediaControls: false,
+  mediaBrowse: false,
+  mediaArtwork: false,
+  cameraSnapshot: false,
+  cameraStreams: false,
+  energyNow: false,
+  calendar: false,
+  weather: false,
+  notifications: false,
+  tasks: false,
+  conversation: false,
+});
 
 var providerRuntimeRegistrations:
   | Partial<Record<IntegrationProviderId, IntegrationProviderRuntimeRegistration>>
@@ -48,12 +70,18 @@ export function getProviderRuntimeRegistration(
 }
 
 export function listProviderRuntimeRegistrations(): IntegrationProviderRuntimeRegistration[] {
-  return INTEGRATION_PROVIDER_IDS.map((providerId) => getProviderRuntimeRegistration(providerId));
+  return IMPLEMENTED_INTEGRATION_PROVIDER_IDS.map((providerId) =>
+    getProviderRuntimeRegistration(providerId)
+  );
 }
 
 export function getProviderFeatureMatrix(
   providerId: IntegrationProviderId
 ): IntegrationProviderFeatureMatrix {
+  if (!isImplementedIntegrationProviderId(providerId)) {
+    return PLANNED_PROVIDER_FEATURE_MATRIX;
+  }
+
   return getProviderRuntimeRegistration(providerId).featureMatrix;
 }
 

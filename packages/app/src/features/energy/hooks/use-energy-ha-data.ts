@@ -8,7 +8,6 @@ import { getProviderRuntimeRegistration } from '@navet/app/provider-runtime-regi
 import { getIntegrationHistoryMessageClient } from '@navet/app/services/integration-history.service';
 import { useEffect, useMemo, useState } from 'react';
 import { HEATING_CATEGORIES } from '../data/energy-constants';
-import type { HaEnergyEntityRegistryEntry } from '../services/energy-ha-service';
 import type {
   EnergyConsumer,
   EnergyDeviceSource,
@@ -372,15 +371,6 @@ type HaWsErrorLike = {
   message?: unknown;
 };
 
-function toHomeAssistantEnergyRegistryEntries(
-  entityRegistry: ReturnType<typeof useProviderEntityRegistryEntries>
-): HaEnergyEntityRegistryEntry[] {
-  return entityRegistry.map((entry) => ({
-    entity_id: entry.entityId,
-    device_id: entry.deviceId,
-  }));
-}
-
 export function isMissingEnergyPrefsError(error: unknown): boolean {
   if (!error || typeof error !== 'object') {
     return false;
@@ -416,14 +406,10 @@ export function useEnergyHaData(
     providerId: 'home_assistant',
     enabled,
   });
-  const providerEntityRegistry = useProviderEntityRegistryEntries({
+  const entityRegistry = useProviderEntityRegistryEntries({
     providerId: 'home_assistant',
     enabled,
   });
-  const entityRegistry = useMemo(
-    () => toHomeAssistantEnergyRegistryEntries(providerEntityRegistry),
-    [providerEntityRegistry]
-  );
   const [haSourceConfig, setHaSourceConfig] = useState<EnergySourceConfig | null>(null);
   const [hasResolvedSourceConfig, setHasResolvedSourceConfig] = useState(false);
 
@@ -489,10 +475,7 @@ export function useEnergyHaData(
     return energyFeatureService.augmentSourceConfig(
       haSourceConfig,
       entityStructure,
-      entityRegistry?.map((entry) => ({
-        ...entry,
-        entityId: entry.entity_id,
-      }))
+      entityRegistry
     );
   }, [entityRegistry, entityStructure, haSourceConfig]);
 

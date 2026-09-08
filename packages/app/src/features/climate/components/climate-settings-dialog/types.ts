@@ -27,6 +27,3 @@ export interface ClimateSettingsDialogProps {
   onTargetTempChange: (temp: number) => void;
   onTargetTempCommit?: (temp: number) => void;
 }
-
-/** @deprecated Use ClimateSettingsDialogProps. */
-export type HVACSettingsDialogProps = ClimateSettingsDialogProps;

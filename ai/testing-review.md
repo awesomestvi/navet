@@ -25,16 +25,14 @@ These tests protect release-critical behavior and should stay blocking.
 - `packages/provider-homeassistant/src/homeassistant-contract.test.ts`
 - `packages/provider-homey/src/homey-contract.test.ts`
 - `packages/provider-openhab/src/openhab-contract.test.ts`
-- `packages/provider-hubitat/src/planned-provider-contract.test.ts`
 
 ## Tier 2: Keep
 
 These tests protect important app contracts and should stay blocking in main CI.
 
 - `packages/app/src/stores/__tests__/integration-store.test.ts`
-- `packages/app/src/services/__tests__/integration-runtime.service.test.ts`
 - `packages/app/src/services/__tests__/integration-registry.service.test.ts`
-- `packages/app/src/services/__tests__/integration-action.service.test.ts`
+- `packages/app/src/commands.test.ts`
 - `packages/app/src/services/__tests__/ha-entity-service.test.ts`
 - `packages/app/src/platform/__tests__/provider-room-management.test.ts`
 - the rest of the curated Tier 2 service/store/platform suites in
@@ -54,7 +52,6 @@ against stronger fixtures or documentation-backed behavior.
 - `packages/app/src/features/climate/components/climate-card/__tests__/use-climate-card-controller.test.tsx`
 - `packages/app/src/features/tasks/components/__tests__/tasks-section.test.tsx`
 - `packages/app/src/features/calendar/components/calendar/__tests__/calendar-event-visibility.test.ts`
-- `packages/app/src/hooks/__tests__/use-ha-devices.test.tsx`
 - `packages/app/src/hooks/__tests__/ha-entity-utils.test.ts`
 
 ## Tier 4: Delete Or Replace

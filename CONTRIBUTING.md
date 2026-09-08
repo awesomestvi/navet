@@ -8,13 +8,9 @@ Use this file for the shortest path from clone to productive work.
 
 ## Start Here
 
-Before changing code, read:
-
-- [`AGENTS.md`](AGENTS.md)
-- [`ai/agents.md`](ai/agents.md)
-- [`docs/README.md`](docs/README.md)
-
-Then read the focused docs for the area you are touching.
+Before changing code, read [`AGENTS.md`](AGENTS.md). Its task router points to the one focused
+guide needed for the area you are touching. Use [`docs/README.md`](docs/README.md) only when you
+need the complete documentation map.
 
 ## Prerequisites
 

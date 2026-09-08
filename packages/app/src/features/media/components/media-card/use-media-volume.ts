@@ -1,7 +1,7 @@
 import { dispatchEntityCommand } from '@navet/app/commands';
-import { HA_CONTROL_DEBOUNCE_MS } from '@navet/app/constants/interaction-timing';
 import type { TranslateFn } from '@navet/app/hooks';
 import { useServiceActionHandler } from '@navet/app/hooks';
+import { useCommandQueue } from '@navet/app/hooks/use-command-queue';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 const VOLUME_SYNC_SETTLE_MS = 800;
@@ -30,14 +30,10 @@ export function useMediaVolume({
   const pendingVolumeRef = useRef<number | null>(null);
   const pendingUnmuteRef = useRef(false);
   const isAdjustingVolumeRef = useRef(false);
-  const volumeCommitTimeoutRef = useRef<number | null>(null);
   const syncSettleTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     return () => {
-      if (volumeCommitTimeoutRef.current !== null) {
-        window.clearTimeout(volumeCommitTimeoutRef.current);
-      }
       if (syncSettleTimeoutRef.current !== null) {
         window.clearTimeout(syncSettleTimeoutRef.current);
       }
@@ -69,7 +65,7 @@ export function useMediaVolume({
   const commitPendingVolume = useCallback(
     (pendingVolume: number, shouldUnmute: boolean) => {
       setVolumeAdjusting(true);
-      void runVolumeAction(async () => {
+      return runVolumeAction(async () => {
         try {
           if (shouldUnmute) {
             await dispatchEntityCommand({ type: 'unmute', entityId });
@@ -81,6 +77,16 @@ export function useMediaVolume({
       }, t('media.feedback.updateVolumeFailed'));
     },
     [entityId, releaseVolumeAdjustingAfterSettle, runVolumeAction, setVolumeAdjusting, t]
+  );
+
+  const { queue: queueVolume, cancel: cancelVolume } = useCommandQueue(
+    ({ volume: nextVolume, unmute }: { volume: number; unmute: boolean }) => {
+      if (pendingVolumeRef.current === nextVolume) {
+        pendingVolumeRef.current = null;
+        pendingUnmuteRef.current = false;
+      }
+      return commitPendingVolume(nextVolume, unmute);
+    }
   );
 
   const toggleMute = useCallback(() => {
@@ -134,26 +140,11 @@ export function useMediaVolume({
       }
 
       pendingVolumeRef.current = nextVolume;
-      if (volumeCommitTimeoutRef.current !== null) {
-        window.clearTimeout(volumeCommitTimeoutRef.current);
-        volumeCommitTimeoutRef.current = null;
-      }
-
-      if (isAdjustingVolumeRef.current) {
-        return;
-      }
-      volumeCommitTimeoutRef.current = window.setTimeout(() => {
-        const pendingVolume = pendingVolumeRef.current;
-        const shouldUnmute =
-          pendingVolume !== null && pendingVolume > 0 && pendingUnmuteRef.current;
-        volumeCommitTimeoutRef.current = null;
-        if (pendingVolume === null) return;
-        pendingVolumeRef.current = null;
-        pendingUnmuteRef.current = false;
-        commitPendingVolume(pendingVolume, shouldUnmute);
-      }, HA_CONTROL_DEBOUNCE_MS);
+      cancelVolume();
+      if (isAdjustingVolumeRef.current) return;
+      queueVolume({ volume: nextVolume, unmute: pendingUnmuteRef.current });
     },
-    [canMuteVolume, canSetVolume, commitPendingVolume, isMuted]
+    [canMuteVolume, canSetVolume, cancelVolume, isMuted, queueVolume]
   );
 
   const startVolumeInteraction = useCallback(() => {
@@ -167,10 +158,7 @@ export function useMediaVolume({
       pendingUnmuteRef.current = false;
       return;
     }
-    if (volumeCommitTimeoutRef.current !== null) {
-      window.clearTimeout(volumeCommitTimeoutRef.current);
-      volumeCommitTimeoutRef.current = null;
-    }
+    cancelVolume();
     const pendingVolume = pendingVolumeRef.current;
     pendingVolumeRef.current = null;
     if (pendingVolume === null) {
@@ -184,8 +172,8 @@ export function useMediaVolume({
     if (shouldUnmute) {
       setIsMuted(false);
     }
-    commitPendingVolume(pendingVolume, shouldUnmute);
-  }, [canMuteVolume, canSetVolume, commitPendingVolume, isMuted, setVolumeAdjusting]);
+    queueVolume({ volume: pendingVolume, unmute: shouldUnmute }, true);
+  }, [canMuteVolume, canSetVolume, cancelVolume, isMuted, queueVolume, setVolumeAdjusting]);
 
   return {
     volume,

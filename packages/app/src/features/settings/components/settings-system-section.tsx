@@ -304,6 +304,19 @@ function ProviderCardView({
             </Button>
           ) : null}
 
+          {provider.id === 'home_assistant' && provider.isConnected ? (
+            <Button
+              type="button"
+              variant="secondary"
+              size="small"
+              leading={<Link2 className="h-4 w-4" />}
+              className="min-w-32 flex-1 rounded-full sm:flex-none"
+              onClick={() => openConnectDialog(provider.id)}
+            >
+              {t('common.editItem', { item: t('settings.system.providers.url') })}
+            </Button>
+          ) : null}
+
           {provider.canDisconnect ? (
             <Button
               type="button"
@@ -363,8 +376,20 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
       ? null
       : (providerCards.find((provider) => provider.id === connectDialogProviderId) ?? null);
   const closeConnectDialog = () => setConnectDialogProviderId(null);
-  const openConnectDialog = (providerId: IntegrationProviderId) =>
+  const openConnectDialog = (providerId: IntegrationProviderId) => {
+    const provider = providerCards.find((candidate) => candidate.id === providerId);
+    if (provider) {
+      setProviderUrls((current) => ({
+        ...current,
+        [providerId]:
+          current[providerId] ||
+          provider.baseUrl ||
+          (providerId === 'home_assistant' ? config?.url : '') ||
+          '',
+      }));
+    }
     setConnectDialogProviderId(providerId);
+  };
 
   return (
     <SettingsSectionShell

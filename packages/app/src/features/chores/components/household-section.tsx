@@ -4,7 +4,6 @@ import {
   InteractivePill,
   LoadingSpinner,
   MessageBar,
-  Panel,
 } from '@navet/app/components/primitives';
 import {
   AlertDialog,
@@ -43,7 +42,15 @@ import {
   type ChoreWorkspaceAction,
   getChoreExperiencePointBalances,
 } from '@navet/core/chores';
-import { AlertTriangle, ClipboardList, Plus, RotateCcw, ShieldCheck, Users } from 'lucide-react';
+import {
+  AlertTriangle,
+  ClipboardList,
+  Plus,
+  RotateCcw,
+  ShieldCheck,
+  Trash2,
+  Users,
+} from 'lucide-react';
 import { type ReactNode, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { getChoreMaterializationRange, materializeChoreWorkspace } from '../chore-workspace-model';
 import { useChoreWorkspaceStore } from '../chore-workspace-store';
@@ -114,7 +121,6 @@ function HouseholdUnavailable({
   retry: () => void;
 }) {
   const { t } = useI18n();
-  const error = useChoreWorkspaceStore((state) => state.error);
   const recovery = useChoreWorkspaceStore((state) => state.recovery);
   const recover = useChoreWorkspaceStore((state) => state.recover);
   const managementUnlocked = useChoreWorkspaceStore((state) => state.managementUnlocked);
@@ -161,39 +167,45 @@ function HouseholdUnavailable({
                 ? t('household.unauthorized.description')
                 : t('household.error.description')
         }
-        actionLabel={t('household.retry')}
-        onAction={retry}
+        actionLabel={recovery ? undefined : t('household.retry')}
+        onAction={recovery ? undefined : retry}
         actionIcon={RotateCcw}
-      />
-
-      {recovery ? (
-        <Panel muted className="grid gap-3 p-4">
-          {error ? (
-            <MessageBar tone="error" title={t('household.recovery.problem')}>
-              {error}
-            </MessageBar>
-          ) : null}
-          <div className="flex flex-wrap gap-2">
-            {recovery.backupAvailable ? (
+      >
+        {recovery ? (
+          <div className="grid w-full max-w-md gap-3">
+            <div className="flex flex-wrap justify-center gap-2">
               <Button
                 variant="secondary"
-                leading={<ShieldCheck aria-hidden="true" className="h-4 w-4" />}
-                onClick={() => continueRecovery('repair')}
+                leading={<RotateCcw aria-hidden="true" className="h-4 w-4" />}
+                onClick={retry}
               >
-                {t('household.recovery.repair')}
+                {t('household.retry')}
               </Button>
+              {recovery.backupAvailable ? (
+                <Button
+                  variant="secondary"
+                  leading={<ShieldCheck aria-hidden="true" className="h-4 w-4" />}
+                  onClick={() => continueRecovery('repair')}
+                >
+                  {t('household.recovery.repair')}
+                </Button>
+              ) : null}
+              <Button
+                variant="secondary"
+                leading={<Trash2 aria-hidden="true" className="h-4 w-4" />}
+                onClick={() => continueRecovery('reset')}
+              >
+                {t('household.recovery.startOver')}
+              </Button>
+            </div>
+            {recovery.backupAvailable ? (
+              <p className="text-xs text-muted-foreground">
+                {t('household.recovery.backupAvailable')}
+              </p>
             ) : null}
-            <Button variant="ghost" onClick={() => continueRecovery('reset')}>
-              {t('household.recovery.startOver')}
-            </Button>
           </div>
-          <p className="text-xs text-muted-foreground">
-            {recovery.backupAvailable
-              ? t('household.recovery.backupAvailable')
-              : t('household.recovery.noBackup')}
-          </p>
-        </Panel>
-      ) : null}
+        ) : null}
+      </DashboardEmptyState>
 
       <ChoreManagementPinDialog
         isOpen={pinOpen}

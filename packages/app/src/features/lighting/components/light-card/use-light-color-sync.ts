@@ -11,6 +11,7 @@ import {
   rgbToXy,
   roundKelvin,
 } from './light-card-utils';
+import { usePendingLightValue } from './use-pending-light-value';
 
 type SyncLightOptions = {
   state?: 'on' | 'off';
@@ -58,8 +59,7 @@ export function useLightColorSync({
   const [customColor, setCustomColor] = useState('#FFA500');
   const lastColorTempRef = useRef(initialColorTemp);
   const lastKnownColorRef = useRef<string | null>(null);
-  const pendingTempRef = useRef<number | null>(null);
-  const tempSyncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingTemp = usePendingLightValue(100);
 
   useEffect(() => {
     if (liveEntity) {
@@ -72,16 +72,7 @@ export function useLightColorSync({
         rememberLightState(id, { colorTemp: nextTemp });
         return;
       }
-      if (pendingTempRef.current !== null && Math.abs(entityTemp - pendingTempRef.current) > 100) {
-        return;
-      }
-      if (pendingTempRef.current !== null) {
-        pendingTempRef.current = null;
-        if (tempSyncTimeoutRef.current) {
-          clearTimeout(tempSyncTimeoutRef.current);
-          tempSyncTimeoutRef.current = null;
-        }
-      }
+      if (!pendingTemp.accept(entityTemp)) return;
       const nextTemp = clampKelvin(entityTemp, minColorTemp, maxColorTemp);
       lastColorTempRef.current = nextTemp;
       rememberLightState(id, { colorTemp: nextTemp });
@@ -93,16 +84,7 @@ export function useLightColorSync({
         ? providerState.colorTemperatureKelvin
         : initialTemp;
     if (isAdjustingTemp) return;
-    if (pendingTempRef.current !== null && Math.abs(providerTemp - pendingTempRef.current) > 100) {
-      return;
-    }
-    if (pendingTempRef.current !== null) {
-      pendingTempRef.current = null;
-      if (tempSyncTimeoutRef.current) {
-        clearTimeout(tempSyncTimeoutRef.current);
-        tempSyncTimeoutRef.current = null;
-      }
-    }
+    if (!pendingTemp.accept(providerTemp)) return;
     const nextTemp = roundKelvin(providerTemp);
     lastColorTempRef.current = nextTemp;
     rememberLightState(id, { colorTemp: nextTemp });
@@ -110,6 +92,7 @@ export function useLightColorSync({
   }, [
     id,
     initialTemp,
+    pendingTemp,
     isAdjustingTemp,
     liveEntity,
     maxColorTemp,
@@ -130,12 +113,6 @@ export function useLightColorSync({
     }
   }, [isAdjustingTemp, liveEntity]);
 
-  useEffect(() => {
-    return () => {
-      if (tempSyncTimeoutRef.current) clearTimeout(tempSyncTimeoutRef.current);
-    };
-  }, []);
-
   const { queue: queueTempSync, cancel: cancelTempSync } = useHaCommandQueue((kelvin: number) =>
     syncLight({ state: 'on', kelvin })
   );
@@ -152,7 +129,7 @@ export function useLightColorSync({
       if (!isOn) setIsOn(true);
       queueTempSync(nextTemp);
     },
-    [id, isOn, maxColorTemp, minColorTemp, queueTempSync, rememberLightState, setIsOn]
+    [id, isOn, maxColorTemp, minColorTemp, pendingTemp, queueTempSync, rememberLightState, setIsOn]
   );
 
   const onTempCommit = useCallback(
@@ -162,18 +139,13 @@ export function useLightColorSync({
       lastColorTempRef.current = nextTemp;
       rememberLightState(id, { colorTemp: nextTemp });
       setIsAdjustingTemp(false);
-      pendingTempRef.current = nextTemp;
-      if (tempSyncTimeoutRef.current) clearTimeout(tempSyncTimeoutRef.current);
-      tempSyncTimeoutRef.current = setTimeout(() => {
-        pendingTempRef.current = null;
-        tempSyncTimeoutRef.current = null;
-      }, 1500);
+      pendingTemp.expect(nextTemp);
       setSelectedColor(null);
       lastKnownColorRef.current = null;
       if (!isOn) setIsOn(true);
       queueTempSync(nextTemp, true);
     },
-    [id, isOn, maxColorTemp, minColorTemp, queueTempSync, rememberLightState, setIsOn]
+    [id, isOn, maxColorTemp, minColorTemp, pendingTemp, queueTempSync, rememberLightState, setIsOn]
   );
 
   const onColorChange = useCallback(
@@ -242,8 +214,7 @@ export function useLightColorSync({
     selectedColor,
     customColor,
     lastColorTempRef,
-    pendingTempRef,
-    tempSyncTimeoutRef,
+    expectTemp: pendingTemp.expect,
     onTempChange,
     onTempCommit,
     onColorChange,

@@ -1,3 +1,6 @@
+import { loadMessages } from '@navet/app/i18n/messages';
+import { svMessages } from '@navet/app/i18n/messages/sv';
+import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { setMediaQueryMatch } from '@navet/app/test/browser-mocks';
 import { renderWithProviders } from '@navet/app/test/render';
 import { fireEvent, screen } from '@testing-library/react';
@@ -14,6 +17,7 @@ function openMenu(name: string | RegExp) {
 describe('HomeEditCommandBar', () => {
   beforeEach(() => {
     setMediaQueryMatch('(max-width: 767px)', false);
+    useSettingsStore.setState({ language: 'en' });
   });
 
   it('keeps primary edit actions on the fixed command strip', () => {
@@ -121,6 +125,24 @@ describe('HomeEditCommandBar', () => {
     expect(screen.getByRole('button', { name: /Add Card/i })).toBeEnabled();
     expect(screen.queryByRole('button', { name: /Add row/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Add column/i })).not.toBeInTheDocument();
+  });
+
+  it('translates Energy edit actions while preserving the selected layout identifier', async () => {
+    await loadMessages('sv');
+    useSettingsStore.setState({ language: 'sv' });
+    setMediaQueryMatch('(max-width: 767px)', true);
+    const onApplyEnergyLayout = vi.fn();
+    renderWithProviders(
+      <HomeEditCommandBar
+        onAddCard={vi.fn()}
+        onApplyEnergyLayout={onApplyEnergyLayout}
+        onConfigureKpis={vi.fn()}
+      />
+    );
+    openMenu(svMessages['common.moreActions']);
+    expect(screen.getByRole('menuitem', { name: 'Nyckeltal' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Balanserat' }));
+    expect(onApplyEnergyLayout).toHaveBeenCalledWith('balanced');
   });
 
   it('moves Energy configuration into the phone overflow menu', () => {

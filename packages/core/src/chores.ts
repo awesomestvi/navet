@@ -1,4 +1,18 @@
 import {
+  addCalendarDays,
+  getDayOfWeek,
+  isScheduledOnDate,
+  parseDateKey,
+  resolveAssignmentSlots,
+  rotationIndexForDate,
+  scheduleStartDate,
+  scheduleTimes,
+} from './chore-calendar-policy.ts';
+import { applyChoreOccurrenceCommand } from './chore-occurrence-policy.ts';
+
+export { applyChoreOccurrenceCommand } from './chore-occurrence-policy.ts';
+
+import {
   type ChoreExperienceState,
   type ChoreMission,
   createChoreExperienceState,
@@ -447,54 +461,6 @@ export interface MaterializeChoreOccurrencesInput {
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
-function parseDateKey(dateKey: string) {
-  if (!DATE_PATTERN.test(dateKey)) {
-    throw new Error(`Invalid chore date: ${dateKey}`);
-  }
-
-  const [year, month, day] = dateKey.split('-').map(Number);
-  const candidate = new Date(Date.UTC(year, month - 1, day));
-  if (
-    candidate.getUTCFullYear() !== year ||
-    candidate.getUTCMonth() !== month - 1 ||
-    candidate.getUTCDate() !== day
-  ) {
-    throw new Error(`Invalid chore date: ${dateKey}`);
-  }
-
-  return { year, month, day };
-}
-
-function formatDateKey(date: Date) {
-  return [
-    String(date.getUTCFullYear()).padStart(4, '0'),
-    String(date.getUTCMonth() + 1).padStart(2, '0'),
-    String(date.getUTCDate()).padStart(2, '0'),
-  ].join('-');
-}
-
-function addCalendarDays(dateKey: string, days: number) {
-  const { year, month, day } = parseDateKey(dateKey);
-  return formatDateKey(new Date(Date.UTC(year, month - 1, day + days)));
-}
-
-function differenceInCalendarDays(left: string, right: string) {
-  const leftDate = parseDateKey(left);
-  const rightDate = parseDateKey(right);
-  const leftTime = Date.UTC(leftDate.year, leftDate.month - 1, leftDate.day);
-  const rightTime = Date.UTC(rightDate.year, rightDate.month - 1, rightDate.day);
-  return Math.round((leftTime - rightTime) / 86_400_000);
-}
-
-function getDayOfWeek(dateKey: string) {
-  const { year, month, day } = parseDateKey(dateKey);
-  return new Date(Date.UTC(year, month - 1, day)).getUTCDay();
-}
-
-function getLastDayOfMonth(year: number, month: number) {
-  return new Date(Date.UTC(year, month, 0)).getUTCDate();
-}
-
 function getTimeZoneParts(timestamp: number, timeZone: string) {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone,
@@ -546,10 +512,6 @@ function getZonedDateKey(timestamp: string, timeZone: string) {
   return `${parts.year}-${parts.month}-${parts.day}`;
 }
 
-function scheduleStartDate(schedule: ChoreSchedule) {
-  return schedule.frequency === 'once' ? schedule.date : schedule.startDate;
-}
-
 function definitionMaterializationChanged(current: ChoreDefinition, next: ChoreDefinition) {
   return (
     JSON.stringify(current.schedule) !== JSON.stringify(next.schedule) ||
@@ -560,116 +522,6 @@ function definitionMaterializationChanged(current: ChoreDefinition, next: ChoreD
 
 function canDiscardForRematerialization(occurrence: ChoreOccurrence) {
   return occurrence.status === 'available' && occurrence.carriedForwardFrom === undefined;
-}
-
-function isScheduledOnDate(
-  schedule: Exclude<ChoreSchedule, { frequency: 'after_completion' }>,
-  dateKey: string
-) {
-  const startDate = scheduleStartDate(schedule);
-  if (
-    dateKey < startDate ||
-    (schedule.endDate !== undefined && dateKey > schedule.endDate) ||
-    schedule.excludedDates?.includes(dateKey)
-  ) {
-    return false;
-  }
-
-  if (schedule.frequency === 'once') {
-    return dateKey === schedule.date;
-  }
-
-  if (schedule.frequency === 'daily') {
-    return (
-      differenceInCalendarDays(dateKey, startDate) % (schedule.intervalDays ?? 1) === 0 &&
-      (!schedule.daysOfWeek || schedule.daysOfWeek.includes(getDayOfWeek(dateKey)))
-    );
-  }
-
-  if (schedule.frequency === 'weekly') {
-    const weeksSinceStart = Math.floor(differenceInCalendarDays(dateKey, startDate) / 7);
-    return (
-      weeksSinceStart % (schedule.intervalWeeks ?? 1) === 0 &&
-      schedule.daysOfWeek.includes(getDayOfWeek(dateKey))
-    );
-  }
-
-  const { year, month, day } = parseDateKey(dateKey);
-  const lastDay = getLastDayOfMonth(year, month);
-  if (schedule.nthWeekday) {
-    if (getDayOfWeek(dateKey) !== schedule.nthWeekday.weekday) return false;
-    return schedule.nthWeekday.ordinal === -1
-      ? day + 7 > lastDay
-      : Math.ceil(day / 7) === schedule.nthWeekday.ordinal;
-  }
-  return day === Math.min(schedule.dayOfMonth ?? 1, lastDay);
-}
-
-function scheduleTimes(schedule: ChoreSchedule) {
-  return schedule.times && schedule.times.length > 0 ? schedule.times : [schedule.time];
-}
-
-function scheduleGroupKey(dateKey: string, reset: ChoreAssignment['rotationReset']) {
-  if (reset === 'monthly') return dateKey.slice(0, 7);
-  if (reset === 'weekly') {
-    const mondayOffset = (getDayOfWeek(dateKey) + 6) % 7;
-    return addCalendarDays(dateKey, -mondayOffset);
-  }
-  return '';
-}
-
-function rotationIndexForDate(
-  scheduledDates: string[],
-  scheduledIndex: number,
-  reset: ChoreAssignment['rotationReset']
-) {
-  if (!reset || reset === 'never') return scheduledIndex;
-  const group = scheduleGroupKey(scheduledDates[scheduledIndex], reset);
-  let firstIndex = scheduledIndex;
-  while (firstIndex > 0 && scheduleGroupKey(scheduledDates[firstIndex - 1], reset) === group) {
-    firstIndex -= 1;
-  }
-  return scheduledIndex - firstIndex;
-}
-
-function activeParticipantIds(
-  assignment: ChoreAssignment,
-  participantsById: Record<string, ChoreParticipant>
-) {
-  return assignment.participantIds.filter((participantId) => {
-    const participant = participantsById[participantId];
-    return participant && !participant.pausedAt && participant.capabilities.includes('complete');
-  });
-}
-
-function resolveAssignmentSlots(
-  assignment: ChoreAssignment,
-  participantsById: Record<string, ChoreParticipant>,
-  scheduledIndex: number
-) {
-  const participantIds = activeParticipantIds(assignment, participantsById);
-  if (participantIds.length === 0) {
-    return [];
-  }
-
-  if (assignment.mode === 'everyone') {
-    return participantIds.map((participantId) => ({
-      assignmentSlot: participantId,
-      assigneeIds: [participantId],
-    }));
-  }
-
-  if (assignment.mode === 'rotation') {
-    const cursor = Math.max(0, assignment.rotationCursor ?? 0);
-    const participantId = participantIds[(cursor + scheduledIndex) % participantIds.length];
-    return [{ assignmentSlot: participantId, assigneeIds: [participantId] }];
-  }
-
-  if (assignment.mode === 'person') {
-    return [{ assignmentSlot: participantIds[0], assigneeIds: [participantIds[0]] }];
-  }
-
-  return [{ assignmentSlot: 'shared', assigneeIds: participantIds }];
 }
 
 function buildOccurrenceId(definitionId: string, scheduledAt: string, assignmentSlot: string) {
@@ -1489,221 +1341,6 @@ export function runChoreWorkspaceScheduler(
     activities,
     outboxItems,
     data: activities.length === 0 ? workspace : { ...workspace, occurrencesById },
-  };
-}
-
-function assertAssigned(occurrence: ChoreOccurrence, participantId: string) {
-  if (!occurrence.assigneeIds.includes(participantId)) {
-    throw new Error('Participant is not assigned to this chore occurrence');
-  }
-}
-
-function buildActivity(input: ApplyChoreCommandInput, type: ChoreActivityType): ChoreActivity {
-  const reason =
-    'reason' in input.command && typeof input.command.reason === 'string'
-      ? input.command.reason.trim()
-      : undefined;
-  return {
-    id: `activity:${input.commandId}`,
-    commandId: input.commandId,
-    occurrenceId: input.occurrence.id,
-    definitionId: input.definition.id,
-    type,
-    actorParticipantId: input.command.participantId,
-    participantId: input.command.participantId,
-    reason: reason || undefined,
-    previousAssigneeIds:
-      input.command.type === 'reassign' ? input.occurrence.assigneeIds : undefined,
-    assigneeIds: input.command.type === 'reassign' ? input.command.assigneeIds : undefined,
-    timestamp: input.timestamp,
-  };
-}
-
-export function applyChoreOccurrenceCommand(
-  input: ApplyChoreCommandInput
-): ApplyChoreCommandResult {
-  const { command, definition, occurrence, timestamp } = input;
-  const participantId = command.participantId;
-  let nextOccurrence: ChoreOccurrence;
-
-  switch (command.type) {
-    case 'claim': {
-      assertAssigned(occurrence, participantId);
-      const canStealExpiredClaim =
-        occurrence.status === 'claimed' &&
-        definition.claimPolicy?.allowSteal === true &&
-        definition.claimPolicy.expiresAfterMinutes !== undefined &&
-        occurrence.claimedAt !== undefined &&
-        Date.parse(timestamp) >=
-          Date.parse(occurrence.claimedAt) + definition.claimPolicy.expiresAfterMinutes * 60_000;
-      if (occurrence.status !== 'available' && !canStealExpiredClaim) {
-        throw new Error('Only available chores can be claimed');
-      }
-      nextOccurrence = {
-        ...occurrence,
-        status: 'claimed',
-        claimedBy: participantId,
-        claimedAt: timestamp,
-        updatedAt: timestamp,
-      };
-      break;
-    }
-    case 'complete': {
-      assertAssigned(occurrence, participantId);
-      if (
-        occurrence.status !== 'available' &&
-        occurrence.status !== 'claimed' &&
-        occurrence.status !== 'missed'
-      ) {
-        throw new Error('Only available, claimed, or missed chores can be completed');
-      }
-      if (
-        (occurrence.status === 'claimed' || occurrence.status === 'missed') &&
-        occurrence.claimedBy &&
-        occurrence.claimedBy !== participantId
-      ) {
-        throw new Error('A claimed chore can only be completed by its claimant');
-      }
-      if (occurrence.status === 'available' && definition.claimPolicy?.required) {
-        throw new Error('This chore must be claimed before it can be completed');
-      }
-      nextOccurrence = {
-        ...occurrence,
-        status: definition.approval.required ? 'awaiting_approval' : 'done',
-        claimedBy: occurrence.claimedBy ?? participantId,
-        claimedAt: occurrence.claimedAt ?? timestamp,
-        completedBy: participantId,
-        completedAt: timestamp,
-        missedAt: undefined,
-        updatedAt: timestamp,
-      };
-      break;
-    }
-    case 'approve': {
-      const managerOverride = command.managerOverride === true;
-      if (
-        !definition.approval.required ||
-        (!definition.approval.approverIds.includes(participantId) && !managerOverride)
-      ) {
-        throw new Error('Participant cannot approve this chore');
-      }
-      if (managerOverride && !command.reason?.trim()) {
-        throw new Error('A manager approval override requires a reason');
-      }
-      if (occurrence.status !== 'awaiting_approval') {
-        throw new Error('Only completed chores awaiting approval can be approved');
-      }
-      nextOccurrence = {
-        ...occurrence,
-        status: 'done',
-        approvedBy: participantId,
-        approvedAt: timestamp,
-        updatedAt: timestamp,
-      };
-      break;
-    }
-    case 'reject': {
-      const managerOverride = command.managerOverride === true;
-      if (
-        !definition.approval.required ||
-        (!definition.approval.approverIds.includes(participantId) && !managerOverride)
-      ) {
-        throw new Error('Participant cannot reject this chore');
-      }
-      if (managerOverride && !command.reason?.trim()) {
-        throw new Error('A manager rejection override requires a reason');
-      }
-      if (occurrence.status !== 'awaiting_approval') {
-        throw new Error('Only completed chores awaiting approval can be rejected');
-      }
-      nextOccurrence = {
-        ...occurrence,
-        status: 'available',
-        claimedBy: undefined,
-        claimedAt: undefined,
-        completedBy: undefined,
-        completedAt: undefined,
-        approvedBy: undefined,
-        approvedAt: undefined,
-        updatedAt: timestamp,
-      };
-      break;
-    }
-    case 'skip': {
-      if (!command.reason.trim()) throw new Error('Skipping a chore requires a reason');
-      if (occurrence.status === 'done' || occurrence.status === 'skipped') {
-        throw new Error('Completed or skipped chores cannot be skipped');
-      }
-      nextOccurrence = {
-        ...occurrence,
-        status: 'skipped',
-        skippedBy: participantId,
-        skippedAt: timestamp,
-        updatedAt: timestamp,
-      };
-      break;
-    }
-    case 'reopen': {
-      if (!command.reason.trim()) throw new Error('Reopening a chore requires a reason');
-      if (
-        occurrence.status !== 'done' &&
-        occurrence.status !== 'skipped' &&
-        occurrence.status !== 'missed'
-      ) {
-        throw new Error('Only completed, skipped, or missed chores can be reopened');
-      }
-      nextOccurrence = {
-        ...occurrence,
-        status: 'available',
-        claimedBy: undefined,
-        claimedAt: undefined,
-        completedBy: undefined,
-        completedAt: undefined,
-        approvedBy: undefined,
-        approvedAt: undefined,
-        skippedBy: undefined,
-        skippedAt: undefined,
-        missedAt: undefined,
-        carriedForwardTo: undefined,
-        updatedAt: timestamp,
-      };
-      break;
-    }
-    case 'reassign': {
-      if (!command.reason.trim()) throw new Error('Reassigning a chore requires a reason');
-      const assigneeIds = [...new Set(command.assigneeIds)];
-      if (assigneeIds.length === 0) {
-        throw new Error('Reassigning a chore requires an eligible participant');
-      }
-      if (occurrence.status !== 'available' && occurrence.status !== 'claimed') {
-        throw new Error('Only available or claimed chores can be reassigned');
-      }
-      nextOccurrence = {
-        ...occurrence,
-        assigneeIds,
-        assignmentSlot: `manager:${[...assigneeIds].sort().join(',')}`,
-        status: 'available',
-        claimedBy: undefined,
-        claimedAt: undefined,
-        updatedAt: timestamp,
-      };
-      break;
-    }
-  }
-
-  const activityType: Record<ChoreOccurrenceCommand['type'], ChoreActivityType> = {
-    claim: 'claimed',
-    complete: 'completed',
-    approve: 'approved',
-    reject: 'rejected',
-    skip: 'skipped',
-    reopen: 'reopened',
-    reassign: 'reassigned',
-  };
-
-  return {
-    occurrence: nextOccurrence,
-    activity: buildActivity(input, activityType[command.type]),
   };
 }
 

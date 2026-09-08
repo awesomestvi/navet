@@ -1,3 +1,10 @@
+import { isCredentialBearingUrl as isCredentialBearingSettingsUrl } from '@navet/core/credential-policy';
+
+export {
+  isCredentialBearingUrl as isCredentialBearingSettingsUrl,
+  isCredentialFieldName,
+} from '@navet/core/credential-policy';
+
 import { isSupportedLanguage } from '@navet/app/i18n/config';
 import { type UserSettings, useSettingsStore } from '@navet/app/stores/settings-store';
 import {
@@ -400,54 +407,6 @@ export function applySettingsPreferenceLayerToStore<L extends SettingsPreference
   const settings = resolvePreferenceSettingsForApplication(projection, layer);
   useSettingsStore.getState().updateSettings(settings);
   return { ...projection, settings };
-}
-
-export function isCredentialFieldName(value: string) {
-  const normalized = value.replace(/[^a-z0-9]/gi, '').toLowerCase();
-  return (
-    normalized.includes('token') ||
-    normalized.includes('password') ||
-    normalized.includes('passwd') ||
-    normalized.includes('passcode') ||
-    normalized.includes('jwt') ||
-    normalized.includes('secret') ||
-    normalized.includes('credential') ||
-    normalized === 'key' ||
-    normalized === 'sig' ||
-    normalized === 'pin' ||
-    normalized === 'code' ||
-    normalized === 'authorization' ||
-    normalized === 'auth' ||
-    normalized === 'authsig' ||
-    normalized.includes('signature') ||
-    normalized === 'bearer' ||
-    normalized === 'accesskey' ||
-    normalized === 'accesscode' ||
-    normalized === 'privatekey' ||
-    normalized.endsWith('apikey') ||
-    (normalized.startsWith('api') && normalized.endsWith('key'))
-  );
-}
-
-export function isCredentialBearingSettingsUrl(value: string) {
-  try {
-    const url = new URL(value, 'https://navet.invalid');
-    if (url.username || url.password) {
-      return true;
-    }
-
-    const fragment = url.hash.slice(1);
-    const fragmentParameters = fragment.includes('?')
-      ? fragment.slice(fragment.indexOf('?') + 1)
-      : fragment;
-
-    return (
-      Array.from(url.searchParams.keys()).some(isCredentialFieldName) ||
-      Array.from(new URLSearchParams(fragmentParameters).keys()).some(isCredentialFieldName)
-    );
-  } catch {
-    return false;
-  }
 }
 
 export function getSettingsProfileScope(key: ScopedUserSettingKey): SettingsProfileScope {

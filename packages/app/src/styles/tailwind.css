@@ -16,8 +16,6 @@
 @source "../../provider-homeassistant/src/**/*.{js,ts,jsx,tsx}";
 @source "../../provider-homey/src/**/*.{js,ts,jsx,tsx}";
 @source "../../provider-openhab/src/**/*.{js,ts,jsx,tsx}";
-@source "../../provider-hubitat/src/**/*.{js,ts,jsx,tsx}";
-@source "../../provider-smartthings/src/**/*.{js,ts,jsx,tsx}";
 @source not "../**/*.stories.{js,ts,jsx,tsx}";
 @source not "../**/*.test.{js,ts,jsx,tsx}";
 @source not "../**/__tests__/**/*.{js,ts,jsx,tsx}";

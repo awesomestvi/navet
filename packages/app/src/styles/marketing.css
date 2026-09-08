@@ -330,32 +330,35 @@
     }
   }
 
-  @media (min-width: 64rem) and (max-width: 68.75rem) {
-    .marketing-hero-background-shell {
-      inset: 0;
+  .marketing-hero-proof-line {
+    display: none;
+  }
+
+  @media (max-width: 39.999rem) {
+    .marketing-hero-pills {
+      display: none;
     }
 
-    .marketing-hero-background-image {
-      left: -280px;
-      right: auto;
-      width: calc(100% + 280px);
-      max-width: none;
-      object-position: center;
+    .marketing-hero-proof-line {
+      display: block;
     }
+  }
 
+  @media (min-width: 64rem) and (max-width: 79.999rem) {
     .marketing-hero-layout {
-      grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.12fr);
-      gap: 1.25rem;
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+      gap: clamp(1.25rem, 3vw, 2rem);
     }
 
     .marketing-hero-copy {
-      max-width: 27rem;
+      min-width: 0;
+      max-width: 30rem;
     }
 
     .marketing-hero-title {
-      max-width: 11.5ch;
-      font-size: 2.625rem;
-      line-height: 0.98;
+      max-width: 10.75ch;
+      font-size: clamp(2.625rem, 4vw, 3rem);
+      line-height: 0.96;
     }
 
     .marketing-hero-copy > * + * {
@@ -377,8 +380,21 @@
     }
 
     .marketing-hero-visual-frame {
-      max-width: 760px;
-      transform: translateX(-5%) translateY(-0.35rem);
+      max-width: 100%;
+    }
+  }
+
+  @media (min-width: 64rem) and (max-width: 68.75rem) {
+    .marketing-hero-background-shell {
+      inset: 0;
+    }
+
+    .marketing-hero-background-image {
+      left: -280px;
+      right: auto;
+      width: calc(100% + 280px);
+      max-width: none;
+      object-position: center;
     }
   }
 
@@ -646,7 +662,8 @@
   }
 
   .marketing-hero-room-off,
-  .marketing-hero-room-shade {
+  .marketing-hero-room-shade,
+  .marketing-hero-mobile-light-state {
     position: absolute;
     inset: 0;
     pointer-events: none;
@@ -665,6 +682,13 @@
     background:
       linear-gradient(90deg, rgb(6 8 13 / 0.84), rgb(6 8 13 / 0.6) 30%, rgb(6 8 13 / 0.06) 64%),
       linear-gradient(180deg, rgb(6 8 13 / 0.2), transparent 52%, rgb(6 8 13 / 0.42) 82%, #06080d 100%);
+  }
+
+  .marketing-hero-mobile-light-state {
+    display: none;
+    background: linear-gradient(180deg, rgb(3 4 7 / 0.4), rgb(3 4 7 / 0.62));
+    opacity: 0;
+    transition: opacity 250ms ease;
   }
 
   .marketing-hero-wall-panel {
@@ -687,6 +711,11 @@
     aspect-ratio: 999 / 791;
     overflow: hidden;
     border-radius: 16px;
+  }
+
+  .marketing-hero-dashboard-image,
+  .marketing-hero-dashboard-off {
+    filter: contrast(1.1) saturate(1.08);
   }
 
   .marketing-hero-light-hotspot {
@@ -769,10 +798,16 @@
     }
   }
 
-  @media (min-width: 80rem) {
+  @media (min-width: 80rem) and (max-width: 89.999rem) {
     .marketing-hero-visual-frame:not(.marketing-hero-visual-frame--mobile) {
-      /* Give the wall-mounted panel more clearance as desktop space opens up. */
-      translate: calc(8% + clamp(0px, 6vw - 5.4rem, 3rem)) -2rem;
+      max-width: 630px;
+      margin-right: clamp(0.75rem, 1.5vw, 1.25rem);
+    }
+  }
+
+  @media (min-width: 90rem) {
+    .marketing-hero-visual-frame:not(.marketing-hero-visual-frame--mobile) {
+      transform: translateX(clamp(1.5rem, 3vw, 3rem));
     }
   }
 
@@ -785,6 +820,14 @@
       background: linear-gradient(180deg, rgb(6 8 13 / 0.78), rgb(6 8 13 / 0.64) 40%, rgb(6 8 13 / 0.06) 62%, rgb(6 8 13 / 0.12) 78%, #06080d 100%);
     }
 
+    .marketing-hero-mobile-light-state {
+      display: block;
+    }
+
+    .marketing-hero-shell[data-room-light="off"] .marketing-hero-mobile-light-state {
+      opacity: 1;
+    }
+
     .marketing-hero-visual-frame--mobile {
       width: calc(100% + 12px);
       margin-left: -6px;
@@ -794,7 +837,6 @@
       padding: 8px;
       border-radius: 24px;
     }
-
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -804,7 +846,8 @@
     }
 
     .marketing-hero-room-off,
-    .marketing-hero-dashboard-off {
+    .marketing-hero-dashboard-off,
+    .marketing-hero-mobile-light-state {
       transition: none;
     }
   }
@@ -819,7 +862,9 @@
   html[data-effects-quality="low"] .marketing-hero-room-off,
   html[data-no-animation="true"] .marketing-hero-room-off,
   html[data-effects-quality="low"] .marketing-hero-dashboard-off,
-  html[data-no-animation="true"] .marketing-hero-dashboard-off {
+  html[data-no-animation="true"] .marketing-hero-dashboard-off,
+  html[data-effects-quality="low"] .marketing-hero-mobile-light-state,
+  html[data-no-animation="true"] .marketing-hero-mobile-light-state {
     transition: none;
   }
 }

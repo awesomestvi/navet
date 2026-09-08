@@ -110,4 +110,31 @@ describe('useHaCommandQueue', () => {
     await act(async () => vi.advanceTimersByTime(75));
     expect(send).not.toHaveBeenCalled();
   });
+
+  it('drops queued work when unmounted during an in-flight command', async () => {
+    let finish = () => {};
+    const flight = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    const send = vi.fn().mockReturnValue(flight);
+    const { result, unmount } = renderHook(() => useHaCommandQueue(send, 75));
+    act(() => {
+      result.current.queue(1, true);
+      result.current.queue(2, true);
+    });
+    unmount();
+    await act(async () => finish());
+    expect(send).toHaveBeenCalledTimes(1);
+  });
+
+  it('releases failed commands so newer queued work can proceed', async () => {
+    const send = vi.fn().mockRejectedValueOnce(new Error('offline')).mockResolvedValue(undefined);
+    const { result } = renderHook(() => useHaCommandQueue(send, 75));
+    await act(async () => {
+      result.current.queue(1, true);
+      result.current.queue(2, true);
+    });
+    expect(send).toHaveBeenCalledTimes(2);
+    expect(send).toHaveBeenLastCalledWith(2);
+  });
 });

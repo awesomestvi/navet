@@ -9,7 +9,7 @@ import { cn } from '@navet/app/components/ui/utils';
 import { useTheme } from '@navet/app/hooks';
 import { type LucideIcon, Settings2 } from 'lucide-react';
 import type { CSSProperties } from 'react';
-import { Button } from '../primitives';
+import { Button } from '../primitives/button';
 
 export interface CardEmptyStateProps {
   title: string;

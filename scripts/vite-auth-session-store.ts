@@ -49,6 +49,8 @@ type OAuthFailureCode =
   | 'invalid_response'
   | 'session_changed'
   | 'not_authorized'
+  | 'target_unreachable'
+  | 'authorization_rejected'
 
 export interface HomeAssistantAuthData {
   hassUrl: string
@@ -57,6 +59,8 @@ export interface HomeAssistantAuthData {
   refresh_token: string
   access_token: string
   expires_in: number
+  /** Stable dashboard namespace. Older sessions derive this from hassUrl. */
+  tenantId?: string
 }
 
 export interface ViteAuthSessionMetadata {
@@ -263,7 +267,8 @@ export function isValidAuthData(value: unknown): value is HomeAssistantAuthData 
     typeof data.access_token === 'string' &&
     data.access_token.length > 0 &&
     typeof data.expires_in === 'number' &&
-    Number.isFinite(data.expires_in)
+    Number.isFinite(data.expires_in) &&
+    (data.tenantId === undefined || /^hat_[a-f0-9]{64}$/.test(data.tenantId))
   )
 }
 
@@ -315,8 +320,10 @@ function isValidStoredSession(value: unknown): value is ViteStoredAuthSession {
         session.authRevision < Number.MAX_SAFE_INTEGER)) &&
     (session.auth === null || isValidAuthData(session.auth)) &&
     (session.pending === null || isValidPendingOAuth(session.pending)) &&
-    session.userId === null &&
-    session.userName === null
+    (session.userId === null ||
+      (typeof session.userId === 'string' && session.userId.length > 0 && session.userId.length <= 128)) &&
+    (session.userName === null ||
+      (typeof session.userName === 'string' && session.userName.length <= 120))
   )
 }
 
@@ -369,8 +376,8 @@ export function sanitizeAuthSession(
     clientId: auth?.clientId ?? null,
     expiresAt: auth?.expires ?? null,
     expiresIn: auth?.expires_in ?? null,
-    userId: null,
-    userName: null,
+    userId: session.userId,
+    userName: session.userName,
   }
 }
 
@@ -925,10 +932,12 @@ export function resolveViteAuthenticatedPrincipal(
     ? {
         providerId: 'home_assistant',
         source: 'standalone_session',
-        tenantId: createHomeAssistantTenantId(session.auth.hassUrl),
+        tenantId:
+          session.auth.tenantId ??
+          createHomeAssistantTenantId(session.auth.hassUrl),
         sessionId: session.sessionId,
-        userId: null,
-        userName: null,
+        userId: session.userId,
+        userName: session.userName,
       }
     : null
 }
@@ -1215,7 +1224,9 @@ export function createViteAuthRequestHandler(
       }
 
       try {
-        const tokenResponse = await fetchImpl(`${pending.hassUrl}/auth/token`, {
+        let tokenResponse: Response
+        try {
+          tokenResponse = await fetchImpl(`${pending.hassUrl}/auth/token`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: new URLSearchParams({
@@ -1223,9 +1234,13 @@ export function createViteAuthRequestHandler(
             code,
             grant_type: 'authorization_code',
           }),
-        })
+          })
+        } catch {
+          redirectFailure('target_unreachable')
+          return
+        }
         if (!tokenResponse.ok) {
-          redirectFailure('temporarily_unavailable')
+          redirectFailure('authorization_rejected')
           return
         }
 
@@ -1235,6 +1250,31 @@ export function createViteAuthRequestHandler(
         } catch {
           redirectFailure('invalid_response')
           return
+        }
+        const previousAuth = context.session.auth
+        let tenantId = createHomeAssistantTenantId(pending.hassUrl)
+        if (
+          previousAuth &&
+          normalizeHassUrl(previousAuth.hassUrl) !== pending.hassUrl
+        ) {
+          // Prove two routes reach the same Home Assistant without ever sending
+          // the trusted route's credential to the candidate server. A token
+          // issued by the candidate must also authenticate at the old route.
+          try {
+            const proof = await fetchImpl(`${previousAuth.hassUrl}/api/`, {
+              headers: {
+                Authorization: `Bearer ${String(token.access_token ?? '')}`,
+              },
+            })
+            if (proof.ok) {
+              tenantId =
+                previousAuth.tenantId ??
+                createHomeAssistantTenantId(previousAuth.hassUrl)
+            }
+          } catch {
+            // The old route may be unavailable after a LAN/VPN transition. In
+            // that case isolate the candidate under its own dashboard namespace.
+          }
         }
         const auth: HomeAssistantAuthData = {
           hassUrl: pending.hassUrl,
@@ -1249,6 +1289,7 @@ export function createViteAuthRequestHandler(
             typeof token.access_token === 'string' ? token.access_token : '',
           expires_in:
             typeof token.expires_in === 'number' ? token.expires_in : 0,
+          tenantId,
         }
         if (!isValidAuthData(auth)) {
           redirectFailure('invalid_response')
@@ -1335,19 +1376,30 @@ export function createViteAuthRequestHandler(
           })
           return
         }
-        const installationAuthorization =
-          installationAuthority.authorizeHomeAssistant(
-            req,
-            hassUrl,
-            normalizeHassUrl
-          )
+        const replacingAuthenticatedTarget = Boolean(
+          context.session.auth &&
+            normalizeHassUrl(context.session.auth.hassUrl) !== hassUrl
+        )
+        const installationAuthorization = replacingAuthenticatedTarget
+          ? (installationAuthority.authorizeHomeAssistantChange?.(
+              req,
+              hassUrl,
+              normalizeHassUrl
+            ) ?? { allowed: true, pairingVerified: true })
+          : installationAuthority.authorizeHomeAssistant(
+              req,
+              hassUrl,
+              normalizeHassUrl
+            )
         if (!installationAuthorization.allowed) {
           sendJson(res, 403, {
-            error: 'Home Assistant target is not authorized for this installation',
+            error:
+              'This Navet server is configured for a different Home Assistant address. Update NAVET_HASS_URL to use this address.',
           })
           return
         }
         const upstreamHassUrl =
+          replacingAuthenticatedTarget ||
           installationAuthorization.upstreamTarget === undefined
             ? hassUrl
             : normalizeHassUrl(installationAuthorization.upstreamTarget)
@@ -1413,6 +1465,49 @@ export function createViteAuthRequestHandler(
           return
         }
         sendJson(res, 400, { error: 'Unable to start Home Assistant OAuth' })
+      }
+      return
+    }
+
+    if (route === '/session/identity') {
+      if (req.method !== 'PUT') {
+        res.setHeader('Allow', 'PUT')
+        sendJson(res, 405, { error: 'Method not allowed' })
+        return
+      }
+      if (!isSameOriginMutation(req)) {
+        sendJson(res, 403, { error: 'Cross-origin identity mutation is not allowed' })
+        return
+      }
+      const context = getBoundRequestContext(req, store, false)
+      if (!context?.session.auth) {
+        sendJson(res, 401, { error: 'Authenticated browser session is required' })
+        return
+      }
+      try {
+        const body = JSON.parse(await readRequestBody(req)) as {
+          userId?: unknown
+          userName?: unknown
+        }
+        const userId = typeof body.userId === 'string' ? body.userId.trim() : ''
+        const userName = typeof body.userName === 'string' ? body.userName.trim() : ''
+        if (!userId || userId.length > 128 || userName.length > 120) {
+          sendJson(res, 400, { error: 'Invalid Home Assistant user identity' })
+          return
+        }
+        const next = {
+          ...context.session,
+          updatedAt: Date.now(),
+          userId,
+          userName: userName || null,
+        }
+        store.writeSession(context.cookieId, next)
+        sendJson(res, 200, store.sanitizeSession(next))
+      } catch (error) {
+        if (sendSessionStoreError(res, error)) {
+          return
+        }
+        sendJson(res, 400, { error: 'Unable to store Home Assistant user identity' })
       }
       return
     }
@@ -1488,6 +1583,10 @@ export function createViteAuthRequestHandler(
           })
           return
         }
+        const refreshedAuth: HomeAssistantAuthData = {
+          ...parsed,
+          tenantId: context.session.auth.tenantId,
+        }
 
         const revisionHeader = getHeader(req, AUTH_REVISION_HEADER).trim()
         const legacyRefresh = revisionHeader === ''
@@ -1502,7 +1601,7 @@ export function createViteAuthRequestHandler(
         const current = store.readSession(context.cookieId)
         const unchanged =
           Boolean(current?.auth) &&
-          JSON.stringify(current?.auth) === JSON.stringify(parsed)
+          JSON.stringify(current?.auth) === JSON.stringify(refreshedAuth)
         if (!current || current.sessionId !== context.session.sessionId) {
           if (unchanged && current) {
             res.setHeader(
@@ -1526,7 +1625,7 @@ export function createViteAuthRequestHandler(
           if (
             unchanged ||
             !current.auth ||
-            parsed.expires <= current.auth.expires
+            refreshedAuth.expires <= current.auth.expires
           ) {
             res.setHeader(
               'Set-Cookie',
@@ -1564,7 +1663,7 @@ export function createViteAuthRequestHandler(
           ...current,
           updatedAt: Date.now(),
           authRevision: getAuthRevision(current) + 1,
-          auth: parsed,
+          auth: refreshedAuth,
           pending: null,
           userId: null,
           userName: null,

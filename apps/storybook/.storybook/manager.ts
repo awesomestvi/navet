@@ -1,6 +1,10 @@
 import { createElement, type ReactNode } from 'react';
 import { addons, types } from 'storybook/manager-api';
-import { DiscordMark, RedditMark } from '../../../packages/app/src/components/shared/social-marks';
+import {
+  DiscordMark,
+  RedditMark,
+  YouTubeMark,
+} from '../../../packages/app/src/components/shared/social-marks';
 import { COMMUNITY_URLS } from '../../../packages/app/src/constants/urls';
 import { navetStorybookTheme } from './navet-theme';
 import managerCss from './manager.css?raw';
@@ -29,8 +33,9 @@ function CommunityLink({ href, label, icon }: { href: string; label: string; ico
       className: 'navet-storybook-community-link',
       'aria-label': `Navet on ${label}`,
       title: label,
+      'data-platform': label.toLowerCase(),
     },
-    icon
+    createElement('span', { className: 'navet-storybook-community-icon' }, icon)
   );
 }
 
@@ -51,6 +56,11 @@ addons.register('navet/community-links', () => {
           href: COMMUNITY_URLS.reddit,
           label: 'Reddit',
           icon: createElement(RedditMark, { width: 14, height: 14 }),
+        }),
+        createElement(CommunityLink, {
+          href: COMMUNITY_URLS.youtube,
+          label: 'YouTube',
+          icon: createElement(YouTubeMark, { width: 14, height: 14 }),
         })
       ),
   });

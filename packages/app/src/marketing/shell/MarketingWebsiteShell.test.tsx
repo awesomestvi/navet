@@ -55,6 +55,10 @@ describe('MarketingWebsiteShell', () => {
       'href',
       'https://www.reddit.com/r/navet/'
     );
+    expect(within(communityLinks).getByRole('link', { name: 'Navet on YouTube' })).toHaveAttribute(
+      'href',
+      'https://www.youtube.com/@navetapp'
+    );
   });
 
   it('adds an explicit Home link on secondary marketing pages', () => {
@@ -106,6 +110,24 @@ describe('MarketingWebsiteShell', () => {
     );
     expect(within(mobileNav).getByRole('link', { name: 'Storybook' })).toBeInTheDocument();
     expect(within(mobileNav).getByRole('link', { name: /^GitHub$/i })).toBeInTheDocument();
+  });
+
+  it('returns keyboard focus to the mobile toggle when Escape closes navigation', () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status: 500 }));
+    renderWithProviders(
+      <MarketingWebsiteShell currentPathname="/">
+        <div>Marketing body</div>
+      </MarketingWebsiteShell>
+    );
+    const toggle = screen.getByRole('button', { name: 'Open navigation menu' });
+    fireEvent.click(toggle);
+    const mobileNav = screen.getByRole('navigation', { name: 'Mobile primary' });
+    const docsLink = within(mobileNav).getByRole('link', { name: 'Docs' });
+    docsLink.focus();
+    expect(docsLink).toHaveFocus();
+    fireEvent.keyDown(docsLink, { key: 'Escape' });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(toggle).toHaveFocus();
   });
 
   it('shows the cached GitHub star count when available', () => {

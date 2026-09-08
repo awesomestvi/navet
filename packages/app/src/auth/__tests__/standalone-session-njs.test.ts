@@ -164,6 +164,34 @@ function seedAuth(
 }
 
 describe('production njs standalone OAuth sessions', () => {
+  it('binds the authenticated Home Assistant user to the browser session', async () => {
+    const { store } = createStore();
+    const browser = await createBrowserSession(store);
+    seedAuth(store, browser, AUTH_A);
+    const identity = createRequest({
+      method: 'PUT',
+      uri: '/__navet_auth__/session/identity',
+      cookie: browser.cookie,
+      headers: {
+        Origin: 'http://navet.example',
+        [AUTH_BINDING_HEADER]: browser.metadata.sessionId,
+      },
+      body: JSON.stringify({ userId: 'ha-user-1', userName: 'Vishal' }),
+    });
+
+    await store.handle(identity.request);
+
+    expect(identity.result.status).toBe(200);
+    expect(JSON.parse(identity.result.body)).toMatchObject({
+      userId: 'ha-user-1',
+      userName: 'Vishal',
+    });
+    expect(store.resolveAuthenticatedPrincipal(identity.request)).toMatchObject({
+      userId: 'ha-user-1',
+      userName: 'Vishal',
+    });
+  });
+
   it('migrates only locally backed legacy cookies and revokes every local legacy duplicate on logout', async () => {
     const legacy = createStore();
     const legacyBrowser = await createBrowserSession(legacy.store);

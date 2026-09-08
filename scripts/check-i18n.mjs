@@ -160,7 +160,7 @@ const allowedIdenticalValuesByLanguage = {
   sv: new Set([
     'System', 'Auto', 'Standard', 'Celsius', 'Fahrenheit', 'Medium', 'Version', 'Status',
     'Media', 'Receiver', 'Soundbar', 'Sensor', 'Max', 'Live', 'tv', 'Radio', 'Person',
-    'Widget', 'Normal', 'Album', 'Orange', 'Neutral', 'Gas',
+    'Widget', 'Normal', 'Album', 'Orange', 'Neutral', 'Gas', 'period',
   ]),
   de: new Set([
     'System', 'Auto', 'Standard', 'Celsius', 'Fahrenheit', 'Routine', 'Version', 'Status',
@@ -184,6 +184,7 @@ const allowedIdenticalValuesByLanguage = {
     'Eco', 'Album', 'Comfort', 'Relax', 'Gas', 'In Navet',
   ]),
   nl: new Set([
+    'week',
     'Week {week}', 'Dashboard', 'Project', 'Celsius', 'Fahrenheit', 'Status', 'Widgets',
     'Details', 'Wind', 'Volume', 'Media', 'Soundbar', 'Sensor', 'Water', 'Zones', 'Max',
     'Later', 'Updates', 'camera', 'Routines', 'Scripts', 'scripts', 'Recent', 'Fans',
@@ -233,6 +234,8 @@ const allowedIdenticalKeys = new Set([
   'security.alarm.action.pending',
   'widgets.assist.title',
   'dashboard.addCard.templates.assist.name',
+  // This message contains only interpolated values and punctuation.
+  'energy.dashboard.usageShareStatus',
 ]);
 
 function isAllowedIdentical(language, key, value) {
@@ -273,6 +276,7 @@ const allowedLiteralValues = new Set([
   'OK', 'kWh', 'kW', 'W', 'Navet', 'openHAB', 'Alert', 'Continue', 'Selected', 'Home',
   'Language', 'Loading', 'awesomestvi', 'OSM', 'CARTO',
   'OpenStreetMap copyright', 'OpenStreetMap contributors', 'CARTO attributions',
+  '© OpenMapTiles', '© OpenStreetMap',
 ]);
 
 function isProductionTsx(file) {

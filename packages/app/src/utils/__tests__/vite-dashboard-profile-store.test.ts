@@ -1165,6 +1165,35 @@ describe('Vite dashboard profile request handler', () => {
     expect(JSON.parse(output.body)).toEqual({ error: 'Authentication required' });
   });
 
+  it('uses isolated persisted stores for different Home Assistant tenants', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'navet-dashboard-tenants-'));
+    tempDirs.push(directory);
+    const profileFilePath = join(directory, 'profile.json');
+    let principal = PRINCIPAL;
+    const handler = createViteDashboardProfileRequestHandler({
+      profileFilePath,
+      resolvePrincipal: () => principal,
+    });
+
+    const firstOutput = createResponse();
+    await handler(createRequest('GET', '/default'), firstOutput.response);
+    expect(firstOutput.status).toBe(204);
+
+    const secondTenantId = `hat_${'b'.repeat(64)}`;
+    principal = { ...PRINCIPAL, tenantId: secondTenantId };
+    const secondOutput = createResponse();
+    await handler(createRequest('GET', '/default'), secondOutput.response);
+    expect(secondOutput.status).toBe(204);
+
+    expect(
+      JSON.parse(readFileSync(`${profileFilePath}.workspace`, 'utf8')).tenantBinding.tenantId
+    ).toBe(HA_TENANT_ID);
+    expect(
+      JSON.parse(readFileSync(`${profileFilePath}.${secondTenantId}.workspace`, 'utf8'))
+        .tenantBinding.tenantId
+    ).toBe(secondTenantId);
+  });
+
   it('requires an exact public origin for every profile mutation, including restore', async () => {
     const handler = createViteDashboardProfileRequestHandler({
       store: createStore(),

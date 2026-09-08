@@ -42,6 +42,11 @@ export interface ViteInstallationAuthority {
     target: string,
     normalizeTarget: (value: unknown) => string
   ): InstallationAuthorization
+  authorizeHomeAssistantChange?(
+    req: IncomingMessage,
+    target: string,
+    normalizeTarget: (value: unknown) => string
+  ): InstallationAuthorization
   authorizeHomeyStart(req: IncomingMessage): InstallationAuthorization
   authorizeOpenHAB(
     req: IncomingMessage,
@@ -321,8 +326,6 @@ export function createViteInstallationAuthority(
     if (!normalizedTarget) {
       return { allowed: false, pairingVerified: false }
     }
-    // Home Assistant may open OAuth through a browser-reachable alias. The
-    // alias gains no authority: its code is redeemed against upstreamTarget.
     const rawPin =
       providerId === 'home_assistant'
         ? options.hassUrlPin
@@ -458,14 +461,40 @@ export function createViteInstallationAuthority(
   }
 
   return {
-    authorizeHomeAssistant(req, target, normalizeTarget) {
-      return authorizeTarget(
-        req,
-        'home_assistant',
-        target,
-        normalizeTarget,
-        true
-      )
+    authorizeHomeAssistant(_req, target, normalizeTarget) {
+      if (options.trustIngress) {
+        return { allowed: true, pairingVerified: false }
+      }
+      const normalizedTarget = normalizeTarget(target)
+      if (!normalizedTarget) {
+        return { allowed: false, pairingVerified: false }
+      }
+      const rawPin = options.hassUrlPin
+      const pin = rawPin ? normalizeTarget(rawPin) : ''
+      if (rawPin) {
+        return {
+          allowed: Boolean(pin && pin === normalizedTarget),
+          pairingVerified: false,
+        }
+      }
+      // A successful Home Assistant OAuth grant authorizes only this browser
+      // connection. Different installations are isolated by tenant identity.
+      return { allowed: true, pairingVerified: true }
+    },
+    authorizeHomeAssistantChange(_req, target, normalizeTarget) {
+      if (options.trustIngress) {
+        return { allowed: true, pairingVerified: false }
+      }
+      const normalizedTarget = normalizeTarget(target)
+      if (!normalizedTarget) {
+        return { allowed: false, pairingVerified: false }
+      }
+      const rawPin = options.hassUrlPin
+      const pin = rawPin ? normalizeTarget(rawPin) : ''
+      if (rawPin && pin !== normalizedTarget) {
+        return { allowed: false, pairingVerified: false }
+      }
+      return { allowed: true, pairingVerified: true }
     },
     authorizeHomeyStart(req) {
       if (options.trustIngress) {

@@ -12,6 +12,8 @@
     "./ids": "./src/ids.ts",
     "./provider-contract": "./src/provider-contract.ts",
     "./snapshot-backed-adapter": "./src/snapshot-backed-adapter.ts",
+    "./temperature": "./src/temperature.ts",
+    "./vacuum-status": "./src/vacuum-status.ts",
     "./types": "./src/types.ts"
   }
 }

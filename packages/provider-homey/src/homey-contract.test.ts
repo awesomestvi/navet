@@ -3,11 +3,12 @@ import { createProviderScopedId } from '@navet/core/ids';
 import { createHomeyContractAdapter } from '@navet/provider-homey/homey-adapter';
 import { beforeEach, expect, vi } from 'vitest';
 import { configureHomeyBridge } from './homey-bridge';
+import { translateHomeyCommand } from './homey-service';
 import type { HomeySnapshot } from './homey-types';
 
 const {
   ensureHomeyApiClientConfiguredMock,
-  homeyCallServiceMock,
+  homeyExecuteCommandMock,
   homeyLoadSnapshotMock,
   homeyReplaceSnapshotMock,
   homeyResetSnapshotMock,
@@ -53,7 +54,7 @@ const {
 
   return {
     ensureHomeyApiClientConfiguredMock: vi.fn(),
-    homeyCallServiceMock: vi.fn(),
+    homeyExecuteCommandMock: vi.fn(),
     homeyLoadSnapshotMock: vi.fn(async () => state.snapshot),
     homeyReplaceSnapshotMock: vi.fn((snapshot: typeof state.snapshot) => {
       state.snapshot = snapshot;
@@ -75,7 +76,9 @@ const {
 
 beforeEach(() => {
   ensureHomeyApiClientConfiguredMock.mockReset();
-  homeyCallServiceMock.mockReset();
+  homeyExecuteCommandMock.mockReset().mockImplementation(async (entity, command) => {
+    translateHomeyCommand(entity, command);
+  });
   homeyLoadSnapshotMock.mockClear();
   homeyReplaceSnapshotMock.mockClear();
   homeyResetSnapshotMock.mockClear();
@@ -94,7 +97,8 @@ beforeEach(() => {
         homeyListeners.delete(listener);
       };
     },
-    callService: homeyCallServiceMock,
+    callService: vi.fn(),
+    executeCommand: homeyExecuteCommandMock,
     entityRuntimeService: {
       getEntitySnapshots: () => null,
       subscribeEntitySnapshots: () => () => {},
@@ -144,11 +148,9 @@ runProviderContractTests({
     expect(homeyResetSnapshotMock).toHaveBeenCalled();
   },
   expectCommandDispatched: () => {
-    expect(homeyCallServiceMock).toHaveBeenCalledWith(
-      'light',
-      'turn_off',
-      {},
-      { entityId: 'device-1' }
+    expect(homeyExecuteCommandMock).toHaveBeenCalledWith(
+      expect.objectContaining({ externalId: 'device-1', type: 'light' }),
+      expect.objectContaining({ type: 'turn_off' })
     );
   },
   getLookupIds: (entity) => [entity.externalId, createProviderScopedId('homey', entity.externalId)],

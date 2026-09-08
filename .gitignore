@@ -1,25 +1,51 @@
-# ------------------------------
-# Dependencies
-# ------------------------------
-ha-fusion/
+# Dependencies and package managers
 node_modules/
 .pnpm-store/
 .pnp
 .pnp.js
 
-# ------------------------------
-# Build output
-# ------------------------------
+# Local workspaces
+/marketing/
+ha-fusion/
+homeassistant
+working_files
+
+# Build and generated output
 dist/
 build/
-storybook-static/
-.next/
 out/
-coverage/
+.next/
+storybook-static/
+/platform/home-assistant/custom_components/navet/frontend/
 
-# ------------------------------
+# Test output
+coverage/
+.nyc_output/
+
+# Caches
+.cache/
+.parcel-cache/
+.vite/
+.eslintcache
+.biome/
+biome.json.cache
+*.tsbuildinfo
+__pycache__/
+*.py[cod]
+
+# Environment and secrets
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.pem
+
+# Public, self-signed TLS fixtures used only by the RSS transport test server.
+!packages/app/src/utils/__tests__/fixtures/rss-tls/cert.pem
+!packages/app/src/utils/__tests__/fixtures/rss-tls/key.pem
+
 # Logs
-# ------------------------------
 logs
 *.log
 npm-debug.log*
@@ -27,58 +53,18 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# ------------------------------
-# Environment variables
-# ------------------------------
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# ------------------------------
-# Cache
-# ------------------------------
-.cache/
-.parcel-cache/
-.vite/
-/platform/home-assistant/custom_components/navet/frontend/
-.eslintcache
-
-# ------------------------------
-# TypeScript
-# ------------------------------
-*.tsbuildinfo
-
-# ------------------------------
-# Testing
-# ------------------------------
-coverage/
-.nyc_output/
-
-# ------------------------------
-# IDE / Editor
-# ------------------------------
+# Editors
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# ------------------------------
-# OS
-# ------------------------------
+# Operating system files
 .DS_Store
 Thumbs.db
 
-# ------------------------------
-# Misc
-# ------------------------------
-*.pem
+# Local tool and deployment state
+.claude/
 .vercel
 .netlify
-.claude/
-biome.json.cache
-.biome/
-working_files
-homeassistant
 scripts/push-ha-panel.sh

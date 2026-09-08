@@ -4,22 +4,24 @@ import type {
   ProviderPackageRegistration,
 } from '@navet/core/provider-runtime-types';
 import { createHomeyProviderPackageRegistration } from '@navet/provider-homey';
-import { createHubitatProviderPackageRegistration } from '@navet/provider-hubitat';
 import { createOpenHABProviderPackageRegistration } from '@navet/provider-openhab';
-import { createSmartThingsProviderPackageRegistration } from '@navet/provider-smartthings';
 import { createHomeAssistantAppProviderPackageRegistration } from './provider-composition/home-assistant-package-registration';
 import type { IntegrationProviderRuntimeRegistration } from './provider-runtime-types';
 import { homeyService } from './services/homey.service';
 import { ensureHomeyApiClientConfigured } from './services/homey-api-client.service';
 import { homeyEntityRuntimeService } from './services/homey-entity-runtime.service';
-import type { IntegrationProviderId } from './types/provider';
+import {
+  type ImplementedIntegrationProviderId,
+  type IntegrationProviderId,
+  isImplementedIntegrationProviderId,
+} from './types/provider';
 
 function getProviderSession(providerId: IntegrationProviderId) {
   return integrationSessionRuntime.getSnapshot().sessions[providerId];
 }
 
 const providerPackageRegistrationFactories: Record<
-  IntegrationProviderId,
+  ImplementedIntegrationProviderId,
   () => ProviderPackageRegistration
 > = {
   home_assistant: () =>
@@ -39,14 +41,6 @@ const providerPackageRegistrationFactories: Record<
     createOpenHABProviderPackageRegistration({
       getSession: () => getProviderSession('openhab'),
     }),
-  hubitat: () =>
-    createHubitatProviderPackageRegistration({
-      getSession: () => getProviderSession('hubitat'),
-    }),
-  smartthings: () =>
-    createSmartThingsProviderPackageRegistration({
-      getSession: () => getProviderSession('smartthings'),
-    }),
 };
 
 var providerPackageRegistrationOverrides:
@@ -60,6 +54,10 @@ var providerPackageRegistrations:
 export function getProviderPackageRegistration(
   providerId: IntegrationProviderId
 ): ProviderPackageRegistration {
+  if (!isImplementedIntegrationProviderId(providerId)) {
+    throw new Error(`Provider ${providerId} is planned and has no runtime adapter`);
+  }
+
   const override = providerPackageRegistrationOverrides?.[providerId];
   if (override) {
     return override;

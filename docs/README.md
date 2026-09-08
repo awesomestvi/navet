@@ -14,6 +14,21 @@ that repeats it. Record the implementation reference and what was verified. Dist
 component preview or preset demo from a complete workflow on a connected installation. Keep
 historical changelog entries as historical records.
 
+## Document lifecycle
+
+Every maintained document must have one clear role:
+
+- **Current guidance** describes the product or architecture as it works today and belongs in the
+  user, contributor, maintainer, or AI maps below.
+- **Open roadmap** describes outcomes that have not shipped. Remove completed items as part of the
+  implementation that ships them.
+- **Historical record** belongs in changelog entries, issues, pull requests, and Git history—not in
+  required reading or beside current architecture guidance.
+
+Delete completed implementation plans after durable behavior has been captured in current guides
+or architecture documents. Do not keep an outdated plan merely to explain why current code exists;
+Git history and the linked issue retain that context without presenting it as a current interface.
+
 ## Start Here
 
 - If you want to run Navet: start with the provider setup guides.
@@ -60,6 +75,8 @@ historical changelog entries as historical records.
   Shared UI boundary rules.
 - [architecture/dashboard-profile-ownership.md](architecture/dashboard-profile-ownership.md)
   Multi-dashboard settings ownership, revision sync, recovery, and credential-session boundaries.
+- [architecture/persisted-data-migrations.md](architecture/persisted-data-migrations.md)
+  Active compatibility reads, review releases, and evidence required before retirement.
 - [architecture/media-dashboard-provider-limitations.md](architecture/media-dashboard-provider-limitations.md)
   Media dashboard contract, Home Assistant behavior, artwork handling, and current limits.
 - [architecture/marketing-website.md](architecture/marketing-website.md)
@@ -90,8 +107,10 @@ historical changelog entries as historical records.
 
 ## AI And Agent Docs
 
+- [../AGENTS.md](../AGENTS.md)
+  Complete baseline rules, code-location shortcuts, and task router.
 - [../ai/agents.md](../ai/agents.md)
-  Canonical agent framing for architecture, vocabulary, and repo layout.
+  Optional navigation index for locating deeper area guidance.
 - [../ai/skills/home-assistant-integration.md](../ai/skills/home-assistant-integration.md)
 - [../ai/skills/auth-deployment.md](../ai/skills/auth-deployment.md)
 - [../ai/skills/testing-architecture.md](../ai/skills/testing-architecture.md)

@@ -33,8 +33,6 @@ export interface ThemeColors {
       glow: string;
     };
   };
-  /** @deprecated Use climate. */
-  hvac: ThemeColors['climate'];
   media: {
     gradient: string;
     border: string;

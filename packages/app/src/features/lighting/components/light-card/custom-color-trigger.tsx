@@ -10,6 +10,7 @@ const RAINBOW_COLOR_BACKGROUND =
 interface CustomColorTriggerProps {
   size: 'small' | 'medium';
   isOn: boolean;
+  foregroundColor?: string;
   currentColor: string;
   isActive: boolean;
   onActivate: () => void;
@@ -19,6 +20,7 @@ interface CustomColorTriggerProps {
 export const CustomColorTrigger = memo(function CustomColorTrigger({
   size,
   isOn,
+  foregroundColor,
   currentColor,
   isActive,
   onActivate,
@@ -98,14 +100,16 @@ export const CustomColorTrigger = memo(function CustomColorTrigger({
               }
             : undefined
         }
-        iconClassName={
+        iconClassName={isActive && isOn ? 'text-slate-900' : !isOn ? 'text-current/60' : undefined}
+        iconStyle={
           isActive && isOn
-            ? 'text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]'
-            : !isOn
-              ? 'text-current/60'
-              : undefined
+            ? undefined
+            : foregroundColor
+              ? { color: foregroundColor }
+              : isLocallySelected && isOn
+                ? { color: inputColor }
+                : undefined
         }
-        iconStyle={isLocallySelected && isOn ? { color: inputColor } : undefined}
         onPointerDown={(event) => event.stopPropagation()}
         onClick={(event) => {
           event.stopPropagation();

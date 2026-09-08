@@ -1,3 +1,4 @@
+import { getProviderFeatureMatrix } from '@navet/app/provider-runtime-registry';
 import {
   expectProviderFeatureClaims,
   expectProviderFeatureMatrixSubset,
@@ -60,13 +61,19 @@ describe('integration-registry.service', () => {
   });
 
   it('lists all available providers and marks Home Assistant, Homey, and openHAB as implemented', () => {
-    expect(listAvailableIntegrationProviders().map((provider) => provider.id)).toEqual([
+    const providers = listAvailableIntegrationProviders();
+    expect(providers.map((provider) => provider.id)).toEqual([
       'home_assistant',
       'homey',
       'openhab',
       'hubitat',
       'smartthings',
     ]);
+    expect(
+      providers
+        .filter((provider) => provider.implementationStatus === 'planned')
+        .map(({ id }) => id)
+    ).toEqual(['hubitat', 'smartthings']);
     expect(listImplementedIntegrationProviders().map((provider) => provider.id)).toEqual([
       'home_assistant',
       'homey',
@@ -207,22 +214,10 @@ describe('integration-registry.service', () => {
     );
   });
 
-  it('exposes planned providers through empty compatibility adapters and stable contract instances', async () => {
-    const adapter = getIntegrationProviderAdapter('hubitat');
-    const providerContractAdapter = getSmartHomeProviderAdapter('hubitat');
-    const contract = getIntegrationProviderContract('hubitat');
-
-    expect(adapter.implementationStatus).toBe('planned');
-    expect(contract).toBe(getIntegrationProviderContract('hubitat'));
-    expect(providerContractAdapter).toBe(getSmartHomeProviderAdapter('hubitat'));
-
-    await expect(providerContractAdapter.listEntities()).resolves.toEqual([]);
-    await expect(providerContractAdapter.getEntity('hubitat:light.kitchen')).resolves.toBeNull();
-    await expect(contract.getState()).toEqual({
-      providerId: 'hubitat',
-      connected: false,
-      entities: [],
-      rooms: [],
-    });
+  it('does not expose runtime adapters for planned provider metadata', () => {
+    expect(Object.values(getProviderFeatureMatrix('hubitat')).every((value) => !value)).toBe(true);
+    expect(() => getIntegrationProviderAdapter('hubitat')).toThrow(
+      'Provider hubitat is planned and has no runtime adapter'
+    );
   });
 });

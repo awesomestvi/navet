@@ -59,12 +59,7 @@ export default defineConfig({
         './packages/provider-homeassistant/src'
       ),
       '@navet/provider-homey': path.resolve(configDir, './packages/provider-homey/src'),
-      '@navet/provider-hubitat': path.resolve(configDir, './packages/provider-hubitat/src'),
       '@navet/provider-openhab': path.resolve(configDir, './packages/provider-openhab/src'),
-      '@navet/provider-smartthings': path.resolve(
-        configDir,
-        './packages/provider-smartthings/src'
-      ),
       '@docker': path.resolve(configDir, './docker'),
       '@scripts': path.resolve(configDir, './scripts'),
       'virtual:pwa-register': path.resolve(

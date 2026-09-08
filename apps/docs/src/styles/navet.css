@@ -1545,3 +1545,17 @@ h1[data-page-title] {
     transition: none;
   }
 }
+/* Keep social marks quiet until interaction, then use the platform's brand color. */
+a[href="https://www.youtube.com/@navetapp"] {
+  transition: color 200ms ease;
+}
+
+a[href="https://www.youtube.com/@navetapp"]:is(:hover, :focus-visible) {
+  color: #f00;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  a[href="https://www.youtube.com/@navetapp"] {
+    transition: none;
+  }
+}

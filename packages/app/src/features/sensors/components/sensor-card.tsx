@@ -1,6 +1,5 @@
 import { QualityBar } from '@navet/app/components/charts/quality-bar';
 import { BaseCard } from '@navet/app/components/primitives';
-import { CardMetric } from '@navet/app/components/primitives/card-metric';
 import { EntityCardHeader } from '@navet/app/components/primitives/entity-card-header';
 import { EntityCardHeaderIcon } from '@navet/app/components/primitives/entity-card-header-icon';
 import {
@@ -126,16 +125,13 @@ export const InfoCard = memo(function InfoCard({
     !isVeryCompact && displayModel.status !== 'unavailable' && qualityModel !== null;
   const shouldShowSparkline =
     !isVeryCompact &&
+    !isSmall &&
     isTemperatureSensor &&
     !shouldShowQualityBar &&
     displayModel.status !== 'unavailable' &&
     (resolvedSparklineData?.length ?? 0) >= 2;
   const sparklineLayerClassName =
-    size === 'large'
-      ? 'absolute inset-x-0 top-24 bottom-0'
-      : isSmall
-        ? 'absolute inset-x-0 top-16 bottom-0'
-        : 'absolute inset-x-0 top-20 bottom-0';
+    size === 'large' ? 'absolute inset-x-0 top-24 bottom-0' : 'absolute inset-x-0 top-20 bottom-0';
   const sparklineTickFormatter = useMemo(
     () =>
       new Intl.DateTimeFormat(locale, {
@@ -145,8 +141,7 @@ export const InfoCard = memo(function InfoCard({
       }),
     [locale, use24HourTime]
   );
-  const sparklineTickIndexes =
-    size === 'large' ? [0, 1 / 3, 2 / 3, 1] : isSmall ? [] : [0, 1 / 2, 1];
+  const sparklineTickIndexes = size === 'large' ? [0, 1 / 3, 2 / 3, 1] : [0, 1 / 2, 1];
   const sparklineTicks = (resolvedSparklineData ?? [])
     .filter((_point, index, data) => {
       if (data.length === 0) {
@@ -268,50 +263,32 @@ export const InfoCard = memo(function InfoCard({
                 : 'bg-linear-to-b from-slate-950/22 via-slate-950/8 to-transparent'
             }`}
           />
-          <div className="pointer-events-none relative z-10 flex h-full flex-col p-3">
-            <div
-              className={`flex min-w-0 items-start justify-between ${isSmall ? 'gap-2' : 'gap-4'}`}
-            >
-              <EntityCardHeader
-                title={displayModel.title}
-                subtitle={subtitleText}
-                size={size}
-                layout="eyebrow-first"
-                className="mb-0 min-w-0 flex-1"
-                marginBottomClassName="mb-0"
-                leading={headerIconNode}
-              />
-              <CardMetric
-                value={
-                  <>
-                    {displayModel.value}
-                    {displayModel.unit ? (
-                      isSmall ? (
-                        <span className="align-baseline text-sm tracking-normal">
-                          {' '}
-                          {displayModel.unit.replace(/^°/, '')}
-                        </span>
-                      ) : (
-                        <span className="align-baseline text-xl">{unitText}</span>
-                      )
-                    ) : null}
-                  </>
-                }
-                size={size === 'large' ? 'xl' : 'lg'}
-                isActive
-                accentClassName={valueColor}
-                theme={theme}
-                className="shrink-0 text-right"
-                valueStyle={{
-                  fontSize: size === 'large' ? '1.7rem' : '1.45rem',
-                  lineHeight: 1,
-                  letterSpacing: '-0.03em',
-                }}
-              />
-            </div>
+          <div className="pointer-events-none relative z-30 flex h-full flex-col p-3">
+            <EntityCardHeader
+              title={displayModel.title}
+              subtitle={subtitleText}
+              size={size}
+              layout="eyebrow-first"
+              className="mb-0 min-w-0"
+              marginBottomClassName="mb-0"
+              leading={headerIconNode}
+            />
 
-            {sparklineTicks.length >= 2 ? (
-              <div className="mt-auto">
+            <div className="mt-auto min-w-0">
+              <div
+                data-testid="sensor-card-metric"
+                className={`min-w-0 truncate font-light leading-none tracking-normal ${valueColor} ${
+                  isSmall ? 'text-3xl' : 'text-4xl'
+                }`}
+                title={`${displayModel.value}${unitText}`}
+              >
+                {displayModel.value}
+                {displayModel.unit ? (
+                  <span className="align-baseline text-xl">{unitText}</span>
+                ) : null}
+              </div>
+
+              {sparklineTicks.length >= 2 ? (
                 <div
                   className={`mt-3 flex items-center justify-between gap-2 text-xs ${
                     theme === 'light' ? 'text-slate-500' : 'text-white/72'
@@ -326,8 +303,8 @@ export const InfoCard = memo(function InfoCard({
                     </div>
                   ))}
                 </div>
-              </div>
-            ) : null}
+              ) : null}
+            </div>
           </div>
         </BaseCard>
       ) : (

@@ -53,7 +53,7 @@ import {
   UserRound,
   UsersRound,
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { MediaCard } from '../media-card';
 
 type MediaDashboardDevice = MediaDevice & { type: 'media' };
@@ -1124,12 +1124,14 @@ function MediaBrowserDirectoryTile({
       : theme === 'glass'
         ? 'bg-white/[0.045] shadow-[inset_0_1px_0_rgba(255,255,255,0.07),0_12px_28px_-26px_rgba(0,0,0,0.6)] backdrop-blur-xl hover:border-white/20 hover:bg-white/[0.075]'
         : theme === 'black'
-          ? 'bg-white/[0.025] hover:border-zinc-700 hover:bg-white/[0.045]'
-          : 'bg-white/[0.04] hover:border-zinc-600 hover:bg-white/[0.065]';
+          ? 'bg-black hover:border-zinc-700 hover:bg-zinc-950'
+          : 'bg-[rgba(24,24,27,0.97)] hover:border-zinc-600 hover:bg-zinc-800';
   const iconWellClassName =
     theme === 'light'
       ? 'border-slate-200/80 bg-slate-100/72 text-slate-600'
-      : 'border-white/10 bg-white/[0.045] text-white/78';
+      : theme === 'glass'
+        ? 'border-white/10 bg-white/[0.045] text-white/78'
+        : `${surface.borderStrong} ${surface.iconBg} text-white/78`;
 
   return (
     <button
@@ -2123,6 +2125,17 @@ export function MediaDashboard({
     [canBrowseMedia, mediaLibraryEntityId, runMediaCommand, setDefaultBrowseViews]
   );
 
+  const loadInitialBrowseView = useEffectEvent(() => {
+    if (!mediaLibraryEntityId) return;
+    const initialBrowseView = defaultBrowseViewsRef.current[mediaLibraryEntityId];
+    if (initialBrowseView) {
+      browseMedia(initialBrowseView, [initialBrowseView], true);
+      return;
+    }
+
+    browseMedia();
+  });
+
   useEffect(() => {
     setBrowseResult(null);
     setBrowseHistory([]);
@@ -2134,14 +2147,9 @@ export function MediaDashboard({
       return;
     }
 
-    const initialBrowseView = defaultBrowseViewsRef.current[mediaLibraryEntityId];
-    if (initialBrowseView) {
-      browseMedia(initialBrowseView, [initialBrowseView], true);
-      return;
-    }
-
-    browseMedia();
-  }, [browseMedia, canBrowseMedia, mediaLibraryEntityId, selectedDeviceId]);
+    // Reload for a different player, not when translated command feedback changes.
+    loadInitialBrowseView();
+  }, [canBrowseMedia, mediaLibraryEntityId, selectedDeviceId]);
 
   useEffect(() => {
     if (!mediaLibraryEntityId || !browseResult?.children) return;

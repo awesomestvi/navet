@@ -735,7 +735,7 @@ def _apply_occurrence(data: dict[str, Any], occurrence_id: str, command: Mapping
         if participant_id not in occurrence.get("assigneeIds", []):
             raise ChoreAuthorityError("Participant is not assigned to this chore occurrence")
         claim = definition.get("claimPolicy") or {}
-        expired = bool(occurrence.get("claimedAt") and claim.get("allowSteal") and claim.get("expiresAfterMinutes") is not None and _parse_iso(timestamp) >= _parse_iso(occurrence["claimedAt"]) + timedelta(minutes=int(claim["expiresAfterMinutes"])))
+        expired = bool(occurrence.get("status") == "claimed" and occurrence.get("claimedAt") and claim.get("allowSteal") and claim.get("expiresAfterMinutes") is not None and _parse_iso(timestamp) >= _parse_iso(occurrence["claimedAt"]) + timedelta(minutes=int(claim["expiresAfterMinutes"])))
         if occurrence.get("status") != "available" and not expired:
             raise ChoreAuthorityError("Only available chores can be claimed")
         next_occurrence.update(status="claimed", claimedBy=participant_id, claimedAt=timestamp)
@@ -754,11 +754,11 @@ def _apply_occurrence(data: dict[str, Any], occurrence_id: str, command: Mapping
     elif action_type in {"approve", "reject"}:
         approval = definition.get("approval") or {}
         if not approval.get("required") or (participant_id not in approval.get("approverIds", []) and not command.get("managerOverride")):
-            raise ChoreAuthorityError("Participant cannot approve this chore")
+            raise ChoreAuthorityError(f"Participant cannot {action_type} this chore")
         if command.get("managerOverride") and not str(command.get("reason", "")).strip():
-            raise ChoreAuthorityError("A manager approval override requires a reason")
+            raise ChoreAuthorityError(f"A manager {'approval' if action_type == 'approve' else 'rejection'} override requires a reason")
         if occurrence.get("status") != "awaiting_approval":
-            raise ChoreAuthorityError("Only completed chores awaiting approval can be approved")
+            raise ChoreAuthorityError(f"Only completed chores awaiting approval can be {'approved' if action_type == 'approve' else 'rejected'}")
         if action_type == "approve":
             next_occurrence.update(status="done", approvedBy=participant_id, approvedAt=timestamp)
             event_type = "approved"
@@ -768,7 +768,8 @@ def _apply_occurrence(data: dict[str, Any], occurrence_id: str, command: Mapping
     elif action_type in {"skip", "reopen", "reassign"}:
         reason = str(command.get("reason", "")).strip()
         if not reason:
-            raise ChoreAuthorityError(f"{action_type.capitalize()}ing a chore requires a reason")
+            verb = {"skip": "Skipping", "reopen": "Reopening", "reassign": "Reassigning"}[action_type]
+            raise ChoreAuthorityError(f"{verb} a chore requires a reason")
         if action_type == "skip":
             if occurrence.get("status") in {"done", "skipped"}:
                 raise ChoreAuthorityError("Completed or skipped chores cannot be skipped")

@@ -1,0 +1,10 @@
+{
+  "energy_sources": [
+    {
+      "type": "grid",
+      "flow_from": [{ "stat_energy_from": "sensor.grid_import_energy" }],
+      "flow_to": [{ "stat_energy_to": "sensor.grid_export_energy" }]
+    }
+  ],
+  "device_consumption": []
+}

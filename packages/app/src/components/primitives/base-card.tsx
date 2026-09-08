@@ -359,9 +359,23 @@ export function BaseCard({
     <div className={activeSurfaceStyle.shineOverlayClassName} />
   ) : null;
 
+  // A card action is a sibling of its controls, never their interactive ancestor.
+  const hasPrimaryAction = props.role === 'button';
+  const frameProps = hasPrimaryAction
+    ? {
+        ...props,
+        role: undefined,
+        tabIndex: undefined,
+        'aria-label': undefined,
+        'aria-pressed': undefined,
+        'aria-disabled': undefined,
+        onKeyDown: undefined,
+      }
+    : props;
+
   return (
     <div
-      {...props}
+      {...frameProps}
       style={mergedStyle}
       data-effective-effects-quality={effectsQuality}
       className={`relative flex h-full w-full flex-col overflow-hidden ${baseCardRadiusClassName} ${paddingClassName} ${gapClassName} ${resolvedSurface.borderClassName} ${surfaceBackgroundClassName} ${shell.backdropClassName} ${backgroundClassName} ${frameClassName} ${interactive ? 'cursor-pointer' : ''} ${className}`}
@@ -374,7 +388,23 @@ export function BaseCard({
       {activeStateShine}
       {overlay}
 
-      <div className={`relative flex h-full min-h-0 flex-col ${innerClassName}`}>
+      {hasPrimaryAction ? (
+        <button
+          type="button"
+          aria-label={props['aria-label']}
+          aria-pressed={props['aria-pressed']}
+          aria-disabled={props['aria-disabled']}
+          tabIndex={props.tabIndex}
+          onClick={(event) => {
+            event.stopPropagation();
+            (props.onClick as HTMLAttributes<HTMLElement>['onClick'])?.(event);
+          }}
+          className="absolute inset-0 rounded-[inherit] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-current"
+        />
+      ) : null}
+      <div
+        className={`relative flex h-full min-h-0 flex-col ${hasPrimaryAction ? 'pointer-events-none [&_button]:pointer-events-auto [&_a]:pointer-events-auto [&_input]:pointer-events-auto [&_select]:pointer-events-auto [&_textarea]:pointer-events-auto [&_[role=slider]]:pointer-events-auto [&_[role=button]]:pointer-events-auto [&_[role=switch]]:pointer-events-auto [&_[data-card-interactive]]:pointer-events-auto' : ''} ${innerClassName}`}
+      >
         {isTiny ? (
           <div className="flex h-full w-full flex-col justify-between text-left">
             <div className="min-w-0 w-full">{headerNode}</div>

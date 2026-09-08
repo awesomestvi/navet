@@ -10,6 +10,7 @@ import {
   createHomeAssistantTenantId,
   createViteAuthRequestHandler,
   createViteAuthSessionStore,
+  type HomeAssistantAuthData,
   normalizeHassOrigin,
   parseViteAuthCookie,
   resolveViteAuthenticatedPrincipal,
@@ -170,7 +171,7 @@ async function createBrowser(
 function seedAuth(
   store: ReturnType<typeof createViteAuthSessionStore>,
   browser: Awaited<ReturnType<typeof createBrowser>>,
-  auth: typeof AUTH_A
+  auth: HomeAssistantAuthData
 ) {
   const cookieId = browser.cookie.split('=')[1] ?? '';
   const now = Date.now();
@@ -1205,7 +1206,7 @@ describe('Vite standalone auth session conformance', () => {
       name: 'upstream rejection',
       callbackSuffix: '&code=oauth-code',
       response: new Response('{}', { status: 503 }),
-      expected: 'temporarily_unavailable',
+      expected: 'authorization_rejected',
     },
     {
       name: 'invalid token response',
@@ -1242,6 +1243,180 @@ describe('Vite standalone auth session conformance', () => {
       expect(callbackResponse.getHeader('location')).toBe(`/?navet_oauth_error=${expected}`);
     }
   );
+
+  it('replaces an authenticated target and preserves its tenant only after token proof', async () => {
+    const tenantId = createHomeAssistantTenantId(AUTH_A.hassUrl);
+    const candidateUrl = 'http://100.77.118.32:8123';
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            access_token: 'candidate-access',
+            refresh_token: 'candidate-refresh',
+            expires_in: 1800,
+          }),
+          { status: 200 }
+        )
+      )
+      .mockResolvedValueOnce(new Response('{}', { status: 200 }));
+    const installationAuthority: ViteInstallationAuthority = {
+      ...TEST_INSTALLATION_AUTHORITY,
+      authorizeHomeAssistant: vi.fn(() => ({ allowed: false, pairingVerified: false })),
+      commitHomeAssistant: vi.fn(() => true),
+    };
+    const { store } = createStore();
+    const handler = createViteAuthRequestHandler(
+      store,
+      fetchMock as typeof fetch,
+      installationAuthority
+    );
+    const browser = await createBrowser(handler);
+    seedAuth(store, browser, { ...AUTH_A, tenantId });
+
+    const authorizeResponse = createResponse();
+    await handler(
+      createRequest({
+        method: 'POST',
+        url: '/authorize',
+        cookie: browser.cookie,
+        headers: {
+          Origin: 'http://navet.example',
+          [AUTH_BINDING_HEADER]: browser.metadata.sessionId,
+        },
+        body: JSON.stringify({ hassUrl: candidateUrl, returnTo: '/' }),
+      }),
+      authorizeResponse.response
+    );
+    expect(authorizeResponse.response.statusCode).toBe(200);
+    expect(installationAuthority.authorizeHomeAssistant).not.toHaveBeenCalled();
+    const state = new URL(JSON.parse(authorizeResponse.body).authorizeUrl).searchParams.get(
+      'state'
+    );
+
+    const callbackResponse = createResponse();
+    await handler(
+      createRequest({
+        url: `/callback?code=vpn-code&state=${state}`,
+        cookie: browser.cookie,
+      }),
+      callbackResponse.response
+    );
+
+    expect(fetchMock.mock.calls.map(([input]) => String(input))).toEqual([
+      `${candidateUrl}/auth/token`,
+      `${AUTH_A.hassUrl}/api/`,
+    ]);
+    expect(fetchMock.mock.calls[1]?.[1]).toMatchObject({
+      headers: { Authorization: 'Bearer candidate-access' },
+    });
+    expect(installationAuthority.commitHomeAssistant).toHaveBeenCalledWith(
+      candidateUrl,
+      expect.any(Function),
+      true
+    );
+    const rotatedCookie = cookieHeader(callbackResponse.getHeader('set-cookie'));
+    expect(
+      resolveViteAuthSession(createRequest({ cookie: rotatedCookie }), store)?.auth
+    ).toMatchObject({
+      hassUrl: candidateUrl,
+      access_token: 'candidate-access',
+      tenantId,
+    });
+  });
+
+  it('binds the Home Assistant user returned by the authenticated connection', async () => {
+    const { store } = createStore();
+    const handler = createViteAuthRequestHandler(
+      store,
+      vi.fn() as typeof fetch,
+      TEST_INSTALLATION_AUTHORITY
+    );
+    const browser = await createBrowser(handler);
+    seedAuth(store, browser, AUTH_A);
+    const response = createResponse();
+
+    await handler(
+      createRequest({
+        method: 'PUT',
+        url: '/session/identity',
+        cookie: browser.cookie,
+        headers: {
+          Origin: 'http://navet.example',
+          [AUTH_BINDING_HEADER]: browser.metadata.sessionId,
+        },
+        body: JSON.stringify({ userId: 'ha-user-1', userName: 'Vishal' }),
+      }),
+      response.response
+    );
+
+    expect(response.response.statusCode).toBe(200);
+    expect(JSON.parse(response.body)).toMatchObject({
+      userId: 'ha-user-1',
+      userName: 'Vishal',
+    });
+    expect(
+      resolveViteAuthenticatedPrincipal(createRequest({ cookie: browser.cookie }), store)
+    ).toMatchObject({
+      userId: 'ha-user-1',
+      userName: 'Vishal',
+    });
+  });
+
+  it('isolates an authenticated target when the old route rejects its new token', async () => {
+    const candidateUrl = 'https://demo-ha.example.com';
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            access_token: 'demo-access',
+            refresh_token: 'demo-refresh',
+            expires_in: 1800,
+          }),
+          { status: 200 }
+        )
+      )
+      .mockResolvedValueOnce(new Response('{}', { status: 401 }));
+    const { store } = createStore();
+    const handler = createViteAuthRequestHandler(
+      store,
+      fetchMock as typeof fetch,
+      TEST_INSTALLATION_AUTHORITY
+    );
+    const browser = await createBrowser(handler);
+    seedAuth(store, browser, AUTH_A);
+    const authorizeResponse = createResponse();
+    await handler(
+      createRequest({
+        method: 'POST',
+        url: '/authorize',
+        cookie: browser.cookie,
+        headers: {
+          Origin: 'http://navet.example',
+          [AUTH_BINDING_HEADER]: browser.metadata.sessionId,
+        },
+        body: JSON.stringify({ hassUrl: candidateUrl, returnTo: '/' }),
+      }),
+      authorizeResponse.response
+    );
+    const state = new URL(JSON.parse(authorizeResponse.body).authorizeUrl).searchParams.get(
+      'state'
+    );
+    const callbackResponse = createResponse();
+    await handler(
+      createRequest({
+        url: `/callback?code=demo-code&state=${state}`,
+        cookie: browser.cookie,
+      }),
+      callbackResponse.response
+    );
+
+    const rotatedCookie = cookieHeader(callbackResponse.getHeader('set-cookie'));
+    expect(
+      resolveViteAuthSession(createRequest({ cookie: rotatedCookie }), store)?.auth?.tenantId
+    ).toBe(createHomeAssistantTenantId(candidateUrl));
+  });
 
   it('selects the OAuth-state-matched backed session regardless of duplicate cookie order', async () => {
     for (const matchingCookieFirst of [true, false]) {

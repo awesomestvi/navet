@@ -16,6 +16,8 @@ const SCOPE_COMMANDS = {
   ],
   provider: [
     ['pnpm', ['check:provider-boundaries']],
+    ['pnpm', ['check:runtime-policies']],
+    ['pnpm', ['check:rss-transport']],
     ['pnpm', ['test:tier1']],
   ],
   ui: [
@@ -26,10 +28,14 @@ const SCOPE_COMMANDS = {
     ['pnpm', ['check:stories']],
     ['pnpm', ['check:ui-kit']],
     ['pnpm', ['check:provider-boundaries']],
+    ['pnpm', ['check:runtime-policies']],
+    ['pnpm', ['check:rss-transport']],
   ],
   release: [
     ['pnpm', ['release:check']],
     ['pnpm', ['check:provider-boundaries']],
+    ['pnpm', ['check:runtime-policies']],
+    ['pnpm', ['check:rss-transport']],
     ['pnpm', ['test:ha-integration']],
     ['pnpm', ['check:docker']],
   ],
@@ -159,7 +165,8 @@ function inferScopes(files) {
       file.includes('provider-contract') ||
       file.includes('provider-runtime') ||
       file.includes('integration-store') ||
-      file.includes('integration-action.service') ||
+      file === 'packages/app/src/commands.ts' ||
+      file === 'packages/app/src/commands.test.ts' ||
       file.includes('integration-registry.service')
     ) {
       scopes.add('provider');

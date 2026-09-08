@@ -21,6 +21,7 @@ declare module '@docker/njs/auth-store.js' {
     refresh_token: string;
     access_token: string;
     expires_in: number;
+    tenantId?: string;
   }
 
   interface AuthSession {
@@ -73,6 +74,11 @@ declare module '@docker/njs/auth-store.js' {
     fetch?: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
     installationAuthority?: {
       authorizeHomeAssistant(
+        request: NjsAuthRequest,
+        target: string,
+        normalizeTarget: (value: unknown) => string
+      ): { allowed: boolean; pairingVerified: boolean; upstreamTarget?: string };
+      authorizeHomeAssistantChange?(
         request: NjsAuthRequest,
         target: string,
         normalizeTarget: (value: unknown) => string

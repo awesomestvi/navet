@@ -84,16 +84,14 @@ export const KelvinSlider = memo(function KelvinSlider({
           <span
             className={`text-xs ${editorSurface.sectionLabelClassName}`}
             style={{
-              color: useInverseActiveLightSurface
-                ? 'rgba(255,255,255,0.78)'
-                : textTokens.subtitleColor,
+              color: textTokens.subtitleColor,
             }}
           >
             {t('lighting.colorTemperature')}
           </span>
           <span
             className={`text-sm font-bold ${editorSurface.sectionValueClassName}`}
-            style={{ color: useInverseActiveLightSurface ? '#ffffff' : textTokens.titleColor }}
+            style={{ color: textTokens.titleColor }}
           >
             {roundedValue}K
           </span>

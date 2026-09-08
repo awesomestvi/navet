@@ -1,3 +1,8 @@
+import {
+  createNavetPackageAliases,
+  createBuildMetadata,
+  REACT_COMPILER_EXCLUDE,
+} from '../../scripts/vite-host-conventions.ts';
 import babel from '@rolldown/plugin-babel';
 import tailwindcss from '@tailwindcss/vite';
 import react, { reactCompilerPreset } from '@vitejs/plugin-react';
@@ -7,23 +12,17 @@ import { defineConfig } from 'vite';
 import { getMarketingReleaseHighlights } from '../../scripts/marketing-release-highlights.mjs';
 
 const repoRoot = path.resolve(__dirname, '../..');
-const packageJson = JSON.parse(
-  readFileSync(path.resolve(repoRoot, 'package.json'), 'utf8')
-) as { version?: string };
+const packageJson = JSON.parse(readFileSync(path.resolve(repoRoot, 'package.json'), 'utf8')) as {
+  version?: string;
+};
 const appVersion = packageJson.version ?? '0.0.0';
 const releaseHighlights = getMarketingReleaseHighlights(
   readFileSync(path.resolve(repoRoot, 'CHANGELOG.md'), 'utf8'),
   appVersion
 );
-const buildMetadata = {
-  gitSha: (process.env.NAVET_GIT_SHA ?? process.env.GITHUB_SHA ?? 'local').trim(),
-  buildDate: (process.env.NAVET_BUILD_DATE ?? new Date().toISOString()).trim(),
-  releaseChannel: (process.env.NAVET_RELEASE_CHANNEL ?? 'development').trim(),
-  buildVersion: (process.env.NAVET_BUILD_VERSION ?? appVersion).trim(),
-};
+const buildMetadata = createBuildMetadata(repoRoot, packageJson.version, 'environment');
 // Restrict the compiler to source modules: its content filter can also match CSS comments.
 const REACT_COMPILER_INCLUDE = [/[\\/]src[\\/].*\.(?:[jt]sx?|[cm][jt]s)(?:$|\?)/];
-const REACT_COMPILER_EXCLUDE = [/[\\/]node_modules[\\/]/, /[\\/]\.cache[\\/]vite[^\\/]*[\\/]deps[\\/]/];
 
 export default defineConfig({
   root: __dirname,
@@ -49,17 +48,10 @@ export default defineConfig({
   resolve: {
     dedupe: ['react', 'react-dom'],
     alias: {
+      ...createNavetPackageAliases(repoRoot),
       '@assets': path.resolve(repoRoot, 'assets'),
       '@': path.resolve(repoRoot, 'src'),
       '@website': path.resolve(repoRoot, 'apps/website/src'),
-      '@navet/core': path.resolve(repoRoot, 'packages/core/src'),
-      '@navet/ui': path.resolve(repoRoot, 'packages/ui/src'),
-      '@navet/app': path.resolve(repoRoot, 'packages/app/src'),
-      '@navet/provider-homeassistant': path.resolve(repoRoot, 'packages/provider-homeassistant/src'),
-      '@navet/provider-homey': path.resolve(repoRoot, 'packages/provider-homey/src'),
-      '@navet/provider-hubitat': path.resolve(repoRoot, 'packages/provider-hubitat/src'),
-      '@navet/provider-openhab': path.resolve(repoRoot, 'packages/provider-openhab/src'),
-      '@navet/provider-smartthings': path.resolve(repoRoot, 'packages/provider-smartthings/src'),
       '@docker': path.resolve(repoRoot, 'docker'),
       '@scripts': path.resolve(repoRoot, 'scripts'),
     },

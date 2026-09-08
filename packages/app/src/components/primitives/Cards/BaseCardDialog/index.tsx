@@ -5,7 +5,7 @@ import {
   CardDialogSection,
   CardDialogTabList,
   CardDialogTabTrigger,
-} from '@navet/app/components/patterns';
+} from '@navet/app/components/patterns/card-dialog';
 import { Button } from '@navet/app/components/primitives/button';
 import {
   coverSheetHeaderClassName,

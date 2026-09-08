@@ -64,19 +64,19 @@ function writeSession(directory: string, index: number, auth: Record<string, unk
 }
 
 describe('production njs installation authority', () => {
-  it('requires the exact pairing key for an unknown target and never persists the key', () => {
+  it('lets Home Assistant authenticate a fresh unpinned target', () => {
     const { authority, paths } = createFixture();
 
     expect(
       authority.authorizeHomeAssistant(request(), 'https://ha.example.com', normalizeTarget)
-    ).toEqual({ allowed: false, pairingVerified: false });
+    ).toEqual({ allowed: true, pairingVerified: true });
     expect(
       authority.authorizeHomeAssistant(
         request('b'.repeat(64)),
         'https://ha.example.com',
         normalizeTarget
       )
-    ).toEqual({ allowed: false, pairingVerified: false });
+    ).toEqual({ allowed: true, pairingVerified: true });
 
     const authorized = authority.authorizeHomeAssistant(
       request(INSTALLATION_KEY),
@@ -99,7 +99,7 @@ describe('production njs installation authority', () => {
     expect(state).not.toContain(INSTALLATION_KEY);
     expect(
       authority.authorizeHomeAssistant(request(), 'https://ha.example.com', normalizeTarget)
-    ).toEqual({ allowed: true, pairingVerified: false });
+    ).toEqual({ allowed: true, pairingVerified: true });
   });
 
   it('lets an exact operator pin replace stale authority only after verification', () => {
@@ -119,11 +119,7 @@ describe('production njs installation authority', () => {
 
     expect(
       authority.authorizeHomeAssistant(request(), 'https://ha-a.example.com', normalizeTarget)
-    ).toEqual({
-      allowed: true,
-      pairingVerified: false,
-      upstreamTarget: 'https://ha-b.example.com',
-    });
+    ).toEqual({ allowed: false, pairingVerified: false });
     const pinned = authority.authorizeHomeAssistant(
       request(),
       'https://ha-b.example.com',
@@ -138,7 +134,7 @@ describe('production njs installation authority', () => {
     });
   });
 
-  it('uses enrolled authority as the upstream for an alternate browser route', () => {
+  it('lets a different unpinned Home Assistant route start OAuth', () => {
     const { authority, paths } = createFixture();
     const authorized = authority.authorizeHomeAssistant(
       request(INSTALLATION_KEY),
@@ -156,17 +152,31 @@ describe('production njs installation authority', () => {
 
     expect(
       authority.authorizeHomeAssistant(request(), 'https://ha-b.example.com', normalizeTarget)
-    ).toEqual({
-      allowed: true,
-      pairingVerified: false,
-      upstreamTarget: 'https://ha-a.example.com',
-    });
+    ).toEqual({ allowed: true, pairingVerified: true });
   });
 
-  it('still requires pairing to replace enrolled authority', () => {
+  it('allows an authenticated target change unless the operator configured a fixed URL', () => {
+    const unpinned = createFixture().authority;
+    expect(
+      unpinned.authorizeHomeAssistantChange(
+        request(),
+        'https://demo-ha.example.com',
+        normalizeTarget
+      )
+    ).toEqual({ allowed: true, pairingVerified: true });
+
+    const pinned = createFixture({
+      config: { hassUrl: 'https://ha.example.com' },
+    }).authority;
+    expect(
+      pinned.authorizeHomeAssistantChange(request(), 'https://demo-ha.example.com', normalizeTarget)
+    ).toEqual({ allowed: false, pairingVerified: false });
+  });
+
+  it('lets successful Home Assistant OAuth replace enrolled unpinned authority', () => {
     const { authority, paths } = createFixture();
     const first = authority.authorizeHomeAssistant(
-      request(INSTALLATION_KEY),
+      request(),
       'https://ha-a.example.com',
       normalizeTarget
     );
@@ -179,7 +189,7 @@ describe('production njs installation authority', () => {
     ).toBe(true);
 
     const replacement = authority.authorizeHomeAssistant(
-      request(INSTALLATION_KEY),
+      request(),
       'https://ha-b.example.com',
       normalizeTarget
     );

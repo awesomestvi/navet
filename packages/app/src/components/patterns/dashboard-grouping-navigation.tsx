@@ -1,4 +1,4 @@
-import { InteractivePill } from '@navet/app/components/primitives';
+import { InteractivePill } from '@navet/app/components/primitives/interactive-pill';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import {
   DropdownMenu,

@@ -177,7 +177,7 @@ export function HomeEditCommandBar({
                     {onConfigureKpis ? (
                       <DropdownMenuItem onClick={onConfigureKpis}>
                         <SlidersHorizontal className="h-4 w-4" />
-                        KPIs
+                        {t('energy.edit.kpis')}
                       </DropdownMenuItem>
                     ) : null}
 
@@ -191,14 +191,14 @@ export function HomeEditCommandBar({
                     {onApplyEnergyLayout ? (
                       <>
                         {onConfigureKpis ? <DropdownMenuSeparator /> : null}
-                        <DropdownMenuLabel>Energy layout</DropdownMenuLabel>
+                        <DropdownMenuLabel>{t('energy.edit.layout')}</DropdownMenuLabel>
                         <DropdownMenuItem onClick={() => onApplyEnergyLayout('essentials')}>
                           <LayoutTemplate className="h-4 w-4" />
-                          Essentials
+                          {t('energy.edit.essentials')}
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => onApplyEnergyLayout('balanced')}>
                           <LayoutDashboard className="h-4 w-4" />
-                          Balanced
+                          {t('energy.edit.balanced')}
                         </DropdownMenuItem>
                       </>
                     ) : null}
@@ -479,7 +479,7 @@ export function HomeEditCommandBar({
                 onClick={onConfigureKpis}
                 className="h-9 rounded-full px-3 text-xs md:text-sm"
               >
-                KPIs
+                {t('energy.edit.kpis')}
               </Button>
             ) : null}
 
@@ -505,14 +505,14 @@ export function HomeEditCommandBar({
                   />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="center" sideOffset={8}>
-                  <DropdownMenuLabel>Energy layout</DropdownMenuLabel>
+                  <DropdownMenuLabel>{t('energy.edit.layout')}</DropdownMenuLabel>
                   <DropdownMenuItem onClick={() => onApplyEnergyLayout('essentials')}>
                     <LayoutTemplate className="h-4 w-4" />
-                    Essentials
+                    {t('energy.edit.essentials')}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => onApplyEnergyLayout('balanced')}>
                     <LayoutDashboard className="h-4 w-4" />
-                    Balanced
+                    {t('energy.edit.balanced')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

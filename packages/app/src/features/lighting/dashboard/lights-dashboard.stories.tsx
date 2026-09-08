@@ -237,6 +237,9 @@ export const SeveralActiveRooms: Story = {
     await userEvent.click(firstToggle);
     await expect(firstToggle).toHaveAttribute('aria-expanded', 'true');
     await expect(roomSections[0]?.querySelector('[aria-pressed]')).toBeInTheDocument();
+    await expect(
+      roomSections[0]?.querySelectorAll('[data-light-row-icon-pill]').length
+    ).toBeGreaterThan(0);
   },
 };
 

@@ -21,14 +21,13 @@ import {
   Volume2,
   VolumeX,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
 import type { MediaEntityTypeKey } from '../media-card/get-media-entity-type-key';
 import { MediaArtworkSurface } from './media-artwork-surface';
 import { getMediaDisplayVolume } from './media-card-style-utils';
 import { MediaEntityHeader } from './media-entity-header';
 import { MediaMarqueeText } from './media-marquee-text';
 import { getMediaReadableForeground } from './media-readable-foreground';
-import { formatMediaTime } from './media-time';
+import { MediaSeekTimeline } from './media-seek-timeline';
 import { MediaVisualizerButton } from './media-visualizer-button';
 import { useArtworkEdgeBlur } from './use-artwork-edge-blur';
 import {
@@ -136,10 +135,6 @@ export function MediaMediumView({
   });
   const iconTone = stateSurface.primaryTextClassName;
   const subtitleTone = stateSurface.secondaryTextClassName;
-  const durationLabel = formatMediaTime(Math.max(durationSeconds, elapsedSeconds));
-  const hasSeekDuration = durationSeconds > 0;
-  const [pendingSeek, setPendingSeek] = useState(elapsedSeconds);
-  const [isSeeking, setIsSeeking] = useState(false);
   const controlSizes = getCardActionControlSizes('small');
   const primaryControlSizes = getCardActionControlSizes('medium');
   const subduedFallback = !stableArtwork;
@@ -201,12 +196,6 @@ export function MediaMediumView({
         />
       </>
     ) : null;
-
-  useEffect(() => {
-    if (!isSeeking) {
-      setPendingSeek(elapsedSeconds);
-    }
-  }, [elapsedSeconds, isSeeking]);
 
   const offToggleSlashClassName = 'absolute inset-0 m-auto h-3.5 w-3.5 stroke-[2.25]';
   const mirroredOffToggleSlashStyle = { transform: 'scaleX(-1)' };
@@ -301,56 +290,20 @@ export function MediaMediumView({
             </div>
 
             {!hideTransportControls ? (
-              <div className="flex items-center gap-2">
-                <span
-                  className={`shrink-0 text-[10px] tabular-nums ${subtitleTone}`}
-                  style={readableForeground.subtitleStyle}
-                >
-                  {formatMediaTime(hasSeekDuration ? Math.max(0, pendingSeek) : 0)}
-                </span>
-                <Slider
-                  value={hasSeekDuration ? Math.min(durationSeconds, pendingSeek) : 0}
-                  min={0}
-                  max={hasSeekDuration ? Math.max(durationSeconds, elapsedSeconds, pendingSeek) : 1}
-                  step={1}
-                  ariaLabel={t('media.seek')}
-                  onValueChange={(value) => {
-                    if (hasSeekDuration && canSeek) {
-                      setPendingSeek(value);
-                    }
-                  }}
-                  onValueCommit={(value) => {
-                    if (hasSeekDuration && canSeek) {
-                      onSeek(value);
-                    }
-                  }}
-                  onInteractionStart={() => {
-                    if (hasSeekDuration && canSeek) {
-                      setIsSeeking(true);
-                    }
-                  }}
-                  onInteractionEnd={() => {
-                    if (hasSeekDuration) {
-                      setIsSeeking(false);
-                    }
-                  }}
-                  disabled={!hasSeekDuration || !canSeek}
-                  rootClassName="relative flex h-4 min-w-0 flex-1 items-center touch-none select-none"
-                  trackClassName="relative h-[3px] grow rounded-full"
-                  rangeClassName="absolute h-full rounded-full"
-                  thumbClassName="block h-3 w-3 rounded-full outline-none"
-                  touchThumbClassName="block h-6 w-6 rounded-full outline-none"
-                  trackStyle={trackBaseStyle}
-                  rangeStyle={trackFillStyle}
-                  thumbStyle={trackThumbStyle}
-                />
-                <span
-                  className={`shrink-0 text-[10px] tabular-nums ${subtitleTone}`}
-                  style={readableForeground.subtitleStyle}
-                >
-                  {hasSeekDuration ? durationLabel : formatMediaTime(0)}
-                </span>
-              </div>
+              <MediaSeekTimeline
+                elapsedSeconds={elapsedSeconds}
+                durationSeconds={durationSeconds}
+                canSeek={canSeek}
+                onSeek={onSeek}
+                className="flex items-center gap-2"
+                labelClassName={`shrink-0 text-[10px] tabular-nums ${subtitleTone}`}
+                labelStyle={readableForeground.subtitleStyle}
+                rootClassName="relative flex h-4 min-w-0 flex-1 items-center touch-none select-none"
+                thumbClassName="block h-3 w-3 rounded-full outline-none"
+                trackStyle={trackBaseStyle}
+                rangeStyle={trackFillStyle}
+                thumbStyle={trackThumbStyle}
+              />
             ) : null}
 
             {!hideTransportControls ? (

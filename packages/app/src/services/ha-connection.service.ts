@@ -1,4 +1,5 @@
 import { createHomeAssistantClient } from '@navet/app/api/homeAssistantClient';
+import { recordStandaloneHomeAssistantUser } from '@navet/app/auth/adapters/standaloneOAuthAuth';
 import type { HomeAssistantAuthSession } from '@navet/app/auth/types';
 import type { Connection, HassConfig, HassEntities, HassUser } from 'home-assistant-js-websocket';
 import {
@@ -84,6 +85,12 @@ class HAConnectionService {
       this.connection = connection;
       this.connected = true;
       this.user = await getUser(connection);
+
+      if (configuration.runtime === 'standalone-oauth' && this.user?.id) {
+        await recordStandaloneHomeAssistantUser(this.user).catch((error) => {
+          console.warn('[HAConnectionService] Unable to record authenticated user identity', error);
+        });
+      }
 
       if (attemptId !== this.authenticationAttemptId || this.connection !== connection) {
         connection.close();

@@ -1,5 +1,7 @@
+import choreOccurrencePolicy from '@docker/njs/chore-occurrence-policy.js';
 import choreStore from '@docker/njs/chore-store.js';
 import conformanceVectors from '@navet/core/chore-conformance-vectors.json';
+import type { ApplyChoreCommandInput } from '@navet/core/chores';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const WORKSPACE_PATH = '/data/navet-dashboard-workspace.json';
@@ -1305,4 +1307,32 @@ describe('NJS chore workspace store', () => {
     expect(protectedCommand.return).toHaveBeenCalledWith(200, expect.any(String));
     expect(parseResponse(protectedCommand).data.participantsById.sofia.displayName).toBe('Sofia');
   });
+});
+
+describe('shared occurrence transition conformance', () => {
+  for (const vector of conformanceVectors.occurrenceTransitions) {
+    it(vector.name, () => {
+      const fixture = conformanceVectors.occurrenceFixture;
+      const input = {
+        definition: { ...fixture.definition, ...vector.definition },
+        occurrence: { ...fixture.occurrence, ...vector.occurrence },
+        command: vector.command,
+        timestamp: fixture.timestamp,
+        commandId: 'conformance',
+      } as ApplyChoreCommandInput;
+      if (vector.error) {
+        expect(() => choreOccurrencePolicy.applyChoreOccurrenceCommand(input)).toThrow(
+          vector.error
+        );
+      } else {
+        const result = choreOccurrencePolicy.applyChoreOccurrenceCommand(input);
+        expect(result.activity.type).toBe(vector.event);
+        for (const [key, value] of Object.entries(vector.expected)) {
+          expect((result.occurrence as unknown as Record<string, unknown>)[key] ?? null).toEqual(
+            value
+          );
+        }
+      }
+    });
+  }
 });

@@ -1,21 +1,8 @@
 import type { CardSize } from '../components/shared/card-size-selector';
-import type { AppLanguage } from '../i18n';
 import type { Section } from '../navigation/sections';
-import type { CustomSidebarAction, CustomSummaryPill } from '../utils/custom-extensions';
-import type {
-  CameraDashboardViewMode,
-  CameraFitMode,
-  CameraStreamPreference,
-  CameraViewMode,
-  CameraWebRtcStreamSource,
-  DashboardProfileMode,
-  DashboardSpaceMode,
-  EffectsQuality,
-  EntityInteractionMode,
-  HeaderTitleMode,
-  WeatherForecastMode,
-  WeatherMetricId,
-} from './settings-store';
+
+export type { SettingsState } from './settings-store';
+
 import type { PrimaryColor, ThemeMode } from './theme-store';
 
 export type ThemeType = ThemeMode;
@@ -68,65 +55,6 @@ export interface SearchState {
   setSearchQuery: (query: string) => void;
   setFilteredDeviceIds: (ids: string[]) => void;
   clearSearch: () => void;
-}
-
-interface UserSettings {
-  username: string;
-  email: string;
-  language: AppLanguage;
-  headerTitleMode: HeaderTitleMode;
-  headerCustomText: string;
-  showNotifications: boolean;
-  showWeatherInHeader: boolean;
-  showHomeSummaryBar: boolean;
-  choresEnabled: boolean;
-  keepDeviceAwake: boolean;
-  use24HourTime: boolean;
-  temperatureUnit: 'celsius' | 'fahrenheit';
-  defaultView: 'all' | string;
-  compactMode: boolean;
-  kioskMode: boolean;
-  kioskSwipeRooms: boolean;
-  dashboardProfileMode: DashboardProfileMode;
-  dashboardSpaceMode: DashboardSpaceMode;
-  disableAnimations: boolean;
-  lowPowerMode: boolean;
-  effectsQuality: EffectsQuality;
-  effectsQualityUserOverride: boolean;
-  entityInteractionMode: EntityInteractionMode;
-  cameraDashboardViewMode: CameraDashboardViewMode;
-  cameraViewMode: CameraViewMode;
-  cameraViewModes: Record<string, CameraViewMode>;
-  cameraStreamPreference: CameraStreamPreference;
-  cameraStreamPreferences: Record<string, CameraStreamPreference>;
-  cameraWebRtcStreamSources: Record<string, CameraWebRtcStreamSource>;
-  cameraDirectStreamUrls: Record<string, string>;
-  cameraFitMode: CameraFitMode;
-  cameraFitModes: Record<string, CameraFitMode>;
-  cameraFullscreenHiddenAccessoryIds: Record<string, string[]>;
-  cameraFullscreenVisibleAccessoryIds: Record<string, string[]>;
-  ambientLightBleed: boolean;
-  weatherForecastMode: WeatherForecastMode;
-  weatherMetricIds: WeatherMetricId[];
-  advancedCustomizationEnabled: boolean;
-  customSidebarActions: CustomSidebarAction[];
-  customSummaryPills: CustomSummaryPill[];
-}
-
-export interface SettingsState extends UserSettings {
-  updateSettings: (settings: Partial<UserSettings>) => void;
-  updateCameraViewMode: (entityId: string, mode: CameraViewMode) => void;
-  updateCameraStreamPreference: (entityId: string, preference: CameraStreamPreference) => void;
-  updateCameraWebRtcStreamSource: (entityId: string, source: CameraWebRtcStreamSource) => void;
-  updateCameraDirectStreamUrl: (entityId: string, url: string) => void;
-  updateCameraFitMode: (entityId: string, mode: CameraFitMode) => void;
-  updateCameraFullscreenAccessoryVisibility: (
-    cameraEntityId: string,
-    accessoryEntityId: string,
-    visible: boolean
-  ) => void;
-  applyImportedSettings: (settings: UserSettings) => void;
-  resetSettings: () => void;
 }
 
 export type CardType =

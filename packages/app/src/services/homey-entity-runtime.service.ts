@@ -4,8 +4,8 @@ import type {
   PlatformEntitySnapshotMap,
 } from '@navet/app/platform/provider-feature-models';
 import type { ProviderEntityRuntimeService } from '@navet/app/platform/provider-feature-services';
-import type { HomeyCapabilityState, HomeyDevice, HomeySnapshot } from '@navet/app/types/homey';
 import { areDataEqual } from '@navet/core/structural-equality';
+import type { HomeyCapabilityState, HomeyDevice, HomeySnapshot } from '@navet/provider-homey';
 import { homeyService } from './homey.service';
 
 const EMPTY_ENTITY_REGISTRY: PlatformEntityRegistryEntry[] = [];

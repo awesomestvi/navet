@@ -16,6 +16,7 @@ runProviderPackageRegistrationTests({
         resetSnapshot: vi.fn(),
         subscribe: vi.fn(() => () => {}),
         callService: vi.fn(async () => undefined),
+        executeCommand: vi.fn(async () => undefined),
         entityRuntimeService: {
           getEntitySnapshots: () => null,
           subscribeEntitySnapshots: () => () => {},

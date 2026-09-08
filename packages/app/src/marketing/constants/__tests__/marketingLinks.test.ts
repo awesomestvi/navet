@@ -8,6 +8,7 @@ describe('marketing links', () => {
     expect(MARKETING_URLS.storybook).toBe('https://storybook.navet.app/');
     expect(MARKETING_URLS.discord).toBe('https://discord.com/channels/1540491864325623892');
     expect(MARKETING_URLS.reddit).toBe('https://www.reddit.com/r/navet/');
+    expect(MARKETING_URLS.youtube).toBe('https://www.youtube.com/@navetapp');
     expect(MARKETING_URLS.docsIndex).toBe('https://docs.navet.app/');
     expect(MARKETING_URLS.gettingStarted).toBe('https://docs.navet.app/getting-started/');
     expect(MARKETING_URLS.changelog).toBe('https://docs.navet.app/changelog/');

@@ -85,7 +85,7 @@ export interface UserSettings {
   customSummaryPills: CustomSummaryPill[];
 }
 
-interface SettingsState extends UserSettings {
+export interface SettingsState extends UserSettings {
   updateSettings: (settings: Partial<UserSettings>) => void;
   updateCameraViewMode: (entityId: string, mode: CameraViewMode) => void;
   updateCameraStreamPreference: (entityId: string, preference: CameraStreamPreference) => void;

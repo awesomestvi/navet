@@ -16,6 +16,7 @@ export interface HomeyProviderDependencies {
     resetSnapshot: HomeyBridge['resetSnapshot'];
     subscribe: (listener: () => void) => () => void;
     callService: HomeyBridge['callService'];
+    executeCommand: HomeyBridge['executeCommand'];
   };
   entityRuntimeService: HomeyBridge['entityRuntimeService'];
 }
@@ -30,6 +31,7 @@ function createHomeyBridgeFromDependencies(dependencies: HomeyProviderDependenci
     subscribe: (listener) => dependencies.homeyService.subscribe(() => listener()),
     callService: (domain, service, serviceData, target) =>
       dependencies.homeyService.callService(domain, service, serviceData, target),
+    executeCommand: (entity, command) => dependencies.homeyService.executeCommand(entity, command),
     entityRuntimeService: dependencies.entityRuntimeService,
   };
 }

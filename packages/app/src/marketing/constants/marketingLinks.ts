@@ -30,6 +30,7 @@ export const MARKETING_URLS = {
   github: GITHUB_REPO_URL,
   discord: COMMUNITY_URLS.discord,
   reddit: COMMUNITY_URLS.reddit,
+  youtube: COMMUNITY_URLS.youtube,
   roadmapDoc: joinUrl(DOCS_SITE_URL, 'roadmap/'),
   docsIndex: DOCS_SITE_URL,
   gettingStarted: joinUrl(DOCS_SITE_URL, 'getting-started/'),

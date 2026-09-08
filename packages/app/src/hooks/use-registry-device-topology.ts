@@ -126,16 +126,6 @@ export function useProviderClimateTopology(entityId: string): ProviderDeviceTopo
   return useClimateRegistryDeviceTopology(entityId);
 }
 
-/** @deprecated Use useClimateRegistryDeviceTopology. */
-export function useHvacRegistryDeviceTopology(entityId: string): RegistryDeviceIdsSlice {
-  return useClimateRegistryDeviceTopology(entityId);
-}
-
-/** @deprecated Use useProviderClimateTopology. */
-export function useProviderHvacTopology(entityId: string): ProviderDeviceTopology {
-  return useClimateRegistryDeviceTopology(entityId);
-}
-
 export function useSwitchRegistryDeviceTopology(entityId: string): RegistryDeviceIdsSlice {
   const currentProviderId = useIntegrationStore((state) => state.currentProviderId);
   const { providerId, runtimeEntityId } = resolveProviderRegistryTarget(

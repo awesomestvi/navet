@@ -36,9 +36,7 @@ function MarketingHeroVisual({ mobile = false, lightOn, onToggleLight }: Marketi
       <div
         className={cn(
           'marketing-hero-visual-frame relative',
-          mobile
-            ? 'marketing-hero-visual-frame--mobile'
-            : 'w-full max-w-[620px] translate-x-[5%] -translate-y-[2rem] xl:max-w-[690px] xl:translate-x-[8%]'
+          mobile ? 'marketing-hero-visual-frame--mobile' : 'w-full max-w-[620px] xl:max-w-[690px]'
         )}
       >
         <fieldset className="marketing-hero-wall-panel" aria-label="Navet wall panel sample home">
@@ -48,7 +46,7 @@ function MarketingHeroVisual({ mobile = false, lightOn, onToggleLight }: Marketi
               alt="Navet's Home dashboard with its sidebar, room navigation, summary, and device cards"
               width={999}
               height={791}
-              className="block h-auto w-full"
+              className="marketing-hero-dashboard-image block h-auto w-full"
               loading="eager"
               fetchPriority="high"
             />
@@ -123,6 +121,7 @@ export function MarketingHeroSection() {
           />
         </div>
         <div className="marketing-hero-room-shade" aria-hidden="true" />
+        <div className="marketing-hero-mobile-light-state" aria-hidden="true" />
 
         <div className="marketing-hero-layout relative mx-auto grid min-h-[46rem] w-full max-w-[1320px] items-center gap-8 px-4 pt-28 pb-14 sm:px-6 sm:py-28 lg:min-h-screen lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-12 lg:px-8 lg:py-32">
           <div className="marketing-hero-copy max-w-[640px] space-y-5 sm:space-y-6">
@@ -167,6 +166,9 @@ export function MarketingHeroSection() {
               compactMobile
               mobileBehavior="scroll"
             />
+            <Text className="marketing-hero-proof-line text-[11px] leading-5 font-medium tracking-[0.01em] text-white/64">
+              {MARKETING_HERO_CONTENT.pills.join(' · ')}
+            </Text>
             <MarketingHeroVisual mobile lightOn={lightOn} onToggleLight={toggleLight} />
             <div className="space-y-3 sm:space-y-4">
               <div className="marketing-hero-secondary-links flex flex-wrap items-center justify-center gap-x-4 gap-y-2 sm:justify-start">

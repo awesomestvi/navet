@@ -1,5 +1,6 @@
 import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
+import { COMMUNITY_URLS } from "../../packages/app/src/constants/urls";
 
 export default defineConfig({
   site: "https://docs.navet.app",
@@ -32,6 +33,11 @@ export default defineConfig({
           icon: "github",
           label: "Navet on GitHub",
           href: "https://github.com/awesomestvi/navet",
+        },
+        {
+          icon: "youtube",
+          label: "Navet on YouTube",
+          href: COMMUNITY_URLS.youtube,
         },
       ],
       lastUpdated: true,

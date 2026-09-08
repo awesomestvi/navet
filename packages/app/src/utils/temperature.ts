@@ -1,22 +1,6 @@
-export type TemperatureUnit = 'celsius' | 'fahrenheit';
+import type { TemperatureUnit } from '@navet/core/temperature';
 
-export function normalizeTemperatureUnit(value: unknown): TemperatureUnit | undefined {
-  if (typeof value !== 'string') {
-    return undefined;
-  }
-
-  const normalized = value.trim().toLowerCase();
-
-  if (normalized === '°f' || normalized === 'f' || normalized === 'fahrenheit') {
-    return 'fahrenheit';
-  }
-
-  if (normalized === '°c' || normalized === 'c' || normalized === 'celsius') {
-    return 'celsius';
-  }
-
-  return undefined;
-}
+export { normalizeTemperatureUnit, type TemperatureUnit } from '@navet/core/temperature';
 
 export function getTemperatureUnitSymbol(unit: TemperatureUnit): '°C' | '°F' {
   return unit === 'fahrenheit' ? '°F' : '°C';

@@ -79,7 +79,8 @@ describe('preview runtime', () => {
     installPreviewRuntime(getPreviewRuntimeScenario('demo'));
     const climate = getProviderRuntimeRegistration('home_assistant').climateFeatureService;
     expect(climate).toBeDefined();
-    await climate!.setTargetTemperature('climate.main_floor', {
+    if (!climate) throw new Error('Expected preview climate service');
+    await climate.setTargetTemperature('climate.main_floor', {
       serviceDomain: 'climate',
       temperature: 22.5,
     });

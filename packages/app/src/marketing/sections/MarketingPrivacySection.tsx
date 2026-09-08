@@ -17,7 +17,7 @@ export function MarketingPrivacySection({ className }: { className?: string }) {
 
   return (
     <MarketingSectionShell variant="editorial" compactMobile className={className}>
-      <MarketingReveal className={cn('relative border-y py-8 sm:py-12', surface.border)}>
+      <MarketingReveal className="relative py-8 sm:py-12">
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] lg:items-center">
           <div className="space-y-2.5 sm:space-y-3">
             <MarketingHeadline compactMobile className={cn('max-w-[11ch]', surface.textPrimary)}>

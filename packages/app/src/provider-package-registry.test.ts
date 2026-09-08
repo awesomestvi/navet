@@ -22,8 +22,6 @@ const mocks = vi.hoisted(() => ({
   }),
   createHomeyProviderPackageRegistrationMock: vi.fn(() => ({ runtimeRegistration: {} })),
   createOpenHABProviderPackageRegistrationMock: vi.fn(() => ({ runtimeRegistration: {} })),
-  createHubitatProviderPackageRegistrationMock: vi.fn(() => ({ runtimeRegistration: {} })),
-  createSmartThingsProviderPackageRegistrationMock: vi.fn(() => ({ runtimeRegistration: {} })),
   subscribeCameraWebRtcOfferMock: vi.fn(async () => () => undefined),
 }));
 
@@ -38,15 +36,6 @@ vi.mock('@navet/provider-homey', () => ({
 
 vi.mock('@navet/provider-openhab', () => ({
   createOpenHABProviderPackageRegistration: mocks.createOpenHABProviderPackageRegistrationMock,
-}));
-
-vi.mock('@navet/provider-hubitat', () => ({
-  createHubitatProviderPackageRegistration: mocks.createHubitatProviderPackageRegistrationMock,
-}));
-
-vi.mock('@navet/provider-smartthings', () => ({
-  createSmartThingsProviderPackageRegistration:
-    mocks.createSmartThingsProviderPackageRegistrationMock,
 }));
 
 vi.mock('./integration-session-runtime', () => ({

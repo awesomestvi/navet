@@ -33,6 +33,7 @@ import {
   usePersistedState,
   useTheme,
 } from '@navet/app/hooks';
+import type { TranslateFn, TranslationKey } from '@navet/app/i18n';
 import type {
   PlatformStatisticsHistoryRequest,
   PlatformStatisticsHistorySeries,
@@ -63,11 +64,12 @@ import { EnergySparkline } from '../charts/energy-sparkline';
 type EnergyUsageRange = 'live' | EnergyHistoryRange;
 
 function EnergyLoadingIndicator() {
+  const { t } = useI18n();
   return (
     <div
       role="status"
       className="flex items-center justify-center"
-      aria-label="Loading energy data"
+      aria-label={t('energy.historyWorkspace.loading')}
     >
       <span
         aria-hidden="true"
@@ -110,13 +112,13 @@ const EnergyKpiOrderEditor = lazy(async () => {
   return { default: module.EnergyKpiOrderEditor };
 });
 
-const RANGE_LABELS: Record<EnergyUsageRange, string> = {
-  live: 'Live',
-  today: 'Day',
-  week: 'Week',
-  month: 'Month',
-  year: 'Year',
-  custom: 'Custom',
+const RANGE_LABELS: Record<EnergyUsageRange, TranslationKey> = {
+  live: 'energy.range.live',
+  today: 'energy.range.day',
+  week: 'energy.range.week',
+  month: 'energy.range.month',
+  year: 'energy.range.year',
+  custom: 'common.custom',
 };
 const EMPTY_HISTORY_SOURCES: EnergyHistorySource[] = [];
 const EMPTY_HISTORY_CONSUMERS: EnergyConsumer[] = [];
@@ -163,7 +165,7 @@ export function EnergyDetailedHistoryWorkspace({
   onKpiCustomizationOpenChange?: (open: boolean) => void;
 }) {
   const { theme } = useTheme();
-  const { locale } = useI18n();
+  const { locale, t } = useI18n();
   const isPhone = useMediaQuery('(max-width: 639px)');
   const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
   const providerKpiMetrics = useProviderEnergyKpiMetrics();
@@ -192,7 +194,7 @@ export function EnergyDetailedHistoryWorkspace({
           ? [
               {
                 id: 'home' as const,
-                label: 'Home use',
+                label: t('energy.historyWorkspace.homeUse'),
                 entityId: currentLoadStatisticId,
                 color: accentColor,
                 valueKind: 'power' as const,
@@ -205,7 +207,7 @@ export function EnergyDetailedHistoryWorkspace({
       seenEntityIds.add(source.entityId);
       return true;
     });
-  }, [accentColor, currentLoadStatisticId, sources]);
+  }, [accentColor, currentLoadStatisticId, sources, t]);
   const selectedSource =
     availableSources.find((source) => source.id === selectedSourceId) ?? availableSources[0];
   const selectedSourceColor =
@@ -239,7 +241,7 @@ export function EnergyDetailedHistoryWorkspace({
       minValue: bucket.lowPowerW,
       maxValue: bucket.peakPowerW,
     })) ?? [];
-  const detailLabel = `${RANGE_LABELS[historyRange]} total`;
+  const detailLabel = t('energy.historyCopy.total', { period: t(RANGE_LABELS[historyRange]) });
   const metricEnergyKWh = model?.totalEnergyKWh ?? 0;
   const metricLowPowerW = model?.lowPowerW ?? 0;
   const metricAveragePowerW = model?.averagePowerW ?? 0;
@@ -252,7 +254,9 @@ export function EnergyDetailedHistoryWorkspace({
       ? (model?.totalEnergyKWh ?? 0) / observedEnergyBuckets.length
       : 0;
   const energyBucketUnit = getEnergyBucketUnit(observedEnergyBuckets[0]);
-  const energyBucketAverageLabel = `the ${energyBucketUnit} average`;
+  const energyBucketAverageLabel = t('energy.historyCopy.bucketAverage', {
+    period: t(`energy.historyCopy.${energyBucketUnit}`),
+  });
   const liveLowPowerW = livePoints.reduce(
     (lowest, point) => Math.min(lowest, point.minValue ?? point.value),
     Number.POSITIVE_INFINITY
@@ -284,71 +288,76 @@ export function EnergyDetailedHistoryWorkspace({
   const displayedEnergyKWh = model?.totalEnergyKWh;
   const lowPowerBucket = findLowestPowerBucket(model?.buckets ?? []);
   const energyComparison = model
-    ? formatEnergyComparison(model.comparisonPercent, isTodayInsights)
+    ? formatEnergyComparison(model.comparisonPercent, isTodayInsights, t)
     : isLoading
-      ? 'Loading previous-period comparison…'
-      : 'Previous-period comparison unavailable';
-  const periodLabel = RANGE_LABELS[historyRange];
-  const historyPeriodContext = formatHistoryPeriodContext(historyRange, window, locale);
-  const historyNavigationUnit = getHistoryNavigationUnit(historyRange);
+      ? t('energy.historyCopy.comparisonLoading')
+      : t('energy.historyCopy.comparisonUnavailable');
+  const periodLabel = t(RANGE_LABELS[historyRange]);
+  const historyPeriodContext = formatHistoryPeriodContext(historyRange, window, locale, t);
+  const navigationUnit = getHistoryNavigationUnit(historyRange);
+  const historyNavigationUnit = navigationUnit ? t(`energy.historyCopy.${navigationUnit}`) : null;
   const isCurrentHistoryPeriod = isSameHistoryPeriod(historyRange, referenceDateMs, Date.now());
-  const periodAverageLabel = isTodayInsights ? "today's average" : 'the period average';
+  const periodAverageLabel = isTodayInsights
+    ? t('energy.historyCopy.todayAverage')
+    : t('energy.historyCopy.periodAverage');
   const metricCardSpans = resolveMetricCardSpans(metricRowSpan);
   const genericLiveMetrics: EnergyUsageMetric[] = [
     {
       id: 'now',
-      label: 'Current demand',
-      period: 'Live',
+      label: t('energy.historyWorkspace.currentDemand'),
+      period: t('energy.range.live'),
       value: formatPowerValue(currentLoadW),
-      detail: 'Household load right now',
+      detail: t('energy.historyCopy.householdLoad'),
       footer: energyComparison,
       icon: Zap,
       color: selectedSourceColor,
     },
     {
       id: 'low',
-      label: 'Low usage',
+      label: t('energy.historyWorkspace.lowUsage'),
       period: periodLabel,
       value: model || livePoints.length > 0 ? formatPowerValue(displayedLowPowerW) : '—',
       detail: lowPowerBucket
-        ? formatLowestOccurrence(lowPowerBucket.startMs, lowPowerBucket.endMs)
-        : 'Today so far',
+        ? formatOccurrence(lowPowerBucket.startMs, lowPowerBucket.endMs, 'lowest', locale, t)
+        : t('energy.historyCopy.todaySoFar'),
       footer: formatRelativeToAverage(
         displayedLowPowerW,
         displayedAveragePowerW,
         'below',
-        periodAverageLabel
+        periodAverageLabel,
+        t
       ),
       icon: TrendingDown,
       color: '#38bdf8',
     },
     {
       id: 'average',
-      label: 'Average usage',
+      label: t('energy.historyWorkspace.averageUsage'),
       period: periodLabel,
       value: model || livePoints.length > 0 ? formatPowerValue(displayedAveragePowerW) : '—',
-      detail: 'Typical demand so far',
+      detail: t('energy.historyCopy.typicalDemand'),
       footer:
         typeof displayedEnergyKWh === 'number'
-          ? `${formatEnergyValue(displayedEnergyKWh)} kWh used today`
-          : 'Historical context is loading…',
+          ? t('energy.historyCopy.usedToday', { value: formatEnergyValue(displayedEnergyKWh) })
+          : t('energy.historyCopy.historyLoading'),
       icon: Gauge,
       color: '#2dd4bf',
     },
     {
       id: 'peak',
-      label: 'Peak usage',
+      label: t('energy.historyWorkspace.peakUsage'),
       period: periodLabel,
       value: model || livePoints.length > 0 ? formatPowerValue(displayedPeakPowerW) : '—',
       detail:
         model?.peakStartMs && model.peakEndMs
-          ? formatPeakOccurrence(model.peakStartMs, model.peakEndMs)
-          : 'Highest demand so far',
+          ? formatOccurrence(model.peakStartMs, model.peakEndMs, 'highest', locale, t)
+          : t('energy.historyCopy.highestDemand'),
       footer: formatRelativeToAverage(
         displayedPeakPowerW,
         displayedAveragePowerW,
         'above',
-        periodAverageLabel
+        periodAverageLabel,
+        t
       ),
       icon: TrendingUp,
       color: '#fb923c',
@@ -365,14 +374,17 @@ export function EnergyDetailedHistoryWorkspace({
       : (priorityData?.totals.importTodayKWh ?? 0);
     capabilityMetrics.push({
       id: 'grid',
-      label: isExporting ? 'Grid export' : 'Grid import',
-      period: 'Live',
+      label: t(isExporting ? 'energy.model.gridExport' : 'energy.model.gridImport'),
+      period: t('energy.range.live'),
       value: formatPowerValue(gridPowerW),
       detail:
         gridPowerW > 0
-          ? `${isExporting ? 'Exporting' : 'Importing'} right now`
-          : 'No grid flow right now',
-      footer: `${formatEnergyValue(gridEnergyKWh)} kWh ${isExporting ? 'exported' : 'imported'} today`,
+          ? t(isExporting ? 'energy.historyCopy.exporting' : 'energy.historyCopy.importing')
+          : t('energy.historyCopy.gridIdle'),
+      footer: t(
+        isExporting ? 'energy.historyCopy.exportedToday' : 'energy.historyCopy.importedToday',
+        { value: formatEnergyValue(gridEnergyKWh) }
+      ),
       icon: UtilityPole,
       color: '#60a5fa',
     });
@@ -384,15 +396,19 @@ export function EnergyDetailedHistoryWorkspace({
         : 0;
     capabilityMetrics.push({
       id: 'solar',
-      label: 'Solar production',
-      period: 'Live',
+      label: t('energy.historyWorkspace.solarProduction'),
+      period: t('energy.range.live'),
       value: formatPowerValue(priorityData.totals.solarW),
       detail:
-        priorityData.totals.solarW > 0 ? 'Generating right now' : 'Configured · not producing',
+        priorityData.totals.solarW > 0
+          ? t('energy.historyCopy.generating')
+          : t('energy.historyCopy.solarIdle'),
       footer:
         priorityData.totals.solarW > 0
-          ? `${solarCoverage}% of current demand`
-          : `${formatEnergyValue(priorityData.totals.solarTodayKWh)} kWh generated today`,
+          ? t('energy.historyCopy.demandShare', { percent: solarCoverage })
+          : t('energy.historyCopy.generatedToday', {
+              value: formatEnergyValue(priorityData.totals.solarTodayKWh),
+            }),
       icon: SunMedium,
       color: '#facc15',
     });
@@ -401,19 +417,21 @@ export function EnergyDetailedHistoryWorkspace({
     const batteryPowerW = priorityData.totals.batteryPowerW;
     capabilityMetrics.push({
       id: 'battery',
-      label: 'Battery',
-      period: 'Live',
+      label: t('energy.model.battery'),
+      period: t('energy.range.live'),
       value: `${Math.round(priorityData.totals.batteryPercent)}%`,
       detail:
         batteryPowerW > 0
-          ? `Charging at ${formatPowerValue(batteryPowerW)}`
+          ? t('energy.historyCopy.charging', { value: formatPowerValue(batteryPowerW) })
           : batteryPowerW < 0
-            ? `Supplying ${formatPowerValue(Math.abs(batteryPowerW))}`
-            : 'Idle right now',
+            ? t('energy.historyCopy.supplying', {
+                value: formatPowerValue(Math.abs(batteryPowerW)),
+              })
+            : t('energy.historyCopy.idle'),
       footer:
         priorityData.totals.batteryPercent <= 20
-          ? 'Battery reserve is low'
-          : 'Stored energy is available',
+          ? t('energy.historyCopy.reserveLow')
+          : t('energy.historyCopy.storedAvailable'),
       icon: BatteryCharging,
       color: '#2dd4bf',
     });
@@ -421,14 +439,16 @@ export function EnergyDetailedHistoryWorkspace({
   if (priorityData?.dataCoverage.hasCost) {
     capabilityMetrics.push({
       id: 'cost',
-      label: 'Energy cost',
-      period: 'Today',
+      label: t('energy.historyWorkspace.energyCost'),
+      period: t('energy.model.today'),
       value: formatEnergyValue(priorityData.totals.costToday),
-      detail: 'Recorded cost so far',
+      detail: t('energy.historyCopy.costSoFar'),
       footer:
         priorityData.totals.projectedMonthCost > 0
-          ? `${formatEnergyValue(priorityData.totals.projectedMonthCost)} projected this month`
-          : 'Monthly projection unavailable',
+          ? t('energy.historyCopy.projectedMonth', {
+              value: formatEnergyValue(priorityData.totals.projectedMonthCost),
+            })
+          : t('energy.historyCopy.projectionUnavailable'),
       icon: CircleDollarSign,
       color: '#a78bfa',
     });
@@ -436,7 +456,7 @@ export function EnergyDetailedHistoryWorkspace({
   const rangeMetrics: EnergyUsageMetric[] = [
     {
       id: 'energy',
-      label: 'Energy used',
+      label: t('energy.historyWorkspace.energyUsed'),
       period: periodLabel,
       value: model ? `${formatEnergyValue(metricEnergyKWh)} kWh` : '—',
       detail: detailLabel,
@@ -446,55 +466,74 @@ export function EnergyDetailedHistoryWorkspace({
     },
     {
       id: 'low',
-      label: 'Low usage',
+      label: t('energy.historyWorkspace.lowUsage'),
       period: periodLabel,
       value: lowestEnergyBucket ? `${formatEnergyValue(lowestEnergyBucket.energyKWh)} kWh` : '—',
       detail: lowestEnergyBucket
-        ? formatLowestOccurrence(lowestEnergyBucket.startMs, lowestEnergyBucket.endMs)
+        ? formatOccurrence(
+            lowestEnergyBucket.startMs,
+            lowestEnergyBucket.endMs,
+            'lowest',
+            locale,
+            t
+          )
         : detailLabel,
       footer: formatRelativeToAverage(
         lowestEnergyBucket?.energyKWh ?? 0,
         averageBucketEnergyKWh,
         'below',
-        energyBucketAverageLabel
+        energyBucketAverageLabel,
+        t
       ),
       icon: TrendingDown,
       color: '#38bdf8',
     },
     {
       id: 'average',
-      label: 'Average usage',
+      label: t('energy.historyWorkspace.averageUsage'),
       period: periodLabel,
       value: model ? `${formatEnergyValue(averageBucketEnergyKWh)} kWh` : '—',
-      detail: `${capitalizeFirst(energyBucketUnit)} average`,
+      detail: t('energy.historyCopy.averageTitle', {
+        period: capitalizeFirst(t(`energy.historyCopy.${energyBucketUnit}`)),
+      }),
       footer: model
-        ? `${formatEnergyValue(model.totalEnergyKWh)} kWh across ${formatBucketCount(observedEnergyBuckets.length, energyBucketUnit)}`
-        : 'Historical context is loading…',
+        ? t('energy.historyCopy.energyAcross', {
+            value: formatEnergyValue(model.totalEnergyKWh),
+            duration: formatBucketCount(observedEnergyBuckets.length, energyBucketUnit, locale, t),
+          })
+        : t('energy.historyCopy.historyLoading'),
       icon: Gauge,
       color: '#2dd4bf',
     },
     {
       id: 'peak',
-      label: 'Peak usage',
+      label: t('energy.historyWorkspace.peakUsage'),
       period: periodLabel,
       value: highestEnergyBucket ? `${formatEnergyValue(highestEnergyBucket.energyKWh)} kWh` : '—',
       detail: highestEnergyBucket
-        ? formatPeakOccurrence(highestEnergyBucket.startMs, highestEnergyBucket.endMs)
+        ? formatOccurrence(
+            highestEnergyBucket.startMs,
+            highestEnergyBucket.endMs,
+            'highest',
+            locale,
+            t
+          )
         : detailLabel,
       footer: formatRelativeToAverage(
         highestEnergyBucket?.energyKWh ?? 0,
         averageBucketEnergyKWh,
         'above',
-        energyBucketAverageLabel
+        energyBucketAverageLabel,
+        t
       ),
       icon: TrendingUp,
       color: '#fb923c',
     },
   ];
-  const providerUsageMetrics = providerKpiMetrics.map(toProviderUsageMetric);
+  const providerUsageMetrics = providerKpiMetrics.map((metric) => toProviderUsageMetric(metric, t));
   const automaticProviderMetrics = providerKpiMetrics
     .filter((metric) => metric.kind === 'prepaid')
-    .map(toProviderUsageMetric);
+    .map((metric) => toProviderUsageMetric(metric, t));
   const selectableUsageMetrics = uniqueUsageMetrics([
     ...providerUsageMetrics,
     ...capabilityMetrics,
@@ -516,7 +555,7 @@ export function EnergyDetailedHistoryWorkspace({
   );
   const usageMetrics =
     currentKpiPreference.mode === 'custom'
-      ? resolveSelectedUsageMetrics(currentKpiPreference.metricIds, selectableUsageMetrics)
+      ? resolveSelectedUsageMetrics(currentKpiPreference.metricIds, selectableUsageMetrics, t)
       : automaticUsageMetrics;
   const updateKpiPreference = (nextPreference: EnergyKpiPreference) => {
     setKpiPreferences((current) => ({
@@ -529,7 +568,9 @@ export function EnergyDetailedHistoryWorkspace({
   };
   const detailCardClassName = useBentoLayout ? 'order-10 col-span-4 row-span-2 min-w-0' : 'min-w-0';
   const selectedBucket = isLiveChart ? null : (model?.selectedBucket ?? null);
-  const selectedBucketUnit = getEnergyBucketUnit(selectedBucket ?? undefined);
+  const selectedBucketUnit = t(
+    `energy.historyCopy.${getEnergyBucketUnit(selectedBucket ?? undefined)}`
+  );
   const selectedBucketCost =
     selectedBucket &&
     priorityData?.dataCoverage.hasCost &&
@@ -562,13 +603,17 @@ export function EnergyDetailedHistoryWorkspace({
           data-testid="energy-usage-card"
           data-overview-module="usage"
           style={mainCardStyle}
-          title={selectedBucket ? `Selected ${selectedBucketUnit}` : 'Energy usage'}
+          title={
+            selectedBucket
+              ? t('energy.historyWorkspace.selected', { period: selectedBucketUnit })
+              : t('energy.historyWorkspace.usage')
+          }
           subtitle={
             isLiveChart
-              ? 'Live power demand'
+              ? t('energy.historyWorkspace.liveDemand')
               : selectedBucket
-                ? formatTimeWindow(selectedBucket.startMs, selectedBucket.endMs)
-                : `${historyPeriodContext} · Select a bar to inspect that period.`
+                ? formatTimeWindow(selectedBucket.startMs, selectedBucket.endMs, locale)
+                : t('energy.historyWorkspace.inspectPeriod', { period: historyPeriodContext })
           }
           headerLayout="title-first"
           headerLeading={
@@ -576,7 +621,7 @@ export function EnergyDetailedHistoryWorkspace({
               <div className="flex items-start gap-1.5">
                 <Button
                   iconOnly
-                  label="Back to chart"
+                  label={t('energy.historyWorkspace.backToChart')}
                   size="compact"
                   variant="ghost"
                   className="h-8 w-8"
@@ -608,10 +653,14 @@ export function EnergyDetailedHistoryWorkspace({
               >
                 {!isLiveChart && historyNavigationUnit ? (
                   <fieldset className="order-2 m-0 flex min-w-0 flex-1 items-center justify-end gap-0.5 border-0 p-0 sm:order-1 sm:flex-none sm:gap-1">
-                    <legend className="sr-only">Displayed {historyNavigationUnit}</legend>
+                    <legend className="sr-only">
+                      {t('energy.historyWorkspace.displayed', { period: historyNavigationUnit })}
+                    </legend>
                     <Button
                       iconOnly
-                      label={`Previous ${historyNavigationUnit}`}
+                      label={t('energy.historyWorkspace.previous', {
+                        period: historyNavigationUnit,
+                      })}
                       size="compact"
                       variant="ghost"
                       className="h-9 w-9 shrink-0"
@@ -633,7 +682,7 @@ export function EnergyDetailedHistoryWorkspace({
                     </span>
                     <Button
                       iconOnly
-                      label={`Next ${historyNavigationUnit}`}
+                      label={t('energy.historyWorkspace.next', { period: historyNavigationUnit })}
                       size="compact"
                       variant="ghost"
                       className="h-9 w-9 shrink-0"
@@ -650,7 +699,7 @@ export function EnergyDetailedHistoryWorkspace({
                 ) : null}
                 <nav
                   className="order-1 flex shrink-0 gap-1 sm:order-2 sm:gap-1.5"
-                  aria-label="Energy usage view"
+                  aria-label={t('energy.historyWorkspace.view')}
                 >
                   <InteractivePill
                     active={isLiveChart}
@@ -662,7 +711,7 @@ export function EnergyDetailedHistoryWorkspace({
                       setSelectedBucketIndex(null);
                     }}
                   >
-                    Live
+                    {t('energy.range.live')}
                   </InteractivePill>
                   <InteractivePill
                     active={!isLiveChart}
@@ -674,7 +723,7 @@ export function EnergyDetailedHistoryWorkspace({
                       setSelectedBucketIndex(null);
                     }}
                   >
-                    {RANGE_LABELS[insightsRange]}
+                    {t(RANGE_LABELS[insightsRange])}
                   </InteractivePill>
                 </nav>
               </div>
@@ -744,7 +793,7 @@ export function EnergyDetailedHistoryWorkspace({
                   <div
                     className={`m-3 flex min-h-32 flex-1 items-center justify-center rounded-2xl border border-dashed px-4 text-center text-sm ${surface.border} ${surface.textMuted}`}
                   >
-                    Live usage history is not available yet.
+                    {t('energy.historyWorkspace.liveEmpty')}
                   </div>
                 )}
               </>
@@ -756,14 +805,13 @@ export function EnergyDetailedHistoryWorkspace({
               <div
                 className={`flex min-h-64 flex-1 items-center justify-center px-6 text-sm ${surface.textSecondary}`}
               >
-                Historical statistics could not be loaded. Check the configured whole-home power
-                sensor.
+                {t('energy.historyWorkspace.historyError')}
               </div>
             ) : !model || chartData.length === 0 ? (
               <div
                 className={`flex min-h-64 flex-1 items-center justify-center px-6 text-center text-sm ${surface.textSecondary}`}
               >
-                No long-term power statistics are available for this range yet.
+                {t('energy.historyWorkspace.historyEmpty')}
               </div>
             ) : selectedBucket ? (
               <SelectedPeriodView
@@ -798,13 +846,15 @@ export function EnergyDetailedHistoryWorkspace({
         {model && chartData.length > 0 && selectedSource?.id !== 'home' ? (
           <section
             className={cn(useBentoLayout ? 'contents' : 'grid gap-3 lg:grid-cols-2')}
-            aria-label="Selected energy period details"
+            aria-label={t('energy.historyWorkspace.selectedDetails')}
           >
             <BaseCard
               size="medium"
               surfaceVariant="muted"
               className={detailCardClassName}
-              title={`${selectedSource?.label ?? 'Source'} summary`}
+              title={t('energy.historyWorkspace.sourceSummary', {
+                source: selectedSource?.label ?? t('media.source'),
+              })}
               subtitle={detailLabel}
               headerLayout="title-first"
               headerLeading={
@@ -818,15 +868,21 @@ export function EnergyDetailedHistoryWorkspace({
             >
               <dl className="grid grid-cols-2 gap-3">
                 <SourceSummaryMetric
-                  label="Energy"
+                  label={t('energy.band.eyebrow')}
                   value={`${formatEnergyValue(metricEnergyKWh)} kWh`}
                 />
                 <SourceSummaryMetric
-                  label="Average"
+                  label={t('energy.history.average')}
                   value={formatPowerValue(metricAveragePowerW)}
                 />
-                <SourceSummaryMetric label="Low" value={formatPowerValue(metricLowPowerW)} />
-                <SourceSummaryMetric label="Peak" value={formatPowerValue(metricPeakPowerW)} />
+                <SourceSummaryMetric
+                  label={t('energy.history.low')}
+                  value={formatPowerValue(metricLowPowerW)}
+                />
+                <SourceSummaryMetric
+                  label={t('energy.dashboard.mode.peak')}
+                  value={formatPowerValue(metricPeakPowerW)}
+                />
               </dl>
             </BaseCard>
           </section>
@@ -845,7 +901,7 @@ export function EnergyDetailedHistoryWorkspace({
   );
 }
 
-function toProviderUsageMetric(metric: EnergyProviderKpiMetric): EnergyUsageMetric {
+function toProviderUsageMetric(metric: EnergyProviderKpiMetric, t: TranslateFn): EnergyUsageMetric {
   const isUnavailable = metric.availability === 'unavailable';
   const icon =
     metric.kind === 'prepaid'
@@ -863,20 +919,22 @@ function toProviderUsageMetric(metric: EnergyProviderKpiMetric): EnergyUsageMetr
         : '#2dd4bf';
   const detail =
     metric.kind === 'prepaid'
-      ? 'Remaining prepaid electricity'
+      ? t('energy.historyCopy.prepaidRemaining')
       : metric.kind === 'cost'
-        ? 'Provider cost reading'
+        ? t('energy.historyCopy.providerCost')
         : metric.kind === 'power'
-          ? 'Live provider power'
-          : 'Provider energy reading';
+          ? t('energy.historyCopy.providerPower')
+          : t('energy.historyCopy.providerEnergy');
 
   return {
     id: metric.id,
     label: metric.label,
-    period: 'Live',
+    period: t('energy.range.live'),
     value: isUnavailable ? '—' : [metric.value, metric.unit].filter(Boolean).join(' '),
-    detail: isUnavailable ? 'Provider reports this reading unavailable' : detail,
-    footer: metric.room ? `Reported for ${metric.room}` : 'Reported by the active provider',
+    detail: isUnavailable ? t('energy.historyCopy.providerUnavailable') : detail,
+    footer: metric.room
+      ? t('energy.historyCopy.reportedRoom', { room: metric.room })
+      : t('energy.historyCopy.reportedProvider'),
     icon,
     color,
   };
@@ -906,18 +964,19 @@ function normalizeEnergyKpiPreference(
 
 function resolveSelectedUsageMetrics(
   selectedMetricIds: string[],
-  metrics: EnergyUsageMetric[]
+  metrics: EnergyUsageMetric[],
+  t: TranslateFn
 ): EnergyUsageMetric[] {
   const metricsById = new Map(metrics.map((metric) => [metric.id, metric]));
   return selectedMetricIds.map(
     (metricId) =>
       metricsById.get(metricId) ?? {
         id: metricId,
-        label: 'Unavailable metric',
-        period: 'Unavailable',
+        label: t('energy.historyWorkspace.unavailableMetric'),
+        period: t('common.unavailable'),
         value: '—',
-        detail: 'This provider reading is not available',
-        footer: 'Choose another KPI in Customize',
+        detail: t('energy.historyCopy.readingUnavailable'),
+        footer: t('energy.historyCopy.chooseKpi'),
         icon: Gauge,
         color: '#94a3b8',
       }
@@ -939,6 +998,7 @@ function EnergyKpiPicker({
   onSave: (preference: EnergyKpiPreference) => void;
   preference: EnergyKpiPreference;
 }) {
+  const { t } = useI18n();
   const { theme, accentColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const [draftMode, setDraftMode] = useState<EnergyKpiPreference['mode']>(preference.mode);
@@ -982,8 +1042,8 @@ function EnergyKpiPicker({
       variant="fullscreen"
       isOpen={isOpen}
       onOpenChange={onOpenChange}
-      title="Energy KPIs"
-      description="Choose and order the four metrics shown above Energy usage."
+      title={t('energy.historyWorkspace.kpis')}
+      description={t('energy.historyWorkspace.kpisDescription')}
       theme={theme}
       contentClassName={cn(
         'md:left-1/2 md:right-auto md:w-[calc(100%-4rem)] md:max-w-[1200px] md:-translate-x-1/2',
@@ -995,9 +1055,9 @@ function EnergyKpiPicker({
       <NavigationWorkspace.Frame className="h-full min-h-0 max-h-full rounded-none border-0 bg-transparent shadow-none">
         <NavigationWorkspace.Header>
           <SheetSurfaceHeader
-            title="Energy KPIs"
-            description="Choose and order the four metrics shown above Energy usage."
-            closeLabel="Close Energy KPIs"
+            title={t('energy.historyWorkspace.kpis')}
+            description={t('energy.historyWorkspace.kpisDescription')}
+            closeLabel={t('energy.historyWorkspace.closeKpis')}
             onClose={() => onOpenChange(false)}
             className="md:px-6"
           />
@@ -1005,17 +1065,19 @@ function EnergyKpiPicker({
 
         <NavigationWorkspace.Body className="grid-rows-[auto_minmax(0,1fr)] md:grid-cols-[18rem_minmax(0,1fr)] md:grid-rows-1">
           <NavigationWorkspace.Sidebar className="border-r-0 border-b p-4 md:border-r md:border-b-0 md:p-5">
-            <p className={`text-sm font-semibold ${surface.textPrimary}`}>KPI setup</p>
-            <p className={`mt-1 text-xs leading-relaxed ${surface.textSecondary}`}>
-              Choose how metrics are selected and arranged.
+            <p className={`text-sm font-semibold ${surface.textPrimary}`}>
+              {t('energy.historyWorkspace.kpiSetup')}
             </p>
-            <nav aria-label="KPI setup" className="mt-4 space-y-1">
+            <p className={`mt-1 text-xs leading-relaxed ${surface.textSecondary}`}>
+              {t('energy.historyWorkspace.setupDescription')}
+            </p>
+            <nav aria-label={t('energy.historyWorkspace.kpiSetup')} className="mt-4 space-y-1">
               <NavigationWorkspace.Item
                 active={activeSection === 'automatic'}
                 accentColor={accentColor}
               >
                 <NavigationWorkspace.ItemButton
-                  aria-label="Automatic"
+                  aria-label={t('security.overview.customize.automatic')}
                   aria-pressed={activeSection === 'automatic'}
                   onClick={() => {
                     setDraftMode('auto');
@@ -1028,8 +1090,8 @@ function EnergyKpiPicker({
                     <Gauge className="h-4 w-4" />
                   </NavigationWorkspace.ItemIcon>
                   <NavigationWorkspace.ItemText
-                    title="Automatic"
-                    description="Adapts to available provider data"
+                    title={t('security.overview.customize.automatic')}
+                    description={t('energy.historyWorkspace.automaticDescription')}
                     descriptionClassName="!overflow-visible !text-clip !whitespace-normal break-words leading-4"
                   />
                 </NavigationWorkspace.ItemButton>
@@ -1039,7 +1101,7 @@ function EnergyKpiPicker({
                 accentColor={accentColor}
               >
                 <NavigationWorkspace.ItemButton
-                  aria-label="Manual"
+                  aria-label={t('security.overview.customize.manual')}
                   aria-pressed={activeSection === 'selection'}
                   onClick={chooseCustomMode}
                   className="!items-start py-2.5"
@@ -1048,11 +1110,13 @@ function EnergyKpiPicker({
                     <SlidersHorizontal className="h-4 w-4" />
                   </NavigationWorkspace.ItemIcon>
                   <NavigationWorkspace.ItemText
-                    title="Manual"
+                    title={t('security.overview.customize.manual')}
                     description={
                       draftMode === 'custom'
-                        ? `${draftMetricIds.length} of 4 selected`
-                        : 'Pin a consistent set'
+                        ? t('energy.historyWorkspace.selectedCount', {
+                            count: draftMetricIds.length,
+                          })
+                        : t('energy.historyWorkspace.pinSet')
                     }
                     descriptionClassName="!overflow-visible !text-clip !whitespace-normal break-words leading-4"
                   />
@@ -1063,7 +1127,7 @@ function EnergyKpiPicker({
                 accentColor={accentColor}
               >
                 <NavigationWorkspace.ItemButton
-                  aria-label="Order"
+                  aria-label={t('security.overview.customize.order')}
                   aria-pressed={activeSection === 'order'}
                   onClick={() => {
                     setDraftMode('custom');
@@ -1075,8 +1139,8 @@ function EnergyKpiPicker({
                     <GripVertical className="h-4 w-4" />
                   </NavigationWorkspace.ItemIcon>
                   <NavigationWorkspace.ItemText
-                    title="Order"
-                    description="Arrange selected metrics"
+                    title={t('security.overview.customize.order')}
+                    description={t('energy.historyWorkspace.orderDescription')}
                     descriptionClassName="!overflow-visible !text-clip !whitespace-normal break-words leading-4"
                   />
                 </NavigationWorkspace.ItemButton>
@@ -1090,23 +1154,22 @@ function EnergyKpiPicker({
                 <div className="w-full">
                   <div className="mb-6">
                     <p className={`text-base font-semibold ${surface.textPrimary}`}>
-                      Select KPIs manually
+                      {t('energy.historyWorkspace.manualTitle')}
                     </p>
                     <p className={`mt-2 text-sm leading-relaxed ${surface.textSecondary}`}>
-                      Select exactly four readings to keep the Energy dashboard focused on what
-                      matters to you.
+                      {t('energy.historyWorkspace.manualDescription')}
                     </p>
                   </div>
                   <EnergyKpiPickerGroup
-                    label="Energy insights"
+                    label={t('energy.historyWorkspace.energyInsights')}
                     metrics={insightMetrics}
                     selectedMetricIds={draftMetricIds}
                     onToggle={toggleMetric}
                   />
                   {providerMetrics.length > 0 ? (
                     <EnergyKpiPickerGroup
-                      label="Provider readings"
-                      description="Live energy-related sensors exposed by the active provider."
+                      label={t('energy.historyWorkspace.providerReadings')}
+                      description={t('energy.historyWorkspace.providerDescription')}
                       metrics={providerMetrics}
                       selectedMetricIds={draftMetricIds}
                       onToggle={toggleMetric}
@@ -1117,10 +1180,10 @@ function EnergyKpiPicker({
                 <div className="w-full">
                   <div className="mb-6">
                     <p className={`text-base font-semibold ${surface.textPrimary}`}>
-                      Order dashboard KPIs
+                      {t('energy.historyWorkspace.orderTitle')}
                     </p>
                     <p className={`mt-2 text-sm leading-relaxed ${surface.textSecondary}`}>
-                      Use the arrow controls to arrange metrics in dashboard order.
+                      {t('energy.historyWorkspace.orderHelp')}
                     </p>
                   </div>
                   <Suspense
@@ -1131,7 +1194,7 @@ function EnergyKpiPicker({
                     }
                   >
                     <EnergyKpiOrderEditor
-                      metrics={resolveSelectedUsageMetrics(draftMetricIds, metrics)}
+                      metrics={resolveSelectedUsageMetrics(draftMetricIds, metrics, t)}
                       orderedMetricIds={draftMetricIds}
                       onOrderChange={setDraftMetricIds}
                     />
@@ -1140,11 +1203,10 @@ function EnergyKpiPicker({
               ) : (
                 <div className="w-full">
                   <p className={`text-base font-semibold ${surface.textPrimary}`}>
-                    Automatic priority
+                    {t('energy.historyWorkspace.automaticTitle')}
                   </p>
                   <p className={`mt-2 text-sm leading-relaxed ${surface.textSecondary}`}>
-                    Navet prioritizes prepaid balance, cost, solar, battery, and grid data when
-                    available, then fills remaining slots with useful usage insights.
+                    {t('energy.historyWorkspace.automaticHelp')}
                   </p>
                   <div className="mt-5 grid gap-2 sm:grid-cols-2">
                     {automaticMetricIds.slice(0, 4).map((metricId) => {
@@ -1168,7 +1230,7 @@ function EnergyKpiPicker({
           )}
         >
           <Button variant="soft" size="small" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             variant="primary"
@@ -1182,7 +1244,7 @@ function EnergyKpiPicker({
               onOpenChange(false);
             }}
           >
-            Apply
+            {t('energy.historyWorkspace.apply')}
           </Button>
         </div>
       </NavigationWorkspace.Frame>
@@ -1456,27 +1518,28 @@ function SelectedPeriodView({
   showDeviceBreakdown: boolean;
   periodCost?: number;
 }) {
+  const { t } = useI18n();
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const metrics: SelectedPeriodMetricData[] = bucket.hasData
     ? [
         {
           id: 'average',
-          label: 'Average',
+          label: t('energy.history.average'),
           value: formatPowerValue(bucket.averagePowerW),
           icon: Gauge,
           color: '#2dd4bf',
         },
         {
           id: 'low',
-          label: 'Low',
+          label: t('energy.history.low'),
           value: formatPowerValue(bucket.lowPowerW),
           icon: TrendingDown,
           color: '#38bdf8',
         },
         {
           id: 'peak',
-          label: 'Peak',
+          label: t('energy.dashboard.mode.peak'),
           value: formatPowerValue(bucket.peakPowerW),
           icon: TrendingUp,
           color: '#fb923c',
@@ -1488,7 +1551,7 @@ function SelectedPeriodView({
     <section
       id="energy-selected-period-details"
       className="flex min-h-0 flex-1 flex-col"
-      aria-label="Selected period details"
+      aria-label={t('energy.historyWorkspace.selectedPeriodDetails')}
       aria-live="polite"
       data-testid="energy-selected-period-details"
     >
@@ -1504,9 +1567,11 @@ function SelectedPeriodView({
               aria-hidden="true"
             />
             <div className="min-w-0">
-              <h3 className={`text-xs font-semibold ${surface.textPrimary}`}>Energy used</h3>
+              <h3 className={`text-xs font-semibold ${surface.textPrimary}`}>
+                {t('energy.historyWorkspace.energyUsed')}
+              </h3>
               <p className={`mt-0.5 text-[11px] ${surface.textSecondary}`}>
-                Total recorded during this period
+                {t('energy.historyWorkspace.recordedTotal')}
               </p>
             </div>
             <div className={`mt-4 text-3xl font-semibold tabular-nums ${surface.textPrimary}`}>
@@ -1518,7 +1583,7 @@ function SelectedPeriodView({
               >
                 <CircleDollarSign className="h-3 w-3" aria-hidden="true" />
                 <span>
-                  Recorded cost{' '}
+                  {t('energy.historyWorkspace.recordedCost')}{' '}
                   <strong className={`font-semibold tabular-nums ${surface.textPrimary}`}>
                     {formatEnergyValue(periodCost)}
                   </strong>
@@ -1551,7 +1616,7 @@ function SelectedPeriodView({
         </div>
       ) : (
         <p className={`px-3 py-5 text-sm ${surface.textSecondary}`}>
-          Choose another bar to inspect recorded usage.
+          {t('energy.historyWorkspace.chooseBar')}
         </p>
       )}
     </section>
@@ -1571,6 +1636,7 @@ function SelectedPeriodDeviceBreakdown({
   isLoading: boolean;
   isAvailable: boolean;
 }) {
+  const { t } = useI18n();
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const trackedEnergyKWh = contributions.reduce((total, item) => total + item.energyKWh, 0);
@@ -1587,7 +1653,7 @@ function SelectedPeriodDeviceBreakdown({
       ? [
           {
             id: 'untracked',
-            name: 'Untracked',
+            name: t('energy.historyWorkspace.untracked'),
             energyKWh: untrackedEnergyKWh,
             averagePowerW: 0,
             share: totalEnergyKWh > 0 ? untrackedEnergyKWh / totalEnergyKWh : 0,
@@ -1605,14 +1671,16 @@ function SelectedPeriodDeviceBreakdown({
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
       <div className="flex items-baseline justify-between gap-3">
         <div className="min-w-0">
-          <h3 className={`text-xs font-semibold ${surface.textPrimary}`}>What used the most</h3>
+          <h3 className={`text-xs font-semibold ${surface.textPrimary}`}>
+            {t('energy.historyWorkspace.topUsage')}
+          </h3>
           <p className={`mt-0.5 text-[11px] ${surface.textSecondary}`}>
-            Ranked by energy during this period
+            {t('energy.historyWorkspace.rankedUsage')}
           </p>
         </div>
         {rows.length > 0 ? (
           <span className={`text-[10px] ${surface.textMuted}`}>
-            {rows.length} contributor{rows.length === 1 ? '' : 's'}
+            {t('energy.historyWorkspace.contributors', { count: rows.length })}
           </span>
         ) : null}
       </div>
@@ -1628,11 +1696,11 @@ function SelectedPeriodDeviceBreakdown({
           </div>
         ) : !isAvailable ? (
           <p className={`py-4 text-xs leading-5 ${surface.textSecondary}`}>
-            Device contribution is not available for this source or period.
+            {t('energy.historyWorkspace.contributionUnavailable')}
           </p>
         ) : rows.length === 0 ? (
           <p className={`py-4 text-xs leading-5 ${surface.textSecondary}`}>
-            No device-level history is available for this period.
+            {t('energy.historyWorkspace.deviceHistoryEmpty')}
           </p>
         ) : (
           <div className="min-w-0">
@@ -1790,7 +1858,8 @@ function shiftHistoryReference(range: EnergyHistoryRange, timestampMs: number, d
 function formatHistoryPeriodContext(
   range: EnergyHistoryRange,
   window: EnergyHistoryWindow,
-  locale: string
+  locale: string,
+  t: TranslateFn
 ) {
   if (range === 'today') {
     return new Intl.DateTimeFormat(locale, {
@@ -1829,7 +1898,7 @@ function formatHistoryPeriodContext(
     return String(new Date(window.startMs).getFullYear());
   }
 
-  return RANGE_LABELS[range];
+  return t(RANGE_LABELS[range]);
 }
 
 function formatPowerValue(powerW: number) {
@@ -1871,51 +1940,95 @@ function getEnergyBucketUnit(
   return 'month';
 }
 
-function formatBucketCount(count: number, unit: string) {
-  return `${count} ${unit}${count === 1 ? '' : 's'}`;
+function formatBucketCount(count: number, unit: string, locale: string, t: TranslateFn) {
+  if (unit === 'period')
+    return count === 1
+      ? `${count} ${t('energy.historyCopy.period')}`
+      : t('energy.historyCopy.periods', { count });
+  return new Intl.NumberFormat(locale, { style: 'unit', unit, unitDisplay: 'long' }).format(count);
 }
 
 function capitalizeFirst(value: string) {
   return `${value.charAt(0).toUpperCase()}${value.slice(1)}`;
 }
 
-function formatEnergyComparison(comparisonPercent: number | undefined, isToday: boolean) {
-  if (typeof comparisonPercent !== 'number') return 'Previous-period comparison unavailable';
-  const percentage = Math.round(Math.abs(comparisonPercent) * 100);
-  const reference = isToday ? 'by this time yesterday' : 'the previous period';
-  if (percentage < 1) {
-    return `Energy use is in line with ${isToday ? 'this time yesterday' : reference}`;
-  }
-  return `${percentage}% ${comparisonPercent < 0 ? 'less' : 'more'} energy used than ${reference}`;
+function formatEnergyComparison(
+  comparisonPercent: number | undefined,
+  isToday: boolean,
+  t: TranslateFn
+) {
+  if (typeof comparisonPercent !== 'number') return t('energy.historyCopy.comparisonUnavailable');
+  const percent = Math.round(Math.abs(comparisonPercent) * 100);
+  if (percent < 1)
+    return t(
+      isToday ? 'energy.historyCopy.comparisonSameToday' : 'energy.historyCopy.comparisonSamePeriod'
+    );
+  const key = isToday
+    ? comparisonPercent < 0
+      ? 'energy.historyCopy.comparisonLessToday'
+      : 'energy.historyCopy.comparisonMoreToday'
+    : comparisonPercent < 0
+      ? 'energy.historyCopy.comparisonLessPeriod'
+      : 'energy.historyCopy.comparisonMorePeriod';
+  return t(key, { percent });
 }
 
 function formatRelativeToAverage(
   value: number,
   average: number,
   direction: 'above' | 'below',
-  averageLabel: string
+  averageLabel: string,
+  t: TranslateFn
 ) {
-  if (average <= 0) return 'Average comparison unavailable';
-  const percentage = Math.round((Math.abs(value - average) / average) * 100);
-  return `${percentage}% ${direction} ${averageLabel}`;
+  if (average <= 0) return t('energy.historyCopy.averageUnavailable');
+  const percent = Math.round((Math.abs(value - average) / average) * 100);
+  return t(
+    direction === 'above' ? 'energy.historyCopy.aboveAverage' : 'energy.historyCopy.belowAverage',
+    { percent, average: averageLabel }
+  );
 }
 
-function formatLowestOccurrence(startMs: number, endMs: number) {
+function formatOccurrence(
+  startMs: number,
+  endMs: number,
+  kind: 'lowest' | 'highest',
+  locale: string,
+  t: TranslateFn
+) {
   const durationMs = endMs - startMs;
   if (durationMs <= 2 * 60 * 60 * 1000) {
-    return `Lowest between ${new Date(startMs).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}–${new Date(endMs).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`;
+    return t(
+      kind === 'lowest' ? 'energy.historyCopy.lowestBetween' : 'energy.historyCopy.highestBetween',
+      {
+        start: new Date(startMs).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }),
+        end: new Date(endMs).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }),
+      }
+    );
   }
-  if (durationMs <= 2 * 24 * 60 * 60 * 1000) {
-    return `Lowest day: ${new Date(startMs).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}`;
-  }
-  return `Lowest month: ${new Date(startMs).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}`;
+  const daily = durationMs <= 2 * 24 * 60 * 60 * 1000;
+  const key =
+    kind === 'lowest'
+      ? daily
+        ? 'energy.historyCopy.lowestDay'
+        : 'energy.historyCopy.lowestMonth'
+      : daily
+        ? 'energy.historyCopy.highestDay'
+        : 'energy.historyCopy.highestMonth';
+  return t(key, {
+    date: new Date(startMs).toLocaleDateString(
+      locale,
+      daily
+        ? { weekday: 'short', month: 'short', day: 'numeric' }
+        : { month: 'long', year: 'numeric' }
+    ),
+  });
 }
 
-function formatTimeWindow(startMs: number, endMs: number) {
+function formatTimeWindow(startMs: number, endMs: number, locale: string) {
   const start = new Date(startMs);
   const end = new Date(endMs);
   if (endMs - startMs > 2 * 60 * 60 * 1000 && endMs - startMs <= 27 * 60 * 60 * 1000) {
-    return start.toLocaleDateString(undefined, {
+    return start.toLocaleDateString(locale, {
       weekday: 'short',
       month: 'short',
       day: 'numeric',
@@ -1923,17 +2036,6 @@ function formatTimeWindow(startMs: number, endMs: number) {
   }
   const sameDay = start.toDateString() === end.toDateString();
   return sameDay
-    ? `${start.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}, ${start.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}–${end.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`
-    : `${start.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}–${end.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
-}
-
-function formatPeakOccurrence(startMs: number, endMs: number) {
-  const durationMs = endMs - startMs;
-  if (durationMs <= 2 * 60 * 60 * 1000) {
-    return `Highest between ${new Date(startMs).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}–${new Date(endMs).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`;
-  }
-  if (durationMs <= 2 * 24 * 60 * 60 * 1000) {
-    return `Highest day: ${new Date(startMs).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}`;
-  }
-  return `Highest month: ${new Date(startMs).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}`;
+    ? `${start.toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' })}, ${start.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}–${end.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}`
+    : `${start.toLocaleDateString(locale, { month: 'short', day: 'numeric' })}–${end.toLocaleDateString(locale, { month: 'short', day: 'numeric' })}`;
 }

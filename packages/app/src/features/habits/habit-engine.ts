@@ -1,4 +1,4 @@
-import { dispatchEntityCommand } from '@navet/app/services/integration-action.service';
+import { dispatchEntityCommand } from '@navet/app/commands';
 import { integrationStore } from '@navet/app/stores/integration-store';
 import type { HabitRule } from '@navet/core/habits';
 import { resolveSunPosition, supportsHabitSuggestions } from '@navet/core/habits';

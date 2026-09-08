@@ -1,3 +1,4 @@
+import profilePolicy from '../docker/shared/dashboard-profile-policy.js'
 import { createHash, randomBytes } from 'node:crypto'
 import {
   mkdirSync,
@@ -32,12 +33,26 @@ import {
   type DashboardWorkspaceIdentity,
 } from '../packages/app/src/services/dashboard-profile.contract.ts'
 
-export interface DashboardProfileData {
-  app: 'navet'
-  version: 3 | 4
-  exportedAt?: string
-  [key: string]: unknown
+const {
+  isValidProfile: isValidDashboardProfileData,
+  sanitizeDashboardProfile: sanitizeDashboardProfileData,
+  areDashboardProfilesEquivalent,
+  pickDisplayProfileSettings,
+  sanitizePreferenceValues: sanitizeDashboardPreferenceValues,
+  sanitizeDisplayProfilePolicy,
+  applyDashboardProfilePatch,
+  DISPLAY_PROFILE_ID_PATTERN,
+} = profilePolicy
+
+export {
+  isValidDashboardProfileData,
+  sanitizeDashboardProfileData,
+  sanitizeDashboardPreferenceValues,
+  applyDashboardProfilePatch,
 }
+
+export type { DashboardProfileData } from '../docker/shared/dashboard-profile-policy.js'
+import type { DashboardProfileData, SanitizedDisplayProfilePolicy } from '../docker/shared/dashboard-profile-policy.js'
 
 export interface DashboardProfileMetadata {
   etag: string
@@ -86,19 +101,7 @@ interface PreferenceRequestContext {
   collection: PreferenceCollection
 }
 
-interface SanitizedDisplayProfile {
-  id: string
-  name: string
-  settings: Record<string, unknown>
-  createdAt: string
-  updatedAt: string
-}
 
-interface SanitizedDisplayProfilePolicy extends Record<string, unknown> {
-  schemaVersion: 1
-  profilesById: Record<string, SanitizedDisplayProfile>
-  profileIdByClientId: Record<string, string>
-}
 
 interface BoundDashboardProfileClient extends DashboardProfileClient {
   bindingId: string
@@ -149,7 +152,6 @@ const MAX_PROFILE_STATE_BYTES = 128 * 1024
 const MAX_CLIENT_REGISTRY_BYTES = 512 * 1024
 const MAX_CLIENT_BINDING_BOOTSTRAP_BYTES = 128 * 1024
 const CLIENT_REGISTRY_LIMIT = 200
-const MAX_PATCH_OPERATIONS = 200
 const PROFILE_HASH_PATTERN = /^[a-f0-9]{64}$/
 const CLIENT_TOUCH_INTERVAL_MS = 15 * 60 * 1000
 const TENANT_ID_PATTERN = /^hat_[a-f0-9]{64}$/
@@ -162,79 +164,6 @@ const CLIENT_STALE_AFTER_MS = 90 * 24 * 60 * 60 * 1000
 const CLIENT_FUTURE_SKEW_MS = 5 * 60 * 1000
 const CLIENT_BINDING_BOOTSTRAP_TTL_MS = 5 * 1000
 const CLIENT_BINDING_BOOTSTRAP_LIMIT = 256
-const SHARED_SETTING_KEYS = [
-  'showWeatherInHeader',
-  'showHomeSummaryBar',
-  'choresEnabled',
-  'weatherForecastMode',
-  'weatherMetricIds',
-  'advancedCustomizationEnabled',
-  'customSidebarActions',
-  'customSummaryPills',
-] as const
-const ACCOUNT_SETTING_KEYS = [
-  'language',
-  'showNotifications',
-  'use24HourTime',
-  'temperatureUnit',
-  'defaultView',
-  'entityInteractionMode',
-] as const
-const CLIENT_SETTING_KEYS = [
-  'headerTitleMode',
-  'headerCustomText',
-  'keepDeviceAwake',
-  'compactMode',
-  'kioskMode',
-  'kioskSwipeRooms',
-  'dashboardProfileMode',
-  'dashboardSpaceMode',
-  'disableAnimations',
-  'lowPowerMode',
-  'effectsQuality',
-  'effectsQualityUserOverride',
-  'cameraDashboardViewMode',
-  'cameraViewModes',
-  'cameraStreamPreference',
-  'cameraStreamPreferences',
-  'cameraFitMode',
-  'cameraFitModes',
-  'ambientLightBleed',
-] as const
-const DISPLAY_PROFILE_SETTING_KEYS = [
-  'headerTitleMode',
-  'headerCustomText',
-  'keepDeviceAwake',
-  'compactMode',
-  'kioskMode',
-  'kioskSwipeRooms',
-  'dashboardProfileMode',
-  'dashboardSpaceMode',
-  'disableAnimations',
-  'lowPowerMode',
-  'effectsQuality',
-  'effectsQualityUserOverride',
-  'ambientLightBleed',
-] as const
-const DISPLAY_PROFILE_ID_PATTERN = /^[A-Za-z0-9_-]{8,128}$/
-const DISPLAY_PROFILE_LIMIT = 20
-const BOOLEAN_DISPLAY_PROFILE_SETTING_KEYS = new Set([
-  'keepDeviceAwake',
-  'compactMode',
-  'kioskMode',
-  'kioskSwipeRooms',
-  'disableAnimations',
-  'lowPowerMode',
-  'effectsQualityUserOverride',
-  'ambientLightBleed',
-])
-const DISPLAY_PROFILE_SETTING_VALUES: Record<string, ReadonlySet<string>> = {
-  headerTitleMode: new Set(['auto_greeting', 'custom_text', 'clock']),
-  dashboardProfileMode: new Set(['standard', 'wall_display', 'bedside', 'custom']),
-  dashboardSpaceMode: new Set(['default', 'more_space']),
-  effectsQuality: new Set(['high', 'medium', 'low']),
-}
-
 const SYSTEM_AUTHOR: DashboardProfileAuthor = {
   id: 'legacy-import',
   name: 'Imported dashboard',
@@ -252,306 +181,12 @@ function createId(prefix: string): string {
   return `${prefix}_${randomBytes(20).toString('hex')}`
 }
 
-export function isValidDashboardProfileData(value: unknown): value is DashboardProfileData {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return false
-  }
-
-  const profile = value as Partial<DashboardProfileData>
-  return profile.app === 'navet' && (profile.version === 3 || profile.version === 4)
-}
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 }
 
-function isCredentialFieldName(value: string): boolean {
-  const normalized = value.replace(/[^a-z0-9]/gi, '').toLowerCase()
-  return (
-    normalized.includes('token') ||
-    normalized.includes('password') ||
-    normalized.includes('passwd') ||
-    normalized.includes('passcode') ||
-    normalized.includes('jwt') ||
-    normalized.includes('secret') ||
-    normalized.includes('credential') ||
-    normalized === 'key' ||
-    normalized === 'sig' ||
-    normalized === 'pin' ||
-    normalized === 'code' ||
-    normalized === 'authorization' ||
-    normalized === 'auth' ||
-    normalized === 'authsig' ||
-    normalized.includes('signature') ||
-    normalized === 'bearer' ||
-    normalized === 'accesskey' ||
-    normalized === 'accesscode' ||
-    normalized === 'privatekey' ||
-    normalized.endsWith('apikey') ||
-    (normalized.startsWith('api') && normalized.endsWith('key'))
-  )
-}
-
-function isCredentialBearingUrl(value: unknown): boolean {
-  if (typeof value !== 'string') {
-    return false
-  }
-  try {
-    const url = new URL(value, 'https://navet.invalid')
-    const fragment = url.hash.slice(1)
-    const fragmentParameters = fragment.includes('?')
-      ? fragment.slice(fragment.indexOf('?') + 1)
-      : fragment
-    return (
-      Boolean(url.username || url.password) ||
-      Array.from(url.searchParams.keys()).some(isCredentialFieldName) ||
-      Array.from(new URLSearchParams(fragmentParameters).keys()).some(isCredentialFieldName)
-    )
-  } catch {
-    return false
-  }
-}
-
-function sanitizeCredentialBearingValue(value: unknown, depth = 0): unknown {
-  if (depth > 16) {
-    return undefined
-  }
-  if (typeof value === 'string') {
-    return isCredentialBearingUrl(value) ? undefined : value
-  }
-  if (Array.isArray(value)) {
-    return value.flatMap((entry) => {
-      const sanitized = sanitizeCredentialBearingValue(entry, depth + 1)
-      return sanitized === undefined ? [] : [sanitized]
-    })
-  }
-  if (isRecord(value)) {
-    return Object.fromEntries(
-      Object.entries(value).flatMap(([key, entry]) => {
-        if (isCredentialFieldName(key)) {
-          return []
-        }
-        const sanitized = sanitizeCredentialBearingValue(entry, depth + 1)
-        return sanitized === undefined ? [] : [[key, sanitized]]
-      })
-    )
-  }
-  return value
-}
-
-function sanitizeSharedExtensionList(value: unknown, urlKey: string): unknown[] {
-  return Array.isArray(value)
-    ? cloneJson(
-        value.filter(
-          (entry) => !isRecord(entry) || !isCredentialBearingUrl(entry[urlKey])
-        )
-      )
-    : []
-}
-
-function normalizeDashboardCollections(profile: DashboardProfileData): void {
-  delete profile.cardOrders
-
-  const cardZonesSource =
-    isRecord(profile.cardZones) &&
-    isRecord(profile.cardZones.state) &&
-    isRecord(profile.cardZones.state.cardZones)
-      ? profile.cardZones.state.cardZones
-      : profile.cardZones
-  if (isRecord(cardZonesSource)) {
-    const cardZones = Object.fromEntries(
-      Object.entries(cardZonesSource).filter(
-        ([, zone]) => typeof zone === 'string' && zone.length > 0
-      )
-    )
-    if (Object.keys(cardZones).length > 0) {
-      profile.cardZones = cardZones
-    } else {
-      delete profile.cardZones
-    }
-  }
-}
-
-export function sanitizeDashboardProfileData(
-  profile: DashboardProfileData
-): DashboardProfileData {
-  const sanitized = cloneJson(profile)
-  normalizeDashboardCollections(sanitized)
-  const sourceSettings = isRecord(sanitized.settings) ? sanitized.settings : {}
-  const settings = Object.fromEntries(
-    SHARED_SETTING_KEYS.flatMap((key) =>
-      Object.hasOwn(sourceSettings, key) && sourceSettings[key] !== undefined
-        ? [[key, cloneJson(sourceSettings[key])]]
-        : []
-    )
-  )
-
-  if (Object.hasOwn(settings, 'customSidebarActions')) {
-    settings.customSidebarActions = sanitizeSharedExtensionList(
-      settings.customSidebarActions,
-      'targetUrl'
-    )
-  }
-  if (Object.hasOwn(settings, 'customSummaryPills')) {
-    settings.customSummaryPills = sanitizeSharedExtensionList(
-      settings.customSummaryPills,
-      'actionUrl'
-    )
-  }
-  if (Object.hasOwn(sanitized, 'settings')) {
-    sanitized.settings = settings
-  }
-  const credentialSafeProfile = sanitizeCredentialBearingValue(sanitized)
-  return isValidDashboardProfileData(credentialSafeProfile)
-    ? credentialSafeProfile
-    : sanitized
-}
-
-const PROFILE_COMPARISON_IGNORED_ROOT_KEYS = new Set([
-  'cardOrders',
-  'exportedAt',
-  'navigation',
-])
-
-function stableSerializeProfileValue(value: unknown, root = false): string {
-  if (Array.isArray(value)) {
-    return `[${value.map((entry) => stableSerializeProfileValue(entry)).join(',')}]`
-  }
-  if (isRecord(value)) {
-    const keys = Object.keys(value)
-      .filter((key) => !root || !PROFILE_COMPARISON_IGNORED_ROOT_KEYS.has(key))
-      .sort()
-    return `{${keys
-      .map(
-        (key) =>
-          `${JSON.stringify(key)}:${stableSerializeProfileValue(value[key])}`
-      )
-      .join(',')}}`
-  }
-  return JSON.stringify(value) ?? 'null'
-}
-
-function areDashboardProfilesEquivalent(
-  current: DashboardProfileData,
-  candidate: DashboardProfileData
-): boolean {
-  return (
-    stableSerializeProfileValue(current, true) ===
-    stableSerializeProfileValue(candidate, true)
-  )
-}
-
 function hashDashboardProfile(profile: DashboardProfileData): string {
   return createHash('sha256').update(JSON.stringify(profile)).digest('hex')
-}
-
-function pickPreferenceSettings(
-  value: unknown,
-  allowedKeys: readonly string[]
-): Record<string, unknown> {
-  const source = isRecord(value) ? value : {}
-  return Object.fromEntries(
-    allowedKeys.flatMap((key) =>
-      Object.hasOwn(source, key) && source[key] !== undefined
-        ? (() => {
-            const sanitized = sanitizeCredentialBearingValue(source[key])
-            return sanitized === undefined ? [] : [[key, sanitized]]
-          })()
-        : []
-    )
-  )
-}
-
-function pickDisplayProfileSettings(value: unknown): Record<string, unknown> {
-  const candidates = pickPreferenceSettings(value, DISPLAY_PROFILE_SETTING_KEYS)
-  const settings: Record<string, unknown> = {}
-  for (const [key, candidate] of Object.entries(candidates)) {
-    if (BOOLEAN_DISPLAY_PROFILE_SETTING_KEYS.has(key)) {
-      if (typeof candidate === 'boolean') {
-        settings[key] = candidate
-      }
-      continue
-    }
-    if (key === 'headerCustomText') {
-      if (typeof candidate === 'string') {
-        settings[key] = candidate.trim().slice(0, 40)
-      }
-      continue
-    }
-    if (typeof candidate === 'string' && DISPLAY_PROFILE_SETTING_VALUES[key]?.has(candidate)) {
-      settings[key] = candidate
-    }
-  }
-  if (settings.effectsQualityUserOverride === false) {
-    delete settings.effectsQuality
-  }
-  return settings
-}
-
-export function sanitizeDashboardPreferenceValues(
-  value: Record<string, unknown>,
-  scope: DashboardPreferenceScope
-): Record<string, unknown> {
-  const allowedKeys = scope === 'account' ? ACCOUNT_SETTING_KEYS : CLIENT_SETTING_KEYS
-  if (isRecord(value.settings)) {
-    return {
-      schemaVersion: Number.isSafeInteger(value.schemaVersion)
-        ? value.schemaVersion
-        : 1,
-      settings: pickPreferenceSettings(value.settings, allowedKeys),
-    }
-  }
-  return pickPreferenceSettings(value, allowedKeys)
-}
-
-function sanitizeDisplayProfilePolicy(value: unknown): SanitizedDisplayProfilePolicy {
-  const source = isRecord(value) ? value : {}
-  const rawProfiles = isRecord(source.profilesById) ? source.profilesById : {}
-  const profilesById: Record<string, SanitizedDisplayProfile> = {}
-  for (const [profileId, candidate] of Object.entries(rawProfiles).slice(
-    0,
-    DISPLAY_PROFILE_LIMIT
-  )) {
-    if (!DISPLAY_PROFILE_ID_PATTERN.test(profileId) || !isRecord(candidate)) {
-      continue
-    }
-    const name = typeof candidate.name === 'string' ? candidate.name.trim().slice(0, 64) : ''
-    if (!name) {
-      continue
-    }
-    const createdAt =
-      typeof candidate.createdAt === 'string' && Number.isFinite(Date.parse(candidate.createdAt))
-        ? candidate.createdAt
-        : new Date(0).toISOString()
-    const updatedAt =
-      typeof candidate.updatedAt === 'string' && Number.isFinite(Date.parse(candidate.updatedAt))
-        ? candidate.updatedAt
-        : createdAt
-    profilesById[profileId] = {
-      id: profileId,
-      name,
-      settings: pickDisplayProfileSettings(candidate.settings),
-      createdAt,
-      updatedAt,
-    }
-  }
-  const assignments = isRecord(source.profileIdByClientId)
-    ? source.profileIdByClientId
-    : {}
-  const profileIdByClientId = Object.fromEntries(
-    Object.entries(assignments).flatMap(([clientId, profileId]) =>
-      DISPLAY_PROFILE_ID_PATTERN.test(clientId) &&
-      typeof profileId === 'string' &&
-      Object.hasOwn(profilesById, profileId)
-        ? [[clientId, profileId]]
-        : []
-    )
-  )
-  return {
-    schemaVersion: 1,
-    profilesById,
-    profileIdByClientId,
-  }
 }
 
 export function buildDashboardProfileMetadata(
@@ -816,114 +451,6 @@ function validState(
     return false
   }
   return true
-}
-
-function cloneJson<T>(value: T): T {
-  return JSON.parse(JSON.stringify(value)) as T
-}
-
-function decodePointer(pointer: string): string[] {
-  if (pointer === '') {
-    return []
-  }
-  if (!pointer.startsWith('/')) {
-    throw new Error('Invalid JSON pointer')
-  }
-  return pointer
-    .slice(1)
-    .split('/')
-    .map((segment) => {
-      const decoded = segment.replace(/~1/g, '/').replace(/~0/g, '~')
-      if (
-        decoded === '__proto__' ||
-        decoded === 'prototype' ||
-        decoded === 'constructor'
-      ) {
-        throw new Error('Unsafe JSON pointer')
-      }
-      return decoded
-    })
-}
-
-export function applyDashboardProfilePatch(
-  source: DashboardProfileData,
-  operations: DashboardProfilePatchOperation[]
-): DashboardProfileData {
-  if (!Array.isArray(operations) || operations.length > MAX_PATCH_OPERATIONS) {
-    throw new Error('Unsupported dashboard patch')
-  }
-
-  let document: unknown = cloneJson(source)
-  for (const operation of operations) {
-    const segments = decodePointer(operation.path)
-    if (segments.length === 0) {
-      if (operation.op === 'remove') {
-        throw new Error('The profile root cannot be removed')
-      }
-      document = cloneJson(operation.value)
-      continue
-    }
-
-    let parent = document as Record<string, unknown> | unknown[]
-    for (const segment of segments.slice(0, -1)) {
-      if (
-        parent === null ||
-        typeof parent !== 'object' ||
-        !Object.prototype.hasOwnProperty.call(parent, segment)
-      ) {
-        throw new Error('Patch path does not exist')
-      }
-      parent = (parent as Record<string, Record<string, unknown> | unknown[]>)[segment]
-    }
-
-    const key = segments.at(-1)!
-    if (Array.isArray(parent)) {
-      if (operation.op === 'add' && key === '-') {
-        parent.push(cloneJson(operation.value))
-        continue
-      }
-      if (!/^\d+$/.test(key)) {
-        throw new Error('Invalid array index')
-      }
-      const index = Number.parseInt(key, 10)
-      if (operation.op === 'add') {
-        if (index > parent.length) {
-          throw new Error('Patch array index is out of range')
-        }
-        parent.splice(index, 0, cloneJson(operation.value))
-      } else if (index >= parent.length) {
-        throw new Error('Patch array index is out of range')
-      } else if (operation.op === 'remove') {
-        parent.splice(index, 1)
-      } else {
-        parent[index] = cloneJson(operation.value)
-      }
-      continue
-    }
-
-    if (!parent || typeof parent !== 'object') {
-      throw new Error('Patch parent is not an object')
-    }
-    if (operation.op === 'remove') {
-      if (!Object.prototype.hasOwnProperty.call(parent, key)) {
-        throw new Error('Patch path does not exist')
-      }
-      delete (parent as Record<string, unknown>)[key]
-    } else {
-      if (
-        operation.op === 'replace' &&
-        !Object.prototype.hasOwnProperty.call(parent, key)
-      ) {
-        throw new Error('Patch path does not exist')
-      }
-      ;(parent as Record<string, unknown>)[key] = cloneJson(operation.value)
-    }
-  }
-
-  if (!isValidDashboardProfileData(document)) {
-    throw new Error('Dashboard patch produced an invalid profile')
-  }
-  return document
 }
 
 function publicPrincipal(principal: ViteDashboardProfilePrincipal): DashboardProfilePrincipal {
@@ -3118,11 +2645,39 @@ function sendPrecondition(
 export function createViteDashboardProfileRequestHandler(options: {
   cookieNames?: InstallationCookieNames
   store?: ViteDashboardProfileStore
+  profileFilePath?: string
   resolvePrincipal: (
     request: IncomingMessage
   ) => ViteDashboardProfilePrincipal | null | Promise<ViteDashboardProfilePrincipal | null>
 }) {
-  const store = options.store ?? createViteDashboardProfileStore()
+  const tenantStores = new Map<string, ViteDashboardProfileStore>()
+  const legacyProfileFilePath =
+    options.profileFilePath ??
+    path.resolve(process.cwd(), '.cache', 'navet-dashboard-profile.json')
+  const resolveTenantStore = (tenantId: string) => {
+    const existing = tenantStores.get(tenantId)
+    if (existing) {
+      return existing
+    }
+
+    let useLegacyPath = false
+    try {
+      const workspace = JSON.parse(
+        readFileSync(`${legacyProfileFilePath}.workspace`, 'utf8')
+      ) as PersistedDashboardWorkspace
+      useLegacyPath = workspace.tenantBinding?.tenantId === tenantId
+    } catch {
+      // A missing legacy workspace means the first authenticated tenant owns
+      // the historical profile path. Other tenants receive isolated files.
+      useLegacyPath = tenantStores.size === 0
+    }
+    const profileFilePath = useLegacyPath
+      ? legacyProfileFilePath
+      : `${legacyProfileFilePath}.${tenantId}`
+    const created = createViteDashboardProfileStore(profileFilePath)
+    tenantStores.set(tenantId, created)
+    return created
+  }
   const cookieNames =
     options.cookieNames ?? {
       currentName: CLIENT_BINDING_COOKIE_NAME,
@@ -3139,6 +2694,7 @@ export function createViteDashboardProfileRequestHandler(options: {
       sendJson(res, 401, { error: 'Authentication required' })
       return
     }
+    const store = options.store ?? resolveTenantStore(principal.tenantId)
     const route = normalizedProfilePath(req)
     const method = req.method ?? 'GET'
     if (route === '/workspace/rebind') {

@@ -1,6 +1,6 @@
 import logoHorizontalLight from '@assets/public/logo-horizontal-light.svg';
 import { Text } from '@navet/app/components/primitives/text';
-import { DiscordMark, RedditMark } from '@navet/app/components/shared/social-marks';
+import { DiscordMark, RedditMark, YouTubeMark } from '@navet/app/components/shared/social-marks';
 import {
   getThemeFocusRingClassName,
   navetSpacingTokens,
@@ -141,7 +141,17 @@ function GithubNavLink({
   );
 }
 
-function SocialIconLink({ href, label, icon }: { href: string; label: string; icon: ReactNode }) {
+function SocialIconLink({
+  href,
+  label,
+  icon,
+  className,
+}: {
+  href: string;
+  label: string;
+  icon: ReactNode;
+  className?: string;
+}) {
   const { theme } = useTheme();
 
   return (
@@ -153,10 +163,9 @@ function SocialIconLink({ href, label, icon }: { href: string; label: string; ic
       title={label}
       className={cn(
         getThemeFocusRingClassName(theme),
-        'inline-flex h-9 w-9 items-center justify-center rounded-full border transition-[color,background-color,border-color] motion-reduce:transition-none',
-        theme === 'light'
-          ? 'border-slate-200 bg-white/72 text-slate-600 hover:border-slate-300 hover:bg-white hover:text-slate-950'
-          : 'border-white/10 bg-white/[0.045] text-white/62 hover:border-white/16 hover:bg-white/[0.08] hover:text-white'
+        'group inline-flex h-9 w-9 items-center justify-center rounded-sm transition-colors duration-200 motion-reduce:transition-none',
+        theme === 'light' ? 'text-slate-500' : 'text-white/62',
+        className
       )}
     >
       {icon}
@@ -176,6 +185,7 @@ export function MarketingWebsiteShell({
   const isHomePage = currentPathname === '/';
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const headerRef = useRef<HTMLElement | null>(null);
+  const mobileNavToggleRef = useRef<HTMLButtonElement | null>(null);
   const mobileNavId = useId();
   const [githubStarCount, setGithubStarCount] = useState<string | null>(() => {
     const cached = storage.get<{ count: number; expiresAt: number } | null>(
@@ -287,6 +297,7 @@ export function MarketingWebsiteShell({
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setIsMobileNavOpen(false);
+        mobileNavToggleRef.current?.focus();
       }
     };
 
@@ -324,7 +335,7 @@ export function MarketingWebsiteShell({
         <header
           ref={headerRef}
           className={cn(
-            'absolute inset-x-4 top-4 z-20 px-3.5 py-2 shadow-[0_20px_60px_-36px_rgba(0,0,0,0.72)] backdrop-blur-xl transition-[border-radius,background-color,border-color,box-shadow] sm:inset-x-6 sm:px-4 sm:py-2.5 lg:inset-x-8 lg:top-6 lg:px-5',
+            'absolute inset-x-4 top-4 z-20 py-2 pr-[15px] pl-[10px] shadow-[0_20px_60px_-36px_rgba(0,0,0,0.72)] backdrop-blur-xl transition-[border-radius,background-color,border-color,box-shadow] sm:inset-x-6 sm:py-2.5 lg:inset-x-8 lg:top-6',
             isMobileNavOpen ? 'rounded-[26px] sm:rounded-[28px]' : 'rounded-[24px] sm:rounded-full',
             isLightTheme
               ? 'border border-slate-200/90 bg-white/78'
@@ -356,6 +367,7 @@ export function MarketingWebsiteShell({
             </nav>
 
             <button
+              ref={mobileNavToggleRef}
               type="button"
               onClick={() => setIsMobileNavOpen((open) => !open)}
               aria-label={isMobileNavOpen ? 'Close navigation menu' : 'Open navigation menu'}
@@ -438,7 +450,7 @@ export function MarketingWebsiteShell({
             isLightTheme ? 'border-slate-200' : 'border-white/10'
           )}
         >
-          <div className="flex flex-wrap items-start justify-between gap-5">
+          <div className="flex flex-wrap items-center justify-between gap-5">
             <nav aria-label="Footer" className="flex flex-wrap gap-5">
               <WebsiteNavLink href={MARKETING_URLS.demo} className="min-h-0 px-0">
                 Demo
@@ -475,12 +487,36 @@ export function MarketingWebsiteShell({
               <SocialIconLink
                 href={MARKETING_URLS.discord}
                 label="Discord"
-                icon={<DiscordMark className="h-4 w-4" />}
+                className="hover:text-[#5865f2] focus-visible:text-[#5865f2]"
+                icon={<DiscordMark className="h-5 w-5" />}
               />
               <SocialIconLink
                 href={MARKETING_URLS.reddit}
                 label="Reddit"
-                icon={<RedditMark className="h-4 w-4" />}
+                className="hover:text-[#ff4500] focus-visible:text-[#ff4500]"
+                icon={
+                  <span className="relative h-5 w-5">
+                    <span
+                      className="absolute inset-[1px] rounded-full bg-transparent transition-colors duration-200 group-hover:bg-white group-focus-visible:bg-white motion-reduce:transition-none"
+                      aria-hidden="true"
+                    />
+                    <RedditMark className="relative h-5 w-5" />
+                  </span>
+                }
+              />
+              <SocialIconLink
+                href={MARKETING_URLS.youtube}
+                label="YouTube"
+                className="hover:text-[#ff0000] focus-visible:text-[#ff0000]"
+                icon={
+                  <span className="relative h-5 w-5">
+                    <span
+                      className="absolute inset-[2px] rounded-sm bg-transparent transition-colors duration-200 group-hover:bg-white group-focus-visible:bg-white motion-reduce:transition-none"
+                      aria-hidden="true"
+                    />
+                    <YouTubeMark className="relative h-5 w-5" />
+                  </span>
+                }
               />
             </nav>
           </div>

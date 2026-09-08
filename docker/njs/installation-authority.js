@@ -267,8 +267,6 @@ function createInstallationAuthority(options) {
     if (!normalizedTarget) {
       return { allowed: false, pairingVerified: false };
     }
-    // Home Assistant may open OAuth through a browser-reachable alias. The
-    // alias gains no authority: its code is redeemed against upstreamTarget.
     const config = readConfig();
     const pinValue =
       providerId === 'home_assistant' ? config.hassUrl : config.openhabUrl;
@@ -455,7 +453,37 @@ function createInstallationAuthority(options) {
 
   return {
     authorizeHomeAssistant: function (r, target, normalizeTarget) {
-      return authorizeTarget(r, 'home_assistant', target, normalizeTarget, true);
+      if (isTrustedIngress()) {
+        return { allowed: true, pairingVerified: false };
+      }
+      const normalizedTarget = normalizeTarget(target);
+      if (!normalizedTarget) {
+        return { allowed: false, pairingVerified: false };
+      }
+      const rawPin = readConfig().hassUrl;
+      const pinnedTarget = rawPin ? normalizeTarget(rawPin) : '';
+      if (rawPin) {
+        return {
+          allowed: Boolean(pinnedTarget && pinnedTarget === normalizedTarget),
+          pairingVerified: false,
+        };
+      }
+      return { allowed: true, pairingVerified: true };
+    },
+    authorizeHomeAssistantChange: function (_r, target, normalizeTarget) {
+      if (isTrustedIngress()) {
+        return { allowed: true, pairingVerified: false };
+      }
+      const normalizedTarget = normalizeTarget(target);
+      if (!normalizedTarget) {
+        return { allowed: false, pairingVerified: false };
+      }
+      const rawPin = readConfig().hassUrl;
+      const pinnedTarget = rawPin ? normalizeTarget(rawPin) : '';
+      if (rawPin && pinnedTarget !== normalizedTarget) {
+        return { allowed: false, pairingVerified: false };
+      }
+      return { allowed: true, pairingVerified: true };
     },
     authorizeHomeyStart: authorizeHomeyStart,
     authorizeOpenHAB: function (r, target, normalizeTarget) {

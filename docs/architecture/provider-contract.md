@@ -106,8 +106,8 @@ Owns:
 - Home Assistant: implemented (first stable provider)
 - Homey: implemented
 - openHAB: implemented
-- Hubitat: planned (contract + registration entry only)
-- SmartThings: planned (contract + registration entry only)
+- Hubitat: planned metadata only; no adapter package
+- SmartThings: planned metadata only; no adapter package
 
 Current runtime feature scope:
 

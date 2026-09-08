@@ -19,6 +19,3 @@ export interface ClimateCardProps {
   onSizeChange: (id: string, size: CardSize) => void;
   isEditMode: boolean;
 }
-
-/** @deprecated Use ClimateCardProps. */
-export type HVACCardProps = ClimateCardProps;

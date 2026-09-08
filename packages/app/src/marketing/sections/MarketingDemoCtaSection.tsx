@@ -15,7 +15,7 @@ export function MarketingDemoCtaSection({ className }: { className?: string }) {
   const surface = getThemeSurfaceTokens(theme);
 
   return (
-    <section className={cn('relative py-8 sm:py-14', className)}>
+    <section className={cn('relative py-8 sm:py-14 lg:pt-0 lg:pb-32', className)}>
       <MarketingReveal className="flex flex-col items-center text-center">
         <MarketingHeadline compactMobile className={cn('max-w-[16ch]', surface.textPrimary)}>
           Use the demo. Then run it at home.

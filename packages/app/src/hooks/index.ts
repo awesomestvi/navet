@@ -95,11 +95,9 @@ export {
   useCameraRegistryDeviceTopology,
   useClimateRegistryDeviceTopology,
   useEntityRoomRegistryContext,
-  useHvacRegistryDeviceTopology,
   useProviderCameraTopology,
   useProviderClimateTopology,
   useProviderEntityRoomContext,
-  useProviderHvacTopology,
   useProviderSwitchTopology,
   useSwitchRegistryDeviceTopology,
 } from './use-registry-device-topology';

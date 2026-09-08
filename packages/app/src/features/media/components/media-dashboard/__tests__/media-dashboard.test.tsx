@@ -4,10 +4,12 @@ import {
 } from '@navet/app/constants/media-player-features';
 import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import type { PlatformEntityRegistryEntry } from '@navet/app/platform/provider-feature-models';
+import { useSettingsStore } from '@navet/app/stores/settings-store';
+import { useThemeStore } from '@navet/app/stores/theme-store';
 import { setMediaQueryMatch, setVisualViewportSize } from '@navet/app/test/browser-mocks';
 import { renderWithProviders } from '@navet/app/test/render';
 import type { MediaDevice } from '@navet/app/types/device.types';
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import { toast } from 'sonner';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MediaDashboard, resolveMusicAssistantThumbnailSourceUrl } from '../media-dashboard';
@@ -141,6 +143,33 @@ describe('MediaDashboard', () => {
       ],
     });
     liveMediaEntityMock.mockReturnValue(undefined);
+    useThemeStore.getState().setTheme('glass');
+  });
+
+  it('uses opaque media source tiles in dark theme', async () => {
+    useThemeStore.getState().setTheme('dark');
+    browseMediaPlayerMock.mockResolvedValue({
+      title: 'Media Library',
+      children: [
+        {
+          title: 'Albums',
+          mediaContentId: 'spotify:directory:albums',
+          mediaContentType: 'album',
+          mediaClass: 'directory',
+          canExpand: true,
+          canPlay: false,
+        },
+      ],
+    });
+
+    renderWithProviders(<MediaDashboard devices={[createMediaDevice()]} />);
+
+    const sourceTile = await screen.findByRole('button', { name: /^Albums/ });
+    expect(sourceTile).toHaveClass('bg-[rgba(24,24,27,0.97)]');
+    expect(sourceTile).not.toHaveClass('backdrop-blur-xl', 'bg-white/[0.04]');
+    expect(screen.getByTestId('media-library-directory-icon')).toHaveClass(
+      'bg-[rgba(39,39,42,0.94)]'
+    );
   });
 
   afterEach(() => {
@@ -845,6 +874,18 @@ describe('MediaDashboard', () => {
         expect(
           await screen.findByText('Radio folder 245', undefined, { timeout: 5_000 })
         ).toBeInTheDocument();
+        const browseCount = browseMediaPlayerMock.mock.calls.length;
+        const originalTimePreference = useSettingsStore.getState().use24HourTime;
+        try {
+          await act(async () => {
+            useSettingsStore.setState({ use24HourTime: !originalTimePreference });
+          });
+          expect(browseMediaPlayerMock).toHaveBeenCalledTimes(browseCount);
+          expect(screen.getByRole('searchbox', { name: 'Search' })).toHaveValue('Radio folder 245');
+          expect(screen.getByText('Radio folder 245')).toBeInTheDocument();
+        } finally {
+          act(() => useSettingsStore.setState({ use24HourTime: originalTimePreference }));
+        }
       }
     );
   }, 10_000);

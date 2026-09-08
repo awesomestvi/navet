@@ -334,9 +334,6 @@ export const ClimateSettingsDialog = memo(function ClimateSettingsDialog({
   );
 });
 
-/** @deprecated Use ClimateSettingsDialog. */
-export const HVACSettingsDialog = ClimateSettingsDialog;
-
 function getSiblingDisplayName(
   primaryLabel: string,
   siblingLabels: readonly string[],
