@@ -25,6 +25,7 @@ import type {
   PlatformMediaBrowseResult,
   PlatformMessageClient,
   PlatformNotificationDeliveryRequest,
+  PlatformNotificationDeliveryTarget,
   PlatformNotificationRequestOptions,
   PlatformNotificationSnapshot,
   PlatformPersistentNotificationEvent,
@@ -251,6 +252,9 @@ export interface ProviderNotificationFeatureService {
   dismissPersistentNotification: (notificationId: string) => Promise<void>;
   installUpdate: (entityId: string) => Promise<void>;
   restartSystem: () => Promise<void>;
+  getDeliveryTargets?: (
+    options?: PlatformNotificationRequestOptions
+  ) => Promise<PlatformNotificationDeliveryTarget[]>;
   sendNotification?: (request: PlatformNotificationDeliveryRequest) => Promise<void>;
 }
 

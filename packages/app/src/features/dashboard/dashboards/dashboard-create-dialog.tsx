@@ -18,7 +18,7 @@ import { getDashboardClientIdentity } from '@navet/app/features/dashboard/client
 import { useDashboardProfileRuntimeStore } from '@navet/app/features/dashboard/clients/dashboard-profile-runtime-store';
 import { getRoomWorkspaceSectionsV2 } from '@navet/app/features/dashboard/rooms';
 import { useAggregatedDevices, useI18n, useTheme } from '@navet/app/hooks';
-import { dashboardToPath } from '@navet/app/navigation/sections';
+import { dashboardToPath, notifyNavigationPathChanged } from '@navet/app/navigation/sections';
 import { useEditModeStore, useNavigationStore } from '@navet/app/stores';
 import type { DeviceWithType } from '@navet/app/types/device.types';
 import { getDeviceRoomLabel } from '@navet/app/utils/device-location';
@@ -212,6 +212,7 @@ function DashboardCreateForm({ isOpen, onOpenChange, onCreated }: DashboardCreat
       currentRoom: ALL_ROOMS_ID,
     });
     history.pushState({}, '', dashboardToPath(result.dashboardId));
+    notifyNavigationPathChanged();
     window.scrollTo(0, 0);
     useEditModeStore.getState().setEditMode(true);
     onOpenChange(false);

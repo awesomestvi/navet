@@ -273,6 +273,96 @@ export const DesktopContinuousCreation: Story = {
   },
 };
 
+export const RotationOffsetValidation: Story = {
+  play: async ({ canvasElement }) => {
+    saveChore.mockClear();
+    const dialog = within(canvasElement.ownerDocument.body).getByRole('dialog', {
+      name: 'Add a chore',
+    });
+    await userEvent.type(within(dialog).getByLabelText('Chore name'), 'Rotate recycling');
+    await userEvent.selectOptions(within(dialog).getByLabelText('Assignment'), 'rotation');
+    await userEvent.click(within(dialog).getByLabelText('More options: Who does it'));
+
+    const offset = within(dialog).getByLabelText('Rotation starting offset');
+    fireEvent.change(offset, { target: { value: '99' } });
+    await expect(offset).toHaveAttribute('aria-invalid', 'true');
+    await expect(within(dialog).getByRole('alert')).toHaveTextContent(
+      'Enter a whole number from 0 to 2.'
+    );
+    await expect(within(dialog).getByRole('button', { name: 'Add chore' })).toBeDisabled();
+    await expect(saveChore).not.toHaveBeenCalled();
+
+    fireEvent.change(offset, { target: { value: '1' } });
+    await expect(offset).not.toHaveAttribute('aria-invalid');
+    await expect(within(dialog).queryByRole('alert')).toBeNull();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Add chore' }));
+    await expect(saveChore).toHaveBeenCalledWith(
+      expect.objectContaining({
+        assignment: expect.objectContaining({
+          mode: 'rotation',
+          rotationCursor: 1,
+        }),
+      }),
+      expect.any(Object)
+    );
+  },
+};
+
+export const NumericAndScheduleValidation: Story = {
+  play: async ({ canvasElement }) => {
+    saveChore.mockClear();
+    const dialog = within(canvasElement.ownerDocument.body).getByRole('dialog', {
+      name: 'Add a chore',
+    });
+    await userEvent.type(within(dialog).getByLabelText('Chore name'), 'Validated chore');
+    await userEvent.click(within(dialog).getByLabelText('More options: The chore'));
+
+    const estimated = within(dialog).getByLabelText('Estimated minutes');
+    fireEvent.change(estimated, { target: { value: '1.5' } });
+    await expect(estimated).toHaveAttribute('aria-invalid', 'true');
+    await expect(within(dialog).getByText(/Enter a whole number from 0 to 1,?440\./)).toBeVisible();
+    fireEvent.change(estimated, { target: { value: '5' } });
+
+    const points = within(dialog).getByLabelText('Points');
+    fireEvent.change(points, { target: { value: '10001' } });
+    await expect(points).toHaveAttribute('aria-invalid', 'true');
+    fireEvent.change(points, { target: { value: '10' } });
+
+    await userEvent.selectOptions(within(dialog).getByLabelText('Repeat'), 'custom');
+    const interval = within(dialog).getByLabelText('Repeat every (days)');
+    fireEvent.change(interval, { target: { value: '' } });
+    await expect(interval).toHaveAttribute('aria-invalid', 'true');
+    fireEvent.change(interval, { target: { value: '2' } });
+
+    fireEvent.change(within(dialog).getByLabelText('Start date'), {
+      target: { value: '2026-12-07' },
+    });
+    fireEvent.change(within(dialog).getByLabelText('End date'), {
+      target: { value: '2026-12-01' },
+    });
+    await expect(within(dialog).getByLabelText('End date')).toHaveAttribute('aria-invalid', 'true');
+    fireEvent.change(within(dialog).getByLabelText('End date'), {
+      target: { value: '2026-12-31' },
+    });
+
+    fireEvent.change(within(dialog).getByLabelText('Dates to skip'), {
+      target: { value: '2026-02-30' },
+    });
+    await expect(within(dialog).getByLabelText('Dates to skip')).toHaveAttribute(
+      'aria-invalid',
+      'true'
+    );
+    await expect(within(dialog).getByRole('button', { name: 'Add chore' })).toBeDisabled();
+    await expect(saveChore).not.toHaveBeenCalled();
+
+    fireEvent.change(within(dialog).getByLabelText('Dates to skip'), {
+      target: { value: '2026-12-24' },
+    });
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Add chore' }));
+    await expect(saveChore).toHaveBeenCalledTimes(1);
+  },
+};
+
 export const WeekdaySchedule: Story = {
   play: async ({ canvasElement }) => {
     saveChore.mockClear();
@@ -378,8 +468,15 @@ export const PersonStepperCreation: Story = {
     await expect(within(dialog).queryByLabelText('Name')).toBeNull();
     await expect(within(dialog).queryByLabelText('Role')).toBeNull();
     await expect(within(dialog).getAllByLabelText('Profile colour')[0]).toBeInTheDocument();
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Photo' }));
-    await expect(within(dialog).getByRole('button', { name: 'Upload photo' })).toBeInTheDocument();
+    const photoMode = within(dialog).getByRole('button', { name: 'Photo' });
+    const iconMode = within(dialog).getByRole('button', { name: 'Icon' });
+    await expect(photoMode).toHaveClass('h-9', 'px-3.5', 'text-xs', 'font-medium');
+    await expect(iconMode).toHaveClass('h-9', 'px-3.5', 'text-xs', 'font-medium');
+    await userEvent.click(photoMode);
+    const uploadPhoto = within(dialog).getByRole('button', { name: 'Upload photo' });
+    const fileHint = within(dialog).getByText('PNG, JPG up to 5MB');
+    await expect(uploadPhoto).toHaveClass('border-transparent', 'text-white');
+    await expect(fileHint.parentElement).toBe(uploadPhoto.parentElement?.parentElement);
     const pngBytes = Uint8Array.from(
       atob(
         'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M/wHwAF/gL+7xRLVQAAAABJRU5ErkJggg=='
@@ -398,13 +495,27 @@ export const PersonStepperCreation: Story = {
     await expect(
       within(dialog).getByRole('link', { name: /Browse Lucide icon catalog/ })
     ).toHaveAttribute('href', 'https://lucide.dev/icons/');
-    await userEvent.click(within(dialog).getByText('Account links'));
-    await expect(within(dialog).getByLabelText('Account ID')).toBeInTheDocument();
+    await expect(within(dialog).queryByText('Account links')).toBeNull();
+    await expect(within(dialog).queryByLabelText('Account ID')).toBeNull();
     await userEvent.click(within(dialog).getByText('Reminders'));
     const reminderSwitch = within(dialog).getByLabelText('Receive chore reminders');
     await expect(reminderSwitch).toBeInTheDocument();
     await expect(reminderSwitch).toHaveClass('h-7', 'w-11');
     await expect(reminderSwitch.firstElementChild).toHaveClass('translate-x-[14px]');
+    await userEvent.selectOptions(
+      within(dialog).getByLabelText('Reminder destination'),
+      'provider'
+    );
+    await expect(
+      within(dialog).getByText(
+        "Sends a push notification through the connected smart-home provider's app. Choose the device this person uses."
+      )
+    ).toBeInTheDocument();
+    const notificationTarget = await within(dialog).findByLabelText('Notification device');
+    await expect(notificationTarget).toBeRequired();
+    await expect(within(dialog).getByRole('button', { name: 'Add person' })).toBeDisabled();
+    await userEvent.selectOptions(notificationTarget, 'mobile_app_alex_iphone');
+    await expect(within(dialog).getByRole('button', { name: 'Add person' })).toBeEnabled();
   },
   globals: {
     viewport: {

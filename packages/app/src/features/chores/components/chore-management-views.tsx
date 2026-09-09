@@ -78,6 +78,12 @@ import {
 } from '../chore-dashboard-selectors';
 import { ChoreBaseCard } from './chore-base-card';
 import { ChoreDashboardGrid } from './chore-dashboard-grid';
+import {
+  ChoreFieldError,
+  isBoundedInteger,
+  type NumericDraft,
+  numericDraft,
+} from './chore-form-validation';
 import { resolveChoreIconComponent } from './chore-icon';
 import { ChorePointsToken } from './chore-points-token';
 import { MissionCard, RewardGoalCard } from './chore-support-cards';
@@ -1216,7 +1222,7 @@ function PointAdjustmentDialog({
   const { t } = useI18n();
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
-  const [amount, setAmount] = useState(1);
+  const [amount, setAmount] = useState<NumericDraft>(1);
   const [reason, setReason] = useState('');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(false);
@@ -1226,8 +1232,8 @@ function PointAdjustmentDialog({
     setReason('');
     setSaveError(false);
   }, [direction, isOpen]);
-  const pointsDelta = direction === 'add' ? Math.round(amount) : -Math.round(amount);
-  const validAmount = Number.isSafeInteger(amount) && amount >= 1 && amount <= 10_000;
+  const pointsDelta = direction === 'add' ? Number(amount) : -Number(amount);
+  const validAmount = isBoundedInteger(amount, 1, 10_000);
   const projectedBalance = currentBalance + (validAmount ? pointsDelta : 0);
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -1265,6 +1271,7 @@ function PointAdjustmentDialog({
           <CardDialogSection label={t('household.points.amount')}>
             <Input
               autoFocus
+              aria-describedby={validAmount ? undefined : 'point-adjustment-amount-error'}
               aria-label={t('household.points.amount')}
               type="number"
               min={1}
@@ -1272,12 +1279,19 @@ function PointAdjustmentDialog({
               step={1}
               value={amount}
               invalid={!validAmount}
-              onChange={(event) => setAmount(Number(event.target.value))}
+              required
+              onChange={(event) => setAmount(numericDraft(event.target.value))}
             />
+            {!validAmount ? (
+              <ChoreFieldError id="point-adjustment-amount-error">
+                {t('household.validation.wholeNumberRange', { min: 1, max: 10_000 })}
+              </ChoreFieldError>
+            ) : null}
           </CardDialogSection>
           <CardDialogSection label={t('household.points.reason')}>
             <Textarea
               aria-label={t('household.points.reason')}
+              maxLength={500}
               value={reason}
               onChange={(event) => setReason(event.target.value)}
             />

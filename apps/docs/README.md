@@ -19,7 +19,21 @@ an exact GitHub `editUrl`.
   `src/components/ChangelogFeed.astro`. Keep writing release notes in the root changelog; there is
   no second public changelog to update.
 - `/resources/` is curated in `src/components/ResourcesHub.astro`. Add real showcases, guides, and
-  videos there as they are published; do not add placeholder links or duplicate guide content.
+  videos there as they are published. Planned walkthroughs may appear as non-interactive entries
+  clearly marked **Planned**, without invented dates, durations, or placeholder links. Do not
+  duplicate guide content.
+
+## Writing and navigation
+
+- Overview pages help readers choose a next step; keep detailed instructions in the task guide.
+- Begin each guide with its outcome and prerequisites. Use numbered lists for ordered steps,
+  exact interface labels for actions, and a short expected result.
+- Keep paragraphs focused and headings in sentence case. Explain provider limits where they
+  affect the task; link to the compatibility matrix for the complete comparison.
+- Put common tasks directly in the sidebar. Keep technical references separate from getting started.
+- Set an explicit `next` link when the learning path differs from sidebar order.
+- Preserve public routes and heading anchors when editing; update incoming links when an anchor changes.
+- Keep one Starlight `Search` instance in the shared header. Its search index mount uses a fixed ID.
 
 ## Local commands
 

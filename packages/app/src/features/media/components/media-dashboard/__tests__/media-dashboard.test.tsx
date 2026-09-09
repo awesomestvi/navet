@@ -166,6 +166,7 @@ describe('MediaDashboard', () => {
 
     const sourceTile = await screen.findByRole('button', { name: /^Albums/ });
     expect(sourceTile).toHaveClass('bg-[rgba(24,24,27,0.97)]');
+    expect(sourceTile).toHaveClass('rounded-[24px]');
     expect(sourceTile).not.toHaveClass('backdrop-blur-xl', 'bg-white/[0.04]');
     expect(screen.getByTestId('media-library-directory-icon')).toHaveClass(
       'bg-[rgba(39,39,42,0.94)]'
@@ -174,6 +175,12 @@ describe('MediaDashboard', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+  });
+
+  it('renders safely while no media devices are available', () => {
+    const { container } = renderWithProviders(<MediaDashboard devices={[]} />);
+
+    expect(container).toBeEmptyDOMElement();
   });
 
   it('shows browse without source selection for an idle Spotify account', async () => {

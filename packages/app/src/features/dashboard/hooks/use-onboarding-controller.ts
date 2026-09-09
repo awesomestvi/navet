@@ -99,16 +99,19 @@ export function useOnboardingController({
   const handleChooseAllEntities = useCallback(() => {
     setActiveSection('home');
     changeRoom(ALL_ROOMS_ID);
+    completeOnboarding(allEntityIds, false);
     setDashboardArrivalVariant('all');
     setOnboardingTransition('all');
-  }, [changeRoom, setActiveSection]);
+  }, [allEntityIds, changeRoom, completeOnboarding, setActiveSection]);
 
   const handleChooseBlankDashboard = useCallback(() => {
     setActiveSection('home');
     changeRoom(ALL_ROOMS_ID);
+    resetDashboard();
+    completeOnboarding(allEntityIds, true);
     setDashboardArrivalVariant('blank');
     setOnboardingTransition('blank');
-  }, [changeRoom, setActiveSection]);
+  }, [allEntityIds, changeRoom, completeOnboarding, resetDashboard, setActiveSection]);
 
   const handleImportDashboardConfig = useCallback(
     async (file: File) => {
@@ -134,6 +137,7 @@ export function useOnboardingController({
         if (isHomeAssistantPanelMode()) {
           setActiveSection('home');
           changeRoom(ALL_ROOMS_ID);
+          markOnboardingCompleted();
           setDashboardArrivalVariant('import');
           setOnboardingTransition('import');
           return;
@@ -146,30 +150,17 @@ export function useOnboardingController({
         toast.error(t('dashboard.feedback.configImportFailed'));
       }
     },
-    [changeRoom, setActiveSection, t]
+    [changeRoom, markOnboardingCompleted, setActiveSection, t]
   );
 
   const onCompleteOnboardingClose = useCallback(() => {
-    if (onboardingTransition === 'all') {
-      completeOnboarding(allEntityIds, false);
-    } else if (onboardingTransition === 'blank') {
-      resetDashboard();
-      completeOnboarding(allEntityIds, true);
-    } else if (onboardingTransition === 'import') {
-      markOnboardingCompleted();
-    } else {
+    if (onboardingTransition === null) {
       return;
     }
 
     setOnboardingTransition(null);
     setShowImportedDashboardReveal(true);
-  }, [
-    allEntityIds,
-    completeOnboarding,
-    markOnboardingCompleted,
-    onboardingTransition,
-    resetDashboard,
-  ]);
+  }, [onboardingTransition]);
 
   return {
     dashboardArrivalVariant,

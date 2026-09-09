@@ -36,6 +36,7 @@ export interface ChoreWorkspaceLoadResult {
   available: boolean;
   unauthorized: boolean;
   notModified: boolean;
+  failureKind?: 'unsupported' | 'invalid_data' | 'unreachable';
   error: string | null;
   recovery: ChoreWorkspaceRecoveryInfo | null;
   revision: number | null;
@@ -134,6 +135,27 @@ function panelErrorMessage(error: unknown, fallback: string) {
     return 'The Home Assistant panel connection is not ready. Reload Navet and try again.';
   }
   return message;
+}
+
+function panelFailureKind(
+  error: unknown,
+  recovery: ChoreWorkspaceRecoveryInfo | null
+): ChoreWorkspaceLoadResult['failureKind'] {
+  const message =
+    error instanceof Error
+      ? error.message
+      : error &&
+          typeof error === 'object' &&
+          typeof (error as { message?: unknown }).message === 'string'
+        ? (error as { message: string }).message
+        : '';
+  if (/unknown command|not[_ ]ready|not found|unsupported.*navet\/chores/i.test(message)) {
+    return 'unsupported';
+  }
+  if (recovery?.reason === 'workspace_invalid' || recovery?.reason === 'workspace_too_large') {
+    return 'invalid_data';
+  }
+  return 'unreachable';
 }
 
 function panelRecoveryInfo(error: unknown): ChoreWorkspaceRecoveryInfo | null {
@@ -644,9 +666,7 @@ async function parseWorkspaceFailure(response: Response): Promise<{
       recovery:
         typeof recovery?.backupAvailable === 'boolean' &&
         typeof recovery.pinConfigured === 'boolean' &&
-        (reason === 'storage_unavailable' ||
-          reason === 'workspace_invalid' ||
-          reason === 'workspace_too_large')
+        (reason === 'workspace_invalid' || reason === 'workspace_too_large')
           ? {
               backupAvailable: recovery.backupAvailable,
               pinConfigured: recovery.pinConfigured,
@@ -682,18 +702,23 @@ export async function loadChoreWorkspace(revision?: number): Promise<ChoreWorksp
         available: document !== null,
         unauthorized: false,
         notModified: false,
-        error: document ? null : 'The Home Assistant chore workspace response was invalid',
+        failureKind: document ? undefined : 'invalid_data',
+        error: document
+          ? null
+          : 'Navet received chore data it could not safely read. Your household data was left unchanged.',
         recovery: null,
         revision: document?.revision ?? null,
         document,
       };
     } catch (error) {
+      const recovery = panelRecoveryInfo(error);
       return {
         available: false,
         unauthorized: false,
         notModified: false,
+        failureKind: panelFailureKind(error, recovery),
         error: panelErrorMessage(error, 'Chore storage could not be reached'),
-        recovery: panelRecoveryInfo(error),
+        recovery,
         revision: null,
         document: null,
       };
@@ -736,6 +761,11 @@ export async function loadChoreWorkspace(revision?: number): Promise<ChoreWorksp
         available: false,
         unauthorized: false,
         notModified: false,
+        failureKind:
+          failure.recovery?.reason === 'workspace_invalid' ||
+          failure.recovery?.reason === 'workspace_too_large'
+            ? 'invalid_data'
+            : 'unreachable',
         error: failure.error,
         recovery: failure.recovery,
         revision: parseRevision(response),
@@ -748,7 +778,10 @@ export async function loadChoreWorkspace(revision?: number): Promise<ChoreWorksp
       available: document !== null,
       unauthorized: false,
       notModified: false,
-      error: document ? null : 'The chore workspace response was invalid',
+      failureKind: document ? undefined : 'invalid_data',
+      error: document
+        ? null
+        : 'Navet received chore data it could not safely read. Your household data was left unchanged.',
       recovery: null,
       revision: document?.revision ?? parseRevision(response),
       document,
@@ -758,6 +791,7 @@ export async function loadChoreWorkspace(revision?: number): Promise<ChoreWorksp
       available: false,
       unauthorized: false,
       notModified: false,
+      failureKind: 'unreachable',
       error: 'Chore storage could not be reached',
       recovery: null,
       revision: null,

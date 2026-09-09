@@ -70,7 +70,7 @@
     "check:website-audit": "node scripts/check-website-audit.mjs",
     "check:brand": "node scripts/brand-assets.mjs check",
     "check:runtime-policies": "node scripts/build-runtime-policies.mjs --check",
-    "check:rss-transport": "node scripts/build-rss-transport.mjs --check",
+    "check:rss-transport": "docker build --target rss-transport-build -t navet:rss-transport-check .",
     "check:provider-boundaries": "node scripts/check-provider-boundaries.mjs",
     "check:docker": "node scripts/check-docker-runtime.mjs",
     "check:lockfile": "node scripts/check-pnpm-lock-sync.mjs",

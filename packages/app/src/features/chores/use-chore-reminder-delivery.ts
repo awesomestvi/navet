@@ -17,7 +17,7 @@ export function useChoreReminderDelivery(enabled = true) {
     const item = reconciledData.outbox.find(
       (candidate) =>
         candidate.eventType.startsWith('reminder_') &&
-        candidate.destination === 'home_assistant' &&
+        (candidate.destination === 'provider' || candidate.destination === 'home_assistant') &&
         (candidate.status === 'pending' || candidate.status === 'failed') &&
         Date.parse(candidate.nextAttemptAt) <= now &&
         !attempts.current.has(`${candidate.id}:${candidate.attempts}`)

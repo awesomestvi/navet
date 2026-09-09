@@ -210,7 +210,7 @@ export function AddCardDialogView({
           data-add-card-header
           className={cn(
             coverSheetHeaderClassName,
-            'z-10 shrink-0 border-b pt-[calc(env(safe-area-inset-top,0px)+0.75rem)]',
+            'z-10 shrink-0 border-b max-sm:pt-2 max-sm:pr-4',
             borderColor,
             theme === 'glass' ? 'bg-transparent' : 'bg-inherit/95 backdrop-blur-xl'
           )}

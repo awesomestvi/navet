@@ -72,6 +72,12 @@ const getIngressDestinationFromPath = (pathname: string): NavigationDestination 
 
 const stripLeadingSlash = (value: string) => value.replace(/^\//, '');
 
+export function notifyNavigationPathChanged() {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('location-changed'));
+  }
+}
+
 function buildBaseRelativePath(segment?: string): string {
   const base = getBasePath();
   const trimmedSegment = segment ? stripLeadingSlash(segment) : '';

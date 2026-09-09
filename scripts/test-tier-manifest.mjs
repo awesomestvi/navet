@@ -58,7 +58,6 @@ export const TEST_TIERS = {
       'packages/core/src/credential-policy.test.ts',
       'packages/provider-homey/src/homey-service.test.ts',
       'packages/app/src/utils/__tests__/rss-proxy-handler.test.ts',
-      'packages/app/src/utils/__tests__/rss-transport-server.test.ts',
       'packages/app/src/utils/__tests__/vite-response-body.test.ts',
       'packages/app/src/utils/__tests__/vite-host-runtime.test.ts',
       'packages/app/src/utils/__tests__/vite-public-resource-request.test.ts',

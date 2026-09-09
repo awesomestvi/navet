@@ -73,7 +73,15 @@ export const PhoneCoverSheet: Story = {
       'max-sm:!rounded-b-none',
       'max-sm:!bottom-0'
     );
-    await expect(header).toHaveClass('px-4', 'py-3', 'sm:px-5', 'sm:py-4');
+    await expect(header).toHaveClass(
+      'px-4',
+      'py-3',
+      'max-sm:pt-2',
+      'max-sm:pr-4',
+      'sm:px-5',
+      'sm:py-4'
+    );
+    await expect(header.className).not.toContain('safe-area-inset-top');
     await expect(header).not.toHaveClass('flex');
     await expect(headerContent.getByRole('button', { name: 'All cards' })).toHaveClass('text-xs');
     await expect(headerContent.getByText('All cards')).toHaveClass('font-normal');

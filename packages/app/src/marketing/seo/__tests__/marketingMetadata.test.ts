@@ -11,7 +11,7 @@ describe('marketing website metadata', () => {
   it('applies homepage metadata', () => {
     applyMarketingWebsiteMetadata(MARKETING_WEBSITE_ROUTES.home);
 
-    expect(document.title).toBe('Smart Home Dashboard for Home Assistant & Homey | Navet');
+    expect(document.title).toBe('Provider-neutral Smart Home Dashboard | Navet');
     expect(
       document.head.querySelector('meta[name="description"]')?.getAttribute('content')
     ).toContain('local-first smart home dashboard');

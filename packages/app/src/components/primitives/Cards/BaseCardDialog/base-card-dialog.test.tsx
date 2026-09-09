@@ -77,11 +77,28 @@ describe('BaseCardDialog', () => {
 
     fireEvent.pointerDown(dragHandle, { clientY: 600, pointerId: 1, pointerType: 'touch' });
     fireEvent.pointerMove(window, { clientY: 500, pointerId: 1, pointerType: 'touch' });
+    expect(dialog.style.getPropertyValue('--mobile-cover-sheet-top')).toContain(
+      'env(safe-area-inset-top, 0px)'
+    );
     fireEvent.pointerUp(window, { clientY: 500, pointerId: 1, pointerType: 'touch' });
 
     expect(dialog).toHaveClass('max-sm:!h-auto');
-    expect(dialog.style.getPropertyValue('--mobile-cover-sheet-top')).toBe('0.5rem');
-    expect(screen.getByRole('button', { name: 'Close dialog' })).toBeInTheDocument();
+    expect(dialog.style.getPropertyValue('--mobile-cover-sheet-top')).toBe(
+      'calc(max(env(safe-area-inset-top, 0px), 0px) + 0.5rem)'
+    );
+    const fullscreenDragHandle = screen.getByRole('button', { name: 'Close dialog' });
+    expect(fullscreenDragHandle).toBeInTheDocument();
+
+    onOpenChange.mockClear();
+    fireEvent.pointerDown(fullscreenDragHandle, {
+      clientY: 100,
+      pointerId: 2,
+      pointerType: 'touch',
+    });
+    fireEvent.pointerMove(window, { clientY: 700, pointerId: 2, pointerType: 'touch' });
+    fireEvent.pointerUp(window, { clientY: 700, pointerId: 2, pointerType: 'touch' });
+
+    expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
   it('renders the room selector as a plain eyebrow and keeps actions palette-aware', () => {
@@ -115,7 +132,8 @@ describe('BaseCardDialog', () => {
 
     const dialog = screen.getByRole('dialog', { name: 'Plant Light' });
     const wholeSheetScrollArea = dialog.querySelector('[dir="ltr"]');
-    expect(wholeSheetScrollArea).toHaveClass('max-sm:-mt-5', 'max-sm:min-h-0', 'max-sm:flex-1');
+    expect(wholeSheetScrollArea).toHaveClass('max-sm:min-h-0', 'max-sm:flex-1');
+    expect(wholeSheetScrollArea).not.toHaveClass('max-sm:-mt-5');
     expect(wholeSheetScrollArea?.parentElement).toHaveClass(
       'max-sm:flex',
       'max-sm:min-h-0',

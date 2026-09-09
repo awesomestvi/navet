@@ -1180,7 +1180,7 @@ const STORY_DOCS: Record<string, string> = {
     ]
   ),
   'Cards/Entity/Info': doc(
-    'Read-only entity card for a single Home Assistant sensor, binary sensor, timestamp, or passive status value.',
+    'Read-only entity card for a single provider sensor, binary sensor, timestamp, or passive status value.',
     [
       'How numeric readings and binary status values share one visual language.',
       'The compact icon, type eyebrow, entity name, and large value hierarchy used by info cards.',

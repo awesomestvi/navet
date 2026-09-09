@@ -24,6 +24,14 @@ describe('detectAuthRuntime', () => {
     expect(detectAuthRuntime()).toBe('ha-ingress');
   });
 
+  it('uses the packaged ingress runtime when Home Assistant rewrites the browser path', () => {
+    window.history.replaceState({}, '', '/');
+    window.__NAVET_CONFIG__ = { runtime: 'ha-ingress' };
+    resetRuntimeContextForTests();
+
+    expect(detectAuthRuntime()).toBe('ha-ingress');
+  });
+
   it('detects standalone runtime', () => {
     window.history.replaceState({}, '', '/');
     resetRuntimeContextForTests();

@@ -62,6 +62,8 @@ describe('DashboardSwitcherPill', () => {
   });
 
   it('previews a dashboard without changing the device assignment, then offers explicit use', async () => {
+    const locationChanged = vi.fn();
+    window.addEventListener('location-changed', locationChanged);
     renderWithProviders(<DashboardSwitcherPill active onShowHome={() => {}} />);
 
     fireEvent.pointerDown(screen.getByRole('button', { name: /Open dashboards/ }));
@@ -75,6 +77,7 @@ describe('DashboardSwitcherPill', () => {
     });
     expect(state.collection.dashboardIdByClientId[clientId]).toBe('home');
     expect(window.location.pathname).toBe('/dashboard/upstairs');
+    expect(locationChanged).toHaveBeenCalledOnce();
 
     fireEvent.pointerDown(screen.getByRole('button', { name: /Open dashboards/ }));
     await waitFor(() => expect(screen.getByRole('menu')).toBeInTheDocument());
@@ -86,6 +89,7 @@ describe('DashboardSwitcherPill', () => {
       activeSource: 'assignment',
     });
     expect(state.collection.dashboardIdByClientId[clientId]).toBe('upstairs');
+    window.removeEventListener('location-changed', locationChanged);
   });
 
   it('opens the dashboard section when managing dashboards', async () => {

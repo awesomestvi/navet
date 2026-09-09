@@ -10,16 +10,16 @@ is due, and whether it is finished.
 
 ![Household Today with the one-row House pulse, overdue and upcoming chore cards, assignees, time, points, and the See rewards action.](/docs/how-to/everyday-control/household-today.webp)
 
-Chores belong to the Navet installation. They are not copied from Home Assistant todo lists, and a
-connected provider does not become the source of truth for assignments, schedules, or history.
-Home Assistant can optionally receive a compact summary and action requests for automations.
+Chores belong to the Navet installation. A connected provider does not become the source of truth
+for assignments, schedules, or history. Provider adapters may optionally project a compact summary
+and accept action requests for automations.
 
 ## Where chores are available
 
-Native chores are available in the Home Assistant add-on and in standalone Navet when it is paired
-with a trusted Home Assistant installation. The Home Assistant custom panel does not provide the
-shared file store required by the chores workspace. Homey-only and openHAB-only installations do
-not currently provide that storage authority.
+Native chores require a Navet runtime with shared chore storage. Today that authority is available
+in the Home Assistant add-on and in a compatible standalone installation. The Home Assistant custom
+panel, Homey-only installations, and openHAB-only installations do not currently provide that
+storage authority; this is a runtime capability limit, not a provider-owned chores model.
 
 ## The Household workspace
 

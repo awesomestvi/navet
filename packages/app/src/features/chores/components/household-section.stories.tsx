@@ -143,6 +143,21 @@ function HouseholdRecoveryStory() {
   return <HouseholdSection syncEnabled={false} />;
 }
 
+function HouseholdInvalidDataStory() {
+  useEffect(() => {
+    useChoreWorkspaceStore.setState({
+      data: null,
+      error:
+        'Navet received chore data it could not safely read. Your household data was left unchanged.',
+      recovery: null,
+      revision: null,
+      status: 'error',
+    });
+    return () => useChoreWorkspaceStore.getState().reset();
+  }, []);
+  return <HouseholdSection syncEnabled={false} />;
+}
+
 function HouseholdProtectedStory() {
   useEffect(() => {
     useChoreWorkspaceStore.getState().setPreviewDocument({
@@ -525,6 +540,20 @@ export const DamagedWorkspaceRecovery: Story = {
         name: 'Start chores over?',
       })
     ).toBeInTheDocument();
+  },
+};
+
+export const InvalidWorkspaceMessage: Story = {
+  render: () => <HouseholdInvalidDataStory />,
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText('Chores could not sync')).toBeInTheDocument();
+    await expect(
+      canvas.getByText(
+        'Navet received chore data it could not safely read. Your household data was left unchanged.'
+      )
+    ).toBeInTheDocument();
+    await expect(canvas.queryByText('Chores are unavailable here')).toBeNull();
+    await expect(canvas.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
   },
 };
 

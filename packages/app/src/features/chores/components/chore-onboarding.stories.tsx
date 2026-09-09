@@ -149,7 +149,8 @@ export const LiquidGlassDialog: Story = {
     const glow = dialog.querySelector('[data-dialog-content-glow]');
     const footer = dialog.querySelector('[data-chore-onboarding-footer]');
     await expect(dialog).toHaveClass('bg-slate-950/55', 'backdrop-blur-2xl');
-    await expect(footer).toHaveClass('border-t', 'bg-transparent');
+    await expect(footer).toHaveClass('border-t', 'bg-slate-950', 'z-10');
+    await expect(footer).not.toHaveClass('bg-transparent');
     await expect(footer?.className).not.toContain('linear-gradient');
     await expect(footer?.className).not.toContain('shadow');
     await expect(glow).toHaveClass('pointer-events-none');
@@ -290,6 +291,27 @@ function createCompleteGuidedSetupPlay(paced: boolean): NonNullable<Story['play'
     await pause();
     await userEvent.click(within(dialog).getByRole('button', { name: 'Continue to profiles' }));
     await expect(within(dialog).getAllByLabelText('Profile colour')[0]).toBeVisible();
+    await expect(
+      within(dialog).getByText(/Phone notifications use the connected smart-home provider's app/)
+    ).toBeVisible();
+    await userEvent.selectOptions(
+      within(dialog).getByLabelText('Reminder destination'),
+      'provider'
+    );
+    await expect(
+      within(dialog).getByText(
+        "Sends a push notification through the connected smart-home provider's app. Choose the device this person uses."
+      )
+    ).toBeVisible();
+    const notificationTarget = await within(dialog).findByLabelText('Notification device');
+    await expect(notificationTarget).toBeRequired();
+    await expect(
+      within(dialog).getByRole('button', { name: 'Save profiles and continue' })
+    ).toBeDisabled();
+    await userEvent.selectOptions(notificationTarget, 'mobile_app_alex_iphone');
+    await expect(
+      within(dialog).getByRole('button', { name: 'Save profiles and continue' })
+    ).toBeEnabled();
     await pause();
     await userEvent.click(within(dialog).getByRole('button', { name: 'Icon' }));
     const profileSymbol = within(dialog).getByLabelText('UserRound');
@@ -298,6 +320,9 @@ function createCompleteGuidedSetupPlay(paced: boolean): NonNullable<Story['play'
     await userEvent.click(within(dialog).getByRole('button', { name: /Maya$/ }));
     await userEvent.click(within(dialog).getByRole('button', { name: /Alex$/ }));
     await expect(within(dialog).getByLabelText('UserRound')).toBeChecked();
+    await expect(within(dialog).getByLabelText('Notification device')).toHaveValue(
+      'mobile_app_alex_iphone'
+    );
     await pause();
     await userEvent.click(
       within(dialog).getByRole('button', { name: 'Save profiles and continue' })

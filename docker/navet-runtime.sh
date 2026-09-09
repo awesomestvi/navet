@@ -18,7 +18,7 @@ mkdir -p /run/navet
 chown nginx:nginx /run/navet
 chmod 750 /run/navet
 rm -f /run/navet/rss-transport.sock
-su-exec nginx node /etc/navet/rss-transport.mjs &
+su-exec nginx /etc/navet/rss-transport &
 transport_pid=$!
 
 attempt=0

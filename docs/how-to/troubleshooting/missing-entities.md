@@ -37,8 +37,8 @@ Card library for a generic entity card.
 
 ## 5. Check provider capability
 
-An entity can exist while an advanced Navet section is unavailable. Homey and openHAB do not
-currently supply all Home Assistant feature services.
+An entity can exist while an advanced Navet section is unavailable. Provider capability coverage
+varies, and not every connected platform currently supplies every advanced feature service.
 
 ## If state is stale
 

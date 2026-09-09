@@ -143,6 +143,18 @@ def _empty_data() -> dict[str, Any]:
     }
 
 
+def _repair_rotation_cursor(definition: Mapping[str, Any]) -> None:
+    assignment = definition.get("assignment")
+    if not isinstance(assignment, dict) or "rotationCursor" not in assignment:
+        return
+    cursor = assignment["rotationCursor"]
+    if isinstance(cursor, bool) or not isinstance(cursor, int) or cursor < 0:
+        if assignment.get("mode") == "rotation":
+            assignment["rotationCursor"] = 0
+        else:
+            assignment.pop("rotationCursor", None)
+
+
 def _normalize_data(value: Any) -> dict[str, Any]:
     if not isinstance(value, Mapping):
         raise ChoreStorageError("Chore workspace data is invalid")
@@ -168,6 +180,9 @@ def _normalize_data(value: Any) -> dict[str, Any]:
     ):
         raise ChoreStorageError("Chore workspace data is invalid")
     data = json.loads(json.dumps(value))
+    for definition in data["definitionsById"].values():
+        if isinstance(definition, Mapping):
+            _repair_rotation_cursor(definition)
     data.setdefault("historyRetention", dict(DEFAULT_RETENTION))
     data.setdefault("experience", _empty_data()["experience"])
     retention = data["historyRetention"]
@@ -435,7 +450,13 @@ def _assignment_slots(definition: Mapping[str, Any], data: Mapping[str, Any], in
     if mode == "everyone":
         return [(item, [item]) for item in ids]
     if mode == "rotation":
-        cursor = max(0, int(assignment.get("rotationCursor", 0)))
+        stored_cursor = assignment.get("rotationCursor", 0)
+        cursor = (
+            stored_cursor
+            if isinstance(stored_cursor, int) and not isinstance(stored_cursor, bool)
+            else 0
+        )
+        cursor = max(0, cursor)
         item = ids[(cursor + index) % len(ids)]
         return [(item, [item])]
     if mode == "person":
@@ -859,6 +880,14 @@ class ChoreAuthority:
             repaired_primary = False
             try:
                 data = _normalize_data(primary.get("data")) if isinstance(primary, Mapping) else _empty_data()
+                if isinstance(primary, Mapping) and data != primary.get("data"):
+                    primary = {
+                        **primary,
+                        "revision": int(primary.get("revision", 0)) + 1,
+                        "updatedAt": _iso(_now()),
+                        "data": data,
+                    }
+                    repaired_primary = True
             except ChoreAuthorityError:
                 backup = await self._stores["last_good"].async_load()
                 try:
@@ -1118,6 +1147,7 @@ class ChoreAuthority:
         if action_type in {"definition_create", "definition_update"}:
             _require_manager(data, actor)
             definition = dict(action.get("definition", {}))
+            _repair_rotation_cursor(definition)
             definition_id = str(definition.get("id", ""))
             if not definition_id or (action_type == "definition_create" and definition_id in data["definitionsById"]) or (action_type == "definition_update" and definition_id not in data["definitionsById"]):
                 raise ChoreAuthorityError("Chore is no longer available")
@@ -1539,7 +1569,7 @@ class ChoreAuthority:
         await self._deliver_pending()
 
     async def _deliver_pending(self) -> None:
-        pending = [item for item in self.data.get("outbox", []) if str(item.get("eventType", "")).startswith("reminder_") and item.get("destination") == "home_assistant" and item.get("status") in {"pending", "failed"} and _parse_iso(item.get("nextAttemptAt", _iso(_now()))) <= _now()][:10]
+        pending = [item for item in self.data.get("outbox", []) if str(item.get("eventType", "")).startswith("reminder_") and item.get("destination") in {"provider", "home_assistant"} and item.get("status") in {"pending", "failed"} and _parse_iso(item.get("nextAttemptAt", _iso(_now()))) <= _now()][:10]
         for item in pending:
             occurrence = self.data.get("occurrencesById", {}).get(item.get("occurrenceId"), {})
             definition = self.data.get("definitionsById", {}).get(occurrence.get("definitionId"), {})
@@ -1580,7 +1610,7 @@ class ChoreAuthority:
                 1
                 for item in self.data.get("outbox", [])
                 if str(item.get("eventType", "")).startswith("reminder_")
-                and item.get("destination") == "home_assistant"
+                and item.get("destination") in {"provider", "home_assistant"}
                 and item.get("status") in {"pending", "failed"}
             ),
             "lastDeliveryError": self._last_delivery_error,

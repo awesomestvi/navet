@@ -65,7 +65,7 @@ route to the trusted LAN address.
 - If Navet says operator pairing is required, the installation does not currently have a trusted
   Home Assistant upstream. On an existing installation, first verify that its original
   `navet-data` volume is mounted. On a fresh or reset installation, complete the one-time pairing
-  described in [Home Assistant setup](/install/home-assistant/#standalone-docker).
+  described in [Home Assistant setup](/install/home-assistant/#option-3-install-with-docker).
 
 ### Change an unreachable trusted upstream
 

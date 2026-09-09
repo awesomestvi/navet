@@ -10,6 +10,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import {
   customSidebarActionToPath,
   isSection,
+  notifyNavigationPathChanged,
   pathToDestination,
   type Section,
   sectionToPath,
@@ -167,6 +168,7 @@ export const useNavigationStore = create<NavigationState>()(
         }),
       setActiveSection: (activeSection) => {
         history.pushState({}, '', sectionToPath(activeSection));
+        notifyNavigationPathChanged();
         window.scrollTo(0, 0);
         set((state) => {
           if (activeSection === 'home') {
@@ -183,6 +185,7 @@ export const useNavigationStore = create<NavigationState>()(
       },
       setActiveCustomSidebarAction: (actionId) => {
         history.pushState({}, '', customSidebarActionToPath(actionId));
+        notifyNavigationPathChanged();
         window.scrollTo(0, 0);
         set((state) =>
           state.activeCustomSidebarActionId === actionId

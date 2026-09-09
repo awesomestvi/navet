@@ -14,7 +14,7 @@ import { ALL_ROOMS_ID } from '@navet/app/constants/rooms';
 import { getDashboardClientIdentity } from '@navet/app/features/dashboard/clients/dashboard-client-identity';
 import { openSettingsTab } from '@navet/app/features/settings/settings-navigation';
 import { useI18n, useTheme } from '@navet/app/hooks';
-import { dashboardToPath } from '@navet/app/navigation/sections';
+import { dashboardToPath, notifyNavigationPathChanged } from '@navet/app/navigation/sections';
 import { useNavigationStore } from '@navet/app/stores/navigation-store';
 import { Check, ChevronDown, LayoutDashboard, Plus, Settings2 } from 'lucide-react';
 import { type ReactNode, useMemo, useState } from 'react';
@@ -32,6 +32,7 @@ export function openDashboardPreview(dashboardId: string) {
     currentRoom: ALL_ROOMS_ID,
   });
   history.pushState({}, '', dashboardToPath(dashboardId));
+  notifyNavigationPathChanged();
   window.scrollTo(0, 0);
 }
 

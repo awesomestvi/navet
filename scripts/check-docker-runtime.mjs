@@ -190,6 +190,11 @@ function ensurePersistentDataConfiguration() {
 
   const standaloneEntrypoint = readFileSync('docker/30-navet-config.sh', 'utf8');
   const addonEntrypoint = readFileSync('platform/home-assistant/addons/navet/run.sh', 'utf8');
+  if (!addonEntrypoint.includes('runtime: "ha-ingress"')) {
+    throw new Error(
+      'Home Assistant add-on config must explicitly select the Ingress runtime'
+    );
+  }
   for (const [file, source] of [
     ['docker/30-navet-config.sh', standaloneEntrypoint],
     ['platform/home-assistant/addons/navet/run.sh', addonEntrypoint],
@@ -821,7 +826,7 @@ async function waitForProvider(containerName) {
 function rssFixtureContainerArgs() {
   return rssFixture ? [
     '--mount', `type=bind,source=${rssFixture.caFile},target=/etc/navet/rss-test-ca.pem,readonly`,
-    '-e', 'NODE_EXTRA_CA_CERTS=/etc/navet/rss-test-ca.pem',
+    '-e', 'SSL_CERT_FILE=/etc/navet/rss-test-ca.pem',
   ] : [];
 }
 
@@ -884,7 +889,14 @@ async function verifyRssServiceSupervision(containerName) {
   if (identity.status !== 0 || identity.stdout.trim() !== 'nginx:nginx:660') {
     throw new Error('RSS Unix socket must be private to the nginx identity');
   }
-  run('docker', ['exec', containerName, 'pkill', '-KILL', '-x', 'node']);
+  run('docker', [
+    'exec',
+    containerName,
+    'pkill',
+    '-KILL',
+    '-f',
+    '/etc/navet/rss-transport$',
+  ]);
   // QEMU can take several seconds to propagate the child failure through the
   // Home Assistant base image's s6 shutdown path. Keep polling so native runs
   // still finish immediately, but give emulated release architectures a fair

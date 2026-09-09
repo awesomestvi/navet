@@ -121,6 +121,7 @@ function HouseholdUnavailable({
   retry: () => void;
 }) {
   const { t } = useI18n();
+  const error = useChoreWorkspaceStore((state) => state.error);
   const recovery = useChoreWorkspaceStore((state) => state.recovery);
   const recover = useChoreWorkspaceStore((state) => state.recover);
   const managementUnlocked = useChoreWorkspaceStore((state) => state.managementUnlocked);
@@ -165,7 +166,7 @@ function HouseholdUnavailable({
               ? t('household.unavailable.description')
               : unauthorized
                 ? t('household.unauthorized.description')
-                : t('household.error.description')
+                : error || t('household.error.description')
         }
         actionLabel={recovery ? undefined : t('household.retry')}
         onAction={recovery ? undefined : retry}
@@ -346,7 +347,7 @@ export function HouseholdSection({ syncEnabled = true }: { syncEnabled?: boolean
     let active = true;
     let unsubscribe = () => {};
     void subscribeIntegrationChoreActionRequests((request) => {
-      const reason = request.reason?.trim() || 'Home Assistant automation';
+      const reason = request.reason?.trim() || 'Provider automation';
       const action =
         request.action === 'reassign'
           ? {

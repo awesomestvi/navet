@@ -2,6 +2,7 @@ import { dispatchEntityCommand } from '@navet/app/commands';
 import { Input } from '@navet/app/components/primitives';
 import { getDashboardCardFootprint } from '@navet/app/components/shared/card-size';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
+import { navetRadiusTokens } from '@navet/app/components/system/tokens';
 import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import { EMPTY_NAVET_MEDIA_CAPABILITIES } from '@navet/app/core/navet-device-state';
 import { useFitDashboardGrid } from '@navet/app/features/dashboard/hooks/use-fit-dashboard-grid';
@@ -57,6 +58,19 @@ import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } fro
 import { MediaCard } from '../media-card';
 
 type MediaDashboardDevice = MediaDevice & { type: 'media' };
+
+const EMPTY_MEDIA_DASHBOARD_DEVICE: MediaDashboardDevice = {
+  id: '',
+  name: '',
+  room: '',
+  size: 'small',
+  title: '',
+  artist: '',
+  state: 'idle',
+  volume: 0,
+  isMuted: false,
+  type: 'media',
+};
 
 interface MediaDashboardProps {
   devices: MediaDashboardDevice[];
@@ -1136,7 +1150,7 @@ function MediaBrowserDirectoryTile({
   return (
     <button
       type="button"
-      className={`group flex min-h-[72px] min-w-0 items-center gap-3 rounded-2xl border px-3 py-2.5 text-left transition-[background-color,border-color,box-shadow] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${surface.border} ${tileSurfaceClassName} ${
+      className={`group flex min-h-[72px] min-w-0 items-center gap-3 ${navetRadiusTokens.panelInset} border px-3 py-2.5 text-left transition-[background-color,border-color,box-shadow] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${surface.border} ${tileSurfaceClassName} ${
         theme === 'light'
           ? 'focus-visible:ring-slate-400 focus-visible:ring-offset-white'
           : 'focus-visible:ring-white/40 focus-visible:ring-offset-zinc-950'
@@ -1853,7 +1867,11 @@ export function MediaDashboard({
       ? restoreRememberedDevice(usableRememberedSession, rememberedCurrentDevice)
       : undefined;
   const usingRememberedSession = rememberedNowPlayingDevice !== undefined;
-  const nowPlayingDevice = liveNowPlayingDevice ?? rememberedNowPlayingDevice ?? selectedDevice;
+  const nowPlayingDevice =
+    liveNowPlayingDevice ??
+    rememberedNowPlayingDevice ??
+    selectedDevice ??
+    EMPTY_MEDIA_DASHBOARD_DEVICE;
   const matchingPhysicalTransportDevice = isMusicAssistantPlaybackDevice(nowPlayingDevice)
     ? findPreferredDevice(
         resolvedDevices,

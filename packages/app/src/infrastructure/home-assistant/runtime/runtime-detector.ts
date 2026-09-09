@@ -128,11 +128,12 @@ export function detectRuntimeContext(): RuntimeContext {
   const ingressBasePath = resolveIngressBasePath();
   const appBasePath = resolveAppBasePath(ingressBasePath);
   const isPanel = typeof window !== 'undefined' && window.__NAVET_PANEL__ === true;
+  const isConfiguredIngress = runtimeConfig.runtime === 'ha-ingress';
   const hasConfiguredHaBaseUrl = Boolean(runtimeConfig.hassUrl);
 
   const kind: RuntimeContext['kind'] = isPanel
     ? 'ha_panel'
-    : ingressBasePath
+    : isConfiguredIngress || ingressBasePath
       ? 'ha_ingress'
       : import.meta.env.DEV
         ? 'dev'

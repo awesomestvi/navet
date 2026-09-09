@@ -113,13 +113,15 @@ describe('DashboardPage loading recovery', () => {
     getControllerMock.mockReturnValue(createController({ connecting: true }));
     renderWithProviders(<DashboardPage />);
 
-    expect(screen.getByText('Connecting to Home Assistant...')).toBeInTheDocument();
+    expect(screen.getByText('Connecting to your smart home...')).toBeInTheDocument();
     expect(useErrorStore.getState().error).toBeNull();
   });
 
   it('falls back cleanly and announces an unavailable direct dashboard link', () => {
     window.history.replaceState({}, '', '/dashboard/missing');
     getControllerMock.mockReturnValue(createController({ homeLayoutHydrated: true }));
+    const locationChanged = vi.fn();
+    window.addEventListener('location-changed', locationChanged);
 
     renderWithProviders(<DashboardPage />);
 
@@ -129,6 +131,8 @@ describe('DashboardPage loading recovery', () => {
       { id: 'dashboard-not-found' }
     );
     expect(window.location.pathname).toBe('/dashboard/home');
+    expect(locationChanged).toHaveBeenCalledOnce();
+    window.removeEventListener('location-changed', locationChanged);
   });
 
   it('does not replace a non-home route during dashboard profile startup', () => {

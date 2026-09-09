@@ -129,6 +129,7 @@ describe('chore workspace service', () => {
 
     await expect(loadChoreWorkspace()).resolves.toMatchObject({
       available: false,
+      failureKind: 'unsupported',
       error: expect.stringContaining('Update the Navet Home Assistant integration'),
     });
   });
@@ -155,6 +156,7 @@ describe('chore workspace service', () => {
 
     await expect(loadChoreWorkspace()).resolves.toMatchObject({
       available: false,
+      failureKind: 'invalid_data',
       error: 'Chore data could not be read',
       recovery: {
         backupAvailable: false,
@@ -342,6 +344,8 @@ describe('chore workspace service', () => {
 
     await expect(loadChoreWorkspace()).resolves.toMatchObject({
       available: false,
+      failureKind: 'invalid_data',
+      error: expect.stringContaining('could not safely read'),
       document: null,
     });
   });
@@ -376,6 +380,7 @@ describe('chore workspace service', () => {
 
     await expect(loadChoreWorkspace()).resolves.toMatchObject({
       available: false,
+      failureKind: 'invalid_data',
       error: 'Chore data could not be read',
       recovery: { backupAvailable: true, pinConfigured: true, reason: 'workspace_invalid' },
     });
@@ -396,6 +401,29 @@ describe('chore workspace service', () => {
         'X-Navet-Chore-Management-Session': 'manager-session',
       }),
       body: JSON.stringify({ action: 'restore_backup', confirmation: 'REPAIR CHORES' }),
+    });
+  });
+
+  it('does not present temporary storage failures as damaged chore data', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          error:
+            'Chore storage could not finish the request. Your saved data has not been replaced.',
+          recovery: {
+            backupAvailable: true,
+            pinConfigured: true,
+            reason: 'storage_unavailable',
+          },
+        }),
+        { status: 503, headers: { 'Content-Type': 'application/json' } }
+      )
+    );
+
+    await expect(loadChoreWorkspace()).resolves.toMatchObject({
+      available: false,
+      failureKind: 'unreachable',
+      recovery: null,
     });
   });
 

@@ -60,7 +60,7 @@ export const Default: Story = {};
 
 export const FullScreen: Story = {
   args: {
-    message: 'Connecting to Home Assistant',
+    message: 'Connecting to your smart home',
   },
   render: (args) => <FullScreenLoadingSpinnerStory message={args.message} />,
 };

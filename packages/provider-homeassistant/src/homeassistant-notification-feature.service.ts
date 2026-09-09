@@ -61,6 +61,25 @@ function normalizePersistentNotification(
   };
 }
 
+function humanizeMobileAppTarget(service: string, metadata: unknown) {
+  if (isObjectEntry<Record<string, unknown>>(metadata)) {
+    const name = metadata.name;
+    if (typeof name === 'string' && name.trim()) {
+      return name
+        .trim()
+        .replace(/^send (?:a )?notification (?:to|via)\s+/i, '')
+        .replace(/^notify\s+/i, '');
+    }
+  }
+
+  return service
+    .replace(/^mobile_app_/, '')
+    .split('_')
+    .filter(Boolean)
+    .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
+    .join(' ');
+}
+
 export const homeAssistantNotificationFeatureService: ProviderNotificationFeatureService = {
   async getSnapshot(options) {
     const messageClient = getActiveMessageClient(options?.messageClient);
@@ -133,11 +152,29 @@ export const homeAssistantNotificationFeatureService: ProviderNotificationFeatur
     await callHomeAssistantService('update', 'install', {}, { entityId: entityId }),
   restartSystem: async () =>
     await callHomeAssistantService('homeassistant', 'restart', {}, undefined),
+  getDeliveryTargets: async (options) => {
+    const messageClient = getActiveMessageClient(options?.messageClient);
+    if (!messageClient) return [];
+
+    const services = await messageClient.sendMessagePromise<Record<string, unknown>>({
+      type: 'get_services',
+    });
+    const notifyServices = services.notify;
+    if (!isObjectEntry<Record<string, unknown>>(notifyServices)) return [];
+
+    return Object.entries(notifyServices)
+      .filter(([service]) => service.startsWith('mobile_app_'))
+      .map(([service, metadata]) => ({
+        id: service,
+        label: humanizeMobileAppTarget(service, metadata),
+      }))
+      .sort((left, right) => left.label.localeCompare(right.label));
+  },
   sendNotification: async (request) => {
     if (request.target) {
       await callHomeAssistantService(
         'notify',
-        request.target,
+        request.target.replace(/^notify\./, ''),
         {
           title: request.title,
           message: request.message,

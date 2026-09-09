@@ -73,6 +73,7 @@ DASHBOARD_CONFIG_URL_JS="${DASHBOARD_CONFIG_URL_JS//\"/\\\"}"
 
 cat > "${CONFIG_FILE}" <<EOF
 window.__NAVET_CONFIG__ = {
+  runtime: "ha-ingress",
   dashboardConfigUrl: "${DASHBOARD_CONFIG_URL_JS}",
   proxyBaseUrl: "/__navet_ha_proxy__"
 };

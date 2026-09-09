@@ -104,3 +104,8 @@ export const MARKETING_ROADMAP = {
     'SmartThings support when product demand justifies it',
   ],
 } as const;
+
+export const MARKETING_TEASER_CONTENT = {
+  videoTitle: 'Navet — Your Smart Home, in One Place | 1-Minute Tour',
+  cta: 'Watch the 1-minute tour',
+} as const;

@@ -2,103 +2,81 @@
 title: Using Navet
 description: Learn the dashboard model and find user-facing references.
 editUrl: https://github.com/awesomestvi/navet/edit/main/docs/user-guide.md
+next:
+  link: /guide/how-to/
+  label: Browse all guides
 ---
 
-Navet organizes smart-home state around the rooms, devices, and entities supplied by your active
-provider. The first screen is designed for glanceable state and common household controls.
+Use **Home** for your everyday overview, choose a room to focus on one space, or open a section
+such as **Lights** or **Climate** for more controls.
+
+New here? Start with [Your first 15 minutes](/guide/quick-start/first-15-minutes/).
 
 ## Dashboard basics
 
-- Use rooms to keep controls close to the physical spaces they affect.
-- Use widgets for focused status or control surfaces.
-- Keep common actions visible and move less frequent information into supporting views.
-- Treat provider data as the source of truth when a device or room is missing.
+- **Rooms** group controls by the spaces in your home.
+- **Cards** show a device, a room, or a piece of information.
+- **Widgets** add content such as notes, photos, maps, or RSS feeds.
+- **Dashboards** let you arrange different views for different needs or screens.
 
-## Main Sections
+## Main sections
 
-- **Home** is the editable room-first overview. It supports custom sections and columns, layout
-  packs, manual entity cards, drag ordering, sizing, locking, hiding, and undo/redo while editing.
-- **Lights** leads with whole-home status, quick scenes, expand/collapse and whole-home power
-  actions, then orders room groups by unavailable, active, and inactive state. Expand a room for
-  individual brightness and power controls.
-- **Media** promotes the large now-playing session while media is active and promotes browsing
-  while idle. It also supports provider browsing and search, speaker destinations, grouping,
-  playback, volume, and TV controls when the provider exposes them.
-- **Energy** combines configurable KPI summaries with detailed usage history by device, room, or
-  source. Day, week, month, year, and custom ranges depend on provider history/statistics support;
-  live flow, tracked and untracked load, and source diagnostics remain available when reported.
-- **Climate** summarizes current conditions, then groups controllable thermostats, HVAC devices,
-  fans, humidifiers, dehumidifiers, and water heaters by room. Environmental sensor details such
-  as air quality and pressure follow in their own sections.
-- **Security** combines a camera-first command center with actionable alerts, alarm controls,
-  provider-backed activity history, a customizable overview, and grouped security entity cards.
-- **Household** puts native chores into an attention-first Today list, keeps completed cards visible,
-  exposes optional missions and rewards from House pulse, manages recurring work and people in
-  dedicated views, and preserves provider automations and scripts under Routines.
-- **Settings** controls appearance, dashboard profiles, kiosk behavior, interactions, providers,
-  extensions, import/export, and project information.
+| Section | Use it to |
+| --- | --- |
+| [Home](/guide/dashboards/customize-home/) | Arrange the rooms, cards, and information you want to see first. |
+| [Lights](/guide/everyday-control/lights-and-scenes/) | Switch lights, adjust brightness, and run scenes. |
+| [Climate](/guide/everyday-control/climate/) | Check room conditions and adjust supported heating, cooling, and fans. |
+| [Media](/guide/everyday-control/media/) | Browse media and control playback, speakers, and volume. |
+| [Energy](/guide/everyday-control/energy/) | See live usage and explore the history your provider supplies. |
+| [Security](/guide/everyday-control/security/) | View cameras, alarms, and security activity. |
+| [Household](/guide/everyday-control/household-chores/) | Keep track of chores. Find automations and scripts under Routines. |
+| [Settings](/guide/settings/) | Adjust appearance, interactions, providers, and device preferences. |
 
-## Editing And Profiles
+The sections and controls available depend on your connected platform and devices.
 
-Home editing supports layout packs such as command center, security monitor, and energy wall, or a
-custom section/column arrangement. Dashboard configuration can be exported and imported. The
-`standard` and `wall_display` profile presets adjust spacing, title behavior, keep-awake, kiosk,
-and Home-summary settings; scoped settings can remain device-specific instead of overwriting the
-shared profile.
+## Editing and profiles
 
-Kiosk mode hides normal dashboard chrome and keeps section, room, settings, and customization
-access in the orbit menu. In Home Assistant-hosted modes, hiding Home Assistant's own header and
-sidebar additionally uses the optional shell module described in the
-[Home Assistant guide](/install/home-assistant/).
+Choose **Customize** on Home to add, move, resize, or hide cards. Use a layout pack for a starting
+point, or arrange your own sections and columns. See [Customize Home](/guide/dashboards/customize-home/).
 
-## Providers And Availability
+You can [create another dashboard](/guide/dashboards/create-second-dashboard/),
+[assign it to a device](/guide/dashboards/assign-to-device/), or
+[back up your configuration](/guide/dashboards/backup-and-restore/).
 
-Navet can keep multiple implemented provider sessions and combine selected providers in its
-normalized entity collections. Provider-scoped IDs prevent collisions between platforms. Advanced
-sections degrade when their required provider feature service is unavailable; consult the
-[capability matrix](/integrations/) instead of assuming every connected platform supplies media,
-camera, energy, calendar, weather, notification, or task services.
+For a shared screen, follow [Kiosk and Wall Display mode](/guide/wall-displays/kiosk-mode/).
 
-## Appearance, Extensions, And Device Support
+## Providers and availability
 
-Navet includes Liquid Glass (`glass`), `dark`, `light`, and `black` theme families, eight built-in
-accent colors plus a custom accent, built-in and uploaded wallpapers, optional reduced motion, and
-adaptive effects that reduce expensive rendering on weaker hardware. The interface ships with
-Danish, Dutch, English, Finnish, French, German, Italian, Norwegian, Polish, Portuguese, Spanish,
-Swedish, and Chinese message catalogs.
+A provider is the smart-home platform connected to Navet. A standalone installation can connect
+multiple supported providers and show their selected devices together.
 
-With visual quality set to **Auto**, ARM Linux browsers such as Raspberry Pi OS start in the
-low-cost rendering tier. Navet removes animated transitions, backdrop and filter effects, large
-shadows, ambient layers, and other compositor-heavy decoration while keeping controls and
-information intact. The setting is device-owned, so a wall panel can stay on **Low** without
-reducing visual quality on another signed-in phone or computer.
+Capability coverage varies by provider. Check [provider compatibility](/integrations/) if a section
+is unavailable, or [troubleshoot missing devices](/guide/troubleshooting/missing-entities/) if
+something you expect is absent.
 
-Custom sidebar extensions can open links in an embedded Navet page and attach up to five quick
-actions. Provider notifications and available update/restart actions appear in the app's
-notification surface when the active provider registers those services. Navet is installable as a
-PWA and offers keep-awake and wall-display settings for tablet and kiosk use.
+## Appearance, extensions, and device support
+
+- [Appearance](/guide/settings/appearance/) — choose a theme, accent, and wallpaper.
+- [Language and formats](/guide/settings/localization/) — set language, time, and temperature preferences.
+- [Low-power displays](/guide/wall-displays/low-power/) — adjust visual quality for your wall panel.
+- [Sidebar extensions](/guide/settings/sidebar-extensions/) — add links and quick actions.
+- [Phone and tablet](/guide/quick-start/phone-and-tablet/) — use Navet on a smaller screen.
 
 ## Widget reference
 
-The [widget guide](/guide/widgets/) documents the available widget types, supported sizes, and
-placement limits.
+[Browse widgets](/guide/widgets/) for supported content, sizes, and placement.
 
 ## Household chores
 
-The [Household chores guide](/guide/chores/) explains availability, profiles, assignments,
-one-time through tri-weekly schedules, ID-based card colours and edit-time overrides, optional
-motivation, Home and room summaries, shared history, backups, and the Home Assistant projection
-boundary. Use the task-oriented guides to
-[set up and complete chores](/guide/everyday-control/household-chores/) or
-[manage and recover the workspace](/guide/everyday-control/manage-household-chores/).
+[Set up and complete chores](/guide/everyday-control/household-chores/), or read the
+[household reference](/guide/chores/) for schedules, assignments, rewards, and backups.
 
 ## Step-by-step help
 
-Use the [how-to guides](/guide/how-to/) for complete tasks such as creating another dashboard,
-organizing rooms, setting up kiosk mode, assigning dashboards to devices, and recovering a
-synchronization or connection problem.
+[Browse all guides](/guide/how-to/) by task. If something goes wrong, start with
+[troubleshooting](/guide/troubleshooting/).
 
 ## Provider-specific behavior
 
-Connection and deployment behavior varies by provider. Use the
-[integration guide](/integrations/) to reach the matching setup documentation.
+For installation and connection details, choose your platform in the
+[integration guide](/integrations/).

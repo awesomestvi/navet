@@ -158,6 +158,7 @@ const mobileCoverSheetFullscreenClassName = [
 
 const mobileCoverSheetDraggingClassName = 'max-sm:!transition-none';
 const mobileCoverSheetTopInsetPx = 8;
+const mobileCoverSheetFullscreenTopInset = 'calc(max(env(safe-area-inset-top, 0px), 0px) + 0.5rem)';
 
 function blurActiveElement() {
   if (typeof document === 'undefined') {
@@ -281,21 +282,20 @@ function BaseCardDialogRoot({
       if (isMobileCoverSheetFullscreen && deltaY > 0) {
         const restingTop =
           mobileCoverSheetRestingTopRef.current || mobileCoverSheetDragStartTopRef.current;
-        const topInset = Math.min(restingTop, mobileCoverSheetTopInsetPx + deltaY);
-        setMobileCoverSheetTopInset(`${Math.max(mobileCoverSheetTopInsetPx, topInset)}px`);
-        setMobileCoverSheetDragOffset(
-          Math.max(0, deltaY - (restingTop - mobileCoverSheetTopInsetPx))
-        );
+        const fullscreenTop = mobileCoverSheetDragStartTopRef.current;
+        const topInset = Math.min(restingTop, fullscreenTop + deltaY);
+        setMobileCoverSheetTopInset(`${Math.max(fullscreenTop, topInset)}px`);
+        setMobileCoverSheetDragOffset(Math.max(0, deltaY - (restingTop - fullscreenTop)));
         return;
       }
 
       setMobileCoverSheetDragOffset(Math.max(0, deltaY));
       setMobileCoverSheetTopInset(
         deltaY < 0
-          ? `${Math.max(
+          ? `max(${Math.max(
               mobileCoverSheetTopInsetPx,
               mobileCoverSheetDragStartTopRef.current + deltaY
-            )}px`
+            )}px, ${mobileCoverSheetFullscreenTopInset})`
           : 'auto'
       );
     };
@@ -324,10 +324,12 @@ function BaseCardDialogRoot({
       }
 
       if (dragDelta <= -fullscreenThresholdPx) {
-        setMobileCoverSheetTopInset('0.5rem');
+        setMobileCoverSheetTopInset(mobileCoverSheetFullscreenTopInset);
         setIsMobileCoverSheetFullscreen(true);
       } else {
-        setMobileCoverSheetTopInset(isMobileCoverSheetFullscreen ? '0.5rem' : 'auto');
+        setMobileCoverSheetTopInset(
+          isMobileCoverSheetFullscreen ? mobileCoverSheetFullscreenTopInset : 'auto'
+        );
       }
 
       window.setTimeout(() => {
@@ -354,8 +356,9 @@ function BaseCardDialogRoot({
     event.preventDefault();
     mobileCoverSheetPointerIdRef.current = event.pointerId;
     mobileCoverSheetDragStartYRef.current = event.clientY;
+    const measuredTop = mobileCoverSheetContentRef.current?.getBoundingClientRect().top;
     mobileCoverSheetDragStartTopRef.current =
-      mobileCoverSheetContentRef.current?.getBoundingClientRect().top ?? mobileCoverSheetTopInsetPx;
+      measuredTop && measuredTop > 0 ? measuredTop : mobileCoverSheetTopInsetPx;
     if (!isMobileCoverSheetFullscreen) {
       mobileCoverSheetRestingTopRef.current = mobileCoverSheetDragStartTopRef.current;
     }
@@ -666,7 +669,7 @@ function BaseCardDialogCardVariant({
     >
       <CustomScrollbar
         isOn={theme !== 'light'}
-        className={cn('max-sm:-mt-5 max-sm:min-h-0 max-sm:flex-1', scrollClassName)}
+        className={cn('max-sm:min-h-0 max-sm:flex-1', scrollClassName)}
       >
         {shouldRenderTabs ? (
           <Tabs

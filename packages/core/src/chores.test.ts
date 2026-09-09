@@ -296,6 +296,25 @@ describe('chores domain', () => {
     ).toBe(false);
   });
 
+  it('accepts provider-neutral and legacy reminder destinations', () => {
+    for (const type of ['provider', 'home_assistant'] as const) {
+      expect(
+        isChoreWorkspaceData({
+          ...createEmptyChoreWorkspace(),
+          participantsById: {
+            alice: {
+              ...alice,
+              reminderPreferences: {
+                enabled: true,
+                destination: { type, target: 'mobile_app_alice' },
+              },
+            },
+          },
+        })
+      ).toBe(true);
+    }
+  });
+
   it('persists bounded Lucide avatar names for participants', () => {
     expect(
       isChoreWorkspaceData({
@@ -341,6 +360,25 @@ describe('chores domain', () => {
       },
     });
     expect(() => migrateChoreWorkspaceData({ schemaVersion: 0 })).toThrow('Unsupported');
+  });
+
+  it('repairs a corrupted rotation cursor without discarding the workspace', () => {
+    const definition = makeDefinition();
+    const corrupted = {
+      ...createEmptyChoreWorkspace(),
+      participantsById: { alice, bob },
+      definitionsById: {
+        [definition.id]: {
+          ...definition,
+          assignment: { ...definition.assignment, rotationCursor: null },
+        },
+      },
+    };
+
+    expect(isChoreWorkspaceData(corrupted)).toBe(false);
+    expect(
+      migrateChoreWorkspaceData(corrupted).definitionsById[definition.id]?.assignment.rotationCursor
+    ).toBe(0);
   });
 
   it('accepts a persisted experience update in workspace activity and outbox data', () => {
@@ -665,7 +703,7 @@ describe('chores domain', () => {
       reminderPreferences: {
         enabled: true,
         quietHours: { start: '21:00', end: '07:00', timeZone: 'Europe/Stockholm' },
-        destination: { type: 'home_assistant', target: 'mobile_app_alice' },
+        destination: { type: 'provider', target: 'mobile_app_alice' },
       },
     };
     const definition = makeDefinition({
@@ -691,7 +729,7 @@ describe('chores domain', () => {
       expect.objectContaining({
         eventType: 'reminder_before_due',
         participantId: 'alice',
-        destination: 'home_assistant',
+        destination: 'provider',
         destinationTarget: 'mobile_app_alice',
         nextAttemptAt: '2026-08-11T05:00:00.000Z',
       }),

@@ -4,18 +4,12 @@ description: Step-by-step help for setting up, personalizing, and operating Nave
 editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/index.md
 ---
 
-Use these guides when you have a specific job to finish. Each guide shows where to start, the
-choices you will see, the expected result, and how to recover if something does not work.
+Choose the task you want to complete. Each guide includes steps and an expected result.
 
 ## Start here
 
-If Navet is new to you, follow this path:
-
-1. [Spend your first 15 minutes in Navet](/guide/quick-start/first-15-minutes/).
-2. [Customize your Home dashboard](/guide/dashboards/customize-home/).
-3. [Add cards, devices, and widgets](/guide/dashboards/add-cards/).
-4. [Organize rooms and groups](/guide/rooms/organize-rooms/).
-5. [Create a second dashboard](/guide/dashboards/create-second-dashboard/).
+New to Navet? [Install it first](/install/), then follow
+[Your first 15 minutes](/guide/quick-start/first-15-minutes/).
 
 ## Browse by task
 
@@ -35,9 +29,8 @@ If Navet is new to you, follow this path:
 
 ## Before changing provider data
 
-Navet is a daily control surface. Your connected smart-home provider remains the source of truth.
-Some room and device operations can also change the connected provider. Navet shows a review step
-before those operations are saved.
+Some room and device operations also change your connected smart-home platform. Read the review
+step before saving those changes.
 
-Home Assistant currently supplies the broadest set of advanced feature services. Check the
-[capability matrix](/integrations/) when a section or action is unavailable.
+Provider capability coverage varies. Check the [capability matrix](/integrations/) when a section
+or action is unavailable.

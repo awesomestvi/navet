@@ -696,6 +696,37 @@ describe('LightCard', () => {
     );
   });
 
+  it('does not render ambient light bleed while the card is in edit mode', () => {
+    homeAssistantStore.setState({
+      connected: true,
+      connection: {} as never,
+      entities: {
+        'light.desk_lamp': createColorLightEntity(),
+      },
+    });
+    useSettingsStore.getState().updateSettings({
+      ambientLightBleed: true,
+      effectsQuality: 'high',
+      lowPowerMode: false,
+    });
+
+    const { container } = renderWithProviders(
+      <LightCard
+        id="light.desk_lamp"
+        name="Desk Lamp"
+        room="Office"
+        initialState
+        initialBrightness={65}
+        initialTemp={3000}
+        size="medium"
+        onSizeChange={vi.fn()}
+        isEditMode
+      />
+    );
+
+    expect(container.querySelector('[data-ambient-light-bleed="true"]')).not.toBeInTheDocument();
+  });
+
   it('collapses the brightness slider to zero when turned off and restores it when turned back on', async () => {
     homeAssistantStore.setState({
       connected: true,

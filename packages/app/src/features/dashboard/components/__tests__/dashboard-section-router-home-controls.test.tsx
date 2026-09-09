@@ -9,7 +9,7 @@ import type { DeviceWithType } from '@navet/app/types/device.types';
 import { act, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DashboardSectionRouter, shouldSubscribeTaskRoutines } from '../dashboard-section-router';
 
 const roomNavMock = vi.fn();
@@ -81,6 +81,10 @@ vi.mock('../../device-grid', () => ({
 }));
 
 describe('DashboardSectionRouter home controls', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   beforeEach(async () => {
     await resetAppStores();
     roomNavMock.mockClear();
@@ -163,6 +167,8 @@ describe('DashboardSectionRouter home controls', () => {
   });
 
   it('adds pending chores to their room grid', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 8, 9, 11));
     useChoreWorkspaceStore.getState().setPreviewDocument({
       data: createChoreDemoWorkspace({ copy: choreCopy }),
     });
