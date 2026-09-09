@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.16.0
+
+## New features
+
+- Added a redesigned Energy workspace with flexible ranges, configurable KPIs, comparisons, and device-level usage details.
+- Added Household links to Home Assistant people and companion-app devices for chore reminders.
+- Added search, sorting, and size filters to the custom-card library.
+
+## Improvements and bug fixes
+
+- Dashboard updates now synchronize across browser sessions without stale tabs overwriting newer changes.
+- Fixed light controls reverting during provider updates and kept ambient effects out of dashboard editing.
+- Improved media cards with accessible seeking and safe handling when no player is active.
+- Improved compact sensor cards by prioritizing readable values and reserving history graphs for larger sizes.
+- Fixed Household forms accepting invalid schedules or numbers and preserved data during temporary storage failures.
+- Fixed root routes opening the standalone sign-in flow instead of the Home Assistant add-on.
+- Hardened authenticated RSS loading against private-network targets, redirects, oversized feeds, and invalid content.
+
 ## 0.15.8
 
 No user-facing changes in this release.
