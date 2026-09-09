@@ -88,7 +88,8 @@ export const LightCard = memo(function LightCard({
   });
   const cardShell = getCardShellSurfaceTokens(theme);
   const resolvedEffectsQuality = resolveEffectsQuality(effectsQuality, lowPowerMode);
-  const showAmbientLightBleed = ambientLightBleed && resolvedEffectsQuality === 'high';
+  const showAmbientLightBleed =
+    !isEditMode && ambientLightBleed && resolvedEffectsQuality === 'high';
   const surfaceTokens = getLightCardSurfaceTokens({
     isOn: controller.isOn,
     isColorMode,

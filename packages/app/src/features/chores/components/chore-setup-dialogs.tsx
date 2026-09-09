@@ -23,7 +23,9 @@ import { themeColorValues } from '@navet/app/components/shared/theme/theme-color
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { navetIconSizeTokens, navetTypographyTokens } from '@navet/app/components/system/tokens';
 import { cn } from '@navet/app/components/ui/utils';
-import { useI18n, useTheme } from '@navet/app/hooks';
+import { useI18n, useIntegrationStore, useTheme } from '@navet/app/hooks';
+import { integrationSelectors } from '@navet/app/stores/selectors';
+import type { PersonDevice } from '@navet/app/types/device.types';
 import { prepareAvatarImageDataUrl, validateImageFile } from '@navet/app/utils/image-upload';
 import type { ChorePresentationMetadata } from '@navet/core/chore-experience';
 import type {
@@ -36,6 +38,12 @@ import type {
 import { ChevronDown, RotateCcw, SlidersHorizontal, UserRound, X } from 'lucide-react';
 import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { resolveChoreColorPalette } from '../chore-color-palette';
+import {
+  getProviderPersonLinkId,
+  resolveMatchingProviderPersonLinkId,
+  resolveProviderAccountLinkId,
+} from '../chore-provider-person-link';
+import { useProviderNotificationTargets } from '../use-provider-notification-targets';
 import {
   ChoreCreationFormGroups,
   type ChoreCreationRepeat,
@@ -62,6 +70,7 @@ function localDateKey(date = new Date()) {
 const ALL_WEEK_DAYS = [0, 1, 2, 3, 4, 5, 6];
 const WEEKDAYS = [1, 2, 3, 4, 5];
 const WEEKENDS = [0, 6];
+const EMPTY_PROVIDER_PERSONS: PersonDevice[] = [];
 type ReminderDestination = Exclude<ChoreReminderDestinationType, 'home_assistant'>;
 
 function normalizeReminderDestination(
@@ -117,8 +126,8 @@ export function AddPersonDialog({
   const [avatarIcon, setAvatarIcon] = useState('');
   const [avatarUploadError, setAvatarUploadError] = useState('');
   const [avatarProcessing, setAvatarProcessing] = useState(false);
-  const [linkedAccountId, setLinkedAccountId] = useState('');
   const [linkedPersonEntityId, setLinkedPersonEntityId] = useState('');
+  const [personLinkChanged, setPersonLinkChanged] = useState(false);
   const [remindersEnabled, setRemindersEnabled] = useState(true);
   const [quietStart, setQuietStart] = useState('21:00');
   const [quietEnd, setQuietEnd] = useState('07:00');
@@ -129,6 +138,14 @@ export function AddPersonDialog({
   const [draftParticipantId, setDraftParticipantId] = useState('');
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
+  const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
+  const currentUser = useIntegrationStore(integrationSelectors.currentUser);
+  const providerPersons = useIntegrationStore(
+    (state) =>
+      integrationSelectors.providerDeviceCollectionById(currentProviderId)(state)?.persons ??
+      EMPTY_PROVIDER_PERSONS,
+    Object.is
+  );
   const personSteps = useMemo(
     () => [
       {
@@ -147,6 +164,9 @@ export function AddPersonDialog({
   );
   const quietHoursValid = !remindersEnabled || (isValidTime(quietStart) && isValidTime(quietEnd));
   const normalizedReminderTarget = reminderTarget.trim();
+  const providerNotificationTargets = useProviderNotificationTargets(
+    isOpen && remindersEnabled && reminderDestination === 'provider'
+  );
   const reminderTargetValid =
     !remindersEnabled ||
     reminderDestination !== 'provider' ||
@@ -164,8 +184,8 @@ export function AddPersonDialog({
       setAvatarIcon(participant?.avatarIcon ?? '');
       setAvatarUploadError('');
       setAvatarProcessing(false);
-      setLinkedAccountId(participant?.linkedAccountId ?? '');
       setLinkedPersonEntityId(participant?.linkedPersonEntityId ?? '');
+      setPersonLinkChanged(false);
       setRemindersEnabled(participant?.reminderPreferences?.enabled ?? true);
       setQuietStart(participant?.reminderPreferences?.quietHours?.start ?? '21:00');
       setQuietEnd(participant?.reminderPreferences?.quietHours?.end ?? '07:00');
@@ -185,8 +205,8 @@ export function AddPersonDialog({
       setAvatarIcon('');
       setAvatarUploadError('');
       setAvatarProcessing(false);
-      setLinkedAccountId('');
       setLinkedPersonEntityId('');
+      setPersonLinkChanged(false);
       setRemindersEnabled(true);
       setQuietStart('21:00');
       setQuietEnd('07:00');
@@ -200,6 +220,13 @@ export function AddPersonDialog({
   useEffect(() => {
     formRef.current?.scrollTo({ top: 0 });
   }, [currentStep]);
+
+  useEffect(() => {
+    if (!isOpen || participant?.linkedPersonEntityId || personLinkChanged) return;
+
+    const matchingPersonId = resolveMatchingProviderPersonLinkId(name, providerPersons);
+    setLinkedPersonEntityId(matchingPersonId ?? '');
+  }, [isOpen, name, participant?.linkedPersonEntityId, personLinkChanged, providerPersons]);
 
   const uploadAvatar = async (file?: File) => {
     if (!file) return;
@@ -230,6 +257,11 @@ export function AddPersonDialog({
       return;
     }
     const timestamp = new Date().toISOString();
+    const inferredAccountId = resolveProviderAccountLinkId(
+      displayName,
+      currentUser,
+      participant?.linkedAccountId
+    );
     setSaving(true);
     const saved = await onSave({
       id: participant?.id ?? draftParticipantId ?? createEntityId('participant', displayName),
@@ -239,7 +271,7 @@ export function AddPersonDialog({
       avatarIcon: avatarIcon.trim() || undefined,
       capabilities: manager || managerRequired ? ['complete', 'approve', 'manage'] : ['complete'],
       pausedAt: paused ? (participant?.pausedAt ?? timestamp) : undefined,
-      linkedAccountId: linkedAccountId.trim() || undefined,
+      linkedAccountId: inferredAccountId,
       linkedPersonEntityId: linkedPersonEntityId.trim() || undefined,
       reminderPreferences: {
         enabled: remindersEnabled,
@@ -374,43 +406,51 @@ export function AddPersonDialog({
                     />
                   </div>
                 ) : null}
-                <details
-                  className={`group overflow-hidden rounded-2xl border ${surface.border} ${surface.subtleBg}`}
-                >
-                  <summary
-                    className={`flex min-h-12 cursor-pointer list-none items-center justify-between gap-4 px-4 py-3 text-sm font-medium [&::-webkit-details-marker]:hidden ${surface.textPrimary}`}
+                {providerPersons.length > 0 || linkedPersonEntityId ? (
+                  <details
+                    className={`group overflow-hidden rounded-2xl border ${surface.border} ${surface.subtleBg}`}
                   >
-                    {t('household.personDialog.moreOptions')}
-                    <ChevronDown
-                      aria-hidden="true"
-                      className="h-4 w-4 shrink-0 transition-transform group-open:rotate-180 motion-reduce:transition-none"
-                    />
-                  </summary>
-                  <div className={`grid gap-4 border-t px-4 py-4 ${surface.border}`}>
-                    <CardDialogSection
-                      className="mb-0"
-                      label={t('household.personDialog.accountLink')}
+                    <summary
+                      className={`flex min-h-12 cursor-pointer list-none items-center justify-between gap-4 px-4 py-3 text-sm font-medium [&::-webkit-details-marker]:hidden ${surface.textPrimary}`}
                     >
-                      <Input
-                        aria-label={t('household.personDialog.accountLink')}
-                        value={linkedAccountId}
-                        size="small"
-                        onChange={(event) => setLinkedAccountId(event.target.value)}
+                      {t('household.personDialog.moreOptions')}
+                      <ChevronDown
+                        aria-hidden="true"
+                        className="h-4 w-4 shrink-0 transition-transform group-open:rotate-180 motion-reduce:transition-none"
                       />
-                    </CardDialogSection>
-                    <CardDialogSection
-                      className="mb-0"
-                      label={t('household.personDialog.personLink')}
-                    >
-                      <Input
-                        aria-label={t('household.personDialog.personLink')}
-                        value={linkedPersonEntityId}
-                        size="small"
-                        onChange={(event) => setLinkedPersonEntityId(event.target.value)}
-                      />
-                    </CardDialogSection>
-                  </div>
-                </details>
+                    </summary>
+                    <div className={`grid gap-4 border-t px-4 py-4 ${surface.border}`}>
+                      <CardDialogSection
+                        className="mb-0"
+                        label={t('household.personDialog.accountLink')}
+                      >
+                        <Select
+                          aria-label={t('household.personDialog.accountLink')}
+                          value={linkedPersonEntityId}
+                          onChange={(event) => {
+                            setPersonLinkChanged(true);
+                            setLinkedPersonEntityId(event.target.value);
+                          }}
+                        >
+                          <option value="">{t('household.personDialog.personLink')}</option>
+                          {linkedPersonEntityId &&
+                          !providerPersons.some(
+                            (person) => getProviderPersonLinkId(person) === linkedPersonEntityId
+                          ) ? (
+                            <option value={linkedPersonEntityId}>
+                              {t('household.personDialog.personLinkSaved')}
+                            </option>
+                          ) : null}
+                          {providerPersons.map((person) => (
+                            <option key={person.id} value={getProviderPersonLinkId(person)}>
+                              {person.name}
+                            </option>
+                          ))}
+                        </Select>
+                      </CardDialogSection>
+                    </div>
+                  </details>
+                ) : null}
                 <details
                   className={`group overflow-hidden rounded-2xl border ${surface.border} ${surface.subtleBg}`}
                 >
@@ -520,19 +560,68 @@ export function AddPersonDialog({
                             className="mb-0"
                             label={t('household.personDialog.destinationTarget')}
                           >
-                            <Input
+                            <Select
                               aria-describedby={
-                                reminderTargetValid ? undefined : 'person-reminder-target-error'
+                                providerNotificationTargets.status === 'loading'
+                                  ? 'person-reminder-target-loading'
+                                  : providerNotificationTargets.targets.length === 0 &&
+                                      !reminderTarget
+                                    ? 'person-reminder-target-empty'
+                                    : reminderTargetValid
+                                      ? undefined
+                                      : 'person-reminder-target-error'
                               }
                               aria-label={t('household.personDialog.destinationTarget')}
-                              invalid={!reminderTargetValid}
-                              maxLength={128}
+                              disabled={
+                                providerNotificationTargets.status === 'loading' ||
+                                (providerNotificationTargets.targets.length === 0 &&
+                                  !reminderTarget)
+                              }
+                              invalid={
+                                !reminderTargetValid &&
+                                providerNotificationTargets.status === 'ready' &&
+                                providerNotificationTargets.targets.length > 0
+                              }
                               required
                               value={reminderTarget}
                               size="small"
                               onChange={(event) => setReminderTarget(event.target.value)}
-                            />
-                            {!reminderTargetValid ? (
+                            >
+                              <option value="">
+                                {providerNotificationTargets.status === 'loading'
+                                  ? t('household.personDialog.destinationTargetLoading')
+                                  : t('household.personDialog.destinationTargetPlaceholder')}
+                              </option>
+                              {reminderTarget &&
+                              !providerNotificationTargets.targets.some(
+                                (target) => target.id === reminderTarget
+                              ) ? (
+                                <option value={reminderTarget}>
+                                  {t('household.personDialog.destinationTargetSaved')}
+                                </option>
+                              ) : null}
+                              {providerNotificationTargets.targets.map((target) => (
+                                <option key={target.id} value={target.id}>
+                                  {target.label}
+                                </option>
+                              ))}
+                            </Select>
+                            {providerNotificationTargets.status === 'loading' ? (
+                              <p
+                                id="person-reminder-target-loading"
+                                className="mt-2 text-xs leading-relaxed text-muted-foreground"
+                              >
+                                {t('household.personDialog.destinationTargetLoading')}
+                              </p>
+                            ) : providerNotificationTargets.targets.length === 0 &&
+                              !reminderTarget ? (
+                              <p
+                                id="person-reminder-target-empty"
+                                className="mt-2 text-xs leading-relaxed text-muted-foreground"
+                              >
+                                {t('household.personDialog.destinationTargetEmpty')}
+                              </p>
+                            ) : !reminderTargetValid ? (
                               <ChoreFieldError id="person-reminder-target-error">
                                 {t('household.validation.notificationTarget')}
                               </ChoreFieldError>

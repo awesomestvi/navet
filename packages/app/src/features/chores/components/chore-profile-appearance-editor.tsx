@@ -238,7 +238,7 @@ export function ChoreProfileAppearanceEditor({
             active={mode === 'photo'}
             accentColor={accentColor}
             icon={ImageIcon}
-            size="compact"
+            size="small"
             onClick={() => setMode('photo')}
           >
             {t('household.personDialog.avatarModePhoto')}
@@ -247,7 +247,7 @@ export function ChoreProfileAppearanceEditor({
             active={mode === 'icon'}
             accentColor={accentColor}
             icon={Shapes}
-            size="compact"
+            size="small"
             onClick={() => setMode('icon')}
           >
             {t('household.personDialog.avatarModeIcon')}
@@ -256,22 +256,33 @@ export function ChoreProfileAppearanceEditor({
 
         {mode === 'photo' ? (
           <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                type="button"
-                variant="secondary"
-                size="compact"
-                loading={avatarProcessing}
-                leading={<ImagePlus aria-hidden="true" className={navetIconSizeTokens.sm} />}
-                onClick={() => avatarInputRef.current?.click()}
-              >
-                {t('household.personDialog.avatarUpload')}
-              </Button>
-              {avatarUrl ? (
-                <Button type="button" variant="ghost" size="compact" onClick={onRemoveAvatar}>
-                  {t('household.personDialog.avatarRemove')}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="compact"
+                  loading={avatarProcessing}
+                  leading={<ImagePlus aria-hidden="true" className={navetIconSizeTokens.sm} />}
+                  onClick={() => avatarInputRef.current?.click()}
+                >
+                  {t('household.personDialog.avatarUpload')}
                 </Button>
-              ) : null}
+                {avatarUrl ? (
+                  <Button type="button" variant="ghost" size="compact" onClick={onRemoveAvatar}>
+                    {t('household.personDialog.avatarRemove')}
+                  </Button>
+                ) : null}
+              </div>
+              <p
+                className={cn(
+                  'whitespace-nowrap',
+                  navetTypographyTokens.compactHelper,
+                  surface.textSecondary
+                )}
+              >
+                {t('settings.appearance.wallpaper.fileHint')}
+              </p>
             </div>
             <input
               ref={avatarInputRef}
@@ -281,9 +292,6 @@ export function ChoreProfileAppearanceEditor({
               aria-label={t('household.personDialog.avatarUpload')}
               onChange={(event) => onUploadAvatar(event.target.files?.[0])}
             />
-            <p className={cn('mt-2', navetTypographyTokens.compactHelper, surface.textSecondary)}>
-              {t('settings.appearance.wallpaper.fileHint')}
-            </p>
             {avatarUploadError ? (
               <p className="mt-2 text-xs text-red-400" role="alert">
                 {avatarUploadError}

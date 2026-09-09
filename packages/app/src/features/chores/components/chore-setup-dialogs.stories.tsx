@@ -468,8 +468,15 @@ export const PersonStepperCreation: Story = {
     await expect(within(dialog).queryByLabelText('Name')).toBeNull();
     await expect(within(dialog).queryByLabelText('Role')).toBeNull();
     await expect(within(dialog).getAllByLabelText('Profile colour')[0]).toBeInTheDocument();
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Photo' }));
-    await expect(within(dialog).getByRole('button', { name: 'Upload photo' })).toBeInTheDocument();
+    const photoMode = within(dialog).getByRole('button', { name: 'Photo' });
+    const iconMode = within(dialog).getByRole('button', { name: 'Icon' });
+    await expect(photoMode).toHaveClass('h-9', 'px-3.5', 'text-xs', 'font-medium');
+    await expect(iconMode).toHaveClass('h-9', 'px-3.5', 'text-xs', 'font-medium');
+    await userEvent.click(photoMode);
+    const uploadPhoto = within(dialog).getByRole('button', { name: 'Upload photo' });
+    const fileHint = within(dialog).getByText('PNG, JPG up to 5MB');
+    await expect(uploadPhoto).toHaveClass('border-transparent', 'text-white');
+    await expect(fileHint.parentElement).toBe(uploadPhoto.parentElement?.parentElement);
     const pngBytes = Uint8Array.from(
       atob(
         'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M/wHwAF/gL+7xRLVQAAAABJRU5ErkJggg=='
@@ -488,8 +495,8 @@ export const PersonStepperCreation: Story = {
     await expect(
       within(dialog).getByRole('link', { name: /Browse Lucide icon catalog/ })
     ).toHaveAttribute('href', 'https://lucide.dev/icons/');
-    await userEvent.click(within(dialog).getByText('Account links'));
-    await expect(within(dialog).getByLabelText('Account ID')).toBeInTheDocument();
+    await expect(within(dialog).queryByText('Account links')).toBeNull();
+    await expect(within(dialog).queryByLabelText('Account ID')).toBeNull();
     await userEvent.click(within(dialog).getByText('Reminders'));
     const reminderSwitch = within(dialog).getByLabelText('Receive chore reminders');
     await expect(reminderSwitch).toBeInTheDocument();
@@ -501,13 +508,13 @@ export const PersonStepperCreation: Story = {
     );
     await expect(
       within(dialog).getByText(
-        "Sends a push notification through the connected smart-home provider. This person needs the provider's app installed with notifications allowed. Availability and target format depend on the provider."
+        "Sends a push notification through the connected smart-home provider's app. Choose the device this person uses."
       )
     ).toBeInTheDocument();
-    const notificationTarget = within(dialog).getByLabelText('Notification service target');
+    const notificationTarget = await within(dialog).findByLabelText('Notification device');
     await expect(notificationTarget).toBeRequired();
     await expect(within(dialog).getByRole('button', { name: 'Add person' })).toBeDisabled();
-    await userEvent.type(notificationTarget, 'notify.mobile_app_alex_phone');
+    await userEvent.selectOptions(notificationTarget, 'mobile_app_alex_iphone');
     await expect(within(dialog).getByRole('button', { name: 'Add person' })).toBeEnabled();
   },
   globals: {

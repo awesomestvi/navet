@@ -18,6 +18,7 @@ import type {
   ProviderHistoryFeatureService,
   ProviderLightFeatureService,
   ProviderMediaFeatureService,
+  ProviderNotificationFeatureService,
   ProviderSecurityFeatureService,
   ProviderTaskFeatureService,
 } from '@navet/core/provider-feature-services';
@@ -1621,6 +1622,19 @@ const previewTaskFeatureService: ProviderTaskFeatureService = {
   },
 };
 
+const previewNotificationFeatureService: ProviderNotificationFeatureService = {
+  getSnapshot: async () => ({ persistentNotifications: [], repairIssues: [] }),
+  subscribePersistentNotifications: async () => () => undefined,
+  dismissPersistentNotification: async () => undefined,
+  installUpdate: async () => undefined,
+  restartSystem: async () => undefined,
+  getDeliveryTargets: async () => [
+    { id: 'mobile_app_alex_iphone', label: "Alex's iPhone" },
+    { id: 'mobile_app_kitchen_tablet', label: 'Kitchen tablet' },
+  ],
+  sendNotification: async () => undefined,
+};
+
 const previewContract: NavetProviderContract = {
   providerId: PREVIEW_PROVIDER_ID,
   bootstrapSession: () => ({
@@ -1688,7 +1702,7 @@ const previewProviderPackageRegistration: ProviderPackageRegistration = {
       energyNow: false,
       calendar: true,
       weather: true,
-      notifications: false,
+      notifications: true,
       tasks: true,
       conversation: false,
     },
@@ -1697,6 +1711,7 @@ const previewProviderPackageRegistration: ProviderPackageRegistration = {
     mediaFeatureService: previewMediaFeatureService,
     securityFeatureService: previewSecurityFeatureService,
     historyFeatureService: previewHistoryFeatureService,
+    notificationFeatureService: previewNotificationFeatureService,
     taskFeatureService: previewTaskFeatureService,
     entityRuntimeService: createPreviewEntityRuntimeService({
       defaultConfig: PREVIEW_HOME_ASSISTANT_CONFIG,

@@ -399,6 +399,11 @@ export interface PlatformNotificationDeliveryRequest {
   data?: Record<string, unknown>;
 }
 
+export interface PlatformNotificationDeliveryTarget {
+  id: string;
+  label: string;
+}
+
 export interface PlatformUpdateNotificationCandidate {
   entityId: string;
   state: string;

@@ -666,9 +666,7 @@ async function parseWorkspaceFailure(response: Response): Promise<{
       recovery:
         typeof recovery?.backupAvailable === 'boolean' &&
         typeof recovery.pinConfigured === 'boolean' &&
-        (reason === 'storage_unavailable' ||
-          reason === 'workspace_invalid' ||
-          reason === 'workspace_too_large')
+        (reason === 'workspace_invalid' || reason === 'workspace_too_large')
           ? {
               backupAvailable: recovery.backupAvailable,
               pinConfigured: recovery.pinConfigured,

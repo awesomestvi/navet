@@ -11,6 +11,7 @@ const JOURNAL_PATH = '/data/navet-chore-command-journal.json';
 const EVENT_HISTORY_PATH = '/data/navet-chore-events.json';
 const OCCURRENCE_ID = 'dishes:2026-08-10T10:00:00.000Z:maya';
 const TENANT_ID = `hat_${'a'.repeat(64)}`;
+const REBOUND_TENANT_ID = `hat_${'b'.repeat(64)}`;
 const PRINCIPAL = {
   providerId: 'home_assistant',
   tenantId: TENANT_ID,
@@ -1211,6 +1212,62 @@ describe('NJS chore workspace store', () => {
     });
     choreStore.handle(newPin);
     expect(newPin.return).toHaveBeenCalledWith(200, expect.any(String));
+  });
+
+  it('keeps chores and PIN protection after an authorized workspace tenant rebind', () => {
+    const mockFs = createMockFs();
+    choreStore.setChoreStoreFsForTests(mockFs);
+    choreStore.setChoreStorePrincipalResolverForTests(() => PRINCIPAL);
+    choreStore.handle(
+      createActionRequest('setup-manager', 0, {
+        type: 'participant_create',
+        participant: managerParticipant(),
+      })
+    );
+    choreStore.handle(
+      createRequest({
+        method: 'POST',
+        uri: '/__navet_chores__/management/pin',
+        requestText: JSON.stringify({ actorParticipantId: 'maya', pin: '2468' }),
+      })
+    );
+
+    const workspace = JSON.parse(mockFs.getFile(WORKSPACE_PATH) ?? '{}');
+    mockFs.writeFileSync(
+      WORKSPACE_PATH,
+      JSON.stringify({
+        ...workspace,
+        tenantBinding: {
+          ...workspace.tenantBinding,
+          tenantId: REBOUND_TENANT_ID,
+          enrolledAt: '2026-09-09T18:00:00.000Z',
+        },
+      })
+    );
+    choreStore.setChoreStorePrincipalResolverForTests(() => ({
+      ...PRINCIPAL,
+      tenantId: REBOUND_TENANT_ID,
+    }));
+
+    const load = createRequest();
+    choreStore.handle(load);
+
+    expect(load.return).toHaveBeenCalledWith(200, expect.any(String));
+    expect(parseResponse(load)).toMatchObject({
+      data: { participantsById: { maya: { displayName: 'Maya' } } },
+      management: { pinConfigured: true },
+    });
+    expect(JSON.parse(mockFs.getFile('/data/navet-chore-management.json') ?? '{}').tenantId).toBe(
+      REBOUND_TENANT_ID
+    );
+
+    const verify = createRequest({
+      method: 'POST',
+      uri: '/__navet_chores__/management/verify',
+      requestText: JSON.stringify({ pin: '2468' }),
+    });
+    choreStore.handle(verify);
+    expect(verify.return).toHaveBeenCalledWith(200, expect.any(String));
   });
 
   it('removes management PIN protection only for an unlocked active manager', () => {

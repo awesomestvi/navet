@@ -2361,6 +2361,34 @@ function readManagementSecurity(tenantId) {
   return security;
 }
 
+function rebindManagementSecurityToAuthorizedTenant(tenantId) {
+  const security = readJson(
+    CHORE_MANAGEMENT_SECURITY_PATH,
+    null,
+    MAX_CHORE_MANAGEMENT_SECURITY_BYTES
+  );
+  if (security === null || security.tenantId === tenantId) return;
+  if (
+    !isRecord(security) ||
+    security.contractVersion !== CONTRACT_VERSION ||
+    typeof security.tenantId !== 'string' ||
+    !TENANT_ID_PATTERN.test(security.tenantId) ||
+    typeof security.salt !== 'string' ||
+    typeof security.pinHash !== 'string'
+  ) {
+    throw new Error('Chore management security is invalid');
+  }
+
+  const previousTenantId = security.tenantId;
+  writeJson(
+    CHORE_MANAGEMENT_SECURITY_PATH,
+    Object.assign({}, security, { tenantId, updatedAt: nowIso() }),
+    MAX_CHORE_MANAGEMENT_SECURITY_BYTES
+  );
+  clearManagementSession(previousTenantId);
+  clearManagementSession(tenantId);
+}
+
 function hashManagementPin(pin, salt) {
   return hashCrypto.createHash('sha256').update(salt + ':' + pin).digest('hex');
 }
@@ -2964,6 +2992,10 @@ function routeRequest(r, principal, options) {
     sendJson(r, 403, { error: 'This chore workspace belongs to another installation' });
     return;
   }
+  // A dashboard workspace rebind is already guarded by a registered browser and
+  // authenticated provider principal. Carry its chore PIN binding forward only
+  // after that shared workspace authority has accepted the new tenant.
+  rebindManagementSecurityToAuthorizedTenant(principal.tenantId);
   if (r.method !== 'GET' && !providerSessionStore.isStrictSameOriginMutation(r)) {
     sendJson(r, 403, { error: 'Cross-origin chore mutation is not allowed' });
     return;

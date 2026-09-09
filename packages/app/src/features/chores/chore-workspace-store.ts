@@ -94,13 +94,15 @@ export const useChoreWorkspaceStore = create<ChoreWorkspaceState>((set, get) => 
         }
         if (!result.available) {
           const pinConfigured = result.recovery?.pinConfigured ?? current.managementPinConfigured;
+          const actionableRecovery =
+            result.recovery?.reason === 'storage_unavailable' ? null : (result.recovery ?? null);
           set({
             error: result.error ?? null,
             managementPinConfigured: pinConfigured,
             managementUnlocked: pinConfigured && Boolean(managementSessionToken),
-            recovery: result.recovery ?? null,
+            recovery: actionableRecovery,
             status:
-              result.recovery || !result.failureKind || result.failureKind === 'unsupported'
+              actionableRecovery || !result.failureKind || result.failureKind === 'unsupported'
                 ? 'unavailable'
                 : 'error',
           });

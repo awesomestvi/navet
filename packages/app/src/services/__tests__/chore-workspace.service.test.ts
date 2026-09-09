@@ -404,6 +404,29 @@ describe('chore workspace service', () => {
     });
   });
 
+  it('does not present temporary storage failures as damaged chore data', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          error:
+            'Chore storage could not finish the request. Your saved data has not been replaced.',
+          recovery: {
+            backupAvailable: true,
+            pinConfigured: true,
+            reason: 'storage_unavailable',
+          },
+        }),
+        { status: 503, headers: { 'Content-Type': 'application/json' } }
+      )
+    );
+
+    await expect(loadChoreWorkspace()).resolves.toMatchObject({
+      available: false,
+      failureKind: 'unreachable',
+      recovery: null,
+    });
+  });
+
   it('removes the management PIN with the active management session', async () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify({ pinConfigured: false }), {

@@ -98,4 +98,42 @@ describe('homeAssistantNotificationFeatureService', () => {
       undefined
     );
   });
+
+  it('discovers companion-app notification devices with user-facing labels', async () => {
+    const sendMessagePromise = vi.fn().mockResolvedValue({
+      notify: {
+        mobile_app_kitchen_tablet: {},
+        mobile_app_alex_iphone: { name: 'Send a notification to Alex iPhone' },
+        send_message: { name: 'Send a message' },
+      },
+      light: {
+        turn_on: { name: 'Turn on' },
+      },
+    });
+
+    await expect(
+      homeAssistantNotificationFeatureService.getDeliveryTargets?.({
+        messageClient: { sendMessagePromise },
+      })
+    ).resolves.toEqual([
+      { id: 'mobile_app_alex_iphone', label: 'Alex iPhone' },
+      { id: 'mobile_app_kitchen_tablet', label: 'Kitchen Tablet' },
+    ]);
+    expect(sendMessagePromise).toHaveBeenCalledWith({ type: 'get_services' });
+  });
+
+  it('accepts legacy Home Assistant targets that include the notify domain', async () => {
+    await homeAssistantNotificationFeatureService.sendNotification?.({
+      title: 'Empty dishes',
+      message: 'Empty dishes is due now.',
+      target: 'notify.mobile_app_alice',
+    });
+
+    expect(callHomeAssistantServiceMock).toHaveBeenCalledWith(
+      'notify',
+      'mobile_app_alice',
+      { title: 'Empty dishes', message: 'Empty dishes is due now.' },
+      undefined
+    );
+  });
 });

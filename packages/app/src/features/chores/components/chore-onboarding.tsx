@@ -68,6 +68,7 @@ import {
   X,
 } from 'lucide-react';
 import { Fragment, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { useProviderNotificationTargets } from '../use-provider-notification-targets';
 import { ChoreCreationFormGroups, type ChoreCreationRepeat } from './chore-creation-form-groups';
 import {
   ChoreFieldError,
@@ -289,7 +290,7 @@ export function ChoreOnboardingWelcome({
             </h1>
             <p
               className={cn(
-                'mt-4 max-w-xl text-base leading-7 sm:text-lg sm:leading-8',
+                'mt-4 max-w-xl text-base leading-6 sm:text-lg sm:leading-7',
                 surface.textSecondary
               )}
             >
@@ -410,6 +411,7 @@ function StepPanel({
 }) {
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
+  const footerSurface = theme === 'glass' ? 'bg-slate-950' : surface.panelMuted;
 
   return (
     <div className="flex min-h-full flex-col">
@@ -425,7 +427,11 @@ function StepPanel({
       </div>
       <div
         data-chore-onboarding-footer
-        className={cn('sticky bottom-0 border-t bg-transparent px-4 py-3 sm:px-7', surface.border)}
+        className={cn(
+          'sticky bottom-0 z-10 border-t px-4 py-3 sm:px-7',
+          footerSurface,
+          surface.border
+        )}
       >
         <div className="flex w-full items-center justify-between gap-3">{footer}</div>
       </div>
@@ -575,6 +581,9 @@ export function ChoreOnboardingDialog({
   const choreFormValid = Boolean(choreTitle.trim()) && choreScheduleValid && chorePointsValid;
   const rewardTargetValid = isBoundedInteger(rewardTarget, 1, 1_000_000);
   const normalizedReminderTarget = reminderTarget.trim();
+  const providerNotificationTargets = useProviderNotificationTargets(
+    isOpen && remindersEnabled && reminderDestination === 'provider'
+  );
   const reminderTargetValid =
     !remindersEnabled ||
     reminderDestination !== 'provider' ||
@@ -1539,18 +1548,67 @@ export function ChoreOnboardingDialog({
                                 className="mb-0"
                                 label={t('household.personDialog.destinationTarget')}
                               >
-                                <Input
+                                <Select
                                   aria-describedby={
-                                    reminderTargetValid ? undefined : 'setup-reminder-target-error'
+                                    providerNotificationTargets.status === 'loading'
+                                      ? 'setup-reminder-target-loading'
+                                      : providerNotificationTargets.targets.length === 0 &&
+                                          !reminderTarget
+                                        ? 'setup-reminder-target-empty'
+                                        : reminderTargetValid
+                                          ? undefined
+                                          : 'setup-reminder-target-error'
                                   }
                                   aria-label={t('household.personDialog.destinationTarget')}
-                                  invalid={!reminderTargetValid}
-                                  maxLength={128}
+                                  disabled={
+                                    providerNotificationTargets.status === 'loading' ||
+                                    (providerNotificationTargets.targets.length === 0 &&
+                                      !reminderTarget)
+                                  }
+                                  invalid={
+                                    !reminderTargetValid &&
+                                    providerNotificationTargets.status === 'ready' &&
+                                    providerNotificationTargets.targets.length > 0
+                                  }
                                   required
                                   value={reminderTarget}
                                   onChange={(event) => setReminderTarget(event.target.value)}
-                                />
-                                {!reminderTargetValid ? (
+                                >
+                                  <option value="">
+                                    {providerNotificationTargets.status === 'loading'
+                                      ? t('household.personDialog.destinationTargetLoading')
+                                      : t('household.personDialog.destinationTargetPlaceholder')}
+                                  </option>
+                                  {reminderTarget &&
+                                  !providerNotificationTargets.targets.some(
+                                    (target) => target.id === reminderTarget
+                                  ) ? (
+                                    <option value={reminderTarget}>
+                                      {t('household.personDialog.destinationTargetSaved')}
+                                    </option>
+                                  ) : null}
+                                  {providerNotificationTargets.targets.map((target) => (
+                                    <option key={target.id} value={target.id}>
+                                      {target.label}
+                                    </option>
+                                  ))}
+                                </Select>
+                                {providerNotificationTargets.status === 'loading' ? (
+                                  <p
+                                    id="setup-reminder-target-loading"
+                                    className="mt-2 text-xs leading-relaxed text-muted-foreground"
+                                  >
+                                    {t('household.personDialog.destinationTargetLoading')}
+                                  </p>
+                                ) : providerNotificationTargets.targets.length === 0 &&
+                                  !reminderTarget ? (
+                                  <p
+                                    id="setup-reminder-target-empty"
+                                    className="mt-2 text-xs leading-relaxed text-muted-foreground"
+                                  >
+                                    {t('household.personDialog.destinationTargetEmpty')}
+                                  </p>
+                                ) : !reminderTargetValid ? (
                                   <ChoreFieldError id="setup-reminder-target-error">
                                     {t('household.validation.notificationTarget')}
                                   </ChoreFieldError>
