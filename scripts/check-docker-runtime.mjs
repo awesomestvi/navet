@@ -895,7 +895,7 @@ async function verifyRssServiceSupervision(containerName) {
     'pkill',
     '-KILL',
     '-f',
-    '^/etc/navet/rss-transport$',
+    '/etc/navet/rss-transport$',
   ]);
   // QEMU can take several seconds to propagate the child failure through the
   // Home Assistant base image's s6 shutdown path. Keep polling so native runs
