@@ -290,6 +290,27 @@ function createCompleteGuidedSetupPlay(paced: boolean): NonNullable<Story['play'
     await pause();
     await userEvent.click(within(dialog).getByRole('button', { name: 'Continue to profiles' }));
     await expect(within(dialog).getAllByLabelText('Profile colour')[0]).toBeVisible();
+    await expect(
+      within(dialog).getByText(/Phone notifications use the connected smart-home provider's app/)
+    ).toBeVisible();
+    await userEvent.selectOptions(
+      within(dialog).getByLabelText('Reminder destination'),
+      'provider'
+    );
+    await expect(
+      within(dialog).getByText(
+        "Sends a push notification through the connected smart-home provider. This person needs the provider's app installed with notifications allowed. Availability and target format depend on the provider."
+      )
+    ).toBeVisible();
+    const notificationTarget = within(dialog).getByLabelText('Notification service target');
+    await expect(notificationTarget).toBeRequired();
+    await expect(
+      within(dialog).getByRole('button', { name: 'Save profiles and continue' })
+    ).toBeDisabled();
+    await userEvent.type(notificationTarget, 'notify.mobile_app_alex_phone');
+    await expect(
+      within(dialog).getByRole('button', { name: 'Save profiles and continue' })
+    ).toBeEnabled();
     await pause();
     await userEvent.click(within(dialog).getByRole('button', { name: 'Icon' }));
     const profileSymbol = within(dialog).getByLabelText('UserRound');
@@ -298,6 +319,9 @@ function createCompleteGuidedSetupPlay(paced: boolean): NonNullable<Story['play'
     await userEvent.click(within(dialog).getByRole('button', { name: /Maya$/ }));
     await userEvent.click(within(dialog).getByRole('button', { name: /Alex$/ }));
     await expect(within(dialog).getByLabelText('UserRound')).toBeChecked();
+    await expect(within(dialog).getByLabelText('Notification service target')).toHaveValue(
+      'notify.mobile_app_alex_phone'
+    );
     await pause();
     await userEvent.click(
       within(dialog).getByRole('button', { name: 'Save profiles and continue' })

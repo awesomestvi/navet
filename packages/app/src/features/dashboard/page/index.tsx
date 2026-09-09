@@ -2,7 +2,11 @@ import { LoadingSpinner } from '@navet/app/components/primitives/loading-spinner
 import { RenderProfiler } from '@navet/app/components/shared/render-profiler';
 import { isAllRooms } from '@navet/app/constants/rooms';
 import { useI18n } from '@navet/app/hooks';
-import { dashboardToPath, pathToDashboardId } from '@navet/app/navigation/sections';
+import {
+  dashboardToPath,
+  notifyNavigationPathChanged,
+  pathToDashboardId,
+} from '@navet/app/navigation/sections';
 import { useErrorStore, useNavigationStore } from '@navet/app/stores';
 import { appErrorSelectors } from '@navet/app/stores/selectors';
 import { useEffect } from 'react';
@@ -76,6 +80,7 @@ export function DashboardPage() {
           '',
           `${dashboardToPath(fallbackDashboardId)}${window.location.search}${window.location.hash}`
         );
+        notifyNavigationPathChanged();
         toast.warning(t('dashboard.multiple.notFound'), {
           id: 'dashboard-not-found',
         });

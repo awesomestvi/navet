@@ -169,10 +169,10 @@ export const deMessages = {
   'household.loading': 'Haushaltsaufgaben werden geladen',
   'household.unavailable.title': 'Aufgaben sind hier nicht verfügbar',
   'household.unavailable.description':
-    'Nutze Navet eigenständig oder als Home-Assistant-Add-on, um Haushaltsaufgaben zu teilen.',
+    'Gemeinsamer Aufgabenspeicher ist in dieser Installation nicht verfügbar.',
   'household.unauthorized.title': 'Navet koppeln, um Haushaltsaufgaben zu nutzen',
   'household.unauthorized.description':
-    'Schließe die Kopplung mit Home Assistant ab und versuche es erneut.',
+    'Verbinde diesen Bildschirm erneut mit der vertrauenswürdigen Navet-Installation.',
   'household.error.title': 'Aufgaben konnten nicht synchronisiert werden',
   'household.error.description': 'Navet konnte die neuesten Änderungen des Haushalts nicht laden.',
   'household.retry': 'Erneut versuchen',
@@ -226,7 +226,7 @@ export const deMessages = {
   'household.setup.stepProtectionDescription': 'Schütze Änderungen am Plan',
   'household.setup.stepReadyDescription': 'Prüfen und Heute öffnen',
   'household.setup.remindersHelper':
-    'Navet kann diese Person erinnern, bevor eine Aufgabe fällig ist. Ruhezeiten pausieren Erinnerungen über Nacht.',
+    'Navet kann diese Person erinnern, bevor eine Aufgabe fällig ist. Telefonbenachrichtigungen verwenden die App des verbundenen Smart-Home-Anbieters. Jede Person benötigt diese App und muss Benachrichtigungen erlauben. Ruhezeiten pausieren Erinnerungen über Nacht.',
   'household.setup.continueToProfiles': 'Weiter zu den Profilen',
   'household.setup.continueToMotivation': 'Weiter zur Motivation',
   'household.setup.continueToProtection': 'Weiter zum Schutz',
@@ -405,7 +405,9 @@ export const deMessages = {
   'household.personDialog.quietEnd': 'Ruhezeit endet',
   'household.personDialog.destination': 'Erinnerungsziel',
   'household.personDialog.destinationInApp': 'In Navet',
-  'household.personDialog.destinationHomeAssistant': 'Home-Assistant-Benachrichtigung',
+  'household.personDialog.destinationProvider': 'Gerätebenachrichtigung',
+  'household.personDialog.destinationProviderHelp':
+    'Sendet eine Push-Benachrichtigung über den verbundenen Smart-Home-Anbieter. Die Person benötigt die App des Anbieters und muss Benachrichtigungen erlauben. Verfügbarkeit und Zielformat hängen vom Anbieter ab.',
   'household.personDialog.destinationTarget': 'Ziel des Benachrichtigungsdienstes',
   'household.personDialog.saveChanges': 'Änderungen speichern',
   'household.choreDialog.title': 'Aufgabe hinzufügen',
@@ -434,6 +436,15 @@ export const deMessages = {
   'household.choreDialog.rotationReset': 'Rotation neu starten',
   'household.choreDialog.rotationNever': 'Nie',
   'household.choreDialog.rotationOffset': 'Startposition der Rotation',
+  'household.choreDialog.rotationOffsetError': 'Gib eine ganze Zahl zwischen 0 und {max} ein.',
+  'household.validation.wholeNumberRange': 'Gib eine ganze Zahl zwischen {min} und {max} ein.',
+  'household.validation.validTime': 'Gib eine gültige Uhrzeit ein.',
+  'household.validation.validDate': 'Gib ein gültiges Datum ein.',
+  'household.validation.endDate': 'Wähle den {date} oder ein späteres Datum.',
+  'household.validation.dateList': 'Verwende kommagetrennte Daten im Format JJJJ-MM-TT.',
+  'household.validation.timeList': 'Verwende kommagetrennte Uhrzeiten im 24-Stunden-Format.',
+  'household.validation.notificationTarget':
+    'Gib ein Benachrichtigungsziel für den verbundenen Anbieter ein.',
   'household.choreDialog.personTimes': 'Zeiten für {name}',
   'household.choreDialog.room': 'Raum',
   'household.choreDialog.claimRequired': 'Aufgabe muss übernommen werden',
@@ -980,12 +991,11 @@ export const deMessages = {
   'integration.featureUnavailable': '{provider} unterstützt diese Funktion noch nicht.',
   'dashboard.addEntity.title': 'Gerät hinzufügen',
   'dashboard.addEntity.descriptionWithHidden':
-    'Home-Assistant-Geräte wieder zum Dashboard hinzufügen.',
-  'dashboard.addEntity.descriptionDefault':
-    'Home-Assistant-Geräte auswählen, die dem Dashboard hinzugefügt werden sollen.',
+    'Verbundene Entitäten wieder zum Dashboard hinzufügen.',
+  'dashboard.addEntity.descriptionDefault': 'Verbundene Entitäten für das Dashboard auswählen.',
   'dashboard.addEntity.action': 'Hinzufügen',
   'dashboard.addEntity.defaultDescriptionAll':
-    'Wähle, welche Home-Assistant-Geräte im Dashboard erscheinen sollen',
+    'Auswählen, welche verbundenen Entitäten im Dashboard erscheinen sollen',
   'dashboard.addEntity.defaultDescriptionRoom': 'Wähle Geräte für {room}',
   'dashboard.addEntity.searchPlaceholder': 'Geräte suchen',
   'dashboard.addEntity.roomLabel': 'Raum',
@@ -997,7 +1007,7 @@ export const deMessages = {
   'dashboard.addCard.title': 'Karte hinzufügen',
   'dashboard.addCard.description': 'Fuge ein neues Widget zu {room} hinzu',
   'dashboard.addCard.libraryDescription':
-    'Durchsuche Home-Assistant-Entitäten und füge sie deinem Dashboard hinzu.',
+    'Entitäten verbundener Anbieter durchsuchen und zum Dashboard hinzufügen.',
   'dashboard.addCard.allRooms': 'Start',
   'dashboard.addCard.tab.cards': 'Alle Karten',
   'dashboard.addCard.filter.label': 'Filtern',
@@ -1008,7 +1018,7 @@ export const deMessages = {
   'dashboard.addCard.tab.widgets': 'Eigene Karten',
   'dashboard.addCard.header.library': 'ENTITATSBIBLIOTHEK',
   'dashboard.addCard.header.widgets': 'BENUTZERDEFINIERTE WIDGETS',
-  'dashboard.addCard.tab.cardsHint': 'Alle Home-Assistant-Entitaten durchsuchen',
+  'dashboard.addCard.tab.cardsHint': 'Alle verbundenen Entitäten durchsuchen',
   'dashboard.addCard.tab.widgetsHint': 'Nutzliche Karten fur Dashboards erstellen',
   'dashboard.addCard.librarySummary.matching': '{count} passende Entitaten',
   'dashboard.addCard.librarySummary.available': '{count} Entitäten',
@@ -1050,7 +1060,7 @@ export const deMessages = {
   'dashboard.roomNav.reorder': 'Räume verwalten',
   'dashboard.roomNav.reorderDialog.title': 'Räume verwalten',
   'dashboard.roomNav.reorderDialog.description':
-    'Ordne Räume neu an, blende sie aus oder lösche Home-Assistant-Räume, die du nicht mehr brauchst.',
+    'Räume verbundener Anbieter neu anordnen, ausblenden oder löschen.',
   'dashboard.roomNav.reorderDialog.dragRoom': 'Raum {room} neu anordnen',
   'dashboard.roomNav.reorderDialog.moveUp': 'Raum nach oben verschieben',
   'dashboard.roomNav.reorderDialog.moveDown': 'Raum nach unten verschieben',
@@ -1063,7 +1073,7 @@ export const deMessages = {
   'dashboard.roomNav.reorderDialog.moveDownRoom': 'Raum {room} nach unten verschieben',
   'dashboard.roomNav.reorderDialog.deleteTitle': 'Raum löschen',
   'dashboard.roomNav.reorderDialog.deleteDescription':
-    '{room} aus Home Assistant löschen? Entitäten in diesem Raum sind danach keinem Raum mehr zugewiesen.',
+    '{room} beim verbundenen Anbieter löschen? Entitäten in diesem Raum werden nicht mehr zugewiesen.',
   'dashboard.roomNav.reorderDialog.deleteAction': 'Raum löschen',
   'dashboard.roomNav.reorderDialog.deleteSuccess': '{room} gelöscht',
   'dashboard.roomNav.reorderDialog.deleteFailed': '{room} konnte nicht gelöscht werden',
@@ -1404,16 +1414,17 @@ export const deMessages = {
   'dashboard.zones.analytics': 'Analysen',
   'dashboard.shell.noLightsTitle': 'Keine Lichter',
   'dashboard.shell.noLightsHidden': 'Alle Licht-Entitäten wurden aus dem Dashboard entfernt.',
-  'dashboard.shell.noLightsEmpty': 'Derzeit sind keine Home-Assistant-Licht-Entitäten verfügbar.',
+  'dashboard.shell.noLightsEmpty':
+    'Bei deinen Anbietern sind derzeit keine Licht-Entitäten verfügbar.',
   'dashboard.shell.noVisibleEntitiesTitle': 'Keine sichtbaren Entitäten',
   'dashboard.shell.noVisibleEntitiesDescription':
     'Dein Dashboard ist leer. Füge Entitäten aus deiner versteckten Liste hinzu oder erstelle benutzerdefinierte Karten, um zu beginnen.',
   'dashboard.shell.loadingSettings': 'Einstellungen werden geladen...',
-  'dashboard.page.connectingHomeAssistant': 'Verbindung zu Home Assistant wird hergestellt...',
+  'dashboard.page.connectingHomeAssistant': 'Verbindung mit deinem Smart Home wird hergestellt...',
   'dashboard.page.loadingDevices': 'Gerate werden geladen...',
   'dashboard.loadingRecovery.title': 'Gerate werden immer noch geladen',
   'dashboard.loadingRecovery.description':
-    'Navet konnte das Dashboard nicht fertig vorbereiten. Versuche die Verbindung erneut, starte eine neue Home-Assistant-Verbindung oder prüfe die häufigen Ursachen unten.',
+    'Navet konnte das Dashboard nicht vorbereiten. Verbinde den Anbieter erneut oder prüfe die Ursachen unten.',
   'dashboard.sections.allItems': 'Alle Elemente',
   'dashboard.sections.widgets': 'Widgets',
   'dashboard.sections.itemCount.one': '{count} Element',
@@ -1457,7 +1468,7 @@ export const deMessages = {
     'Wähle Grundthema und Akzentfarbe, die Navet vor dem ersten Anzeigen des Dashboards anwenden soll.',
   'dashboard.onboarding.route.all.title': 'Mit allen Geräten starten',
   'dashboard.onboarding.route.all.body':
-    'Zeige alles, was Home Assistant bereitstellt, und blende später aus, was du nicht möchtest.',
+    'Alles anzeigen, was deine verbundenen Anbieter bereitstellen, und Unerwünschtes ausblenden.',
   'dashboard.onboarding.route.blank.title': 'Mit leerem Dashboard starten',
   'dashboard.onboarding.route.blank.body':
     'Beginne mit einem leeren Dashboard und füge später nur die Geräte über Add Entity wieder hinzu, die du wirklich willst.',
@@ -1651,7 +1662,7 @@ export const deMessages = {
   'weather.settings.hourly': 'Stündlich',
   'weather.settings.weekly': 'Wöchentlich',
   'weather.settings.locationManaged':
-    'Der Ort stammt derzeit von der verbundenen Home-Assistant-Wetterentität.',
+    'Der Standort stammt von der Wetter-Entität des verbundenen Anbieters.',
   'weather.settings.metrics': 'Metriken',
   'weather.settings.metricsLimit': 'Entferne eine andere Metrik, um diese hinzuzufügen.',
   'weather.precipitation': 'Niederschlag',
@@ -1862,7 +1873,7 @@ export const deMessages = {
   'vacuum.plan.wholeHomeHint':
     'Starte eine vollständige Reinigung über alle zugeordneten Bereiche.',
   'vacuum.plan.mapHint':
-    'Bereichsreinigung erscheint hier, sobald der Staubsauger zugeordnete Home-Assistant-Bereiche bereitstellt.',
+    'Bereichsreinigung erscheint, wenn der Anbieter kartierte Bereiche für den Staubsauger bereitstellt.',
   'vacuum.plan.noMapTitle': 'Keine Karte gefunden',
   'vacuum.plan.noMapDescription':
     'Dieser Staubsauger hat Navet noch keine nutzbare Karte bereitgestellt.',
@@ -1989,7 +2000,7 @@ export const deMessages = {
   'entityRoomSelector.movedTo': 'Karte nach {room} verschoben',
   'entityRoomSelector.updateFailed': 'Raum konnte nicht aktualisiert werden',
   'entityRoomSelector.createAction': 'Raum erstellen...',
-  'entityRoomSelector.createPrompt': 'Gib einen Namen für den neuen Home-Assistant-Raum ein',
+  'entityRoomSelector.createPrompt': 'Name für den neuen Anbieterraum eingeben',
   'entityRoomSelector.createInvalid': 'Der Raumname darf nicht leer sein',
   'deviceEditor.brightnessPresets': 'Helligkeitsvorgaben',
   'deviceEditor.moreBrightnessPresets': 'Weitere Helligkeitsvorgaben',
@@ -2219,7 +2230,7 @@ export const deMessages = {
   'userDropdown.defaultUser': 'Benutzer',
   'userDropdown.defaultInitial': 'B',
   'userDropdown.openMenu': 'Benutzermenü öffnen',
-  'userDropdown.connected': 'Mit Home Assistant verbunden',
+  'userDropdown.connected': 'Smart Home verbunden',
   'userDropdown.roleLabel': 'Rolle',
   'userDropdown.role.owner': 'Eigentümer',
   'userDropdown.role.administrator': 'Administrator',
@@ -2314,13 +2325,13 @@ export const deMessages = {
   'errorDisplay.backToLogin': 'Zurueck zur Anmeldung',
   'errorDisplay.connectionInterrupted': 'Wiederherstellung erforderlich',
   'errorDisplay.connectionInterruptedDescription':
-    'Navet konnte die Home Assistant-Sitzung nicht abschliessen oder das Dashboard nicht laden. Versuche die Verbindung erneut oder pruefe die haeufigen Ursachen unten.',
+    'Navet konnte die Anbietersitzung oder das Dashboard nicht vollständig laden. Versuche die Verbindung erneut.',
   'errorDisplay.commonIssues': 'Häufige Probleme:',
   'errorDisplay.issue.1': 'Das Smart-Home-System läuft nicht oder ist nicht erreichbar',
-  'errorDisplay.issue.2': 'Home Assistant-Sitzung ist nicht verfuegbar oder abgelaufen',
+  'errorDisplay.issue.2': 'Die Anbietersitzung ist nicht verfügbar oder abgelaufen',
   'errorDisplay.issue.3': 'Probleme mit der Netzwerkverbindung',
   'errorDisplay.issue.4': 'CORS oder Firewall blockiert die Verbindung',
-  'errorDisplay.issue.5': 'Home Assistant hat keine nutzbaren Entitäten zurückgegeben',
+  'errorDisplay.issue.5': 'Der verbundene Anbieter hat keine nutzbaren Entitäten zurückgegeben',
   'errorDisplay.issue.6':
     'Gespeichertes Dashboard-Layout verweist auf Geräte, die nicht mehr existieren',
   'cover.open': 'Öffnen',
@@ -2663,8 +2674,7 @@ export const deMessages = {
   'energy.widgets.now.gridImportInactive': 'Derzeit kein aktiver Netzbezug',
   'energy.widgets.now.liveBadge': 'Live',
   'energy.widgets.now.sparklineTitle': '5-Minuten-Sparkline',
-  'energy.widgets.now.sparklineDescription':
-    'Letzte 24 Stunden, Home Assistant 5-Minuten-Mittelwert',
+  'energy.widgets.now.sparklineDescription': 'Letzte 24 Stunden, 5-Minuten-Mittel des Anbieters',
   'energy.widgets.now.totalUsage': 'Gesamtverbrauch heute',
   'energy.widgets.now.totalUsageDescription':
     'Abgeleitet aus der Home-Load-Historie seit Mitternacht',
@@ -2720,7 +2730,8 @@ export const deMessages = {
   'energy.widgets.drilldown.resource': 'Ressource',
   'energy.widgets.batteryDevices.title': 'Batteriebetriebene Gerate',
   'energy.widgets.batteryDevices.eyebrow': 'Verbleibende Batterie',
-  'energy.widgets.batteryDevices.empty': 'Keine Batteriesensoren in Home Assistant erkannt.',
+  'energy.widgets.batteryDevices.empty':
+    'Beim verbundenen Anbieter wurden keine Batteriesensoren gefunden.',
   'energy.widgets.flow.title': 'Energiefluss',
   'energy.widgets.flow.eyebrow': 'Live-Balance',
   'energy.widgets.flow.direction.usage': 'Verbrauch',
@@ -2752,8 +2763,9 @@ export const deMessages = {
   'energy.stats.gridImport': 'Netzeinspeisung',
   'energy.stats.costToday': 'Heutige Kosten',
   'energy.demo.message': 'Demo-Daten werden angezeigt.',
-  'energy.demo.hint': 'Verbinde deine Home Assistant-Energiesensoren, um Live-Werte zu sehen.',
-  'energy.demo.connect': 'Mit HA-Energie verbinden',
+  'energy.demo.hint':
+    'Verbinde Energiesensoren eines unterstützten Anbieters, um Live-Werte zu sehen.',
+  'energy.demo.connect': 'Energiedaten verbinden',
   'energy.band.eyebrow': 'Energie',
   'energy.band.rightNow.title': 'Gerade jetzt',
   'energy.band.rightNow.description':
@@ -3022,7 +3034,7 @@ export const deMessages = {
   'energy.dashboard.flow.fullDescription':
     'Inaktive Pfade bleiben ruhig. Für bewegungsreduzierte und energiesparende Modi wird die Bewegung auf statische Strahlen zurückgesetzt.',
   'energy.dashboard.flow.simpleDescription':
-    'Der Live-Gitterimport wird angezeigt, wenn Home Assistant den aktuellen Bedarf anzeigt.',
+    'Der aktuelle Netzbezug wird angezeigt, wenn der verbundene Anbieter den Bedarf bereitstellt.',
   'energy.dashboard.flow.aria': 'Energieflusskarte',
   'energy.dashboard.flow.todayValue': 'Heute {value}',
   'energy.dashboard.flow.exportValue': '{value} kW-Export',

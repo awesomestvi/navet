@@ -18,6 +18,12 @@ import { useI18n, useTheme } from '@navet/app/hooks';
 import type { ChoreMission, ChoreRewardGoal, ChoreRewardType } from '@navet/core/chore-experience';
 import type { ChoreDefinition, ChoreParticipant } from '@navet/core/chores';
 import { type FormEvent, useEffect, useState } from 'react';
+import {
+  ChoreFieldError,
+  isBoundedInteger,
+  type NumericDraft,
+  numericDraft,
+} from './chore-form-validation';
 
 function createId(prefix: string) {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -46,7 +52,7 @@ export function MissionDialog({
   const [description, setDescription] = useState('');
   const [definitionIds, setDefinitionIds] = useState<string[]>([]);
   const [status, setStatus] = useState<ChoreMission['status']>('upcoming');
-  const [rewardPoints, setRewardPoints] = useState(0);
+  const [rewardPoints, setRewardPoints] = useState<NumericDraft>(0);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -57,10 +63,11 @@ export function MissionDialog({
     setStatus(mission?.status ?? 'upcoming');
     setRewardPoints(mission?.rewardPoints ?? 0);
   }, [isOpen, mission]);
+  const rewardPointsValid = isBoundedInteger(rewardPoints, 0, 100_000);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (!title.trim() || definitionIds.length === 0) return;
+    if (!title.trim() || definitionIds.length === 0 || !rewardPointsValid) return;
     const timestamp = new Date().toISOString();
     setSaving(true);
     const saved = await onSave({
@@ -69,7 +76,7 @@ export function MissionDialog({
       description: description.trim() || undefined,
       definitionIds,
       status,
-      rewardPoints: rewardPoints > 0 ? Math.round(rewardPoints) : undefined,
+      rewardPoints: Number(rewardPoints) > 0 ? Number(rewardPoints) : undefined,
       createdAt: mission?.createdAt ?? timestamp,
       updatedAt: timestamp,
     });
@@ -102,6 +109,8 @@ export function MissionDialog({
             <Input
               autoFocus
               aria-label={t('household.missionDialog.name')}
+              maxLength={200}
+              required
               value={title}
               onChange={(event) => setTitle(event.target.value)}
             />
@@ -109,6 +118,7 @@ export function MissionDialog({
           <CardDialogSection label={t('household.missionDialog.outcome')}>
             <Textarea
               aria-label={t('household.missionDialog.outcome')}
+              maxLength={2000}
               value={description}
               onChange={(event) => setDescription(event.target.value)}
             />
@@ -162,20 +172,29 @@ export function MissionDialog({
             </CardDialogSection>
             <CardDialogSection label={t('household.missionDialog.reward')}>
               <Input
+                aria-describedby={rewardPointsValid ? undefined : 'mission-reward-points-error'}
                 aria-label={t('household.missionDialog.reward')}
+                invalid={!rewardPointsValid}
                 type="number"
                 min={0}
                 max={100000}
+                required
+                step={1}
                 value={rewardPoints}
-                onChange={(event) => setRewardPoints(Number(event.target.value))}
+                onChange={(event) => setRewardPoints(numericDraft(event.target.value))}
               />
+              {!rewardPointsValid ? (
+                <ChoreFieldError id="mission-reward-points-error">
+                  {t('household.validation.wholeNumberRange', { min: 0, max: 100_000 })}
+                </ChoreFieldError>
+              ) : null}
             </CardDialogSection>
           </div>
           <CardDialogFooter>
             <Button
               type="submit"
               loading={saving}
-              disabled={!title.trim() || definitionIds.length === 0}
+              disabled={!title.trim() || definitionIds.length === 0 || !rewardPointsValid}
             >
               {mission
                 ? t('household.missionDialog.saveChanges')
@@ -205,8 +224,8 @@ export function RewardDialog({
   const { theme } = useTheme();
   const [title, setTitle] = useState('');
   const [type, setType] = useState<ChoreRewardType>('saving');
-  const [targetPoints, setTargetPoints] = useState(100);
-  const [startingPoints, setStartingPoints] = useState(0);
+  const [targetPoints, setTargetPoints] = useState<NumericDraft>(100);
+  const [startingPoints, setStartingPoints] = useState<NumericDraft>(0);
   const [participantId, setParticipantId] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -218,18 +237,20 @@ export function RewardDialog({
     setStartingPoints(reward?.startingPoints ?? 0);
     setParticipantId(reward?.participantId ?? '');
   }, [isOpen, reward]);
+  const targetPointsValid = isBoundedInteger(targetPoints, 1, 1_000_000);
+  const startingPointsValid = isBoundedInteger(startingPoints, 0, 1_000_000);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (!title.trim() || targetPoints < 1) return;
+    if (!title.trim() || !targetPointsValid || !startingPointsValid) return;
     const timestamp = new Date().toISOString();
     setSaving(true);
     const saved = await onSave({
       id: reward?.id ?? createId('reward'),
       title: title.trim(),
       type,
-      targetPoints: Math.round(targetPoints),
-      startingPoints: startingPoints > 0 ? Math.round(startingPoints) : undefined,
+      targetPoints: Number(targetPoints),
+      startingPoints: Number(startingPoints) > 0 ? Number(startingPoints) : undefined,
       participantId: type === 'family' ? undefined : participantId || undefined,
       enabled: reward?.enabled ?? true,
       createdAt: reward?.createdAt ?? timestamp,
@@ -263,6 +284,8 @@ export function RewardDialog({
             <Input
               autoFocus
               aria-label={t('household.rewardDialog.name')}
+              maxLength={200}
+              required
               value={title}
               onChange={(event) => setTitle(event.target.value)}
             />
@@ -298,27 +321,49 @@ export function RewardDialog({
           <div className="grid grid-cols-2 gap-3">
             <CardDialogSection label={t('household.rewardDialog.target')}>
               <Input
+                aria-describedby={targetPointsValid ? undefined : 'reward-target-points-error'}
                 aria-label={t('household.rewardDialog.target')}
+                invalid={!targetPointsValid}
                 type="number"
                 min={1}
                 max={1000000}
+                required
+                step={1}
                 value={targetPoints}
-                onChange={(event) => setTargetPoints(Number(event.target.value))}
+                onChange={(event) => setTargetPoints(numericDraft(event.target.value))}
               />
+              {!targetPointsValid ? (
+                <ChoreFieldError id="reward-target-points-error">
+                  {t('household.validation.wholeNumberRange', { min: 1, max: 1_000_000 })}
+                </ChoreFieldError>
+              ) : null}
             </CardDialogSection>
             <CardDialogSection label={t('household.rewardDialog.starting')}>
               <Input
+                aria-describedby={startingPointsValid ? undefined : 'reward-starting-points-error'}
                 aria-label={t('household.rewardDialog.starting')}
+                invalid={!startingPointsValid}
                 type="number"
                 min={0}
                 max={1000000}
+                required
+                step={1}
                 value={startingPoints}
-                onChange={(event) => setStartingPoints(Number(event.target.value))}
+                onChange={(event) => setStartingPoints(numericDraft(event.target.value))}
               />
+              {!startingPointsValid ? (
+                <ChoreFieldError id="reward-starting-points-error">
+                  {t('household.validation.wholeNumberRange', { min: 0, max: 1_000_000 })}
+                </ChoreFieldError>
+              ) : null}
             </CardDialogSection>
           </div>
           <CardDialogFooter>
-            <Button type="submit" loading={saving} disabled={!title.trim() || targetPoints < 1}>
+            <Button
+              type="submit"
+              loading={saving}
+              disabled={!title.trim() || !targetPointsValid || !startingPointsValid}
+            >
               {reward ? t('household.rewardDialog.saveChanges') : t('household.rewardDialog.save')}
             </Button>
           </CardDialogFooter>

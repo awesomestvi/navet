@@ -32,5 +32,5 @@ New to Navet? [Install it first](/install/), then follow
 Some room and device operations also change your connected smart-home platform. Read the review
 step before saving those changes.
 
-Home Assistant currently supplies the broadest set of advanced feature services. Check the
-[capability matrix](/integrations/) when a section or action is unavailable.
+Provider capability coverage varies. Check the [capability matrix](/integrations/) when a section
+or action is unavailable.

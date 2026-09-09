@@ -13,7 +13,8 @@ unless a separate dialog explicitly describes a provider change.
 
 Build on the included **Home** dashboard: add cards, choose sizes, arrange sections with mouse
 drag and drop, and check the result on a phone. The walkthrough keeps both light cards Small and
-enters the Quick Note after leaving edit mode. It uses a connected Home Assistant installation.
+enters the Quick Note after leaving edit mode. The recording uses Home Assistant as its example
+provider; the dashboard workflow itself is provider-neutral.
 
 <iframe class="navet-video" src="https://www.youtube-nocookie.com/embed/8xis2yjmul8" title="Navet Dashboard Guide: Add Cards and Arrange Home" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="fullscreen" allowfullscreen></iframe>
 

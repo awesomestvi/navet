@@ -44,6 +44,7 @@ import type {
   ChoreAssignmentMode,
   ChoreDefinition,
   ChoreParticipant,
+  ChoreReminderDestinationType,
   ChoreSchedule,
 } from '@navet/core/chores';
 import {
@@ -68,6 +69,15 @@ import {
 } from 'lucide-react';
 import { Fragment, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { ChoreCreationFormGroups, type ChoreCreationRepeat } from './chore-creation-form-groups';
+import {
+  ChoreFieldError,
+  isBoundedInteger,
+  isValidDate,
+  isValidDateList,
+  isValidTime,
+  type NumericDraft,
+  numericDraft,
+} from './chore-form-validation';
 import { resolveChoreIconComponent } from './chore-icon';
 import { ChoreProfileAppearanceEditor } from './chore-profile-appearance-editor';
 import { ChoreManagementPinDialog } from './chore-setup-dialogs';
@@ -75,6 +85,13 @@ import { ChoreManagementPinDialog } from './chore-setup-dialogs';
 type SetupStepId = 'person' | 'customize' | 'chores' | 'rewards' | 'security' | 'ready';
 type SetupParticipantRole = 'member' | 'manager';
 type SetupRepeat = ChoreCreationRepeat;
+type ReminderDestination = Exclude<ChoreReminderDestinationType, 'home_assistant'>;
+
+function normalizeReminderDestination(
+  destination?: ChoreReminderDestinationType
+): ReminderDestination {
+  return destination === 'in_app' ? 'in_app' : 'provider';
+}
 
 interface SetupStep {
   id: SetupStepId;
@@ -516,6 +533,8 @@ export function ChoreOnboardingDialog({
   const [remindersEnabled, setRemindersEnabled] = useState(true);
   const [quietStart, setQuietStart] = useState('21:00');
   const [quietEnd, setQuietEnd] = useState('07:00');
+  const [reminderDestination, setReminderDestination] = useState<ReminderDestination>('in_app');
+  const [reminderTarget, setReminderTarget] = useState('');
   const [choreTitle, setChoreTitle] = useState('');
   const [choreIcon, setChoreIcon] = useState('ListChecks');
   const [addingChore, setAddingChore] = useState(false);
@@ -525,13 +544,13 @@ export function ChoreOnboardingDialog({
   const [dueTime, setDueTime] = useState('18:00');
   const [scheduleStartDate, setScheduleStartDate] = useState(localDateKey());
   const [scheduleEndDate, setScheduleEndDate] = useState('');
-  const [scheduleInterval, setScheduleInterval] = useState(1);
+  const [scheduleInterval, setScheduleInterval] = useState<NumericDraft>(1);
   const [excludedDates, setExcludedDates] = useState('');
   const [roomId, setRoomId] = useState('');
-  const [points, setPoints] = useState(10);
+  const [points, setPoints] = useState<NumericDraft>(10);
   const [mode, setMode] = useState<ChoreGamificationMode>('off');
   const [rewardTitle, setRewardTitle] = useState('');
-  const [rewardTarget, setRewardTarget] = useState(100);
+  const [rewardTarget, setRewardTarget] = useState<NumericDraft>(100);
   const [managementPin, setManagementPin] = useState('');
   const [managementPinConfirmation, setManagementPinConfirmation] = useState('');
   const [pinError, setPinError] = useState('');
@@ -540,6 +559,28 @@ export function ChoreOnboardingDialog({
   const wasOpenRef = useRef(false);
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const activeStepButtonRef = useRef<HTMLButtonElement | null>(null);
+  const scheduleIntervalValid =
+    repeat !== 'custom' && repeat !== 'after_completion'
+      ? true
+      : isBoundedInteger(scheduleInterval, repeat === 'custom' ? 2 : 1, 3650);
+  const choreScheduleValid =
+    isValidTime(dueTime) &&
+    isValidDate(scheduleStartDate) &&
+    (repeat === 'once' ||
+      scheduleEndDate === '' ||
+      (isValidDate(scheduleEndDate) && scheduleEndDate >= scheduleStartDate)) &&
+    (repeat === 'once' || isValidDateList(excludedDates)) &&
+    scheduleIntervalValid;
+  const chorePointsValid = isBoundedInteger(points, 0, 10_000);
+  const choreFormValid = Boolean(choreTitle.trim()) && choreScheduleValid && chorePointsValid;
+  const rewardTargetValid = isBoundedInteger(rewardTarget, 1, 1_000_000);
+  const normalizedReminderTarget = reminderTarget.trim();
+  const reminderTargetValid =
+    !remindersEnabled ||
+    reminderDestination !== 'provider' ||
+    (normalizedReminderTarget.length > 0 && normalizedReminderTarget.length <= 128);
+  const reminderSettingsValid =
+    !remindersEnabled || (isValidTime(quietStart) && isValidTime(quietEnd) && reminderTargetValid);
 
   useEffect(() => {
     if (!isOpen) {
@@ -567,6 +608,10 @@ export function ChoreOnboardingDialog({
     setRemindersEnabled(firstManager?.reminderPreferences?.enabled ?? true);
     setQuietStart(firstManager?.reminderPreferences?.quietHours?.start ?? '21:00');
     setQuietEnd(firstManager?.reminderPreferences?.quietHours?.end ?? '07:00');
+    setReminderDestination(
+      normalizeReminderDestination(firstManager?.reminderPreferences?.destination?.type)
+    );
+    setReminderTarget(firstManager?.reminderPreferences?.destination?.target ?? '');
     setChoreParticipantId(firstManager?.id ?? '');
     setChoreAssignmentMode('person');
     setRepeat('daily');
@@ -612,6 +657,10 @@ export function ChoreOnboardingDialog({
     setRemindersEnabled(participant.reminderPreferences?.enabled ?? true);
     setQuietStart(participant.reminderPreferences?.quietHours?.start ?? '21:00');
     setQuietEnd(participant.reminderPreferences?.quietHours?.end ?? '07:00');
+    setReminderDestination(
+      normalizeReminderDestination(participant.reminderPreferences?.destination?.type)
+    );
+    setReminderTarget(participant.reminderPreferences?.destination?.target ?? '');
   };
 
   const applyCurrentCustomization = (roster: ChoreParticipant[]) =>
@@ -625,7 +674,10 @@ export function ChoreOnboardingDialog({
             reminderPreferences: {
               enabled: remindersEnabled,
               quietHours: { start: quietStart, end: quietEnd },
-              destination: { type: 'in_app' as const },
+              destination: {
+                type: reminderDestination,
+                target: reminderTarget.trim() || undefined,
+              },
             },
             updatedAt: new Date().toISOString(),
           }
@@ -754,6 +806,7 @@ export function ChoreOnboardingDialog({
   };
 
   const savePersonCustomization = async () => {
+    if (!reminderSettingsValid) return false;
     const nextRoster = applyCurrentCustomization(setupRoster);
     if (!nextRoster.some((participant) => participant.id === participantId)) return false;
     setSetupRoster(nextRoster);
@@ -800,7 +853,7 @@ export function ChoreOnboardingDialog({
 
   const saveChore = async () => {
     const title = choreTitle.trim();
-    if (!title) return;
+    if (!title || !choreFormValid) return;
     const timestamp = new Date().toISOString();
     const selectedRoom = rooms.find((room) => room.canonicalId === roomId);
     const completers = setupRoster.filter((participant) =>
@@ -821,6 +874,7 @@ export function ChoreOnboardingDialog({
               .map((value) => value.trim())
               .filter((value) => /^\d{4}-\d{2}-\d{2}$/.test(value)),
     };
+    const scheduleIntervalValue = Number(scheduleInterval);
     const schedule: ChoreSchedule =
       repeat === 'once'
         ? {
@@ -845,7 +899,7 @@ export function ChoreOnboardingDialog({
                 startDate,
                 time: dueTime,
                 timeZone,
-                intervalDays: Math.max(2, scheduleInterval),
+                intervalDays: Math.max(2, scheduleIntervalValue),
                 ...scheduleOptions,
               }
             : repeat === 'weekly' ||
@@ -865,7 +919,7 @@ export function ChoreOnboardingDialog({
                         ? 3
                         : repeat === 'fourweekly'
                           ? 4
-                          : Math.max(1, scheduleInterval),
+                          : Math.max(1, scheduleIntervalValue),
                   ...scheduleOptions,
                 }
               : repeat === 'monthly'
@@ -883,7 +937,7 @@ export function ChoreOnboardingDialog({
                       startDate,
                       time: dueTime,
                       timeZone,
-                      intervalDays: Math.max(1, scheduleInterval),
+                      intervalDays: Math.max(1, scheduleIntervalValue),
                       ...scheduleOptions,
                     }
                   : {
@@ -891,7 +945,7 @@ export function ChoreOnboardingDialog({
                       startDate,
                       time: dueTime,
                       timeZone,
-                      intervalDays: Math.max(1, scheduleInterval),
+                      intervalDays: Math.max(1, scheduleIntervalValue),
                       ...scheduleOptions,
                     };
     setSaving(true);
@@ -926,7 +980,7 @@ export function ChoreOnboardingDialog({
       },
       {
         estimatedMinutes: 5,
-        points: points > 0 ? Math.round(points) : undefined,
+        points: Number(points) > 0 ? Number(points) : undefined,
         icon: choreIcon,
       }
     );
@@ -945,6 +999,7 @@ export function ChoreOnboardingDialog({
 
   const saveRewardsAndContinue = async () => {
     const normalizedTitle = rewardTitle.trim();
+    if (mode !== 'off' && normalizedTitle && !rewardTargetValid) return;
     const timestamp = new Date().toISOString();
     const reward =
       mode !== 'off' && normalizedTitle
@@ -954,7 +1009,7 @@ export function ChoreOnboardingDialog({
               createSetupId('reward', normalizedTitle),
             title: normalizedTitle,
             type: 'family' as const,
-            targetPoints: Math.max(1, Math.round(rewardTarget)),
+            targetPoints: Number(rewardTarget),
             enabled: true,
             createdAt: Object.values(experience.rewardGoalsById)[0]?.createdAt ?? timestamp,
             updatedAt: timestamp,
@@ -1307,7 +1362,7 @@ export function ChoreOnboardingDialog({
                         <BackButton onClick={() => setStepIndex(0)} />
                         <Button
                           loading={saving}
-                          disabled={!participantId || !name.trim()}
+                          disabled={!participantId || !name.trim() || !reminderSettingsValid}
                           onClick={async () => {
                             if (await savePersonCustomization()) moveTo(2);
                           }}
@@ -1402,29 +1457,106 @@ export function ChoreOnboardingDialog({
                           />
                         </div>
                         {remindersEnabled ? (
-                          <div className="mt-4 grid grid-cols-2 gap-3">
+                          <div className="mt-4 grid gap-3">
+                            <div className="grid grid-cols-2 gap-3">
+                              <CardDialogSection
+                                className="mb-0"
+                                label={t('household.personDialog.quietStart')}
+                              >
+                                <Input
+                                  aria-describedby={
+                                    isValidTime(quietStart) ? undefined : 'setup-quiet-start-error'
+                                  }
+                                  aria-label={t('household.personDialog.quietStart')}
+                                  invalid={!isValidTime(quietStart)}
+                                  required
+                                  type="time"
+                                  value={quietStart}
+                                  onChange={(event) => setQuietStart(event.target.value)}
+                                />
+                                {!isValidTime(quietStart) ? (
+                                  <ChoreFieldError id="setup-quiet-start-error">
+                                    {t('household.validation.validTime')}
+                                  </ChoreFieldError>
+                                ) : null}
+                              </CardDialogSection>
+                              <CardDialogSection
+                                className="mb-0"
+                                label={t('household.personDialog.quietEnd')}
+                              >
+                                <Input
+                                  aria-describedby={
+                                    isValidTime(quietEnd) ? undefined : 'setup-quiet-end-error'
+                                  }
+                                  aria-label={t('household.personDialog.quietEnd')}
+                                  invalid={!isValidTime(quietEnd)}
+                                  required
+                                  type="time"
+                                  value={quietEnd}
+                                  onChange={(event) => setQuietEnd(event.target.value)}
+                                />
+                                {!isValidTime(quietEnd) ? (
+                                  <ChoreFieldError id="setup-quiet-end-error">
+                                    {t('household.validation.validTime')}
+                                  </ChoreFieldError>
+                                ) : null}
+                              </CardDialogSection>
+                            </div>
                             <CardDialogSection
                               className="mb-0"
-                              label={t('household.personDialog.quietStart')}
+                              label={t('household.personDialog.destination')}
                             >
-                              <Input
-                                aria-label={t('household.personDialog.quietStart')}
-                                type="time"
-                                value={quietStart}
-                                onChange={(event) => setQuietStart(event.target.value)}
-                              />
+                              <Select
+                                aria-describedby={
+                                  reminderDestination === 'provider'
+                                    ? 'setup-reminder-destination-help'
+                                    : undefined
+                                }
+                                aria-label={t('household.personDialog.destination')}
+                                value={reminderDestination}
+                                onChange={(event) =>
+                                  setReminderDestination(event.target.value as ReminderDestination)
+                                }
+                              >
+                                <option value="in_app">
+                                  {t('household.personDialog.destinationInApp')}
+                                </option>
+                                <option value="provider">
+                                  {t('household.personDialog.destinationProvider')}
+                                </option>
+                              </Select>
+                              {reminderDestination === 'provider' ? (
+                                <p
+                                  id="setup-reminder-destination-help"
+                                  className="mt-2 text-xs leading-relaxed text-muted-foreground"
+                                >
+                                  {t('household.personDialog.destinationProviderHelp')}
+                                </p>
+                              ) : null}
                             </CardDialogSection>
-                            <CardDialogSection
-                              className="mb-0"
-                              label={t('household.personDialog.quietEnd')}
-                            >
-                              <Input
-                                aria-label={t('household.personDialog.quietEnd')}
-                                type="time"
-                                value={quietEnd}
-                                onChange={(event) => setQuietEnd(event.target.value)}
-                              />
-                            </CardDialogSection>
+                            {reminderDestination === 'provider' ? (
+                              <CardDialogSection
+                                className="mb-0"
+                                label={t('household.personDialog.destinationTarget')}
+                              >
+                                <Input
+                                  aria-describedby={
+                                    reminderTargetValid ? undefined : 'setup-reminder-target-error'
+                                  }
+                                  aria-label={t('household.personDialog.destinationTarget')}
+                                  invalid={!reminderTargetValid}
+                                  maxLength={128}
+                                  required
+                                  value={reminderTarget}
+                                  onChange={(event) => setReminderTarget(event.target.value)}
+                                />
+                                {!reminderTargetValid ? (
+                                  <ChoreFieldError id="setup-reminder-target-error">
+                                    {t('household.validation.notificationTarget')}
+                                  </ChoreFieldError>
+                                ) : null}
+                              </CardDialogSection>
+                            ) : null}
                           </div>
                         ) : null}
                       </div>
@@ -1550,11 +1682,7 @@ export function ChoreOnboardingDialog({
                             >
                               {t('common.cancel')}
                             </Button>
-                            <Button
-                              loading={saving}
-                              disabled={!choreTitle.trim()}
-                              onClick={saveChore}
-                            >
+                            <Button loading={saving} disabled={!choreFormValid} onClick={saveChore}>
                               {t('household.setup.addThisChore')}
                             </Button>
                           </div>
@@ -1572,7 +1700,13 @@ export function ChoreOnboardingDialog({
                     footer={
                       <>
                         <BackButton onClick={() => setStepIndex(2)} />
-                        <Button loading={saving} onClick={saveRewardsAndContinue}>
+                        <Button
+                          loading={saving}
+                          disabled={
+                            mode !== 'off' && Boolean(rewardTitle.trim()) && !rewardTargetValid
+                          }
+                          onClick={saveRewardsAndContinue}
+                        >
                           {t('household.setup.continueToProtection')}
                         </Button>
                       </>
@@ -1626,6 +1760,7 @@ export function ChoreOnboardingDialog({
                           >
                             <Input
                               aria-label={t('household.rewardDialog.name')}
+                              maxLength={200}
                               value={rewardTitle}
                               placeholder={t('household.demo.rewardTitle')}
                               onChange={(event) => setRewardTitle(event.target.value)}
@@ -1636,13 +1771,29 @@ export function ChoreOnboardingDialog({
                             label={t('household.rewardDialog.target')}
                           >
                             <Input
+                              aria-describedby={
+                                rewardTargetValid ? undefined : 'setup-reward-target-error'
+                              }
                               aria-label={t('household.rewardDialog.target')}
+                              invalid={!rewardTargetValid}
                               type="number"
                               min={1}
                               max={1000000}
+                              required
+                              step={1}
                               value={rewardTarget}
-                              onChange={(event) => setRewardTarget(Number(event.target.value))}
+                              onChange={(event) =>
+                                setRewardTarget(numericDraft(event.target.value))
+                              }
                             />
+                            {!rewardTargetValid ? (
+                              <ChoreFieldError id="setup-reward-target-error">
+                                {t('household.validation.wholeNumberRange', {
+                                  min: 1,
+                                  max: 1_000_000,
+                                })}
+                              </ChoreFieldError>
+                            ) : null}
                           </CardDialogSection>
                         </div>
                       ) : null}

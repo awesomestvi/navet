@@ -50,10 +50,9 @@ For a shared screen, follow [Kiosk and Wall Display mode](/guide/wall-displays/k
 A provider is the smart-home platform connected to Navet. A standalone installation can connect
 multiple supported providers and show their selected devices together.
 
-Home Assistant supplies the full feature set. Homey and openHAB currently support rooms, lights,
-switches, sensors, and live state updates. Check [provider compatibility](/integrations/) if a
-section is unavailable, or [troubleshoot missing devices](/guide/troubleshooting/missing-entities/)
-if something you expect is absent.
+Capability coverage varies by provider. Check [provider compatibility](/integrations/) if a section
+is unavailable, or [troubleshoot missing devices](/guide/troubleshooting/missing-entities/) if
+something you expect is absent.
 
 ## Appearance, extensions, and device support
 

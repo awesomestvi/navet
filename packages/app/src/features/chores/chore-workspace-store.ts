@@ -99,7 +99,10 @@ export const useChoreWorkspaceStore = create<ChoreWorkspaceState>((set, get) => 
             managementPinConfigured: pinConfigured,
             managementUnlocked: pinConfigured && Boolean(managementSessionToken),
             recovery: result.recovery ?? null,
-            status: 'unavailable',
+            status:
+              result.recovery || !result.failureKind || result.failureKind === 'unsupported'
+                ? 'unavailable'
+                : 'error',
           });
           return;
         }

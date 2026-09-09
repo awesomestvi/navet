@@ -443,7 +443,7 @@ function CameraDirectStreamControls({
         aria-describedby={directStreamUrlError ? errorId : hintId}
         invalid={directStreamUrlError}
         value={directStreamUrl}
-        placeholder="http://homeassistant.local:1984/stream.html?src=camera_name"
+        placeholder="https://camera.example/stream.html?src=camera_name"
         onChange={(event) => onDirectStreamUrlChange(event.target.value)}
       />
     </FieldBlock>

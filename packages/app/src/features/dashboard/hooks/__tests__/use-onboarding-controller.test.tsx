@@ -3,6 +3,7 @@ import { renderHookWithProviders } from '@navet/app/test/render';
 import { resetAppStores } from '@navet/app/test/store-reset';
 import { act } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { useDashboardEntitiesStore } from '../../stores/dashboard-entities-store';
 import { useOnboardingController } from '../use-onboarding-controller';
 
 const { importDashboardConfigFromFile, toastSuccess, toastError } = vi.hoisted(() => ({
@@ -93,16 +94,43 @@ describe('useOnboardingController', () => {
     expect(sessionStorage.getItem(ONBOARDING_CONFIG_IMPORT_REVEAL_KEY)).toBeNull();
     expect(result.current.dashboardArrivalVariant).toBe('import');
     expect(result.current.isOnboardingClosing).toBe(true);
+    expect(useDashboardEntitiesStore.getState().onboardingCompleted).toBe(true);
     expect(reloadWindow).not.toHaveBeenCalled();
+  });
+
+  it('persists the all-entities choice before the closing animation completes', () => {
+    const { result, unmount } = renderController();
+
+    act(() => result.current.handleChooseAllEntities());
+
+    expect(useDashboardEntitiesStore.getState().onboardingCompleted).toBe(true);
+    expect(result.current.isOnboardingClosing).toBe(true);
+    unmount();
+    expect(JSON.parse(localStorage.getItem('navet-dashboard-entities') ?? '{}')).toMatchObject({
+      state: { onboardingCompleted: true },
+    });
+  });
+
+  it('persists the blank choice and resets the dashboard before the closing animation', () => {
+    const resetDashboard = vi.fn();
+    const { result } = renderController({ resetDashboard });
+
+    act(() => result.current.handleChooseBlankDashboard());
+
+    expect(resetDashboard).toHaveBeenCalledTimes(1);
+    expect(useDashboardEntitiesStore.getState()).toMatchObject({
+      hiddenEntityIds: ['home_assistant:light.kitchen'],
+      onboardingCompleted: true,
+    });
   });
 });
 
-function renderController() {
+function renderController(overrides: { resetDashboard?: () => void } = {}) {
   return renderHookWithProviders(() =>
     useOnboardingController({
       allEntityIds: ['light.kitchen'],
       changeRoom: vi.fn(),
-      resetDashboard: vi.fn(),
+      resetDashboard: overrides.resetDashboard ?? vi.fn(),
     })
   );
 }

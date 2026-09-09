@@ -38,7 +38,7 @@ function TabsPlayground({ variant, size }: TabsStoryProps) {
                 <span className="text-sm font-semibold text-white">Add Card</span>
               </span>
               <span className="mt-0.5 text-sm font-medium text-[#e4d2c5]">
-                Browse every Home Assistant entity
+                Browse every connected entity
               </span>
             </TabTrigger>
             <TabTrigger

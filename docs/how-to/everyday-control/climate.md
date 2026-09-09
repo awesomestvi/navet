@@ -37,5 +37,4 @@ power capability remains a simple control.
 ## If a control is absent
 
 Navet does not manufacture provider commands. Check the provider's entity capabilities and the
-[integration matrix](/integrations/). Homey and openHAB currently have narrower advanced feature
-coverage than Home Assistant.
+[integration matrix](/integrations/), because advanced climate coverage varies by provider.

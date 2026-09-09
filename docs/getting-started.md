@@ -19,8 +19,8 @@ and connects to your existing smart-home platform.
 - A browser on the phone, tablet, computer, or wall panel you want to use.
 
 Navet controls the devices your platform provides; it does not replace that platform.
-Home Assistant supports the full feature set. Homey and openHAB support rooms, lights, switches,
-sensors, and live state updates. See [provider compatibility](/integrations/) for details.
+Capability coverage varies by provider and continues to expand. See
+[provider compatibility](/integrations/) for the current feature matrix.
 
 ## Start with your provider
 
@@ -40,8 +40,9 @@ Then [customize Home](/guide/dashboards/customize-home/) or
 
 ## Watch the setup guide
 
-Already installed Navet? Follow the Home Assistant login, onboarding, and first Home card
-walkthrough. Available devices and controls depend on your connected provider.
+Already installed Navet? This walkthrough demonstrates Home Assistant sign-in, followed by the
+provider-neutral onboarding and first Home card flow. Sign-in differs by provider, while available
+devices and controls depend on the provider's capabilities.
 
 <iframe class="navet-video" src="https://www.youtube-nocookie.com/embed/XEjrLwt5xiQ" title="Navet Setup Guide: Login, Onboarding &amp; Your First Dashboard" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="fullscreen" allowfullscreen></iframe>
 

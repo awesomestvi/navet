@@ -129,6 +129,7 @@ describe('chore workspace service', () => {
 
     await expect(loadChoreWorkspace()).resolves.toMatchObject({
       available: false,
+      failureKind: 'unsupported',
       error: expect.stringContaining('Update the Navet Home Assistant integration'),
     });
   });
@@ -155,6 +156,7 @@ describe('chore workspace service', () => {
 
     await expect(loadChoreWorkspace()).resolves.toMatchObject({
       available: false,
+      failureKind: 'invalid_data',
       error: 'Chore data could not be read',
       recovery: {
         backupAvailable: false,
@@ -342,6 +344,8 @@ describe('chore workspace service', () => {
 
     await expect(loadChoreWorkspace()).resolves.toMatchObject({
       available: false,
+      failureKind: 'invalid_data',
+      error: expect.stringContaining('could not safely read'),
       document: null,
     });
   });
@@ -376,6 +380,7 @@ describe('chore workspace service', () => {
 
     await expect(loadChoreWorkspace()).resolves.toMatchObject({
       available: false,
+      failureKind: 'invalid_data',
       error: 'Chore data could not be read',
       recovery: { backupAvailable: true, pinConfigured: true, reason: 'workspace_invalid' },
     });

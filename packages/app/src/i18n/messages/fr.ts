@@ -169,10 +169,10 @@ export const frMessages = {
   'household.loading': 'Chargement des tâches du foyer',
   'household.unavailable.title': 'Les tâches ne sont pas disponibles ici',
   'household.unavailable.description':
-    'Utilisez Navet en mode autonome ou comme module Home Assistant pour partager les tâches du foyer.',
+    'Le stockage partagé des tâches est indisponible dans cette installation.',
   'household.unauthorized.title': 'Associez Navet pour utiliser les tâches du foyer',
   'household.unauthorized.description':
-    "Terminez l'association avec Home Assistant, puis réessayez.",
+    'Reconnectez cet écran à l’installation Navet approuvée, puis réessayez.',
   'household.error.title': 'Impossible de synchroniser les tâches',
   'household.error.description': "Navet n'a pas pu charger les dernières modifications du foyer.",
   'household.retry': 'Réessayer',
@@ -226,7 +226,7 @@ export const frMessages = {
   'household.setup.stepProtectionDescription': 'Protégez les modifications du plan',
   'household.setup.stepReadyDescription': 'Vérifiez et ouvrez Aujourd’hui',
   'household.setup.remindersHelper':
-    'Navet peut rappeler cette personne avant l’échéance d’une tâche. Les heures calmes suspendent les rappels la nuit.',
+    'Navet peut rappeler cette personne avant l’échéance d’une tâche. Les notifications téléphoniques utilisent l’application du fournisseur de maison connectée : chaque personne doit donc l’avoir installée et autoriser les notifications. Les heures calmes suspendent les rappels la nuit.',
   'household.setup.continueToProfiles': 'Continuer vers les profils',
   'household.setup.continueToMotivation': 'Continuer vers la motivation',
   'household.setup.continueToProtection': 'Continuer vers la protection',
@@ -405,7 +405,9 @@ export const frMessages = {
   'household.personDialog.quietEnd': 'Fin des heures calmes',
   'household.personDialog.destination': 'Destination des rappels',
   'household.personDialog.destinationInApp': 'Dans Navet',
-  'household.personDialog.destinationHomeAssistant': 'Notification Home Assistant',
+  'household.personDialog.destinationProvider': 'Notification de l’appareil',
+  'household.personDialog.destinationProviderHelp':
+    'Envoie une notification push via le fournisseur de maison connectée. Cette personne doit avoir installé l’application du fournisseur et autorisé les notifications. La disponibilité et le format de la cible dépendent du fournisseur.',
   'household.personDialog.destinationTarget': 'Cible du service de notification',
   'household.personDialog.saveChanges': 'Enregistrer les modifications',
   'household.choreDialog.title': 'Ajouter une tâche',
@@ -434,6 +436,17 @@ export const frMessages = {
   'household.choreDialog.rotationReset': 'Recommencer la rotation',
   'household.choreDialog.rotationNever': 'Jamais',
   'household.choreDialog.rotationOffset': 'Position de départ de la rotation',
+  'household.choreDialog.rotationOffsetError':
+    'Saisissez un nombre entier compris entre 0 et {max}.',
+  'household.validation.wholeNumberRange':
+    'Saisissez un nombre entier compris entre {min} et {max}.',
+  'household.validation.validTime': 'Saisissez une heure valide.',
+  'household.validation.validDate': 'Saisissez une date valide.',
+  'household.validation.endDate': 'Choisissez le {date} ou une date ultérieure.',
+  'household.validation.dateList': 'Utilisez des dates AAAA-MM-JJ séparées par des virgules.',
+  'household.validation.timeList': 'Utilisez des heures sur 24 heures séparées par des virgules.',
+  'household.validation.notificationTarget':
+    'Saisissez une cible de notification pour le fournisseur connecté.',
   'household.choreDialog.personTimes': 'Heures pour {name}',
   'household.choreDialog.room': 'Pièce',
   'household.choreDialog.claimRequired': 'Exiger la prise en charge de la tâche',
@@ -979,12 +992,12 @@ export const frMessages = {
     '{provider} ne prend pas encore en charge cette fonctionnalité.',
   'dashboard.addEntity.title': 'Ajouter une entité',
   'dashboard.addEntity.descriptionWithHidden':
-    'Rajouter des entités Home Assistant sur le tableau de bord.',
+    'Rajoutez les entités connectées au tableau de bord.',
   'dashboard.addEntity.descriptionDefault':
-    'Choisissez les entités Home Assistant à ajouter au tableau de bord.',
+    'Choisissez les entités connectées à ajouter au tableau de bord.',
   'dashboard.addEntity.action': 'Ajouter',
   'dashboard.addEntity.defaultDescriptionAll':
-    'Choisissez quelles entités Home Assistant doivent apparaître sur le tableau de bord',
+    'Choisissez les entités connectées qui doivent apparaître sur le tableau de bord',
   'dashboard.addEntity.defaultDescriptionRoom': 'Choisissez des entités pour {room}',
   'dashboard.addEntity.searchPlaceholder': 'Rechercher des entités',
   'dashboard.addEntity.roomLabel': 'Pièce',
@@ -995,7 +1008,7 @@ export const frMessages = {
   'dashboard.addCard.title': 'Ajouter une carte',
   'dashboard.addCard.description': 'Ajouter un nouveau widget a {room}',
   'dashboard.addCard.libraryDescription':
-    'Parcourez les entités Home Assistant et ajoutez-les à votre tableau de bord.',
+    'Parcourez les entités de vos fournisseurs connectés et ajoutez-les au tableau de bord.',
   'dashboard.addCard.allRooms': 'accueil',
   'dashboard.addCard.tab.cards': 'Toutes les cartes',
   'dashboard.addCard.filter.label': 'Filtrer',
@@ -1006,7 +1019,7 @@ export const frMessages = {
   'dashboard.addCard.tab.widgets': 'Cartes personnalisées',
   'dashboard.addCard.header.library': 'BIBLIOTHEQUE D ENTITES',
   'dashboard.addCard.header.widgets': 'WIDGETS PERSONNALISES',
-  'dashboard.addCard.tab.cardsHint': 'Parcourir toutes les entites Home Assistant',
+  'dashboard.addCard.tab.cardsHint': 'Parcourir toutes les entités connectées',
   'dashboard.addCard.tab.widgetsHint': 'Creer des cartes utilitaires pour le tableau de bord',
   'dashboard.addCard.librarySummary.matching': '{count} entites correspondantes',
   'dashboard.addCard.librarySummary.available': '{count} entités',
@@ -1048,7 +1061,7 @@ export const frMessages = {
   'dashboard.roomNav.reorder': 'Gérer les pièces',
   'dashboard.roomNav.reorderDialog.title': 'Gérer les pièces',
   'dashboard.roomNav.reorderDialog.description':
-    'Réorganisez, masquez ou supprimez les pièces Home Assistant devenues inutiles.',
+    'Réorganisez, masquez ou supprimez les pièces des fournisseurs connectés.',
   'dashboard.roomNav.reorderDialog.dragRoom': 'Réorganiser la pièce {room}',
   'dashboard.roomNav.reorderDialog.moveUp': 'Déplacer la pièce vers le haut',
   'dashboard.roomNav.reorderDialog.moveDown': 'Déplacer la pièce vers le bas',
@@ -1061,7 +1074,7 @@ export const frMessages = {
   'dashboard.roomNav.reorderDialog.moveDownRoom': 'Descendre la pièce {room}',
   'dashboard.roomNav.reorderDialog.deleteTitle': 'Supprimer la pièce',
   'dashboard.roomNav.reorderDialog.deleteDescription':
-    'Supprimer {room} de Home Assistant ? Les entités de cette pièce ne seront plus assignées.',
+    'Supprimer {room} de son fournisseur connecté ? Les entités de cette pièce ne seront plus assignées.',
   'dashboard.roomNav.reorderDialog.deleteAction': 'Supprimer la pièce',
   'dashboard.roomNav.reorderDialog.deleteSuccess': '{room} supprimée',
   'dashboard.roomNav.reorderDialog.deleteFailed': 'Impossible de supprimer {room}',
@@ -1403,16 +1416,16 @@ export const frMessages = {
   'dashboard.shell.noLightsHidden':
     'Toutes les entités lumière ont été retirées du tableau de bord.',
   'dashboard.shell.noLightsEmpty':
-    'Aucune entité lumière Home Assistant n’est actuellement disponible.',
+    'Aucune entité lumière n’est disponible auprès de vos fournisseurs.',
   'dashboard.shell.noVisibleEntitiesTitle': 'Aucune entité visible',
   'dashboard.shell.noVisibleEntitiesDescription':
     'Votre tableau de bord est vide. Ajoutez des entités depuis votre liste masquée ou ajoutez des cartes personnalisées pour commencer.',
   'dashboard.shell.loadingSettings': 'Chargement des paramètres...',
-  'dashboard.page.connectingHomeAssistant': 'Connexion a Home Assistant...',
+  'dashboard.page.connectingHomeAssistant': 'Connexion à votre maison connectée...',
   'dashboard.page.loadingDevices': 'Chargement des appareils...',
   'dashboard.loadingRecovery.title': 'Les appareils chargent toujours',
   'dashboard.loadingRecovery.description':
-    'Navet n’a pas pu terminer la préparation du tableau de bord. Réessayez la connexion, démarrez une nouvelle connexion Home Assistant ou vérifiez les causes fréquentes ci-dessous.',
+    'Navet n’a pas pu préparer le tableau de bord. Reconnectez le fournisseur ou vérifiez les causes ci-dessous.',
   'dashboard.sections.allItems': 'Tous les éléments',
   'dashboard.sections.widgets': 'Widgets',
   'dashboard.sections.itemCount.one': '{count} élément',
@@ -1457,7 +1470,7 @@ export const frMessages = {
     'Choisissez le thème de base et la couleur d’accent que Navet doit appliquer avant la première apparition du tableau de bord.',
   'dashboard.onboarding.route.all.title': 'Commencer avec toutes les entités',
   'dashboard.onboarding.route.all.body':
-    'Affichez tout ce que Home Assistant expose, puis masquez ensuite ce que vous ne voulez pas.',
+    'Affichez tout ce que vos fournisseurs connectés exposent, puis masquez ce que vous ne voulez pas.',
   'dashboard.onboarding.route.blank.title': 'Commencer avec un tableau vide',
   'dashboard.onboarding.route.blank.body':
     'Commencez avec un tableau vide, puis rajoutez uniquement les entités voulues via Add Entity.',
@@ -1654,7 +1667,7 @@ export const frMessages = {
   'weather.settings.hourly': 'Par heure',
   'weather.settings.weekly': 'Hebdomadaire',
   'weather.settings.locationManaged':
-    "La position provient actuellement de l'entité météo Home Assistant connectée.",
+    'La localisation provient de l’entité météo du fournisseur connecté.',
   'weather.settings.metrics': 'Mesures',
   'weather.settings.metricsLimit': 'Retirez une autre mesure pour ajouter celle-ci.',
   'weather.precipitation': 'Précipitations',
@@ -1863,7 +1876,7 @@ export const frMessages = {
   'vacuum.plan.wholeHome': 'Toute la maison',
   'vacuum.plan.wholeHomeHint': 'Lance un nettoyage complet sur toutes les zones cartographiées.',
   'vacuum.plan.mapHint':
-    'Le nettoyage par zone apparaîtra ici lorsque l aspirateur exposera des zones Home Assistant associées.',
+    'Le nettoyage par zone apparaîtra lorsque le fournisseur exposera les zones cartographiées de cet aspirateur.',
   'vacuum.plan.noMapTitle': 'Aucune carte trouvée',
   'vacuum.plan.noMapDescription':
     'Cet aspirateur n a pas encore fourni de carte exploitable à Navet.',
@@ -1988,7 +2001,7 @@ export const frMessages = {
   'entityRoomSelector.movedTo': 'Carte deplacee vers {room}',
   'entityRoomSelector.updateFailed': 'Impossible de mettre à jour la pièce',
   'entityRoomSelector.createAction': 'Créer une pièce...',
-  'entityRoomSelector.createPrompt': 'Saisissez un nom pour la nouvelle pièce Home Assistant',
+  'entityRoomSelector.createPrompt': 'Saisissez un nom pour la nouvelle pièce du fournisseur',
   'entityRoomSelector.createInvalid': 'Le nom de la pièce ne peut pas être vide',
   'deviceEditor.brightnessPresets': 'Préréglages de luminosité',
   'deviceEditor.moreBrightnessPresets': 'Plus de préréglages de luminosité',
@@ -2216,7 +2229,7 @@ export const frMessages = {
   'userDropdown.defaultUser': 'Utilisateur',
   'userDropdown.defaultInitial': 'U',
   'userDropdown.openMenu': 'Ouvrir le menu utilisateur',
-  'userDropdown.connected': 'Connecté à Home Assistant',
+  'userDropdown.connected': 'Maison connectée',
   'userDropdown.roleLabel': 'Rôle',
   'userDropdown.role.owner': 'Proprietaire',
   'userDropdown.role.administrator': 'Administrateur',
@@ -2312,13 +2325,13 @@ export const frMessages = {
   'errorDisplay.backToLogin': 'Retour à la connexion',
   'errorDisplay.connectionInterrupted': 'Récupération nécessaire',
   'errorDisplay.connectionInterruptedDescription':
-    'Navet n’a pas pu terminer la session Home Assistant ou charger le tableau de bord. Réessayez la connexion ou consultez les causes fréquentes ci-dessous.',
+    'Navet n’a pas pu terminer la session du fournisseur ni charger le tableau de bord. Réessayez la connexion.',
   'errorDisplay.commonIssues': 'Problèmes fréquents :',
   'errorDisplay.issue.1': 'Le système domotique n’est pas lancé ou est inaccessible',
-  'errorDisplay.issue.2': 'La session Home Assistant est indisponible ou expirée',
+  'errorDisplay.issue.2': 'La session du fournisseur est indisponible ou expirée',
   'errorDisplay.issue.3': 'Problèmes de connectivité réseau',
   'errorDisplay.issue.4': 'CORS ou pare-feu bloque la connexion',
-  'errorDisplay.issue.5': 'Home Assistant n’a renvoyé aucune entité utilisable',
+  'errorDisplay.issue.5': 'Le fournisseur connecté n’a renvoyé aucune entité utilisable',
   'errorDisplay.issue.6':
     'Une disposition de tableau de bord enregistrée référence des appareils inexistants',
   'cover.open': 'Ouvrir',
@@ -2663,7 +2676,7 @@ export const frMessages = {
   'energy.widgets.now.liveBadge': 'En direct',
   'energy.widgets.now.sparklineTitle': 'Sparkline 5 minutes',
   'energy.widgets.now.sparklineDescription':
-    '24 dernieres heures, moyenne Home Assistant sur 5 minutes',
+    'Dernières 24 heures, moyenne sur 5 minutes du fournisseur',
   'energy.widgets.now.totalUsage': 'Usage total aujourd hui',
   'energy.widgets.now.totalUsageDescription':
     'Derive de l historique de charge de la maison depuis minuit',
@@ -2719,7 +2732,8 @@ export const frMessages = {
   'energy.widgets.drilldown.resource': 'Ressource',
   'energy.widgets.batteryDevices.title': 'Appareils sur batterie',
   'energy.widgets.batteryDevices.eyebrow': 'Batterie restante',
-  'energy.widgets.batteryDevices.empty': 'Aucun capteur batterie detecte dans Home Assistant.',
+  'energy.widgets.batteryDevices.empty':
+    'Aucun capteur de batterie détecté auprès du fournisseur connecté.',
   'energy.widgets.flow.title': 'Flux d energie',
   'energy.widgets.flow.eyebrow': 'Equilibre en direct',
   'energy.widgets.flow.direction.usage': 'Usage',
@@ -2752,8 +2766,8 @@ export const frMessages = {
   'energy.stats.costToday': 'Coût du jour',
   'energy.demo.message': 'Données de démonstration.',
   'energy.demo.hint':
-    "Connectez vos capteurs d'énergie Home Assistant pour voir les valeurs en direct.",
-  'energy.demo.connect': 'Connecter à HA Énergie',
+    'Connectez les capteurs d’énergie d’un fournisseur pris en charge pour afficher les mesures en direct.',
+  'energy.demo.connect': 'Connecter les données d’énergie',
   'energy.band.eyebrow': 'Énergie',
   'energy.band.rightNow.title': 'En ce moment',
   'energy.band.rightNow.description':
@@ -3022,7 +3036,7 @@ export const frMessages = {
   'energy.dashboard.flow.fullDescription':
     'Les chemins inactifs restent silencieux. Le mouvement revient aux faisceaux statiques pour les modes de mouvement réduit et de faible consommation.',
   'energy.dashboard.flow.simpleDescription':
-    "L'importation de grille en direct s'affiche lorsque Home Assistant expose la demande actuelle.",
+    'L’import réseau en direct apparaît lorsque le fournisseur connecté expose la demande actuelle.',
   'energy.dashboard.flow.aria': "Carte des flux d'énergie",
   'energy.dashboard.flow.todayValue': "Aujourd'hui {value}",
   'energy.dashboard.flow.exportValue': '{value} kW exportés',

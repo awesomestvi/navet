@@ -222,6 +222,27 @@ describe('chore workspace store', () => {
     });
   });
 
+  it('reports malformed chore data as an actionable sync error', async () => {
+    loadChoreWorkspace.mockResolvedValue({
+      available: false,
+      unauthorized: false,
+      notModified: false,
+      failureKind: 'invalid_data',
+      error: 'Navet received chore data it could not safely read.',
+      recovery: null,
+      revision: null,
+      document: null,
+    });
+
+    await useChoreWorkspaceStore.getState().load({ force: true });
+
+    expect(useChoreWorkspaceStore.getState()).toMatchObject({
+      data: null,
+      error: 'Navet received chore data it could not safely read.',
+      status: 'error',
+    });
+  });
+
   it('preserves recovery details and replaces the broken workspace after repair', async () => {
     loadChoreWorkspace.mockResolvedValue({
       available: false,

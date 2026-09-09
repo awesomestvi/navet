@@ -348,6 +348,101 @@ class ChoreAuthorityTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(chores.ChoreStorageError):
             chores._normalize_data(malformed)
 
+    async def test_invalid_rotation_cursor_is_repaired_without_losing_workspace(self):
+        data = chores._empty_data()
+        data["definitionsById"] = {
+            "dishes": {
+                "id": "dishes",
+                "assignment": {
+                    "mode": "rotation",
+                    "participantIds": ["manager"],
+                    "rotationCursor": None,
+                },
+            }
+        }
+
+        normalized = chores._normalize_data(data)
+
+        self.assertEqual(
+            normalized["definitionsById"]["dishes"]["assignment"]["rotationCursor"],
+            0,
+        )
+
+    async def test_invalid_rotation_cursor_repair_is_persisted_during_startup(self):
+        data = chores._empty_data()
+        data["definitionsById"] = {
+            "dishes": {
+                "id": "dishes",
+                "enabled": False,
+                "assignment": {
+                    "mode": "rotation",
+                    "participantIds": ["manager"],
+                    "rotationCursor": None,
+                },
+            }
+        }
+        _Store.values[chores.WORKSPACE_KEY] = {
+            "contractVersion": 1,
+            "revision": 4,
+            "updatedAt": "2026-08-28T08:00:00.000Z",
+            "data": data,
+        }
+
+        authority = chores.ChoreAuthority(_Hass())
+        await authority.async_initialize()
+
+        persisted = _Store.values[chores.WORKSPACE_KEY]
+        self.assertEqual(persisted["revision"], 5)
+        self.assertEqual(
+            persisted["data"]["definitionsById"]["dishes"]["assignment"][
+                "rotationCursor"
+            ],
+            0,
+        )
+
+    async def test_invalid_rotation_cursor_is_repaired_before_a_definition_is_saved(self):
+        await self._create_manager()
+        timestamp = "2026-08-28T08:00:00.000Z"
+
+        await self.authority.async_command(
+            {
+                "commandId": "definition-create-invalid-cursor",
+                "baseRevision": self.authority.revision,
+                "action": {
+                    "type": "definition_create",
+                    "actorParticipantId": "manager",
+                    "definition": {
+                        "id": "dishes",
+                        "title": "Empty dishes",
+                        "enabled": True,
+                        "assignment": {
+                            "mode": "rotation",
+                            "participantIds": ["manager"],
+                            "rotationCursor": None,
+                        },
+                        "schedule": {
+                            "frequency": "once",
+                            "date": "2026-08-28",
+                            "time": "08:00",
+                            "timeZone": "UTC",
+                        },
+                        "dueWindowMinutes": 60,
+                        "approval": {"required": False, "approverIds": []},
+                        "createdAt": timestamp,
+                        "updatedAt": timestamp,
+                    },
+                },
+            },
+            "ha-user-1",
+        )
+
+        self.assertEqual(
+            self.authority.data["definitionsById"]["dishes"]["assignment"][
+                "rotationCursor"
+            ],
+            0,
+        )
+
     async def test_definition_delete_removes_the_chore_and_generated_occurrences(self):
         await self._create_manager()
         timestamp = "2026-08-28T08:00:00.000Z"
@@ -868,9 +963,9 @@ class ChoreAuthorityTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(sensor.extra_state_attributes["revision"], 1)
         self.assertEqual(sensor.write_count, 1)
 
-    async def test_background_reminder_uses_home_assistant_and_records_delivery(self):
+    async def test_background_reminder_uses_provider_delivery_and_records_delivery(self):
         manager = _participant(
-            destination={"type": "home_assistant", "target": "notify.mobile_app_phone"}
+            destination={"type": "provider", "target": "notify.mobile_app_phone"}
         )
         await self.authority.async_command(
             {

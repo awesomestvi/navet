@@ -9,9 +9,9 @@ home. **Today** leads with overdue and due work, then remaining work and complet
 
 ![The current Household Today dashboard with House pulse, needs-attention chores, remaining work, and completed chores.](/docs/how-to/everyday-control/household-today.webp)
 
-Native chores are currently available in the Home Assistant add-on and in standalone Navet when it
-is paired with a trusted Home Assistant installation. The Home Assistant custom panel does not have
-the shared file store required by this feature.
+Native chores require a Navet runtime with shared chore storage. Today that storage authority is
+available in the Home Assistant add-on and in a compatible standalone installation. Other runtimes
+may show chores as unavailable until they provide the same provider-neutral storage capability.
 
 ## Complete the guided setup
 
@@ -19,8 +19,9 @@ the shared file store required by this feature.
 2. Choose **Set up chores**.
 3. In **Profile**, add everyone who will be assigned work. At least one person must have the
    **Manager** role.
-4. In **Customize**, choose each person's colour, icon or photo, and optional reminder quiet
-   hours.
+4. In **Customize**, choose each person's colour, icon or photo, reminder destination, and optional
+   quiet hours. Device notifications use the connected provider's notification service and require
+   that provider's app and notification permission on the person's device.
 5. In **Chores**, add one or more recurring jobs.
 6. In **Rewards**, choose a motivation style. **Off** keeps the experience focused only on work
    and completion.

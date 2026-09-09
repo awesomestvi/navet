@@ -7,6 +7,15 @@ import { useI18n, useTheme } from '@navet/app/hooks';
 import type { ChoreAssignmentMode, ChoreParticipant, ChoreSchedule } from '@navet/core/chores';
 import { ChevronDown, SlidersHorizontal } from 'lucide-react';
 import { Children, isValidElement, type ReactNode } from 'react';
+import {
+  ChoreFieldError,
+  isBoundedInteger,
+  isValidDate,
+  isValidDateList,
+  isValidTime,
+  type NumericDraft,
+  numericDraft,
+} from './chore-form-validation';
 import { ChoreIconPicker } from './chore-icon-picker';
 
 export type ChoreCreationRepeat =
@@ -40,7 +49,7 @@ interface ChoreCreationFormGroupsProps {
   dueTime: string;
   startDate: string;
   endDate: string;
-  interval: number;
+  interval: NumericDraft;
   excludedDates: string;
   showTemplates?: boolean;
   children?: ReactNode;
@@ -53,7 +62,7 @@ interface ChoreCreationFormGroupsProps {
   onDueTimeChange: (value: string) => void;
   onStartDateChange: (value: string) => void;
   onEndDateChange: (value: string) => void;
-  onIntervalChange: (value: number) => void;
+  onIntervalChange: (value: NumericDraft) => void;
   onExcludedDatesChange: (value: string) => void;
 }
 
@@ -154,6 +163,18 @@ export function ChoreCreationFormGroups({
     [t('household.demo.plants'), 'Sprout'],
     [t('household.demo.bins'), 'Recycle'],
   ] as const;
+  const intervalMinimum = repeat === 'custom' ? 2 : 1;
+  const intervalValid =
+    repeat !== 'custom' && repeat !== 'after_completion'
+      ? true
+      : isBoundedInteger(interval, intervalMinimum, 3650);
+  const dueTimeValid = isValidTime(dueTime);
+  const startDateValid = isValidDate(startDate);
+  const endDateValid =
+    repeat === 'once' ||
+    endDate === '' ||
+    (isValidDate(endDate) && startDateValid && endDate >= startDate);
+  const excludedDatesValid = repeat === 'once' || isValidDateList(excludedDates);
   const sectionOptions = (section: ChoreCreationSection) => {
     for (const child of Children.toArray(children)) {
       if (
@@ -204,6 +225,8 @@ export function ChoreCreationFormGroups({
         <CardDialogSection className="mb-0" label={t('household.choreDialog.name')}>
           <Input
             aria-label={t('household.choreDialog.name')}
+            maxLength={200}
+            required
             value={title}
             placeholder={t('household.choreDialog.namePlaceholder')}
             onChange={(event) => onTitleChange(event.target.value)}
@@ -289,39 +312,72 @@ export function ChoreCreationFormGroups({
         {repeat === 'custom' ? (
           <CardDialogSection className="mb-0" label={t('household.choreDialog.repeatEveryDays')}>
             <Input
+              aria-describedby={intervalValid ? undefined : 'chore-repeat-interval-error'}
               aria-label={t('household.choreDialog.repeatEveryDays')}
+              invalid={!intervalValid}
               min={2}
+              max={3650}
+              required
+              step={1}
               type="number"
               value={interval}
-              onChange={(event) => onIntervalChange(Math.max(2, Number(event.target.value)))}
+              onChange={(event) => onIntervalChange(numericDraft(event.target.value))}
             />
+            {!intervalValid ? (
+              <ChoreFieldError id="chore-repeat-interval-error">
+                {t('household.validation.wholeNumberRange', { min: 2, max: 3650 })}
+              </ChoreFieldError>
+            ) : null}
           </CardDialogSection>
         ) : null}
         <CardDialogSection className="mb-0" label={t('household.choreDialog.time')}>
           <Input
+            aria-describedby={dueTimeValid ? undefined : 'chore-due-time-error'}
             aria-label={t('household.choreDialog.time')}
+            invalid={!dueTimeValid}
+            required
             type="time"
             value={dueTime}
             onChange={(event) => onDueTimeChange(event.target.value)}
           />
+          {!dueTimeValid ? (
+            <ChoreFieldError id="chore-due-time-error">
+              {t('household.validation.validTime')}
+            </ChoreFieldError>
+          ) : null}
         </CardDialogSection>
         <CardDialogSection className="mb-0" label={t('household.choreDialog.startDate')}>
           <Input
+            aria-describedby={startDateValid ? undefined : 'chore-start-date-error'}
             aria-label={t('household.choreDialog.startDate')}
+            invalid={!startDateValid}
+            required
             type="date"
             value={startDate}
             onChange={(event) => onStartDateChange(event.target.value)}
           />
+          {!startDateValid ? (
+            <ChoreFieldError id="chore-start-date-error">
+              {t('household.validation.validDate')}
+            </ChoreFieldError>
+          ) : null}
         </CardDialogSection>
         {repeat !== 'once' ? (
           <CardDialogSection className="mb-0" label={t('household.choreDialog.endDate')}>
             <Input
+              aria-describedby={endDateValid ? undefined : 'chore-end-date-error'}
               aria-label={t('household.choreDialog.endDate')}
+              invalid={!endDateValid}
               type="date"
               min={startDate}
               value={endDate}
               onChange={(event) => onEndDateChange(event.target.value)}
             />
+            {!endDateValid ? (
+              <ChoreFieldError id="chore-end-date-error">
+                {t('household.validation.endDate', { date: startDate })}
+              </ChoreFieldError>
+            ) : null}
           </CardDialogSection>
         ) : null}
         {repeat === 'after_completion' ? (
@@ -331,12 +387,22 @@ export function ChoreCreationFormGroups({
             helperText={t('household.setup.scheduleAfterCompletionHelper')}
           >
             <Input
+              aria-describedby={intervalValid ? undefined : 'chore-after-completion-error'}
               aria-label={t('household.setup.scheduleAfterCompletionLabel')}
+              invalid={!intervalValid}
               min={1}
+              max={3650}
+              required
+              step={1}
               type="number"
               value={interval}
-              onChange={(event) => onIntervalChange(Math.max(1, Number(event.target.value)))}
+              onChange={(event) => onIntervalChange(numericDraft(event.target.value))}
             />
+            {!intervalValid ? (
+              <ChoreFieldError id="chore-after-completion-error">
+                {t('household.validation.wholeNumberRange', { min: 1, max: 3650 })}
+              </ChoreFieldError>
+            ) : null}
           </CardDialogSection>
         ) : null}
         {repeat !== 'once' ? (
@@ -345,11 +411,18 @@ export function ChoreCreationFormGroups({
             label={t('household.choreDialog.excludedDates')}
           >
             <Input
+              aria-describedby={excludedDatesValid ? undefined : 'chore-excluded-dates-error'}
               aria-label={t('household.choreDialog.excludedDates')}
+              invalid={!excludedDatesValid}
               placeholder="2026-12-24, 2026-12-25"
               value={excludedDates}
               onChange={(event) => onExcludedDatesChange(event.target.value)}
             />
+            {!excludedDatesValid ? (
+              <ChoreFieldError id="chore-excluded-dates-error">
+                {t('household.validation.dateList')}
+              </ChoreFieldError>
+            ) : null}
           </CardDialogSection>
         ) : null}
       </ChoreFormGroup>

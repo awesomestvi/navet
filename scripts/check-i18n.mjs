@@ -120,6 +120,43 @@ function interpolationTokens(value) {
 
 const dictionaries = Object.fromEntries(languages.map((language) => [language, parseMessages(language)]));
 const english = dictionaries.en;
+const providerNeutralMessageKeys = [
+  'household.unavailable.description',
+  'household.unauthorized.description',
+  'dashboard.addEntity.descriptionWithHidden',
+  'dashboard.addEntity.descriptionDefault',
+  'dashboard.addEntity.defaultDescriptionAll',
+  'dashboard.addCard.libraryDescription',
+  'dashboard.addCard.tab.cardsHint',
+  'dashboard.roomNav.reorderDialog.description',
+  'dashboard.roomNav.reorderDialog.deleteDescription',
+  'dashboard.shell.noLightsEmpty',
+  'dashboard.page.connectingHomeAssistant',
+  'dashboard.loadingRecovery.description',
+  'dashboard.onboarding.route.all.body',
+  'weather.settings.locationManaged',
+  'vacuum.plan.mapHint',
+  'entityRoomSelector.createPrompt',
+  'energy.widgets.now.sparklineDescription',
+  'energy.widgets.batteryDevices.empty',
+  'energy.demo.hint',
+  'energy.demo.connect',
+  'energy.dashboard.flow.simpleDescription',
+  'userDropdown.connected',
+  'errorDisplay.connectionInterruptedDescription',
+  'errorDisplay.issue.2',
+  'errorDisplay.issue.5',
+];
+const providerBrandPattern = /home assistant|homey|openhab/i;
+
+for (const language of languages) {
+  for (const key of providerNeutralMessageKeys) {
+    const value = dictionaries[language].get(key);
+    if (value && providerBrandPattern.test(value)) {
+      failures.push(`${language}: provider-specific wording in shared message ${key}`);
+    }
+  }
+}
 
 for (const language of languages.slice(1)) {
   const dictionary = dictionaries[language];

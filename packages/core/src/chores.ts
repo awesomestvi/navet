@@ -22,6 +22,11 @@ import {
 export const CHORE_WORKSPACE_SCHEMA_VERSION = 2 as const;
 
 export type ChoreParticipantCapability = 'complete' | 'approve' | 'manage';
+export type ChoreReminderDestinationType =
+  | 'in_app'
+  | 'provider'
+  /** Legacy persisted value. Current writes use `provider`. */
+  | 'home_assistant';
 
 export interface ChoreParticipant {
   id: string;
@@ -41,7 +46,7 @@ export interface ChoreParticipant {
       timeZone?: string;
     };
     destination?: {
-      type: 'in_app' | 'home_assistant';
+      type: ChoreReminderDestinationType;
       target?: string;
     };
   };
@@ -259,7 +264,7 @@ export interface ChoreOutboxItem {
   lastError?: string;
   occurrenceId?: string;
   participantId?: string;
-  destination?: 'in_app' | 'home_assistant';
+  destination?: ChoreReminderDestinationType;
   destinationTarget?: string;
 }
 
@@ -578,7 +583,9 @@ function isChoreParticipant(value: unknown, expectedId: string) {
               reminderPreferences.quietHours.timeZone.length > 0)))) &&
       (reminderPreferences.destination === undefined ||
         (isRecord(reminderPreferences.destination) &&
-          ['in_app', 'home_assistant'].includes(String(reminderPreferences.destination.type)) &&
+          ['in_app', 'provider', 'home_assistant'].includes(
+            String(reminderPreferences.destination.type)
+          ) &&
           (reminderPreferences.destination.target === undefined ||
             typeof reminderPreferences.destination.target === 'string'))));
   return (
@@ -880,7 +887,7 @@ function isChoreOutboxItem(value: unknown) {
     (value.occurrenceId === undefined || typeof value.occurrenceId === 'string') &&
     (value.participantId === undefined || typeof value.participantId === 'string') &&
     (value.destination === undefined ||
-      ['in_app', 'home_assistant'].includes(String(value.destination))) &&
+      ['in_app', 'provider', 'home_assistant'].includes(String(value.destination))) &&
     (value.destinationTarget === undefined || typeof value.destinationTarget === 'string')
   );
 }
@@ -940,13 +947,24 @@ export function migrateChoreWorkspaceData(value: unknown): ChoreWorkspaceData {
     return value.experience ? value : { ...value, experience: createChoreExperienceState() };
   }
 
-  if (isRecord(value) && value.schemaVersion === 1 && hasValidChoreWorkspaceCollections(value)) {
+  const repaired = repairInvalidRotationCursors(value);
+  if (repaired !== value && isChoreWorkspaceData(repaired)) {
+    return repaired.experience
+      ? repaired
+      : { ...repaired, experience: createChoreExperienceState() };
+  }
+
+  if (
+    isRecord(repaired) &&
+    repaired.schemaVersion === 1 &&
+    hasValidChoreWorkspaceCollections(repaired)
+  ) {
     const migrated: ChoreWorkspaceData = {
       schemaVersion: CHORE_WORKSPACE_SCHEMA_VERSION,
-      participantsById: value.participantsById as Record<string, ChoreParticipant>,
-      definitionsById: value.definitionsById as Record<string, ChoreDefinition>,
-      occurrencesById: value.occurrencesById as Record<string, ChoreOccurrence>,
-      activity: value.activity as ChoreActivity[],
+      participantsById: repaired.participantsById as Record<string, ChoreParticipant>,
+      definitionsById: repaired.definitionsById as Record<string, ChoreDefinition>,
+      occurrencesById: repaired.occurrencesById as Record<string, ChoreOccurrence>,
+      activity: repaired.activity as ChoreActivity[],
       outbox: [],
       historyRetention: { ...DEFAULT_CHORE_HISTORY_RETENTION },
       experience: createChoreExperienceState(),
@@ -955,6 +973,36 @@ export function migrateChoreWorkspaceData(value: unknown): ChoreWorkspaceData {
   }
 
   throw new Error('Unsupported or invalid chore workspace schema');
+}
+
+function repairInvalidRotationCursors(value: unknown): unknown {
+  if (!isRecord(value) || !isRecord(value.definitionsById)) {
+    return value;
+  }
+
+  let repaired = false;
+  const definitionsById = Object.fromEntries(
+    Object.entries(value.definitionsById).map(([id, definition]) => {
+      if (!isRecord(definition) || !isRecord(definition.assignment)) {
+        return [id, definition];
+      }
+      const cursor = definition.assignment.rotationCursor;
+      if (cursor === undefined || (Number.isSafeInteger(cursor) && Number(cursor) >= 0)) {
+        return [id, definition];
+      }
+
+      repaired = true;
+      const assignment = { ...definition.assignment };
+      if (assignment.mode === 'rotation') {
+        assignment.rotationCursor = 0;
+      } else {
+        delete assignment.rotationCursor;
+      }
+      return [id, { ...definition, assignment }];
+    })
+  );
+
+  return repaired ? { ...value, definitionsById } : value;
 }
 
 export function isChoreHistoryRetentionPolicy(

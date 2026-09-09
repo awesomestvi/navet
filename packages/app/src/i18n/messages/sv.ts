@@ -166,10 +166,10 @@ export const svMessages = {
   'household.loading': 'Läser in hushållssysslor',
   'household.unavailable.title': 'Sysslor är inte tillgängliga här',
   'household.unavailable.description':
-    'Använd Navet fristående eller som Home Assistant-tillägg för att dela hushållssysslor.',
+    'Delad lagring för hushållssysslor är inte tillgänglig i den här installationen.',
   'household.unauthorized.title': 'Parkoppla Navet för att använda hushållssysslor',
   'household.unauthorized.description':
-    'Slutför parkopplingen med Home Assistant och försök sedan igen.',
+    'Anslut skärmen till den betrodda Navet-installationen och försök igen.',
   'household.error.title': 'Sysslorna kunde inte synkroniseras',
   'household.error.description': 'Navet kunde inte läsa in hushållets senaste ändringar.',
   'household.retry': 'Försök igen',
@@ -232,7 +232,7 @@ export const svMessages = {
   'household.setup.customizeDescription':
     'Välj namn, färg och bild för varje person. Påminnelser är valfria och tysta tider stoppar dem under natten.',
   'household.setup.remindersHelper':
-    'Navet kan påminna personen innan en syssla ska göras. Tysta tider pausar påminnelser under natten.',
+    'Navet kan påminna personen innan en syssla ska göras. Telefonaviseringar använder den anslutna smarthemsleverantörens app, så varje person behöver ha appen installerad och tillåta aviseringar. Tysta tider pausar påminnelser under natten.',
   'household.setup.savePersonContinue': 'Spara profiler och fortsätt',
   'household.setup.choreGroupDetails': 'Sysslan',
   'household.setup.choreGroupAssignment': 'Vem gör den',
@@ -402,7 +402,9 @@ export const svMessages = {
   'household.personDialog.quietEnd': 'Tyst tid slutar',
   'household.personDialog.destination': 'Mål för påminnelser',
   'household.personDialog.destinationInApp': 'I Navet',
-  'household.personDialog.destinationHomeAssistant': 'Home Assistant-avisering',
+  'household.personDialog.destinationProvider': 'Enhetsavisering',
+  'household.personDialog.destinationProviderHelp':
+    'Skickar en pushavisering via den anslutna smarthemsleverantören. Personen behöver ha leverantörens app installerad och tillåta aviseringar. Tillgänglighet och målformat beror på leverantören.',
   'household.personDialog.destinationTarget': 'Mål för aviseringstjänst',
   'household.personDialog.saveChanges': 'Spara ändringar',
   'household.choreDialog.title': 'Lägg till en syssla',
@@ -431,6 +433,16 @@ export const svMessages = {
   'household.choreDialog.rotationReset': 'Starta om rotation',
   'household.choreDialog.rotationNever': 'Aldrig',
   'household.choreDialog.rotationOffset': 'Startläge för rotation',
+  'household.choreDialog.rotationOffsetError': 'Ange ett heltal från 0 till {max}.',
+  'household.validation.wholeNumberRange': 'Ange ett heltal från {min} till {max}.',
+  'household.validation.validTime': 'Ange en giltig tid.',
+  'household.validation.validDate': 'Ange ett giltigt datum.',
+  'household.validation.endDate': 'Välj {date} eller ett senare datum.',
+  'household.validation.dateList':
+    'Använd datum i formatet ÅÅÅÅ-MM-DD, avgränsade med kommatecken.',
+  'household.validation.timeList': 'Använd tider i 24-timmarsformat, avgränsade med kommatecken.',
+  'household.validation.notificationTarget':
+    'Ange ett aviseringsmål för den anslutna leverantören.',
   'household.choreDialog.personTimes': 'Tider för {name}',
   'household.choreDialog.room': 'Rum',
   'household.choreDialog.claimRequired': 'Kräv att någon tar sysslan',
@@ -968,13 +980,12 @@ export const svMessages = {
   'settings.feedback.providerDisconnectFailed': 'Det gick inte att koppla från provider',
   'integration.featureUnavailable': '{provider} stöder inte den här funktionen ännu.',
   'dashboard.addEntity.title': 'Lägg till enhet',
-  'dashboard.addEntity.descriptionWithHidden':
-    'Lägg tillbaka Home Assistant-enheter till dashboarden.',
+  'dashboard.addEntity.descriptionWithHidden': 'Lägg tillbaka anslutna entiteter på dashboarden.',
   'dashboard.addEntity.descriptionDefault':
-    'Välj Home Assistant-enheter att lägga till i dashboarden.',
+    'Välj anslutna entiteter att lägga till på dashboarden.',
   'dashboard.addEntity.action': 'Lägg till',
   'dashboard.addEntity.defaultDescriptionAll':
-    'Välj vilka Home Assistant-enheter som ska visas i dashboarden',
+    'Välj vilka anslutna entiteter som ska visas på dashboarden',
   'dashboard.addEntity.defaultDescriptionRoom': 'Välj enheter för {room}',
   'dashboard.addEntity.searchPlaceholder': 'Sök enheter',
   'dashboard.addEntity.roomLabel': 'Rum',
@@ -985,7 +996,7 @@ export const svMessages = {
   'dashboard.addCard.title': 'Lägg till kort',
   'dashboard.addCard.description': 'Lägg till en ny widget i {room}',
   'dashboard.addCard.libraryDescription':
-    'Bläddra bland Home Assistant-entiteter och lägg till dem på din instrumentpanel.',
+    'Bläddra bland entiteter från anslutna leverantörer och lägg till dem på dashboarden.',
   'dashboard.addCard.allRooms': 'hem',
   'dashboard.addCard.tab.cards': 'Alla kort',
   'dashboard.addCard.filter.label': 'Filtrera',
@@ -996,7 +1007,7 @@ export const svMessages = {
   'dashboard.addCard.tab.widgets': 'Anpassade kort',
   'dashboard.addCard.header.library': 'ENTITETSBIBLIOTEK',
   'dashboard.addCard.header.widgets': 'ANPASSADE WIDGETS',
-  'dashboard.addCard.tab.cardsHint': 'Bladdra bland alla Home Assistant-entiteter',
+  'dashboard.addCard.tab.cardsHint': 'Bläddra bland alla anslutna entiteter',
   'dashboard.addCard.tab.widgetsHint': 'Skapa nyttokort for dashboards',
   'dashboard.addCard.librarySummary.matching': '{count} matchande entiteter',
   'dashboard.addCard.librarySummary.available': '{count} entiteter',
@@ -1037,7 +1048,7 @@ export const svMessages = {
   'dashboard.roomNav.reorder': 'Hantera rum',
   'dashboard.roomNav.reorderDialog.title': 'Hantera rum',
   'dashboard.roomNav.reorderDialog.description':
-    'Ordna om, dölj eller ta bort Home Assistant-rum som inte längre behövs.',
+    'Ordna om, dölj eller ta bort rum från anslutna leverantörer.',
   'dashboard.roomNav.reorderDialog.dragRoom': 'Ordna om rum {room}',
   'dashboard.roomNav.reorderDialog.moveUp': 'Flytta rum upp',
   'dashboard.roomNav.reorderDialog.moveDown': 'Flytta rum ned',
@@ -1050,7 +1061,7 @@ export const svMessages = {
   'dashboard.roomNav.reorderDialog.moveDownRoom': 'Flytta ned rum {room}',
   'dashboard.roomNav.reorderDialog.deleteTitle': 'Ta bort rum',
   'dashboard.roomNav.reorderDialog.deleteDescription':
-    'Ta bort {room} från Home Assistant? Entiteter i rummet blir utan tilldelat rum.',
+    'Ta bort {room} från dess anslutna leverantör? Entiteter i rummet blir utan rum.',
   'dashboard.roomNav.reorderDialog.deleteAction': 'Ta bort rum',
   'dashboard.roomNav.reorderDialog.deleteSuccess': 'Tog bort {room}',
   'dashboard.roomNav.reorderDialog.deleteFailed': 'Kunde inte ta bort {room}',
@@ -1386,16 +1397,16 @@ export const svMessages = {
   'dashboard.zones.analytics': 'Analys',
   'dashboard.shell.noLightsTitle': 'Inga lampor',
   'dashboard.shell.noLightsHidden': 'Alla ljusenheter har tagits bort från dashboarden.',
-  'dashboard.shell.noLightsEmpty': 'Inga Home Assistant-ljusenheter är tillgängliga just nu.',
+  'dashboard.shell.noLightsEmpty': 'Inga ljusentiteter är tillgängliga från dina leverantörer.',
   'dashboard.shell.noVisibleEntitiesTitle': 'Inga synliga enheter',
   'dashboard.shell.noVisibleEntitiesDescription':
     'Din dashboard är tom. Lägg till enheter från din dolda lista eller lägg till egna kort för att börja bygga.',
   'dashboard.shell.loadingSettings': 'Laddar inställningar...',
-  'dashboard.page.connectingHomeAssistant': 'Ansluter till Home Assistant...',
+  'dashboard.page.connectingHomeAssistant': 'Ansluter till ditt smarta hem...',
   'dashboard.page.loadingDevices': 'Laddar enheter...',
   'dashboard.loadingRecovery.title': 'Enheter laddas fortfarande',
   'dashboard.loadingRecovery.description':
-    'Navet kunde inte göra dashboarden klar. Försök ansluta igen, starta en ny Home Assistant-anslutning eller kontrollera vanliga orsaker nedan.',
+    'Navet kunde inte förbereda dashboarden. Anslut leverantören igen eller kontrollera orsakerna nedan.',
   'dashboard.sections.allItems': 'Alla objekt',
   'dashboard.sections.widgets': 'Widgetar',
   'dashboard.sections.itemCount.one': '{count} objekt',
@@ -1439,7 +1450,7 @@ export const svMessages = {
     'Välj grundtema och accentfärg som Navet ska använda innan dashboarden visas för första gången.',
   'dashboard.onboarding.route.all.title': 'Starta med alla enheter',
   'dashboard.onboarding.route.all.body':
-    'Visa allt som Home Assistant exponerar och dölj sedan det du inte vill ha.',
+    'Visa allt som dina anslutna leverantörer exponerar och dölj sedan det du inte vill ha.',
   'dashboard.onboarding.route.blank.title': 'Starta med en tom dashboard',
   'dashboard.onboarding.route.blank.body':
     'Börja med en tom dashboard och lägg sedan tillbaka bara de enheter du vill ha via Add Entity.',
@@ -1631,7 +1642,7 @@ export const svMessages = {
   'weather.settings.hourly': 'Timvis',
   'weather.settings.weekly': 'Veckovis',
   'weather.settings.locationManaged':
-    'Platsen hämtas just nu från den anslutna väderentiteten i Home Assistant.',
+    'Platsen hämtas från den anslutna leverantörens väderentitet.',
   'weather.settings.metrics': 'Mätvärden',
   'weather.settings.metricsLimit': 'Ta bort ett annat mätvärde för att lägga till detta.',
   'weather.precipitation': 'Nederbörd',
@@ -1840,7 +1851,7 @@ export const svMessages = {
   'vacuum.plan.wholeHome': 'Hela hemmet',
   'vacuum.plan.wholeHomeHint': 'Kör en full städning över hemmets kartlagda ytor.',
   'vacuum.plan.mapHint':
-    'Områdesstädning visas här när dammsugaren exponerar mappade Home Assistant-områden.',
+    'Områdesstädning visas när leverantören exponerar mappade områden för dammsugaren.',
   'vacuum.plan.noMapTitle': 'Ingen karta hittades',
   'vacuum.plan.noMapDescription':
     'Den här dammsugaren har ännu inte exponerat en användbar karta till Navet.',
@@ -1963,7 +1974,7 @@ export const svMessages = {
   'entityRoomSelector.movedTo': 'Kort flyttat till {room}',
   'entityRoomSelector.updateFailed': 'Det gick inte att uppdatera rummet',
   'entityRoomSelector.createAction': 'Skapa rum...',
-  'entityRoomSelector.createPrompt': 'Ange ett namn för det nya rummet i Home Assistant',
+  'entityRoomSelector.createPrompt': 'Ange ett namn för det nya leverantörsrummet',
   'entityRoomSelector.createInvalid': 'Rumsnamnet får inte vara tomt',
   'deviceEditor.brightnessPresets': 'Ljusstyrkepresets',
   'deviceEditor.moreBrightnessPresets': 'Fler ljusstyrkepresets',
@@ -2183,7 +2194,7 @@ export const svMessages = {
   'userDropdown.defaultUser': 'Användare',
   'userDropdown.defaultInitial': 'A',
   'userDropdown.openMenu': 'Öppna användarmenyn',
-  'userDropdown.connected': 'Ansluten till Home Assistant',
+  'userDropdown.connected': 'Smart hem anslutet',
   'userDropdown.roleLabel': 'Roll',
   'userDropdown.role.owner': 'Ägare',
   'userDropdown.role.administrator': 'Administratör',
@@ -2275,13 +2286,13 @@ export const svMessages = {
   'errorDisplay.backToLogin': 'Tillbaka till inloggning',
   'errorDisplay.connectionInterrupted': 'Åtgärd behövs',
   'errorDisplay.connectionInterruptedDescription':
-    'Navet kunde inte slutföra Home Assistant-sessionen eller ladda dashboarden. Försök ansluta igen eller kontrollera de vanliga orsakerna nedan.',
+    'Navet kunde inte slutföra leverantörssessionen eller ladda dashboarden. Försök ansluta igen.',
   'errorDisplay.commonIssues': 'Vanliga problem:',
   'errorDisplay.issue.1': 'Smarta hem-systemet kör inte eller kan inte nås',
-  'errorDisplay.issue.2': 'Home Assistant-sessionen är inte tillgänglig eller har löpt ut',
+  'errorDisplay.issue.2': 'Leverantörssessionen är inte tillgänglig eller har löpt ut',
   'errorDisplay.issue.3': 'Problem med nätverksanslutningen',
   'errorDisplay.issue.4': 'CORS eller brandvägg blockerar anslutningen',
-  'errorDisplay.issue.5': 'Home Assistant returnerade inga användbara enheter',
+  'errorDisplay.issue.5': 'Den anslutna leverantören returnerade inga användbara entiteter',
   'errorDisplay.issue.6': 'Sparad dashboard-layout refererar till enheter som inte längre finns',
   'cover.open': 'Öppna',
   'cover.close': 'Stäng',
@@ -2616,7 +2627,7 @@ export const svMessages = {
   'energy.widgets.now.gridImportInactive': 'Ingen aktiv natimport just nu',
   'energy.widgets.now.liveBadge': 'Live',
   'energy.widgets.now.sparklineTitle': '5-minuters sparkline',
-  'energy.widgets.now.sparklineDescription': 'Senaste 24 timmarna, Home Assistant 5-minutersmedel',
+  'energy.widgets.now.sparklineDescription': 'Senaste 24 timmarna, leverantörens 5-minutersmedel',
   'energy.widgets.now.totalUsage': 'Total anvandning idag',
   'energy.widgets.now.totalUsageDescription': 'Harlett fran hemmets lasthistorik sedan midnatt',
   'energy.widgets.gridAllocation.title': 'Natenergi till enheter',
@@ -2671,7 +2682,8 @@ export const svMessages = {
   'energy.widgets.drilldown.resource': 'Resurs',
   'energy.widgets.batteryDevices.title': 'Batteridrivna enheter',
   'energy.widgets.batteryDevices.eyebrow': 'Aterstaende batteri',
-  'energy.widgets.batteryDevices.empty': 'Inga batterisensorer upptackta i Home Assistant.',
+  'energy.widgets.batteryDevices.empty':
+    'Inga batterisensorer hittades hos den anslutna leverantören.',
   'energy.widgets.flow.title': 'Energiflode',
   'energy.widgets.flow.eyebrow': 'Livebalans',
   'energy.widgets.flow.direction.usage': 'Anvandning',
@@ -2703,8 +2715,8 @@ export const svMessages = {
   'energy.stats.gridImport': 'Nätimport',
   'energy.stats.costToday': 'Kostnad idag',
   'energy.demo.message': 'Visar demodata.',
-  'energy.demo.hint': 'Anslut dina Home Assistant-energisensorer för att se livedata.',
-  'energy.demo.connect': 'Anslut till HA-energi',
+  'energy.demo.hint': 'Anslut energisensorer från en leverantör som stöds för att se livedata.',
+  'energy.demo.connect': 'Anslut energidata',
   'energy.band.eyebrow': 'Energi',
   'energy.band.rightNow.title': 'Just nu',
   'energy.band.rightNow.description': 'Vad huset drar just nu och hur dagen ser ut hittills.',
@@ -2963,7 +2975,7 @@ export const svMessages = {
   'energy.dashboard.flow.fullDescription':
     'Inaktiva flöden hålls diskreta. Rörelser ersätts med statiska linjer vid minskad rörelse och i lågenergiläge.',
   'energy.dashboard.flow.simpleDescription':
-    'Aktuell nätimport visas när Home Assistant exponerar den nuvarande efterfrågan.',
+    'Aktuell nätimport visas när den anslutna leverantören exponerar nuvarande efterfrågan.',
   'energy.dashboard.flow.aria': 'Energiflödeskarta',
   'energy.dashboard.flow.todayValue': 'Idag {value}',
   'energy.dashboard.flow.exportValue': '{value} kW exporteras',
