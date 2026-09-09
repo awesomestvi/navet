@@ -2,43 +2,53 @@
 title: Getting started
 description: Understand Navet, choose a provider, and reach your first dashboard.
 editUrl: https://github.com/awesomestvi/navet/edit/main/docs/getting-started.md
+next:
+  link: /install/
+  label: Choose an installation
 ---
 
-Navet is a local-first smart-home dashboard. It provides one visual layer for the smart-home
-platform you already use; it does not replace that platform or move your home into a hosted cloud.
+Navet brings your rooms and devices into one dashboard. It runs on your own device or server
+and connects to your existing smart-home platform.
+
+**Already installed?** Go straight to [Your first 15 minutes](/guide/quick-start/first-15-minutes/).
+
+## What you need
+
+- A working **Home Assistant**, **Homey**, or **openHAB** setup with devices already connected.
+- A supported place to run Navet, such as Home Assistant or a Docker host.
+- A browser on the phone, tablet, computer, or wall panel you want to use.
+
+Navet controls the devices your platform provides; it does not replace that platform.
+Home Assistant supports the full feature set. Homey and openHAB support rooms, lights, switches,
+sensors, and live state updates. See [provider compatibility](/integrations/) for details.
 
 ## Start with your provider
 
-- **Home Assistant:** use the [Home Assistant installation guide](/install/home-assistant/).
-- **Homey:** use the [Homey setup guide](/install/homey/).
-- **openHAB:** use the [openHAB setup guide](/install/openhab/).
-- **Development builds:** use [Navet Dev](/install/navet-dev/) when you explicitly want the newest
-  in-progress build.
+Choose [Home Assistant](/install/home-assistant/), [Homey](/install/homey/), or
+[openHAB](/install/openhab/) and follow its installation guide.
 
-If you are unsure which Home Assistant route fits, compare them in
-[Choose an installation](/install/).
+Unsure how to run Navet? [Compare installation options](/install/).
 
 ## After Navet opens
 
-If the startup wizard appears, choose **Start with all entities**, **Start with a blank dashboard**,
-or **Import a config file**. The first two routes continue through language, formats, and appearance;
-import restores a saved Navet YAML configuration directly. Follow
-[Complete the startup wizard](/guide/quick-start/first-15-minutes/#complete-the-startup-wizard)
-for the exact steps.
+The startup wizard lets you start with all entities, start with a blank dashboard, or import a
+saved configuration. Follow [Your first 15 minutes](/guide/quick-start/first-15-minutes/) for the
+choices, their effects, and your first dashboard edit.
 
-Check that your rooms and devices appear, or add the cards you want if you chose a blank dashboard.
-Then try these steps:
+Then [customize Home](/guide/dashboards/customize-home/) or
+[add cards and widgets](/guide/dashboards/add-cards/).
 
-1. Use **Customize** on Home to reorder, resize, hide, lock, or manually add cards.
-2. Try a Home layout pack or build sections and columns yourself.
-3. Use the [widget reference](/guide/widgets/) for Navet-owned content such as RSS, notes, photos,
-   maps, battery summaries, and live energy.
+## Watch the setup guide
 
-For step-by-step product help, continue with
-[Your first 15 minutes with Navet](/guide/quick-start/first-15-minutes/) or browse the
-[how-to guides](/guide/how-to/).
+Already installed Navet? Follow the Home Assistant login, onboarding, and first Home card
+walkthrough. Available devices and controls depend on your connected provider.
+
+<iframe class="navet-video" src="https://www.youtube-nocookie.com/embed/XEjrLwt5xiQ" title="Navet Setup Guide: Login, Onboarding &amp; Your First Dashboard" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="fullscreen" allowfullscreen></iframe>
+
+[Watch the setup guide on YouTube](https://youtu.be/XEjrLwt5xiQ). Then continue with
+[the dashboard tutorial](/guide/dashboards/customize-home/#watch-the-dashboard-tutorial).
+
 
 ## Keep it private
 
-Navet is designed for local use. Before exposing any smart-home interface beyond your trusted
-network, read the [security guidance](/security/).
+Before making Navet accessible outside your trusted network, read the [security guidance](/security/).

@@ -31,6 +31,7 @@ export const MARKETING_URLS = {
   discord: COMMUNITY_URLS.discord,
   reddit: COMMUNITY_URLS.reddit,
   youtube: COMMUNITY_URLS.youtube,
+  teaserEmbed: 'https://www.youtube-nocookie.com/embed/FmdQCJASTZA',
   roadmapDoc: joinUrl(DOCS_SITE_URL, 'roadmap/'),
   docsIndex: DOCS_SITE_URL,
   gettingStarted: joinUrl(DOCS_SITE_URL, 'getting-started/'),

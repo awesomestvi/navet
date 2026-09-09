@@ -35,22 +35,26 @@ COPY packages packages
 COPY assets assets
 COPY scripts scripts
 COPY docker/shared docker/shared
-RUN node scripts/build-rss-transport.mjs \
-  && NAVET_ENABLE_DEMO=$NAVET_ENABLE_DEMO pnpm build
+RUN NAVET_ENABLE_DEMO=$NAVET_ENABLE_DEMO pnpm build
 
-# Runtime binaries must match the target architecture, independently of the build host.
-FROM node:22-alpine AS rss-node-runtime
+FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS rss-transport-build
+ARG TARGETOS
+ARG TARGETARCH
+WORKDIR /src
+COPY docker/rss-transport docker/rss-transport
+RUN GO111MODULE=off go test ./docker/rss-transport \
+  && GO111MODULE=off CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build \
+    -trimpath -ldflags="-s -w" -o /out/rss-transport ./docker/rss-transport
 
 FROM ${BUILD_FROM}
 ARG BUILD_VERSION
 ARG BUILD_ARCH
 
-RUN apk add --no-cache bash nginx nginx-mod-http-js libstdc++ su-exec
-COPY --from=rss-node-runtime /usr/local/bin/node /usr/local/bin/node
+RUN apk add --no-cache bash nginx nginx-mod-http-js su-exec
 
 COPY platform/home-assistant/addons/navet/run.sh /run.sh
 COPY docker/navet-runtime.sh /usr/local/bin/navet-runtime
-COPY --from=build /app/docker/runtime/rss-transport.mjs /etc/navet/rss-transport.mjs
+COPY --from=rss-transport-build /out/rss-transport /etc/navet/rss-transport
 COPY platform/home-assistant/addons/navet/rootfs/ /
 COPY docker/njs/rss-proxy.js /etc/nginx/njs/rss-proxy.js
 COPY docker/njs/resource-host-policy.js /etc/nginx/njs/resource-host-policy.js

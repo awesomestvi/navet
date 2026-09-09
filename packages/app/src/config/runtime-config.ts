@@ -1,4 +1,5 @@
 interface NavetRuntimeConfig {
+  runtime?: 'ha-ingress';
   hassUrl?: string;
   dashboardConfigUrl?: string;
   proxyBaseUrl?: string;
@@ -22,6 +23,7 @@ export function getRuntimeConfig(): NavetRuntimeConfig {
   const runtimeConfig = window.__NAVET_CONFIG__ ?? {};
 
   return {
+    runtime: runtimeConfig.runtime === 'ha-ingress' ? 'ha-ingress' : undefined,
     hassUrl: normalizeUrl(runtimeConfig.hassUrl),
     dashboardConfigUrl: normalizeValue(runtimeConfig.dashboardConfigUrl),
     proxyBaseUrl: normalizeUrl(runtimeConfig.proxyBaseUrl),

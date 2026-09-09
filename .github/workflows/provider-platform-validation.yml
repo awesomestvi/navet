@@ -34,8 +34,8 @@ jobs:
       - name: Check generated runtime policy parity
         run: node scripts/build-runtime-policies.mjs --check
 
-      - name: Check generated RSS transport parity
-        run: node scripts/build-rss-transport.mjs --check
+      - name: Check RSS transport build
+        run: pnpm check:rss-transport
 
       - name: Check provider boundaries
         run: node scripts/check-provider-boundaries.mjs

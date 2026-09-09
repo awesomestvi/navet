@@ -2,11 +2,17 @@
 title: Your first 15 minutes with Navet
 description: Complete first-run setup, learn the main navigation, and make your first dashboard change.
 editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/quick-start/first-15-minutes.md
+next:
+  link: /guide/dashboards/customize-home/
+  label: Customize Home
 ---
 
 This guide starts after Navet has connected to a provider. Complete the first-run choices, check
 that your home loaded, and make one useful change to Home. If your dashboard is already open,
 continue with **Check that your home loaded** below.
+
+Prefer a walkthrough? [Watch the setup guide](/getting-started/#watch-the-setup-guide) for
+login, onboarding, and your first Home card.
 
 ## Complete the startup wizard
 

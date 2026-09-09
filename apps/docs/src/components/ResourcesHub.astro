@@ -1,12 +1,6 @@
 ---
 const showcases = [
   {
-    title: "A home at a glance",
-    description: "Rooms, weather, energy, and everyday controls composed for a shared wall display.",
-    image: "https://raw.githubusercontent.com/awesomestvi/navet/main/assets/reference/marketing/screenshots/navet-ipad-landscape-home.jpg",
-    alt: "Navet home dashboard on an iPad",
-  },
-  {
     title: "Energy without the spreadsheet",
     description: "Live consumption and source context designed to be understood in a few seconds.",
     image: "https://raw.githubusercontent.com/awesomestvi/navet/main/assets/reference/marketing/screenshots/navet-ipad-landscape-energy.jpg",
@@ -18,6 +12,25 @@ const showcases = [
     image: "https://raw.githubusercontent.com/awesomestvi/navet/main/assets/reference/marketing/screenshots/navet-mobile-pwa-home.jpg",
     alt: "Navet mobile dashboard",
   },
+];
+
+const videos = [
+  { lesson: 1, topic: "Setup", title: "Set up Navet and your first dashboard", videoId: "XEjrLwt5xiQ", duration: "6:29", type: "Tutorial", description: "Follow Home Assistant login, startup choices, and your first Home card.", href: "https://youtu.be/XEjrLwt5xiQ" },
+  { lesson: 2, topic: "Dashboards", title: "Add cards and arrange Home", videoId: "8xis2yjmul8", duration: "3:45", type: "Tutorial", description: "Add cards, arrange sections with drag and drop, and check Home on a phone.", href: "https://youtu.be/8xis2yjmul8" },
+];
+
+// The remaining first-batch tutorials. Add a real video URL only after publication.
+const plannedVideos = [
+  { lesson: 3, title: "Change theme and accent", topic: "Appearance" },
+  { lesson: 4, title: "Start music and choose the right speaker", topic: "Media · Home Assistant" },
+  { lesson: 5, title: "Music player controls in depth", topic: "Media · Home Assistant" },
+  { lesson: 6, title: "Create a group of speakers", topic: "Media · Home Assistant" },
+  { lesson: 7, title: "Set up Household and chores", topic: "Household" },
+  { lesson: 8, title: "Add and customize a chore", topic: "Household" },
+  { lesson: 9, title: "Choose how your household uses points", topic: "Household" },
+  { lesson: 10, title: "Earn points and understand the balance", topic: "Household" },
+  { lesson: 11, title: "Add points manually", topic: "Household" },
+  { lesson: 12, title: "Remove points and correct a balance", topic: "Household" },
 ];
 
 const guides = [
@@ -54,9 +67,24 @@ const guides = [
       <a href="https://demo.navet.app/">Explore the demo <span aria-hidden="true">↗</span></a>
     </div>
     <div class="navet-showcase-grid">
-      {showcases.map((item, index) => (
-        <article class:list={["navet-showcase-card", { "navet-showcase-card--wide": index === 0 }]}>
-          <div class="navet-showcase-media"><img src={item.image} alt={item.alt} loading={index === 0 ? "eager" : "lazy"} /></div>
+      <article class="navet-showcase-card navet-showcase-card--wide">
+        <iframe
+          class="navet-showcase-teaser"
+          src="https://www.youtube-nocookie.com/embed/FmdQCJASTZA"
+          title="Navet — Your Smart Home, in One Place | 1-Minute Tour"
+          loading="lazy"
+          referrerpolicy="strict-origin-when-cross-origin"
+          allow="fullscreen"
+          allowfullscreen
+        ></iframe>
+        <div>
+          <h3>Get to know Navet in one minute</h3>
+          <p>See everyday home controls across desktop, tablet, and phone layouts.</p>
+        </div>
+      </article>
+      {showcases.map((item) => (
+        <article class="navet-showcase-card">
+          <div class="navet-showcase-media"><img src={item.image} alt={item.alt} loading="lazy" /></div>
           <div><h3>{item.title}</h3><p>{item.description}</p></div>
         </article>
       ))}
@@ -76,13 +104,42 @@ const guides = [
     </div>
   </section>
 
-  <section class="navet-video-callout" aria-labelledby="videos-title">
-    <div class="navet-video-mark" aria-hidden="true"><span>▶</span></div>
-    <div>
-      <p>Videos</p>
-      <h2 id="videos-title">Walkthroughs are next.</h2>
-      <p>The library is ready for installation guides, dashboard tours, and community setups. Until the first videos arrive, the live demo is the fastest way to explore.</p>
+  <section class="navet-resource-section" aria-labelledby="videos-title">
+    <div class="navet-resource-section-heading">
+      <div><p>Watch now</p><h2 id="videos-title">Video walkthroughs</h2></div>
+      <a href="https://www.youtube.com/@navetapp">All videos <span aria-hidden="true">↗</span></a>
     </div>
-    <a href="https://github.com/awesomestvi/navet/issues/new?template=feature_request.yml">Suggest a video <span aria-hidden="true">↗</span></a>
+    <p class="navet-walkthrough-intro">Start with 01, then watch in order.</p>
+    <div class="navet-walkthrough-grid">
+      {videos.map((item) => (
+        <a class="navet-walkthrough-card" href={item.href}>
+          <div class="navet-walkthrough-media">
+            <img src={`https://i.ytimg.com/vi/${item.videoId}/hqdefault.jpg`} alt="" width="480" height="360" loading="lazy" />
+            <span class="navet-walkthrough-play" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+            </span>
+            <span class="navet-walkthrough-duration">{item.duration}</span>
+          </div>
+          <div class="navet-walkthrough-copy">
+            <small class="navet-walkthrough-lesson">{`${String(item.lesson).padStart(2, "0")} · ${item.topic}${item.lesson === 1 ? " · Start here" : ""}`}</small>
+            <h3>{item.title}</h3>
+            <p>{item.description}</p>
+            <span class="navet-walkthrough-action">Watch tutorial <span aria-hidden="true">↗</span></span>
+          </div>
+        </a>
+      ))}
+    </div>
+    <div class="navet-planned-videos">
+      <h3 id="planned-videos-title">Planned walkthroughs</h3>
+      <p>Continue with 03–12 as they become available. These tutorials are planned; publication dates have not been set.</p>
+      <ul class="navet-planned-video-list" aria-labelledby="planned-videos-title">
+        {plannedVideos.map((item) => (
+          <li>
+            <div><small>{String(item.lesson).padStart(2, "0")} · {item.topic}</small><h4>{item.title}</h4></div>
+            <span class="navet-video-status">Planned</span>
+          </li>
+        ))}
+      </ul>
+    </div>
   </section>
 </div>

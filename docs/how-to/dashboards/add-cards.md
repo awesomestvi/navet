@@ -9,6 +9,9 @@ already present in the target area where duplicates would not be useful.
 
 ![The Add Card phone cover sheet with All cards, Custom card, search, filters, and available entities.](/docs/how-to/dashboards/add-card-library.webp)
 
+Watch the [Add Card demonstration on YouTube](https://youtu.be/8xis2yjmul8?t=32), or follow the
+[full dashboard tutorial](/guide/dashboards/customize-home/#watch-the-dashboard-tutorial).
+
 ## Open Add Card
 
 1. Open the target dashboard and room.

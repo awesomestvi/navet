@@ -7,6 +7,12 @@ editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/dashboards/i
 Navet can keep several focused Home dashboards. A wall display can open one dashboard while a
 phone or browser opens another.
 
+## Watch a dashboard walkthrough
+
+[Watch Add Cards and Arrange Home](/guide/dashboards/customize-home/#watch-the-dashboard-tutorial)
+to build on the included Home dashboard, arrange sections, and check the phone layout. Creating
+additional dashboards is optional.
+
 ## Create and edit
 
 - [Create a second dashboard](/guide/dashboards/create-second-dashboard/)

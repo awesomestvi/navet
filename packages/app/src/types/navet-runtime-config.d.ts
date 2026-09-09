@@ -1,4 +1,5 @@
 interface NavetRuntimeConfig {
+  runtime?: 'ha-ingress';
   hassUrl?: string;
   dashboardConfigUrl?: string;
   proxyBaseUrl?: string;

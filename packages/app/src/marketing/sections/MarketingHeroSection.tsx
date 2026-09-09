@@ -11,6 +11,7 @@ import { Text } from '@navet/app/components/primitives/text';
 import { cn } from '@navet/app/components/ui/utils';
 import { MarketingPillGroup } from '@navet/app/marketing/components/MarketingEditorial';
 import { MarketingResponsiveImage } from '@navet/app/marketing/components/MarketingResponsiveImage';
+import { MarketingTeaserButton } from '@navet/app/marketing/components/MarketingTeaserButton';
 import { MARKETING_HERO_CONTENT } from '@navet/app/marketing/data/marketingContent';
 import { AnimatedGradientText } from '@website/components/effects/animated-gradient-text';
 import { ArrowRight, ChevronDown, Hand } from 'lucide-react';
@@ -159,6 +160,7 @@ export function MarketingHeroSection() {
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </span>
               </Button>
+              <MarketingTeaserButton />
             </div>
             <MarketingPillGroup
               items={MARKETING_HERO_CONTENT.pills}
