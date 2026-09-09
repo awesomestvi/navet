@@ -51,7 +51,7 @@ if (unexpectedThirdPartyScriptSources.length > 0) {
 }
 
 for (const requiredSeoMarkup of [
-  '<title>Smart Home Dashboard for Home Assistant &amp; Homey | Navet</title>',
+  '<title>Provider-neutral Smart Home Dashboard | Navet</title>',
   '<link rel="canonical" href="https://navet.app/"',
   'https://navet.app/navet-social-card.jpg',
   'application/ld+json',
