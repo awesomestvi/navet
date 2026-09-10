@@ -42,4 +42,9 @@ export const homeAssistantPaths = {
   addonDockerfile: resolve(repoRoot, 'platform/home-assistant/addons/navet/Dockerfile'),
   hacsReadmeTemplate: resolve(repoRoot, 'platform/home-assistant/repo-templates/hacs/README.md'),
   hacsMetadataTemplate: resolve(repoRoot, 'platform/home-assistant/repo-templates/hacs/hacs.json'),
+  hacsLicenseTemplate: resolve(repoRoot, 'platform/home-assistant/repo-templates/hacs/LICENSE'),
+  hacsValidationWorkflowTemplate: resolve(
+    repoRoot,
+    'platform/home-assistant/repo-templates/hacs/.github/workflows/validate.yml'
+  ),
 };

@@ -27,13 +27,16 @@ export type NavigationDestination =
   | { kind: 'custom_sidebar'; actionId: string };
 
 const HOME_ASSISTANT_INGRESS_PREFIX = '/api/hassio_ingress/';
+const HOME_ASSISTANT_PANEL_BASE_PATH = '/navet/';
 
-// Read the <base href> injected by nginx for HA Ingress support.
-// Returns '/' when running standalone (no base tag or base href='/').
+// Read the <base href> injected by nginx for HA Ingress support. HA's custom-panel iframe has no
+// useful base tag, so keep its client-side routes below the registered /navet panel path.
 const getBasePath = (): string => {
   if (typeof document === 'undefined') return '/';
   const href = document.querySelector('base')?.getAttribute('href');
-  if (!href || href === '/') return '/';
+  if (!href || href === '/') {
+    return window.__NAVET_PANEL__ === true ? HOME_ASSISTANT_PANEL_BASE_PATH : '/';
+  }
 
   try {
     const url = new URL(href, window.location.origin);

@@ -5,6 +5,7 @@ import {
   pathToDashboardId,
   pathToDestination,
   pathToSection,
+  sectionToPath,
 } from '../sections';
 
 function installBase(href: string) {
@@ -16,6 +17,7 @@ function installBase(href: string) {
 
 afterEach(() => {
   document.querySelector('base')?.remove();
+  window.__NAVET_PANEL__ = undefined;
 });
 
 describe('pathToSection', () => {
@@ -57,6 +59,22 @@ describe('pathToSection', () => {
       actionId: 'movie-status',
     });
   });
+
+  it('keeps navigation within the registered Home Assistant panel path', () => {
+    window.__NAVET_PANEL__ = true;
+
+    expect(sectionToPath('home')).toBe('/navet/');
+    expect(sectionToPath('settings')).toBe('/navet/settings');
+    expect(customSidebarActionToPath('movie-status')).toBe('/navet/embedded/movie-status');
+    expect(pathToDestination('/navet/settings')).toEqual({
+      kind: 'section',
+      section: 'settings',
+    });
+    expect(pathToDestination('/navet/embedded/movie-status')).toEqual({
+      kind: 'custom_sidebar',
+      actionId: 'movie-status',
+    });
+  });
 });
 
 describe('dashboard paths', () => {
@@ -79,6 +97,13 @@ describe('dashboard paths', () => {
 
   it('recognizes a named dashboard through Home Assistant Ingress', () => {
     expect(pathToDashboardId('/api/hassio_ingress/navet_dev/dashboard/sonoff')).toBe('sonoff');
+  });
+
+  it('keeps named dashboards within the registered Home Assistant panel path', () => {
+    window.__NAVET_PANEL__ = true;
+
+    expect(dashboardToPath('upstairs')).toBe('/navet/dashboard/upstairs');
+    expect(pathToDashboardId('/navet/dashboard/upstairs')).toBe('upstairs');
   });
 
   it('rejects nested paths that only happen to contain a dashboard segment', () => {

@@ -130,6 +130,34 @@ function ensureSerializedProfileRuntime() {
     if (!/^ingress_port:\s+8099$/m.test(source)) {
       throw new Error(`${file} must keep the dedicated Ingress listener on port 8099`);
     }
+    for (const obsoleteOption of [
+      'dashboard_config_url',
+      'homey_client_id',
+      'homey_client_secret',
+      'homey_redirect_uri',
+      'hass_url',
+      'token',
+    ]) {
+      if (new RegExp(`^\\s+${obsoleteOption}:`, 'm').test(source)) {
+        throw new Error(`${file} must not expose obsolete option ${obsoleteOption}`);
+      }
+    }
+    if (!/^\s+allow_insecure_provider_tls:\s+bool$/m.test(source)) {
+      throw new Error(`${file} must retain the advanced provider TLS option`);
+    }
+
+    const translations = readFileSync(
+      file.replace(/config\.yaml$/, 'translations/en.yaml'),
+      'utf8'
+    );
+    if (
+      !/^configuration:\s*$/m.test(translations) ||
+      !/^\s+allow_insecure_provider_tls:\s*$/m.test(translations) ||
+      !/^network:\s*$/m.test(translations) ||
+      !/^\s+8080\/TCP:/m.test(translations)
+    ) {
+      throw new Error(`${file} must provide English option and network translations`);
+    }
   }
 
   const njsHandlerFiles = [
@@ -952,20 +980,12 @@ function startNavetContainer(containerName, networkName, volumeName, imageTag) {
 
 function seedHomeAssistantAddonOptions(imageTag, volumeName) {
   const options = JSON.stringify({
-    dashboard_config_url: '',
-    homey_client_id: '',
-    homey_client_secret: '',
-    homey_redirect_uri: '',
     allow_insecure_provider_tls: false,
-    hass_url: '',
   });
   const bashioShim = `bashio::config() {
   case "$1" in
     allow_insecure_provider_tls)
       printf '%s\\n' 'false'
-      ;;
-    dashboard_config_url|hass_url|homey_client_id|homey_client_secret|homey_redirect_uri)
-      printf '%s\\n' ''
       ;;
     *)
       return 1

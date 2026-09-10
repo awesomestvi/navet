@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.16.1
+
+## Improvements and bug fixes
+
+- Added optional direct access to the Home Assistant add-on while preserving its authenticated Ingress route.
+- Simplified add-on setup by removing obsolete provider fields, clarifying options, and replacing technical introduction copy.
+
 ## 0.16.0
 
 ## New features

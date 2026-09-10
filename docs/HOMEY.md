@@ -75,9 +75,8 @@ such as when Navet sits behind a reverse proxy or the public callback URL differ
 origin users open. Navet also supports a custom callback path if you register a different exact URL
 with Athom, such as `https://navet.example.com/callback`.
 
-For the Home Assistant App, set the corresponding `homey_client_id`, `homey_client_secret`, and
-optional `homey_redirect_uri` App options, restart the App, then connect Homey from
-**Settings -> System** inside Navet.
+Homey connections are not configured through the Home Assistant App. Use the standalone Docker
+deployment when you need Navet to connect to Homey.
 
 ### 3. Start Navet
 

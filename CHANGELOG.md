@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.16.1 - 2026-09-10
+
+## Improvements and bug fixes
+
+- Added optional direct access to the Home Assistant add-on while preserving its authenticated Ingress route.
+- Fixed the HACS sidebar panel flickering instead of opening Navet.
+- Simplified Home Assistant add-on setup by removing obsolete provider fields, clarifying options, and replacing technical introduction copy.
+
 ## 0.16.0 - 2026-09-09
 
 ## New features

@@ -5,6 +5,7 @@ import { startNavigationStoreSync, useNavigationStore } from '../navigation-stor
 
 describe('useNavigationStore', () => {
   beforeEach(async () => {
+    window.__NAVET_PANEL__ = undefined;
     await resetAppStores();
   });
 
@@ -16,6 +17,18 @@ describe('useNavigationStore', () => {
     expect(pushStateSpy).toHaveBeenCalled();
     expect(useNavigationStore.getState().activeSection).toBe('media');
     expect(window.scrollTo).toHaveBeenCalledWith(0, 0);
+  });
+
+  it('keeps emitted navigation inside the Home Assistant panel route', () => {
+    window.__NAVET_PANEL__ = true;
+    const locationChangedListener = vi.fn();
+    window.addEventListener('location-changed', locationChangedListener);
+
+    useNavigationStore.getState().setActiveSection('settings');
+
+    expect(window.location.pathname).toBe('/navet/settings');
+    expect(locationChangedListener).toHaveBeenCalledOnce();
+    window.removeEventListener('location-changed', locationChangedListener);
   });
 
   it('updates the active custom sidebar action and pushes browser history', () => {

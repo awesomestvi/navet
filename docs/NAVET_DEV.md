@@ -49,12 +49,10 @@ This is the recommended development installation for Home Assistant OS users.
 The App runs through Home Assistant Ingress and reuses the authenticated parent Home Assistant
 session. It does not need a Home Assistant URL or long-lived access token in normal Ingress use.
 
-The App is Ingress-only so its trusted Home Assistant user headers are never exposed on a
-directly reachable port. Use the standalone Docker app when testing the direct-access OAuth flow.
-
-To test Homey as an additional provider, set the App's `homey_client_id`,
-`homey_client_secret`, and optional `homey_redirect_uri` options, restart it, then connect Homey in
-**Settings -> System**. openHAB can be added there with a container-reachable URL and credentials.
+The App uses Ingress by default. To test direct access, assign an available host port to the
+optional direct Navet web interface in **Network**, restart the App, and complete the separate
+Home Assistant sign-in. openHAB can be added in **Settings -> System** with a
+container-reachable URL and credentials.
 
 ### Update
 

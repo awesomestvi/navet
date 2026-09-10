@@ -369,6 +369,35 @@ jobs:
           git tag -fa "${GITHUB_REF_NAME}" -m "Release ${GITHUB_REF_NAME}"
           git push origin "refs/tags/${GITHUB_REF_NAME}" --force
 
+      - name: Create matching HACS GitHub release
+        if: steps.hacs_preflight.outputs.enabled == 'true'
+        env:
+          GH_TOKEN: ${{ steps.hacs_app_token.outputs.token }}
+          PRERELEASE: ${{ needs.release-context.outputs.prerelease }}
+        run: |
+          set -euo pipefail
+
+          if gh release view "${GITHUB_REF_NAME}" --repo "${HACS_REPOSITORY}" >/dev/null 2>&1; then
+            echo "HACS release ${GITHUB_REF_NAME} already exists."
+            exit 0
+          fi
+
+          NOTES_FILE="${RUNNER_TEMP}/navet-hacs-release-notes.md"
+          node scripts/extract-release-notes.mjs "${GITHUB_REF_NAME}" > "${NOTES_FILE}"
+
+          args=(
+            release create "${GITHUB_REF_NAME}"
+            --repo "${HACS_REPOSITORY}"
+            --verify-tag
+            --title "${GITHUB_REF_NAME}"
+            --notes-file "${NOTES_FILE}"
+          )
+          if [[ "${PRERELEASE}" == "true" ]]; then
+            args+=(--prerelease)
+          fi
+
+          gh "${args[@]}"
+
   github-release:
     name: Create GitHub release
     runs-on: ubuntu-latest

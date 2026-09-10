@@ -63,6 +63,12 @@ await assembleHomeAssistantIntegration({
 });
 await cp(homeAssistantPaths.hacsMetadataTemplate, resolve(exportRoot, 'hacs.json'));
 await cp(homeAssistantPaths.hacsReadmeTemplate, resolve(exportRoot, 'README.md'));
+await cp(homeAssistantPaths.hacsLicenseTemplate, resolve(exportRoot, 'LICENSE'));
+await mkdir(resolve(exportRoot, '.github/workflows'), { recursive: true });
+await cp(
+  homeAssistantPaths.hacsValidationWorkflowTemplate,
+  resolve(exportRoot, '.github/workflows/validate.yml')
+);
 await cp(changelogPath, resolve(exportRoot, 'CHANGELOG.md'));
 
 const targetManifestPath = resolve(exportRoot, 'custom_components/navet/manifest.json');

@@ -208,6 +208,16 @@ export function assertHacsExport(exportRoot) {
     throw new Error(`HACS export is missing hacs.json: ${hacsFile}`);
   }
 
+  const licenseFile = resolve(exportRoot, 'LICENSE');
+  if (!fs.existsSync(licenseFile)) {
+    throw new Error(`HACS export is missing its license: ${licenseFile}`);
+  }
+
+  const validationWorkflow = resolve(exportRoot, '.github/workflows/validate.yml');
+  if (!fs.existsSync(validationWorkflow)) {
+    throw new Error(`HACS export is missing its validation workflow: ${validationWorkflow}`);
+  }
+
   const requiredPanelFiles = [
     'custom_components/navet/frontend/.vite/manifest.json',
     'custom_components/navet/frontend/navet-panel.js',

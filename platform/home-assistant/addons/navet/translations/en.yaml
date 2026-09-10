@@ -1,0 +1,6 @@
+configuration:
+  allow_insecure_provider_tls:
+    name: Allow self-signed provider certificates
+    description: Disable certificate verification only for a trusted local provider, such as an openHAB server with a self-signed certificate.
+network:
+  8080/TCP: Optional direct Navet interface with a separate Home Assistant sign-in

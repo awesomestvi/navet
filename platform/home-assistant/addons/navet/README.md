@@ -1,10 +1,10 @@
 # Navet
 
-RSS cards use authenticated feed retrieval with verified HTTPS and public destination checks.
-Hostnames resolving to private network addresses are rejected.
+Navet gives your household a calm, room-first dashboard for everyday control across wall panels,
+tablets, desktops, and phones.
 
-Navet is installed and ready to use through Home Assistant. It reuses your Home Assistant session,
-so there is no separate Home Assistant URL or access token to enter.
+It runs locally alongside Home Assistant and uses your existing Home Assistant session. There is
+no separate Home Assistant URL or access token to enter.
 
 ## Open Your Dashboard
 
@@ -13,11 +13,9 @@ so there is no separate Home Assistant URL or access token to enter.
 3. Enable **Show in sidebar** for quicker access next time.
 4. Enable **Start on boot** if you want Navet available whenever Home Assistant starts.
 
-Your rooms and devices should appear automatically. From there, arrange the dashboard around the
-controls, status, and routines you use most.
-
-Home Assistant saves Navet's data automatically. Normal add-on restarts and updates keep your
-dashboard. Navet also uses your current Home Assistant sign-in.
+Your rooms and devices should appear automatically. Arrange the dashboard around the controls,
+status, and routines your household uses most. Navet keeps your dashboard data through normal
+add-on restarts and updates.
 
 ## If Navet Does Not Open
 
