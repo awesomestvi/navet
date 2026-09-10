@@ -34,7 +34,7 @@ use the **Home Assistant App**.
 4. Paste this address:
 
    ```text
-   https://github.com/awesomestvi/navet-hacs
+   https://github.com/awesomestvi/navet-home-assistant
    ```
 
 5. Choose **Integration** as the category, then add the repository.

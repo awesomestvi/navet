@@ -46,7 +46,7 @@ add-on release, even when it mostly mirrors the main app changelog.
 
 Home Assistant packaging uses two public repository surfaces:
 
-- `awesomestvi/navet-hacs` contains only HACS integration files at its repository root
+- `awesomestvi/navet-home-assistant` contains only HACS integration files at its repository root
 - `awesomestvi/navet` remains the Home Assistant add-on repository root and must keep
   `repository.yaml` at the repo root
 
@@ -179,8 +179,8 @@ Behavior:
 
 - validates release-managed files and changelog alignment
 - requires Tier 1 validation
-- syncs the release HACS payload into `awesomestvi/navet-hacs/main`
-- creates or refreshes the matching `awesomestvi/navet-hacs` Git tag for the release
+- syncs the release HACS payload into `awesomestvi/navet-home-assistant/main`
+- creates or refreshes the matching `awesomestvi/navet-home-assistant` Git tag for the release
 - pins Node 22 anywhere the workflow runs repo JavaScript
 - builds the custom panel assets in workflow and attaches a panel archive
 - publishes standalone app release images
@@ -223,8 +223,8 @@ not part of tagged release promotion in phase 1.
 8. Create and push the release tag for `awesomestvi/navet`.
 9. Let the tagged release workflow build the panel bundle, package it, and attach
     `navet-panel-<tag>.tar.gz` to the GitHub release.
-10. Verify the published standalone/add-on artifacts, the matching `navet-hacs` branch/tag sync, and
-    the GitHub release page.
+10. Verify the published standalone/add-on artifacts, the matching `navet-home-assistant`
+    branch/tag sync, and the GitHub release page.
 
 Optional immutable Navet Dev publish:
 
@@ -247,7 +247,8 @@ Optional immutable Navet Dev publish:
 - checking Linear `Ready for Release` scope and deciding whether the commit-history fallback is needed
 - drafting release notes
 - keeping the HA panel source buildable when the automated export/release workflows rebuild it
-- monitoring the automatic `navet-hacs` sync from `main` and tagged releases, and stepping in if that repo rejects a push
+- monitoring the automatic `navet-home-assistant` sync from `main` and tagged releases, and
+  stepping in if that repo rejects a push
 - updating `platform/home-assistant/addons/navet/CHANGELOG.md` for every add-on release
 - final runtime sanity checks for Home Assistant panel and add-on installs
 - choosing when to publish an immutable branch build and when to promote `main` to the shared Navet

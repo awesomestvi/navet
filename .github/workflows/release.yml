@@ -16,7 +16,7 @@ concurrency:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository_owner }}/navet
-  HACS_REPOSITORY: awesomestvi/navet-hacs
+  HACS_REPOSITORY: awesomestvi/navet-home-assistant
 
 jobs:
   release-context:
@@ -296,7 +296,7 @@ jobs:
           app-id: ${{ secrets.NAVET_HACS_APP_ID }}
           private-key: ${{ secrets.NAVET_HACS_APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
-          repositories: navet-hacs
+          repositories: navet-home-assistant
 
       - name: Checkout HACS repository
         if: steps.hacs_preflight.outputs.enabled == 'true'

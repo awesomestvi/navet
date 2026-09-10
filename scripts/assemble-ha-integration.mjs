@@ -27,6 +27,8 @@ export async function assembleHomeAssistantIntegration({
     filter: (sourcePath) => !isInsideFrontend(sourceRoot, sourcePath),
   });
   await cp(panelDist, resolve(destination, 'frontend'), { recursive: true });
+  await rm(resolve(destination, 'frontend/.vite'), { recursive: true, force: true });
+  await rm(resolve(destination, 'frontend/wallpapers/generated/manifest.json'), { force: true });
 
   return {
     destination,
