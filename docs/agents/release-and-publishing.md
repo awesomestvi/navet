@@ -77,7 +77,7 @@ Important note:
   refreshes Docker `edge` and `dev`, and advances the supervised `Navet Dev` add-on surface
 - install a non-main publish by its exact immutable Docker version; do not expect the moving aliases
   or Add-on Store to select it
-- dev publishes do not sync `awesomestvi/navet-hacs` and do not create HACS updates
+- dev publishes do not sync `awesomestvi/navet-home-assistant` and do not create HACS updates
 
 ## Release Notes
 
@@ -141,8 +141,8 @@ Fallback source:
 - Tier 2 remains blocking for main CI
 - Tier 3 remains visible but non-release-blocking
 - tagged releases build the custom-panel artifact in workflow
-- tagged releases sync the exported HACS payload into `awesomestvi/navet-hacs/main`
-- tagged releases also create or refresh the matching Git tag in `awesomestvi/navet-hacs`
+- tagged releases sync the exported HACS payload into `awesomestvi/navet-home-assistant/main`
+- tagged releases also create or refresh the matching Git tag in `awesomestvi/navet-home-assistant`
 - local `pnpm sync:hacs` is still useful for previewing export output before release work
 
 ## Publishing Rules

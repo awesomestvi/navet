@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import process from 'node:process';
-import { resolve } from 'node:path';
+import { relative, resolve } from 'node:path';
 import { homeAssistantPaths, repoRoot } from './repo-paths.mjs';
 
 export const root = repoRoot;
@@ -167,6 +167,17 @@ export function fail(message) {
   process.exit(1);
 }
 
+function findFilesNamed(directory, filename) {
+  return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const entryPath = resolve(directory, entry.name);
+    if (entry.isDirectory()) {
+      return findFilesNamed(entryPath, filename);
+    }
+
+    return entry.isFile() && entry.name === filename ? [entryPath] : [];
+  });
+}
+
 export function assertMainRepositoryMetadata() {
   if (!fs.existsSync(repositoryMetadataPath)) {
     throw new Error(`Required root repository.yaml is missing: ${repositoryMetadataPath}.`);
@@ -219,16 +230,23 @@ export function assertHacsExport(exportRoot) {
   }
 
   const requiredPanelFiles = [
-    'custom_components/navet/frontend/.vite/manifest.json',
     'custom_components/navet/frontend/navet-panel.js',
     'custom_components/navet/frontend/navet-ha-shell.js',
     'custom_components/navet/frontend/logo.svg',
-    'custom_components/navet/frontend/wallpapers/generated/manifest.json',
   ];
   for (const entry of requiredPanelFiles) {
     if (!fs.existsSync(resolve(exportRoot, entry))) {
       throw new Error(`HACS export is missing generated panel asset: ${resolve(exportRoot, entry)}`);
     }
+  }
+
+  const manifestFiles = findFilesNamed(exportRoot, 'manifest.json').map((entry) =>
+    relative(exportRoot, entry)
+  );
+  if (manifestFiles.length !== 1 || manifestFiles[0] !== 'custom_components/navet/manifest.json') {
+    throw new Error(
+      `HACS export must contain only the integration manifest.json, received: ${manifestFiles.join(', ')}`
+    );
   }
 
   const forbiddenPaths = ['repository.yaml', 'platform'];

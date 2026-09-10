@@ -175,12 +175,13 @@ exact branch build on a household dashboard.
 ## HACS Custom Panel
 
 HACS installs the stable Navet custom-panel release from
-`https://github.com/awesomestvi/navet-hacs`. The Navet Dev publish workflow does not update that
-repository, so there is no supported `Navet Dev` HACS channel.
+`https://github.com/awesomestvi/navet-home-assistant`. The Navet Dev publish workflow does not
+update that repository, so there is no supported `Navet Dev` HACS channel.
 
 For the supported stable installation:
 
-1. Add `https://github.com/awesomestvi/navet-hacs` to HACS as an `Integration` custom repository.
+1. Add `https://github.com/awesomestvi/navet-home-assistant` to HACS as an `Integration` custom
+   repository.
 2. Install `Navet`.
 3. Restart Home Assistant.
 4. Add `Navet` from `Settings -> Devices & services`.
@@ -226,8 +227,8 @@ this manual build with the latest stable release.
 
 - Home Assistant App: stop `Navet Dev`, install or start the stable `Navet` App, and verify its configuration.
 - Docker: change `ghcr.io/awesomestvi/navet:dev` to `ghcr.io/awesomestvi/navet:latest`.
-- Custom panel: install or redownload Navet from the `awesomestvi/navet-hacs` repository and restart
-  Home Assistant.
+- Custom panel: install or redownload Navet from the `awesomestvi/navet-home-assistant` repository
+  and restart Home Assistant.
 
 Development and stable installations may not share the same storage location. Export important
 dashboard configuration before switching rather than assuming it will appear in the other runtime.

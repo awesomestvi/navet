@@ -25,12 +25,17 @@ describe('Home Assistant integration packaging', () => {
     const destination = join(root, 'export', 'custom_components', 'navet');
 
     await mkdir(join(sourceRoot, 'frontend'), { recursive: true });
+    await mkdir(join(panelDist, '.vite'), { recursive: true });
     await mkdir(join(panelDist, 'assets'), { recursive: true });
+    await mkdir(join(panelDist, 'wallpapers', 'generated'), { recursive: true });
     await writeFile(join(sourceRoot, '__init__.py'), '# integration source\n');
     await writeFile(join(sourceRoot, 'frontend', 'navet-panel.js'), 'stale panel\n');
     await writeFile(join(panelDist, 'navet-panel.js'), 'fresh panel\n');
     await writeFile(join(panelDist, 'navet-ha-shell.js'), 'fresh shell\n');
     await writeFile(join(panelDist, 'assets', 'app.js'), 'fresh chunk\n');
+    await writeFile(join(panelDist, '.vite', 'manifest.json'), '{}\n');
+    await writeFile(join(panelDist, 'wallpapers', 'generated', 'manifest.json'), '{}\n');
+    await writeFile(join(panelDist, 'wallpapers', 'generated', 'aurora.webp'), 'wallpaper\n');
 
     await assembleHomeAssistantIntegration({ sourceRoot, panelDist, destination });
 
@@ -46,6 +51,15 @@ describe('Home Assistant integration packaging', () => {
     await expect(readFile(join(destination, 'frontend', 'assets', 'app.js'), 'utf8')).resolves.toBe(
       'fresh chunk\n'
     );
+    await expect(
+      readFile(join(destination, 'frontend', '.vite', 'manifest.json'), 'utf8')
+    ).rejects.toMatchObject({ code: 'ENOENT' });
+    await expect(
+      readFile(join(destination, 'frontend', 'wallpapers', 'generated', 'manifest.json'), 'utf8')
+    ).rejects.toMatchObject({ code: 'ENOENT' });
+    await expect(
+      readFile(join(destination, 'frontend', 'wallpapers', 'generated', 'aurora.webp'), 'utf8')
+    ).resolves.toBe('wallpaper\n');
   });
 
   it('keeps tagged panel artifacts build-owned instead of checkout-owned', async () => {

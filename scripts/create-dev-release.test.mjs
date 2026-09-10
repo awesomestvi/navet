@@ -35,7 +35,7 @@ function createReleaseFixture() {
   const emptyHooksDirectory = join(root, 'empty-hooks');
   const globalGitConfig = join(root, 'global.gitconfig');
   const environment = {
-    ...process.env,
+    ...Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_'))),
     GIT_AUTHOR_EMAIL: 'navet-release-test@example.com',
     GIT_AUTHOR_NAME: 'Navet Release Test',
     GIT_COMMITTER_EMAIL: 'navet-release-test@example.com',
