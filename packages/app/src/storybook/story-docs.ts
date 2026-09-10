@@ -1297,7 +1297,7 @@ const ADDITIONAL_STORY_DOCS: Record<string, string> = {
       'Attention-first ordering across overdue, due, remaining, and completed chores for today.',
       'Responsive tablet, phone, wide-screen, empty, approval, completion, and recovery states.',
       'Independent room-nav-style destinations for Today, Chores, Missions, Rewards, Progress, Settings, and Routines.',
-      'Missions and rewards stay out of Today until See rewards is opened from the House pulse banner.',
+      'Missions and rewards stay out of Today until See rewards is opened from the Chores today banner.',
     ],
     [
       'Use this story when the Household information hierarchy, navigation, shared-screen behavior, or management views change.',
@@ -1357,7 +1357,7 @@ const ADDITIONAL_STORY_DOCS: Record<string, string> = {
     ]
   ),
   'Cards/Household/Support': doc(
-    'Supporting progress cards for the one-row House pulse banner, missions, and optional reward goals.',
+    'Supporting progress cards for the one-row Chores today banner, missions, and optional reward goals.',
     [
       'Full-height metric cells for earned points, streak, completion, and the See rewards disclosure.',
       'Mission and reward progress that remains secondary to operational work and hidden from Today until requested.',
@@ -2513,6 +2513,21 @@ const ADDITIONAL_STORY_DOCS: Record<string, string> = {
     [
       'Confirm labels and states look like real Navet data.',
       'Confirm the preview remains readable without pretending to be a fully interactive dashboard.',
+    ]
+  ),
+  'Pages/Marketing/HouseholdChores': doc(
+    'Website section presenting Household chores as a Navet-owned workspace alongside every supported provider.',
+    [
+      'A hands-on sample household using the product summary bar, chore, mission, and reward cards.',
+      'The runtime boundary between Navet-owned chore data and connected smart-home platforms.',
+    ],
+    [
+      'Use this story when changing how Household chores are introduced on the public website.',
+      'Explain that chores, RSS feeds, photos, and notes are built-in Navet features.',
+    ],
+    [
+      'Confirm card internals retain their product layout and completion updates summary, mission, and reward totals together.',
+      'Confirm the copy does not imply provider-owned chore storage or unsupported runtime parity.',
     ]
   ),
   'Pages/Marketing/Privacy': doc(

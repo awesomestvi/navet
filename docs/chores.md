@@ -8,7 +8,7 @@ Household chores keeps recurring home work in the same calm, shared interface as
 Navet. The **Today** view answers four questions first: what needs doing, who should do it, when it
 is due, and whether it is finished.
 
-![Household Today with the one-row House pulse, overdue and upcoming chore cards, assignees, time, points, and the See rewards action.](/docs/how-to/everyday-control/household-today.webp)
+![Household Today with the one-row Chores today, overdue and upcoming chore cards, assignees, time, points, and the See rewards action.](/docs/how-to/everyday-control/household-today.webp)
 
 Chores belong to the Navet installation. A connected provider does not become the source of truth
 for assignments, schedules, or history. Provider adapters may optionally project a compact summary
@@ -23,7 +23,7 @@ storage authority; this is a runtime capability limit, not a provider-owned chor
 
 ## The Household workspace
 
-- **Today** puts overdue and due work before later chores. The one-row **House pulse** shows earned
+- **Today** puts overdue and due work before later chores. The one-row **Chores today** shows earned
   points, streak, completion, and a **See rewards** action without another progress bar.
 - **Chores** is the searchable library for creating, editing, pausing, duplicating, and archiving
   recurring work.

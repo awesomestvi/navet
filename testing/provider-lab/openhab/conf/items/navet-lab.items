@@ -1,0 +1,32 @@
+Group NavetHome "Navet test home" ["Location"]
+Group NavetLivingRoom "Living room" (NavetHome) ["LivingRoom"]
+Group NavetKitchen "Kitchen" (NavetHome) ["Kitchen"]
+Group NavetBedroom "Bedroom" (NavetHome) ["Bedroom"]
+Group NavetHallway "Hallway" (NavetHome) ["Hallway"]
+Group NavetGarden "Garden" (NavetHome) ["Garden"]
+
+Group NavetLivingCeiling "Living room ceiling" (NavetLivingRoom) ["Lightbulb"]
+Switch NavetLivingCeiling_Power "Living room ceiling" <light> (NavetLivingCeiling) ["Control", "Light"]
+Dimmer NavetLivingCeiling_Brightness "Living room ceiling brightness" <light> (NavetLivingCeiling) ["Control", "Light"]
+Color NavetLivingAccent_Color "Living room accent" <light> (NavetLivingRoom) ["Control", "Light"]
+
+Switch NavetKitchenCoffee_Power "Coffee maker" <switch> (NavetKitchen) ["Control"]
+Number:Power NavetKitchenCoffee_PowerUsage "Coffee maker power [%.0f W]" <energy> (NavetKitchen) ["Measurement", "Power"]
+Number:Energy NavetKitchenCoffee_Energy "Coffee maker energy [%.2f kWh]" <energy> (NavetKitchen) ["Measurement", "Energy"]
+
+Number:Temperature NavetLiving_Temperature "Living room temperature [%.1f °C]" <temperature> (NavetLivingRoom) ["Measurement", "Temperature"]
+Number:Dimensionless NavetLiving_Humidity "Living room humidity [%.0f %%]" <humidity> (NavetLivingRoom) ["Measurement", "Humidity"]
+Number:Dimensionless NavetLiving_CO2 "Living room CO₂ [%.0f ppm]" <carbondioxide> (NavetLivingRoom) ["Measurement", "CO2"]
+Number:Illuminance NavetGarden_Illuminance "Garden illuminance [%.0f lx]" <sun> (NavetGarden) ["Measurement", "Light"]
+
+Contact NavetHallway_FrontDoor "Front door contact" <door> (NavetHallway) ["OpenState"]
+Switch NavetHallway_FrontDoorLock "Front door lock" <lock> (NavetHallway) ["Lock"]
+Switch NavetHallway_Motion "Hallway motion" <motion> (NavetHallway) ["Status"]
+Switch NavetKitchen_Leak "Kitchen leak" <water> (NavetKitchen) ["Status"]
+
+Rollershutter NavetBedroom_Blind "Bedroom blind [%d %%]" <rollershutter> (NavetBedroom) ["Control"]
+Dimmer NavetBedroom_FanSpeed "Bedroom fan speed [%d %%]" <fan> (NavetBedroom) ["Control"]
+
+String NavetMedia_State "Speaker state [%s]" <soundvolume> (NavetLivingRoom) ["Status"]
+Dimmer NavetMedia_Volume "Speaker volume [%d %%]" <soundvolume> (NavetLivingRoom) ["Control"]
+DateTime NavetLastActivity "Last activity [%1$tF %1$tR]" <time> (NavetHallway) ["Status"]

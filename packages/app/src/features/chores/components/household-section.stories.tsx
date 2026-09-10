@@ -304,7 +304,7 @@ export const IpadProLandscape: Story = {
     docs: {
       description: {
         story:
-          'Primary tablet and wall-display state keeps missions and rewards out of the chore flow until the household opens them from House pulse.',
+          'Primary tablet and wall-display state keeps missions and rewards out of the chore flow until the household opens them from Chores today.',
       },
     },
   },
@@ -371,7 +371,7 @@ export const IpadMiniLandscape: Story = {
     docs: {
       description: {
         story:
-          'Short landscape tablets move Add chore and assignment into House pulse, remove the redundant Today introduction, and keep the metrics in one compact row so the first actionable chore stays above the fold.',
+          'Short landscape tablets move Add chore and assignment into Chores today, remove the redundant Today introduction, and keep the metrics in one compact row so the first actionable chore stays above the fold.',
       },
     },
   },
@@ -406,7 +406,7 @@ export const IpadProPortrait: Story = {
     docs: {
       description: {
         story:
-          'Portrait tablets use the compact House pulse composition so each metric and the rewards action remains readable and touchable.',
+          'Portrait tablets use the compact Chores today composition so each metric and the rewards action remains readable and touchable.',
       },
     },
   },
@@ -560,7 +560,7 @@ export const InvalidWorkspaceMessage: Story = {
 export const HouseSettled: Story = {
   args: { mode: 'complete' },
   play: async ({ canvas }) => {
-    await canvas.findByText('The house is settled');
+    await canvas.findByText('All done for today');
     await expect(
       within(canvas.getByRole('region', { name: 'Today' })).getByText(
         'Everything due today is complete.'

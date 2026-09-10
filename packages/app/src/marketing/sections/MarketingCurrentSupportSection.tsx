@@ -148,8 +148,10 @@ export function MarketingCurrentSupportSection({ className }: { className?: stri
               />
             </summary>
             <p className={cn('mt-5 max-w-2xl text-sm leading-6', surface.textSecondary)}>
-              Home Assistant supports the full feature set. Homey and openHAB currently cover rooms,
-              lights, switches, and sensors.
+              Device controls depend on your connected platform. Home Assistant has the broadest
+              integration; Homey and openHAB currently cover rooms, lights, switches, and sensors.
+              Household chores, RSS feeds, photos, and notes are built into Navet and independent of
+              these integrations.
             </p>
             <div className="grid gap-6 pt-6 sm:gap-8 xl:grid-cols-3">
               <SupportEditorialColumn

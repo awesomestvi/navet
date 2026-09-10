@@ -38,6 +38,7 @@ export const MARKETING_URLS = {
   changelog: joinUrl(DOCS_SITE_URL, 'changelog/'),
   resources: joinUrl(DOCS_SITE_URL, 'resources/'),
   userGuide: joinUrl(DOCS_SITE_URL, 'guide/'),
+  householdChoresGuide: joinUrl(DOCS_SITE_URL, 'guide/everyday-control/household-chores/'),
   widgetGuide: joinUrl(DOCS_SITE_URL, 'guide/widgets/'),
   integrations: joinUrl(DOCS_SITE_URL, 'integrations/'),
   install: {

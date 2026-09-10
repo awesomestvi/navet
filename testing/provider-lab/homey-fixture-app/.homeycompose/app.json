@@ -1,0 +1,23 @@
+{
+  "id": "com.navet.provider-lab",
+  "sdk": 3,
+  "version": "1.0.0",
+  "compatibility": ">=12.9.0",
+  "name": {
+    "en": "Navet Provider Lab"
+  },
+  "description": {
+    "en": "Deterministic virtual devices for testing Navet's Homey provider."
+  },
+  "category": "tools",
+  "brandColor": "#F97316",
+  "platforms": ["local"],
+  "images": {
+    "small": "/assets/images/small.png",
+    "large": "/assets/images/large.png",
+    "xlarge": "/assets/images/xlarge.png"
+  },
+  "author": {
+    "name": "Navet"
+  }
+}

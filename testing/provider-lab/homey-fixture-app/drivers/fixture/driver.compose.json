@@ -1,0 +1,27 @@
+{
+  "name": {
+    "en": "Fixture devices"
+  },
+  "class": "other",
+  "capabilities": ["onoff"],
+  "platforms": ["local"],
+  "connectivity": ["lan"],
+  "images": {
+    "small": "/drivers/fixture/assets/images/small.png",
+    "large": "/drivers/fixture/assets/images/large.png",
+    "xlarge": "/drivers/fixture/assets/images/xlarge.png"
+  },
+  "pair": [
+    {
+      "id": "list_devices",
+      "template": "list_devices",
+      "navigation": {
+        "next": "add_devices"
+      }
+    },
+    {
+      "id": "add_devices",
+      "template": "add_devices"
+    }
+  ]
+}

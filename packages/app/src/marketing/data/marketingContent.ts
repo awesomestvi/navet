@@ -74,6 +74,15 @@ export const MARKETING_CURRENT_SUPPORT = {
   ],
 } as const;
 
+export const MARKETING_HOUSEHOLD_CHORES = {
+  title: 'One home. One list. Everyone knows what’s next.',
+  description:
+    'Plan recurring chores, share the work, and see what’s done. Assign people, rotate responsibilities, and keep everyday tasks together in Navet.',
+  capabilities: ['Recurring chores', 'Assignments & approvals', 'Optional points & rewards'],
+  nativeNote:
+    'Built into Navet, independent of your smart-home provider. RSS feeds, photos, and notes are built in too—no provider integration needed.',
+} as const;
+
 export const MARKETING_PRIVACY = {
   eyebrow: 'PRIVACY',
   title: 'Local by default.',

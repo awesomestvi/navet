@@ -7,7 +7,7 @@ editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/everyday-con
 Open **Household** to keep ordinary home work beside the routines that already run your smart
 home. **Today** leads with overdue and due work, then remaining work and completed chores.
 
-![The current Household Today dashboard with House pulse, needs-attention chores, remaining work, and completed chores.](/docs/how-to/everyday-control/household-today.webp)
+![The current Household Today dashboard with Chores today, needs-attention chores, remaining work, and completed chores.](/docs/how-to/everyday-control/household-today.webp)
 
 Native chores require a Navet runtime with shared chore storage. Today that storage authority is
 available in the Home Assistant add-on and in a compatible standalone installation. Other runtimes
@@ -70,9 +70,9 @@ visible as smaller cards, without a time tag, and show the points that were earn
 Completed work remains in shared activity history. Changes use revision checks, so a screen refreshes
 and retries against the newest household list when another screen saves first.
 
-## Read House pulse and rewards
+## Read Chores today and rewards
 
-House pulse keeps the daily summary in one row. When work is overdue, it leads with **Needs
+Chores today keeps the daily summary in one row. When work is overdue, it leads with **Needs
 attention**, the overdue count, remaining work, and completed chores. Otherwise it shows earned
 points, current streak, and completed chores.
 Choose **See rewards** to reveal the supporting mission and reward cards below the banner. They stay

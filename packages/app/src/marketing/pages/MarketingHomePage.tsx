@@ -36,6 +36,11 @@ const MarketingThemeShowcaseSection = lazy(async () => {
   return { default: module.MarketingThemeShowcaseSection };
 });
 
+const MarketingHouseholdChoresSection = lazy(async () => {
+  const module = await import('@navet/app/marketing/sections/MarketingHouseholdChoresSection');
+  return { default: module.MarketingHouseholdChoresSection };
+});
+
 const MarketingPrivacySection = lazy(async () => {
   const module = await import('@navet/app/marketing/sections/MarketingPrivacySection');
   return { default: module.MarketingPrivacySection };
@@ -100,6 +105,11 @@ export function MarketingHomePage() {
         }
       >
         <MarketingFeatureGridSection />
+      </MarketingDeferredSection>
+      <MarketingDeferredSection
+        fallback={<DeferredSectionFallback minHeightClassName="min-h-[340px] sm:min-h-[420px]" />}
+      >
+        <MarketingHouseholdChoresSection />
       </MarketingDeferredSection>
       <MarketingDeferredSection
         fallback={<DeferredSectionFallback minHeightClassName="min-h-[340px] sm:min-h-[420px]" />}

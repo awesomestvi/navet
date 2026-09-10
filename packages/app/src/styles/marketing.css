@@ -485,6 +485,34 @@
     gap: 32px;
   }
 
+  .marketing-household-layout {
+    display: grid;
+    align-items: center;
+    gap: 40px;
+  }
+
+  .marketing-chore-demo { width: 100%; min-width: 0; container-type: inline-size; }
+  .marketing-chore-feedback { min-height: 48px; margin-block: 16px; }
+  .marketing-chore-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .marketing-chore-card { height: 176px; min-width: 0; }
+  .marketing-chore-rewards { margin-top: 12px; animation: marketing-chore-reveal 320ms ease-out; }
+  .marketing-chore-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 16px; }
+  /* Feedback animates the wrapper only, preserving every product card's internal layout. */
+  .marketing-chore-card[data-complete="true"] { animation: marketing-chore-complete 350ms ease-out; }
+  @keyframes marketing-chore-complete { 50% { transform: translateY(-3px); } }
+  @keyframes marketing-chore-reveal { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @container (min-width: 650px) { .marketing-chore-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (prefers-reduced-motion: reduce) { .marketing-chore-card[data-complete="true"], .marketing-chore-rewards { animation: none; } }
+
+
+
+  .marketing-household-copy {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 18px;
+  }
+
   .marketing-moment-picker {
     display: flex;
     flex-wrap: wrap;
@@ -611,6 +639,7 @@
 
   @media (min-width: 1024px) {
     .marketing-playground-layout { grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); gap: 48px; }
+    .marketing-household-layout { grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr); gap: 64px; }
   }
 
   @media (max-width: 639px) {
@@ -625,6 +654,7 @@
     .marketing-moment-picker { gap: 6px; }
     .marketing-moment-picker button { padding-inline: 10px; font-size: 13px; }
     .marketing-moment-picker button svg { display: none; }
+    .marketing-household-layout { gap: 30px; }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -768,8 +798,10 @@
 
   .marketing-hero-touch-ring {
     position: absolute;
-    left: 9%;
-    top: 26.5%;
+    /* Visually aligned icon center (109, 224) in the 999 × 791 dashboard capture. */
+    left: 10.910911%;
+    top: 28.318584%;
+    translate: -50% -50%;
     width: 3.5%;
     aspect-ratio: 1;
     border: 1px solid #ffd18a;

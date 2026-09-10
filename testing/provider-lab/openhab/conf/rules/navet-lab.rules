@@ -1,0 +1,27 @@
+rule "Seed Navet provider lab"
+when
+  System started
+then
+  createTimer(now.plusSeconds(10), [ |
+    NavetLivingCeiling_Power.postUpdate(ON)
+    NavetLivingCeiling_Brightness.postUpdate(72)
+    NavetLivingAccent_Color.postUpdate("28,75,68")
+    NavetKitchenCoffee_Power.postUpdate(OFF)
+    NavetKitchenCoffee_PowerUsage.postUpdate("0 W")
+    NavetKitchenCoffee_Energy.postUpdate("12.45 kWh")
+    NavetLiving_Temperature.postUpdate("21.6 °C")
+    NavetLiving_Humidity.postUpdate("46 %")
+    NavetLiving_CO2.postUpdate("612 ppm")
+    NavetGarden_Illuminance.postUpdate("380 lx")
+    NavetHallway_FrontDoor.postUpdate(CLOSED)
+    NavetHallway_FrontDoorLock.postUpdate(ON)
+    NavetHallway_Motion.postUpdate(OFF)
+    NavetKitchen_Leak.postUpdate(OFF)
+    NavetBedroom_Blind.postUpdate(35)
+    NavetBedroom_FanSpeed.postUpdate(40)
+    NavetMedia_State.postUpdate("PAUSED")
+    NavetMedia_Volume.postUpdate(32)
+    NavetLastActivity.postUpdate(now.toString)
+    logInfo("navet-provider-lab", "Seeded Navet openHAB fixture items")
+  ])
+end

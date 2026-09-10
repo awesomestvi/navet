@@ -27,6 +27,10 @@ vi.mock('@navet/app/marketing/sections/MarketingThemeShowcaseSection', () => ({
   MarketingThemeShowcaseSection: () => <section>Theme showcase section</section>,
 }));
 
+vi.mock('@navet/app/marketing/sections/MarketingHouseholdChoresSection', () => ({
+  MarketingHouseholdChoresSection: () => <section>Household chores section</section>,
+}));
+
 vi.mock('@navet/app/marketing/sections/MarketingPrivacySection', () => ({
   MarketingPrivacySection: () => (
     <section>
@@ -73,12 +77,19 @@ describe('MarketingHomePage', () => {
       name: 'Use the demo. Then run it at home.',
     });
     const featureGrid = await screen.findByText('Feature grid section');
+    const householdChores = await screen.findByText('Household chores section');
     const privacyHeading = await screen.findByRole('heading', { name: 'Local by default.' });
 
     expect(releaseResources.compareDocumentPosition(productPreview)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING
     );
     expect(productPreview.compareDocumentPosition(featureGrid)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
+    expect(featureGrid.compareDocumentPosition(householdChores)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
+    expect(householdChores.compareDocumentPosition(privacyHeading)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING
     );
     expect(featureGrid.compareDocumentPosition(privacyHeading)).toBe(

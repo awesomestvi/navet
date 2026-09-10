@@ -1,0 +1,62 @@
+{
+  "_comment": "This file is generated. Please edit .homeycompose/app.json instead.",
+  "id": "com.navet.provider-lab",
+  "sdk": 3,
+  "version": "1.0.0",
+  "compatibility": ">=12.9.0",
+  "name": {
+    "en": "Navet Provider Lab"
+  },
+  "description": {
+    "en": "Deterministic virtual devices for testing Navet's Homey provider."
+  },
+  "category": "tools",
+  "brandColor": "#F97316",
+  "platforms": [
+    "local"
+  ],
+  "images": {
+    "small": "/assets/images/small.png",
+    "large": "/assets/images/large.png",
+    "xlarge": "/assets/images/xlarge.png"
+  },
+  "author": {
+    "name": "Navet"
+  },
+  "drivers": [
+    {
+      "name": {
+        "en": "Fixture devices"
+      },
+      "class": "other",
+      "capabilities": [
+        "onoff"
+      ],
+      "platforms": [
+        "local"
+      ],
+      "connectivity": [
+        "lan"
+      ],
+      "images": {
+        "small": "/drivers/fixture/assets/images/small.png",
+        "large": "/drivers/fixture/assets/images/large.png",
+        "xlarge": "/drivers/fixture/assets/images/xlarge.png"
+      },
+      "pair": [
+        {
+          "id": "list_devices",
+          "template": "list_devices",
+          "navigation": {
+            "next": "add_devices"
+          }
+        },
+        {
+          "id": "add_devices",
+          "template": "add_devices"
+        }
+      ],
+      "id": "fixture"
+    }
+  ]
+}

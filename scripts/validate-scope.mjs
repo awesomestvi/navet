@@ -162,6 +162,8 @@ function inferScopes(files) {
     if (
       file.startsWith('packages/provider-') ||
       file.startsWith('packages/core/') ||
+      file.startsWith('testing/provider-lab/') ||
+      file === 'scripts/install-provider-lab.mjs' ||
       file.includes('provider-contract') ||
       file.includes('provider-runtime') ||
       file.includes('integration-store') ||

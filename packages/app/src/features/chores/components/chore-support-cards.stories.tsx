@@ -44,7 +44,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Operational Household support cards. House pulse pairs identity with primary actions, then keeps metrics in a dedicated row on landscape displays and a safer wrapped grid on portrait tablets and phones; mission and reward cards stay hidden from Today until requested and use compact milestones instead of repeated progress bars.',
+          'Operational Household support cards. Chores today pairs identity with primary actions, then keeps metrics in a dedicated row on landscape displays and a safer wrapped grid on portrait tablets and phones; mission and reward cards stay hidden from Today until requested and use compact milestones instead of repeated progress bars.',
       },
     },
   },
@@ -108,7 +108,7 @@ export const PulseCurrent: Story = {
     },
   },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('heading', { name: 'House pulse' })).toBeInTheDocument();
+    await expect(canvas.getByRole('heading', { name: 'Chores today' })).toBeInTheDocument();
     await expect(canvas.getByText('20 points')).toBeInTheDocument();
     await expect(canvas.getByText('Earned')).toBeInTheDocument();
     await expect(canvas.queryByText('Overdue')).not.toBeInTheDocument();
@@ -145,7 +145,7 @@ export const PortraitTablet: Story = {
     docs: {
       description: {
         story:
-          'At portrait tablet width, House pulse keeps its identity separate and gives each summary metric enough room in a balanced two-column grid.',
+          'At portrait tablet width, Chores today keeps its identity separate and gives each summary metric enough room in a balanced two-column grid.',
       },
     },
   },

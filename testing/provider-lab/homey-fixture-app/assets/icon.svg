@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 960">
+  <g fill="none" stroke="#000" stroke-linecap="round" stroke-width="48">
+    <path d="M480 480V160M480 480 706 266M480 480h320M480 480l226 214M480 480v320M480 480 254 694M480 480H160M480 480 254 266"/>
+  </g>
+  <g fill="#000">
+    <circle cx="480" cy="480" r="80"/>
+    <circle cx="480" cy="160" r="50"/>
+    <circle cx="706" cy="266" r="50"/>
+    <circle cx="800" cy="480" r="50"/>
+    <circle cx="706" cy="694" r="50"/>
+    <circle cx="480" cy="800" r="50"/>
+    <circle cx="254" cy="694" r="50"/>
+    <circle cx="160" cy="480" r="50"/>
+    <circle cx="254" cy="266" r="50"/>
+  </g>
+</svg>

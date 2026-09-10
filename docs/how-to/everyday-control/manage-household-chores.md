@@ -41,7 +41,7 @@ An uneven-workload note is a suggestion. Navet does not silently reassign future
 
 Open **Missions** or **Rewards** to create and edit supporting goals. Their cards follow the same
 chore card geometry, but they do not appear in Today by default. From Today, choose **See rewards**
-in House pulse when you want to reveal the current mission and reward cards for that visit.
+in Chores today when you want to reveal the current mission and reward cards for that visit.
 
 ## Hide household chores
 
