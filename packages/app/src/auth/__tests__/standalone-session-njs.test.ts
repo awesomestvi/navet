@@ -1253,6 +1253,7 @@ describe('production njs standalone OAuth sessions', () => {
       expect.objectContaining({ method: 'POST' })
     );
     expect(installationAuthority.commitHomeAssistant).toHaveBeenCalledWith(
+      callback.request,
       upstreamHassUrl,
       expect.any(Function),
       false
@@ -1501,7 +1502,7 @@ describe('production njs standalone OAuth sessions', () => {
     });
   });
 
-  it('keeps standalone OAuth endpoints out of the Ingress-only add-on', () => {
+  it('keeps standalone OAuth endpoints off the protected Ingress listener', () => {
     for (const relativePath of [
       'platform/home-assistant/addons/navet/rootfs/etc/nginx/http.d/default.conf',
       'platform/home-assistant/addons/navet/run.sh',
@@ -1510,5 +1511,13 @@ describe('production njs standalone OAuth sessions', () => {
       expect(source).not.toContain('navet-auth-store.conf');
       expect(source).toContain('navet-profile-store-ingress.conf');
     }
+
+    const directTemplate = readFileSync('docker/nginx.conf', 'utf8');
+    const addOnDockerfile = readFileSync('platform/home-assistant/addons/navet/Dockerfile', 'utf8');
+    expect(directTemplate).toContain('navet-auth-store.conf');
+    expect(directTemplate).toContain('navet-profile-store.conf');
+    expect(addOnDockerfile).toContain(
+      'COPY docker/nginx.conf /etc/navet-nginx/direct.conf.template'
+    );
   });
 });

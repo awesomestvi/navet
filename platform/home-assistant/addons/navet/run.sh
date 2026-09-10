@@ -3,14 +3,29 @@ set -euo pipefail
 
 CONFIG_DIR="/usr/share/nginx/html"
 CONFIG_FILE="${CONFIG_DIR}/config.js"
+DIRECT_CONFIG_FILE="${CONFIG_DIR}/direct-config.js"
 NGINX_CONF="/etc/nginx/http.d/default.conf"
+DIRECT_NGINX_CONF="/etc/nginx/http.d/direct.conf"
 
 DASHBOARD_CONFIG_URL="$(bashio::config 'dashboard_config_url')"
+HASS_URL="$(bashio::config 'hass_url')"
 HOMEY_CLIENT_ID="$(bashio::config 'homey_client_id')"
 HOMEY_CLIENT_SECRET="$(bashio::config 'homey_client_secret')"
 HOMEY_REDIRECT_URI="$(bashio::config 'homey_redirect_uri')"
 ALLOW_INSECURE_PROVIDER_TLS="$(bashio::config 'allow_insecure_provider_tls')"
 RESOLVED_HASS_PROXY_BASE="http://supervisor/core"
+
+case "${HASS_URL}" in
+  ""|http://*|https://*) ;;
+  *)
+    echo "hass_url must be empty or start with http:// or https://" >&2
+    exit 1
+    ;;
+esac
+
+json_escape() {
+  printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
+}
 
 mkdir -p /data
 chown nginx:nginx /data 2>/dev/null || true
@@ -32,6 +47,20 @@ else
 fi
 chmod 600 "${INSTALLATION_KEY_PATH}"
 chown nginx:nginx "${INSTALLATION_KEY_PATH}" 2>/dev/null || true
+
+INSTALLATION_CONFIG_PATH="/data/navet-installation-config.json"
+{
+  printf '{"version":1,"hassUrl":'
+  if [[ -n "${HASS_URL}" ]]; then
+    printf '"%s"' "$(json_escape "${HASS_URL}")"
+  else
+    printf 'null'
+  fi
+  printf ',"openhabUrl":null}\n'
+} > "${INSTALLATION_CONFIG_PATH}.tmp"
+chmod 600 "${INSTALLATION_CONFIG_PATH}.tmp"
+mv "${INSTALLATION_CONFIG_PATH}.tmp" "${INSTALLATION_CONFIG_PATH}"
+chown nginx:nginx "${INSTALLATION_CONFIG_PATH}" 2>/dev/null || true
 
 RESOLVER_ADDRESSES="$(
   awk '
@@ -62,6 +91,8 @@ export NAVET_HOMEY_CLIENT_SECRET="${HOMEY_CLIENT_SECRET}"
 export NAVET_HOMEY_REDIRECT_URI="${HOMEY_REDIRECT_URI}"
 export NAVET_ALLOW_INSECURE_PROVIDER_TLS="${ALLOW_INSECURE_PROVIDER_TLS}"
 export NAVET_TRUST_HOME_ASSISTANT_INGRESS="true"
+export NAVET_HOME_ASSISTANT_INGRESS_PORT="8099"
+export NAVET_PROVIDER_TLS_VERIFY="${PROVIDER_TLS_VERIFY}"
 
 if [[ "${DASHBOARD_CONFIG_URL}" == *\"* || "${DASHBOARD_CONFIG_URL}" == *\'* || "${DASHBOARD_CONFIG_URL}" == *";"* ]]; then
   echo "dashboard_config_url must not contain quotes or semicolons" >&2
@@ -70,6 +101,8 @@ fi
 
 DASHBOARD_CONFIG_URL_JS="${DASHBOARD_CONFIG_URL//\\/\\\\}"
 DASHBOARD_CONFIG_URL_JS="${DASHBOARD_CONFIG_URL_JS//\"/\\\"}"
+HASS_URL_JS="${HASS_URL//\\/\\\\}"
+HASS_URL_JS="${HASS_URL_JS//\"/\\\"}"
 
 cat > "${CONFIG_FILE}" <<EOF
 window.__NAVET_CONFIG__ = {
@@ -78,6 +111,31 @@ window.__NAVET_CONFIG__ = {
   proxyBaseUrl: "/__navet_ha_proxy__"
 };
 EOF
+
+cat > "${DIRECT_CONFIG_FILE}" <<EOF
+window.__NAVET_CONFIG__ = {
+  hassUrl: "${HASS_URL_JS}",
+  dashboardConfigUrl: "${DASHBOARD_CONFIG_URL_JS}",
+  proxyBaseUrl: "/__navet_ha_proxy__"
+};
+EOF
+
+{
+  printf '{"candidates":['
+  if [[ -n "${HASS_URL}" ]]; then
+    printf '{"url":"%s","source":"config","reachable":true},' "$(json_escape "${HASS_URL}")"
+  fi
+  printf '{"url":"http://homeassistant.local:8123","source":"hostname","reachable":false}]'
+  if [[ -n "${HASS_URL}" ]]; then
+    printf ',"preferredUrl":"%s"' "$(json_escape "${HASS_URL}")"
+  fi
+  printf '}\n'
+} > "${CONFIG_DIR}/navet-discovery-home-assistant.json"
+
+export NAVET_HASS_URL="${HASS_URL}"
+envsubst '${NAVET_HASS_URL}' \
+  < /etc/navet-nginx/ha-proxy.template.js \
+  > /etc/nginx/njs/ha-proxy.js
 
 PROXY_AUTH_DIRECTIVE='    proxy_set_header Authorization "";'
 if [[ -n "${SUPERVISOR_TOKEN:-}" ]]; then
@@ -307,5 +365,25 @@ ${PROXY_AUTH_DIRECTIVE}
   }
 }
 EOF
+
+awk '
+  /^  listen 80;$/ {
+    print "  listen 8080;"
+    next
+  }
+  /^  location = \/config\.js \{$/ {
+    in_runtime_config = 1
+  }
+  in_runtime_config && /try_files \$uri =404;/ {
+    print "    alias /usr/share/nginx/html/direct-config.js;"
+    next
+  }
+  in_runtime_config && /^  \}$/ {
+    in_runtime_config = 0
+  }
+  { print }
+' /etc/navet-nginx/direct.conf.template \
+  | envsubst '${NAVET_PROVIDER_TLS_VERIFY}' \
+  > "${DIRECT_NGINX_CONF}"
 
 exec /usr/local/bin/navet-runtime nginx -g 'daemon off;'

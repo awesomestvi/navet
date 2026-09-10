@@ -50,7 +50,7 @@ FROM ${BUILD_FROM}
 ARG BUILD_VERSION
 ARG BUILD_ARCH
 
-RUN apk add --no-cache bash nginx nginx-mod-http-js su-exec
+RUN apk add --no-cache bash gettext nginx nginx-mod-http-js su-exec
 
 COPY platform/home-assistant/addons/navet/run.sh /run.sh
 COPY docker/navet-runtime.sh /usr/local/bin/navet-runtime
@@ -71,6 +71,8 @@ COPY docker/njs/openhab-store.js /etc/nginx/njs/openhab-store.js
 COPY docker/njs/openhab-proxy.js /etc/nginx/njs/openhab-proxy.js
 COPY docker/njs/homey-store.js /etc/nginx/njs/homey-store.js
 COPY docker/njs/homey-proxy.js /etc/nginx/njs/homey-proxy.js
+COPY docker/njs/ha-proxy.template.js /etc/navet-nginx/ha-proxy.template.js
+COPY docker/nginx.conf /etc/navet-nginx/direct.conf.template
 COPY docker/snippets/navet-rss-proxy.conf /etc/nginx/snippets/navet-rss-proxy.conf
 COPY docker/snippets/navet-rss-proxy-ingress.conf /etc/nginx/snippets/navet-rss-proxy-ingress.conf
 COPY docker/snippets/navet-rss-transport.conf /etc/nginx/snippets/navet-rss-transport.conf
@@ -94,6 +96,6 @@ LABEL \
   io.hass.type="addon" \
   io.hass.arch="${BUILD_ARCH}"
 
-EXPOSE 8099
+EXPOSE 8080 8099
 
 CMD ["/run.sh"]

@@ -124,8 +124,11 @@ function ensureSerializedProfileRuntime() {
   ];
   for (const file of addonConfigs) {
     const source = readFileSync(file, 'utf8');
-    if (/^ports(?:_description)?:/m.test(source)) {
-      throw new Error(`${file} must remain Ingress-only without a published host port`);
+    if (!/^ports:\s*\n\s+8080\/tcp:\s+null$/m.test(source)) {
+      throw new Error(`${file} must expose the optional direct listener disabled by default`);
+    }
+    if (!/^ingress_port:\s+8099$/m.test(source)) {
+      throw new Error(`${file} must keep the dedicated Ingress listener on port 8099`);
     }
   }
 
@@ -954,13 +957,14 @@ function seedHomeAssistantAddonOptions(imageTag, volumeName) {
     homey_client_secret: '',
     homey_redirect_uri: '',
     allow_insecure_provider_tls: false,
+    hass_url: '',
   });
   const bashioShim = `bashio::config() {
   case "$1" in
     allow_insecure_provider_tls)
       printf '%s\\n' 'false'
       ;;
-    dashboard_config_url|homey_client_id|homey_client_secret|homey_redirect_uri)
+    dashboard_config_url|hass_url|homey_client_id|homey_client_secret|homey_redirect_uri)
       printf '%s\\n' ''
       ;;
     *)
@@ -1026,6 +1030,55 @@ function startHomeAssistantAddonContainer({
 }
 
 const addonIngressPath = '/api/hassio_ingress/navet-runtime-check';
+const addonDirectProbeSource = `
+  async function run() {
+    const baseUrl = 'http://navet-addon-check:8080';
+    const configResponse = await fetch(baseUrl + '/config.js', {
+      signal: AbortSignal.timeout(2000)
+    });
+    const config = await configResponse.text();
+    const authResponse = await fetch(baseUrl + '/__navet_auth__/session', {
+      signal: AbortSignal.timeout(2000)
+    });
+    const auth = await authResponse.json();
+    const authCookie = (authResponse.headers.get('set-cookie') || '').split(';')[0];
+    const authorizeResponse = await fetch(baseUrl + '/__navet_auth__/authorize', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cookie': authCookie,
+        'Origin': baseUrl,
+        'X-Navet-OAuth-Binding': auth.sessionId
+      },
+      body: JSON.stringify({
+        hassUrl: 'http://homeassistant.local:8123',
+        returnTo: '/'
+      }),
+      signal: AbortSignal.timeout(2000)
+    });
+    const authorize = await authorizeResponse.json();
+    const spoofedProfileResponse = await fetch(baseUrl + '/__navet_profile__/preferences/client', {
+      headers: {
+        'X-Remote-User-Id': 'spoofed-direct-user',
+        'X-Remote-User-Name': 'Spoofed direct user'
+      },
+      signal: AbortSignal.timeout(2000)
+    });
+    process.stdout.write(JSON.stringify({
+      auth,
+      authStatus: authResponse.status,
+      authorize,
+      authorizeStatus: authorizeResponse.status,
+      config,
+      configStatus: configResponse.status,
+      spoofedProfileStatus: spoofedProfileResponse.status
+    }));
+  }
+  run().catch((error) => {
+    process.stderr.write(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  });
+`;
 const addonIngressProbeSource = `
   const headers = {
     'X-Forwarded-Proto': 'https',
@@ -1208,6 +1261,34 @@ function readHomeAssistantAddonIngressProfile(probeContainerName, cookie = '') {
       error: `Add-on Ingress probe returned invalid JSON: ${result.stdout.trim()}`,
       response: null,
     };
+  }
+}
+
+function assertHomeAssistantAddonDirectListener(probeContainerName) {
+  const result = spawnSync(
+    'docker',
+    ['exec', probeContainerName, 'node', '-e', addonDirectProbeSource],
+    { stdio: 'pipe', encoding: 'utf8' }
+  );
+  if (result.error || result.status !== 0) {
+    throw new Error(result.error?.message || result.stderr.trim() || result.stdout.trim());
+  }
+  const response = JSON.parse(result.stdout);
+  if (
+    response.configStatus !== 200 ||
+    response.config.includes('runtime: "ha-ingress"') ||
+    !response.config.includes('proxyBaseUrl: "/__navet_ha_proxy__"') ||
+    response.authStatus !== 200 ||
+    response.auth?.authenticated !== false ||
+    response.authorizeStatus !== 200 ||
+    !String(response.authorize?.authorizeUrl || '').startsWith(
+      'http://homeassistant.local:8123/auth/authorize?'
+    ) ||
+    response.spoofedProfileStatus !== 401
+  ) {
+    throw new Error(
+      `Home Assistant add-on direct listener boundary check failed: ${JSON.stringify(response)}`
+    );
   }
 }
 
@@ -2162,6 +2243,7 @@ try {
     addonContainerName,
     addonProbeContainerName
   );
+  assertHomeAssistantAddonDirectListener(addonProbeContainerName);
   const addonCookie = assertHomeAssistantAddonIngressCookie(
     firstAddonProfile.cookie
   );
@@ -2488,7 +2570,7 @@ try {
       addonTarget.exactBase
         ? 'the exact Home Assistant base image'
         : 'the explicit Alpine with-contenv/bashio compatibility fallback'
-    }, exact standalone build metadata, no anonymous record minting, OAuth rotation, proxied token renewal, direct alternate-target Home Assistant login, two-installation host cookie isolation, runtime hostname resolution, pinned RSS HTTPS with private-DNS rejection and isolated credentials, bounded XML, transport supervision/recovery, provider confinement, stable parallel profile binding, njs-safe two-client profile ordering, cross-request chore management PIN sessions, and persisted auth/profile state after container replacement.`
+    }, separate add-on Ingress and direct OAuth listeners, exact standalone build metadata, no anonymous record minting, OAuth rotation, proxied token renewal, direct alternate-target Home Assistant login, two-installation host cookie isolation, runtime hostname resolution, pinned RSS HTTPS with private-DNS rejection and isolated credentials, bounded XML, transport supervision/recovery, provider confinement, stable parallel profile binding, njs-safe two-client profile ordering, cross-request chore management PIN sessions, and persisted auth/profile state after container replacement.`
   );
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));

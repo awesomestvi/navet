@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 // @ts-expect-error Docker njs runtime modules are JavaScript and have no TypeScript declaration.
 import installationAuthorityModule from '@docker/njs/installation-authority.js';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const { createInstallationAuthority } = installationAuthorityModule;
 const INSTALLATION_KEY = 'a'.repeat(64);
@@ -45,9 +45,10 @@ function createFixture(options?: { config?: { hassUrl?: string; openhabUrl?: str
   };
 }
 
-function request(key?: string) {
+function request(key?: string, serverPort?: string) {
   return {
     headersIn: key ? { [PAIRING_HEADER]: key } : {},
+    variables: serverPort ? { server_port: serverPort } : {},
   };
 }
 
@@ -64,6 +65,33 @@ function writeSession(directory: string, index: number, auth: Record<string, unk
 }
 
 describe('production njs installation authority', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('trusts add-on identity only on the dedicated Ingress listener', () => {
+    vi.stubEnv('NAVET_TRUST_HOME_ASSISTANT_INGRESS', 'true');
+    vi.stubEnv('NAVET_HOME_ASSISTANT_INGRESS_PORT', '8099');
+    const { authority } = createFixture({
+      config: { hassUrl: 'https://ha.example.com' },
+    });
+
+    expect(
+      authority.authorizeHomeAssistant(
+        request(undefined, '8099'),
+        'https://different-ha.example.com',
+        normalizeTarget
+      )
+    ).toEqual({ allowed: true, pairingVerified: false });
+    expect(
+      authority.authorizeHomeAssistant(
+        request(undefined, '8080'),
+        'https://different-ha.example.com',
+        normalizeTarget
+      )
+    ).toEqual({ allowed: false, pairingVerified: false });
+  });
+
   it('lets Home Assistant authenticate a fresh unpinned target', () => {
     const { authority, paths } = createFixture();
 
@@ -86,6 +114,7 @@ describe('production njs installation authority', () => {
     expect(authorized).toEqual({ allowed: true, pairingVerified: true });
     expect(
       authority.commitHomeAssistant(
+        request(),
         'https://ha.example.com',
         normalizeTarget,
         authorized.pairingVerified
@@ -126,9 +155,9 @@ describe('production njs installation authority', () => {
       normalizeTarget
     );
     expect(pinned).toEqual({ allowed: true, pairingVerified: false });
-    expect(authority.commitHomeAssistant('https://ha-b.example.com', normalizeTarget, false)).toBe(
-      true
-    );
+    expect(
+      authority.commitHomeAssistant(request(), 'https://ha-b.example.com', normalizeTarget, false)
+    ).toBe(true);
     expect(JSON.parse(readFileSync(paths.statePath, 'utf8'))).toMatchObject({
       homeAssistantTarget: 'https://ha-b.example.com',
     });
@@ -143,6 +172,7 @@ describe('production njs installation authority', () => {
     );
     expect(
       authority.commitHomeAssistant(
+        request(),
         'https://ha-a.example.com',
         normalizeTarget,
         authorized.pairingVerified
@@ -182,6 +212,7 @@ describe('production njs installation authority', () => {
     );
     expect(
       authority.commitHomeAssistant(
+        request(),
         'https://ha-a.example.com',
         normalizeTarget,
         first.pairingVerified
@@ -196,6 +227,7 @@ describe('production njs installation authority', () => {
     expect(replacement).toEqual({ allowed: true, pairingVerified: true });
     expect(
       authority.commitHomeAssistant(
+        request(),
         'https://ha-b.example.com',
         normalizeTarget,
         replacement.pairingVerified
@@ -234,10 +266,10 @@ describe('production njs installation authority', () => {
       homeys: [{ id: 'homey-a' }, { id: 'homey-b' }],
     });
     expect(chain.authority.authorizeHomeyStart(request()).allowed).toBe(true);
-    expect(chain.authority.commitHomey(['homey-b', 'homey-c'], false)).toBe(false);
-    expect(chain.authority.commitHomey(['homey-c', 'homey-d'], false)).toBe(false);
-    expect(chain.authority.commitHomey(['homey-a', 'homey-b'], false)).toBe(true);
-    expect(chain.authority.commitHomey(['homey-b', 'homey-c'], false)).toBe(false);
+    expect(chain.authority.commitHomey(request(), ['homey-b', 'homey-c'], false)).toBe(false);
+    expect(chain.authority.commitHomey(request(), ['homey-c', 'homey-d'], false)).toBe(false);
+    expect(chain.authority.commitHomey(request(), ['homey-a', 'homey-b'], false)).toBe(true);
+    expect(chain.authority.commitHomey(request(), ['homey-b', 'homey-c'], false)).toBe(false);
     expect(JSON.parse(readFileSync(chain.paths.statePath, 'utf8'))).toMatchObject({
       homeyIds: ['homey-a', 'homey-b'],
     });
@@ -253,8 +285,8 @@ describe('production njs installation authority', () => {
     });
 
     expect(authority.authorizeHomeyStart(request()).allowed).toBe(true);
-    expect(authority.commitHomey(['homey-b'], false)).toBe(true);
-    expect(authority.commitHomey(['homey-b', 'homey-c'], false)).toBe(false);
+    expect(authority.commitHomey(request(), ['homey-b'], false)).toBe(true);
+    expect(authority.commitHomey(request(), ['homey-b', 'homey-c'], false)).toBe(false);
     expect(JSON.parse(readFileSync(paths.statePath, 'utf8'))).toMatchObject({
       homeyIds: ['homey-b'],
     });

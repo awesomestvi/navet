@@ -1564,6 +1564,7 @@ function createAuthSessionStore(options) {
     let installationAuthorized = false;
     try {
       installationAuthorized = installationAuthority.commitHomeAssistant(
+          r,
           pending.hassUrl,
           normalizeHassUrl,
           pending.installationPairingVerified === true

@@ -25,19 +25,15 @@ dashboard. Navet also uses your current Home Assistant sign-in.
 2. Open the **Log** tab and look for the first error shown during startup.
 3. Restart the add-on, then open it with **Open Web UI** or the Home Assistant sidebar.
 
-### A direct address shows 403 Forbidden
+### Enable a direct address
 
-The add-on opens through Home Assistant Ingress only. A direct address such as
-`http://homeassistant.local:8234` cannot reuse your Home Assistant session and is blocked.
+Direct access is optional and disabled by default. In the add-on's **Network** settings, assign
+any available host port to the optional direct Navet web interface, save, and restart Navet. For
+example, assigning `8234` makes Navet available at `http://homeassistant.local:8234`.
 
-1. Update the add-on if an older version still offers a network port setting, and remove any
-   manually configured port mapping.
-2. Open Navet with **Open Web UI** or the Home Assistant sidebar.
-3. Replace any bookmark pointing to the direct port with the Home Assistant page you just opened.
-
-For a separate dashboard URL, use
-[standalone Docker](https://docs.navet.app/install/home-assistant/#option-3-install-with-docker),
-which supports its own Home Assistant sign-in.
+The direct interface uses its own Home Assistant sign-in. **Open Web UI** and the sidebar continue
+to use Home Assistant Ingress and do not require a separate login. Remove the Network port to
+disable direct access again.
 
 Still stuck? Read the [Home Assistant guide](https://docs.navet.app/install/home-assistant/) or
 [open a GitHub issue](https://github.com/awesomestvi/navet/issues). Include your Navet and Home

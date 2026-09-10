@@ -73,9 +73,10 @@ account, Home Assistant address, or access token.
 Your rooms and devices should appear automatically. You do not need to enter a Home Assistant
 address or access token.
 
-The App opens inside Home Assistant through Ingress. Always use **Open Web UI** or the sidebar;
-a direct address such as `http://homeassistant.local:8234` is blocked. Choose standalone Docker
-below if you need a separate dashboard URL.
+The App opens inside Home Assistant through Ingress by default. If you also need a separate
+dashboard URL, open the App's **Network** settings and assign any available host port to the
+optional direct Navet web interface. Direct access uses its own Home Assistant sign-in and does
+not weaken the authenticated Ingress/sidebar route.
 
 ## Option 3: Install with Docker
 
@@ -217,19 +218,19 @@ create a second `frontend:` section.
 3. Open the **Log** tab and read the first error.
 4. Restart the App and try **Open Web UI** again.
 
-### A direct App address shows 403 Forbidden
+### Enable or change direct App access
 
-The Home Assistant App accepts connections through Home Assistant Ingress only. Mapping its
-internal port to a host port does not enable a standalone dashboard.
+The direct interface is disabled until you assign it a host port.
 
-1. Update Navet if an older installation still offers a network port setting, and remove any
-   manually configured port mapping.
-2. Go to **Settings → Apps → Navet** and choose **Open Web UI**, or open Navet from the sidebar.
-3. Replace bookmarks such as `http://homeassistant.local:8234` with the Home Assistant page you
-   just opened.
+1. Go to **Settings → Apps → Navet → Configuration**.
+2. In **Network**, enter an available host port for the optional direct Navet web interface, such
+   as `8234`, and save.
+3. Restart Navet, then open `http://homeassistant.local:8234` with the port you selected.
+4. Sign in to Home Assistant when Navet asks. This browser-bound session is separate from the
+   session Home Assistant provides through Ingress.
 
-For direct browser access on a separate port, follow [Option 3: Install with Docker](#option-3-install-with-docker).
-The Docker installation has its own Home Assistant sign-in.
+If Home Assistant reports that the port is already in use, choose another port. Removing the port
+from **Network** disables direct access without affecting **Open Web UI** or the sidebar.
 
 ### Docker cannot connect to Home Assistant
 

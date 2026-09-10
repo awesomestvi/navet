@@ -102,13 +102,20 @@ function createInstallationAuthority(options) {
   const openHABSessionsDirectory =
     settings.openHABSessionsDirectory || OPENHAB_SESSIONS_DIRECTORY;
 
-  function isTrustedIngress() {
-    return (
-      settings.trustIngress === true ||
-      (typeof process !== 'undefined' &&
-        process.env &&
-        process.env.NAVET_TRUST_HOME_ASSISTANT_INGRESS === 'true')
-    );
+  function isTrustedIngress(r) {
+    if (settings.trustIngress === true) {
+      return true;
+    }
+    if (
+      typeof process === 'undefined' ||
+      !process.env ||
+      process.env.NAVET_TRUST_HOME_ASSISTANT_INGRESS !== 'true'
+    ) {
+      return false;
+    }
+    const ingressPort = String(process.env.NAVET_HOME_ASSISTANT_INGRESS_PORT || '8099');
+    const requestPort = String((r && r.variables && r.variables.server_port) || '');
+    return requestPort === ingressPort;
   }
 
   function readKey() {
@@ -260,7 +267,7 @@ function createInstallationAuthority(options) {
     normalizeTarget,
     allowBrowserAlias
   ) {
-    if (isTrustedIngress()) {
+    if (isTrustedIngress(r)) {
       return { allowed: true, pairingVerified: false };
     }
     const normalizedTarget = normalizeTarget(target);
@@ -331,8 +338,8 @@ function createInstallationAuthority(options) {
     };
   }
 
-  function commitTarget(providerId, target, normalizeTarget, pairingVerified) {
-    if (isTrustedIngress()) {
+  function commitTarget(r, providerId, target, normalizeTarget, pairingVerified) {
+    if (isTrustedIngress(r)) {
       return true;
     }
     const normalizedTarget = normalizeTarget(target);
@@ -414,7 +421,7 @@ function createInstallationAuthority(options) {
   }
 
   function authorizeHomeyStart(r) {
-    if (isTrustedIngress()) {
+    if (isTrustedIngress(r)) {
       return { allowed: true, pairingVerified: false };
     }
     const pairingVerified = hasValidPairingKey(r);
@@ -424,8 +431,8 @@ function createInstallationAuthority(options) {
     };
   }
 
-  function commitHomey(homeyIds, pairingVerified) {
-    if (isTrustedIngress()) {
+  function commitHomey(r, homeyIds, pairingVerified) {
+    if (isTrustedIngress(r)) {
       return true;
     }
     const requestedIds = normalizeHomeyIds(homeyIds);
@@ -453,7 +460,7 @@ function createInstallationAuthority(options) {
 
   return {
     authorizeHomeAssistant: function (r, target, normalizeTarget) {
-      if (isTrustedIngress()) {
+      if (isTrustedIngress(r)) {
         return { allowed: true, pairingVerified: false };
       }
       const normalizedTarget = normalizeTarget(target);
@@ -470,8 +477,8 @@ function createInstallationAuthority(options) {
       }
       return { allowed: true, pairingVerified: true };
     },
-    authorizeHomeAssistantChange: function (_r, target, normalizeTarget) {
-      if (isTrustedIngress()) {
+    authorizeHomeAssistantChange: function (r, target, normalizeTarget) {
+      if (isTrustedIngress(r)) {
         return { allowed: true, pairingVerified: false };
       }
       const normalizedTarget = normalizeTarget(target);
@@ -489,8 +496,9 @@ function createInstallationAuthority(options) {
     authorizeOpenHAB: function (r, target, normalizeTarget) {
       return authorizeTarget(r, 'openhab', target, normalizeTarget, false);
     },
-    commitHomeAssistant: function (target, normalizeTarget, pairingVerified) {
+    commitHomeAssistant: function (r, target, normalizeTarget, pairingVerified) {
       return commitTarget(
+        r,
         'home_assistant',
         target,
         normalizeTarget,
@@ -498,8 +506,8 @@ function createInstallationAuthority(options) {
       );
     },
     commitHomey: commitHomey,
-    commitOpenHAB: function (target, normalizeTarget, pairingVerified) {
-      return commitTarget('openhab', target, normalizeTarget, pairingVerified);
+    commitOpenHAB: function (r, target, normalizeTarget, pairingVerified) {
+      return commitTarget(r, 'openhab', target, normalizeTarget, pairingVerified);
     },
     hasValidPairingKey: hasValidPairingKey,
   };

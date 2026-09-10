@@ -196,7 +196,7 @@ afterEach(() => {
 });
 
 describe('dashboard profile backend conformance', () => {
-  it('keeps trusted Ingress profile routing off every directly exposed add-on port', () => {
+  it('separates trusted Ingress profiles from the optional direct add-on listener', () => {
     const stableConfig = readFileSync('platform/home-assistant/addons/navet/config.yaml', 'utf8');
     const developmentConfig = readFileSync(
       'platform/home-assistant/addons/navet-dev/config.yaml',
@@ -206,9 +206,12 @@ describe('dashboard profile backend conformance', () => {
     const standaloneSnippet = readFileSync('docker/snippets/navet-profile-store.conf', 'utf8');
     const ingressSnippet = readFileSync('docker/snippets/navet-profile-store-ingress.conf', 'utf8');
 
-    expect(stableConfig).not.toMatch(/^ports:/m);
-    expect(developmentConfig).not.toMatch(/^ports:/m);
+    expect(stableConfig).toMatch(/^ports:\s*\n\s+8080\/tcp:\s+null$/m);
+    expect(developmentConfig).toMatch(/^ports:\s*\n\s+8080\/tcp:\s+null$/m);
     expect(addOnRuntime).toContain('navet-profile-store-ingress.conf');
+    expect(addOnRuntime).toContain('listen 8099;');
+    expect(addOnRuntime).toContain('listen 8080;');
+    expect(addOnRuntime).toContain('/usr/share/nginx/html/direct-config.js');
     expect(addOnRuntime).toContain('allow 172.30.32.2;');
     expect(addOnRuntime).toContain('deny all;');
     expect(

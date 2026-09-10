@@ -525,6 +525,7 @@ function createOpenHABSessionStore(options) {
       }
       if (
         !installationAuthority.commitOpenHAB(
+          r,
           parsed.hassUrl,
           normalizeOpenHABBaseUrl,
           installationAccess.pairingVerified === true

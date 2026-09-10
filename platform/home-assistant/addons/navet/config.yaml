@@ -11,6 +11,10 @@ startup: application
 init: false
 ingress: true
 ingress_port: 8099
+ports:
+  8080/tcp: null
+ports_description:
+  8080/tcp: Optional direct Navet web interface
 homeassistant_api: true
 panel_icon: mdi:hub
 panel_title: Navet
@@ -22,6 +26,7 @@ options:
   homey_client_secret: ""
   homey_redirect_uri: ""
   allow_insecure_provider_tls: false
+  hass_url: ""
 schema:
   dashboard_config_url: str?
   homey_client_id: str?
