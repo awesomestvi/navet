@@ -3458,4 +3458,96 @@ export const itMessages = {
   'energy.historyCopy.year': 'anno',
   'energy.historyCopy.period': 'periodo',
   'energy.historyCopy.periods': '{count} periodi',
+  'deviceAuthorization.approval.approveDevice': 'Approva dispositivo',
+  'deviceAuthorization.approval.approvedDescription':
+    "L'altra schermata si sta collegando a Navet ora.",
+  'deviceAuthorization.approval.approving': 'Approvazione in corso...',
+  'deviceAuthorization.approval.connections': 'Connessioni: {providers}',
+  'deviceAuthorization.approval.description':
+    'Approva solo la schermata in cui è visibile questo codice corrispondente.',
+  'deviceAuthorization.approval.deviceApproved': 'Dispositivo approvato',
+  'deviceAuthorization.approval.matchingCode': 'Codice corrispondente',
+  'deviceAuthorization.approval.requestingDevice': 'Schermata di richiesta: {device}',
+  'deviceAuthorization.approval.revocableSession':
+    'Lo schermo riceve la propria sessione Navet revocabile.',
+  'deviceAuthorization.approval.title': 'Collegare un altro dispositivo?',
+  'deviceAuthorization.clickToCopy': 'Clicca per copiare',
+  'deviceAuthorization.connectWithAnotherDevice': 'Connettiti con un altro dispositivo',
+  'deviceAuthorization.connectingDevice': 'Connessione di questo dispositivo in corso...',
+  'deviceAuthorization.copied': 'Copiato',
+  'deviceAuthorization.copyCodeLabel': 'Copia il codice di connessione del dispositivo',
+  'deviceAuthorization.copyFailed': 'Impossibile copiare il codice.',
+  'deviceAuthorization.copyFailedDescription': 'Seleziona il codice e copialo manualmente.',
+  'deviceAuthorization.createNewCode': 'Crea un nuovo codice',
+  'deviceAuthorization.defaultDeviceName': 'Navet su {device}',
+  'deviceAuthorization.enterCode':
+    "Oppure inserisci questo codice sul dispositivo con cui hai effettuato l'accesso",
+  'deviceAuthorization.preparingApproval':
+    "Preparazione dell'approvazione del dispositivo in corso...",
+  'deviceAuthorization.preparingConnection': 'Preparazione di una connessione sicura...',
+  'deviceAuthorization.requestDeclined': 'Richiesta rifiutata',
+  'deviceAuthorization.requestDeclinedDescription':
+    "L'altro dispositivo non ha concesso l'accesso. Crea un nuovo codice o accedi normalmente.",
+  'deviceAuthorization.signInInstead': 'Accedi invece',
+  'deviceAuthorization.unknownDevice': 'un altro dispositivo',
+  'deviceAuthorization.waitingForApproval': 'In attesa di approvazione · Scade tra {time}',
+  'login.setup.checkFailed':
+    'Navet non è riuscito a verificare se questa connessione è pronta. Verificare che questa installazione Navet sia raggiungibile, quindi riprovare.',
+  'login.setup.checkingConnection': 'Controllo della connessione in corso...',
+  'login.setup.codeLabel': 'Codice di configurazione',
+  'login.setup.codePlaceholder': 'Inserisci il tuo codice di configurazione',
+  'login.setup.description':
+    'Ciò impedisce a qualcuno che può raggiungere Navet di collegarlo a una casa intelligente diversa. Lo fai solo quando aggiungi o sostituisci un provider.',
+  'login.setup.dockerInstruction': 'Per Docker, eseguire',
+  'login.setup.otherInstruction':
+    'Per lo sviluppo locale, utilizzare il codice stampato dal server di sviluppo. Se qualcun altro ha installato Navet, chiedigli un codice.',
+  'login.setup.providerUnavailable':
+    'Questo provider non è disponibile nel runtime Navet corrente.',
+  'login.setup.title': 'Approvazione una tantum',
+  'settings.system.authorizedDevices.activity': '{providers} · Attivo {time}',
+  'settings.system.authorizedDevices.approvalDescription':
+    'Accesso a {providers} con la propria sessione Navet revocabile.',
+  'settings.system.authorizedDevices.approvalTitle': 'Approvare {name}?',
+  'settings.system.authorizedDevices.codeLabel': 'Codice di connessione del dispositivo',
+  'settings.system.authorizedDevices.codePlaceholder': 'XXXX-XXXX-XXXX',
+  'settings.system.authorizedDevices.connectDescription':
+    "Inserisci il codice monouso mostrato sull'altro dispositivo.",
+  'settings.system.authorizedDevices.connectTitle': 'Collega un altro dispositivo',
+  'settings.system.authorizedDevices.decline': 'Rifiuta',
+  'settings.system.authorizedDevices.description':
+    "Visualizza i dispositivi con accesso e gestiscili dall'accesso principale.",
+  'settings.system.authorizedDevices.deviceName': 'Nome del dispositivo',
+  'settings.system.authorizedDevices.feedback.approved': "L'altra schermata è stata approvata.",
+  'settings.system.authorizedDevices.feedback.declined':
+    'La richiesta del dispositivo è stata rifiutata.',
+  'settings.system.authorizedDevices.feedback.promoted': '{name} è ora un dispositivo principale.',
+  'settings.system.authorizedDevices.feedback.promotedDescription':
+    'Può collegare, rinominare e rimuovere i dispositivi autorizzati.',
+  'settings.system.authorizedDevices.feedback.removed': '{name} è stato rimosso.',
+  'settings.system.authorizedDevices.feedback.removedDescription':
+    'Non può più aprire questa installazione Navet.',
+  'settings.system.authorizedDevices.feedback.renamed': 'Dispositivo rinominato in {name}.',
+  'settings.system.authorizedDevices.loading':
+    'Caricamento dei dispositivi autorizzati in corso...',
+  'settings.system.authorizedDevices.makePrimary': 'Rendi primario',
+  'settings.system.authorizedDevices.originalSignIn': 'Accesso originale',
+  'settings.system.authorizedDevices.primary': 'Primario',
+  'settings.system.authorizedDevices.primarySignIn': 'Accesso principale',
+  'settings.system.authorizedDevices.primarySignInEmpty':
+    'Accesso principale · Nessun altro dispositivo',
+  'settings.system.authorizedDevices.promoteDescription':
+    '{name} sarà in grado di connettere, rinominare e rimuovere i dispositivi autorizzati. Le credenziali del provider rimangono protette sul server Navet.',
+  'settings.system.authorizedDevices.promoteTitle': 'Renderlo un dispositivo primario?',
+  'settings.system.authorizedDevices.readOnlyDescription':
+    "Puoi visualizzare i dispositivi con accesso qui. Connettili, rinominali o rimuovili dall'accesso principale.",
+  'settings.system.authorizedDevices.readOnlyTitle': 'Gestito dal dispositivo primario',
+  'settings.system.authorizedDevices.removeDescription':
+    "{name} perderà immediatamente l'accesso a Navet. Puoi ricollegarlo in un secondo momento con un nuovo codice di approvazione.",
+  'settings.system.authorizedDevices.removeNamed': 'Rimuovi {name}',
+  'settings.system.authorizedDevices.removeTitle': 'Rimuovere questo dispositivo autorizzato?',
+  'settings.system.authorizedDevices.rename': 'Rinomina dispositivo',
+  'settings.system.authorizedDevices.reviewCode': 'Codice di revisione',
+  'settings.system.authorizedDevices.saveName': 'Salva il nome del dispositivo',
+  'settings.system.authorizedDevices.thisDevice': 'Questo dispositivo',
+  'settings.system.authorizedDevices.title': 'Dispositivi autorizzati',
 } as const satisfies Record<keyof typeof enMessages, string>;

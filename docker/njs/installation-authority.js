@@ -6,6 +6,11 @@ const INSTALLATION_KEY_PATTERN = /^[a-f0-9]{64}$/;
 const INSTALLATION_KEY_PATH = '/data/navet-installation-key';
 const INSTALLATION_CONFIG_PATH = '/data/navet-installation-config.json';
 const INSTALLATION_STATE_PATH = '/data/navet-installation-authority.json';
+const INSTALLATION_SETUP_CODE_PATH = '/data/navet-setup-code.json';
+const SETUP_CODE_PATTERN = /^[a-f0-9]{16}$/;
+const SETUP_GRANT_TTL_SECONDS = 10 * 60;
+const SETUP_ATTEMPT_LIMIT = 8;
+const SETUP_ATTEMPT_WINDOW_MS = 5 * 60 * 1000;
 const AUTH_SESSIONS_DIRECTORY = '/data/navet-auth-sessions';
 const HOMEY_SESSIONS_DIRECTORY = '/data/navet-provider-sessions/homey';
 const OPENHAB_SESSIONS_DIRECTORY = '/data/navet-provider-sessions/openhab';
@@ -90,17 +95,37 @@ function constantTimeKeyEquals(candidate, expected) {
   );
 }
 
+function normalizeSetupCode(value) {
+  return String(value || '').toLowerCase().replace(/[^a-f0-9]/g, '');
+}
+
 function createInstallationAuthority(options) {
   const settings = options || {};
   const keyPath = settings.keyPath || INSTALLATION_KEY_PATH;
   const configPath = settings.configPath || INSTALLATION_CONFIG_PATH;
   const statePath = settings.statePath || INSTALLATION_STATE_PATH;
+  const setupCodePath = settings.setupCodePath || INSTALLATION_SETUP_CODE_PATH;
   const authSessionsDirectory =
     settings.authSessionsDirectory || AUTH_SESSIONS_DIRECTORY;
   const homeySessionsDirectory =
     settings.homeySessionsDirectory || HOMEY_SESSIONS_DIRECTORY;
   const openHABSessionsDirectory =
     settings.openHABSessionsDirectory || OPENHAB_SESSIONS_DIRECTORY;
+  const setupAttemptBuckets = {};
+
+  function consumeSetupAttempt(r) {
+    const address = String(
+      (r && r.remoteAddress) || getHeader(r && r.headersIn, 'X-Real-IP') || 'local'
+    );
+    const now = Date.now();
+    const bucket = setupAttemptBuckets[address];
+    if (!bucket || bucket.resetAt <= now) {
+      setupAttemptBuckets[address] = { count: 1, resetAt: now + SETUP_ATTEMPT_WINDOW_MS };
+      return true;
+    }
+    bucket.count += 1;
+    return bucket.count <= SETUP_ATTEMPT_LIMIT;
+  }
 
   function isTrustedIngress(r) {
     if (settings.trustIngress === true) {
@@ -200,10 +225,106 @@ function createInstallationAuthority(options) {
   }
 
   function hasValidPairingKey(r) {
-    return constantTimeKeyEquals(
+    return (
+      constantTimeKeyEquals(
       getHeader(r && r.headersIn, INSTALLATION_KEY_HEADER).trim(),
       readKey()
+      ) || hasValidSetupGrant(r)
     );
+  }
+
+  function setupCookieName() {
+    return (
+      'navet_setup_grant_' +
+      hashCrypto.createHash('sha256').update(readKey()).digest('hex').slice(0, 12)
+    );
+  }
+
+  function getCookie(r, name) {
+    const source = getHeader(r && r.headersIn, 'Cookie');
+    const entries = source.split(';');
+    let index;
+    for (index = 0; index < entries.length; index += 1) {
+      const separator = entries[index].indexOf('=');
+      if (separator > 0 && entries[index].slice(0, separator).trim() === name) {
+        return entries[index].slice(separator + 1).trim();
+      }
+    }
+    return '';
+  }
+
+  function hasValidSetupGrant(r) {
+    const value = getCookie(r, setupCookieName());
+    const separator = value.indexOf('.');
+    if (separator <= 0) {
+      return false;
+    }
+    const expiresAt = value.slice(0, separator);
+    const signature = value.slice(separator + 1);
+    if (!/^[0-9]{10,13}$/.test(expiresAt) || Number(expiresAt) < Date.now()) {
+      return false;
+    }
+    const expected = hashCrypto
+      .createHmac('sha256', readKey())
+      .update('setup-grant:' + expiresAt)
+      .digest('hex');
+    return constantTimeKeyEquals(signature, expected);
+  }
+
+  function exchangeSetupCode(r, candidate) {
+    if (!consumeSetupAttempt(r)) {
+      return { approved: false, reason: 'rate_limited' };
+    }
+    let record;
+    try {
+      record = parseJson(fs.readFileSync(setupCodePath, 'utf8'));
+    } catch (error) {
+      if (error && error.code === 'ENOENT') {
+        return { approved: false, reason: 'expired' };
+      }
+      throw error;
+    }
+    const presented = normalizeSetupCode(candidate);
+    const expected = normalizeSetupCode(record && record.code);
+    if (
+      !SETUP_CODE_PATTERN.test(presented) ||
+      !SETUP_CODE_PATTERN.test(expected) ||
+      typeof record.expiresAt !== 'number' ||
+      record.expiresAt < Date.now() ||
+      !constantTimeKeyEquals(
+        hashCrypto.createHash('sha256').update(presented).digest('hex'),
+        hashCrypto.createHash('sha256').update(expected).digest('hex')
+      )
+    ) {
+      return { approved: false, reason: 'invalid' };
+    }
+    const expiresAt = Date.now() + SETUP_GRANT_TTL_SECONDS * 1000;
+    const signature = hashCrypto
+      .createHmac('sha256', readKey())
+      .update('setup-grant:' + expiresAt)
+      .digest('hex');
+    try {
+      fs.unlinkSync(setupCodePath);
+    } catch (_error) {
+      return { approved: false, reason: 'already_used' };
+    }
+    const secure =
+      String((r && r.variables && r.variables.scheme) || '').toLowerCase() === 'https'
+        ? '; Secure'
+        : '';
+    return {
+      approved: true,
+      setCookie:
+        setupCookieName() +
+        '=' +
+        expiresAt +
+        '.' +
+        signature +
+        '; Path=/; Max-Age=' +
+        SETUP_GRANT_TTL_SECONDS +
+        '; HttpOnly; SameSite=Strict' +
+        secure,
+    };
   }
 
   function readSessionRecords(directory) {
@@ -431,6 +552,41 @@ function createInstallationAuthority(options) {
     };
   }
 
+  function getProviderSetupStatus(r, providerId) {
+    if (isTrustedIngress(r)) {
+      return { state: 'ready', authorization: 'trusted_runtime' };
+    }
+    if (hasValidPairingKey(r)) {
+      return { state: 'ready', authorization: 'setup_proof' };
+    }
+
+    const config = readConfig();
+    const state = readState();
+    let configured = false;
+    if (providerId === 'home_assistant') {
+      configured = Boolean(
+        config.hassUrl ||
+          state.homeAssistantTarget ||
+          readSessionRecords(authSessionsDirectory).length > 0
+      );
+    } else if (providerId === 'openhab') {
+      configured = Boolean(
+        config.openhabUrl ||
+          state.openHABTarget ||
+          readSessionRecords(openHABSessionsDirectory).length > 0
+      );
+    } else if (providerId === 'homey') {
+      configured = getKnownHomeyIds().length > 0;
+    } else {
+      return { state: 'unavailable', authorization: 'none' };
+    }
+
+    return {
+      state: configured ? 'ready' : 'approval_required',
+      authorization: configured ? 'approved_connection' : 'none',
+    };
+  }
+
   function commitHomey(r, homeyIds, pairingVerified) {
     if (isTrustedIngress(r)) {
       return true;
@@ -460,37 +616,13 @@ function createInstallationAuthority(options) {
 
   return {
     authorizeHomeAssistant: function (r, target, normalizeTarget) {
-      if (isTrustedIngress(r)) {
-        return { allowed: true, pairingVerified: false };
-      }
-      const normalizedTarget = normalizeTarget(target);
-      if (!normalizedTarget) {
-        return { allowed: false, pairingVerified: false };
-      }
-      const rawPin = readConfig().hassUrl;
-      const pinnedTarget = rawPin ? normalizeTarget(rawPin) : '';
-      if (rawPin) {
-        return {
-          allowed: Boolean(pinnedTarget && pinnedTarget === normalizedTarget),
-          pairingVerified: false,
-        };
-      }
-      return { allowed: true, pairingVerified: true };
+      return authorizeTarget(r, 'home_assistant', target, normalizeTarget, true);
     },
     authorizeHomeAssistantChange: function (r, target, normalizeTarget) {
       if (isTrustedIngress(r)) {
         return { allowed: true, pairingVerified: false };
       }
-      const normalizedTarget = normalizeTarget(target);
-      if (!normalizedTarget) {
-        return { allowed: false, pairingVerified: false };
-      }
-      const rawPin = readConfig().hassUrl;
-      const pinnedTarget = rawPin ? normalizeTarget(rawPin) : '';
-      if (rawPin && pinnedTarget !== normalizedTarget) {
-        return { allowed: false, pairingVerified: false };
-      }
-      return { allowed: true, pairingVerified: true };
+      return authorizeTarget(r, 'home_assistant', target, normalizeTarget, false);
     },
     authorizeHomeyStart: authorizeHomeyStart,
     authorizeOpenHAB: function (r, target, normalizeTarget) {
@@ -509,6 +641,8 @@ function createInstallationAuthority(options) {
     commitOpenHAB: function (r, target, normalizeTarget, pairingVerified) {
       return commitTarget(r, 'openhab', target, normalizeTarget, pairingVerified);
     },
+    getProviderSetupStatus: getProviderSetupStatus,
+    exchangeSetupCode: exchangeSetupCode,
     hasValidPairingKey: hasValidPairingKey,
   };
 }
@@ -524,4 +658,6 @@ export default {
   commitHomeAssistant: installationAuthority.commitHomeAssistant,
   commitHomey: installationAuthority.commitHomey,
   commitOpenHAB: installationAuthority.commitOpenHAB,
+  getProviderSetupStatus: installationAuthority.getProviderSetupStatus,
+  exchangeSetupCode: installationAuthority.exchangeSetupCode,
 };

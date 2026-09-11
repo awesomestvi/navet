@@ -177,12 +177,6 @@ const SETTINGS: SearchSettingDefinition[] = [
     descriptionKey: 'settings.system.providers.description',
   },
   {
-    id: 'system-connected-devices',
-    sectionId: 'system',
-    labelKey: 'settings.system.clients.title',
-    descriptionKey: 'settings.system.clients.description',
-  },
-  {
     id: 'system-local-data',
     sectionId: 'system',
     labelKey: 'settings.project.localData.title',

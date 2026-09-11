@@ -7,6 +7,7 @@ import {
   createInstallationCookieNames,
   type InstallationCookieNames,
 } from './installation-cookie-scope.ts'
+import type { ViteDeviceSessionAuthority } from './vite-device-session-authority.ts'
 
 export const HOMEY_SESSION_COOKIE_NAME = 'navet_homey_session'
 export const HOMEY_OAUTH_PENDING_TTL_MS = 10 * 60 * 1000
@@ -260,6 +261,7 @@ export function createViteHomeySessionStore(
     cookieNames?: InstallationCookieNames
     legacySessionPath?: string
     sessionsDirectory?: string
+    deviceSessionAuthority?: ViteDeviceSessionAuthority
   } = {}
 ): ViteProviderSessionStore<ViteStoredHomeySession> {
   const cacheDirectory = path.resolve(process.cwd(), '.cache')
@@ -275,5 +277,7 @@ export function createViteHomeySessionStore(
     sessionsDirectory:
       options.sessionsDirectory ??
       path.join(cacheDirectory, 'navet-provider-sessions', 'homey'),
+    deviceSessionAuthority: options.deviceSessionAuthority,
+    providerId: 'homey',
   })
 }

@@ -404,6 +404,7 @@ function createOpenHABSessionStore(options) {
       ? ngx.fetch.bind(ngx)
       : null);
   const bindingStore = createProviderSessionStore({
+    providerId: 'openhab',
     cookieName: OPENHAB_COOKIE_NAME,
     cookieNames: settings.cookieNames,
     installationKey: settings.installationKey,

@@ -84,10 +84,10 @@ deployment when you need Navet to connect to Homey.
 docker compose up -d
 ```
 
-For the first Homey enrollment, run `docker compose logs navet`, copy the Navet URL containing
-`#navet_pairing=<64-character-key>`, and open that complete URL once. Navet removes the key from
-the address immediately. The key authorizes the first provider enrollment; it is not a Homey
-credential and is not needed again while the `navet-data` volume is preserved.
+For the first Homey connection, run `docker compose logs navet` and find the temporary Navet setup
+code. Open Navet, choose Homey, and enter that code when prompted. The code works once and expires
+after 10 minutes. It approves the connection; it is not a Homey credential and is not needed again
+while the `navet-data` volume is preserved. Restart the container to generate a new code if needed.
 
 ### 4. Sign in
 
@@ -113,8 +113,9 @@ credential and is not needed again while the `navet-data` volume is preserved.
 
 - If the `Homey` option does not appear on the login screen, check that
   `NAVET_HOMEY_CLIENT_ID` and `NAVET_HOMEY_CLIENT_SECRET` are set in the running Navet container.
-- If Navet says operator pairing is required, reopen the one-time pairing URL from the container
-  log. Preserve the `navet-data` volume so enrolled providers remain trusted across updates.
+- If Navet asks for setup approval, run `docker exec navet navet-setup-code` and use the temporary
+  code it prints. Run the command again if the code expired. Preserve the `navet-data` volume so approved
+  connections remain trusted across updates.
 - If sign-in returns to the wrong URL, set `NAVET_HOMEY_REDIRECT_URI` to the exact callback URL
   registered in your Athom Web API client.
 - If Navet keeps asking you to choose a Homey again, confirm the selected Homey is still available

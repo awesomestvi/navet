@@ -17,3 +17,8 @@ export function isHomeAssistantAddonMode(): boolean {
 export function isStandaloneMode(): boolean {
   return getRuntimeContext().kind === 'standalone';
 }
+
+export function supportsAdditionalSmartHomeProviders(): boolean {
+  const kind = getRuntimeContext().kind;
+  return kind === 'standalone' || kind === 'dev';
+}

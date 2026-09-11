@@ -3452,4 +3452,91 @@ export const plMessages = {
   'energy.historyCopy.year': 'rok',
   'energy.historyCopy.period': 'okres',
   'energy.historyCopy.periods': 'Liczba okresów: {count}',
+  'deviceAuthorization.approval.approveDevice': 'Zatwierdź urządzenie',
+  'deviceAuthorization.approval.approvedDescription': 'Drugi ekran łączy się teraz z Navet.',
+  'deviceAuthorization.approval.approving': 'zatwierdzanie…',
+  'deviceAuthorization.approval.connections': 'Połączenia: {providers}',
+  'deviceAuthorization.approval.description':
+    'Zatwierdź tylko ekran, na którym widoczny jest ten pasujący kod.',
+  'deviceAuthorization.approval.deviceApproved': 'Urządzenie zatwierdzone',
+  'deviceAuthorization.approval.matchingCode': 'Pasujący kod',
+  'deviceAuthorization.approval.requestingDevice': 'Ekran żądania: {device}',
+  'deviceAuthorization.approval.revocableSession': 'Ekran otrzymuje własną odwołalną sesję Navet.',
+  'deviceAuthorization.approval.title': 'Podłączyć inne urządzenie?',
+  'deviceAuthorization.clickToCopy': 'Kliknij, aby skopiować',
+  'deviceAuthorization.connectWithAnotherDevice': 'Połącz się z innym urządzeniem',
+  'deviceAuthorization.connectingDevice': 'Podłączanie tego urządzenia…',
+  'deviceAuthorization.copied': 'Skopiowano',
+  'deviceAuthorization.copyCodeLabel': 'Skopiuj kod połączenia urządzenia',
+  'deviceAuthorization.copyFailed': 'Nie można skopiować kodu.',
+  'deviceAuthorization.copyFailedDescription': 'Wybierz kod i skopiuj go ręcznie.',
+  'deviceAuthorization.createNewCode': 'Utwórz nowy kod',
+  'deviceAuthorization.defaultDeviceName': 'Navet na {device}',
+  'deviceAuthorization.enterCode': 'Lub wprowadź ten kod na zalogowanym urządzeniu',
+  'deviceAuthorization.preparingApproval': 'Przygotowywanie zatwierdzenia urządzenia…',
+  'deviceAuthorization.preparingConnection': 'Przygotowywanie bezpiecznego połączenia…',
+  'deviceAuthorization.requestDeclined': 'Prośba odrzucona',
+  'deviceAuthorization.requestDeclinedDescription':
+    'Drugie urządzenie nie udzieliło dostępu. Utwórz nowy kod lub zaloguj się normalnie.',
+  'deviceAuthorization.signInInstead': 'Zamiast tego zaloguj',
+  'deviceAuthorization.unknownDevice': 'inne urządzenie',
+  'deviceAuthorization.waitingForApproval': 'Oczekiwanie na zatwierdzenie · Wygasa za {time}',
+  'login.setup.checkFailed':
+    'Navet nie mógł sprawdzić, czy to połączenie jest gotowe. Sprawdź, czy ta instalacja Navet jest dostępna, a następnie spróbuj ponownie.',
+  'login.setup.checkingConnection': 'Sprawdzam to połączenie…',
+  'login.setup.codeLabel': 'Kod konfiguracji',
+  'login.setup.codePlaceholder': 'Wpisz swój kod konfiguracyjny',
+  'login.setup.description':
+    'Uniemożliwia to osobie, która może skontaktować się z Navet, podłączenie go do innego inteligentnego domu. Robisz to tylko podczas dodawania lub zastępowania dostawcy.',
+  'login.setup.dockerInstruction': 'W przypadku Dockera, uruchom',
+  'login.setup.otherInstruction':
+    'Do rozwoju lokalnego użyj kodu wydrukowanego przez serwer deweloperski. Jeśli ktoś inny zainstalował Navet, poproś go o kod.',
+  'login.setup.providerUnavailable':
+    'Ten dostawca nie jest dostępny w bieżącym środowisku uruchomieniowym Navet.',
+  'login.setup.title': 'Jednorazowe zatwierdzenie',
+  'settings.system.authorizedDevices.activity': '{providers} · Aktywny {time}',
+  'settings.system.authorizedDevices.approvalDescription':
+    'Dostęp do {providers} z własną odwołalną sesją Navet.',
+  'settings.system.authorizedDevices.approvalTitle': 'Zatwierdzić {name}?',
+  'settings.system.authorizedDevices.codeLabel': 'Kod połączenia urządzenia',
+  'settings.system.authorizedDevices.codePlaceholder': 'XXXX-XXXX-XXXX',
+  'settings.system.authorizedDevices.connectDescription':
+    'Wprowadź jednorazowy kod widoczny na drugim urządzeniu.',
+  'settings.system.authorizedDevices.connectTitle': 'Podłącz inne urządzenie',
+  'settings.system.authorizedDevices.decline': 'Odrzuć',
+  'settings.system.authorizedDevices.description':
+    'Wyświetlaj urządzenia z dostępem i zarządzaj nimi z poziomu podstawowego logowania.',
+  'settings.system.authorizedDevices.deviceName': 'Nazwa urządzenia',
+  'settings.system.authorizedDevices.feedback.approved': 'Drugi ekran został zatwierdzony.',
+  'settings.system.authorizedDevices.feedback.declined': 'Żądanie urządzenia zostało odrzucone.',
+  'settings.system.authorizedDevices.feedback.promoted':
+    '{name} jest teraz urządzeniem podstawowym.',
+  'settings.system.authorizedDevices.feedback.promotedDescription':
+    'Może łączyć, zmieniać nazwy i usuwać autoryzowane urządzenia.',
+  'settings.system.authorizedDevices.feedback.removed': 'Usunięto {name}.',
+  'settings.system.authorizedDevices.feedback.removedDescription':
+    'Nie może już otworzyć tej instalacji Navet.',
+  'settings.system.authorizedDevices.feedback.renamed': 'Zmieniono nazwę urządzenia na {name}.',
+  'settings.system.authorizedDevices.loading': 'Ładowanie autoryzowanych urządzeń…',
+  'settings.system.authorizedDevices.makePrimary': 'Ustaw jako podstawowy',
+  'settings.system.authorizedDevices.originalSignIn': 'Oryginalne logowanie',
+  'settings.system.authorizedDevices.primary': 'Podstawowe',
+  'settings.system.authorizedDevices.primarySignIn': 'Podstawowe logowanie',
+  'settings.system.authorizedDevices.primarySignInEmpty':
+    'Podstawowe logowanie · Brak innych urządzeń',
+  'settings.system.authorizedDevices.promoteDescription':
+    '{name} będzie mógł łączyć, zmieniać nazwy i usuwać autoryzowane urządzenia. Dane uwierzytelniające dostawcy pozostają chronione na serwerze Navet.',
+  'settings.system.authorizedDevices.promoteTitle': 'Ustawić to urządzenie jako podstawowe?',
+  'settings.system.authorizedDevices.readOnlyDescription':
+    'Tutaj możesz przeglądać urządzenia z dostępem. Połącz je, zmień ich nazwę lub usuń z głównego logowania.',
+  'settings.system.authorizedDevices.readOnlyTitle': 'Zarządzane przez urządzenie podstawowe',
+  'settings.system.authorizedDevices.removeDescription':
+    '{name} natychmiast utraci dostęp do Navet. Możesz połączyć go ponownie później za pomocą nowego kodu zatwierdzenia.',
+  'settings.system.authorizedDevices.removeNamed': 'Usuń {name}',
+  'settings.system.authorizedDevices.removeTitle': 'Usunąć to autoryzowane urządzenie?',
+  'settings.system.authorizedDevices.rename': 'Zmień nazwę urządzenia',
+  'settings.system.authorizedDevices.reviewCode': 'Sprawdź kod',
+  'settings.system.authorizedDevices.saveName': 'Zapisz nazwę urządzenia',
+  'settings.system.authorizedDevices.thisDevice': 'To urządzenie',
+  'settings.system.authorizedDevices.title': 'Autoryzowane urządzenia',
 } as const;

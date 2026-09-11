@@ -3484,4 +3484,92 @@ export const nlMessages = {
   'energy.historyCopy.year': 'jaar',
   'energy.historyCopy.period': 'periode',
   'energy.historyCopy.periods': '{count} periodes',
+  'deviceAuthorization.approval.approveDevice': 'Apparaat goedkeuren',
+  'deviceAuthorization.approval.approvedDescription':
+    'Het andere scherm maakt nu verbinding met Navet.',
+  'deviceAuthorization.approval.approving': 'Goedkeuren…',
+  'deviceAuthorization.approval.connections': 'Verbindingen: {providers}',
+  'deviceAuthorization.approval.description':
+    'Keur alleen het scherm goed waar deze matchingcode zichtbaar is.',
+  'deviceAuthorization.approval.deviceApproved': 'Apparaat goedgekeurd',
+  'deviceAuthorization.approval.matchingCode': 'Overeenkomende code',
+  'deviceAuthorization.approval.requestingDevice': 'Aanvraagscherm: {device}',
+  'deviceAuthorization.approval.revocableSession':
+    'Het scherm ontvangt zijn eigen herroepbare Navet-sessie.',
+  'deviceAuthorization.approval.title': 'Een ander apparaat verbinden?',
+  'deviceAuthorization.clickToCopy': 'Klik om te kopiëren',
+  'deviceAuthorization.connectWithAnotherDevice': 'Verbinding maken met een ander apparaat',
+  'deviceAuthorization.connectingDevice': 'Dit apparaat verbinden...',
+  'deviceAuthorization.copied': 'Gekopieerd',
+  'deviceAuthorization.copyCodeLabel': 'Apparaatverbindingscode kopiëren',
+  'deviceAuthorization.copyFailed': 'Kon de code niet kopiëren.',
+  'deviceAuthorization.copyFailedDescription': 'Selecteer de code en kopieer deze handmatig.',
+  'deviceAuthorization.createNewCode': 'Maak een nieuwe code',
+  'deviceAuthorization.defaultDeviceName': 'Navet op {device}',
+  'deviceAuthorization.enterCode': 'Of voer deze code in op uw ingelogde apparaat',
+  'deviceAuthorization.preparingApproval': 'Apparaatgoedkeuring wordt voorbereid...',
+  'deviceAuthorization.preparingConnection': 'voorbereiden van een beveiligde verbinding...',
+  'deviceAuthorization.requestDeclined': 'Aanvraag afgewezen',
+  'deviceAuthorization.requestDeclinedDescription':
+    'Het andere apparaat gaf geen toegang. Maak een nieuwe code aan of log normaal in.',
+  'deviceAuthorization.signInInstead': 'Log in plaats daarvan in',
+  'deviceAuthorization.unknownDevice': 'een ander apparaat',
+  'deviceAuthorization.waitingForApproval': 'Wachten op goedkeuring · Vervalt over {time}',
+  'login.setup.checkFailed':
+    'Navet kon niet controleren of deze verbinding gereed is. Controleer of deze Navet-installatie bereikbaar is en probeer het opnieuw.',
+  'login.setup.checkingConnection': 'Deze verbinding wordt gecontroleerd...',
+  'login.setup.codeLabel': 'Instellingscode',
+  'login.setup.codePlaceholder': 'Voer je installatiecode in',
+  'login.setup.description':
+    'Dit voorkomt dat iemand die Navet kan bereiken, het kan aansluiten op een ander slim huis. Dit doe je alleen bij het toevoegen of vervangen van een provider.',
+  'login.setup.dockerInstruction': 'Voor Docker, voer',
+  'login.setup.otherInstruction':
+    'Gebruik voor lokale ontwikkeling de code die is afgedrukt door de dev-server. Als iemand anders Navet heeft geïnstalleerd, vraag dan om een code.',
+  'login.setup.providerUnavailable':
+    'Deze provider is niet beschikbaar in de huidige Navet-runtime.',
+  'login.setup.title': 'Eenmalige goedkeuring',
+  'settings.system.authorizedDevices.activity': '{providers} · Actief {time}',
+  'settings.system.authorizedDevices.approvalDescription':
+    'Toegang tot {providers} met een eigen herroepbare Navet-sessie.',
+  'settings.system.authorizedDevices.approvalTitle': '{name} goedkeuren?',
+  'settings.system.authorizedDevices.codeLabel': 'Apparaatverbindingscode',
+  'settings.system.authorizedDevices.codePlaceholder': 'XXXX-XXXX-XXXX',
+  'settings.system.authorizedDevices.connectDescription':
+    'Voer de eenmalige code in die op het andere apparaat wordt weergegeven.',
+  'settings.system.authorizedDevices.connectTitle': 'Een ander apparaat aansluiten',
+  'settings.system.authorizedDevices.decline': 'Afwijzen',
+  'settings.system.authorizedDevices.description':
+    'Bekijk apparaten met toegang en beheer ze vanaf de primaire aanmelding.',
+  'settings.system.authorizedDevices.deviceName': 'Apparaatnaam',
+  'settings.system.authorizedDevices.feedback.approved': 'Het andere scherm werd goedgekeurd.',
+  'settings.system.authorizedDevices.feedback.declined': 'Het apparaatverzoek is afgewezen.',
+  'settings.system.authorizedDevices.feedback.promoted': '{name} is nu een primair apparaat.',
+  'settings.system.authorizedDevices.feedback.promotedDescription':
+    'Het kan geautoriseerde apparaten verbinden, hernoemen en verwijderen.',
+  'settings.system.authorizedDevices.feedback.removed': '{name} is verwijderd.',
+  'settings.system.authorizedDevices.feedback.removedDescription':
+    'Het kan deze Navet-installatie niet meer openen.',
+  'settings.system.authorizedDevices.feedback.renamed': 'Apparaat hernoemd naar {name}.',
+  'settings.system.authorizedDevices.loading': 'Geautoriseerde apparaten laden...',
+  'settings.system.authorizedDevices.makePrimary': 'Primair maken',
+  'settings.system.authorizedDevices.originalSignIn': 'Oorspronkelijke aanmelding',
+  'settings.system.authorizedDevices.primary': 'Primair',
+  'settings.system.authorizedDevices.primarySignIn': 'Primaire aanmelding',
+  'settings.system.authorizedDevices.primarySignInEmpty':
+    'Primaire aanmelding · Geen andere apparaten',
+  'settings.system.authorizedDevices.promoteDescription':
+    '{name} kan geautoriseerde apparaten verbinden, hernoemen en verwijderen. Inloggegevens van de provider blijven beschermd op de Navet-server.',
+  'settings.system.authorizedDevices.promoteTitle': 'Dit een primair apparaat maken?',
+  'settings.system.authorizedDevices.readOnlyDescription':
+    'U kunt hier apparaten met toegang bekijken. Verbind, hernoem of verwijder ze uit de primaire aanmelding.',
+  'settings.system.authorizedDevices.readOnlyTitle': 'Beheerd door het primaire apparaat',
+  'settings.system.authorizedDevices.removeDescription':
+    '{name} verliest onmiddellijk de toegang tot Navet. U kunt het later opnieuw verbinden met een nieuwe goedkeuringscode.',
+  'settings.system.authorizedDevices.removeNamed': '{name} verwijderen',
+  'settings.system.authorizedDevices.removeTitle': 'Dit geautoriseerde apparaat verwijderen?',
+  'settings.system.authorizedDevices.rename': 'Apparaat hernoemen',
+  'settings.system.authorizedDevices.reviewCode': 'Code controleren',
+  'settings.system.authorizedDevices.saveName': 'Apparaatnaam opslaan',
+  'settings.system.authorizedDevices.thisDevice': 'Dit apparaat',
+  'settings.system.authorizedDevices.title': 'Geautoriseerde apparaten',
 } as const;

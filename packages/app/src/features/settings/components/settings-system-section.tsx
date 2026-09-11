@@ -14,6 +14,7 @@ import {
   AlertDialogTitle,
 } from '@navet/app/components/ui/alert-dialog';
 import { useI18n } from '@navet/app/hooks';
+import { supportsAdditionalSmartHomeProviders } from '@navet/app/runtime/app-mode';
 import type { IntegrationProviderId } from '@navet/app/types/provider';
 import {
   ChevronDown,
@@ -30,7 +31,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import type { SettingsSectionController } from '../hooks/use-settings-section-controller';
-import { SettingsDashboardClients } from './settings-dashboard-clients';
+import { SettingsAuthorizedDevices } from './settings-authorized-devices';
 import { SettingsDeviceSettings } from './settings-device-settings';
 import { SettingsItem, SettingsSectionGroup, SettingsSectionShell } from './settings-section-shell';
 
@@ -346,8 +347,11 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
     setShowLogoutConfirm,
     styles,
   } = controller;
+  const showAdditionalProviders = supportsAdditionalSmartHomeProviders();
   const providerCards = allProviderCards.filter(
-    (provider) => provider.implementationStatus === 'implemented'
+    (provider) =>
+      provider.implementationStatus === 'implemented' &&
+      (showAdditionalProviders || provider.id === 'home_assistant')
   );
   const connectedProviders = providerCards.filter((provider) => provider.isConnected);
   const showActiveControls = connectedProviders.length > 1;
@@ -386,6 +390,13 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
         title={t('settings.system.group.smartHome')}
         styles={styles}
       >
+        <SettingsItem
+          title={t('settings.system.authorizedDevices.title')}
+          description={t('settings.system.authorizedDevices.description')}
+          styles={styles}
+        >
+          <SettingsAuthorizedDevices styles={styles} />
+        </SettingsItem>
         <SettingsItem
           title={t('settings.system.providers.title')}
           description={t('settings.system.providers.description')}
@@ -591,13 +602,6 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
         styles={styles}
       >
         <SettingsItem
-          title={t('settings.system.clients.title')}
-          description={t('settings.system.clients.description')}
-          styles={styles}
-        >
-          <SettingsDashboardClients styles={styles} />
-        </SettingsItem>
-        <SettingsItem
           title={t('settings.system.clients.displaySync.title')}
           description={t('settings.system.clients.displaySync.description')}
           styles={styles}
@@ -631,14 +635,16 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
           description={t('settings.system.logout.description')}
           styles={styles}
         >
-          <button
+          <Button
             type="button"
+            size="small"
+            variant="destructive"
             onClick={handleLogout}
-            className={`inline-flex h-9 items-center gap-2 rounded-full border border-red-500/20 bg-red-500/8 px-3.5 text-sm font-medium text-red-500 transition-colors hover:bg-red-500/12 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none ${styles.ringClass}`}
+            leading={<LogOut className="h-4 w-4" />}
+            className="rounded-full"
           >
-            <LogOut className="h-4 w-4" />
-            <span>{t('settings.project.logout')}</span>
-          </button>
+            {t('settings.project.logout')}
+          </Button>
 
           <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
             <AlertDialogContent>

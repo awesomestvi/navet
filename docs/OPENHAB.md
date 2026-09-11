@@ -78,17 +78,12 @@ Then run:
 docker compose up -d
 ```
 
-For a fresh installation, inspect `docker compose logs navet` and open Navet once with the printed
-`#navet_pairing=<64-character-key>` fragment. Navet removes the fragment immediately and keeps the
-key only in browser memory until the enrollment request is accepted. Reloading before you connect
-requires reopening the pairing URL. The key can be recovered later with:
-
-```bash
-docker exec navet cat /data/navet-installation-key
-```
+For a fresh installation, inspect `docker compose logs navet`, open Navet, choose openHAB, and enter
+the temporary setup code when prompted. The code works once and expires after 10 minutes. Run
+`docker exec navet navet-setup-code` to create a new code when needed.
 
 As an alternative, `NAVET_OPENHAB_URL` hard-pins one exact normalized openHAB base URL. A pin
-cannot be overridden by another URL, even with the pairing key.
+cannot be overridden by another URL, even with setup approval.
 
 ### 3. Sign in
 
@@ -101,8 +96,8 @@ cannot be overridden by another URL, even with the pairing key.
 ## What To Expect
 
 - Navet's server-side proxy connects to the openHAB URL you provide.
-- a fresh, unpinned target requires the installation pairing fragment; Navet never returns the key
-  in HTTP content or forwards it to openHAB
+- a fresh, unpinned target requires the temporary setup code; Navet never returns its persistent
+  installation key in HTTP content or forwards setup proof to openHAB
 - There is no separate cloud redirect step.
 - Navet stores the username and password in that browser's server-side provider session and
   authenticates allowlisted REST and WebSocket requests with Basic auth.

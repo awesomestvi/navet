@@ -1,6 +1,10 @@
 import { resetRuntimeContextForTests } from '@navet/app/infrastructure/home-assistant/runtime/runtime-detector';
 import { afterEach, describe, expect, it } from 'vitest';
-import { isHomeAssistantAddonMode, isHomeAssistantPanelMode } from '../app-mode';
+import {
+  isHomeAssistantAddonMode,
+  isHomeAssistantPanelMode,
+  supportsAdditionalSmartHomeProviders,
+} from '../app-mode';
 
 function setPath(path: string) {
   window.history.replaceState(null, '', path);
@@ -28,6 +32,7 @@ describe('app mode detection', () => {
 
     expect(isHomeAssistantPanelMode()).toBe(true);
     expect(isHomeAssistantAddonMode()).toBe(false);
+    expect(supportsAdditionalSmartHomeProviders()).toBe(false);
   });
 
   it('recomputes the runtime when the panel flag appears after an earlier cache', () => {
@@ -46,6 +51,7 @@ describe('app mode detection', () => {
     resetRuntimeContextForTests();
 
     expect(isHomeAssistantAddonMode()).toBe(true);
+    expect(supportsAdditionalSmartHomeProviders()).toBe(false);
   });
 
   it('detects add-on mode from the document base href', () => {
@@ -64,5 +70,6 @@ describe('app mode detection', () => {
     resetRuntimeContextForTests();
 
     expect(isHomeAssistantAddonMode()).toBe(false);
+    expect(supportsAdditionalSmartHomeProviders()).toBe(true);
   });
 });

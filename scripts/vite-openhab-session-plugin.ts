@@ -1,6 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { type PreviewServer, type ViteDevServer } from 'vite';
 import { type ViteInstallationAuthority } from './vite-installation-authority.ts';
+import type { ViteDeviceSessionAuthority } from './vite-device-session-authority.ts';
 import {
   createViteOpenHABSessionStore,
   OPENHAB_SESSION_COOKIE_NAME as OPENHAB_SESSION_COOKIE_BASE_NAME,
@@ -27,13 +28,26 @@ import {
 } from './vite-provider-session-store.ts';
 
 export const OPENHAB_SESSION_MAX_BYTES = 8 * 1024;
-export function openhabSessionStorePlugin(installationAuthority: ViteInstallationAuthority) {
+export function openhabSessionStorePlugin(
+  installationAuthority: ViteInstallationAuthority,
+  deviceSessionAuthority?: ViteDeviceSessionAuthority
+) {
   const OPENHAB_SESSION_COOKIE_NAME = installationAuthority.getCookieNames(
     OPENHAB_SESSION_COOKIE_BASE_NAME
   );
   const openhabSessionStore = createViteOpenHABSessionStore({
     cookieNames: OPENHAB_SESSION_COOKIE_NAME,
+    deviceSessionAuthority,
   });
+  const setOpenHABSessionCookie = (
+    req: IncomingMessage,
+    res: ServerResponse,
+    cookieId: string
+  ) => {
+    if (!deviceSessionAuthority?.isDelegatedRequest(req, 'openhab')) {
+      setViteProviderSessionCookie(req, res, OPENHAB_SESSION_COOKIE_NAME, cookieId);
+    }
+  };
   const loginRateLimiter = createViteOpenHABLoginRateLimiter();
   const OPENHAB_VALIDATE_TIMEOUT_MS = 5_000;
   const sessionTouchIntervalMs = 24 * 60 * 60 * 1000;
@@ -146,7 +160,7 @@ export function openhabSessionStorePlugin(installationAuthority: ViteInstallatio
           updatedAt: Date.now(),
         });
       }
-      setViteProviderSessionCookie(req, res, OPENHAB_SESSION_COOKIE_NAME, context.cookieId);
+      setOpenHABSessionCookie(req, res, context.cookieId);
       sendJson(res, 200, {
         authenticated: true,
         hassUrl: context.session.auth.hassUrl,
@@ -294,7 +308,7 @@ export function openhabSessionStorePlugin(installationAuthority: ViteInstallatio
           });
         }
         if (res) {
-          setViteProviderSessionCookie(req, res, OPENHAB_SESSION_COOKIE_NAME, context.cookieId);
+          setOpenHABSessionCookie(req, res, context.cookieId);
         }
         return context.session.auth;
       },

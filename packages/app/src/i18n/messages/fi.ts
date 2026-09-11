@@ -3451,4 +3451,92 @@ export const fiMessages = {
   'energy.historyCopy.year': 'vuosi',
   'energy.historyCopy.period': 'jakso',
   'energy.historyCopy.periods': '{count} jaksoa',
+  'deviceAuthorization.approval.approveDevice': 'Hyväksy laite',
+  'deviceAuthorization.approval.approvedDescription':
+    'Toinen näyttö muodostaa nyt yhteyttä Navetiin.',
+  'deviceAuthorization.approval.approving': '…',
+  'deviceAuthorization.approval.connections': 'Yhteydet: {providers}',
+  'deviceAuthorization.approval.description':
+    'Hyväksy vain näyttö, jossa tämä vastaava koodi on näkyvissä.',
+  'deviceAuthorization.approval.deviceApproved': 'Laite hyväksytty',
+  'deviceAuthorization.approval.matchingCode': 'Täsmäävä koodi',
+  'deviceAuthorization.approval.requestingDevice': 'Pyyntönäyttö: {device}',
+  'deviceAuthorization.approval.revocableSession': 'Näyttö saa oman peruutettavan Navet-istunnon.',
+  'deviceAuthorization.approval.title': 'Yhdistetäänkö toinen laite?',
+  'deviceAuthorization.clickToCopy': 'Kopioi napsauttamalla',
+  'deviceAuthorization.connectWithAnotherDevice': 'Yhdistä toiseen laitteeseen',
+  'deviceAuthorization.connectingDevice': 'Tätä laitetta yhdistetään...',
+  'deviceAuthorization.copied': 'Kopioitu',
+  'deviceAuthorization.copyCodeLabel': 'Kopioi laitteen yhteyskoodi',
+  'deviceAuthorization.copyFailed': 'Koodia ei voitu kopioida.',
+  'deviceAuthorization.copyFailedDescription': 'Valitse koodi ja kopioi se manuaalisesti.',
+  'deviceAuthorization.createNewCode': 'Luo uusi koodi',
+  'deviceAuthorization.defaultDeviceName': 'Navet laitteella {device}',
+  'deviceAuthorization.enterCode': 'Tai syötä tämä koodi kirjautuneella laitteellasi',
+  'deviceAuthorization.preparingApproval': 'Valmistellaan laitteen hyväksyntää…',
+  'deviceAuthorization.preparingConnection': 'Valmistellaan suojattua yhteyttä...',
+  'deviceAuthorization.requestDeclined': 'Pyyntö hylätty',
+  'deviceAuthorization.requestDeclinedDescription':
+    'Toinen laite ei myöntänyt käyttöoikeutta. Luo uusi koodi tai kirjaudu sisään normaalisti.',
+  'deviceAuthorization.signInInstead': 'Kirjaudu sen sijaan sisään',
+  'deviceAuthorization.unknownDevice': 'toinen laite',
+  'deviceAuthorization.waitingForApproval': 'Odotetaan hyväksyntää · Vanhenee {time} kuluttua',
+  'login.setup.checkFailed':
+    'Navet ei voinut tarkistaa, onko tämä yhteys valmis. Tarkista, että tämä Navet-asennus on tavoitettavissa, ja yritä sitten uudelleen.',
+  'login.setup.checkingConnection': 'Tarkistetaan tätä yhteyttä...',
+  'login.setup.codeLabel': 'Asennuskoodi',
+  'login.setup.codePlaceholder': 'Syötä asetuskoodisi',
+  'login.setup.description':
+    'Tämä estää henkilöä, joka voi tavoittaa Navetin, yhdistämästä sitä toiseen älykotiin. Tämä tehdään vain palveluntarjoajaa lisättäessä tai vaihdettaessa.',
+  'login.setup.dockerInstruction': 'Dockerille, suorita',
+  'login.setup.otherInstruction':
+    'Käytä paikallista kehittämistä varten DEV-palvelimen tulostamaa koodia. Jos joku muu on asentanut Navetin, pyydä häneltä koodi.',
+  'login.setup.providerUnavailable':
+    'Tämä palveluntarjoaja ei ole käytettävissä nykyisessä Navetin ajoajassa.',
+  'login.setup.title': 'Kertahyväksyntä',
+  'settings.system.authorizedDevices.activity': '{providers} · Aktiivinen {time}',
+  'settings.system.authorizedDevices.approvalDescription':
+    '{providers}: n käyttöoikeus omalla peruutettavalla Navet-istunnollaan.',
+  'settings.system.authorizedDevices.approvalTitle': 'Hyväksytäänkö {name}?',
+  'settings.system.authorizedDevices.codeLabel': 'Laitteen yhteyskoodi',
+  'settings.system.authorizedDevices.codePlaceholder': 'XXXX-XXXX-XXXX',
+  'settings.system.authorizedDevices.connectDescription':
+    'Syötä toisessa laitteessa näkyvä kertaluonteinen koodi.',
+  'settings.system.authorizedDevices.connectTitle': 'Yhdistä toinen laite',
+  'settings.system.authorizedDevices.decline': 'Hylkää',
+  'settings.system.authorizedDevices.description':
+    'Tarkastele laitteita, joilla on käyttöoikeus, ja hallinnoi niitä ensisijaisesta kirjautumisesta.',
+  'settings.system.authorizedDevices.deviceName': 'Laitteen nimi',
+  'settings.system.authorizedDevices.feedback.approved': 'Toinen näyttö hyväksyttiin.',
+  'settings.system.authorizedDevices.feedback.declined': 'Laitepyyntö hylättiin.',
+  'settings.system.authorizedDevices.feedback.promoted': '{name} on nyt ensisijainen laite.',
+  'settings.system.authorizedDevices.feedback.promotedDescription':
+    'Se voi yhdistää, nimetä uudelleen ja poistaa valtuutettuja laitteita.',
+  'settings.system.authorizedDevices.feedback.removed': '{name} poistettiin.',
+  'settings.system.authorizedDevices.feedback.removedDescription':
+    'Se ei voi enää avata tätä Navet-asennusta.',
+  'settings.system.authorizedDevices.feedback.renamed':
+    'Laite on nimetty uudelleen nimellä {name}.',
+  'settings.system.authorizedDevices.loading': 'Ladataan valtuutettuja laitteita…',
+  'settings.system.authorizedDevices.makePrimary': 'Aseta ensisijaiseksi',
+  'settings.system.authorizedDevices.originalSignIn': 'Alkuperäinen kirjautuminen',
+  'settings.system.authorizedDevices.primary': 'Ensisijainen',
+  'settings.system.authorizedDevices.primarySignIn': 'Ensisijainen kirjautuminen',
+  'settings.system.authorizedDevices.primarySignInEmpty':
+    'Ensisijainen kirjautuminen · Ei muita laitteita',
+  'settings.system.authorizedDevices.promoteDescription':
+    '{name} voi yhdistää, nimetä uudelleen ja poistaa valtuutettuja laitteita. Palveluntarjoajan kirjautumistiedot pysyvät suojattuina Navet-palvelimella.',
+  'settings.system.authorizedDevices.promoteTitle': 'Tehdäänkö tästä ensisijainen laite?',
+  'settings.system.authorizedDevices.readOnlyDescription':
+    'Voit tarkastella laitteita, joilla on käyttöoikeus täällä. Yhdistä, nimeä uudelleen tai poista ne ensisijaisesta kirjautumisesta.',
+  'settings.system.authorizedDevices.readOnlyTitle': 'Ensisijaisen laitteen hallinnoima',
+  'settings.system.authorizedDevices.removeDescription':
+    '{name} menettää välittömästi Navetin käyttöoikeuden. Voit yhdistää sen myöhemmin uudelleen uudella hyväksyntäkoodilla.',
+  'settings.system.authorizedDevices.removeNamed': 'Poista {name}',
+  'settings.system.authorizedDevices.removeTitle': 'Poistetaanko tämä valtuutettu laite?',
+  'settings.system.authorizedDevices.rename': 'Nimeä laite uudelleen',
+  'settings.system.authorizedDevices.reviewCode': 'Arvostelukoodi',
+  'settings.system.authorizedDevices.saveName': 'Tallenna laitteen nimi',
+  'settings.system.authorizedDevices.thisDevice': 'Tämä laite',
+  'settings.system.authorizedDevices.title': 'Sallitut laitteet',
 } as const;

@@ -15,12 +15,17 @@ import {
 } from './vite-dashboard-profile-store.ts';
 import { createViteChoreStoreRequestHandler } from './vite-chore-store.ts';
 import { type ViteInstallationAuthority } from './vite-installation-authority.ts';
+import type { ViteDeviceSessionAuthority } from './vite-device-session-authority.ts';
 
-export function authSessionStorePlugin(installationAuthority: ViteInstallationAuthority) {
+export function authSessionStorePlugin(
+  installationAuthority: ViteInstallationAuthority,
+  deviceSessionAuthority?: ViteDeviceSessionAuthority
+) {
   const authSessionStore = createViteAuthSessionStore(
     undefined,
     undefined,
-    installationAuthority.getCookieNames(AUTH_COOKIE_NAME)
+    installationAuthority.getCookieNames(AUTH_COOKIE_NAME),
+    deviceSessionAuthority
   );
   const handleRequest = createViteAuthRequestHandler(
     authSessionStore,
@@ -47,6 +52,20 @@ export function authSessionStorePlugin(installationAuthority: ViteInstallationAu
         return resolveViteAuthenticatedPrincipal(req, authSessionStore, options);
       },
     },
+    configureServer: registerMiddleware,
+    configurePreviewServer: registerMiddleware,
+  };
+}
+
+export function deviceSessionStorePlugin(authority: ViteDeviceSessionAuthority) {
+  const registerMiddleware = (server: ViteDevServer | PreviewServer) => {
+    server.middlewares.use('/__navet_devices__', async (req, res) => {
+      await authority.handle(req, res);
+    });
+  };
+
+  return {
+    name: 'navet-device-session-store',
     configureServer: registerMiddleware,
     configurePreviewServer: registerMiddleware,
   };

@@ -515,7 +515,7 @@ async function startHomeAssistantOAuth(
         returnTo: '/wall-panel?view=home&code=stale&state=stale#lights',
       }),
     });
-  const response = await requestStart();
+  const response = await requestStart(installationKey);
   if (response.status !== 200) {
     throw new Error(
       `Docker NJS OAuth authorize endpoint did not start Home Assistant login: ${response.status}`
@@ -564,7 +564,8 @@ async function startHomeAssistantOAuth(
 async function startHomeAssistantOAuthThroughAlternateBrowserRoute(
   baseUrl,
   containerName,
-  browserSession
+  browserSession,
+  installationKey
 ) {
   const browserHassUrl = 'http://100.77.118.32:8123';
   const response = await fetch(`${baseUrl}/__navet_auth__/authorize`, {
@@ -574,6 +575,7 @@ async function startHomeAssistantOAuthThroughAlternateBrowserRoute(
       Origin: baseUrl,
       'Content-Type': 'application/json',
       'X-Navet-OAuth-Binding': browserSession.metadata.sessionId,
+      'X-Navet-Installation-Key': installationKey,
     },
     body: JSON.stringify({
       hassUrl: browserHassUrl,
@@ -1062,11 +1064,21 @@ const addonDirectProbeSource = `
     });
     const auth = await authResponse.json();
     const authCookie = (authResponse.headers.get('set-cookie') || '').split(';')[0];
+    const setupResponse = await fetch(baseUrl + '/__navet_auth__/setup', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Origin': baseUrl
+      },
+      body: JSON.stringify({ code: process.env.NAVET_SETUP_CODE }),
+      signal: AbortSignal.timeout(2000)
+    });
+    const setupCookie = (setupResponse.headers.get('set-cookie') || '').split(';')[0];
     const authorizeResponse = await fetch(baseUrl + '/__navet_auth__/authorize', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Cookie': authCookie,
+        'Cookie': [authCookie, setupCookie].filter(Boolean).join('; '),
         'Origin': baseUrl,
         'X-Navet-OAuth-Binding': auth.sessionId
       },
@@ -1284,10 +1296,27 @@ function readHomeAssistantAddonIngressProfile(probeContainerName, cookie = '') {
   }
 }
 
-function assertHomeAssistantAddonDirectListener(probeContainerName) {
+function assertHomeAssistantAddonDirectListener(probeContainerName, addonContainerName) {
+  const setupCodeResult = spawnSync(
+    'docker',
+    ['exec', addonContainerName, 'cat', '/data/navet-setup-code.json'],
+    { stdio: 'pipe', encoding: 'utf8' }
+  );
+  if (setupCodeResult.error || setupCodeResult.status !== 0) {
+    throw new Error(setupCodeResult.error?.message || setupCodeResult.stderr.trim());
+  }
+  const setupCodeRecord = JSON.parse(setupCodeResult.stdout);
   const result = spawnSync(
     'docker',
-    ['exec', probeContainerName, 'node', '-e', addonDirectProbeSource],
+    [
+      'exec',
+      '-e',
+      `NAVET_SETUP_CODE=${setupCodeRecord.code}`,
+      probeContainerName,
+      'node',
+      '-e',
+      addonDirectProbeSource,
+    ],
     { stdio: 'pipe', encoding: 'utf8' }
   );
   if (result.error || result.status !== 0) {
@@ -2263,7 +2292,7 @@ try {
     addonContainerName,
     addonProbeContainerName
   );
-  assertHomeAssistantAddonDirectListener(addonProbeContainerName);
+  assertHomeAssistantAddonDirectListener(addonProbeContainerName, addonContainerName);
   const addonCookie = assertHomeAssistantAddonIngressCookie(
     firstAddonProfile.cookie
   );
@@ -2401,7 +2430,8 @@ try {
   await startHomeAssistantOAuthThroughAlternateBrowserRoute(
     baseUrl,
     containerName,
-    secondBrowser
+    secondBrowser,
+    installationKey
   );
   await verifyHomeAssistantProxyTokenRefresh(baseUrl, authenticatedCookie);
   const authRefresh = await verifyHomeAssistantRefreshRevision(
@@ -2523,14 +2553,14 @@ try {
   ) {
     throw new Error('The profile runtime logged a JavaScript exception or crashed');
   }
-  const keyLogLines = combinedRuntimeLogs
+  if (combinedRuntimeLogs.includes(installationKey)) {
+    throw new Error('The installation key leaked into runtime logs');
+  }
+  const setupCodeLogLines = combinedRuntimeLogs
     .split('\n')
-    .filter((line) => line.includes(installationKey));
-  if (
-    keyLogLines.length !== 1 ||
-    !keyLogLines[0].includes(`#navet_pairing=${installationKey}`)
-  ) {
-    throw new Error('The installation key appeared outside its startup pairing instruction');
+    .filter((line) => /Navet setup code: [a-f0-9]{4}(?:-[a-f0-9]{4}){3}/.test(line));
+  if (setupCodeLogLines.length !== 1) {
+    throw new Error('The temporary setup code was not logged exactly once at startup');
   }
 
   const resolverConfig = spawnSync(

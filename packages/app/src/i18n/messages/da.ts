@@ -3436,4 +3436,91 @@ export const daMessages = {
   'energy.historyCopy.year': 'år',
   'energy.historyCopy.period': 'periode',
   'energy.historyCopy.periods': '{count} perioder',
+  'deviceAuthorization.approval.approveDevice': 'Godkend enhed',
+  'deviceAuthorization.approval.approvedDescription':
+    'Den anden skærm opretter forbindelse til Navet nu.',
+  'deviceAuthorization.approval.approving': 'Godkender...',
+  'deviceAuthorization.approval.connections': 'Forbindelser: {providers}',
+  'deviceAuthorization.approval.description':
+    'Godkend kun skærmen, hvor denne matchende kode er synlig.',
+  'deviceAuthorization.approval.deviceApproved': 'Enhed godkendt',
+  'deviceAuthorization.approval.matchingCode': 'Matchende kode',
+  'deviceAuthorization.approval.requestingDevice': 'Anmodningsskærm: {device}',
+  'deviceAuthorization.approval.revocableSession':
+    'Skærmen modtager sin egen genkaldelige Navet-session.',
+  'deviceAuthorization.approval.title': 'Tilslut en anden enhed?',
+  'deviceAuthorization.clickToCopy': 'Klik for at kopiere',
+  'deviceAuthorization.connectWithAnotherDevice': 'Opret forbindelse til en anden enhed',
+  'deviceAuthorization.connectingDevice': 'Tilslutter denne enhed...',
+  'deviceAuthorization.copied': 'Kopieret',
+  'deviceAuthorization.copyCodeLabel': 'Kopier enhedens forbindelseskode',
+  'deviceAuthorization.copyFailed': 'Kunne ikke kopiere koden.',
+  'deviceAuthorization.copyFailedDescription': 'Vælg koden, og kopier den manuelt.',
+  'deviceAuthorization.createNewCode': 'Opret en ny kode',
+  'deviceAuthorization.defaultDeviceName': 'Navet på {device}',
+  'deviceAuthorization.enterCode': 'Eller indtast denne kode på din indloggede enhed',
+  'deviceAuthorization.preparingApproval': 'Forbereder enhedsgodkendelse...',
+  'deviceAuthorization.preparingConnection': 'Forbereder en sikker forbindelse...',
+  'deviceAuthorization.requestDeclined': 'Anmodningen blev afvist',
+  'deviceAuthorization.requestDeclinedDescription':
+    'Den anden enhed gav ikke adgang. Opret en ny kode, eller log ind normalt.',
+  'deviceAuthorization.signInInstead': 'Log ind i stedet',
+  'deviceAuthorization.unknownDevice': 'en anden enhed',
+  'deviceAuthorization.waitingForApproval': 'Venter på godkendelse · Udløber om {time}',
+  'login.setup.checkFailed':
+    'Navet kunne ikke kontrollere, om denne forbindelse er klar. Kontroller, at denne Navet-installation er tilgængelig, og prøv derefter igen.',
+  'login.setup.checkingConnection': 'Kontrollerer denne forbindelse...',
+  'login.setup.codeLabel': 'Opsætningskode',
+  'login.setup.codePlaceholder': 'Indtast din konfigurationskode',
+  'login.setup.description':
+    'Dette forhindrer en person, der kan nå Navet, i at forbinde det til et andet smart hjem. Det gør du kun, når du tilføjer eller erstatter en udbyder.',
+  'login.setup.dockerInstruction': 'For Docker, kør',
+  'login.setup.otherInstruction':
+    'Til lokal udvikling skal du bruge den kode, der er udskrevet af dev-serveren. Hvis en anden har installeret Navet, skal du bede vedkommende om en kode.',
+  'login.setup.providerUnavailable':
+    'Denne udbyder er ikke tilgængelig i den aktuelle Navet runtime.',
+  'login.setup.title': 'Engangsgodkendelse',
+  'settings.system.authorizedDevices.activity': '{providers} · Aktiv {time}',
+  'settings.system.authorizedDevices.approvalDescription':
+    'Adgang til {providers} med sin egen genkaldelige Navet-session.',
+  'settings.system.authorizedDevices.approvalTitle': 'Godkend {name}?',
+  'settings.system.authorizedDevices.codeLabel': 'Enhedsforbindelseskode',
+  'settings.system.authorizedDevices.codePlaceholder': 'XXXX-XXXX-XXXX',
+  'settings.system.authorizedDevices.connectDescription':
+    'Indtast engangskoden, der vises på den anden enhed.',
+  'settings.system.authorizedDevices.connectTitle': 'Tilslut en anden enhed',
+  'settings.system.authorizedDevices.decline': 'Afvis',
+  'settings.system.authorizedDevices.description':
+    'Se enheder med adgang, og administrer dem fra den primære logon.',
+  'settings.system.authorizedDevices.deviceName': 'Enhedsnavn',
+  'settings.system.authorizedDevices.feedback.approved': 'Den anden skærm blev godkendt.',
+  'settings.system.authorizedDevices.feedback.declined': 'Enhedsanmodningen blev afvist.',
+  'settings.system.authorizedDevices.feedback.promoted': '{name} er nu en primær enhed.',
+  'settings.system.authorizedDevices.feedback.promotedDescription':
+    'Den kan oprette forbindelse til, omdøbe og fjerne autoriserede enheder.',
+  'settings.system.authorizedDevices.feedback.removed': '{name} blev fjernet.',
+  'settings.system.authorizedDevices.feedback.removedDescription':
+    'Den kan ikke længere åbne denne Navet-installation.',
+  'settings.system.authorizedDevices.feedback.renamed': 'Enhed omdøbt til {name}.',
+  'settings.system.authorizedDevices.loading': 'Indlæser autoriserede enheder...',
+  'settings.system.authorizedDevices.makePrimary': 'Gør til primær',
+  'settings.system.authorizedDevices.originalSignIn': 'Oprindelig logon',
+  'settings.system.authorizedDevices.primary': 'Primær',
+  'settings.system.authorizedDevices.primarySignIn': 'Primær logon',
+  'settings.system.authorizedDevices.primarySignInEmpty': 'Primær logon · Ingen andre enheder',
+  'settings.system.authorizedDevices.promoteDescription':
+    '{name} vil kunne oprette forbindelse til, omdøbe og fjerne autoriserede enheder. Udbyderens legitimationsoplysninger forbliver beskyttet på Navet-serveren.',
+  'settings.system.authorizedDevices.promoteTitle': 'Gør dette til en primær enhed?',
+  'settings.system.authorizedDevices.readOnlyDescription':
+    'Du kan se enheder med adgang her. Opret forbindelse til, omdøb eller fjern dem fra det primære login.',
+  'settings.system.authorizedDevices.readOnlyTitle': 'Administreret af den primære enhed',
+  'settings.system.authorizedDevices.removeDescription':
+    '{name} mister straks adgang til Navet. Du kan forbinde den igen senere med en ny godkendelseskode.',
+  'settings.system.authorizedDevices.removeNamed': 'Fjern {name}',
+  'settings.system.authorizedDevices.removeTitle': 'Vil du fjerne denne autoriserede enhed?',
+  'settings.system.authorizedDevices.rename': 'Omdøb enhed',
+  'settings.system.authorizedDevices.reviewCode': 'Gennemgangskode',
+  'settings.system.authorizedDevices.saveName': 'Gem enhedsnavn',
+  'settings.system.authorizedDevices.thisDevice': 'Denne enhed',
+  'settings.system.authorizedDevices.title': 'Godkendte enheder',
 } as const;

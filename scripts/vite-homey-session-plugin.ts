@@ -1,6 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { type PreviewServer, type ViteDevServer } from 'vite';
 import { type ViteInstallationAuthority } from './vite-installation-authority.ts';
+import type { ViteDeviceSessionAuthority } from './vite-device-session-authority.ts';
 import {
   appendHomeyOAuthCallbackMarker,
   appendHomeyOAuthFailureMarker,
@@ -33,13 +34,26 @@ import {
 } from './vite-provider-session-store.ts';
 
 const HOMEY_SESSION_MAX_BYTES = 8 * 1024;
-export function homeySessionStorePlugin(installationAuthority: ViteInstallationAuthority) {
+export function homeySessionStorePlugin(
+  installationAuthority: ViteInstallationAuthority,
+  deviceSessionAuthority?: ViteDeviceSessionAuthority
+) {
   const HOMEY_SESSION_COOKIE_NAME = installationAuthority.getCookieNames(
     HOMEY_SESSION_COOKIE_BASE_NAME
   );
   const homeySessionStore = createViteHomeySessionStore({
     cookieNames: HOMEY_SESSION_COOKIE_NAME,
+    deviceSessionAuthority,
   });
+  const setHomeySessionCookie = (
+    req: IncomingMessage,
+    res: ServerResponse,
+    cookieId: string
+  ) => {
+    if (!deviceSessionAuthority?.isDelegatedRequest(req, 'homey')) {
+      setViteProviderSessionCookie(req, res, HOMEY_SESSION_COOKIE_NAME, cookieId);
+    }
+  };
   const athomApiBaseUrl = 'https://api.athom.com';
   const defaultHomeyCallbackPath = '/__navet_homey__/callback';
   const sessionTouchIntervalMs = 24 * 60 * 60 * 1000;
@@ -407,7 +421,7 @@ export function homeySessionStorePlugin(installationAuthority: ViteInstallationA
       next = writeHomeyRecord(context.cookieId, next, {});
     }
     if (res) {
-      setViteProviderSessionCookie(req, res, HOMEY_SESSION_COOKIE_NAME, context.cookieId);
+      setHomeySessionCookie(req, res, context.cookieId);
     }
     return next;
   };
@@ -431,7 +445,7 @@ export function homeySessionStorePlugin(installationAuthority: ViteInstallationA
           sendNoContent(res);
           return;
         }
-        setViteProviderSessionCookie(req, res, HOMEY_SESSION_COOKIE_NAME, context.cookieId);
+        setHomeySessionCookie(req, res, context.cookieId);
         sendJson(res, 200, sanitizeHomeySession(latest.auth));
       };
       const persistSession = (session: HomeySessionData) => {
