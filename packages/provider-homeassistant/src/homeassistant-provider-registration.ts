@@ -143,7 +143,6 @@ export interface HomeAssistantProviderDependencies {
     ) => ReturnType<HomeAssistantServiceBridge['browseMediaSource']>;
     resolveMediaSource: HomeAssistantServiceBridge['resolveMediaSource'];
     getAutomationConfig: HomeAssistantServiceBridge['getAutomationConfig'];
-    saveAutomationConfig: HomeAssistantServiceBridge['saveAutomationConfig'];
     getCameraCapabilities: HomeAssistantServiceBridge['getCameraCapabilities'];
     enableCameraMotionDetection: HomeAssistantServiceBridge['enableCameraMotionDetection'];
     disableCameraMotionDetection: HomeAssistantServiceBridge['disableCameraMotionDetection'];
@@ -239,8 +238,6 @@ function createHomeAssistantServiceBridgeFromDependencies(
       dependencies.homeAssistantService.resolveMediaSource(mediaContentId),
     getAutomationConfig: (entityId) =>
       dependencies.homeAssistantService.getAutomationConfig(entityId),
-    saveAutomationConfig: (configKey, config) =>
-      dependencies.homeAssistantService.saveAutomationConfig(configKey, config),
     getCameraCapabilities: (entityId) =>
       dependencies.homeAssistantService.getCameraCapabilities(entityId),
     enableCameraMotionDetection: (entityId) =>

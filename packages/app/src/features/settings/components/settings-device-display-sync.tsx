@@ -238,13 +238,7 @@ export function SettingsDeviceDisplaySync({
       >
         <div className="p-4 md:p-5">
           <div className="min-w-0">
-            <p className={`text-sm font-medium ${styles.textColor}`}>
-              {t('settings.system.clients.displaySync.title')}
-            </p>
-            <p className={`mt-1 text-sm leading-6 ${styles.subtleColor}`}>
-              {t('settings.system.clients.displaySync.description')}
-            </p>
-            <div className={`mt-3 flex items-center gap-2 ${styles.mutedColor}`}>
+            <div className={`flex items-center gap-2 ${styles.mutedColor}`}>
               <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-current" aria-hidden="true" />
               <p className="text-xs font-medium">
                 {linkedProfile

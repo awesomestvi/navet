@@ -1461,21 +1461,6 @@ const ADDITIONAL_STORY_DOCS: Record<string, string> = {
       'Confirm compact controls remain comfortable on touch-first dashboard hardware.',
     ]
   ),
-  'Pages/Tasks/Habit Insights': doc(
-    'Local habit suggestions shown inside Tasks after Navet recognizes a repeated household routine.',
-    [
-      'Suggestion, learning, empty, and disabled states for the local-habits surface.',
-      'The evidence, confidence, safety context, and explicit confirmation required before creating a rule.',
-    ],
-    [
-      'Use this story when changing habit explanation, feedback actions, or automation confirmation.',
-      'Keep examples grounded in ordinary household routines and use names people would recognize at home.',
-    ],
-    [
-      'Confirm Navet explains why it made a suggestion before asking for a decision.',
-      'Confirm dismissing and creating a rule are distinct, understandable actions in every theme.',
-    ]
-  ),
   'Components/Patterns/Form Field': doc(
     'Shared field-block pattern for form labels, helper text, and the control body they describe.',
     [

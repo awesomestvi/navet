@@ -213,18 +213,25 @@ describe('SettingsSystemSection', () => {
     );
     expect(providerActions).not.toBeNull();
     if (providerActions) {
-      expect(within(providerActions).getByRole('link', { name: 'Open' })).toBeInTheDocument();
+      const openAction = within(providerActions).getByRole('link', { name: 'Open' });
+      const disconnectAction = within(providerActions).getByRole('button', {
+        name: 'Disconnect',
+      });
+      expect(openAction).toBeInTheDocument();
       expect(
         within(providerActions).getByRole('button', { name: 'Disconnect' })
       ).toBeInTheDocument();
+      expect(Array.from(providerActions.children)).toHaveLength(3);
+      for (const action of Array.from(providerActions.children)) {
+        expect(action).toHaveClass('flex-1');
+        expect(action).not.toHaveClass('sm:flex-none');
+      }
+      expect(disconnectAction).toHaveClass('flex-1');
     }
     expect(screen.getByRole('button', { name: 'Manage 2 other providers' })).toBeInTheDocument();
     expect(screen.queryByText('openHAB')).not.toBeInTheDocument();
     expect(screen.queryByText('Camera live streams')).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'View supported entities' })).toHaveAttribute(
-      'href',
-      'https://docs.navet.app/integrations/#home-assistant'
-    );
+    expect(screen.queryByRole('link', { name: 'View supported entities' })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Manage 2 other providers' }));
 
@@ -236,15 +243,7 @@ describe('SettingsSystemSection', () => {
     expect(screen.queryByRole('button', { name: 'Make active' })).not.toBeInTheDocument();
     expect(screen.queryByText('Lighting')).not.toBeInTheDocument();
     expect(screen.queryByText('Notifications')).not.toBeInTheDocument();
-    expect(
-      screen
-        .getAllByRole('link', { name: 'View supported entities' })
-        .map((link) => link.getAttribute('href'))
-    ).toEqual([
-      'https://docs.navet.app/integrations/#home-assistant',
-      'https://docs.navet.app/integrations/#homey',
-      'https://docs.navet.app/integrations/#openhab',
-    ]);
+    expect(screen.queryByRole('link', { name: 'View supported entities' })).not.toBeInTheDocument();
   });
 
   it('starts a fresh Home Assistant connection from its current address', () => {
@@ -530,26 +529,29 @@ describe('SettingsSystemSection', () => {
 
     renderWithProviders(<SettingsSystemSection controller={controller} />);
 
-    expect(screen.getByText('Connected devices')).toBeInTheDocument();
-    expect(screen.getByText('This device')).toBeInTheDocument();
-    expect(screen.getByText('Other devices')).toBeInTheDocument();
+    expect(screen.getByText('Displays and sync')).toBeInTheDocument();
+    expect(screen.getByText('Connected displays')).toBeInTheDocument();
+    expect(screen.getByText('Device settings')).toBeInTheDocument();
+    expect(screen.getByText('This display')).toBeInTheDocument();
+    expect(screen.getByText('Other displays')).toBeInTheDocument();
+    expect(screen.queryByText(/Browser ID/)).not.toBeInTheDocument();
     expect(screen.getByText('Synced')).toBeInTheDocument();
     expect(screen.getAllByText('Revision 5')).toHaveLength(2);
     expect(screen.getByText('Dashboard updated from Kitchen panel')).toBeInTheDocument();
     expect(screen.getByText('Signed in as Vishal')).toBeInTheDocument();
 
-    expect(screen.queryByRole('textbox', { name: 'Device name' })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Rename device' }));
+    expect(screen.queryByRole('textbox', { name: 'Display name' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Rename display' }));
 
-    fireEvent.change(screen.getByRole('textbox', { name: 'Device name' }), {
+    fireEvent.change(screen.getByRole('textbox', { name: 'Display name' }), {
       target: { value: 'Vishal’s phone' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Save name' }));
     expect(useDashboardProfileRuntimeStore.getState().client?.name).toBe('Vishal’s phone');
-    expect(screen.queryByRole('textbox', { name: 'Device name' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: 'Display name' })).not.toBeInTheDocument();
   });
 
-  it('hides the other devices section when this is the only registered device', () => {
+  it('hides the other displays section when this is the only registered client', () => {
     const currentClient = useDashboardProfileRuntimeStore.getState().client;
     expect(currentClient).not.toBeNull();
     if (!currentClient) return;
@@ -567,11 +569,51 @@ describe('SettingsSystemSection', () => {
 
     renderWithProviders(<SettingsSystemSection controller={controller} />);
 
-    expect(screen.queryByText('Other devices')).not.toBeInTheDocument();
+    expect(screen.queryByText('Other displays')).not.toBeInTheDocument();
     expect(
-      screen.queryByText('No other device has connected to this Navet installation yet.')
+      screen.queryByText('No other display has connected to this Navet installation yet.')
     ).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Rename device' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Rename display' })).toBeInTheDocument();
+  });
+
+  it('shows four recent displays and moves older displays into history', () => {
+    const currentClient = useDashboardProfileRuntimeStore.getState().client;
+    expect(currentClient).not.toBeNull();
+    if (!currentClient) return;
+
+    useDashboardProfileRuntimeStore.getState().setClients([
+      {
+        id: currentClient.id,
+        name: currentClient.name,
+        kind: currentClient.kind,
+        firstSeenAt: '2026-07-25T08:00:00.000Z',
+        lastSeenAt: '2026-07-25T08:00:00.000Z',
+        lastRevision: 5,
+      },
+      ...Array.from({ length: 6 }, (_, index) => ({
+        id: `display_${index + 1}`,
+        name: `Display ${index + 1}`,
+        kind: 'phone' as const,
+        firstSeenAt: `2026-07-${24 - index}T08:00:00.000Z`,
+        lastSeenAt: `2026-07-${24 - index}T08:00:00.000Z`,
+        lastRevision: 4 - index,
+      })),
+    ]);
+
+    renderWithProviders(<SettingsSystemSection controller={controller} />);
+
+    for (const name of ['Display 1', 'Display 2', 'Display 3', 'Display 4']) {
+      expect(screen.getByText(name)).toBeInTheDocument();
+    }
+    expect(screen.queryByText('Display 5')).not.toBeInTheDocument();
+    expect(screen.queryByText('Display 6')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'History' }));
+
+    expect(screen.getByText('Earlier displays')).toBeInTheDocument();
+    expect(screen.getByText('Display 5')).toBeInTheDocument();
+    expect(screen.getByText('Display 6')).toBeInTheDocument();
+    expect(screen.getByText('Dashboard revisions')).toBeInTheDocument();
   });
 
   it('copies display settings once or creates an automatic linked profile', async () => {
@@ -607,8 +649,8 @@ describe('SettingsSystemSection', () => {
 
     renderWithProviders(<SettingsSystemSection controller={controller} />);
 
-    expect(screen.getByText('Independent on this device')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Copy to devices' }));
+    expect(screen.getByText('Not shared — changes affect only this device')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Copy settings once' }));
     fireEvent.click(screen.getByRole('button', { name: 'Copy settings' }));
     await waitFor(() =>
       expect(dashboardProfileServiceMocks.copyDashboardDisplaySettings).toHaveBeenCalledWith(
@@ -618,7 +660,7 @@ describe('SettingsSystemSection', () => {
       )
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Keep devices in sync' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Keep settings synced' }));
     fireEvent.change(screen.getByRole('textbox', { name: 'Group name' }), {
       target: { value: 'Personal devices' },
     });
@@ -749,14 +791,14 @@ describe('SettingsSystemSection', () => {
     renderWithProviders(<SettingsSystemSection controller={controller} />);
 
     expect(dashboardProfileServiceMocks.loadDashboardProfileHistory).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', { name: 'Revision history' }));
+    fireEvent.click(screen.getByRole('button', { name: 'History' }));
 
     await waitFor(() => {
       expect(dashboardProfileServiceMocks.loadDashboardProfileHistory).toHaveBeenCalledTimes(1);
     });
     expect(screen.getByText('Current')).toBeInTheDocument();
     expect(screen.getByText('Revision 3')).toBeInTheDocument();
-    const historyViewport = screen.getByRole('region', { name: 'Revision history' });
+    const historyViewport = screen.getByRole('region', { name: 'History' });
     expect(historyViewport).toHaveClass(
       'max-h-[min(22rem,55vh)]',
       'overflow-y-auto',
@@ -856,7 +898,7 @@ describe('SettingsSystemSection', () => {
     window.addEventListener(DASHBOARD_PROFILE_REFRESH_EVENT, refreshListener);
 
     renderWithProviders(<SettingsSystemSection controller={controller} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Revision history' }));
+    fireEvent.click(screen.getByRole('button', { name: 'History' }));
     await waitFor(() => {
       expect(dashboardProfileServiceMocks.loadDashboardProfileHistory).toHaveBeenCalledTimes(1);
     });
@@ -888,7 +930,7 @@ describe('SettingsSystemSection', () => {
     renderWithProviders(<SettingsSystemSection controller={controller} />);
 
     expect(screen.getByText('Local only')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Revision history' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'History' })).not.toBeInTheDocument();
   });
 
   it('offers a manual recovery action when dashboard sync needs attention', () => {
@@ -929,7 +971,7 @@ describe('SettingsSystemSection', () => {
     window.removeEventListener(DASHBOARD_PROFILE_REBIND_EVENT, rebindListener);
   });
 
-  it('lists another dashboard without exposing a cross-browser removal control', () => {
+  it('lists another display without exposing a removal control', () => {
     const currentClient = useDashboardProfileRuntimeStore.getState().client;
     expect(currentClient).not.toBeNull();
     if (!currentClient) return;

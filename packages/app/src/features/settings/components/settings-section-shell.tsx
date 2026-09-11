@@ -95,7 +95,7 @@ export function SettingsSectionShell({
         </div>
 
         {grouped ? (
-          <div className="mt-6 grid gap-6" data-settings-detail-groups>
+          <div className="mt-6 grid gap-0 sm:gap-6" data-settings-detail-groups>
             {children}
           </div>
         ) : (
@@ -104,7 +104,8 @@ export function SettingsSectionShell({
               'mt-5 overflow-hidden rounded-[22px] border divide-y',
               styles.insetBorderColor,
               styles.insetBg,
-              styles.dividerColor
+              styles.dividerColor,
+              'max-sm:overflow-visible max-sm:rounded-none max-sm:border-transparent max-sm:bg-transparent'
             )}
             data-settings-detail-group
           >
@@ -118,11 +119,14 @@ export function SettingsSectionShell({
 
 export function SettingsSectionGroup({ id, title, styles, children }: SettingsSectionGroupProps) {
   return (
-    <section aria-labelledby={`${id}-settings-group-title`}>
+    <section
+      aria-labelledby={`${id}-settings-group-title`}
+      className={cn('border-b last:border-b-0 sm:border-b-0', styles.dividerBorderColor)}
+    >
       <h3
         id={`${id}-settings-group-title`}
         className={cn(
-          'mb-2 px-1',
+          'sr-only sm:not-sr-only sm:mb-2 sm:px-1',
           navetTypographyTokens.caption,
           'font-semibold',
           styles.subtleColor
@@ -135,7 +139,8 @@ export function SettingsSectionGroup({ id, title, styles, children }: SettingsSe
           'overflow-hidden rounded-[22px] border divide-y',
           styles.insetBorderColor,
           styles.insetBg,
-          styles.dividerColor
+          styles.dividerColor,
+          'max-sm:overflow-visible max-sm:rounded-none max-sm:border-transparent max-sm:bg-transparent'
         )}
         data-settings-detail-group={id}
       >
@@ -149,7 +154,7 @@ export function SettingsItem({ title, description, styles, children }: SettingsI
   return (
     <div
       className={cn(
-        'scroll-mt-4 px-4 py-4 outline-none md:px-5 md:py-5',
+        'scroll-mt-4 px-0 py-4 outline-none sm:px-4 md:px-5 md:py-5',
         'focus-visible:ring-2 focus-visible:ring-inset',
         styles.ringClass,
         'transition-colors motion-reduce:transition-none'

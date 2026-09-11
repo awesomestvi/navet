@@ -26,8 +26,7 @@ Navet currently ships:
 - entity-card families for lights, switches, fans, climate and HVAC, humidifiers, covers, locks,
   alarm panels, cameras, media, weather, calendars, people, sensors, sensor groups, scenes, helpers,
   vacuums, and lawn mowers
-- task automation details, dependency summaries, and habit-suggested routine creation for providers
-  that expose the automation creation capability
+- task automation details and dependency summaries for providers that expose those capabilities
 - custom sidebar extensions with embedded pages and up to five quick actions
 - dashboard profile presets for standard and wall-display setups, including kiosk mode and kiosk
   navigation

@@ -22,6 +22,12 @@ type ProviderCardStatus =
   | 'disconnected'
   | 'planned';
 
+export function resolveProviderDisplayBaseUrl(
+  session: { haBaseUrl?: string; hassUrl?: string } | null | undefined
+) {
+  return session?.haBaseUrl ?? session?.hassUrl ?? null;
+}
+
 export function useSettingsSectionController() {
   const {
     customPrimaryColor,
@@ -183,7 +189,7 @@ export function useSettingsSectionController() {
           isConnected: Boolean(session),
           canConnect: provider.loginMode !== 'unavailable',
           canDisconnect: Boolean(session),
-          baseUrl: session?.hassUrl ?? null,
+          baseUrl: resolveProviderDisplayBaseUrl(session),
           error: health?.lastError ?? null,
           implementationStatus: health?.implementationStatus ?? 'planned',
           featureMatrix: getProviderFeatureMatrix(provider.id),

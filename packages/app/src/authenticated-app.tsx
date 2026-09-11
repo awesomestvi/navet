@@ -11,7 +11,6 @@ import { isImplementedIntegrationProviderId } from '@navet/core/integration-prov
 import type { NavetProviderSession } from '@navet/core/provider-contract';
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { PwaUpdatePrompt } from './components/shared/pwa-update-prompt';
-import { useLocalHabitsFeature } from './features/habits/local-habits-feature';
 import {
   useAccentColor,
   useCurrentIntegrationConnectionState,
@@ -104,7 +103,6 @@ function AppContent() {
   );
   const setProviderSessions = useCurrentIntegrationStore(integrationSelectors.setProviderSessions);
   const accentColor = useAccentColor();
-  const [localHabitsFeatureEnabled] = useLocalHabitsFeature();
   const keepDeviceAwake = useSettingsStore(settingsSelectors.keepDeviceAwake);
   const [isOnline, setIsOnline] = useState(() =>
     typeof navigator === 'undefined' ? true : navigator.onLine
@@ -470,29 +468,6 @@ function AppContent() {
       stopNavigationSync();
     };
   }, []);
-
-  useEffect(() => {
-    if (!isAuthenticated || !localHabitsFeatureEnabled) {
-      return;
-    }
-
-    let cancelled = false;
-    let stopHabitEngine: (() => void) | null = null;
-
-    void import('./features/habits/habit-engine').then((module) => {
-      if (cancelled) {
-        return;
-      }
-
-      module.initializeHabitEngine();
-      stopHabitEngine = module.stopHabitEngine;
-    });
-
-    return () => {
-      cancelled = true;
-      stopHabitEngine?.();
-    };
-  }, [isAuthenticated, localHabitsFeatureEnabled]);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);

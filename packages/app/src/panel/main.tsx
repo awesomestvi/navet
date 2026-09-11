@@ -2,11 +2,6 @@ import { AuthProvider } from '@navet/app/auth/AuthProvider';
 import { ErrorDisplay } from '@navet/app/components/shared/error-display';
 import { Toaster } from '@navet/app/components/ui/sonner';
 import { DashboardPage } from '@navet/app/features/dashboard';
-import {
-  initializeHabitEngine,
-  stopHabitEngine,
-  useLocalHabitsFeature,
-} from '@navet/app/features/habits';
 import { useAccentColor, useSyncHomeAssistantPanelKioskMode } from '@navet/app/hooks';
 import { useViewportResize } from '@navet/app/hooks/use-viewport-resize';
 import { I18nProvider } from '@navet/app/i18n';
@@ -113,7 +108,6 @@ function PanelRuntime({ hass }: HomeAssistantPanelProps) {
     disableAnimations || lowPowerMode
   );
   const reducedEffectsEnabled = resolvedEffectsQuality === 'low';
-  const [localHabitsFeatureEnabled] = useLocalHabitsFeature();
   useSyncHomeAssistantPanelKioskMode();
 
   const syncViewportEnvironment = useCallback(() => {
@@ -129,15 +123,6 @@ function PanelRuntime({ hass }: HomeAssistantPanelProps) {
       stopNavigationSync();
     };
   }, []);
-
-  useEffect(() => {
-    if (!localHabitsFeatureEnabled) {
-      return;
-    }
-
-    initializeHabitEngine();
-    return stopHabitEngine;
-  }, [localHabitsFeatureEnabled]);
 
   useEffect(() => {
     syncViewportEnvironment();

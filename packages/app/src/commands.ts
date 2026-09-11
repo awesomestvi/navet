@@ -1,4 +1,3 @@
-import { recordHabitCommand } from '@navet/app/features/habits/command-attribution';
 import { maybeDispatchPreviewCommand } from '@navet/app/preview/preview-action-bridge';
 import { getRegisteredSmartHomeProviderAdapter } from '@navet/app/provider-contract-registry';
 import { resolveIntegrationProviderId } from '@navet/app/services/integration-provider-context.service';
@@ -24,7 +23,6 @@ export async function dispatchEntityCommand(
   command: NavetUiCommand,
   providerId?: IntegrationProviderId
 ): Promise<CommandResult> {
-  recordHabitCommand(command);
   return await dispatchNavetCommand(command, providerId);
 }
 

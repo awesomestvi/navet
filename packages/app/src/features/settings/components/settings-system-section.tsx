@@ -16,7 +16,6 @@ import {
 import { useI18n } from '@navet/app/hooks';
 import type { IntegrationProviderId } from '@navet/app/types/provider';
 import {
-  BookOpen,
   ChevronDown,
   ChevronUp,
   ExternalLink,
@@ -32,19 +31,12 @@ import {
 import { useState } from 'react';
 import type { SettingsSectionController } from '../hooks/use-settings-section-controller';
 import { SettingsDashboardClients } from './settings-dashboard-clients';
+import { SettingsDeviceSettings } from './settings-device-settings';
 import { SettingsItem, SettingsSectionGroup, SettingsSectionShell } from './settings-section-shell';
 
 interface SettingsSystemSectionProps {
   controller: SettingsSectionController;
 }
-
-const PROVIDER_SUPPORT_URLS: Record<IntegrationProviderId, string> = {
-  home_assistant: 'https://docs.navet.app/integrations/#home-assistant',
-  homey: 'https://docs.navet.app/integrations/#homey',
-  openhab: 'https://docs.navet.app/integrations/#openhab',
-  hubitat: 'https://docs.navet.app/integrations/#planned-providers',
-  smartthings: 'https://docs.navet.app/integrations/#planned-providers',
-};
 
 type ProviderCardStatus =
   | 'connected'
@@ -236,17 +228,6 @@ function ProviderCardView({
               ) : null}
             </div>
           </div>
-
-          <a
-            href={PROVIDER_SUPPORT_URLS[provider.id]}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`mt-3 inline-flex h-9 items-center gap-2 rounded-full px-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none ${styles.mutedColor} ${styles.hoverBg} ${styles.ringClass}`}
-          >
-            <BookOpen className="h-4 w-4" aria-hidden="true" />
-            <span>{t('settings.system.providers.supportedEntities')}</span>
-            <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-          </a>
         </div>
 
         <div
@@ -258,7 +239,7 @@ function ProviderCardView({
               href={openUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className={`inline-flex h-9 min-w-32 flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-full border px-3.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none sm:flex-none ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor} ${styles.ringClass}`}
+              className={`inline-flex h-9 min-w-32 flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-full border px-3.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor} ${styles.ringClass}`}
             >
               <ExternalLink className="h-4 w-4" />
               <span>{t('common.open')}</span>
@@ -271,7 +252,7 @@ function ProviderCardView({
               variant="secondary"
               size="small"
               leading={<LocateFixed className="h-4 w-4" />}
-              className="min-w-32 flex-1 rounded-full sm:flex-none"
+              className="min-w-32 flex-1 rounded-full"
               onClick={() => setActiveProvider(provider.id)}
             >
               {t('settings.system.providers.makeActive')}
@@ -284,7 +265,7 @@ function ProviderCardView({
               variant="secondary"
               size="small"
               leading={<Link2 className="h-4 w-4" />}
-              className="min-w-32 flex-1 rounded-full sm:flex-none"
+              className="min-w-32 flex-1 rounded-full"
               onClick={() => void handleConnectProvider('homey')}
             >
               {t('settings.system.providers.connect')}
@@ -297,7 +278,7 @@ function ProviderCardView({
               variant="secondary"
               size="small"
               leading={<Link2 className="h-4 w-4" />}
-              className="min-w-32 flex-1 rounded-full sm:flex-none"
+              className="min-w-32 flex-1 rounded-full"
               onClick={() => openConnectDialog(provider.id)}
             >
               {t('settings.system.providers.connect')}
@@ -310,7 +291,7 @@ function ProviderCardView({
               variant="secondary"
               size="small"
               leading={<Link2 className="h-4 w-4" />}
-              className="min-w-32 flex-1 rounded-full sm:flex-none"
+              className="min-w-32 flex-1 rounded-full"
               onClick={() => openConnectDialog(provider.id)}
             >
               {t('common.editItem', { item: t('settings.system.providers.url') })}
@@ -323,7 +304,7 @@ function ProviderCardView({
               variant="destructive"
               size="small"
               leading={<Unplug className="h-4 w-4" />}
-              className="min-w-32 flex-1 rounded-full sm:flex-none"
+              className="min-w-32 flex-1 rounded-full"
               onClick={() => void handleDisconnectProvider(provider.id)}
             >
               {t('settings.system.providers.disconnect')}
@@ -615,6 +596,13 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
           styles={styles}
         >
           <SettingsDashboardClients styles={styles} />
+        </SettingsItem>
+        <SettingsItem
+          title={t('settings.system.clients.displaySync.title')}
+          description={t('settings.system.clients.displaySync.description')}
+          styles={styles}
+        >
+          <SettingsDeviceSettings styles={styles} />
         </SettingsItem>
       </SettingsSectionGroup>
 

@@ -38,7 +38,6 @@ vi.mock('@navet/app/services/home-assistant.service', () => {
           ],
         },
       })),
-      saveAutomationConfig: vi.fn(async () => undefined),
       getConfig: vi.fn(() => getState().config),
       getConnection: vi.fn(() => null),
       disconnect: vi.fn(),
@@ -238,15 +237,6 @@ describe('TasksSection', () => {
     expect(screen.getAllByText('Disabled').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Recent').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Needs attention').length).toBeGreaterThan(0);
-  });
-
-  it('keeps habit suggestions out of the full-width routines workspace', () => {
-    setRoutineEntities();
-
-    renderWithProviders(<TasksSection />);
-
-    expect(screen.queryByText('Suggested routines')).not.toBeInTheDocument();
-    expect(screen.getAllByText('Automations').length).toBeGreaterThan(0);
   });
 
   it('filters automations with active and disabled pills', () => {

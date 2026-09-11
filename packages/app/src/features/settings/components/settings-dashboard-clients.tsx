@@ -5,6 +5,7 @@ import {
   getDashboardClientIdentity,
   renameDashboardClient,
 } from '@navet/app/features/dashboard/clients/dashboard-client-identity';
+import type { DashboardProfileClientRecord } from '@navet/app/features/dashboard/clients/dashboard-profile-runtime-store';
 import { useDashboardProfileRuntimeStore } from '@navet/app/features/dashboard/clients/dashboard-profile-runtime-store';
 import {
   DASHBOARD_PROFILE_REBIND_EVENT,
@@ -39,7 +40,8 @@ import {
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import type { SettingsSectionController } from '../hooks/use-settings-section-controller';
-import { SettingsDeviceDisplaySync } from './settings-device-display-sync';
+
+const VISIBLE_OTHER_DISPLAY_LIMIT = 4;
 
 function DashboardClientIcon({
   className,
@@ -83,6 +85,50 @@ function getStatusTranslationKey(
   status: ReturnType<typeof useDashboardProfileRuntimeStore.getState>['status']
 ) {
   return `settings.system.clients.status.${status}` as const;
+}
+
+function RegisteredDisplayRow({
+  display,
+  styles,
+  t,
+}: {
+  display: DashboardProfileClientRecord;
+  styles: SettingsSectionController['styles'];
+  t: ReturnType<typeof useI18n>['t'];
+}) {
+  return (
+    <div className="px-4 py-3 md:px-5">
+      <div className="flex min-w-0 items-center gap-3">
+        <div
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border ${styles.borderColor} ${styles.softBg}`}
+        >
+          <DashboardClientIcon kind={display.kind} className={`h-4.5 w-4.5 ${styles.mutedColor}`} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className={`truncate text-sm font-medium ${styles.textColor}`}>{display.name}</p>
+          {display.userName ? (
+            <p className={`mt-0.5 truncate text-xs ${styles.subtleColor}`}>
+              {t('settings.system.clients.signedInAs', { name: display.userName })}
+            </p>
+          ) : null}
+          <div className={`mt-1 flex flex-wrap items-center gap-2 text-xs ${styles.subtleColor}`}>
+            <span>{formatLastSeen(display.lastSeenAt)}</span>
+            {display.lastRevision !== null ? (
+              <>
+                <span
+                  aria-hidden="true"
+                  className={`h-1 w-1 rounded-full ${styles.isLightTheme ? 'bg-slate-400' : 'bg-white/28'}`}
+                />
+                <span>
+                  {t('settings.system.clients.revision', { revision: display.lastRevision })}
+                </span>
+              </>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function toRuntimeActivity(metadata: DashboardProfileRevisionMetadata) {
@@ -147,6 +193,8 @@ export function SettingsDashboardClients({
   const [actionError, setActionError] = useState<string | null>(null);
   const [rebindConfirmationOpen, setRebindConfirmationOpen] = useState(false);
   const otherClients = clients.filter(({ id }) => id !== resolvedClient.id);
+  const visibleOtherClients = otherClients.slice(0, VISIBLE_OTHER_DISPLAY_LIMIT);
+  const earlierClients = otherClients.slice(VISIBLE_OTHER_DISPLAY_LIMIT);
   const hasNameChange = clientName.trim() !== resolvedClient.name;
   const canRebindWorkspace = failureCode === DASHBOARD_PROFILE_ERROR_CODES.workspaceTenantMismatch;
 
@@ -193,7 +241,7 @@ export function SettingsDashboardClients({
   const toggleHistory = () => {
     const nextOpen = !historyOpen;
     setHistoryOpen(nextOpen);
-    if (nextOpen && historyEntries === null && !historyLoading) {
+    if (nextOpen && status !== 'disabled' && historyEntries === null && !historyLoading) {
       void refreshHistory();
     }
   };
@@ -464,68 +512,26 @@ export function SettingsDashboardClients({
           </div>
         ) : null}
 
-        {otherClients.length > 0 ? (
+        {visibleOtherClients.length > 0 ? (
           <div className={`border-t ${styles.dividerBorderColor}`}>
             <p className={`px-4 pt-4 text-sm font-medium md:px-5 ${styles.textColor}`}>
               {t('settings.system.clients.otherDashboards')}
             </p>
             <div className={`mt-2 divide-y ${styles.dividerColor}`}>
-              {otherClients.map((registeredClient) => {
-                return (
-                  <div key={registeredClient.id} className="px-4 py-3 md:px-5">
-                    <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
-                      <div className="flex min-w-0 flex-1 items-center gap-3">
-                        <div
-                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border ${styles.borderColor} ${styles.softBg}`}
-                        >
-                          <DashboardClientIcon
-                            kind={registeredClient.kind}
-                            className={`h-4.5 w-4.5 ${styles.mutedColor}`}
-                          />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className={`truncate text-sm font-medium ${styles.textColor}`}>
-                            {registeredClient.name}
-                          </p>
-                          {registeredClient.userName ? (
-                            <p className={`mt-0.5 truncate text-xs ${styles.subtleColor}`}>
-                              {t('settings.system.clients.signedInAs', {
-                                name: registeredClient.userName,
-                              })}
-                            </p>
-                          ) : null}
-                          <div
-                            className={`mt-1 flex flex-wrap items-center gap-2 text-xs ${styles.subtleColor}`}
-                          >
-                            <span>{formatLastSeen(registeredClient.lastSeenAt)}</span>
-                            {registeredClient.lastRevision !== null ? (
-                              <>
-                                <span
-                                  aria-hidden="true"
-                                  className={`h-1 w-1 rounded-full ${styles.isLightTheme ? 'bg-slate-400' : 'bg-white/28'}`}
-                                />
-                                <span>
-                                  {t('settings.system.clients.revision', {
-                                    revision: registeredClient.lastRevision,
-                                  })}
-                                </span>
-                              </>
-                            ) : null}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+              {visibleOtherClients.map((registeredClient) => (
+                <RegisteredDisplayRow
+                  key={registeredClient.id}
+                  display={registeredClient}
+                  styles={styles}
+                  t={t}
+                />
+              ))}
             </div>
           </div>
         ) : null}
       </div>
 
-      <SettingsDeviceDisplaySync clients={clients} currentClient={resolvedClient} styles={styles} />
-
-      {status !== 'disabled' ? (
+      {status !== 'disabled' || earlierClients.length > 0 ? (
         <div>
           <button
             type="button"
@@ -542,7 +548,36 @@ export function SettingsDashboardClients({
 
           {historyOpen ? (
             <div className="mt-4">
-              {historyLoading && historyEntries === null ? (
+              {earlierClients.length > 0 ? (
+                <section className="mb-4" aria-labelledby="earlier-displays-title">
+                  <p
+                    id="earlier-displays-title"
+                    className={`mb-2 px-1 text-sm font-medium ${styles.textColor}`}
+                  >
+                    {t('settings.system.clients.earlierDisplays')}
+                  </p>
+                  <div
+                    className={`overflow-hidden rounded-[18px] border divide-y ${styles.insetBorderColor} ${styles.insetBg} ${styles.dividerColor}`}
+                  >
+                    {earlierClients.map((registeredClient) => (
+                      <RegisteredDisplayRow
+                        key={registeredClient.id}
+                        display={registeredClient}
+                        styles={styles}
+                        t={t}
+                      />
+                    ))}
+                  </div>
+                </section>
+              ) : null}
+
+              {status !== 'disabled' ? (
+                <p className={`mb-2 px-1 text-sm font-medium ${styles.textColor}`}>
+                  {t('settings.system.clients.dashboardRevisions')}
+                </p>
+              ) : null}
+
+              {status === 'disabled' ? null : historyLoading && historyEntries === null ? (
                 <p className={`text-sm leading-6 ${styles.subtleColor}`}>
                   {t('settings.system.clients.historyLoading')}
                 </p>

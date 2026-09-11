@@ -144,7 +144,6 @@ export default defineConfig({
               label: "Actions, maps, and status",
               link: "/guide/everyday-control/actions-maps-status/",
             },
-            { label: "Local Habits", link: "/guide/everyday-control/local-habits/" },
             {
               label: "Home Assistant Energy sources",
               link: "/guide/everyday-control/manual-energy-setup/",

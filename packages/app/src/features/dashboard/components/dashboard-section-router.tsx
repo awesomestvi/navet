@@ -605,7 +605,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
             <Suspense fallback={<LoadingSpinner message={t('common.loading')} />}>
               <HomeDashboardOverview
                 deviceMap={controller.availableDeviceMap}
-                summaryDeviceMap={controller.availableDeviceMap}
+                summaryDeviceMap={controller.deviceMap}
                 cardSizes={cardSizes}
                 updateCardSize={updateCardSize}
                 isEditMode={isEditMode}

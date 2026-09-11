@@ -130,6 +130,31 @@ describe('useHomeSecurityAlertCount', () => {
     expect(result.current).toBe(0);
   });
 
+  it('excludes a directly hidden active security sensor from the home alert count', () => {
+    const activeDoor = sensor({
+      id: 'binary_sensor.side_door',
+      name: 'Side Door',
+      unit: '',
+      value: 'Open',
+      securityKind: 'door',
+      securitySeverity: 'warning',
+      status: 'active',
+    });
+    const devices: DeviceCollection = {
+      ...createEmptyDeviceCollection(),
+      sensors: [activeDoor],
+    };
+    const { result } = renderHook(() =>
+      useHomeSecurityAlertCount({
+        devices,
+        enabled: true,
+        hiddenEntityIds: [activeDoor.id],
+      })
+    );
+
+    expect(result.current).toBe(0);
+  });
+
   it('excludes a hidden unavailable camera from its room alert count', () => {
     const unavailableCamera: CameraDevice = {
       id: 'camera.bedroom',

@@ -71,7 +71,6 @@ vi.mock('./services/home-assistant.service', () => ({
     browseMediaSource: vi.fn(async () => ({ title: 'Media' })),
     resolveMediaSource: vi.fn(async () => ({ url: '/media' })),
     getAutomationConfig: vi.fn(async () => ({ config: {} })),
-    saveAutomationConfig: vi.fn(async () => undefined),
     getCameraCapabilities: vi.fn(async () => ({})),
     enableCameraMotionDetection: vi.fn(async () => undefined),
     disableCameraMotionDetection: vi.fn(async () => undefined),

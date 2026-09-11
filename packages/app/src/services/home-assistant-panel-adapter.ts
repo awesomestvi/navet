@@ -131,10 +131,6 @@ export class HomeAssistantPanelAdapter {
     throw new Error('Home Assistant panel REST requests require the authenticated hass API bridge');
   }
 
-  async saveAutomationConfig(configKey: string, config: Record<string, unknown>): Promise<void> {
-    await this.callApi('POST', `config/automation/config/${encodeURIComponent(configKey)}`, config);
-  }
-
   async loadRegistries(): Promise<{
     areas: HomeAssistantAreaRegistryEntry[];
     devices: HomeAssistantDeviceRegistryEntry[];

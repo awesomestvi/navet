@@ -81,7 +81,7 @@ describe('DashboardSwitcherPill', () => {
 
     fireEvent.pointerDown(screen.getByRole('button', { name: /Open dashboards/ }));
     await waitFor(() => expect(screen.getByRole('menu')).toBeInTheDocument());
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Use on this device' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Use on this display' }));
 
     state = useDashboardCollectionStore.getState();
     expect(state).toMatchObject({

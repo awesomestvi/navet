@@ -10,7 +10,6 @@ export * from './chores';
 export * from './dashboard-entity-view';
 export * from './energy-types';
 export * from './errors';
-export * from './habits';
 export * from './home-events';
 export * from './ids';
 export * from './integration-providers';

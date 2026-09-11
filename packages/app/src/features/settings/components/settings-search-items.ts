@@ -6,8 +6,6 @@ type SearchSectionId =
   | 'localization'
   | 'interaction'
   | 'dashboard'
-  | 'habits'
-  | 'experimental'
   | 'system'
   | 'project';
 
@@ -44,16 +42,6 @@ const SECTIONS: SearchSectionDefinition[] = [
     id: 'dashboard',
     labelKey: 'settings.dashboard.sectionTitle',
     descriptionKey: 'settings.dashboard.sectionDescription',
-  },
-  {
-    id: 'habits',
-    labelKey: 'habits.settings.sectionTitle',
-    descriptionKey: 'habits.settings.sectionDescription',
-  },
-  {
-    id: 'experimental',
-    labelKey: 'settings.experimental.sectionTitle',
-    descriptionKey: 'settings.experimental.sectionDescription',
   },
   {
     id: 'system',
@@ -183,36 +171,6 @@ const SETTINGS: SearchSettingDefinition[] = [
     descriptionKey: 'settings.dashboard.backup.description',
   },
   {
-    id: 'habits-enable',
-    sectionId: 'habits',
-    labelKey: 'habits.settings.enable.title',
-    descriptionKey: 'habits.settings.enable.description',
-  },
-  {
-    id: 'habits-privacy',
-    sectionId: 'habits',
-    labelKey: 'habits.settings.privacy.title',
-    descriptionKey: 'habits.settings.privacy.description',
-  },
-  {
-    id: 'habits-rules',
-    sectionId: 'habits',
-    labelKey: 'habits.settings.rules.title',
-    descriptionKey: 'habits.settings.rules.description',
-  },
-  {
-    id: 'habits-debug',
-    sectionId: 'habits',
-    labelKey: 'habits.settings.debug.title',
-    descriptionKey: 'habits.settings.debug.description',
-  },
-  {
-    id: 'experimental-local-habits',
-    sectionId: 'experimental',
-    labelKey: 'settings.experimental.localHabits.title',
-    descriptionKey: 'settings.experimental.localHabits.description',
-  },
-  {
     id: 'system-providers',
     sectionId: 'system',
     labelKey: 'settings.system.providers.title',
@@ -268,15 +226,9 @@ const SETTINGS: SearchSettingDefinition[] = [
   },
 ];
 
-export function createSettingsSearchItems(
-  t: TranslateFn,
-  localHabitsEnabled: boolean
-): SettingsSearchItem[] {
-  const availableSections = SECTIONS.filter(
-    (section) => section.id !== 'habits' || localHabitsEnabled
-  );
-  const sectionById = new Map(availableSections.map((section) => [section.id, section]));
-  const sectionItems = availableSections.map((section) => ({
+export function createSettingsSearchItems(t: TranslateFn): SettingsSearchItem[] {
+  const sectionById = new Map(SECTIONS.map((section) => [section.id, section]));
+  const sectionItems = SECTIONS.map((section) => ({
     id: `section-${section.id}`,
     sectionId: section.id,
     sectionLabel: t(section.labelKey),
