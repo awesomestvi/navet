@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.16.2
+
+## Improvements and bug fixes
+
+- Hidden entities no longer appear in Home climate and security summaries.
+- Simplified Settings by clarifying dashboards, connected displays, sync history, and device controls, and removing unfinished Local Habits.
+
 ## 0.16.1
 
 ## Improvements and bug fixes

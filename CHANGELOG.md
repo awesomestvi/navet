@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.16.2 - 2026-09-11
+
+## Improvements and bug fixes
+
+- Fixed HACS updates after the integration repository rename and added recovery guidance for affected installations.
+- Hidden entities no longer appear in Home climate and security summaries.
+- Simplified Settings by clarifying dashboards, connected displays, sync history, and device controls, and removing unfinished Local Habits.
+
 ## 0.16.1 - 2026-09-10
 
 ## Improvements and bug fixes
