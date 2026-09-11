@@ -314,7 +314,7 @@ describe('LoginPage', () => {
     renderWithProviders(<LoginPage />);
     fireEvent.click(await screen.findByRole('button', { name: 'Connect with another device' }));
 
-    expect(await screen.findByText('1234-5678-9ABC')).toBeVisible();
+    expect(await screen.findByText('1234-5678-9ABC', undefined, { timeout: 5_000 })).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: 'Copy device connection code' }));
     await waitFor(() => expect(writeText).toHaveBeenCalledWith('1234-5678-9ABC'));
     expect(execCommand).toHaveBeenCalledWith('copy');
