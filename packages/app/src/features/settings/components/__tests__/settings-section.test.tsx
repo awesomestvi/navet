@@ -10,26 +10,6 @@ describe('SettingsSection', () => {
     document.documentElement.style.scrollbarGutter = '';
   });
 
-  it('shows the habits tab after enabling the production-safe experimental feature', () => {
-    renderWithProviders(<SettingsSection />);
-
-    expect(screen.queryByRole('button', { name: 'Habits' })).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Experimental' }));
-
-    expect(screen.getByRole('heading', { name: 'Experimental' })).toBeInTheDocument();
-    fireEvent.click(
-      within(screen.getByRole('group', { name: 'Local habits' })).getByRole('button', {
-        name: 'On',
-      })
-    );
-
-    fireEvent.click(screen.getByRole('button', { name: 'Habits' }));
-
-    expect(screen.getByRole('heading', { name: 'Local habits' })).toBeInTheDocument();
-    expect(screen.getByRole('group', { name: 'Enable local habits' })).toBeInTheDocument();
-  });
-
   it('restores the persisted tab after remounting', async () => {
     const firstRender = renderWithProviders(<SettingsSection />);
 

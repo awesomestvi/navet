@@ -90,10 +90,6 @@ export function getAppChunkName(id: string) {
     return 'auth-flow'
   }
 
-  if (moduleId.includes('/packages/app/src/features/habits/')) {
-    return 'app-shell'
-  }
-
   if (moduleId.includes('/packages/app/src/hooks/')) {
     return 'hooks-shell'
   }

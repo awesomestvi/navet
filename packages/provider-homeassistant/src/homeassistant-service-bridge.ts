@@ -118,7 +118,6 @@ export interface HomeAssistantServiceBridge {
   browseMediaSource(mediaContentId?: string): Promise<PlatformMediaBrowseResult>;
   resolveMediaSource(mediaContentId: string): Promise<{ url: string; mime_type?: string }>;
   getAutomationConfig(entityId: string): Promise<{ config: Record<string, unknown> }>;
-  saveAutomationConfig(configKey: string, config: Record<string, unknown>): Promise<void>;
   getCameraCapabilities(entityId: string): Promise<Record<string, unknown>>;
   enableCameraMotionDetection(entityId: string): Promise<void>;
   disableCameraMotionDetection(entityId: string): Promise<void>;
@@ -316,13 +315,6 @@ export function resolveHomeAssistantMediaSource(mediaContentId: string) {
 
 export function getHomeAssistantAutomationConfig(entityId: string) {
   return getBridge().getAutomationConfig(entityId);
-}
-
-export function saveHomeAssistantAutomationConfig(
-  configKey: string,
-  config: Record<string, unknown>
-) {
-  return getBridge().saveAutomationConfig(configKey, config);
 }
 
 export function getHomeAssistantCameraCapabilities(entityId: string) {

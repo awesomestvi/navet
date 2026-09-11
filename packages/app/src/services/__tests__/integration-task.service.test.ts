@@ -2,13 +2,11 @@ import { homeAssistantStore } from '@navet/app/stores/home-assistant-store';
 import { integrationStore } from '@navet/app/stores/integration-store';
 import { automationEntityFactory } from '@navet/app/test/fixtures/home-assistant/entities/automation';
 import { lightEntityFactory } from '@navet/app/test/fixtures/home-assistant/entities/light';
-import type { HabitRule } from '@navet/core/habits';
 import { describe, expect, it, vi } from 'vitest';
 
-const { callServiceMock, getAutomationConfigMock, saveAutomationConfigMock } = vi.hoisted(() => ({
+const { callServiceMock, getAutomationConfigMock } = vi.hoisted(() => ({
   callServiceMock: vi.fn(),
   getAutomationConfigMock: vi.fn(),
-  saveAutomationConfigMock: vi.fn(async () => undefined),
 }));
 
 vi.mock('../home-assistant.service', async () => {
@@ -22,7 +20,6 @@ vi.mock('../home-assistant.service', async () => {
       ...actual.homeAssistantService,
       callService: callServiceMock,
       getAutomationConfig: getAutomationConfigMock,
-      saveAutomationConfig: saveAutomationConfigMock,
     },
   };
 });
@@ -99,48 +96,6 @@ describe('integration-task.service', () => {
       {
         entity_id: 'automation.arrival',
       }
-    );
-  });
-
-  it('creates suggested habit rules as provider automations', async () => {
-    const rule = {
-      id: 'habit-rule:morning-lights',
-      sourceCandidateId: 'habit-candidate:morning-lights',
-      enabled: true,
-      scope: 'navet_local',
-      trigger: {
-        days: [1, 2, 3, 4, 5],
-        startMinute: 420,
-        endMinute: 480,
-      },
-      action: {
-        type: 'turn_on',
-        entityIds: ['light.kitchen', 'switch.coffee'],
-      },
-      safety: {
-        allowDomains: ['light', 'switch'],
-        requireUserCreated: true,
-      },
-      createdAt: '2026-01-01T00:00:00.000Z',
-      updatedAt: '2026-01-01T00:00:00.000Z',
-    } satisfies HabitRule;
-
-    await expect(
-      integrationTaskService.createAutomationFromHabitRule?.(rule, {
-        name: 'Morning lights',
-        description: 'Kitchen lights are usually turned on around breakfast.',
-      })
-    ).resolves.toEqual({
-      automationId: 'navet_morning_lights',
-      entityId: 'automation.navet_morning_lights',
-    });
-
-    expect(saveAutomationConfigMock).toHaveBeenCalledWith(
-      'navet_morning_lights',
-      expect.objectContaining({
-        alias: 'Morning lights',
-        description: 'Kitchen lights are usually turned on around breakfast.',
-      })
     );
   });
 

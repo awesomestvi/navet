@@ -166,6 +166,42 @@ describe('DashboardSectionRouter home controls', () => {
     });
   });
 
+  it('builds home summary badges from visible devices while preserving hidden home cards', () => {
+    const controller = createController();
+    const visibleClimate = {
+      id: 'climate.living_room',
+      name: 'Living Room Thermostat',
+      room: 'Living Room',
+      size: 'small',
+      temperature: 21,
+      currentTemperature: 20,
+      mode: 'heat',
+      type: 'climate',
+    } satisfies DeviceWithType;
+    const hiddenTemperature = {
+      id: 'sensor.zigbee_cpu_temperature',
+      name: 'Zigbee CPU Temperature',
+      room: 'Living Room',
+      size: 'small',
+      unit: '°C',
+      value: '52',
+      deviceClass: 'temperature',
+      type: 'sensors',
+    } satisfies DeviceWithType;
+    controller.deviceMap = new Map([[visibleClimate.id, visibleClimate]]);
+    controller.availableDeviceMap = new Map<string, DeviceWithType>([
+      [visibleClimate.id, visibleClimate],
+      [hiddenTemperature.id, hiddenTemperature],
+    ]);
+
+    renderWithProviders(<DashboardSectionRouter controller={controller} />);
+
+    expect(homeDashboardPropsMock.mock.calls.at(-1)?.[0]).toMatchObject({
+      deviceMap: controller.availableDeviceMap,
+      summaryDeviceMap: controller.deviceMap,
+    });
+  });
+
   it('adds pending chores to their room grid', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 8, 9, 11));

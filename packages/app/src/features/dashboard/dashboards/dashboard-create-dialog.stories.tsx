@@ -78,7 +78,7 @@ export const Desktop: Story = {
     await expect(
       workspace.getByText('Assign it to this device or leave it unassigned for now.')
     ).toBeInTheDocument();
-    await expect(workspace.getByRole('button', { name: 'This device' })).toBeInTheDocument();
+    await expect(workspace.getByRole('button', { name: 'This display' })).toBeInTheDocument();
     await expect(workspace.getByRole('button', { name: 'Back' })).toBeInTheDocument();
     await expect(workspace.getByRole('button', { name: 'Create dashboard' })).toBeInTheDocument();
   },

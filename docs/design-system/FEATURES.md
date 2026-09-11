@@ -19,7 +19,6 @@ Current feature folders under `packages/app/src/features/`:
 - `energy`
 - `lighting`
 - `media`
-- `habits`
 - `notifications`
 - `person`
 - `rss`
@@ -113,7 +112,7 @@ when the widget is domain-specific.
 The `entity` widget is a generic fallback for normalized provider entities. Prefer a dedicated
 provider-neutral card when the entity type has meaningful controls or domain-specific presentation.
 
-## Household, Routines, And Habit Automation
+## Household And Routines
 
 The chores feature owns provider-neutral participants, definitions, occurrences, scheduling,
 workflow, activity, and the Today and Chores surfaces. Household participants are attribution and
@@ -123,11 +122,6 @@ are unavailable in the Home Assistant custom panel.
 The tasks feature continues to own provider automation and script presentation under Household's
 Routines tab. Automation detail rows can summarize triggers, conditions, actions, diagnostics, and
 dependent entities discovered from provider automation config.
-
-Habit insights can suggest safe local routines. When the active provider exposes
-`createAutomationFromHabitRule`, the app asks that provider to create a native automation. When the
-capability is absent, Navet falls back to saving the rule locally where supported by the habit
-store.
 
 ## Energy Dashboard
 

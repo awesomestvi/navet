@@ -162,16 +162,26 @@ describe('SettingsDashboardSection', () => {
 
     renderWithProviders(<TestSection />);
 
+    const homeDashboard = screen.getByTestId('dashboard-manager-home');
+    const upstairsDashboard = screen.getByTestId('dashboard-manager-upstairs');
+    expect(homeDashboard).toHaveTextContent('Used by 2 displays');
+    expect(within(homeDashboard).queryByText('Sonoff upstairs')).not.toBeInTheDocument();
+    expect(within(homeDashboard).queryByText('This display')).not.toBeInTheDocument();
+    expect(upstairsDashboard).toHaveTextContent('Not assigned');
+
     fireEvent.pointerDown(
       screen.getByRole('button', { name: 'Dashboard actions for Upstairs lights' })
     );
-    fireEvent.click(await screen.findByRole('menuitem', { name: 'Assign devices' }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Assign displays' }));
 
     const dialog = await screen.findByRole('dialog', { name: 'Assign Upstairs lights' });
+    expect(within(dialog).getByRole('button', { name: 'Sonoff upstairs' })).toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole('button', { name: 'Sonoff upstairs' }));
 
     const assignments = useDashboardCollectionStore.getState().collection.dashboardIdByClientId;
     expect(assignments['sonoff-upstairs']).toBe('upstairs');
     expect(assignments[currentClientId]).toBeUndefined();
+    expect(homeDashboard).toHaveTextContent('Used by 1 display');
+    expect(upstairsDashboard).toHaveTextContent('Used by 1 display');
   });
 });

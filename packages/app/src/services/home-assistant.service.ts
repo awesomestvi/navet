@@ -695,15 +695,6 @@ class HomeAssistantService {
     return await this.entityService.getAutomationConfig(entityId);
   }
 
-  async saveAutomationConfig(configKey: string, config: Record<string, unknown>): Promise<void> {
-    if (this.panelAdapter) {
-      await this.panelAdapter.saveAutomationConfig(configKey, config);
-      return;
-    }
-
-    await this.connectionService.saveAutomationConfig(configKey, config);
-  }
-
   /**
    * Disconnect from Home Assistant
    */
