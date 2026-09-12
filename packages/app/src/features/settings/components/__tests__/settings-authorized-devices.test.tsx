@@ -181,6 +181,40 @@ describe('SettingsAuthorizedDevices', () => {
     expect(screen.queryByRole('button', { name: /Remove / })).not.toBeInTheDocument();
   });
 
+  it('shows migrated primary browsers as separate devices without a synthetic sign-in row', async () => {
+    authorizationMocks.list.mockResolvedValue({
+      access: 'primary',
+      currentDeviceId: 'computer-device',
+      devices: [
+        {
+          id: 'computer-device',
+          name: 'Computer A1B2',
+          role: 'primary',
+          providers: ['home_assistant'],
+          createdAt: Date.now() - 20_000,
+          lastActivityAt: Date.now(),
+          expiresAt: Date.now() + 300_000,
+        },
+        {
+          id: 'phone-device',
+          name: 'Phone C3D4',
+          role: 'primary',
+          providers: ['home_assistant'],
+          createdAt: Date.now() - 10_000,
+          lastActivityAt: Date.now(),
+          expiresAt: Date.now() + 300_000,
+        },
+      ],
+    });
+
+    renderWithProviders(<SettingsAuthorizedDevices styles={styles} />);
+
+    expect(await screen.findByText('Computer A1B2')).toBeVisible();
+    expect(screen.getByText('Phone C3D4')).toBeVisible();
+    expect(screen.queryByText('Original sign-in')).not.toBeInTheDocument();
+    expect(screen.getByText('Current')).toBeVisible();
+  });
+
   it('lets a primary sign-in promote an authorized device', async () => {
     authorizationMocks.list.mockResolvedValue(
       primaryOverview([

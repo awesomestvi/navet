@@ -253,6 +253,29 @@ describe('home dashboard overview grid layout', () => {
     expect(getGridElement(container)).toBeInTheDocument();
   });
 
+  it('packs sparse Home cards from the left instead of pushing tall cards to the far edge', () => {
+    const cards = new Map([
+      ['battery-overview', createDevice('battery-overview', 'medium')],
+      ['weather', createDevice('weather', 'large')],
+    ]);
+
+    renderWithProviders(
+      <PresentationCardGrid
+        cardIds={['battery-overview', 'weather']}
+        gridCols={6}
+        allCards={cards}
+        cardSizes={{}}
+        updateCardSize={vi.fn()}
+        showHero
+      />
+    );
+
+    expect(screen.getByTestId('card-battery-overview').parentElement?.style.gridColumnStart).toBe(
+      '1'
+    );
+    expect(screen.getByTestId('card-weather').parentElement?.style.gridColumnStart).toBe('5');
+  });
+
   it('progressively mounts home cards and enables offscreen paint optimization in low-power mode', () => {
     mockSettingsState.lowPowerMode = true;
     progressiveBatchingMock.mockReturnValue(1);

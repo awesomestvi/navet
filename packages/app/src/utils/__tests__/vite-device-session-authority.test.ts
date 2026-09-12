@@ -7,7 +7,14 @@ import { createViteDeviceSessionAuthority } from '@scripts/vite-device-session-a
 import { createViteInstallationAuthority } from '@scripts/vite-installation-authority.ts';
 import { describe, expect, it, vi } from 'vitest';
 
-function makeRequest(method: string, url: string, body?: unknown, cookie = '', host = 'localhost') {
+function makeRequest(
+  method: string,
+  url: string,
+  body?: unknown,
+  cookie = '',
+  host = 'localhost',
+  headers: Record<string, string> = {}
+) {
   const stream = Readable.from(body === undefined ? [] : [JSON.stringify(body)]) as IncomingMessage;
   Object.assign(stream, {
     method,
@@ -16,6 +23,7 @@ function makeRequest(method: string, url: string, body?: unknown, cookie = '', h
       host,
       ...(method === 'GET' ? {} : { origin: `http://${host}` }),
       ...(cookie ? { cookie } : {}),
+      ...headers,
     },
     socket: {},
   });
@@ -42,7 +50,7 @@ function makeResponse() {
 }
 
 describe('Vite device session authority', () => {
-  it('offers device connection only when an active primary provider session exists', async () => {
+  it('offers device connection only when another active primary provider session exists', async () => {
     vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const cacheDirectory = mkdtempSync(path.join(tmpdir(), 'navet-device-availability-'));
     const installationAuthority = createViteInstallationAuthority({
@@ -66,13 +74,158 @@ describe('Vite device session authority', () => {
     await authority.handle(makeRequest('GET', '/availability'), configured.response);
     expect(configured.json()).toEqual({ available: true });
 
+    const providerCookieName =
+      installationAuthority.getCookieNames('navet_auth_session').currentName;
+    const currentDevice = makeResponse();
+    await authority.handle(
+      makeRequest('GET', '/availability', undefined, `${providerCookieName}=${'b'.repeat(64)}`),
+      currentDevice.response
+    );
+    expect(currentDevice.json()).toEqual({ available: false });
+
+    writeFileSync(
+      path.join(providerDirectory, `${'c'.repeat(64)}.json`),
+      JSON.stringify({ auth: { accessToken: 'other-secret' }, updatedAt: Date.now() })
+    );
+    const otherDevice = makeResponse();
+    await authority.handle(
+      makeRequest('GET', '/availability', undefined, `${providerCookieName}=${'b'.repeat(64)}`),
+      otherDevice.response
+    );
+    expect(otherDevice.json()).toEqual({ available: true });
+
     writeFileSync(
       path.join(providerDirectory, `${'b'.repeat(64)}.json`),
       JSON.stringify({ auth: { accessToken: 'secret' }, updatedAt: 0 })
     );
+    writeFileSync(
+      path.join(providerDirectory, `${'c'.repeat(64)}.json`),
+      JSON.stringify({ auth: { accessToken: 'other-secret' }, updatedAt: 0 })
+    );
     const expired = makeResponse();
     await authority.handle(makeRequest('GET', '/availability'), expired.response);
     expect(expired.json()).toEqual({ available: false });
+  });
+
+  it('registers legacy direct sign-ins as distinct current devices', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const cacheDirectory = mkdtempSync(path.join(tmpdir(), 'navet-legacy-devices-'));
+    const installationAuthority = createViteInstallationAuthority({
+      cacheDirectory,
+      installationKey: 'a'.repeat(64),
+    });
+    const authority = createViteDeviceSessionAuthority(installationAuthority, { cacheDirectory });
+    const providerDirectory = path.join(cacheDirectory, 'navet-auth-sessions');
+    mkdirSync(providerDirectory, { recursive: true });
+    for (const cookieId of ['b'.repeat(64), 'c'.repeat(64)]) {
+      writeFileSync(
+        path.join(providerDirectory, `${cookieId}.json`),
+        JSON.stringify({ auth: { accessToken: 'secret' }, updatedAt: Date.now() })
+      );
+    }
+    const providerCookieName =
+      installationAuthority.getCookieNames('navet_auth_session').currentName;
+
+    const computer = makeResponse();
+    await authority.handle(
+      makeRequest(
+        'GET',
+        '/sessions',
+        undefined,
+        `${providerCookieName}=${'b'.repeat(64)}`,
+        'localhost',
+        {
+          'x-navet-device-client-id': 'computer_client_01',
+          'x-navet-device-name': encodeURIComponent('Computer A1B2'),
+        }
+      ),
+      computer.response
+    );
+    const computerCookie = String(computer.headers.get('set-cookie')).split(';')[0];
+    const computerId = computerCookie.split('=')[1];
+    expect(computer.json()).toMatchObject({
+      access: 'primary',
+      currentDeviceId: computerId,
+      devices: [{ id: computerId, name: 'Computer A1B2', role: 'primary' }],
+    });
+
+    const phone = makeResponse();
+    await authority.handle(
+      makeRequest(
+        'GET',
+        '/sessions',
+        undefined,
+        `${providerCookieName}=${'c'.repeat(64)}`,
+        'localhost',
+        {
+          'x-navet-device-client-id': 'phone_client_02',
+          'x-navet-device-name': encodeURIComponent('Phone C3D4'),
+        }
+      ),
+      phone.response
+    );
+    const phoneId = String(phone.headers.get('set-cookie')).split(';')[0].split('=')[1];
+    expect(phoneId).not.toBe(computerId);
+    expect(phone.json()).toMatchObject({
+      access: 'primary',
+      currentDeviceId: phoneId,
+      devices: expect.arrayContaining([
+        expect.objectContaining({ id: computerId, name: 'Computer A1B2', role: 'primary' }),
+        expect.objectContaining({ id: phoneId, name: 'Phone C3D4', role: 'primary' }),
+      ]),
+    });
+
+    const computerAgain = makeResponse();
+    await authority.handle(
+      makeRequest(
+        'GET',
+        '/sessions',
+        undefined,
+        `${providerCookieName}=${'b'.repeat(64)}; ${computerCookie}`,
+        'localhost',
+        {
+          'x-navet-device-client-id': 'computer_client_01',
+          'x-navet-device-name': encodeURIComponent('Computer A1B2'),
+        }
+      ),
+      computerAgain.response
+    );
+    expect(computerAgain.json()).toMatchObject({
+      currentDeviceId: computerId,
+      devices: expect.arrayContaining([
+        expect.objectContaining({ id: computerId }),
+        expect.objectContaining({ id: phoneId }),
+      ]),
+    });
+
+    const removedPhone = makeResponse();
+    await authority.handle(
+      makeRequest(
+        'DELETE',
+        '/sessions',
+        { id: phoneId },
+        `${providerCookieName}=${'b'.repeat(64)}; ${computerCookie}`
+      ),
+      removedPhone.response
+    );
+    expect(removedPhone.json()).toEqual({ revoked: true });
+
+    const revokedPhone = makeResponse();
+    await authority.handle(
+      makeRequest(
+        'GET',
+        '/sessions',
+        undefined,
+        `${providerCookieName}=${'c'.repeat(64)}; ${String(phone.headers.get('set-cookie')).split(';')[0]}`,
+        'localhost',
+        {
+          'x-navet-device-client-id': 'phone_client_02',
+          'x-navet-device-name': encodeURIComponent('Phone C3D4'),
+        }
+      ),
+      revokedPhone.response
+    );
+    expect(revokedPhone.response.statusCode).toBe(403);
   });
 
   it('allows device authorization on a self-hosted HTTP address', async () => {

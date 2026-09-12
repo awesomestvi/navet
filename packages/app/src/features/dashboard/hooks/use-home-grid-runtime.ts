@@ -139,7 +139,8 @@ export function useHomeGridRuntime({
             },
           ];
         }),
-        renderedGridCols
+        renderedGridCols,
+        { placementPreference: 'leftmost' }
       ),
     [allCards, breakpointCols, cardIds, cardSizes, renderedGridCols]
   );

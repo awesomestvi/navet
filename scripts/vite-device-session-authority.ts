@@ -17,6 +17,7 @@ const SESSION_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 const SECRET_PATTERN = /^[a-f0-9]{64}$/;
 const ID_PATTERN = /^[a-f0-9]{32}$/;
 const CODE_PATTERN = /^[a-f0-9]{12}$/;
+const CLIENT_ID_PATTERN = /^[a-zA-Z0-9_-]{8,128}$/;
 
 type ProviderId = 'home_assistant' | 'homey' | 'openhab';
 type ProviderCookieIds = Partial<Record<ProviderId, string>>;
@@ -46,6 +47,8 @@ interface DeviceSessionRecord {
   id: string;
   name: string;
   role?: 'primary';
+  clientId?: string;
+  directProviderSession?: boolean;
   providerCookieIds: ProviderCookieIds;
   createdAt: number;
   updatedAt: number;
@@ -102,6 +105,27 @@ function cookieValue(req: IncomingMessage, name: string) {
     }
   }
   return '';
+}
+
+function deviceClientIdentity(req: IncomingMessage) {
+  const clientId = String(req.headers['x-navet-device-client-id'] ?? '');
+  let name = '';
+  try {
+    name = decodeURIComponent(String(req.headers['x-navet-device-name'] ?? ''));
+  } catch {
+    name = '';
+  }
+  name = Array.from(name, (character) => {
+    const codePoint = character.codePointAt(0) ?? 0;
+    return codePoint <= 0x1f || codePoint === 0x7f ? '' : character;
+  })
+    .join('')
+    .trim()
+    .slice(0, 64);
+  return {
+    clientId: CLIENT_ID_PATTERN.test(clientId) ? clientId : undefined,
+    name: name || 'Navet device',
+  };
 }
 
 async function readBody(req: IncomingMessage) {
@@ -240,9 +264,10 @@ export function createViteDeviceSessionAuthority(
       ? validProviderCookieIds(currentDevice.record.providerCookieIds)
       : {};
   };
-  const hasActivePrimaryProviderSession = () =>
+  const hasOtherActivePrimaryProviderSession = (req: IncomingMessage) =>
     (Object.keys(providerRecords) as ProviderId[]).some((providerId) => {
       const provider = providerRecords[providerId];
+      const currentCookieId = cookieValue(req, provider.cookieName);
       let names: string[] = [];
       try {
         names = readdirSync(provider.directory);
@@ -251,6 +276,7 @@ export function createViteDeviceSessionAuthority(
       }
       return names.slice(0, 256).some((name) => {
         const id = name.replace(/\.json$/, '');
+        if (id === currentCookieId) return false;
         const record = SECRET_PATTERN.test(id)
           ? readJson<{ auth?: unknown; updatedAt?: number }>(path.join(provider.directory, name))
           : null;
@@ -264,6 +290,59 @@ export function createViteDeviceSessionAuthority(
   const deviceCookie = (req: IncomingMessage, value: string, maxAge: number) => {
     const secure = requestOrigin(req).startsWith('https://') ? '; Secure' : '';
     return `${deviceCookieName}=${value}; Path=/; Max-Age=${maxAge}; HttpOnly; SameSite=Strict${secure}`;
+  };
+  const registerPrimaryDevice = (
+    req: IncomingMessage,
+    res: ServerResponse,
+    providerCookieIds: ProviderCookieIds
+  ) => {
+    const identity = deviceClientIdentity(req);
+    let existing: { id: string; record: DeviceSessionRecord } | null = null;
+    if (identity.clientId) {
+      let names: string[] = [];
+      try {
+        names = readdirSync(sessionsDirectory);
+      } catch {
+        names = [];
+      }
+      for (const name of names.slice(0, 256)) {
+        const id = name.replace(/\.json$/, '');
+        const record = SECRET_PATTERN.test(id)
+          ? readJson<DeviceSessionRecord>(sessionPath(id))
+          : null;
+        if (
+          record?.clientId === identity.clientId &&
+          record.role === 'primary' &&
+          !record.revokedAt &&
+          record.expiresAt >= Date.now()
+        ) {
+          existing = { id, record };
+          break;
+        }
+      }
+    }
+
+    const id = existing?.id ?? randomBytes(32).toString('hex');
+    const record: DeviceSessionRecord = existing?.record ?? {
+      version: 1,
+      id,
+      name: identity.name,
+      role: 'primary',
+      clientId: identity.clientId,
+      directProviderSession: true,
+      providerCookieIds: {},
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      expiresAt: Date.now() + SESSION_TTL_MS,
+      revokedAt: null,
+    };
+    record.directProviderSession = true;
+    record.providerCookieIds = { ...record.providerCookieIds, ...providerCookieIds };
+    record.updatedAt = Date.now();
+    record.expiresAt = Date.now() + SESSION_TTL_MS;
+    writeJson(sessionPath(id), record);
+    res.setHeader('Set-Cookie', deviceCookie(req, id, SESSION_TTL_MS / 1000));
+    return { id, record };
   };
 
   const authority: ViteDeviceSessionAuthority = {
@@ -330,7 +409,7 @@ export function createViteDeviceSessionAuthority(
         return;
       }
       if (route === '/availability' && req.method === 'GET') {
-        sendJson(res, 200, { available: hasActivePrimaryProviderSession() });
+        sendJson(res, 200, { available: hasOtherActivePrimaryProviderSession(req) });
         return;
       }
       if (route === '/request' && req.method === 'POST') {
@@ -569,7 +648,10 @@ export function createViteDeviceSessionAuthority(
       }
       if (route === '/sessions' && req.method === 'GET') {
         const isPrimary = Object.keys(primaryProviderCookieIds(req)).length > 0;
-        const currentDevice = getDeviceSession(req);
+        let currentDevice = getDeviceSession(req);
+        if (isPrimary && !currentDevice) {
+          currentDevice = registerPrimaryDevice(req, res, directProviderCookieIds(req));
+        }
         if (!isPrimary && !currentDevice) {
           sendJson(res, 403, { error: 'An authorized Navet device is required' });
           return;
@@ -609,6 +691,15 @@ export function createViteDeviceSessionAuthority(
         if (!record) {
           sendJson(res, 404, { error: 'Device not found' });
           return;
+        }
+        if (record.directProviderSession) {
+          for (const providerId of Object.keys(record.providerCookieIds) as ProviderId[]) {
+            const provider = providerRecords[providerId];
+            const cookieId = record.providerCookieIds[providerId] ?? '';
+            if (provider && SECRET_PATTERN.test(cookieId)) {
+              rmSync(path.join(provider.directory, `${cookieId}.json`), { force: true });
+            }
+          }
         }
         record.revokedAt = Date.now();
         record.updatedAt = Date.now();

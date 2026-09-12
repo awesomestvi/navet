@@ -53,6 +53,11 @@ export interface AuthorizedDeviceOverview {
   devices: AuthorizedDevice[];
 }
 
+export interface AuthorizedDeviceClientIdentity {
+  id: string;
+  name: string;
+}
+
 export interface DeviceAuthorizationPreview {
   code: string;
   deviceName: string;
@@ -156,8 +161,17 @@ export function declineDeviceAuthorization(code: string): Promise<void> {
   }).then(() => undefined);
 }
 
-export function listAuthorizedDevices(): Promise<AuthorizedDeviceOverview> {
-  return requestJson<AuthorizedDeviceOverview>('/__navet_devices__/sessions');
+export function listAuthorizedDevices(
+  client?: AuthorizedDeviceClientIdentity
+): Promise<AuthorizedDeviceOverview> {
+  return requestJson<AuthorizedDeviceOverview>('/__navet_devices__/sessions', {
+    headers: client
+      ? {
+          'X-Navet-Device-Client-Id': client.id,
+          'X-Navet-Device-Name': encodeURIComponent(client.name),
+        }
+      : undefined,
+  });
 }
 
 export function revokeAuthorizedDevice(id: string): Promise<void> {

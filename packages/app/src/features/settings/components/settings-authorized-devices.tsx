@@ -23,6 +23,7 @@ import {
   AlertDialogTitle,
 } from '@navet/app/components/ui/alert-dialog';
 import { getCurrentDevicePairingPreferences } from '@navet/app/features/auth/device-pairing-preferences';
+import { getDashboardClientIdentity } from '@navet/app/features/dashboard/clients/dashboard-client-identity';
 import type { SettingsSectionStyles } from '@navet/app/features/settings/hooks/settings-section-styles';
 import { useI18n } from '@navet/app/i18n';
 import {
@@ -69,13 +70,19 @@ export function SettingsAuthorizedDevices({ styles }: { styles: SettingsSectionS
   const [pendingPreview, setPendingPreview] = useState<DeviceAuthorizationPreview | null>(null);
   const [deviceToPromote, setDeviceToPromote] = useState<AuthorizedDevice | null>(null);
   const [deviceToRemove, setDeviceToRemove] = useState<AuthorizedDevice | null>(null);
+  const [dashboardClient] = useState(() => getDashboardClientIdentity());
   const approvalSyncGeneration = useRef(0);
+
+  const loadAuthorizedDevices = useCallback(
+    () => listAuthorizedDevices({ id: dashboardClient.id, name: dashboardClient.name }),
+    [dashboardClient.id, dashboardClient.name]
+  );
 
   const refresh = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const overview = await listAuthorizedDevices();
+      const overview = await loadAuthorizedDevices();
       setDevices(overview.devices);
       setAccess(overview.access);
       setCurrentDeviceId(overview.currentDeviceId);
@@ -84,14 +91,14 @@ export function SettingsAuthorizedDevices({ styles }: { styles: SettingsSectionS
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, [loadAuthorizedDevices, t]);
 
   useEffect(() => void refresh(), [refresh]);
 
   useEffect(() => {
     if (access !== 'authorized') return;
     const interval = window.setInterval(() => {
-      void listAuthorizedDevices()
+      void loadAuthorizedDevices()
         .then((overview) => {
           setDevices(overview.devices);
           setAccess(overview.access);
@@ -100,7 +107,7 @@ export function SettingsAuthorizedDevices({ styles }: { styles: SettingsSectionS
         .catch(() => undefined);
     }, 5_000);
     return () => window.clearInterval(interval);
-  }, [access]);
+  }, [access, loadAuthorizedDevices]);
 
   useEffect(
     () => () => {
@@ -109,25 +116,28 @@ export function SettingsAuthorizedDevices({ styles }: { styles: SettingsSectionS
     []
   );
 
-  const syncApprovedDevice = useCallback(async (knownDeviceIds: Set<string>) => {
-    const generation = ++approvalSyncGeneration.current;
-    for (let attempt = 0; attempt < 15; attempt += 1) {
-      if (attempt > 0) {
-        await new Promise((resolve) => window.setTimeout(resolve, 1_000));
-      }
-      if (approvalSyncGeneration.current !== generation) return;
-      try {
-        const overview = await listAuthorizedDevices();
+  const syncApprovedDevice = useCallback(
+    async (knownDeviceIds: Set<string>) => {
+      const generation = ++approvalSyncGeneration.current;
+      for (let attempt = 0; attempt < 15; attempt += 1) {
+        if (attempt > 0) {
+          await new Promise((resolve) => window.setTimeout(resolve, 1_000));
+        }
         if (approvalSyncGeneration.current !== generation) return;
-        setDevices(overview.devices);
-        setAccess(overview.access);
-        setCurrentDeviceId(overview.currentDeviceId);
-        if (overview.devices.some((device) => !knownDeviceIds.has(device.id))) return;
-      } catch {
-        // Keep the current list and retry while the approved device finishes connecting.
+        try {
+          const overview = await loadAuthorizedDevices();
+          if (approvalSyncGeneration.current !== generation) return;
+          setDevices(overview.devices);
+          setAccess(overview.access);
+          setCurrentDeviceId(overview.currentDeviceId);
+          if (overview.devices.some((device) => !knownDeviceIds.has(device.id))) return;
+        } catch {
+          // Keep the current list and retry while the approved device finishes connecting.
+        }
       }
-    }
-  }, []);
+    },
+    [loadAuthorizedDevices]
+  );
 
   const review = async () => {
     setWorking(true);
@@ -362,36 +372,38 @@ export function SettingsAuthorizedDevices({ styles }: { styles: SettingsSectionS
             </p>
           ) : error ? null : (
             <div className={`divide-y ${styles.dividerColor}`}>
-              <div className="flex min-w-0 items-center gap-3 px-4 py-3.5 md:px-5">
-                <span
-                  aria-hidden="true"
-                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border ${styles.borderColor} ${styles.softBg} ${styles.mutedColor}`}
-                >
-                  <Smartphone className="h-4 w-4" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className={`text-sm font-medium ${styles.textColor}`}>
-                      {access === 'primary' && currentDeviceId === null
-                        ? t('settings.system.authorizedDevices.thisDevice')
-                        : t('settings.system.authorizedDevices.originalSignIn')}
+              {devices.some((device) => device.role === 'primary') ? null : (
+                <div className="flex min-w-0 items-center gap-3 px-4 py-3.5 md:px-5">
+                  <span
+                    aria-hidden="true"
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border ${styles.borderColor} ${styles.softBg} ${styles.mutedColor}`}
+                  >
+                    <Smartphone className="h-4 w-4" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className={`text-sm font-medium ${styles.textColor}`}>
+                        {access === 'primary' && currentDeviceId === null
+                          ? t('settings.system.authorizedDevices.thisDevice')
+                          : t('settings.system.authorizedDevices.originalSignIn')}
+                      </p>
+                      {access === 'primary' && currentDeviceId === null ? (
+                        <span
+                          className="shrink-0 text-[11px] font-medium leading-[14px]"
+                          style={{ color: themeColorValues.green }}
+                        >
+                          {t('sidebar.current')}
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className={`mt-0.5 text-xs ${styles.subtleColor}`}>
+                      {devices.length === 0
+                        ? t('settings.system.authorizedDevices.primarySignInEmpty')
+                        : t('settings.system.authorizedDevices.primarySignIn')}
                     </p>
-                    {access === 'primary' && currentDeviceId === null ? (
-                      <span
-                        className="shrink-0 text-[11px] font-medium leading-[14px]"
-                        style={{ color: themeColorValues.green }}
-                      >
-                        {t('sidebar.current')}
-                      </span>
-                    ) : null}
                   </div>
-                  <p className={`mt-0.5 text-xs ${styles.subtleColor}`}>
-                    {devices.length === 0
-                      ? t('settings.system.authorizedDevices.primarySignInEmpty')
-                      : t('settings.system.authorizedDevices.primarySignIn')}
-                  </p>
                 </div>
-              </div>
+              )}
 
               {devices.map((device) => (
                 <div key={device.id} className="px-4 py-3.5 md:px-5">

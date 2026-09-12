@@ -11,6 +11,7 @@ const DEVICE_SESSION_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 const ID_PATTERN = /^[a-f0-9]{32}$/;
 const SECRET_PATTERN = /^[a-f0-9]{64}$/;
 const CODE_PATTERN = /^[a-f0-9]{12}$/;
+const CLIENT_ID_PATTERN = /^[a-zA-Z0-9_-]{8,128}$/;
 const SUPPORTED_LANGUAGES = [
   'en', 'de', 'fr', 'nl', 'es', 'it', 'pt', 'pl', 'sv', 'no', 'da', 'fi', 'zh',
 ];
@@ -83,6 +84,24 @@ function getCookie(r, name) {
     }
   }
   return '';
+}
+
+function deviceClientIdentity(r) {
+  const clientId = getHeader(r && r.headersIn, 'X-Navet-Device-Client-Id');
+  let name = '';
+  try {
+    name = decodeURIComponent(getHeader(r && r.headersIn, 'X-Navet-Device-Name'));
+  } catch (_error) {
+    name = '';
+  }
+  name = Array.from(name).filter(function (character) {
+    const codePoint = character.codePointAt(0) || 0;
+    return codePoint > 0x1f && codePoint !== 0x7f;
+  }).join('').trim().slice(0, 64);
+  return {
+    clientId: CLIENT_ID_PATTERN.test(clientId) ? clientId : null,
+    name: name || 'Navet device',
+  };
 }
 
 function secureRandomHex(bytes) {
@@ -222,11 +241,12 @@ function validProviderCookieIds(candidateIds) {
   return result;
 }
 
-function hasActivePrimaryProviderSession() {
+function hasOtherActivePrimaryProviderSession(r) {
   const providerIds = Object.keys(PROVIDERS);
   let providerIndex;
   for (providerIndex = 0; providerIndex < providerIds.length; providerIndex += 1) {
     const provider = PROVIDERS[providerIds[providerIndex]];
+    const currentCookieId = getCookie(r, scopedCookieName(provider.cookieName));
     let names = [];
     try {
       names = fs.readdirSync(provider.directory);
@@ -236,6 +256,9 @@ function hasActivePrimaryProviderSession() {
     let sessionIndex;
     for (sessionIndex = 0; sessionIndex < names.length && sessionIndex < 256; sessionIndex += 1) {
       const match = /^([a-f0-9]{64})\.json$/.exec(names[sessionIndex]);
+      if (match && match[1] === currentCookieId) {
+        continue;
+      }
       const record = match ? readJson(provider.directory + '/' + names[sessionIndex]) : null;
       if (
         record &&
@@ -264,6 +287,51 @@ function buildDeviceCookie(r, id, maxAge) {
     attributes.push('Secure');
   }
   return attributes.join('; ');
+}
+
+function registerPrimaryDevice(r, providerCookieIds) {
+  const identity = deviceClientIdentity(r);
+  let names = [];
+  try { names = fs.readdirSync(SESSIONS_DIRECTORY); } catch (_error) { names = []; }
+  let existing = null;
+  let index;
+  if (identity.clientId) {
+    for (index = 0; index < names.length && index < 256; index += 1) {
+      const match = /^([a-f0-9]{64})\.json$/.exec(names[index]);
+      const record = match ? readJson(sessionPath(match[1])) : null;
+      if (
+        record &&
+        record.clientId === identity.clientId &&
+        record.role === 'primary' &&
+        !record.revokedAt &&
+        record.expiresAt >= Date.now()
+      ) {
+        existing = { id: match[1], record: record };
+        break;
+      }
+    }
+  }
+  const id = existing ? existing.id : secureRandomHex(32);
+  const record = existing ? existing.record : {
+    version: 1,
+    id: id,
+    name: identity.name,
+    role: 'primary',
+    clientId: identity.clientId,
+    directProviderSession: true,
+    providerCookieIds: {},
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+    expiresAt: Date.now() + DEVICE_SESSION_TTL_MS,
+    revokedAt: null,
+  };
+  record.directProviderSession = true;
+  record.providerCookieIds = Object.assign({}, record.providerCookieIds, providerCookieIds);
+  record.updatedAt = Date.now();
+  record.expiresAt = Date.now() + DEVICE_SESSION_TTL_MS;
+  writeJson(sessionPath(id), record);
+  r.headersOut['Set-Cookie'] = buildDeviceCookie(r, id, DEVICE_SESSION_TTL_MS / 1000);
+  return { id: id, record: record };
 }
 
 function getDeviceSession(r) {
@@ -591,7 +659,10 @@ function handleRedeem(r) {
 
 function listDevices(r) {
   const isPrimary = Object.keys(primaryProviderCookieIds(r)).length > 0;
-  const currentDevice = getDeviceSession(r);
+  let currentDevice = getDeviceSession(r);
+  if (isPrimary && !currentDevice) {
+    currentDevice = registerPrimaryDevice(r, providerCookieIdsFromDirectSession(r));
+  }
   if (!isPrimary && !currentDevice) {
     sendJson(r, 403, { error: 'An authorized Navet device is required' });
     return;
@@ -633,6 +704,18 @@ function revokeDevice(r) {
   if (!record) {
     sendJson(r, 404, { error: 'Device not found' });
     return;
+  }
+  if (record.directProviderSession) {
+    const providerIds = Object.keys(record.providerCookieIds || {});
+    let providerIndex;
+    for (providerIndex = 0; providerIndex < providerIds.length; providerIndex += 1) {
+      const providerId = providerIds[providerIndex];
+      const provider = PROVIDERS[providerId];
+      const cookieId = String(record.providerCookieIds[providerId] || '');
+      if (provider && SECRET_PATTERN.test(cookieId)) {
+        deletePath(provider.directory + '/' + cookieId + '.json');
+      }
+    }
   }
   record.revokedAt = Date.now();
   record.updatedAt = Date.now();
@@ -708,7 +791,7 @@ async function handle(r) {
     return;
   }
   if (r.uri === '/__navet_devices__/availability' && r.method === 'GET') {
-    sendJson(r, 200, { available: hasActivePrimaryProviderSession() });
+    sendJson(r, 200, { available: hasOtherActivePrimaryProviderSession(r) });
     return;
   }
   if (r.uri === '/__navet_devices__/request' && r.method === 'POST') {
