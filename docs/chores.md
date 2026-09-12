@@ -10,16 +10,21 @@ is due, and whether it is finished.
 
 ![Household Today with the one-row Chores today, overdue and upcoming chore cards, assignees, time, points, and the See rewards action.](/docs/how-to/everyday-control/household-today.webp)
 
-Chores belong to the Navet installation. A connected provider does not become the source of truth
-for assignments, schedules, or history. Provider adapters may optionally project a compact summary
-and accept action requests for automations.
+Chores belong to your Navet installation, not the connected smart-home provider. Navet stores
+people, assignments, schedules, and history in a shared household workspace. Changing a provider
+connection does not create a new household, and separate Navet installations keep separate data.
+
+Provider adapters may optionally project a compact summary and accept action requests for
+automations without becoming the source of truth for chores.
 
 ## Where chores are available
 
-Native chores require a Navet runtime with shared chore storage. Today that authority is available
-in the Home Assistant add-on and in a compatible standalone installation. The Home Assistant custom
-panel, Homey-only installations, and openHAB-only installations do not currently provide that
-storage authority; this is a runtime capability limit, not a provider-owned chores model.
+Chores require shared storage supplied by the Navet runtime. Standalone Docker supplies this
+storage for supported provider connections. In Home Assistant, it is supplied by the Navet
+add-on or the Navet custom integration used by the custom panel.
+
+Provider capabilities still determine whether optional reminders, routine actions, or projected
+entities are available. See the [integration reference](/integrations/) for provider support.
 
 ## The Household workspace
 
@@ -85,6 +90,9 @@ person's immutable history.
 Chore changes are shared across authenticated Navet screens connected to the same installation.
 Revision checks prevent one screen from silently overwriting a newer household change. Activity
 history supports weekly review and JSON or CSV export.
+
+Access to the installation and chore management are separate: screens must be authenticated,
+while household roles and the optional management PIN govern planning and recovery actions.
 
 Use **Settings → Data and recovery** to download a complete backup. Restoring with **Merge** keeps
 the current workspace and remaps conflicts; **Replace** removes the current workspace before the

@@ -11,6 +11,7 @@ interface EnergyHistoryBarChartProps {
   selectionDetailsId?: string;
   selectedIndex?: number | null;
   onSelectedIndexChange?: (index: number | null) => void;
+  showPowerRange?: boolean;
 }
 
 function getEvenlySpacedTickIndexes(pointCount: number, maximumLabels: number) {
@@ -34,6 +35,7 @@ export const EnergyHistoryBarChart = memo(function EnergyHistoryBarChart({
   selectionDetailsId,
   selectedIndex = null,
   onSelectedIndexChange,
+  showPowerRange = false,
 }: EnergyHistoryBarChartProps) {
   const { locale, t } = useI18n();
   const { theme } = useTheme();
@@ -79,9 +81,9 @@ export const EnergyHistoryBarChart = memo(function EnergyHistoryBarChart({
       aria-valuetext={
         committedPoint
           ? committedPoint.hasData === false
-            ? `${committedPoint.label}, No data`
+            ? `${committedPoint.label}, ${t('energy.history.noData')}`
             : `${committedPoint.label}, ${committedPoint.secondaryValue ?? committedPoint.value} kWh`
-          : 'No period selected'
+          : t('energy.history.noPeriodSelected')
       }
       tabIndex={0}
       onClick={(event) => {
@@ -140,7 +142,7 @@ export const EnergyHistoryBarChart = memo(function EnergyHistoryBarChart({
         className="absolute inset-x-0 top-6 bottom-6 grid items-end"
         style={{
           gridTemplateColumns: `repeat(${data.length}, minmax(0, 64px))`,
-          gap: compactBars ? '2px' : '4px',
+          gap: data.length > 100 ? '0.5px' : compactBars ? '2px' : '4px',
           justifyContent: 'space-evenly',
         }}
         aria-hidden="true"
@@ -245,12 +247,30 @@ export const EnergyHistoryBarChart = memo(function EnergyHistoryBarChart({
             <div className={tokens.surface.textSecondary}>{activePoint.label}</div>
             <div className={`mt-1 font-semibold tabular-nums ${tokens.surface.textPrimary}`}>
               {activePoint.hasData === false
-                ? 'No data'
-                : `${(activePoint.secondaryValue ?? activePoint.value).toLocaleString(undefined, {
+                ? t('energy.history.noData')
+                : `${(activePoint.secondaryValue ?? activePoint.value).toLocaleString(locale, {
                     maximumFractionDigits: 2,
                     minimumFractionDigits: 1,
                   })} kWh`}
             </div>
+            {showPowerRange && activePoint.hasData !== false ? (
+              <dl className="mt-2 grid grid-cols-[auto_auto] gap-x-4 gap-y-1">
+                {(
+                  [
+                    ['energy.history.high', activePoint.maxValue ?? activePoint.value],
+                    ['energy.history.average', activePoint.value],
+                    ['energy.history.low', activePoint.minValue ?? activePoint.value],
+                  ] as const
+                ).map(([label, value]) => (
+                  <div key={label} className="contents">
+                    <dt className={tokens.surface.textSecondary}>{t(label)}</dt>
+                    <dd className="text-right tabular-nums">
+                      {value.toLocaleString(locale, { maximumFractionDigits: 1 })} W
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            ) : null}
           </div>
         </>
       ) : null}

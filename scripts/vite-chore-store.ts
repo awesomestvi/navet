@@ -31,7 +31,9 @@ import {
   type ChoreWorkspaceResetRequest,
   type ChoreWorkspaceRestoreRequest,
 } from '../packages/app/src/services/chore-workspace.contract.ts'
-import type { ViteDashboardProfilePrincipal } from './vite-dashboard-profile-store.ts'
+export interface ViteChorePrincipal {
+  sessionId: string
+}
 import { isViteStrictSameOriginMutation } from './vite-provider-session-store.ts'
 
 const CONTRACT_VERSION = 1
@@ -283,7 +285,7 @@ export function createViteChoreStoreRequestHandler(options: {
   filePath?: string
   resolvePrincipal: (
     request: IncomingMessage
-  ) => ViteDashboardProfilePrincipal | null | Promise<ViteDashboardProfilePrincipal | null>
+  ) => ViteChorePrincipal | null | Promise<ViteChorePrincipal | null>
 }) {
   const filePath =
     options.filePath ?? path.resolve(process.cwd(), '.cache', 'navet-chore-workspace.json')
@@ -294,6 +296,19 @@ export function createViteChoreStoreRequestHandler(options: {
   let managementSessions: ChoreManagementSession[] = []
   let failedManagementAttempts = 0
   let managementBlockedUntil = 0
+
+  const workspaceKey = () => {
+    const identityPath = `${filePath}.identity`
+    const missing = Symbol('missing')
+    const identity = readJson<unknown>(identityPath, missing, 1024)
+    if (identity !== missing && (typeof identity !== 'string' || !/^hat_[a-f0-9]{64}$/.test(identity))) {
+      throw new Error('Chore workspace identity is invalid')
+    }
+    if (typeof identity === 'string') return identity
+    const created = `hat_${randomBytes(32).toString('hex')}`
+    writeJson(identityPath, created, 1024)
+    return created
+  }
 
   const readManagementSecurity = (
     tenantId: string
@@ -306,11 +321,18 @@ export function createViteChoreStoreRequestHandler(options: {
     if (!security) return null
     if (
       security.contractVersion !== CONTRACT_VERSION ||
-      security.tenantId !== tenantId ||
+      typeof security.tenantId !== 'string' ||
+      !/^hat_[a-f0-9]{64}$/.test(security.tenantId) ||
       typeof security.salt !== 'string' ||
       typeof security.pinHash !== 'string'
     ) {
       throw new Error('Chore management security is invalid')
+    }
+    if (security.tenantId !== tenantId) {
+      const migrated = { ...security, tenantId, updatedAt: new Date().toISOString() }
+      writeJson(managementSecurityPath, migrated, MAX_MANAGEMENT_SECURITY_BYTES)
+      managementSessions = []
+      return migrated
     }
     return security
   }
@@ -401,7 +423,8 @@ export function createViteChoreStoreRequestHandler(options: {
     if (
       !isRecord(value) ||
       value.contractVersion !== CONTRACT_VERSION ||
-      (value.tenantId !== undefined && value.tenantId !== tenantId) ||
+      (value.tenantId !== undefined &&
+        (typeof value.tenantId !== 'string' || !/^hat_[a-f0-9]{64}$/.test(value.tenantId))) ||
       !Number.isSafeInteger(value.revision) ||
       Number(value.revision) < 0 ||
       typeof value.updatedAt !== 'string' ||
@@ -462,7 +485,7 @@ export function createViteChoreStoreRequestHandler(options: {
     let documentNeedsMigration = Boolean(
       document &&
         isRecord(rawDocument) &&
-        (rawDocument.tenantId === undefined || document.data !== rawDocument.data)
+        (rawDocument.tenantId !== tenantId || document.data !== rawDocument.data)
     )
     if (!document) {
       const backup = readDocumentCandidate(lastGoodWorkspacePath, tenantId)
@@ -547,8 +570,8 @@ export function createViteChoreStoreRequestHandler(options: {
   }
 
   return async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
-    const principal = await options.resolvePrincipal(req)
-    if (!principal) {
+    const authenticated = await options.resolvePrincipal(req)
+    if (!authenticated || !authenticated.sessionId) {
       sendJson(res, 401, { error: 'Authentication required' })
       return
     }
@@ -559,7 +582,9 @@ export function createViteChoreStoreRequestHandler(options: {
     }
 
     const route = normalizeRoute(req)
+    let principal = { ...authenticated, tenantId: '' }
     try {
+      principal = { ...authenticated, tenantId: workspaceKey() }
       let managementSecurity: ChoreManagementSecurityDocument | null = null
       let managementSecurityReadable = true
       try {

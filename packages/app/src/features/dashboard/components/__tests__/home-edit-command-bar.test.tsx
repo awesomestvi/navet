@@ -1,5 +1,3 @@
-import { loadMessages } from '@navet/app/i18n/messages';
-import { svMessages } from '@navet/app/i18n/messages/sv';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { setMediaQueryMatch } from '@navet/app/test/browser-mocks';
 import { renderWithProviders } from '@navet/app/test/render';
@@ -25,8 +23,6 @@ describe('HomeEditCommandBar', () => {
     const onAddColumn = vi.fn();
     const onAddRow = vi.fn();
     const onApplyPack = vi.fn();
-    const onApplyEnergyLayout = vi.fn();
-    const onConfigureKpis = vi.fn();
     const onManageRooms = vi.fn();
     const onRedo = vi.fn();
     const onSetLayoutMode = vi.fn();
@@ -42,8 +38,6 @@ describe('HomeEditCommandBar', () => {
         onAddColumn={onAddColumn}
         onAddRow={onAddRow}
         onApplyPack={onApplyPack}
-        onApplyEnergyLayout={onApplyEnergyLayout}
-        onConfigureKpis={onConfigureKpis}
         onManageRooms={onManageRooms}
         onRedo={onRedo}
         onSetLayoutMode={onSetLayoutMode}
@@ -65,23 +59,19 @@ describe('HomeEditCommandBar', () => {
     expect(
       screen
         .getAllByRole('button')
-        .slice(-4)
+        .slice(-2)
         .map((button) => button.textContent)
-    ).toEqual(['KPIs', 'Layout', 'Add Card', 'Done']);
+    ).toEqual(['Add Card', 'Done']);
 
-    fireEvent.click(screen.getByRole('button', { name: 'KPIs' }));
     fireEvent.click(screen.getByRole('button', { name: /Add Card/i }));
     fireEvent.click(screen.getByRole('button', { name: /Add row/i }));
     fireEvent.click(screen.getByRole('button', { name: /Add column/i }));
 
-    expect(onConfigureKpis).toHaveBeenCalledTimes(1);
     expect(onAddCard).toHaveBeenCalledTimes(1);
     expect(onAddRow).toHaveBeenCalledTimes(1);
     expect(onAddColumn).toHaveBeenCalledTimes(1);
 
-    openMenu('Layout');
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Essentials' }));
-    expect(onApplyEnergyLayout).toHaveBeenCalledWith('essentials');
+    expect(screen.queryByRole('button', { name: 'Layout' })).not.toBeInTheDocument();
 
     openMenu('Presets');
     fireEvent.click(screen.getByRole('menuitem', { name: /Command Center/i }));
@@ -127,73 +117,28 @@ describe('HomeEditCommandBar', () => {
     expect(screen.queryByRole('button', { name: /Add column/i })).not.toBeInTheDocument();
   });
 
-  it('translates Energy edit actions while preserving the selected layout identifier', async () => {
-    await loadMessages('sv');
-    useSettingsStore.setState({ language: 'sv' });
-    setMediaQueryMatch('(max-width: 767px)', true);
-    const onApplyEnergyLayout = vi.fn();
-    renderWithProviders(
-      <HomeEditCommandBar
-        onAddCard={vi.fn()}
-        onApplyEnergyLayout={onApplyEnergyLayout}
-        onConfigureKpis={vi.fn()}
-      />
-    );
-    openMenu(svMessages['common.moreActions']);
-    expect(screen.getByRole('menuitem', { name: 'Nyckeltal' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Balanserat' }));
-    expect(onApplyEnergyLayout).toHaveBeenCalledWith('balanced');
+  it('offers Hide KPIs and Show KPIs on the Customize bar', () => {
+    const toggle = vi.fn();
+    const { rerender } = renderWithProviders(<HomeEditCommandBar onToggleEnergyKpis={toggle} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Hide KPIs' }));
+    expect(toggle).toHaveBeenCalledOnce();
+    rerender(<HomeEditCommandBar onToggleEnergyKpis={toggle} energyKpisHidden />);
+    expect(screen.getByRole('button', { name: 'Show KPIs' })).toBeInTheDocument();
   });
 
-  it('moves Energy configuration into the phone overflow menu', () => {
+  it('offers KPI visibility in the phone Customize menu', () => {
     setMediaQueryMatch('(max-width: 767px)', true);
-    const onApplyEnergyLayout = vi.fn();
-    const onConfigureKpis = vi.fn();
+    const toggle = vi.fn();
+    renderWithProviders(<HomeEditCommandBar onToggleEnergyKpis={toggle} energyKpisHidden />);
+    openMenu('More actions');
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Show KPIs' }));
+    expect(toggle).toHaveBeenCalledOnce();
+  });
 
-    renderWithProviders(
-      <HomeEditCommandBar
-        onAddCard={vi.fn()}
-        onApplyEnergyLayout={onApplyEnergyLayout}
-        onConfigureKpis={onConfigureKpis}
-        onToggleEditMode={vi.fn()}
-      />
-    );
-
+  it('does not offer KPI configuration in the phone Customize bar', () => {
+    setMediaQueryMatch('(max-width: 767px)', true);
+    renderWithProviders(<HomeEditCommandBar onAddCard={vi.fn()} onToggleEditMode={vi.fn()} />);
     expect(screen.queryByRole('button', { name: 'KPIs' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Layout' })).not.toBeInTheDocument();
-    openMenu('More actions');
-    fireEvent.click(screen.getByRole('menuitem', { name: 'KPIs' }));
-
-    expect(onConfigureKpis).toHaveBeenCalledTimes(1);
-
-    openMenu('More actions');
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Balanced' }));
-    expect(onApplyEnergyLayout).toHaveBeenCalledWith('balanced');
-  });
-
-  it('opens Security overview customization from desktop and phone command bars', () => {
-    const onConfigureSecurityOverview = vi.fn();
-    const { unmount } = renderWithProviders(
-      <HomeEditCommandBar
-        onConfigureSecurityOverview={onConfigureSecurityOverview}
-        onToggleEditMode={vi.fn()}
-      />
-    );
-
-    fireEvent.click(screen.getByRole('button', { name: 'Overview' }));
-    expect(onConfigureSecurityOverview).toHaveBeenCalledTimes(1);
-
-    unmount();
-    setMediaQueryMatch('(max-width: 767px)', true);
-    renderWithProviders(
-      <HomeEditCommandBar
-        onConfigureSecurityOverview={onConfigureSecurityOverview}
-        onToggleEditMode={vi.fn()}
-      />
-    );
-
-    openMenu('More actions');
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Overview' }));
-    expect(onConfigureSecurityOverview).toHaveBeenCalledTimes(2);
+    expect(screen.queryByRole('button', { name: 'More actions' })).not.toBeInTheDocument();
   });
 });

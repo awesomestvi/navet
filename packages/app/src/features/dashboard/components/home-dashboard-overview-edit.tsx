@@ -1,6 +1,5 @@
 import { closestCenter, DndContext, DragOverlay } from '@dnd-kit/core';
 import { Badge } from '@navet/app/components/primitives';
-import { getCardSizeOverlayStyle } from '@navet/app/components/shared/card-size-selector';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@navet/app/hooks';
 import { Columns2, GripVertical } from 'lucide-react';
@@ -53,7 +52,6 @@ export default function HomeDashboardOverviewEdit({
     setActiveDragSection,
     activeDragColumn,
     setActiveDragColumn,
-    activeDragSize,
     sensors,
     handleDragOver,
     handleDragEnd,
@@ -202,11 +200,8 @@ export default function HomeDashboardOverviewEdit({
               <div className="text-sm font-semibold">{t('dashboard.section.moveDragLabel')}</div>
             </div>
           </div>
-        ) : activeDragCard && activeDragSize ? (
-          <div
-            className="flex items-center justify-center rounded-2xl border border-white/20 bg-white/10 backdrop-blur-xl"
-            style={getCardSizeOverlayStyle(activeDragSize)}
-          >
+        ) : activeDragCard ? (
+          <div className="flex h-full w-full items-center justify-center rounded-2xl border border-white/20 bg-white/10 backdrop-blur-xl">
             <GripVertical className="h-5 w-5 text-white/76" />
           </div>
         ) : null}

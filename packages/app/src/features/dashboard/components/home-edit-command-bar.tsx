@@ -1,4 +1,4 @@
-import { Button, IconButton } from '@navet/app/components/primitives';
+import { Button, IconButton, InteractivePill } from '@navet/app/components/primitives';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import {
   AlertDialog,
@@ -19,7 +19,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@navet/app/components/ui/dropdown-menu';
-import type { EnergyOverviewTemplate } from '@navet/app/features/energy/components/dashboard/energy-overview-layout';
 import { useI18n, useTheme } from '@navet/app/hooks';
 import {
   Columns2,
@@ -47,9 +46,8 @@ interface HomeEditCommandBarProps {
   onAddColumn?: () => void;
   onAddRow?: () => void;
   onApplyPack?: (packId: DashboardPackId) => void;
-  onApplyEnergyLayout?: (template: EnergyOverviewTemplate) => void;
-  onConfigureKpis?: () => void;
-  onConfigureSecurityOverview?: () => void;
+  energyKpisHidden?: boolean;
+  onToggleEnergyKpis?: () => void;
   onManageRooms?: () => void;
   onRedo?: () => void;
   onSetLayoutMode?: (mode: HomeLayoutMode) => void;
@@ -106,9 +104,8 @@ export function HomeEditCommandBar({
   onAddColumn,
   onAddRow,
   onApplyPack,
-  onApplyEnergyLayout,
-  onConfigureKpis,
-  onConfigureSecurityOverview,
+  energyKpisHidden = false,
+  onToggleEnergyKpis,
   onManageRooms,
   onRedo,
   onSetLayoutMode,
@@ -134,9 +131,7 @@ export function HomeEditCommandBar({
   const { activeDashboard } = useDashboardSwitcher();
   const pendingPack = DASHBOARD_PACKS.find((pack) => pack.id === pendingPackId);
   const hasMobileOverflowActions =
-    Boolean(onConfigureKpis) ||
-    Boolean(onConfigureSecurityOverview) ||
-    Boolean(onApplyEnergyLayout) ||
+    Boolean(onToggleEnergyKpis) ||
     Boolean(onManageRooms) ||
     Boolean(onApplyPack) ||
     showHomeLayoutControls ||
@@ -174,35 +169,11 @@ export function HomeEditCommandBar({
                     />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" sideOffset={10} className="w-64">
-                    {onConfigureKpis ? (
-                      <DropdownMenuItem onClick={onConfigureKpis}>
-                        <SlidersHorizontal className="h-4 w-4" />
-                        {t('energy.edit.kpis')}
+                    {onToggleEnergyKpis ? (
+                      <DropdownMenuItem onClick={onToggleEnergyKpis}>
+                        {t(energyKpisHidden ? 'energy.edit.showKpis' : 'energy.edit.hideKpis')}
                       </DropdownMenuItem>
                     ) : null}
-
-                    {onConfigureSecurityOverview ? (
-                      <DropdownMenuItem onClick={onConfigureSecurityOverview}>
-                        <SlidersHorizontal className="h-4 w-4" />
-                        {t('security.overview.customize.action')}
-                      </DropdownMenuItem>
-                    ) : null}
-
-                    {onApplyEnergyLayout ? (
-                      <>
-                        {onConfigureKpis ? <DropdownMenuSeparator /> : null}
-                        <DropdownMenuLabel>{t('energy.edit.layout')}</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => onApplyEnergyLayout('essentials')}>
-                          <LayoutTemplate className="h-4 w-4" />
-                          {t('energy.edit.essentials')}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onApplyEnergyLayout('balanced')}>
-                          <LayoutDashboard className="h-4 w-4" />
-                          {t('energy.edit.balanced')}
-                        </DropdownMenuItem>
-                      </>
-                    ) : null}
-
                     {onManageRooms ? (
                       <DropdownMenuItem onClick={onManageRooms}>
                         <SlidersHorizontal className="h-4 w-4" />
@@ -305,18 +276,17 @@ export function HomeEditCommandBar({
 
             <div className="flex min-w-0 shrink-0 items-center gap-2">
               {onAddCard ? (
-                <Button
-                  type="button"
-                  variant="secondary"
+                <InteractivePill
+                  intent="action"
                   size="small"
-                  leading={<Plus className="h-4 w-4" />}
                   onClick={onAddCard}
-                  className="h-10 max-w-[9.5rem] rounded-full px-3 text-xs"
+                  className={`h-10 max-w-[9.5rem] gap-2 px-3 ${surface.textSecondary}`}
                 >
+                  <Plus className="h-4 w-4 shrink-0" />
                   <span className="truncate">
                     {addActionLabel ?? t('dashboard.roomNav.addCard')}
                   </span>
-                </Button>
+                </InteractivePill>
               ) : null}
 
               {onToggleEditMode ? (
@@ -470,65 +440,26 @@ export function HomeEditCommandBar({
               <div className={`hidden h-6 w-px md:block ${dividerClass}`} />
             ) : null}
 
-            {onConfigureKpis ? (
+            {onToggleEnergyKpis ? (
               <Button
-                type="button"
                 variant="secondary"
                 size="small"
-                leading={<SlidersHorizontal className="h-4 w-4" />}
-                onClick={onConfigureKpis}
+                onClick={onToggleEnergyKpis}
                 className="h-9 rounded-full px-3 text-xs md:text-sm"
               >
-                {t('energy.edit.kpis')}
+                {t(energyKpisHidden ? 'energy.edit.showKpis' : 'energy.edit.hideKpis')}
               </Button>
             ) : null}
-
-            {onConfigureSecurityOverview ? (
-              <Button
-                type="button"
-                variant="secondary"
-                size="small"
-                leading={<SlidersHorizontal className="h-4 w-4" />}
-                onClick={onConfigureSecurityOverview}
-                className="h-9 rounded-full px-3 text-xs md:text-sm"
-              >
-                {t('security.overview.customize.action')}
-              </Button>
-            ) : null}
-
-            {onApplyEnergyLayout ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <CommandBarMenuButton
-                    icon={<LayoutTemplate className="h-4 w-4" />}
-                    label="Layout"
-                  />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="center" sideOffset={8}>
-                  <DropdownMenuLabel>{t('energy.edit.layout')}</DropdownMenuLabel>
-                  <DropdownMenuItem onClick={() => onApplyEnergyLayout('essentials')}>
-                    <LayoutTemplate className="h-4 w-4" />
-                    {t('energy.edit.essentials')}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onApplyEnergyLayout('balanced')}>
-                    <LayoutDashboard className="h-4 w-4" />
-                    {t('energy.edit.balanced')}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : null}
-
             {onAddCard ? (
-              <Button
-                type="button"
-                variant="secondary"
+              <InteractivePill
+                intent="action"
                 size="small"
-                leading={<Plus className="h-4 w-4" />}
                 onClick={onAddCard}
-                className="h-9 rounded-full px-3 text-xs md:text-sm"
+                className={`gap-2 px-3 md:gap-2.5 md:px-3.5 md:text-sm ${surface.textSecondary}`}
               >
+                <Plus className="h-4 w-4 shrink-0" />
                 {addActionLabel ?? t('dashboard.roomNav.addCard')}
-              </Button>
+              </InteractivePill>
             ) : null}
 
             {onToggleEditMode ? (

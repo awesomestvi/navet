@@ -162,7 +162,7 @@ export interface EnergyHistoryWindow {
   displayEndMs?: number;
   previousStartMs: number;
   previousEndMs: number;
-  period: 'hour' | 'day' | 'month';
+  period: '5minute' | 'hour' | 'day' | 'month';
 }
 
 export interface EnergyHistorySource {

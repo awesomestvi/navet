@@ -101,7 +101,7 @@ export function CameraCardView({
   imageSources,
   streamHost,
   cameraState,
-  statusChangedAt,
+  statusChangedAt: _statusChangedAt,
   motionDetected,
   motionDetectionTarget,
   motionChangedAt,
@@ -149,7 +149,11 @@ export function CameraCardView({
   const hasLiveStream = Boolean(streamHost) && !isUnavailable;
   const motionLabel = motionDetected ? t('camera.motion.detected') : null;
   const MotionDetectedIcon = motionDetectionTarget === 'person' ? PersonStanding : Radio;
-  const statusElapsed = formatElapsedCompact(now, statusChangedAt);
+  const [snapshotLoadedAt, setSnapshotLoadedAt] = useState<number | null>(null);
+  useEffect(() => {
+    setSnapshotLoadedAt(null);
+  }, [id]);
+  const snapshotAge = formatElapsedCompact(now, snapshotLoadedAt);
   const motionElapsed = formatElapsedCompact(now, motionChangedAt);
   let streamLabel = isStreamCapable
     ? t('camera.viewer.streamCapable')
@@ -173,13 +177,20 @@ export function CameraCardView({
     hasLiveStream && streamKind !== 'snapshot' && !isStreamReadinessOpaque && isStreamReady;
   const isStreamPending =
     hasLiveStream && streamKind !== 'snapshot' && !isStreamReadinessOpaque && !isStreamReady;
-  const statusLabel = isStreamReadinessOpaque
-    ? resolvedStreamLabel
-    : getCameraStatusLabel(t, cameraState, isFeedRunning, isStreamPending);
+  const statusLabel = isUnavailable
+    ? t('camera.status.unavailable')
+    : cameraState === 'off'
+      ? t('common.off')
+      : !hasLiveStream
+        ? t('camera.settings.viewMode.snapshot')
+        : isStreamReadinessOpaque
+          ? resolvedStreamLabel
+          : getCameraStatusLabel(t, cameraState, isFeedRunning, isStreamPending);
   const showStreamLabel = Boolean(
-    !isStreamReadinessOpaque &&
+    hasLiveStream &&
+      !isStreamReadinessOpaque &&
       resolvedStreamLabel &&
-      (!isCompact || streamKind === 'snapshot' || isStreamFallback || streamLabelOverride)
+      (streamKind === 'snapshot' || isStreamFallback)
   );
   const snapshotFitClassName = fitMode === 'contain' ? 'object-contain' : 'object-cover';
   const overlayButtonClassName = isLightTheme
@@ -224,9 +235,9 @@ export function CameraCardView({
   const snapshotFallback = (
     <div className={emptyStateClassName} data-testid="camera-snapshot-fallback">
       <Camera className={emptyStateIconClassName} />
-      <span className={emptyStateTextClassName}>
-        {isUnavailable ? t('camera.status.unavailable') : t('camera.status.noSnapshot')}
-      </span>
+      {!isUnavailable ? (
+        <span className={emptyStateTextClassName}>{t('camera.status.noSnapshot')}</span>
+      ) : null}
     </div>
   );
 
@@ -265,6 +276,7 @@ export function CameraCardView({
                 alt={name}
                 className={`absolute inset-0 h-full w-full ${snapshotFitClassName}`}
                 fallback={snapshotFallback}
+                onLoad={() => setSnapshotLoadedAt(Date.now())}
                 onError={() => {
                   setSnapshotFailed(true);
                   onImageError();
@@ -329,8 +341,10 @@ export function CameraCardView({
             />
             {statusLabel ? <span>{statusLabel}</span> : null}
           </div>
-          {!motionDetected && statusElapsed ? (
-            <span className={statusMutedTextClassName}>{statusElapsed}</span>
+          {!hasLiveStream && !isUnavailable && snapshotAge ? (
+            <span className={statusMutedTextClassName}>
+              {t('camera.snapshot.loaded', { age: snapshotAge })}
+            </span>
           ) : null}
           {motionLabel ? (
             <>

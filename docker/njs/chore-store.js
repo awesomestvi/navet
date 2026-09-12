@@ -3,6 +3,8 @@ import choreOccurrencePolicy from './chore-occurrence-policy.js';
 import fs from 'fs';
 import hashCrypto from 'crypto';
 import authStore from './auth-store.js';
+import homeyStore from './homey-store.js';
+import openhabStore from './openhab-store.js';
 import providerSessionStore from './provider-session-store.js';
 
 const CONTRACT_VERSION = 1;
@@ -52,12 +54,16 @@ let lastSchedulerRunAt = null;
 let lastDeliveryError = null;
 
 let fsModule = fs;
-let principalResolver = function (r, options) {
-  if (!authStore || typeof authStore.resolveAuthenticatedPrincipal !== 'function') {
-    return null;
-  }
-  return authStore.resolveAuthenticatedPrincipal(r, options);
-};
+function resolveChorePrincipal(r, options) {
+  const principal = authStore.resolveAuthenticatedPrincipal(r, options);
+  if (principal) return principal;
+  const homey = homeyStore.resolveHomeySession(r);
+  if (homey) return { providerId: 'homey', sessionId: homey.cookieId };
+  const openhab = openhabStore.resolveOpenHABSession(r);
+  return openhab ? { providerId: 'openhab', sessionId: openhab.cookieId } : null;
+}
+
+let principalResolver = resolveChorePrincipal;
 
 function setChoreStoreFsForTests(mockFs) {
   fsModule = mockFs;
@@ -74,12 +80,7 @@ function resetChoreStoreForTests() {
   managementBlockedUntil = 0;
   lastSchedulerRunAt = null;
   lastDeliveryError = null;
-  principalResolver = function (r, options) {
-    if (!authStore || typeof authStore.resolveAuthenticatedPrincipal !== 'function') {
-      return null;
-    }
-    return authStore.resolveAuthenticatedPrincipal(r, options);
-  };
+  principalResolver = resolveChorePrincipal;
 }
 
 function nowIso() {
@@ -240,28 +241,10 @@ function readOrCreateWorkspace() {
 }
 
 function authorizeWorkspacePrincipal(principal) {
-  if (
-    !principal ||
-    principal.providerId !== 'home_assistant' ||
-    typeof principal.tenantId !== 'string' ||
-    !TENANT_ID_PATTERN.test(principal.tenantId)
-  ) {
-    return null;
-  }
-
-  const workspace = readOrCreateWorkspace();
-  if (workspace.tenantBinding === undefined) {
-    const enrolled = Object.assign({}, workspace, {
-      tenantBinding: {
-        providerId: 'home_assistant',
-        tenantId: principal.tenantId,
-        enrolledAt: nowIso(),
-      },
-    });
-    writeJson(WORKSPACE_PATH, enrolled, MAX_WORKSPACE_BYTES);
-    return enrolled;
-  }
-  return workspace.tenantBinding.tenantId === principal.tenantId ? workspace : null;
+  if (!principal || typeof principal.sessionId !== 'string' || !principal.sessionId) return null;
+  // Chores belong to this persisted Navet workspace, not a provider URL.
+  // Retain the legacy dashboard tenant binding for dashboard compatibility.
+  return readOrCreateWorkspace();
 }
 
 function isValidActivity(value) {
@@ -2988,18 +2971,23 @@ function commitAdministration(r, principal, operation) {
 }
 
 function routeRequest(r, principal, options) {
-  if (!authorizeWorkspacePrincipal(principal)) {
-    sendJson(r, 403, { error: 'This chore workspace belongs to another installation' });
-    return;
-  }
-  // A dashboard workspace rebind is already guarded by a registered browser and
-  // authenticated provider principal. Carry its chore PIN binding forward only
-  // after that shared workspace authority has accepted the new tenant.
-  rebindManagementSecurityToAuthorizedTenant(principal.tenantId);
   if (r.method !== 'GET' && !providerSessionStore.isStrictSameOriginMutation(r)) {
     sendJson(r, 403, { error: 'Cross-origin chore mutation is not allowed' });
     return;
   }
+  const workspace = authorizeWorkspacePrincipal(principal);
+  if (!workspace) {
+    sendJson(r, 403, { error: 'An authorized Navet session is required' });
+    return;
+  }
+  // Keep the legacy field/namespace readable by older releases. Its value now
+  // derives only from persistent Navet identity. PIN salt/hash remain unchanged.
+  principal = Object.assign({}, principal, {
+    tenantId: 'hat_' + hashCrypto.createHash('sha256')
+      .update('navet-chores:' + workspace.installationId + ':' + workspace.workspaceId)
+      .digest('hex'),
+  });
+  rebindManagementSecurityToAuthorizedTenant(principal.tenantId);
 
   const uri = typeof r.uri === 'string' ? r.uri.replace(/\/+$/, '') : '';
   if (uri === '/__navet_chores__/capabilities' && r.method === 'GET') {

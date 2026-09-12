@@ -117,15 +117,17 @@ export function resolveEnergyHistoryWindow({
   }
   const durationMs = end.getTime() - start.getTime();
   const period =
-    range === 'month' || range === 'week'
-      ? 'day'
-      : range === 'year'
-        ? 'month'
-        : durationMs <= 2 * DAY_MS
-          ? 'hour'
-          : durationMs <= 90 * DAY_MS
-            ? 'day'
-            : 'month';
+    range === 'today'
+      ? '5minute'
+      : range === 'month' || range === 'week'
+        ? 'day'
+        : range === 'year'
+          ? 'month'
+          : durationMs <= 2 * DAY_MS
+            ? 'hour'
+            : durationMs <= 90 * DAY_MS
+              ? 'day'
+              : 'month';
   const previousStart =
     range === 'today'
       ? addLocalDays(start, -1)
@@ -212,15 +214,20 @@ export function buildEnergyHistoryBuckets({
 
   if (!window.displayEndMs) return observedBuckets;
 
-  if (window.period === 'hour') {
+  if (window.period === 'hour' || window.period === '5minute') {
+    const stepMs = window.period === '5minute' ? 5 * 60 * 1000 : HOUR_MS;
+    const bucketKey =
+      window.period === '5minute'
+        ? (timestampMs: number) => String(Math.floor(timestampMs / stepMs))
+        : localHourKey;
     const bucketsByHour = new Map(
-      observedBuckets.map((bucket) => [localHourKey(bucket.startMs), bucket] as const)
+      observedBuckets.map((bucket) => [bucketKey(bucket.startMs), bucket] as const)
     );
     const calendarBuckets: EnergyHistoryBucket[] = [];
     let cursor = startOfLocalDay(new Date(window.startMs));
     while (cursor.getTime() < window.displayEndMs) {
-      const next = new Date(cursor.getTime() + HOUR_MS);
-      const observed = bucketsByHour.get(localHourKey(cursor.getTime()));
+      const next = new Date(cursor.getTime() + stepMs);
+      const observed = bucketsByHour.get(bucketKey(cursor.getTime()));
       calendarBuckets.push(
         observed ?? {
           id: `empty:${cursor.getTime()}:${next.getTime()}`,
@@ -312,7 +319,7 @@ function labelForBucket(
   period: EnergyHistoryWindow['period']
 ) {
   const date = new Date(point.startMs);
-  if (period === 'hour') {
+  if (period === 'hour' || period === '5minute') {
     return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
   }
   if (period === 'month') {

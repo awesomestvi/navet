@@ -3,7 +3,7 @@ import { useI18n } from '@navet/app/hooks';
 import { lazy, Suspense, useMemo } from 'react';
 import type { DashboardController } from '../hooks/use-dashboard-controller';
 import { buildManualEntityCardCatalog } from '../utils/manual-entity-card-catalog';
-import { AddCardDialogContainer } from './add-card-dialog';
+import { AddEntityDialogPrimitive } from './add-entity-dialog';
 import type { DashboardLibraryCard } from './dashboard-library-list';
 import { DashboardOnboardingDialog } from './dashboard-onboarding-dialog';
 
@@ -99,7 +99,7 @@ export function DashboardOverlays({ controller }: DashboardOverlaysProps) {
   return (
     <>
       {showAddCardDialog && (
-        <AddCardDialogContainer
+        <AddEntityDialogPrimitive
           open={showAddCardDialog}
           onClose={onCloseAddCardDialog}
           onAddCard={handleAddCard}

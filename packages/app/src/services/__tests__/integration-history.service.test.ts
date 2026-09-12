@@ -28,6 +28,41 @@ describe('integrationHistoryService', () => {
     integrationStore.getState().setCurrentProviderId('home_assistant');
   });
 
+  it('propagates native batch failures when the caller requires complete history', async () => {
+    getProviderRuntimeRegistrationMock.mockReturnValue({
+      historyFeatureService: {
+        getEntityHistories: vi.fn().mockRejectedValue(new Error('Offline')),
+      },
+    });
+    const request = { entityIds: ['home_assistant:lock.front'], startTime: '2026-09-12T10:00:00Z' };
+    await expect(getIntegrationEntityHistories(request, { requireComplete: true })).rejects.toThrow(
+      'Offline'
+    );
+    await expect(getIntegrationEntityHistories(request)).resolves.toEqual([]);
+  });
+
+  it('does not silently return incomplete fallback history in strict mode', async () => {
+    getProviderRuntimeRegistrationMock.mockReturnValue({
+      historyFeatureService: {
+        getEntityHistory: vi
+          .fn()
+          .mockImplementation(({ entityId }: { entityId: string }) =>
+            entityId === 'lock.front'
+              ? Promise.resolve({ entityId, points: [] })
+              : Promise.reject(new Error('Missing device'))
+          ),
+      },
+    });
+    const request = {
+      entityIds: ['home_assistant:lock.front', 'home_assistant:lock.back'],
+      startTime: '2026-09-12T10:00:00Z',
+    };
+    await expect(getIntegrationEntityHistories(request, { requireComplete: true })).rejects.toThrow(
+      'Missing device'
+    );
+    await expect(getIntegrationEntityHistories(request)).resolves.toHaveLength(1);
+  });
+
   it('exposes the active provider message client through the history contract', () => {
     const sendMessagePromise = vi.fn();
     getProviderRuntimeRegistrationMock.mockReturnValue({

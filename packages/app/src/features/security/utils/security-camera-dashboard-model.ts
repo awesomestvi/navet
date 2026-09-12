@@ -166,13 +166,17 @@ function isActiveCameraState(state: string | undefined): boolean {
   return state === 'streaming' || state === 'recording' || state === 'on';
 }
 
-function getSecuritySeverity(device: DeviceWithType): SecuritySeverity {
+export function getSecuritySeverity(device: DeviceWithType): SecuritySeverity {
   if (device.type === 'covers') {
+    if (device.securitySeverity === 'unknown') return 'unknown';
     return device.position > 0 ? 'warning' : 'normal';
   }
 
   if (device.type === 'cameras' || device.securityKind === 'camera') {
-    if (device.securitySeverity === 'unknown') {
+    if (
+      device.securitySeverity === 'unknown' ||
+      (device.type === 'cameras' && (device.state === 'unavailable' || device.state === 'unknown'))
+    ) {
       return 'unknown';
     }
 
@@ -493,6 +497,17 @@ function getRoomSuffix(device: DeviceWithType): string {
 
 function formatAttentionSnippet(device: DeviceWithType, t: TranslateFn): string {
   const room = getRoomSuffix(device);
+  if (
+    getSecuritySeverity(device) === 'active' &&
+    ['motion', 'occupancy', 'sound', 'vibration'].includes(device.securityKind ?? '')
+  ) {
+    const kind =
+      device.securityKind === 'sound' || device.securityKind === 'vibration'
+        ? device.securityKind
+        : 'motion';
+    const title = t(`security.activity.${kind}`, { name: device.name });
+    return room ? `${title} · ${room}` : title;
+  }
   const stateLabel = readStateLabel(device, t).toLocaleLowerCase();
   return room ? `${device.name} ${stateLabel} · ${room}` : `${device.name} ${stateLabel}`;
 }
@@ -871,7 +886,7 @@ function buildHeroCopy(
 
   return {
     highestSeverity,
-    title: t('security.overview.hero.allSecure'),
+    title: t('security.overview.hero.noIssues'),
     subtitle: getSecureCountSummaryText(securedCounts, t) || t('security.overview.hero.noIssues'),
   };
 }

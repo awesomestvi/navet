@@ -95,7 +95,19 @@ describe('CameraCardView', () => {
     expect(screen.queryByText('Live')).not.toBeInTheDocument();
     expect(screen.queryByText('Auto')).not.toBeInTheDocument();
     expect(screen.queryByText('No motion')).not.toBeInTheDocument();
-    expect(screen.getByText('4m')).toBeInTheDocument();
+    expect(screen.queryByText('4m')).not.toBeInTheDocument();
+  });
+
+  it('reports snapshot load age without treating provider state time as image freshness', () => {
+    vi.spyOn(Date, 'now').mockReturnValue(baseNow - 30_000);
+    renderWithProviders(
+      <CameraCardView {...defaultProps} statusChangedAt={baseNow - 4 * 60_000} />
+    );
+    expect(screen.queryByText(/Loaded/)).not.toBeInTheDocument();
+    fireEvent.load(screen.getByRole('img', { name: 'Front Door' }));
+    expect(screen.getByText('Loaded 30s ago')).toBeInTheDocument();
+    expect(screen.queryByText('4m')).not.toBeInTheDocument();
+    vi.restoreAllMocks();
   });
 
   it('shows motion text only when motion is detected', () => {
@@ -137,12 +149,12 @@ describe('CameraCardView', () => {
     expect(screen.getByText('Snapshot')).toBeInTheDocument();
   });
 
-  it('shows RTC for WebRTC dashboard playback labels', () => {
+  it('keeps playback diagnostics out of the dashboard overlay', () => {
     renderWithProviders(
       <CameraCardView {...defaultProps} streamKind="web_rtc" frontendStreamTypes={['web_rtc']} />
     );
 
-    expect(screen.getByText('RTC')).toBeInTheDocument();
+    expect(screen.queryByText('RTC')).not.toBeInTheDocument();
     expect(screen.queryByText('WEB_RTC')).not.toBeInTheDocument();
   });
 
@@ -158,10 +170,10 @@ describe('CameraCardView', () => {
       />
     );
 
-    expect(screen.getByText('MSE')).toBeInTheDocument();
+    expect(screen.queryByText('MSE')).not.toBeInTheDocument();
     expect(screen.queryByText('Live')).not.toBeInTheDocument();
     expect(screen.getByText('Loading camera feed')).toBeInTheDocument();
-    expect(screen.getByText('55m')).toBeInTheDocument();
+    expect(screen.queryByText('55m')).not.toBeInTheDocument();
   });
 
   it('marks direct MSE playback live after a decoded frame is verified', () => {
@@ -176,7 +188,7 @@ describe('CameraCardView', () => {
       />
     );
 
-    expect(screen.getByText('MSE')).toBeInTheDocument();
+    expect(screen.queryByText('MSE')).not.toBeInTheDocument();
     expect(screen.getByText('Live')).toBeInTheDocument();
   });
 
@@ -217,7 +229,7 @@ describe('CameraCardView', () => {
     );
 
     expect(screen.getByText('Live')).toBeInTheDocument();
-    expect(screen.getByText('13h')).toBeInTheDocument();
+    expect(screen.queryByText('13h')).not.toBeInTheDocument();
   });
 
   it('does not render the snapshot image layer when a live stream element is present', () => {
@@ -283,8 +295,8 @@ describe('CameraCardView', () => {
     expect(onImageError).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole('img', { name: 'Front Door' })).not.toBeInTheDocument();
     expect(screen.getAllByText('Unavailable')).toHaveLength(1);
-    expect(screen.getByText('4m')).toBeInTheDocument();
-    expect(screen.getByText('Snapshot')).toBeInTheDocument();
+    expect(screen.queryByText('4m')).not.toBeInTheDocument();
+    expect(screen.queryByText('Snapshot')).not.toBeInTheDocument();
   });
 
   it('renders a bottom contrast scrim over camera imagery', () => {

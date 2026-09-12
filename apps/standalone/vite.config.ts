@@ -190,7 +190,6 @@ export default defineConfig(({ command, mode }) => {
       installationAuthority,
       resolveAuthenticatedPrincipal
     );
-    const choresPlugin = choreStorePlugin(resolveAuthenticatedPrincipal);
     const homeySessionPlugin = homeySessionStorePlugin(
       installationAuthority,
       deviceSessionAuthority
@@ -198,6 +197,12 @@ export default defineConfig(({ command, mode }) => {
     const openhabSessionPlugin = openhabSessionStorePlugin(
       installationAuthority,
       deviceSessionAuthority
+    );
+    const choresPlugin = choreStorePlugin((req) =>
+      resolveAuthenticatedPrincipal(req) ??
+      (homeySessionPlugin.api.getHomeySession(req) || openhabSessionPlugin.api.getOpenHABSession(req)
+        ? { sessionId: 'authenticated-provider-session' }
+        : null)
     );
     const appPlugins: PluginOption[] = [
       react(),

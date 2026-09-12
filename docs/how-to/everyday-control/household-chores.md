@@ -9,9 +9,9 @@ home. **Today** leads with overdue and due work, then remaining work and complet
 
 ![The current Household Today dashboard with Chores today, needs-attention chores, remaining work, and completed chores.](/docs/how-to/everyday-control/household-today.webp)
 
-Native chores require a Navet runtime with shared chore storage. Today that storage authority is
-available in the Home Assistant add-on and in a compatible standalone installation. Other runtimes
-may show chores as unavailable until they provide the same provider-neutral storage capability.
+Chores use the shared household workspace supplied by your Navet installation. Check
+[where chores are available](/guide/chores/#where-chores-are-available) if your runtime reports
+that shared storage is unavailable.
 
 ## Complete the guided setup
 

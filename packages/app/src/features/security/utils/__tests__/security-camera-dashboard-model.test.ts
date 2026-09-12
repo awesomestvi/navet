@@ -467,7 +467,7 @@ describe('security camera dashboard model', () => {
     });
 
     expect(model.summary.highestSeverity).toBe('normal');
-    expect(model.summary.title).toBe('The house is secure');
+    expect(model.summary.title).toBe('No security issues found');
     expect(model.summary.securedCounts).toEqual({
       openingsClosed: 2,
       locksLocked: 1,

@@ -181,8 +181,11 @@ export function useProviderCameraLiveData(
   }, [deviceEntities, providerDeviceEntitiesByNativeId]);
 
   const cameraState = useMemo(
-    () => normalizeCameraState(liveEntity, providerState),
-    [liveEntity, providerState]
+    () =>
+      providerEntity?.availability === 'unavailable' || providerEntity?.availability === 'unknown'
+        ? 'unavailable'
+        : normalizeCameraState(liveEntity, providerState),
+    [liveEntity, providerState, providerEntity?.availability]
   );
 
   return {

@@ -46,6 +46,7 @@ interface DashboardCardItemProps {
   onDeleteCard?: (cardId: string) => void;
   onUpdateCard?: (cardId: string, data: Record<string, unknown>) => void;
   onRemoveFromLayout?: (cardId: string) => void;
+  removeFromLayoutLabel?: string;
   onRemoveEntity?: (entityId: string) => void;
   allowEntityRemoval?: boolean;
   allowExtraLargeSizes?: boolean;
@@ -72,6 +73,7 @@ export const DashboardCardItem = memo(function DashboardCardItem({
   onDeleteCard,
   onUpdateCard,
   onRemoveFromLayout,
+  removeFromLayoutLabel,
   onRemoveEntity,
   allowEntityRemoval = false,
   allowExtraLargeSizes = zone === 'hero' || zone === undefined,
@@ -226,6 +228,7 @@ export const DashboardCardItem = memo(function DashboardCardItem({
                 onDeleteCard,
                 onRemoveEntity,
                 onRemoveFromLayout,
+                removeFromLayoutLabel,
                 removeAriaLabel,
                 RemoveActionIcon,
                 resolvedSize,
@@ -268,6 +271,7 @@ export const DashboardCardItem = memo(function DashboardCardItem({
               onDeleteCard,
               onRemoveEntity,
               onRemoveFromLayout,
+              removeFromLayoutLabel,
               removeAriaLabel,
               RemoveActionIcon,
               resolvedSize,
@@ -499,6 +503,7 @@ function renderEditModeDockActions({
   onDeleteCard,
   onRemoveEntity,
   onRemoveFromLayout,
+  removeFromLayoutLabel,
   removeAriaLabel,
   RemoveActionIcon,
   resolvedSize,
@@ -522,6 +527,7 @@ function renderEditModeDockActions({
   onDeleteCard?: (cardId: string) => void;
   onRemoveEntity?: (entityId: string) => void;
   onRemoveFromLayout?: (cardId: string) => void;
+  removeFromLayoutLabel?: string;
   removeAriaLabel: string;
   RemoveActionIcon: typeof EyeOff;
   resolvedSize: CardSize;
@@ -552,7 +558,7 @@ function renderEditModeDockActions({
           variant="warning"
           data-dashboard-edit-action="remove-layout"
           data-card-id={cardId}
-          aria-label={t('dashboard.edit.removeFromHome')}
+          aria-label={removeFromLayoutLabel ?? t('dashboard.edit.removeFromHome')}
         />
       ) : null}
       {!onRemoveFromLayout && card && onDeleteCard ? (
@@ -910,6 +916,7 @@ function areDashboardCardItemPropsEqual(
     previous.onDeleteCard === next.onDeleteCard &&
     previous.onUpdateCard === next.onUpdateCard &&
     previous.onRemoveFromLayout === next.onRemoveFromLayout &&
+    previous.removeFromLayoutLabel === next.removeFromLayoutLabel &&
     previous.onRemoveEntity === next.onRemoveEntity &&
     previous.allowEntityRemoval === next.allowEntityRemoval &&
     previous.allowExtraLargeSizes === next.allowExtraLargeSizes &&

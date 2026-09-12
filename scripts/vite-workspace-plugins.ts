@@ -13,7 +13,7 @@ import {
   createViteDashboardProfileRequestHandler,
   type ViteDashboardProfilePrincipal,
 } from './vite-dashboard-profile-store.ts';
-import { createViteChoreStoreRequestHandler } from './vite-chore-store.ts';
+import { createViteChoreStoreRequestHandler, type ViteChorePrincipal } from './vite-chore-store.ts';
 import { type ViteInstallationAuthority } from './vite-installation-authority.ts';
 import type { ViteDeviceSessionAuthority } from './vite-device-session-authority.ts';
 
@@ -97,7 +97,7 @@ export function dashboardProfileStorePlugin(
 export function choreStorePlugin(
   resolvePrincipal: (
     req: IncomingMessage
-  ) => ViteDashboardProfilePrincipal | null | Promise<ViteDashboardProfilePrincipal | null>
+  ) => ViteChorePrincipal | null | Promise<ViteChorePrincipal | null>
 ) {
   const handleRequest = createViteChoreStoreRequestHandler({ resolvePrincipal });
   const registerMiddleware = (server: ViteDevServer | PreviewServer) => {

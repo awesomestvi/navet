@@ -7,7 +7,7 @@ import {
 describe('Energy load history', () => {
   it('uses bounded statistics buckets for dashboard ranges', () => {
     expect(resolveOverviewStatisticsRange('today')).toEqual({
-      period: 'hour',
+      period: '5minute',
       ttlMs: 5 * 60 * 1000,
     });
     expect(resolveOverviewStatisticsRange('week')).toEqual({
@@ -54,5 +54,13 @@ describe('Energy load history', () => {
         ],
       })
     ).toEqual([]);
+  });
+
+  it('preserves reported power precision for interval tooltips', () => {
+    const points = buildStatisticsHistoryPoints({
+      range: 'today',
+      points: [{ startMs: 0, endMs: 300_000, mean: 2279.3, min: 572.1, max: 5287.4 }],
+    });
+    expect(points[0]).toMatchObject({ value: 2279.3, minValue: 572.1, maxValue: 5287.4 });
   });
 });

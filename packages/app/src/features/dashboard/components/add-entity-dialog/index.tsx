@@ -1,77 +1,14 @@
-import { DashboardEmptyState } from '@navet/app/components/patterns';
-import { Input } from '@navet/app/components/primitives';
-import { ModalSurface } from '@navet/app/components/primitives/modal-surface';
-import { getThemeColorValue } from '@navet/app/components/shared/theme/theme-colors';
-import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { getDeviceTypeIcon } from '@navet/app/constants/device-type-icons';
 import { isAllRooms } from '@navet/app/constants/rooms';
-import { useI18n, useIntegrationStore, useTheme } from '@navet/app/hooks';
+import { useI18n, useIntegrationStore } from '@navet/app/hooks';
 import { integrationSelectors } from '@navet/app/stores/selectors';
-import { Plus, Search, X } from 'lucide-react';
-import { memo, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  buildPreparedDashboardDevices,
-  type PreparedDashboardDevice as PreparedDevice,
-} from '../../utils/prepared-dashboard-devices';
-import { ENTITY_LIST_HEIGHT, ENTITY_LIST_OVERSCAN, ENTITY_ROW_HEIGHT } from './constants';
+import { useMemo } from 'react';
+import { buildPreparedDashboardDevices } from '../../utils/prepared-dashboard-devices';
+import type { DashboardLibraryCard } from '../dashboard-library-list';
+import { AddEntityDialogPrimitive } from './primitive';
 import type { AddEntityDialogProps } from './types';
 
-interface AddEntityRowProps {
-  actionLabel: string;
-  borderColor: string;
-  cardBg: string;
-  device: PreparedDevice;
-  mutedColor: string;
-  onAddEntity: (entityId: string) => void;
-  primaryColor: string;
-  textColor: string;
-}
-
-const AddEntityRow = memo(function AddEntityRow({
-  actionLabel,
-  borderColor,
-  cardBg,
-  device,
-  mutedColor,
-  onAddEntity,
-  primaryColor,
-  textColor,
-}: AddEntityRowProps) {
-  const IconComponent = getDeviceTypeIcon(
-    device.device.type,
-    'deviceClass' in device.device && typeof device.device.deviceClass === 'string'
-      ? device.device.deviceClass
-      : undefined
-  );
-  return (
-    <div
-      className={`flex h-19 items-center gap-3 rounded-xl border ${borderColor} ${cardBg} px-3 py-3`}
-    >
-      <div
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
-        style={{ backgroundColor: 'rgba(255,255,255,0.06)' }}
-      >
-        <IconComponent className={`h-4 w-4 ${mutedColor}`} aria-hidden="true" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className={`truncate text-sm font-medium ${textColor}`}>{device.name}</p>
-        <p className={`mt-0.5 truncate text-xs ${mutedColor}`}>
-          {device.typeLabel} · {device.room}
-        </p>
-      </div>
-      <button
-        type="button"
-        onClick={() => onAddEntity(device.id)}
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white transition-opacity hover:opacity-80"
-        style={{ backgroundColor: primaryColor }}
-        aria-label={`${actionLabel} ${device.name}`}
-      >
-        <Plus className="h-3.5 w-3.5" aria-hidden="true" />
-      </button>
-    </div>
-  );
-});
-
+/** Keep dashboard eligibility and mutations separate from the shared Home library UI. */
 export function AddEntityDialog({
   open,
   onClose,
@@ -80,212 +17,68 @@ export function AddEntityDialog({
   deviceMap,
   addedEntityIds,
   visibleEntityIds,
-  title = 'Add Entity',
+  title,
   description,
-  actionLabel = 'Add',
+  actionLabel,
 }: AddEntityDialogProps) {
-  const { t } = useI18n();
-  const { theme, primaryColor } = useTheme();
-  const surface = getThemeSurfaceTokens(theme);
-  const [query, setQuery] = useState('');
-  const [scrollTop, setScrollTop] = useState(0);
-  const listRef = useRef<HTMLDivElement | null>(null);
-  const scrollRafRef = useRef<number | null>(null);
-  const deferredQuery = useDeferredValue(query);
-
-  const bgColor = theme !== 'light' ? surface.panel : 'bg-white';
-  const textColor = surface.textPrimary;
-  const mutedColor = surface.textSecondary;
-  const borderColor = surface.border;
-  const cardBg = surface.panelMuted;
-  const hoverBg = surface.hoverBg;
-  const inputBg = surface.inputBg;
-  const accentColor = getThemeColorValue(primaryColor);
-
-  const visibleIdSet = useMemo(
-    () => (visibleEntityIds ? new Set(visibleEntityIds) : null),
-    [visibleEntityIds]
-  );
-  const addedEntityIdSet = useMemo(() => new Set(addedEntityIds), [addedEntityIds]);
+  const { t, locale } = useI18n();
   const providerSessions = useIntegrationStore(integrationSelectors.providerSessions);
   const connectedProviderCount = Object.keys(providerSessions).length;
-  const preparedDeviceCatalog = useMemo(
-    () => buildPreparedDashboardDevices(deviceMap, t, connectedProviderCount),
-    [connectedProviderCount, deviceMap, t]
-  );
-
-  const preparedDevices = useMemo(() => {
-    const devices: PreparedDevice[] = [];
-
-    for (const device of preparedDeviceCatalog) {
-      if (visibleIdSet && !visibleIdSet.has(device.id)) {
-        continue;
-      }
-
-      if (addedEntityIdSet.has(device.id)) {
-        continue;
-      }
-
-      const room = device.room;
-      if (!isAllRooms(currentRoom) && room !== currentRoom) {
-        continue;
-      }
-      devices.push(device);
-    }
-
-    devices.sort((left, right) => {
-      const roomComparison = left.room.localeCompare(right.room);
-      if (roomComparison !== 0) {
-        return roomComparison;
-      }
-
-      return left.name.localeCompare(right.name);
-    });
-
-    return devices;
-  }, [addedEntityIdSet, currentRoom, preparedDeviceCatalog, visibleIdSet]);
-
-  const availableDevices = useMemo(() => {
-    const normalizedQuery = deferredQuery.trim().toLowerCase();
-    if (!normalizedQuery) {
-      return preparedDevices;
-    }
-
-    return preparedDevices.filter((device) => device.searchText.includes(normalizedQuery));
-  }, [deferredQuery, preparedDevices]);
-
-  const listResetKey = `${open}:${currentRoom}:${query}:${visibleEntityIds?.join(',') ?? ''}`;
-
-  useEffect(() => {
-    setScrollTop(0);
-    listRef.current?.scrollTo({ top: 0 });
-  }, [listResetKey]);
-
-  useEffect(() => {
-    return () => {
-      if (scrollRafRef.current !== null) {
-        window.cancelAnimationFrame(scrollRafRef.current);
-      }
-    };
-  }, []);
-
-  const visibleCount = Math.ceil(ENTITY_LIST_HEIGHT / ENTITY_ROW_HEIGHT);
-  const startIndex = Math.max(0, Math.floor(scrollTop / ENTITY_ROW_HEIGHT) - ENTITY_LIST_OVERSCAN);
-  const endIndex = Math.min(
-    availableDevices.length,
-    startIndex + visibleCount + ENTITY_LIST_OVERSCAN * 2
-  );
-  const virtualDevices = availableDevices.slice(startIndex, endIndex);
-  const topSpacerHeight = startIndex * ENTITY_ROW_HEIGHT;
-  const totalHeight = availableDevices.length * ENTITY_ROW_HEIGHT;
+  const libraryCards = useMemo<DashboardLibraryCard[]>(() => {
+    const visibleIds = visibleEntityIds ? new Set(visibleEntityIds) : null;
+    const addedIds = new Set(addedEntityIds);
+    return buildPreparedDashboardDevices(deviceMap, t, connectedProviderCount)
+      .filter(
+        (device) =>
+          (!visibleIds || visibleIds.has(device.id)) &&
+          !addedIds.has(device.id) &&
+          (isAllRooms(currentRoom) || device.room === currentRoom)
+      )
+      .sort(
+        (left, right) =>
+          left.room.localeCompare(right.room, locale) || left.name.localeCompare(right.name, locale)
+      )
+      .map(({ device, id, name, room, typeLabel }) => ({
+        id,
+        title: name,
+        subtitle: room,
+        room,
+        meta: typeLabel,
+        kind: 'device',
+        entityType: device.type,
+        entityTypeLabel: typeLabel,
+        idSearchText: id,
+        icon: getDeviceTypeIcon(
+          device.type,
+          'deviceClass' in device && typeof device.deviceClass === 'string'
+            ? device.deviceClass
+            : undefined
+        ),
+      }));
+  }, [deviceMap, t, connectedProviderCount, visibleEntityIds, addedEntityIds, currentRoom, locale]);
 
   return (
-    <ModalSurface
-      isOpen={open}
-      onOpenChange={(nextOpen) => {
-        if (!nextOpen) onClose();
-      }}
-      title={title}
+    <AddEntityDialogPrimitive
+      open={open}
+      onClose={onClose}
+      onAddCard={() => {}}
+      onAddLibraryCard={onAddEntity}
+      currentRoom={currentRoom}
+      libraryCards={libraryCards}
+      libraryOnly
+      title={title ?? t('dashboard.addEntity.title')}
       description={
         description ??
         (isAllRooms(currentRoom)
           ? t('dashboard.addEntity.defaultDescriptionAll')
           : t('dashboard.addEntity.defaultDescriptionRoom', { room: currentRoom }))
       }
-      contentClassName="max-w-2xl max-h-[80vh] max-sm:max-h-[calc(100dvh-1rem)]"
-      shellBodyClassName="max-h-[80vh] min-h-0 max-sm:max-h-[calc(100dvh-4rem)]"
-      bodyClassName="flex max-h-[80vh] min-h-0 flex-col max-sm:max-h-[calc(100dvh-4rem)]"
-      disableOpenAutoFocus
-    >
-      <div
-        className={`${bgColor} flex min-h-0 flex-col overflow-hidden`}
-        style={{ boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)' }}
-      >
-        <div className="flex items-start justify-between gap-3 border-b border-white/10 p-6 max-sm:p-4 max-sm:pt-2">
-          <div className="min-w-0">
-            <h2 className={`text-xl font-semibold ${textColor}`}>{title}</h2>
-            <p className={`text-sm ${mutedColor} mt-1`}>
-              {description ??
-                (isAllRooms(currentRoom)
-                  ? t('dashboard.addEntity.defaultDescriptionAll')
-                  : t('dashboard.addEntity.defaultDescriptionRoom', { room: currentRoom }))}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label={t('common.closeDialog')}
-            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[18px] ${cardBg} ${hoverBg} transition-colors`}
-          >
-            <X className={`h-4 w-4 ${mutedColor}`} aria-hidden="true" />
-          </button>
-        </div>
-
-        <div className="border-b border-white/10 p-6 max-sm:p-4">
-          <Input
-            type="text"
-            aria-label={t('dashboard.addEntity.searchPlaceholder')}
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder={t('dashboard.addEntity.searchPlaceholder')}
-            leading={<Search className={`h-4 w-4 ${mutedColor}`} />}
-            inputClassName={`${borderColor} ${inputBg} ${textColor}`}
-            style={{ caretColor: accentColor }}
-          />
-        </div>
-
-        <div
-          ref={listRef}
-          className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-6 pt-4 max-sm:p-4 max-sm:pt-3"
-          style={{ maxHeight: `${ENTITY_LIST_HEIGHT}px` }}
-          onScroll={(event) => {
-            const nextScrollTop = event.currentTarget.scrollTop;
-            if (scrollRafRef.current !== null) {
-              return;
-            }
-
-            scrollRafRef.current = window.requestAnimationFrame(() => {
-              scrollRafRef.current = null;
-              setScrollTop(nextScrollTop);
-            });
-          }}
-        >
-          {availableDevices.length > 0 ? (
-            <div className="relative" style={{ height: totalHeight || ENTITY_LIST_HEIGHT }}>
-              <div
-                className="absolute inset-x-0 top-0 space-y-3"
-                style={{ transform: `translateY(${topSpacerHeight}px)` }}
-              >
-                {virtualDevices.map((device) => (
-                  <AddEntityRow
-                    key={device.id}
-                    actionLabel={actionLabel}
-                    borderColor={borderColor}
-                    cardBg={cardBg}
-                    device={device}
-                    mutedColor={mutedColor}
-                    onAddEntity={onAddEntity}
-                    primaryColor={accentColor}
-                    textColor={textColor}
-                  />
-                ))}
-              </div>
-            </div>
-          ) : (
-            <DashboardEmptyState
-              title={t('dashboard.addEntity.emptyTitle')}
-              description={
-                visibleEntityIds
-                  ? t('dashboard.addEntity.emptyHidden')
-                  : t('dashboard.addEntity.emptyDefault')
-              }
-              surface={surface}
-              accentColor={accentColor}
-              variant="inline"
-            />
-          )}
-        </div>
-      </div>
-    </ModalSurface>
+      actionLabel={actionLabel ?? t('dashboard.addEntity.action')}
+      libraryEmptyText={t('dashboard.addCard.libraryEmpty')}
+    />
   );
 }
+
+export type { CardType } from '@navet/app/features/dashboard/stores/custom-cards-store';
+export { AddEntityDialogPrimitive } from './primitive';
+export type { AddEntityDialogPrimitiveProps, CardTemplate, CardTemplateId } from './types';

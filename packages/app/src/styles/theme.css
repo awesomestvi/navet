@@ -1,5 +1,18 @@
 @custom-variant dark (&:is(.dark *));
 
+/* iOS zooms focused text fields below 16px. Cover native fields as well as primitives,
+ * including touch devices with a connected mouse, without disabling pinch-to-zoom. */
+@media (any-pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="hidden"]),
+  textarea,
+  select,
+  [contenteditable="true"],
+  [contenteditable="plaintext-only"] {
+    /* biome-ignore lint/complexity/noImportantStyles: guard against smaller field utilities causing iOS focus zoom */
+    font-size: max(16px, 1rem) !important;
+  }
+}
+
 :root {
   --background: #ffffff;
   --foreground: oklch(0.145 0 0);

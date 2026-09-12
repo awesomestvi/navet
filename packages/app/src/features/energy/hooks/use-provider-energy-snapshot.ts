@@ -1,3 +1,5 @@
+import { useI18n } from '@navet/app/hooks';
+import type { TranslateFn } from '@navet/app/i18n';
 import type {
   PlatformEnergyNowSnapshot,
   PlatformEnergySnapshot,
@@ -23,12 +25,13 @@ function mapEnergySourceOptions(
     powerW: number;
     energyKWh: number;
     powerEntityId?: string;
-  }>
+  }>,
+  t: TranslateFn
 ): PlatformEnergySourceOption[] {
   const options: PlatformEnergySourceOption[] = [
     {
       id: 'home-load',
-      name: 'Home',
+      name: t('energy.model.home'),
       currentPowerW: snapshot.currentLoadW,
       todayUsageKWh: snapshot.todayTotalUsageKWh,
       trendEntityId: snapshot.currentLoadStatisticId,
@@ -39,7 +42,7 @@ function mapEnergySourceOptions(
   if (snapshot.solarTodayKWh > 0 || snapshot.solarW > 0) {
     options.push({
       id: 'solar',
-      name: 'Solar',
+      name: t('energy.model.solar'),
       currentPowerW: snapshot.solarW,
       todayUsageKWh: snapshot.solarTodayKWh,
       group: 'sources',
@@ -49,7 +52,7 @@ function mapEnergySourceOptions(
   if (snapshot.importTodayKWh > 0 || snapshot.importW > 0) {
     options.push({
       id: 'grid-import',
-      name: 'Grid import',
+      name: t('energy.stats.gridImport'),
       currentPowerW: snapshot.importW,
       todayUsageKWh: snapshot.importTodayKWh,
       group: 'sources',
@@ -71,6 +74,7 @@ function mapEnergySourceOptions(
 }
 
 export function useProviderEnergySnapshot(): PlatformEnergySnapshot {
+  const { t } = useI18n();
   const {
     sourceDiagnostics,
     hasEnergyStatisticsLoaded,
@@ -98,9 +102,10 @@ export function useProviderEnergySnapshot(): PlatformEnergySnapshot {
       ...snapshotBase,
       hasLoaded: hasEnergyStatisticsLoaded,
       sourceDiagnostics,
-      sourceOptions: mapEnergySourceOptions(snapshotBase, overview.topConsumers),
+      sourceOptions: mapEnergySourceOptions(snapshotBase, overview.topConsumers, t),
     };
   }, [
+    t,
     currentLoadStatisticId,
     hasEnergyStatisticsLoaded,
     isConfigured,

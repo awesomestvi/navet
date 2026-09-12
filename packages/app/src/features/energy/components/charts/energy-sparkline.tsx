@@ -25,6 +25,8 @@ interface EnergySparklineProps {
   fillOpacity?: number;
   strokeWidth?: number;
   valueKind?: 'power' | 'energy';
+  /** Include recorded low/average/high statistics in the tooltip. */
+  showPowerRange?: boolean;
 }
 
 const VB_W = 200;
@@ -55,8 +57,7 @@ function smoothPath(pts: { x: number; y: number }[]): string {
 
 function roundYAxisMark(value: number): number {
   const absoluteValue = Math.abs(value);
-  const step =
-    absoluteValue >= 1000 ? 1000 : absoluteValue >= 100 ? 100 : absoluteValue >= 10 ? 10 : 1;
+  const step = absoluteValue >= 10 ? 10 ** Math.floor(Math.log10(absoluteValue)) : 1;
   return Math.max(0, Math.round(value / step) * step);
 }
 
@@ -71,6 +72,7 @@ export const EnergySparkline = memo(function EnergySparkline({
   fillOpacity = 0.28,
   strokeWidth = 1.1,
   valueKind = 'power',
+  showPowerRange = false,
 }: EnergySparklineProps) {
   const { locale, t } = useI18n();
   const { theme } = useTheme();
@@ -82,6 +84,7 @@ export const EnergySparkline = memo(function EnergySparkline({
   const axisLineClassName = chartSurface.axisLineColor;
   const axisLabelClassName = chartSurface.axisLabelColor;
   const tooltipClassName = `border ${tokens.surface.border} ${tokens.surface.panel} ${theme !== 'light' ? 'shadow-2xl' : 'shadow-[0_18px_38px_-24px_rgba(15,23,42,0.22)]'}`;
+  const hasPowerRange = showPowerRange && valueKind === 'power';
   const updateHoverIndex = useCallback(
     (clientX: number, rect: DOMRect) => {
       const relativeX = Math.max(0, Math.min(rect.width, clientX - rect.left));
@@ -111,8 +114,12 @@ export const EnergySparkline = memo(function EnergySparkline({
       }),
     [locale, valueKind]
   );
+  const powerNumberFormatter = useMemo(
+    () => new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }),
+    [locale]
+  );
 
-  const { baseline, line, pts, chartHeight, minVal, maxVal } = useMemo(() => {
+  const { baseline, line, pts, chartHeight, minVal, maxVal, recordedMax } = useMemo(() => {
     if (data.length < 2) {
       const chartH = height - PAD_TOP - PAD_BOTTOM;
       return {
@@ -122,13 +129,14 @@ export const EnergySparkline = memo(function EnergySparkline({
         chartHeight: chartH,
         minVal: 0,
         maxVal: 0,
+        recordedMax: 0,
       };
     }
 
     const chartW = VB_W - padX * 2;
     const chartH = height - PAD_TOP - PAD_BOTTOM;
     const nextBaseline = PAD_TOP + chartH;
-    const rawMin = Math.min(...data.map((d) => d.value));
+    const rawMin = 0;
     const rawMax = Math.max(...data.map((d) => d.value), 1);
     const valueRange = Math.max(rawMax - rawMin, Math.max(rawMax * 0.04, 1));
     const nextMinVal = rawMin;
@@ -140,13 +148,19 @@ export const EnergySparkline = memo(function EnergySparkline({
 
     return {
       baseline: nextBaseline,
-      line: smoothPath(nextPoints),
+      // Straight segments cannot invent overshoot between statistics intervals.
+      line: hasPowerRange
+        ? nextPoints
+            .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`)
+            .join(' ')
+        : smoothPath(nextPoints),
       pts: nextPoints,
       chartHeight: chartH,
       minVal: nextMinVal,
       maxVal: nextMaxVal,
+      recordedMax: rawMax,
     };
-  }, [data, height, padX]);
+  }, [data, height, padX, hasPowerRange]);
 
   const activeIndex = hoverIndex;
   const activePoint = activeIndex === null ? null : data[activeIndex];
@@ -178,12 +192,11 @@ export const EnergySparkline = memo(function EnergySparkline({
     }
 
     const span = Math.max(maxVal - minVal, 1);
-    const values = [maxVal, minVal + span * 0.5];
+    const values = [hasPowerRange ? recordedMax : maxVal, minVal + span * 0.5];
     const seenLabels = new Set<string>();
-    return values.flatMap((value) => {
-      const label = yAxisNumberFormatter.format(
-        valueKind === 'energy' ? Math.max(0, value) : roundYAxisMark(value)
-      );
+    return values.flatMap((candidate) => {
+      const value = roundYAxisMark(candidate);
+      const label = yAxisNumberFormatter.format(value);
       if (seenLabels.has(label)) {
         return [];
       }
@@ -191,7 +204,17 @@ export const EnergySparkline = memo(function EnergySparkline({
       const y = PAD_TOP + (1 - (value - minVal) / span) * chartHeight;
       return [{ key: value, label, topPercent: (y / height) * 100 }];
     });
-  }, [chartHeight, height, maxVal, minVal, showYAxisMarks, valueKind, yAxisNumberFormatter]);
+  }, [
+    chartHeight,
+    height,
+    maxVal,
+    minVal,
+    recordedMax,
+    hasPowerRange,
+    showYAxisMarks,
+    valueKind,
+    yAxisNumberFormatter,
+  ]);
 
   if (data.length < 2) {
     return null;
@@ -241,22 +264,48 @@ export const EnergySparkline = memo(function EnergySparkline({
               className={`w-max max-w-55 rounded-xl px-3 py-2 text-left backdrop-blur-md ${tooltipClassName}`}
             >
               <div className={`text-xs ${tokens.surface.textSecondary}`}>{tooltipTimestamp}</div>
-              <div className={`mt-1 flex items-center gap-2 text-xs ${tokens.surface.textPrimary}`}>
-                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: tokens.accent }} />
-                <span>
-                  {t(
-                    valueKind === 'energy'
-                      ? 'charts.energySparkline.useLabel'
-                      : 'charts.powerSparkline.useLabel',
-                    {
-                      value:
-                        valueKind === 'energy'
-                          ? yAxisNumberFormatter.format(activePoint.value)
-                          : Math.round(activePoint.value),
-                    }
-                  )}
-                </span>
-              </div>
+              {hasPowerRange ? (
+                <dl
+                  className={`mt-2 grid grid-cols-[auto_auto] gap-x-5 gap-y-1 text-xs ${tokens.surface.textPrimary}`}
+                >
+                  {(
+                    [
+                      ['energy.history.high', activePoint.maxValue ?? activePoint.value],
+                      ['energy.history.average', activePoint.value],
+                      ['energy.history.low', activePoint.minValue ?? activePoint.value],
+                    ] as const
+                  ).map(([label, value]) => (
+                    <div key={label} className="contents">
+                      <dt className={tokens.surface.textSecondary}>{t(label)}</dt>
+                      <dd className="text-right tabular-nums">
+                        {powerNumberFormatter.format(value)} W
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              ) : (
+                <div
+                  className={`mt-1 flex items-center gap-2 text-xs ${tokens.surface.textPrimary}`}
+                >
+                  <span
+                    className="h-2 w-2 rounded-full"
+                    style={{ backgroundColor: tokens.accent }}
+                  />
+                  <span>
+                    {t(
+                      valueKind === 'energy'
+                        ? 'charts.energySparkline.useLabel'
+                        : 'charts.powerSparkline.useLabel',
+                      {
+                        value:
+                          valueKind === 'energy'
+                            ? yAxisNumberFormatter.format(activePoint.value)
+                            : Math.round(activePoint.value),
+                      }
+                    )}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -110,6 +110,18 @@ describe('useProviderCameraLiveData', () => {
     });
   });
 
+  it('honors normalized unavailability even when a retained snapshot reports streaming', () => {
+    const entity = vi.mocked(useProviderEntityModel).getMockImplementation()?.(
+      'home_assistant:camera.front_door'
+    );
+    if (!entity) throw new Error('Missing camera fixture');
+    vi.mocked(useProviderEntityModel).mockReturnValue({ ...entity, availability: 'unavailable' });
+    const { result } = renderHookWithProviders(() =>
+      useProviderCameraLiveData('home_assistant:camera.front_door', [])
+    );
+    expect(result.current.cameraState).toBe('unavailable');
+  });
+
   it('reads live camera and sibling entity snapshots through the provider service', () => {
     const { result } = renderHookWithProviders(() =>
       useProviderCameraLiveData('home_assistant:camera.front_door', [

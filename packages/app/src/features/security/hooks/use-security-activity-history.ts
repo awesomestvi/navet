@@ -97,14 +97,19 @@ async function fetchActivityPage({
   signal: AbortSignal;
 }) {
   const startMs = endMs - lookbackMs;
-  const histories: PlatformEntityHistorySeries[] = await getIntegrationEntityHistories({
-    entityIds: entities.map((entity) => entity.id),
-    startTime: new Date(startMs).toISOString(),
-    endTime: new Date(endMs).toISOString(),
-    significantChangesOnly: true,
-    signal,
-  });
+  const histories: PlatformEntityHistorySeries[] = await getIntegrationEntityHistories(
+    {
+      entityIds: entities.map((entity) => entity.id),
+      startTime: new Date(startMs).toISOString(),
+      endTime: new Date(endMs).toISOString(),
+      significantChangesOnly: true,
+      signal,
+    },
+    { requireComplete: true }
+  );
 
+  if (histories.length > 0 && histories.length !== entities.length)
+    throw new Error('Incomplete security activity history');
   return {
     events: buildSecurityActivityEvents({
       devices: entities,
@@ -112,7 +117,7 @@ async function fetchActivityPage({
       nowMs: endMs,
       lookbackMs,
     }),
-    hasHistoryData: histories.some((history) => history.points.length > 0),
+    hasHistoryData: histories.length === entities.length,
     startMs,
   };
 }
@@ -157,6 +162,10 @@ export function useSecurityActivityHistory({
   const [historicalEvents, setHistoricalEvents] = useState<SecurityActivityEvent[]>([]);
   const historicalEventsRef = useRef<SecurityActivityEvent[]>([]);
   const [historyAvailable, setHistoryAvailable] = useState(false);
+  const [historyError, setHistoryError] = useState<'refresh' | 'older' | null>(null);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
+  const refreshRef = useRef<() => Promise<void>>(async () => {});
+  const retry = useCallback(() => refreshRef.current(), []);
   const [hasMore, setHasMore] = useState(false);
   const [isLoading, setIsLoading] = useState(historyEntities.length > 0);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -166,6 +175,9 @@ export function useSecurityActivityHistory({
 
   useEffect(() => {
     if (historyEntityIdsKey.length === 0) {
+      setHistoryError(null);
+      setLastUpdatedAt(null);
+      refreshRef.current = async () => {};
       setHistoricalEvents([]);
       setHistoryAvailable(false);
       setHasMore(false);
@@ -183,6 +195,8 @@ export function useSecurityActivityHistory({
     requestGenerationRef.current = requestGeneration;
     activeRequestRef.current?.abort();
     activeRequestRef.current = null;
+    setHistoryError(null);
+    setLastUpdatedAt(null);
     setHistoricalEvents([]);
     historicalEventsRef.current = [];
     setHistoryAvailable(false);
@@ -199,6 +213,7 @@ export function useSecurityActivityHistory({
       const controller = new AbortController();
       activeRequestRef.current = controller;
       const now = Date.now();
+      setIsLoading(true);
       try {
         const page = await fetchActivityPage({
           entities: historyEntitiesRef.current,
@@ -220,20 +235,28 @@ export function useSecurityActivityHistory({
         oldestFetchedMsRef.current = oldestFetchedMs;
         const mergedEvents = mergeHistoricalEvents(historicalEventsRef.current, page.events);
         historicalEventsRef.current = mergedEvents;
-        setHistoryAvailable((available) => available || page.hasHistoryData);
+        setHistoryAvailable(page.hasHistoryData);
+        setHistoryError(null);
+        setLastUpdatedAt((updated) => (page.hasHistoryData ? now : updated));
         setHistoricalEvents(mergedEvents);
         setHasMore((hasOlderHistory) =>
-          isInitialPage
-            ? canLoadOlderActivity({
-                historicalEventCount: mergedEvents.length,
-                oldestFetchedMs,
-                nowMs: now,
-              })
-            : hasOlderHistory && mergedEvents.length < SECURITY_ACTIVITY_EVENT_LIMIT
+          !page.hasHistoryData
+            ? false
+            : isInitialPage
+              ? canLoadOlderActivity({
+                  historicalEventCount: mergedEvents.length,
+                  oldestFetchedMs,
+                  nowMs: now,
+                })
+              : hasOlderHistory && mergedEvents.length < SECURITY_ACTIVITY_EVENT_LIMIT
         );
       } catch {
-        if (!controller.signal.aborted) {
-          setHasMore(false);
+        if (
+          !controller.signal.aborted &&
+          !cancelled &&
+          requestGenerationRef.current === requestGeneration
+        ) {
+          setHistoryError('refresh');
         }
       } finally {
         if (activeRequestRef.current === controller) {
@@ -245,6 +268,7 @@ export function useSecurityActivityHistory({
       }
     }
 
+    refreshRef.current = fetchActivity;
     const unsubscribe = subscribeVisibilityAwareAsyncTask(
       fetchActivity,
       SECURITY_ACTIVITY_REFRESH_MS,
@@ -253,6 +277,7 @@ export function useSecurityActivityHistory({
 
     return () => {
       cancelled = true;
+      refreshRef.current = async () => {};
       requestGenerationRef.current += 1;
       activeRequestRef.current?.abort();
       activeRequestRef.current = null;
@@ -290,9 +315,12 @@ export function useSecurityActivityHistory({
         return;
       }
 
+      if (!page.hasHistoryData) throw new Error('Older activity history unavailable');
+
       oldestFetchedMsRef.current = page.startMs;
       const mergedEvents = mergeHistoricalEvents(historicalEventsRef.current, page.events);
       historicalEventsRef.current = mergedEvents;
+      setHistoryError((error) => (error === 'refresh' ? error : null));
       setHistoryAvailable((available) => available || page.hasHistoryData);
       setHistoricalEvents(mergedEvents);
       setHasMore(
@@ -303,7 +331,8 @@ export function useSecurityActivityHistory({
         })
       );
     } catch {
-      if (!controller.signal.aborted) {
+      if (!controller.signal.aborted && requestGenerationRef.current === requestGeneration) {
+        setHistoryError((error) => (error === 'refresh' ? error : 'older'));
         setHasMore(true);
       }
     } finally {
@@ -328,6 +357,9 @@ export function useSecurityActivityHistory({
   return {
     events,
     historyAvailable,
+    historyError,
+    lastUpdatedAt,
+    retry,
     hasMore,
     isLoading,
     isLoadingMore,
