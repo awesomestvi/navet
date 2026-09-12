@@ -3506,6 +3506,9 @@ export const ptMessages = {
   'settings.system.authorizedDevices.approvalDescription':
     'Acesso a {providers} com a sua própria sessão Navet revogável.',
   'settings.system.authorizedDevices.approvalTitle': 'Aprovar {name}?',
+  'settings.system.authorizedDevices.choosePrimaryDescription':
+    'Estes inícios de sessão foram migrados como dispositivos principais. Escolha qual dispositivo deve gerir os restantes.',
+  'settings.system.authorizedDevices.choosePrimaryTitle': 'Escolher o dispositivo principal',
   'settings.system.authorizedDevices.codeLabel': 'Código de ligação do dispositivo',
   'settings.system.authorizedDevices.codePlaceholder': 'XXXX-XXXX-XXXX',
   'settings.system.authorizedDevices.connectDescription':

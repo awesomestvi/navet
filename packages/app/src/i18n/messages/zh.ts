@@ -3223,6 +3223,9 @@ export const zhMessages = {
   'settings.system.authorizedDevices.activityNow': '{providers} · 当前活跃',
   'settings.system.authorizedDevices.approvalDescription': '自己的可撤销Navet会话访问{providers}。',
   'settings.system.authorizedDevices.approvalTitle': '批准{name} ？',
+  'settings.system.authorizedDevices.choosePrimaryDescription':
+    '这些登录已迁移为主设备。请选择要用于管理其他设备的设备。',
+  'settings.system.authorizedDevices.choosePrimaryTitle': '选择主设备',
   'settings.system.authorizedDevices.codeLabel': '设备连接代码',
   'settings.system.authorizedDevices.codePlaceholder': 'XXXX-XXXX-XXXX',
   'settings.system.authorizedDevices.connectDescription': '输入另一台设备上显示的一次性代码。',

@@ -3501,6 +3501,9 @@ export const fiMessages = {
   'settings.system.authorizedDevices.approvalDescription':
     '{providers}: n käyttöoikeus omalla peruutettavalla Navet-istunnollaan.',
   'settings.system.authorizedDevices.approvalTitle': 'Hyväksytäänkö {name}?',
+  'settings.system.authorizedDevices.choosePrimaryDescription':
+    'Nämä kirjautumiset siirrettiin ensisijaisiksi laitteiksi. Valitse laite, jonka tulee hallita muita.',
+  'settings.system.authorizedDevices.choosePrimaryTitle': 'Valitse ensisijainen laite',
   'settings.system.authorizedDevices.codeLabel': 'Laitteen yhteyskoodi',
   'settings.system.authorizedDevices.codePlaceholder': 'XXXX-XXXX-XXXX',
   'settings.system.authorizedDevices.connectDescription':

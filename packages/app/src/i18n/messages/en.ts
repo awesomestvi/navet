@@ -3469,6 +3469,9 @@ export const enMessages = {
   'settings.system.authorizedDevices.approvalDescription':
     'Access to {providers} with its own revocable Navet session.',
   'settings.system.authorizedDevices.approvalTitle': 'Approve {name}?',
+  'settings.system.authorizedDevices.choosePrimaryDescription':
+    'These sign-ins were migrated as primary devices. Choose which device should manage the others.',
+  'settings.system.authorizedDevices.choosePrimaryTitle': 'Choose the primary device',
   'settings.system.authorizedDevices.codeLabel': 'Device connection code',
   'settings.system.authorizedDevices.codePlaceholder': 'xxxx-xxxx-xxxx',
   'settings.system.authorizedDevices.connectDescription':

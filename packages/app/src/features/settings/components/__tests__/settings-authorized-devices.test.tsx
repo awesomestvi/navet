@@ -217,11 +217,26 @@ describe('SettingsAuthorizedDevices', () => {
 
     expect(await screen.findByText('Computer A1B2')).toBeVisible();
     expect(screen.getByText('Phone C3D4')).toBeVisible();
+    expect(screen.getByText('Choose the primary device')).toBeVisible();
+    expect(
+      screen.getByText(
+        'These sign-ins were migrated as primary devices. Choose which device should manage the others.'
+      )
+    ).toBeVisible();
     expect(screen.queryByText('Original sign-in')).not.toBeInTheDocument();
     const primaryBadges = screen.getAllByText('Primary');
+    expect(primaryBadges).toHaveLength(2);
     expect(screen.getByText('Home Assistant · Current')).toBeVisible();
     expect(screen.queryByText('Current')).not.toBeInTheDocument();
     expect(primaryBadges[0]).toHaveClass('rounded-full', 'border', 'px-2', 'py-0.5', 'text-[10px]');
+
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions: Computer A1B2' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Make primary' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Make primary' }));
+
+    await waitFor(() => expect(authorizationMocks.promote).toHaveBeenCalledWith('computer-device'));
+    expect(screen.getAllByText('Primary')).toHaveLength(1);
+    expect(screen.queryByText('Choose the primary device')).not.toBeInTheDocument();
   });
 
   it('opens device editing from the overflow menu and saves the new name', async () => {
@@ -256,8 +271,19 @@ describe('SettingsAuthorizedDevices', () => {
   });
 
   it('lets a primary sign-in promote an authorized device', async () => {
-    authorizationMocks.list.mockResolvedValue(
-      primaryOverview([
+    authorizationMocks.list.mockResolvedValue({
+      access: 'primary',
+      currentDeviceId: 'primary-device',
+      devices: [
+        {
+          id: 'primary-device',
+          name: 'Primary screen',
+          role: 'primary',
+          providers: ['home_assistant'],
+          createdAt: Date.now() - 20_000,
+          lastActivityAt: Date.now(),
+          expiresAt: Date.now() + 300_000,
+        },
         {
           id: 'device-1',
           name: 'Kitchen tablet',
@@ -267,8 +293,8 @@ describe('SettingsAuthorizedDevices', () => {
           lastActivityAt: Date.now(),
           expiresAt: Date.now() + 300_000,
         },
-      ])
-    );
+      ],
+    });
 
     renderWithProviders(<SettingsAuthorizedDevices styles={styles} />);
     await screen.findByText('Kitchen tablet');
@@ -280,7 +306,8 @@ describe('SettingsAuthorizedDevices', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Make primary' }));
 
     await waitFor(() => expect(authorizationMocks.promote).toHaveBeenCalledWith('device-1'));
-    expect(screen.getByText('Primary')).toBeVisible();
+    expect(screen.getAllByText('Primary')).toHaveLength(1);
+    expect(screen.getByText('Managed by the primary device')).toBeVisible();
     expect(authorizationMocks.toastSuccess).toHaveBeenCalledWith(
       'Kitchen tablet is now a primary device.',
       { description: 'It can connect, rename, and remove authorized devices.' }

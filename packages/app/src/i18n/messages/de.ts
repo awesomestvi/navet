@@ -3554,6 +3554,9 @@ export const deMessages = {
   'settings.system.authorizedDevices.approvalDescription':
     'Zugriff auf {providers} mit einer eigenen widerruflichen Navet-Sitzung.',
   'settings.system.authorizedDevices.approvalTitle': '{name} genehmigen?',
+  'settings.system.authorizedDevices.choosePrimaryDescription':
+    'Diese Anmeldungen wurden als primäre Geräte migriert. Wähle aus, welches Gerät die anderen verwalten soll.',
+  'settings.system.authorizedDevices.choosePrimaryTitle': 'Primäres Gerät auswählen',
   'settings.system.authorizedDevices.codeLabel': 'Geräteanschlusscode',
   'settings.system.authorizedDevices.codePlaceholder': 'XXXX-XXXX-XXXX',
   'settings.system.authorizedDevices.connectDescription':

@@ -40,6 +40,7 @@ import {
   MoreHorizontal,
   Pencil,
   RefreshCw,
+  ShieldAlert,
   ShieldCheck,
   Smartphone,
   Trash2,
@@ -79,6 +80,8 @@ export function SettingsAuthorizedDevices({ styles }: { styles: SettingsSectionS
   const [deviceToRemove, setDeviceToRemove] = useState<AuthorizedDevice | null>(null);
   const [dashboardClient] = useState(() => getDashboardClientIdentity());
   const approvalSyncGeneration = useRef(0);
+  const primaryDeviceCount = devices.filter((device) => device.role === 'primary').length;
+  const needsPrimarySelection = access === 'primary' && primaryDeviceCount > 1;
 
   const formatDeviceActivity = (device: AuthorizedDevice) => {
     const providers = device.providers.map(formatProvider).join(', ');
@@ -241,10 +244,12 @@ export function SettingsAuthorizedDevices({ styles }: { styles: SettingsSectionS
     try {
       await promoteAuthorizedDevice(device.id);
       setDevices((current) =>
-        current.map((item) =>
-          item.id === device.id ? { ...item, role: 'primary' as const } : item
-        )
+        current.map((item) => ({
+          ...item,
+          role: item.id === device.id ? ('primary' as const) : ('authorized' as const),
+        }))
       );
+      if (device.id !== currentDeviceId) setAccess('authorized');
       toast.success(
         t('settings.system.authorizedDevices.feedback.promoted', { name: device.name }),
         {
@@ -384,6 +389,29 @@ export function SettingsAuthorizedDevices({ styles }: { styles: SettingsSectionS
           </div>
         ) : null}
 
+        {needsPrimarySelection ? (
+          <div
+            className={`border-t px-3 py-2.5 md:px-3.5 ${styles.dividerBorderColor}`}
+            role="status"
+          >
+            <div className="flex gap-2.5">
+              <ShieldAlert
+                aria-hidden="true"
+                className="mt-0.5 h-4 w-4 shrink-0"
+                style={{ color: styles.accentColor }}
+              />
+              <div className="min-w-0">
+                <p className={`text-sm font-medium ${styles.textColor}`}>
+                  {t('settings.system.authorizedDevices.choosePrimaryTitle')}
+                </p>
+                <p className={`mt-0.5 text-xs leading-4 ${styles.subtleColor}`}>
+                  {t('settings.system.authorizedDevices.choosePrimaryDescription')}
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
         <div className={`border-t ${styles.dividerBorderColor}`}>
           {loading ? (
             <p
@@ -452,7 +480,8 @@ export function SettingsAuthorizedDevices({ styles }: { styles: SettingsSectionS
                         {formatDeviceActivity(device)}
                       </p>
                     </div>
-                    {access === 'primary' && device.id !== currentDeviceId ? (
+                    {access === 'primary' &&
+                    (device.id !== currentDeviceId || needsPrimarySelection) ? (
                       editingId === device.id ? (
                         <Button
                           type="button"
@@ -480,29 +509,33 @@ export function SettingsAuthorizedDevices({ styles }: { styles: SettingsSectionS
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-52">
-                            {device.role !== 'primary' ? (
+                            {needsPrimarySelection || device.role !== 'primary' ? (
                               <DropdownMenuItem onSelect={() => setDeviceToPromote(device)}>
                                 <ShieldCheck className="h-4 w-4" />
                                 {t('settings.system.authorizedDevices.makePrimary')}
                               </DropdownMenuItem>
                             ) : null}
-                            <DropdownMenuItem
-                              onSelect={() => {
-                                setEditingId(device.id);
-                                setEditingName(device.name);
-                              }}
-                            >
-                              <Pencil className="h-4 w-4" />
-                              {t('settings.system.authorizedDevices.rename')}
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              variant="destructive"
-                              onSelect={() => setDeviceToRemove(device)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                              {t('energy.setup.removeDevice')}
-                            </DropdownMenuItem>
+                            {device.id !== currentDeviceId ? (
+                              <>
+                                <DropdownMenuItem
+                                  onSelect={() => {
+                                    setEditingId(device.id);
+                                    setEditingName(device.name);
+                                  }}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                  {t('settings.system.authorizedDevices.rename')}
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  variant="destructive"
+                                  onSelect={() => setDeviceToRemove(device)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                  {t('energy.setup.removeDevice')}
+                                </DropdownMenuItem>
+                              </>
+                            ) : null}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       )

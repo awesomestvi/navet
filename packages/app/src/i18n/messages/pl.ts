@@ -3501,6 +3501,9 @@ export const plMessages = {
   'settings.system.authorizedDevices.approvalDescription':
     'Dostęp do {providers} z własną odwołalną sesją Navet.',
   'settings.system.authorizedDevices.approvalTitle': 'Zatwierdzić {name}?',
+  'settings.system.authorizedDevices.choosePrimaryDescription':
+    'Te logowania zostały przeniesione jako urządzenia podstawowe. Wybierz urządzenie, które ma zarządzać pozostałymi.',
+  'settings.system.authorizedDevices.choosePrimaryTitle': 'Wybierz urządzenie podstawowe',
   'settings.system.authorizedDevices.codeLabel': 'Kod połączenia urządzenia',
   'settings.system.authorizedDevices.codePlaceholder': 'XXXX-XXXX-XXXX',
   'settings.system.authorizedDevices.connectDescription':

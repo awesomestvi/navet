@@ -3475,6 +3475,9 @@ export const svMessages = {
   'settings.system.authorizedDevices.approvalDescription':
     'Tillgång till {providers} med en egen återkallelig Navet-session.',
   'settings.system.authorizedDevices.approvalTitle': 'Godkänn {name}?',
+  'settings.system.authorizedDevices.choosePrimaryDescription':
+    'Dessa inloggningar migrerades som primära enheter. Välj vilken enhet som ska hantera de andra.',
+  'settings.system.authorizedDevices.choosePrimaryTitle': 'Välj primär enhet',
   'settings.system.authorizedDevices.codeLabel': 'Anslutningskod för enhet',
   'settings.system.authorizedDevices.codePlaceholder': 'XXXX-XXXX-XXXX',
   'settings.system.authorizedDevices.connectDescription':

@@ -3535,6 +3535,9 @@ export const nlMessages = {
   'settings.system.authorizedDevices.approvalDescription':
     'Toegang tot {providers} met een eigen herroepbare Navet-sessie.',
   'settings.system.authorizedDevices.approvalTitle': '{name} goedkeuren?',
+  'settings.system.authorizedDevices.choosePrimaryDescription':
+    'Deze aanmeldingen zijn gemigreerd als primaire apparaten. Kies welk apparaat de andere moet beheren.',
+  'settings.system.authorizedDevices.choosePrimaryTitle': 'Kies het primaire apparaat',
   'settings.system.authorizedDevices.codeLabel': 'Apparaatverbindingscode',
   'settings.system.authorizedDevices.codePlaceholder': 'XXXX-XXXX-XXXX',
   'settings.system.authorizedDevices.connectDescription':

@@ -257,12 +257,17 @@ export function createViteDeviceSessionAuthority(
     return result;
   };
   const primaryProviderCookieIds = (req: IncomingMessage) => {
-    const directIds = directProviderCookieIds(req);
-    if (Object.keys(directIds).length > 0) return directIds;
+    const requestedDeviceId = cookieValue(req, deviceCookieName);
     const currentDevice = getDeviceSession(req);
-    return currentDevice?.record.role === 'primary'
-      ? validProviderCookieIds(currentDevice.record.providerCookieIds)
-      : {};
+    if (currentDevice) {
+      return currentDevice.record.role === 'primary'
+        ? validProviderCookieIds(currentDevice.record.providerCookieIds)
+        : {};
+    }
+    if (SECRET_PATTERN.test(requestedDeviceId) && readJson(sessionPath(requestedDeviceId))) {
+      return {};
+    }
+    return directProviderCookieIds(req);
   };
   const hasOtherActivePrimaryProviderSession = (req: IncomingMessage) =>
     (Object.keys(providerRecords) as ProviderId[]).some((providerId) => {
@@ -291,6 +296,23 @@ export function createViteDeviceSessionAuthority(
     const secure = requestOrigin(req).startsWith('https://') ? '; Secure' : '';
     return `${deviceCookieName}=${value}; Path=/; Max-Age=${maxAge}; HttpOnly; SameSite=Strict${secure}`;
   };
+  const demoteOtherPrimaryDevices = (primaryId: string) => {
+    let names: string[] = [];
+    try {
+      names = readdirSync(sessionsDirectory);
+    } catch {
+      return;
+    }
+    for (const name of names.slice(0, 256)) {
+      const id = name.replace(/\.json$/, '');
+      if (id === primaryId || !SECRET_PATTERN.test(id)) continue;
+      const record = readJson<DeviceSessionRecord>(sessionPath(id));
+      if (!record || record.role !== 'primary') continue;
+      delete record.role;
+      record.directProviderSession = false;
+      writeJson(sessionPath(id), record);
+    }
+  };
   const registerPrimaryDevice = (
     req: IncomingMessage,
     res: ServerResponse,
@@ -312,7 +334,6 @@ export function createViteDeviceSessionAuthority(
           : null;
         if (
           record?.clientId === identity.clientId &&
-          record.role === 'primary' &&
           !record.revokedAt &&
           record.expiresAt >= Date.now()
         ) {
@@ -337,6 +358,7 @@ export function createViteDeviceSessionAuthority(
       revokedAt: null,
     };
     record.directProviderSession = true;
+    record.role = 'primary';
     record.providerCookieIds = { ...record.providerCookieIds, ...providerCookieIds };
     record.updatedAt = Date.now();
     record.expiresAt = Date.now() + SESSION_TTL_MS;
@@ -624,7 +646,9 @@ export function createViteDeviceSessionAuthority(
           return;
         }
         if (body.role === 'primary') {
+          demoteOtherPrimaryDevices(id);
           record.role = 'primary';
+          record.directProviderSession = true;
           record.updatedAt = Date.now();
           writeJson(sessionPath(id), record);
           sendJson(res, 200, { updated: true });

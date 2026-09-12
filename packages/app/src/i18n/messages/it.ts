@@ -3511,6 +3511,9 @@ export const itMessages = {
   'settings.system.authorizedDevices.approvalDescription':
     'Accesso a {providers} con la propria sessione Navet revocabile.',
   'settings.system.authorizedDevices.approvalTitle': 'Approvare {name}?',
+  'settings.system.authorizedDevices.choosePrimaryDescription':
+    'Questi accessi sono stati migrati come dispositivi primari. Scegli quale dispositivo deve gestire gli altri.',
+  'settings.system.authorizedDevices.choosePrimaryTitle': 'Scegli il dispositivo primario',
   'settings.system.authorizedDevices.codeLabel': 'Codice di connessione del dispositivo',
   'settings.system.authorizedDevices.codePlaceholder': 'XXXX-XXXX-XXXX',
   'settings.system.authorizedDevices.connectDescription':

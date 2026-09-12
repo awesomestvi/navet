@@ -3487,6 +3487,9 @@ export const daMessages = {
   'settings.system.authorizedDevices.approvalDescription':
     'Adgang til {providers} med sin egen genkaldelige Navet-session.',
   'settings.system.authorizedDevices.approvalTitle': 'Godkend {name}?',
+  'settings.system.authorizedDevices.choosePrimaryDescription':
+    'Disse login blev migreret som primære enheder. Vælg, hvilken enhed der skal administrere de andre.',
+  'settings.system.authorizedDevices.choosePrimaryTitle': 'Vælg den primære enhed',
   'settings.system.authorizedDevices.codeLabel': 'Enhedsforbindelseskode',
   'settings.system.authorizedDevices.codePlaceholder': 'XXXX-XXXX-XXXX',
   'settings.system.authorizedDevices.connectDescription':

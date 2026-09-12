@@ -289,6 +289,25 @@ function buildDeviceCookie(r, id, maxAge) {
   return attributes.join('; ');
 }
 
+function demoteOtherPrimaryDevices(primaryId) {
+  let names = [];
+  try { names = fs.readdirSync(SESSIONS_DIRECTORY); } catch (_error) { return; }
+  let index;
+  for (index = 0; index < names.length && index < 256; index += 1) {
+    const match = /^([a-f0-9]{64})\.json$/.exec(names[index]);
+    if (!match || match[1] === primaryId) {
+      continue;
+    }
+    const record = readJson(sessionPath(match[1]));
+    if (!record || record.role !== 'primary') {
+      continue;
+    }
+    delete record.role;
+    record.directProviderSession = false;
+    writeJson(sessionPath(match[1]), record);
+  }
+}
+
 function registerPrimaryDevice(r, providerCookieIds) {
   const identity = deviceClientIdentity(r);
   let names = [];
@@ -302,7 +321,6 @@ function registerPrimaryDevice(r, providerCookieIds) {
       if (
         record &&
         record.clientId === identity.clientId &&
-        record.role === 'primary' &&
         !record.revokedAt &&
         record.expiresAt >= Date.now()
       ) {
@@ -326,6 +344,7 @@ function registerPrimaryDevice(r, providerCookieIds) {
     revokedAt: null,
   };
   record.directProviderSession = true;
+  record.role = 'primary';
   record.providerCookieIds = Object.assign({}, record.providerCookieIds, providerCookieIds);
   record.updatedAt = Date.now();
   record.expiresAt = Date.now() + DEVICE_SESSION_TTL_MS;
@@ -359,14 +378,17 @@ function getDeviceSession(r) {
 }
 
 function primaryProviderCookieIds(r) {
-  const directIds = providerCookieIdsFromDirectSession(r);
-  if (Object.keys(directIds).length > 0) {
-    return directIds;
-  }
+  const requestedDeviceId = getCookie(r, scopedCookieName(DEVICE_COOKIE_BASE_NAME));
   const currentDevice = getDeviceSession(r);
-  return currentDevice && currentDevice.record.role === 'primary'
-    ? validProviderCookieIds(currentDevice.record.providerCookieIds)
-    : {};
+  if (currentDevice) {
+    return currentDevice.record.role === 'primary'
+      ? validProviderCookieIds(currentDevice.record.providerCookieIds)
+      : {};
+  }
+  if (SECRET_PATTERN.test(requestedDeviceId) && readJson(sessionPath(requestedDeviceId))) {
+    return {};
+  }
+  return providerCookieIdsFromDirectSession(r);
 }
 
 function getProviderCookieId(r, providerId) {
@@ -736,7 +758,9 @@ function renameDevice(r) {
     return;
   }
   if (body.role === 'primary') {
+    demoteOtherPrimaryDevices(id);
     record.role = 'primary';
+    record.directProviderSession = true;
     record.updatedAt = Date.now();
     writeJson(sessionPath(id), record);
     sendJson(r, 200, { updated: true });

@@ -3554,6 +3554,9 @@ export const frMessages = {
   'settings.system.authorizedDevices.approvalDescription':
     'Accès à {providers} avec sa propre session Navet révocable.',
   'settings.system.authorizedDevices.approvalTitle': 'Approuver {name} ?',
+  'settings.system.authorizedDevices.choosePrimaryDescription':
+    "Ces connexions ont été migrées en tant qu'appareils principaux. Choisissez l'appareil qui doit gérer les autres.",
+  'settings.system.authorizedDevices.choosePrimaryTitle': "Choisir l'appareil principal",
   'settings.system.authorizedDevices.codeLabel': "Code de connexion de l'appareil",
   'settings.system.authorizedDevices.codePlaceholder': 'XXXX-XXXX-XXXX',
   'settings.system.authorizedDevices.connectDescription':

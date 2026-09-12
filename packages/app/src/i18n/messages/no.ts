@@ -3485,6 +3485,9 @@ export const noMessages = {
   'settings.system.authorizedDevices.approvalDescription':
     'Tilgang til {providers} med egen tilbakekallbar Navet-økt.',
   'settings.system.authorizedDevices.approvalTitle': 'Godkjenn {name}?',
+  'settings.system.authorizedDevices.choosePrimaryDescription':
+    'Disse påloggingene ble overført som primærenheter. Velg hvilken enhet som skal administrere de andre.',
+  'settings.system.authorizedDevices.choosePrimaryTitle': 'Velg primærenheten',
   'settings.system.authorizedDevices.codeLabel': 'Enhetstilkoblingskode',
   'settings.system.authorizedDevices.codePlaceholder': 'XXXX-XXXX-XXXX',
   'settings.system.authorizedDevices.connectDescription':
