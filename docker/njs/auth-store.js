@@ -800,6 +800,16 @@ function createAuthSessionStore(options) {
   }
 
   function getStoredRequestContexts(r) {
+    if (deviceSessionAuthority.hasPresentedDeviceCookie(r)) {
+      const delegatedCookieId = deviceSessionAuthority.getProviderCookieId(
+        r,
+        'home_assistant'
+      );
+      const delegatedSession = readSession(delegatedCookieId);
+      return delegatedSession
+        ? [{ cookieId: delegatedCookieId, session: delegatedSession }]
+        : [];
+    }
     const currentContexts = getCurrentCookieIds(r)
       .map(function (cookieId) {
         const session = readSession(cookieId);

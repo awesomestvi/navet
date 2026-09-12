@@ -66,12 +66,12 @@ export function ThemeAppearancePicker({
           </div>
         ) : null}
 
-        <div className="mt-4">
+        <div className="@container/theme-picker mt-4">
           <fieldset>
             <legend className={`text-sm font-semibold ${pickerTokens.textClassName}`}>
               {t('themePicker.themeMode')}
             </legend>
-            <div className="mt-3 grid grid-cols-4 gap-2">
+            <div className="mt-3 grid grid-cols-2 gap-3 @min-[480px]/theme-picker:grid-cols-4 @min-[480px]/theme-picker:gap-2">
               {themeOptions.map((option) => {
                 const isActive =
                   (manualThemeLocked ? previewTheme : selectedTheme) === option.value;

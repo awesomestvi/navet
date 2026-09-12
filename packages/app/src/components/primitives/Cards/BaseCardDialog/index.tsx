@@ -111,6 +111,7 @@ interface BaseCardDialogFullscreenProps extends BaseCardDialogSharedProps {
   variant: 'fullscreen';
   contentTitle?: string;
   contentDescription?: string;
+  mobileCoverSheet?: boolean;
   persistentMobileDismiss?: boolean;
 }
 
@@ -832,6 +833,7 @@ function BaseCardDialogFullscreenVariant({
   children,
   contentTitle,
   contentDescription,
+  mobileCoverSheet = true,
   persistentMobileDismiss = true,
 }: BaseCardDialogFullscreenProps) {
   const surface = getThemeSurfaceTokens(theme);
@@ -841,7 +843,7 @@ function BaseCardDialogFullscreenVariant({
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       disableOpenAutoFocus={disableOpenAutoFocus}
-      mobileCoverSheet
+      mobileCoverSheet={mobileCoverSheet}
       persistentMobileDismiss={persistentMobileDismiss}
       overlayClassName={overlayClassName ?? `animate-in fade-in ${surface.dialogBackdrop}`}
       contentTitle={contentTitle ?? title}

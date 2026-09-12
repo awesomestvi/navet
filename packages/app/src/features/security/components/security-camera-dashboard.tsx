@@ -1,4 +1,5 @@
 import { DashboardGroupingNavigation } from '@navet/app/components/patterns';
+import { BaseCard } from '@navet/app/components/primitives';
 import {
   type CardSize,
   getCardGridAutoRowsStyle,
@@ -60,6 +61,7 @@ import {
   normalizeSecurityOverviewPreference,
   resolveSecurityOverviewEntities,
 } from '../utils/security-overview-preferences';
+import { CameraCard } from './camera-card';
 import { CameraLiveViewer } from './camera-card/camera-live-viewer';
 import {
   appendCameraCacheBuster,
@@ -444,6 +446,77 @@ function MobileOverviewCarousel({
   );
 }
 
+function getCameraMosaicCellClassName(index: number, count: number) {
+  if (count === 3 && index === 0) {
+    return 'row-span-2';
+  }
+
+  return '';
+}
+
+function CameraOverviewMosaic({
+  cameras,
+  updateCardSize,
+  isEditMode,
+  columnCount,
+}: {
+  cameras: CameraDevice[];
+  updateCardSize: (id: string, size: CardSize) => void;
+  isEditMode: boolean;
+  columnCount: number;
+}) {
+  const visibleCameras = cameras.slice(0, 4);
+  const gridClassName =
+    visibleCameras.length === 1
+      ? 'grid-cols-1 grid-rows-1'
+      : visibleCameras.length === 2
+        ? 'grid-cols-2 grid-rows-1'
+        : 'grid-cols-2 grid-rows-2';
+
+  return (
+    <div
+      data-testid="security-camera-mosaic-layout"
+      className="grid w-full grid-flow-row-dense gap-3 lg:gap-4"
+      style={{
+        ...getCardGridAutoRowsStyle(columnCount),
+        gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
+      }}
+    >
+      <div className={`${getCardSpanClass('large')} [&>*]:h-full`}>
+        <BaseCard size="large" fullBleed data-testid="security-camera-mosaic">
+          <div className={`grid h-full w-full gap-px bg-black/70 ${gridClassName}`}>
+            {visibleCameras.map((camera, index) => (
+              <div
+                key={camera.id}
+                className={`min-h-0 min-w-0 overflow-hidden ${getCameraMosaicCellClassName(
+                  index,
+                  visibleCameras.length
+                )}`}
+                data-security-entity-id={camera.id}
+                data-testid="security-camera-mosaic-cell"
+              >
+                <CameraCard
+                  id={camera.id}
+                  name={camera.name}
+                  room={camera.room}
+                  entityPicture={camera.entityPicture}
+                  entityPictureSources={camera.entityPictureSources}
+                  supportedFeatures={camera.supportedFeatures}
+                  isStreamCapable={camera.isStreamCapable}
+                  size="small"
+                  onSizeChange={updateCardSize}
+                  isEditMode={isEditMode}
+                  presentation="mosaic-tile"
+                />
+              </div>
+            ))}
+          </div>
+        </BaseCard>
+      </div>
+    </div>
+  );
+}
+
 function DetailsSection({
   groupSummaries,
   selectedGroupId,
@@ -548,6 +621,21 @@ export function SecurityCameraDashboard({
     () => resolveSecurityOverviewEntities(overviewPreference, model.allEntities),
     [model.allEntities, overviewPreference]
   );
+  const portraitMosaicCameras = useMemo(() => {
+    const sourceEntities =
+      overviewPreference.mode === 'auto' ? model.allEntities : overviewEntities;
+
+    return sourceEntities
+      .filter(
+        (entity): entity is Extract<DeviceWithType, { type: 'cameras' }> =>
+          entity.type === 'cameras'
+      )
+      .slice(0, 4);
+  }, [model.allEntities, overviewEntities, overviewPreference.mode]);
+  const canUsePortraitMosaic =
+    portraitMosaicCameras.length > 0 &&
+    (overviewPreference.mode === 'auto' ||
+      portraitMosaicCameras.length === overviewEntities.length);
   const roomGroupSummaries = useMemo(
     () => buildSecurityRoomGroupSummaries(model.allEntities, t),
     [model.allEntities, t]
@@ -736,13 +824,20 @@ export function SecurityCameraDashboard({
           model={model}
           alarms={alarms}
           surface={surface}
-          renderOverviewContent={(columnCount, isMobile) =>
-            isMobile ? (
+          renderOverviewContent={(columnCount, layout) =>
+            layout === 'mobile-carousel' ? (
               <MobileOverviewCarousel
                 devices={overviewEntities}
                 cardSizes={cardSizes}
                 updateCardSize={updateCardSize}
                 isEditMode={isEditMode}
+              />
+            ) : layout === 'portrait-mosaic' && canUsePortraitMosaic ? (
+              <CameraOverviewMosaic
+                cameras={portraitMosaicCameras}
+                updateCardSize={updateCardSize}
+                isEditMode={isEditMode}
+                columnCount={columnCount}
               />
             ) : (
               <DetailsGrid

@@ -308,6 +308,29 @@ function demoteOtherPrimaryDevices(primaryId) {
   }
 }
 
+function hasOtherActiveDeviceReference(excludedDeviceId, providerId, cookieId) {
+  let names = [];
+  try { names = fs.readdirSync(SESSIONS_DIRECTORY); } catch (_error) { return false; }
+  let index;
+  for (index = 0; index < names.length && index < 256; index += 1) {
+    const match = /^([a-f0-9]{64})\.json$/.exec(names[index]);
+    if (!match || match[1] === excludedDeviceId) {
+      continue;
+    }
+    const record = readJson(sessionPath(match[1]));
+    if (
+      record &&
+      !record.revokedAt &&
+      record.expiresAt >= Date.now() &&
+      record.providerCookieIds &&
+      record.providerCookieIds[providerId] === cookieId
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function registerPrimaryDevice(r, providerCookieIds) {
   const identity = deviceClientIdentity(r);
   let names = [];
@@ -400,8 +423,12 @@ function getProviderCookieId(r, providerId) {
   return SECRET_PATTERN.test(String(cookieId || '')) ? cookieId : '';
 }
 
+function hasPresentedDeviceCookie(r) {
+  return SECRET_PATTERN.test(getCookie(r, scopedCookieName(DEVICE_COOKIE_BASE_NAME)));
+}
+
 function isDelegatedRequest(r, providerId) {
-  return Boolean(getProviderCookieId(r, providerId));
+  return hasPresentedDeviceCookie(r);
 }
 
 function replaceProviderCookieId(providerId, previousId, nextId) {
@@ -727,16 +754,18 @@ function revokeDevice(r) {
     sendJson(r, 404, { error: 'Device not found' });
     return;
   }
-  if (record.directProviderSession) {
-    const providerIds = Object.keys(record.providerCookieIds || {});
-    let providerIndex;
-    for (providerIndex = 0; providerIndex < providerIds.length; providerIndex += 1) {
-      const providerId = providerIds[providerIndex];
-      const provider = PROVIDERS[providerId];
-      const cookieId = String(record.providerCookieIds[providerId] || '');
-      if (provider && SECRET_PATTERN.test(cookieId)) {
-        deletePath(provider.directory + '/' + cookieId + '.json');
-      }
+  const providerIds = Object.keys(record.providerCookieIds || {});
+  let providerIndex;
+  for (providerIndex = 0; providerIndex < providerIds.length; providerIndex += 1) {
+    const providerId = providerIds[providerIndex];
+    const provider = PROVIDERS[providerId];
+    const cookieId = String(record.providerCookieIds[providerId] || '');
+    if (
+      provider &&
+      SECRET_PATTERN.test(cookieId) &&
+      !hasOtherActiveDeviceReference(id, providerId, cookieId)
+    ) {
+      deletePath(provider.directory + '/' + cookieId + '.json');
     }
   }
   record.revokedAt = Date.now();
@@ -868,6 +897,7 @@ async function handle(r) {
 
 export default {
   getProviderCookieId: getProviderCookieId,
+  hasPresentedDeviceCookie: hasPresentedDeviceCookie,
   hasDependentDevices: hasDependentDevices,
   handle: handle,
   isDelegatedRequest: isDelegatedRequest,

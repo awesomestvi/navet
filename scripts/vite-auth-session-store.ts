@@ -792,22 +792,25 @@ function getStoredRequestContexts(
 ): ViteAuthRequestContext[] {
   store.discardLegacyGlobalSession()
   let contexts: ViteAuthRequestContext[] = []
-  for (const cookieId of parseViteAuthCookies(
-    req,
-    store.cookieNames.currentName
-  )) {
-    const session = store.readSession(cookieId)
-    if (session) {
-      contexts.push({ cookieId, session })
-    }
-  }
-  if (contexts.length === 0 && store.cookieNames.scoped) {
-    contexts = parseViteAuthCookies(req, store.cookieNames.legacyName).flatMap(
-      (cookieId) => {
-        const session = store.readSession(cookieId)
-        return session ? [{ cookieId, session }] : []
+  const hasDeviceCookie = store.deviceSessionAuthority?.hasPresentedDeviceCookie(req) ?? false
+  if (!hasDeviceCookie) {
+    for (const cookieId of parseViteAuthCookies(
+      req,
+      store.cookieNames.currentName
+    )) {
+      const session = store.readSession(cookieId)
+      if (session) {
+        contexts.push({ cookieId, session })
       }
-    )
+    }
+    if (contexts.length === 0 && store.cookieNames.scoped) {
+      contexts = parseViteAuthCookies(req, store.cookieNames.legacyName).flatMap(
+        (cookieId) => {
+          const session = store.readSession(cookieId)
+          return session ? [{ cookieId, session }] : []
+        }
+      )
+    }
   }
   if (contexts.length === 0 && store.deviceSessionAuthority) {
     const cookieId = store.deviceSessionAuthority.getProviderCookieId(

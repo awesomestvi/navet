@@ -618,6 +618,7 @@ export function CameraLiveViewer({
   const { t } = useI18n();
   const { theme } = useTheme();
   const isPhone = useMediaQuery('(max-width: 639px)');
+  const isPortrait = useMediaQuery('(orientation: portrait)');
   const surface = getThemeSurfaceTokens(theme);
   const viewerRef = useRef<HTMLDivElement>(null);
   const [isNativeFullscreen, setIsNativeFullscreen] = useState(false);
@@ -870,6 +871,7 @@ export function CameraLiveViewer({
   return (
     <BaseCardDialog
       variant="fullscreen"
+      mobileCoverSheet={false}
       persistentMobileDismiss={false}
       isOpen={isOpen}
       onOpenChange={onOpenChange}
@@ -880,13 +882,25 @@ export function CameraLiveViewer({
       contentTitle={name}
       contentDescription={t('camera.viewer.description')}
       overlayClassName={`animate-in fade-in ${surface.dialogBackdrop}`}
+      contentClassName={
+        isPortrait
+          ? '!inset-auto !top-1/2 !left-1/2 !h-auto !max-h-[calc(100dvh-1.5rem)] !w-[calc(100%-1.5rem)] !max-w-[72rem] !-translate-x-1/2 !-translate-y-1/2 md:!max-h-[calc(100dvh-4rem)] md:!w-[calc(100%-4rem)]'
+          : undefined
+      }
       shellBodyClassName="h-full"
     >
       <div
         ref={viewerRef}
-        className="relative isolate flex h-full min-h-0 flex-col bg-black text-white"
+        className={`relative isolate flex min-h-0 flex-col overflow-hidden bg-black text-white ${
+          isPortrait && !isNativeFullscreen ? 'h-auto' : 'h-full'
+        }`}
       >
-        <div className="absolute inset-0 z-0">
+        <div
+          data-testid="camera-viewer-media"
+          className={`relative order-2 z-0 min-h-0 overflow-hidden bg-black ${
+            isPortrait && !isNativeFullscreen ? 'aspect-video w-full flex-none' : 'flex-1'
+          }`}
+        >
           {selectedTransport && cameraState !== 'unavailable' ? (
             canReuseInitialStream && retainedStreamHost ? (
               <CameraStreamHostSlot host={retainedStreamHost} />
@@ -929,7 +943,11 @@ export function CameraLiveViewer({
 
         <div
           data-testid="camera-viewer-top-controls"
-          className="pointer-events-none absolute inset-x-0 top-0 z-20 bg-gradient-to-b from-black/85 via-black/45 to-transparent pb-4 pl-[calc(env(safe-area-inset-left,0px)+1rem)] pr-[calc(env(safe-area-inset-right,0px)+1rem)] pt-[calc(env(safe-area-inset-top,0px)+1rem)] md:pb-5 md:pl-[calc(env(safe-area-inset-left,0px)+1.25rem)] md:pr-[calc(env(safe-area-inset-right,0px)+1.25rem)] md:pt-[calc(env(safe-area-inset-top,0px)+1.25rem)]"
+          className={`pointer-events-none relative order-1 z-20 shrink-0 border-white/10 border-b bg-zinc-950/95 pl-[calc(env(safe-area-inset-left,0px)+1rem)] pr-[calc(env(safe-area-inset-right,0px)+1rem)] md:pl-[calc(env(safe-area-inset-left,0px)+1.25rem)] md:pr-[calc(env(safe-area-inset-right,0px)+1.25rem)] ${
+            isNativeFullscreen
+              ? 'pt-[calc(max(env(safe-area-inset-top,0px),0px)+0.75rem)] pb-3'
+              : 'py-3'
+          }`}
         >
           <div
             data-testid="camera-viewer-header-layout"
@@ -984,7 +1002,7 @@ export function CameraLiveViewer({
 
         <div
           data-testid="camera-viewer-bottom-controls"
-          className="pointer-events-none absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black/85 via-black/45 to-transparent pl-[calc(env(safe-area-inset-left,0px)+1rem)] pr-[calc(env(safe-area-inset-right,0px)+1rem)] pt-4 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] md:pl-[calc(env(safe-area-inset-left,0px)+1.25rem)] md:pr-[calc(env(safe-area-inset-right,0px)+1.25rem)] md:pt-5 md:pb-[calc(env(safe-area-inset-bottom,0px)+1.25rem)]"
+          className="pointer-events-none relative order-3 z-20 shrink-0 border-white/10 border-t bg-zinc-950/95 pl-[calc(env(safe-area-inset-left,0px)+1rem)] pr-[calc(env(safe-area-inset-right,0px)+1rem)] pt-3 pb-[calc(env(safe-area-inset-bottom,0px)+0.75rem)] md:pl-[calc(env(safe-area-inset-left,0px)+1.25rem)] md:pr-[calc(env(safe-area-inset-right,0px)+1.25rem)]"
         >
           <div className="flex min-w-0 flex-col gap-3">
             <CameraAccessoryRail accessories={accessoryEntities} cameraName={name} />

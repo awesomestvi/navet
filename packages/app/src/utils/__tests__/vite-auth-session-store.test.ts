@@ -17,6 +17,7 @@ import {
   resolveViteAuthSession,
   serializeViteAuthCookie,
 } from '@scripts/vite-auth-session-store';
+import type { ViteDeviceSessionAuthority } from '@scripts/vite-device-session-authority';
 import type { ViteInstallationAuthority } from '@scripts/vite-installation-authority';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -218,6 +219,43 @@ function seedPendingOAuth(
 }
 
 describe('Vite standalone auth session conformance', () => {
+  it('does not fall back to a legacy provider cookie when a revoked device cookie is present', async () => {
+    const fixture = createStore();
+    const cookieNames = createInstallationCookieNames('navet_auth_session', '1'.repeat(64));
+    const deviceAuthority: ViteDeviceSessionAuthority = {
+      getProviderCookieId: () => '',
+      hasPresentedDeviceCookie: () => true,
+      hasDependentDevices: () => false,
+      isDelegatedRequest: () => true,
+      replaceProviderCookieId: () => undefined,
+      revokeCurrentDevice: () => false,
+      handle: async () => undefined,
+    };
+    const store = createViteAuthSessionStore(
+      fixture.sessionsDirectory,
+      fixture.legacyFile,
+      cookieNames,
+      deviceAuthority
+    );
+    const legacy = store.createSession();
+    store.writeSession(legacy.cookieId, { ...legacy.session, auth: AUTH_A });
+    const handler = createViteAuthRequestHandler(
+      store,
+      vi.fn().mockResolvedValue(new Response('{}', { status: 404 })),
+      TEST_INSTALLATION_AUTHORITY
+    );
+    const response = createResponse();
+
+    await handler(
+      createRequest({
+        cookie: `${cookieNames.currentName}=${legacy.cookieId}; navet_device_session=${'d'.repeat(64)}`,
+      }),
+      response.response
+    );
+
+    expect(JSON.parse(response.body)).toMatchObject({ authenticated: false });
+  });
+
   it('promotes only local legacy sessions and revokes every local legacy duplicate on logout', async () => {
     const legacy = createStore();
     const fetchImpl = vi.fn().mockResolvedValue(new Response('{}', { status: 404 }));

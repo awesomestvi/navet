@@ -252,6 +252,23 @@ describe('Vite device session authority', () => {
     );
     expect(removedComputer.json()).toEqual({ revoked: true });
 
+    const legacyProviderCookieOnly = makeResponse();
+    await authority.handle(
+      makeRequest(
+        'GET',
+        '/sessions',
+        undefined,
+        `${providerCookieName}=${'b'.repeat(64)}`,
+        'localhost',
+        {
+          'x-navet-device-client-id': 'computer_client_01',
+          'x-navet-device-name': encodeURIComponent('Computer A1B2'),
+        }
+      ),
+      legacyProviderCookieOnly.response
+    );
+    expect(legacyProviderCookieOnly.response.statusCode).toBe(403);
+
     const revokedComputer = makeResponse();
     await authority.handle(
       makeRequest(
@@ -428,6 +445,25 @@ describe('Vite device session authority', () => {
       access: 'authorized',
       currentDeviceId: primaryDeviceId,
     });
+
+    const removedFormerPrimary = makeResponse();
+    await authority.handle(
+      makeRequest('DELETE', '/sessions', { id: primaryDeviceId }, deviceCookie),
+      removedFormerPrimary.response
+    );
+    expect(removedFormerPrimary.json()).toEqual({ revoked: true });
+    expect(
+      authority.getProviderCookieId(makeRequest('GET', '/', undefined, deviceCookie), 'openhab')
+    ).toBe(providerCookieId);
+    const removedDeviceRequest = makeRequest(
+      'GET',
+      '/',
+      undefined,
+      `${primaryCookie}; ${primaryDeviceCookie}`
+    );
+    expect(authority.hasPresentedDeviceCookie(removedDeviceRequest)).toBe(true);
+    expect(authority.isDelegatedRequest(removedDeviceRequest, 'openhab')).toBe(true);
+    expect(authority.getProviderCookieId(removedDeviceRequest, 'openhab')).toBe('');
 
     const replay = makeResponse();
     await authority.handle(

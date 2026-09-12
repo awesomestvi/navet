@@ -47,7 +47,10 @@ interface SecurityCommandCenterProps {
   model: CameraDashboardModel;
   alarms: NavetAlarmEntity[];
   surface: ReturnType<typeof getThemeSurfaceTokens>;
-  renderOverviewContent: (columnCount: number, isMobile: boolean) => ReactNode;
+  renderOverviewContent: (
+    columnCount: number,
+    layout: 'grid' | 'mobile-carousel' | 'portrait-mosaic'
+  ) => ReactNode;
   renderDetailsContent?: (columnCount: number) => ReactNode;
   onSelectEntity: (device: DeviceWithType) => void;
   onSelectCamera: (camera: CameraDevice) => void;
@@ -746,7 +749,7 @@ function SecurityActivitySidebar({
           <SecurityPanelCard alarms={alarms} presentation="compact" />
         </div>
       ) : null}
-      <div className="order-5 min-w-0" style={fullWidthGridStyle}>
+      <div className="order-last min-w-0 md:order-none" style={fullWidthGridStyle}>
         <ActivityPanel
           events={events}
           hasMore={hasMore}
@@ -817,7 +820,14 @@ export function SecurityCommandCenter({
                 className="order-4 min-w-0"
                 style={fullWidthGridStyle}
               >
-                {renderOverviewContent(mainSpan, breakpointCols <= 2)}
+                {renderOverviewContent(
+                  mainSpan,
+                  breakpointCols <= 2
+                    ? 'mobile-carousel'
+                    : mainSpan <= 4
+                      ? 'portrait-mosaic'
+                      : 'grid'
+                )}
               </section>
               {renderDetailsContent ? (
                 <div

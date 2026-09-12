@@ -292,4 +292,26 @@ describe('CameraCardView', () => {
 
     expect(container.querySelector('.bg-gradient-to-t')).toBeInTheDocument();
   });
+
+  it('renders as an edge-to-edge tile without nested card controls in a mosaic', () => {
+    renderWithProviders(
+      <CameraCardView
+        {...defaultProps}
+        cameraViewMode="snapshot"
+        motionDetectionEnabled
+        presentation="mosaic-tile"
+      />
+    );
+
+    const viewerButton = screen.getByRole('button', {
+      name: 'Open camera viewer: Front Door',
+    });
+    expect(viewerButton.parentElement).toHaveClass('rounded-none', 'border-0');
+    expect(
+      screen.queryByRole('button', { name: 'Refresh camera snapshot' })
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Camera settings' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /motion detection/i })).not.toBeInTheDocument();
+    expect(screen.getByTestId('camera-card-identity')).toHaveClass('px-3', 'pb-3');
+  });
 });

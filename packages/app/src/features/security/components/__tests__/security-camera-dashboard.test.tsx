@@ -180,13 +180,13 @@ describe('SecurityCameraDashboard', () => {
     const overview = within(screen.getByTestId('security-overview-grid'));
     expect(screen.getByTestId('security-command-center')).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Live cameras' })).not.toBeInTheDocument();
-    expect(overview.getByTestId('detail-card:camera.front')).toBeInTheDocument();
+    expect(overview.getByTestId('camera-card:camera.front')).toBeInTheDocument();
     expect(overview.queryByTestId('detail-card:lock.front')).not.toBeInTheDocument();
     expect(screen.queryByText('All Security')).not.toBeInTheDocument();
     expect(screen.queryByTestId('security-status-card')).not.toBeInTheDocument();
   });
 
-  it('automatically shows the first two available camera feeds', () => {
+  it('automatically groups up to four available camera feeds in the portrait mosaic', () => {
     renderDashboard({
       cameras: [
         camera({ id: 'camera.front', name: 'Front Door' }),
@@ -196,10 +196,10 @@ describe('SecurityCameraDashboard', () => {
     });
 
     const overview = within(screen.getByTestId('security-overview-grid'));
-    expect(overview.getAllByTestId(/^detail-card:/)).toHaveLength(2);
-    expect(overview.getByTestId('detail-card:camera.front')).toBeInTheDocument();
-    expect(overview.getByTestId('detail-card:camera.garden')).toBeInTheDocument();
-    expect(overview.queryByTestId('detail-card:camera.side')).not.toBeInTheDocument();
+    expect(overview.getAllByTestId(/^camera-card:/)).toHaveLength(3);
+    expect(overview.getByTestId('camera-card:camera.front')).toBeInTheDocument();
+    expect(overview.getByTestId('camera-card:camera.garden')).toBeInTheDocument();
+    expect(overview.getByTestId('camera-card:camera.side')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Choose camera feeds' })).not.toBeInTheDocument();
     const outcome = screen.getByTestId('security-outcome-panel');
     expect(within(outcome).getByRole('heading')).toHaveClass('text-lg', 'font-bold');
@@ -222,7 +222,86 @@ describe('SecurityCameraDashboard', () => {
     expect(carousel).toHaveClass('snap-x', 'snap-mandatory', 'overflow-x-auto');
     expect(items).toHaveLength(2);
     expect(items[0]).toHaveClass('snap-start', 'w-[84%]');
+    expect(overview.queryByTestId('security-camera-mosaic')).not.toBeInTheDocument();
     expect(overview.queryByTestId('security-card-grid')).not.toBeInTheDocument();
+  });
+
+  it('uses a dominant feed with two stacked feeds for three portrait cameras', () => {
+    activityEventsMock.breakpointCols = 4;
+    renderDashboard({
+      cameras: [
+        camera({ id: 'camera.front', name: 'Front Door' }),
+        camera({ id: 'camera.garden', name: 'Garden' }),
+        camera({ id: 'camera.side', name: 'Side Gate' }),
+      ],
+    });
+
+    const overview = within(screen.getByTestId('security-overview-grid'));
+    const mosaic = overview.getByTestId('security-camera-mosaic');
+    const mosaicLayout = overview.getByTestId('security-camera-mosaic-layout');
+    const cells = overview.getAllByTestId('security-camera-mosaic-cell');
+
+    expect(mosaic).not.toHaveClass('aspect-video');
+    expect(mosaic.parentElement).toHaveClass('col-span-4', 'row-span-4');
+    expect(mosaicLayout).toHaveStyle({
+      gridAutoRows: '82px',
+      gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+    });
+    expect(cells).toHaveLength(3);
+    expect(cells[0]).toHaveClass('row-span-2');
+    expect(cells[1]).not.toHaveClass('row-span-2');
+    expect(overview.queryByTestId('security-overview-carousel')).not.toBeInTheDocument();
+    expect(overview.queryByTestId('security-card-grid')).not.toBeInTheDocument();
+  });
+
+  it('uses four equal mosaic cells for four portrait cameras', () => {
+    activityEventsMock.breakpointCols = 4;
+    renderDashboard({
+      cameras: [
+        camera({ id: 'camera.front', name: 'Front Door' }),
+        camera({ id: 'camera.garden', name: 'Garden' }),
+        camera({ id: 'camera.side', name: 'Side Gate' }),
+        camera({ id: 'camera.deck', name: 'Deck' }),
+      ],
+    });
+
+    const mosaic = screen.getByTestId('security-camera-mosaic');
+    const cells = screen.getAllByTestId('security-camera-mosaic-cell');
+
+    expect(mosaic.querySelector('.grid-cols-2.grid-rows-2')).toBeInTheDocument();
+    expect(cells).toHaveLength(4);
+    for (const cell of cells) {
+      expect(cell).not.toHaveClass('row-span-2');
+    }
+  });
+
+  it('keeps independent camera cards in the wide desktop grid', () => {
+    activityEventsMock.breakpointCols = 6;
+    renderDashboard({
+      cameras: [
+        camera({ id: 'camera.front', name: 'Front Door' }),
+        camera({ id: 'camera.garden', name: 'Garden' }),
+      ],
+    });
+
+    const overview = within(screen.getByTestId('security-overview-grid'));
+    expect(overview.getByTestId('security-card-grid')).toBeInTheDocument();
+    expect(overview.queryByTestId('security-camera-mosaic')).not.toBeInTheDocument();
+    expect(overview.queryByTestId('security-overview-carousel')).not.toBeInTheDocument();
+  });
+
+  it('places the internally scrollable Activity card last on mobile', () => {
+    activityEventsMock.breakpointCols = 2;
+    renderDashboard({
+      cameras: [camera({ id: 'camera.front', name: 'Front Door' })],
+      locks: [lock({ id: 'lock.front', name: 'Front Door Lock' })],
+    });
+
+    expect(screen.getByTestId('security-activity-panel').parentElement).toHaveClass(
+      'order-last',
+      'md:order-none'
+    );
+    expect(screen.getByTestId('security-command-main-details')).toHaveClass('order-6');
   });
 
   it('groups critical hazards inside the Security sidebar', () => {
@@ -307,10 +386,10 @@ describe('SecurityCameraDashboard', () => {
     expect(screen.getByTestId('security-command-grid').style.gridTemplateColumns).toContain(
       'repeat(8'
     );
-    expect(
-      within(screen.getByTestId('security-overview-grid')).getByTestId('security-card-grid').style
-        .gridTemplateColumns
-    ).toBe('repeat(4, minmax(0, 1fr))');
+    const overview = within(screen.getByTestId('security-overview-grid'));
+    expect(overview.getByTestId('security-camera-mosaic')).toBeInTheDocument();
+    expect(overview.queryByTestId('security-overview-carousel')).not.toBeInTheDocument();
+    expect(overview.queryByTestId('security-card-grid')).not.toBeInTheDocument();
     expect(
       within(screen.getByTestId('security-command-main-details')).getByTestId('security-card-grid')
         .style.gridTemplateColumns

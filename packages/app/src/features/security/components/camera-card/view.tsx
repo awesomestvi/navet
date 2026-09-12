@@ -31,6 +31,7 @@ interface CameraCardViewProps {
   now: number;
   size: CardSize;
   isEditMode: boolean;
+  presentation?: 'card' | 'mosaic-tile';
   cameraViewMode: CameraViewMode;
   fitMode: CameraFitMode;
   isStreamCapable: boolean;
@@ -108,6 +109,7 @@ export function CameraCardView({
   now,
   size,
   isEditMode,
+  presentation = 'card',
   cameraViewMode,
   fitMode,
   isStreamCapable,
@@ -132,6 +134,7 @@ export function CameraCardView({
   }, [imageUrl]);
 
   const surface = getThemeSurfaceTokens(theme);
+  const isMosaicTile = presentation === 'mosaic-tile';
   const isCompact = isCompactCardSize(size);
   const isLightTheme = theme === 'light';
   const isGlassTheme = theme === 'glass';
@@ -231,11 +234,11 @@ export function CameraCardView({
     <div ref={cardRef} className="h-full w-full" data-entity-id={id}>
       <BaseCard
         size={size}
-        className="isolate"
+        className={`isolate ${isMosaicTile ? 'rounded-none border-0' : ''}`}
         fullBleed
         interactive={!isEditMode}
         frameClassName={isLightTheme ? surface.cardShadow : isGlassTheme ? '' : 'bg-zinc-900'}
-        disableDefaultSheen={!isGlassTheme}
+        disableDefaultSheen={isMosaicTile || !isGlassTheme}
         role={!isEditMode ? 'button' : undefined}
         tabIndex={!isEditMode ? 0 : undefined}
         onClick={!isEditMode ? onOpenViewer : undefined}
@@ -295,7 +298,7 @@ export function CameraCardView({
           </>
         ) : null}
 
-        {showRefreshButton && (
+        {showRefreshButton && !isMosaicTile && (
           <button
             type="button"
             onClick={(event) => {
@@ -361,7 +364,10 @@ export function CameraCardView({
           ) : null}
         </div>
 
-        <div className="absolute inset-x-0 bottom-0 z-20 px-3 pb-3 pt-10">
+        <div
+          data-testid="camera-card-identity"
+          className="absolute inset-x-0 bottom-0 z-20 px-3 pt-10 pb-3"
+        >
           <div className="flex items-end justify-between gap-2">
             <div className="min-w-0 flex-1">
               <EntityCardHeader
@@ -376,7 +382,7 @@ export function CameraCardView({
               />
             </div>
 
-            {!isEditMode && (
+            {!isEditMode && !isMosaicTile && (
               <div className="flex shrink-0 items-center gap-2">
                 {motionDetectionEnabled !== null ? (
                   <button

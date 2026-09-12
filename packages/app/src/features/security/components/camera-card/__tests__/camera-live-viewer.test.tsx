@@ -73,13 +73,77 @@ const defaultProps = {
 
 beforeEach(() => {
   setMediaQueryMatch('(max-width: 639px)', false);
+  setMediaQueryMatch('(orientation: portrait)', false);
   autoLoadStreamPlayerMock.current = false;
   dispatchEntityCommandMock.mockClear();
 });
 
 describe('CameraLiveViewer', () => {
-  it('requests device-native fullscreen from the camera surface', async () => {
-    const requestFullscreen = vi.fn().mockResolvedValue(undefined);
+  it('uses a centered landscape frame in portrait instead of filling the viewport', async () => {
+    setMediaQueryMatch('(orientation: portrait)', true);
+    getCameraPlaybackPlanMock.mockResolvedValue({
+      cameraState: 'streaming',
+      snapshotResource: null,
+      supportsSnapshot: false,
+      liveTransports: [],
+      fallbackTransports: [],
+      selectedTransport: null,
+      selectedStreamResource: null,
+      supportsStreaming: false,
+      isSnapshotFallback: false,
+      shouldStartWithSnapshot: false,
+      motionDetectionEnabled: true,
+      refreshPolicy: { retryDelaysMs: [1_000] },
+    });
+
+    await act(async () => {
+      renderWithProviders(<CameraLiveViewer {...defaultProps} />);
+    });
+
+    const dialog = screen.getByRole('dialog', { name: 'Front Door' });
+    expect(dialog).toHaveClass(
+      '!top-1/2',
+      '!left-1/2',
+      '!h-auto',
+      '!-translate-x-1/2',
+      '!-translate-y-1/2'
+    );
+    expect(dialog).not.toHaveClass('h-full');
+    expect(screen.getByTestId('camera-viewer-media')).toHaveClass(
+      'aspect-video',
+      'w-full',
+      'flex-none'
+    );
+    expect(screen.getByTestId('camera-viewer-top-controls')).toHaveClass(
+      'relative',
+      'border-b',
+      'bg-zinc-950/95'
+    );
+    expect(screen.getByTestId('camera-viewer-bottom-controls')).toHaveClass(
+      'relative',
+      'border-t',
+      'bg-zinc-950/95'
+    );
+    expect(
+      screen.queryByRole('button', { name: 'Drag dialog to fullscreen or close' })
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Open Focused camera viewer' })).toBeInTheDocument();
+  });
+
+  it('avoids a duplicate coversheet inset while keeping native fullscreen controls safe', async () => {
+    let fullscreenElement: Element | null = null;
+    const fullscreenElementDescriptor = Object.getOwnPropertyDescriptor(
+      document,
+      'fullscreenElement'
+    );
+    Object.defineProperty(document, 'fullscreenElement', {
+      configurable: true,
+      get: () => fullscreenElement,
+    });
+    const requestFullscreen = vi.fn().mockImplementation(async function (this: HTMLElement) {
+      fullscreenElement = this;
+      document.dispatchEvent(new Event('fullscreenchange'));
+    });
     Object.defineProperty(HTMLElement.prototype, 'requestFullscreen', {
       configurable: true,
       value: requestFullscreen,
@@ -101,11 +165,22 @@ describe('CameraLiveViewer', () => {
 
     try {
       renderWithProviders(<CameraLiveViewer {...defaultProps} />);
+      const topControls = screen.getByTestId('camera-viewer-top-controls');
+      expect(topControls).toHaveClass('py-3');
+      expect(topControls.className).not.toContain('safe-area-inset-top');
+
       fireEvent.click(screen.getByRole('button', { name: 'Open Focused camera viewer' }));
       await waitFor(() => expect(requestFullscreen).toHaveBeenCalledTimes(1));
+      expect(topControls.className).toContain('safe-area-inset-top');
+      expect(topControls).not.toHaveClass('py-3');
     } finally {
       delete (HTMLElement.prototype as { requestFullscreen?: () => Promise<void> })
         .requestFullscreen;
+      if (fullscreenElementDescriptor) {
+        Object.defineProperty(document, 'fullscreenElement', fullscreenElementDescriptor);
+      } else {
+        delete (document as { fullscreenElement?: Element | null }).fullscreenElement;
+      }
     }
   });
 

@@ -384,7 +384,8 @@ function createProviderSessionStore(options) {
   function getRequestSessions(r) {
     discardLegacyGlobalSession();
     let contexts = [];
-    const currentCookieIds = getCookieIds(r, cookieName);
+    const hasDeviceCookie = deviceSessionAuthority.hasPresentedDeviceCookie(r);
+    const currentCookieIds = hasDeviceCookie ? [] : getCookieIds(r, cookieName);
     let index;
     for (index = 0; index < currentCookieIds.length; index += 1) {
       const session = readSession(currentCookieIds[index]);
@@ -395,7 +396,7 @@ function createProviderSessionStore(options) {
         });
       }
     }
-    if (contexts.length === 0 && hasScopedCookie) {
+    if (contexts.length === 0 && hasScopedCookie && !hasDeviceCookie) {
       const legacyCookieIds = getCookieIds(r, legacyCookieName);
       for (index = 0; index < legacyCookieIds.length; index += 1) {
         const legacySession = readSession(legacyCookieIds[index]);

@@ -501,22 +501,25 @@ export function getViteProviderRequestSessions<T extends { updatedAt: number }>(
 ) {
   const names = normalizeCookieNames(cookieNames)
   let contexts: Array<{ cookieId: string; session: T }> = []
-  for (const cookieId of getViteProviderCookieIds(req, names)) {
-    const session = store.readSession(cookieId)
-    if (session) {
-      contexts.push({ cookieId, session })
-    }
-  }
-  if (contexts.length === 0 && names.scoped) {
-    const legacyNames: InstallationCookieNames = {
-      currentName: names.legacyName,
-      legacyName: names.legacyName,
-      scoped: false,
-    }
-    contexts = getViteProviderCookieIds(req, legacyNames).flatMap((cookieId) => {
+  const hasDeviceCookie = store.deviceSessionAuthority?.hasPresentedDeviceCookie(req) ?? false
+  if (!hasDeviceCookie) {
+    for (const cookieId of getViteProviderCookieIds(req, names)) {
       const session = store.readSession(cookieId)
-      return session ? [{ cookieId, session }] : []
-    })
+      if (session) {
+        contexts.push({ cookieId, session })
+      }
+    }
+    if (contexts.length === 0 && names.scoped) {
+      const legacyNames: InstallationCookieNames = {
+        currentName: names.legacyName,
+        legacyName: names.legacyName,
+        scoped: false,
+      }
+      contexts = getViteProviderCookieIds(req, legacyNames).flatMap((cookieId) => {
+        const session = store.readSession(cookieId)
+        return session ? [{ cookieId, session }] : []
+      })
+    }
   }
   if (contexts.length === 0 && store.deviceSessionAuthority && store.providerId) {
     const cookieId = store.deviceSessionAuthority.getProviderCookieId(req, store.providerId)

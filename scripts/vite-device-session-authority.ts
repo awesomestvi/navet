@@ -58,6 +58,7 @@ interface DeviceSessionRecord {
 
 export interface ViteDeviceSessionAuthority {
   getProviderCookieId(req: IncomingMessage, providerId: ProviderId): string;
+  hasPresentedDeviceCookie(req: IncomingMessage): boolean;
   hasDependentDevices(providerId: ProviderId, cookieId: string): boolean;
   isDelegatedRequest(req: IncomingMessage, providerId: ProviderId): boolean;
   replaceProviderCookieId(providerId: ProviderId, previousId: string, nextId: string): void;
@@ -313,6 +314,29 @@ export function createViteDeviceSessionAuthority(
       writeJson(sessionPath(id), record);
     }
   };
+  const hasOtherActiveDeviceReference = (
+    excludedDeviceId: string,
+    providerId: ProviderId,
+    cookieId: string
+  ) => {
+    let names: string[] = [];
+    try {
+      names = readdirSync(sessionsDirectory);
+    } catch {
+      return false;
+    }
+    return names.slice(0, 256).some((name) => {
+      const id = name.replace(/\.json$/, '');
+      if (id === excludedDeviceId || !SECRET_PATTERN.test(id)) return false;
+      const record = readJson<DeviceSessionRecord>(sessionPath(id));
+      return Boolean(
+        record &&
+          !record.revokedAt &&
+          record.expiresAt >= Date.now() &&
+          record.providerCookieIds[providerId] === cookieId
+      );
+    });
+  };
   const registerPrimaryDevice = (
     req: IncomingMessage,
     res: ServerResponse,
@@ -373,6 +397,9 @@ export function createViteDeviceSessionAuthority(
       const id = context?.record.providerCookieIds[providerId] ?? '';
       return SECRET_PATTERN.test(id) ? id : '';
     },
+    hasPresentedDeviceCookie(req) {
+      return SECRET_PATTERN.test(cookieValue(req, deviceCookieName));
+    },
     hasDependentDevices(providerId, cookieId) {
       let names: string[] = [];
       try { names = readdirSync(sessionsDirectory); } catch { return false; }
@@ -387,8 +414,8 @@ export function createViteDeviceSessionAuthority(
         );
       });
     },
-    isDelegatedRequest(req, providerId) {
-      return Boolean(authority.getProviderCookieId(req, providerId));
+    isDelegatedRequest(req, _providerId) {
+      return authority.hasPresentedDeviceCookie(req);
     },
     replaceProviderCookieId(providerId, previousId, nextId) {
       let names: string[] = [];
@@ -716,13 +743,15 @@ export function createViteDeviceSessionAuthority(
           sendJson(res, 404, { error: 'Device not found' });
           return;
         }
-        if (record.directProviderSession) {
-          for (const providerId of Object.keys(record.providerCookieIds) as ProviderId[]) {
-            const provider = providerRecords[providerId];
-            const cookieId = record.providerCookieIds[providerId] ?? '';
-            if (provider && SECRET_PATTERN.test(cookieId)) {
-              rmSync(path.join(provider.directory, `${cookieId}.json`), { force: true });
-            }
+        for (const providerId of Object.keys(record.providerCookieIds) as ProviderId[]) {
+          const provider = providerRecords[providerId];
+          const cookieId = record.providerCookieIds[providerId] ?? '';
+          if (
+            provider &&
+            SECRET_PATTERN.test(cookieId) &&
+            !hasOtherActiveDeviceReference(id, providerId, cookieId)
+          ) {
+            rmSync(path.join(provider.directory, `${cookieId}.json`), { force: true });
           }
         }
         record.revokedAt = Date.now();

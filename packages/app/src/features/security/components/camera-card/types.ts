@@ -22,4 +22,5 @@ export interface CameraCardProps {
   size: CardSize;
   onSizeChange: (id: string, size: CardSize) => void;
   isEditMode: boolean;
+  presentation?: 'card' | 'mosaic-tile';
 }
