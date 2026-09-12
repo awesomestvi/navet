@@ -3474,7 +3474,8 @@ export const fiMessages = {
   'deviceAuthorization.copyFailedDescription': 'Valitse koodi ja kopioi se manuaalisesti.',
   'deviceAuthorization.createNewCode': 'Luo uusi koodi',
   'deviceAuthorization.defaultDeviceName': 'Navet laitteella {device}',
-  'deviceAuthorization.enterCode': 'Tai syötä tämä koodi kirjautuneella laitteellasi',
+  'deviceAuthorization.enterCode':
+    'Avaa ensisijaisella laitteellasi Navet → Asetukset → Järjestelmä → Valtuutetut laitteet. Anna tämä koodi, tarkista ja hyväksy käyttöoikeus.',
   'deviceAuthorization.preparingApproval': 'Valmistellaan laitteen hyväksyntää…',
   'deviceAuthorization.preparingConnection': 'Valmistellaan suojattua yhteyttä...',
   'deviceAuthorization.requestDeclined': 'Pyyntö hylätty',

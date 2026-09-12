@@ -8,6 +8,14 @@ This guide helps you install Navet for Home Assistant.
 
 You only need to choose **one** installation method.
 
+## Connect another standalone screen
+
+On the new standalone screen, choose **Connect with another device** to display a one-time
+code. On your primary device, open your signed-in Navet app or PWA →
+**Settings → System → Authorized devices**, enter the code, then review and approve access.
+The new screen connects automatically with its own revocable session. This works on HTTP
+installations without camera access or a separate browser sign-in.
+
 ## Pick an installation method
 
 | Choose this | Use it when |

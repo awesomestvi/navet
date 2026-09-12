@@ -3527,7 +3527,8 @@ export const frMessages = {
   'deviceAuthorization.copyFailedDescription': 'Sélectionnez le code et copiez-le manuellement.',
   'deviceAuthorization.createNewCode': 'Créer un nouveau code',
   'deviceAuthorization.defaultDeviceName': 'Navet sur {device}',
-  'deviceAuthorization.enterCode': 'Ou saisissez ce code sur votre appareil connecté',
+  'deviceAuthorization.enterCode':
+    'Sur votre appareil principal, ouvrez Navet → Paramètres → Système → Appareils autorisés. Saisissez ce code, vérifiez et approuvez l’accès.',
   'deviceAuthorization.preparingApproval': "Préparation de l'approbation de l'appareil…",
   'deviceAuthorization.preparingConnection': "Préparation d'une connexion sécurisée...",
   'deviceAuthorization.requestDeclined': 'Demande refusée',

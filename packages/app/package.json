@@ -15,8 +15,5 @@
     "./session-runtime-registry": "./src/session-runtime-registry.ts",
     "./session-runtime-types": "./src/session-runtime-types.ts",
     "./types/provider": "./src/types/provider.ts"
-  },
-  "dependencies": {
-    "qrcode.react": "^4.2.0"
   }
 }

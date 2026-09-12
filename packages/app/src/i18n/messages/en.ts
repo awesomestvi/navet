@@ -3443,7 +3443,8 @@ export const enMessages = {
   'deviceAuthorization.copyFailedDescription': 'Select the code and copy it manually.',
   'deviceAuthorization.createNewCode': 'Create a new code',
   'deviceAuthorization.defaultDeviceName': 'Navet on {device}',
-  'deviceAuthorization.enterCode': 'Or enter this code on your signed-in device',
+  'deviceAuthorization.enterCode':
+    'On your primary device, open Navet → Settings → System → Authorized devices. Enter this code, then review and approve access.',
   'deviceAuthorization.preparingApproval': 'Preparing device approval…',
   'deviceAuthorization.preparingConnection': 'Preparing a secure connection…',
   'deviceAuthorization.requestDeclined': 'Request declined',

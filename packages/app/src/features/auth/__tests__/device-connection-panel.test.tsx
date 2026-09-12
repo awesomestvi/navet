@@ -44,6 +44,26 @@ describe('DeviceConnectionPanel', () => {
     });
   });
 
+  it('shows only a copyable code and primary-device instructions while awaiting approval', async () => {
+    authorizationMocks.load.mockResolvedValue({ state: 'pending' });
+    const onConnected = vi.fn();
+    const { container } = renderWithProviders(
+      <DeviceConnectionPanel onConnected={onConnected} onSignIn={vi.fn()} />
+    );
+
+    expect(
+      await screen.findByRole('button', { name: 'Copy device connection code' })
+    ).toHaveTextContent('1234-5678-9ABC');
+    expect(
+      screen.getByText(
+        'On your primary device, open Navet → Settings → System → Authorized devices. Enter this code, then review and approve access.'
+      )
+    ).toBeVisible();
+    expect(container.querySelector('svg[role="img"], video, canvas')).toBeNull();
+    expect(authorizationMocks.redeem).not.toHaveBeenCalled();
+    expect(onConnected).not.toHaveBeenCalled();
+  });
+
   it('finishes connecting after an approved request is redeemed', async () => {
     const onConnected = vi.fn();
     renderWithProviders(<DeviceConnectionPanel onConnected={onConnected} onSignIn={vi.fn()} />);

@@ -3502,7 +3502,8 @@ export const esMessages = {
   'deviceAuthorization.copyFailedDescription': 'Selecciona el código y cópialo manualmente.',
   'deviceAuthorization.createNewCode': 'Crear un nuevo código',
   'deviceAuthorization.defaultDeviceName': 'Navet en {device}',
-  'deviceAuthorization.enterCode': 'O introduzca este código en su dispositivo de inicio de sesión',
+  'deviceAuthorization.enterCode':
+    'En tu dispositivo principal, abre Navet → Ajustes → Sistema → Dispositivos autorizados. Introduce este código, revisa y aprueba el acceso.',
   'deviceAuthorization.preparingApproval': 'Preparando la aprobación del dispositivo...',
   'deviceAuthorization.preparingConnection': 'Preparando una conexión segura...',
   'deviceAuthorization.requestDeclined': 'Solicitud rechazada',

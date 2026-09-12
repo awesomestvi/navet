@@ -3483,7 +3483,7 @@ export const itMessages = {
   'deviceAuthorization.createNewCode': 'Crea un nuovo codice',
   'deviceAuthorization.defaultDeviceName': 'Navet su {device}',
   'deviceAuthorization.enterCode':
-    "Oppure inserisci questo codice sul dispositivo con cui hai effettuato l'accesso",
+    'Sul dispositivo principale, apri Navet → Impostazioni → Sistema → Dispositivi autorizzati. Inserisci questo codice, verifica e approva l’accesso.',
   'deviceAuthorization.preparingApproval':
     "Preparazione dell'approvazione del dispositivo in corso...",
   'deviceAuthorization.preparingConnection': 'Preparazione di una connessione sicura...',

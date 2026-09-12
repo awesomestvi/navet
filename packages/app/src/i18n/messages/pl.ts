@@ -3474,7 +3474,8 @@ export const plMessages = {
   'deviceAuthorization.copyFailedDescription': 'Wybierz kod i skopiuj go ręcznie.',
   'deviceAuthorization.createNewCode': 'Utwórz nowy kod',
   'deviceAuthorization.defaultDeviceName': 'Navet na {device}',
-  'deviceAuthorization.enterCode': 'Lub wprowadź ten kod na zalogowanym urządzeniu',
+  'deviceAuthorization.enterCode':
+    'Na urządzeniu głównym otwórz Navet → Ustawienia → System → Autoryzowane urządzenia. Wpisz ten kod, sprawdź i zatwierdź dostęp.',
   'deviceAuthorization.preparingApproval': 'Przygotowywanie zatwierdzenia urządzenia…',
   'deviceAuthorization.preparingConnection': 'Przygotowywanie bezpiecznego połączenia…',
   'deviceAuthorization.requestDeclined': 'Prośba odrzucona',

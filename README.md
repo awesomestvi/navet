@@ -90,6 +90,14 @@ Hubitat and SmartThings are planned and are not supported today. Follow the
 
 Not sure which route fits? [Compare every installation option](https://docs.navet.app/install/).
 
+## Connect another device
+
+On the new device, choose **Connect with another device** on the login page to display
+a one-time code. On your primary device, open your signed-in Navet app or PWA →
+**Settings → System → Authorized devices**, enter the code, then review and approve access.
+The new device connects automatically with its own revocable session. No camera or
+separate browser sign-in is needed; the code flow works on HTTP installations too.
+
 ## Contribute to Navet
 
 Navet is an AGPL-3.0 open-source project. Whether you want to fix a bug, improve a provider, refine

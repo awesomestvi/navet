@@ -3508,7 +3508,8 @@ export const nlMessages = {
   'deviceAuthorization.copyFailedDescription': 'Selecteer de code en kopieer deze handmatig.',
   'deviceAuthorization.createNewCode': 'Maak een nieuwe code',
   'deviceAuthorization.defaultDeviceName': 'Navet op {device}',
-  'deviceAuthorization.enterCode': 'Of voer deze code in op uw ingelogde apparaat',
+  'deviceAuthorization.enterCode':
+    'Open op je primaire apparaat Navet → Instellingen → Systeem → Geautoriseerde apparaten. Voer deze code in, controleer en keur de toegang goed.',
   'deviceAuthorization.preparingApproval': 'Apparaatgoedkeuring wordt voorbereid...',
   'deviceAuthorization.preparingConnection': 'voorbereiden van een beveiligde verbinding...',
   'deviceAuthorization.requestDeclined': 'Aanvraag afgewezen',

@@ -8,6 +8,11 @@ no separate Home Assistant URL or access token to enter.
 
 ## Open Your Dashboard
 
+To connect another standalone screen, choose **Connect with another device** on that
+screen. Enter its one-time code on your primary device in your signed-in Navet app or PWA
+under **Settings → System → Authorized devices**, then review and approve access.
+The screen connects automatically. No camera or separate browser sign-in is needed.
+
 1. Select **Start** and wait for the add-on to finish starting.
 2. Select **Open Web UI** to open Navet inside Home Assistant.
 3. Enable **Show in sidebar** for quicker access next time.

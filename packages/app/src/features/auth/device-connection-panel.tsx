@@ -7,8 +7,7 @@ import {
 import { Button } from '@navet/app/components/primitives';
 import { useI18n } from '@navet/app/i18n';
 import { Check, CircleAlert, Copy, Loader2, RefreshCw, Smartphone } from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { applyDevicePairingPreferences } from './device-pairing-preferences';
 
@@ -129,11 +128,6 @@ export function DeviceConnectionPanel({
     return () => window.clearInterval(interval);
   }, [request, state]);
 
-  const approvalUrl = useMemo(
-    () => (request ? `${window.location.origin}/#navet_device_code=${request.code}` : ''),
-    [request]
-  );
-
   const copyCode = async () => {
     if (!request) return;
     try {
@@ -161,9 +155,6 @@ export function DeviceConnectionPanel({
     <div className="space-y-5 text-center">
       {request && state !== 'expired' && state !== 'declined' ? (
         <>
-          <div className="mx-auto w-fit rounded-[24px] bg-white p-4 shadow-[0_20px_50px_-30px_rgba(0,0,0,0.9)]">
-            <QRCodeSVG value={approvalUrl} size={184} level="M" marginSize={0} />
-          </div>
           <div>
             <p className="text-sm text-white/68">{t('deviceAuthorization.enterCode')}</p>
             <button

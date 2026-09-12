@@ -10,11 +10,6 @@ import { LoginPage } from './features/auth/login-page';
 import { I18nProvider, useI18n } from './i18n';
 
 const AuthenticatedApp = lazy(() => import('./authenticated-app'));
-const DeviceApprovalPrompt = lazy(() =>
-  import('./features/auth/device-approval-prompt').then((module) => ({
-    default: module.DeviceApprovalPrompt,
-  }))
-);
 
 function VisualQualityRoot({ children }: { children: ReactNode }) {
   const prefersReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
@@ -152,7 +147,6 @@ function AppGate() {
   return (
     <Suspense fallback={<AppLoading message={t('common.loading')} />}>
       <AuthenticatedApp />
-      <DeviceApprovalPrompt />
     </Suspense>
   );
 }

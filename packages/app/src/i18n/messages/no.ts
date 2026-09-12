@@ -3458,7 +3458,8 @@ export const noMessages = {
   'deviceAuthorization.copyFailedDescription': 'Velg koden og kopier den manuelt.',
   'deviceAuthorization.createNewCode': 'Opprett en ny kode',
   'deviceAuthorization.defaultDeviceName': 'Navet på {device}',
-  'deviceAuthorization.enterCode': 'Eller skriv inn denne koden på den påloggede enheten din',
+  'deviceAuthorization.enterCode':
+    'Åpne Navet → Innstillinger → System → Autoriserte enheter på din primære enhet. Skriv inn denne koden, gjennomgå og godkjenn tilgangen.',
   'deviceAuthorization.preparingApproval': 'Forbereder enhetsgodkjenning …',
   'deviceAuthorization.preparingConnection': 'Forbereder en sikker tilkobling …',
   'deviceAuthorization.requestDeclined': 'Forespørsel avslått',

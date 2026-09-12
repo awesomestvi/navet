@@ -3460,7 +3460,8 @@ export const daMessages = {
   'deviceAuthorization.copyFailedDescription': 'Vælg koden, og kopier den manuelt.',
   'deviceAuthorization.createNewCode': 'Opret en ny kode',
   'deviceAuthorization.defaultDeviceName': 'Navet på {device}',
-  'deviceAuthorization.enterCode': 'Eller indtast denne kode på din indloggede enhed',
+  'deviceAuthorization.enterCode':
+    'Åbn Navet → Indstillinger → System → Autoriserede enheder på din primære enhed. Indtast denne kode, gennemgå og godkend adgangen.',
   'deviceAuthorization.preparingApproval': 'Forbereder enhedsgodkendelse...',
   'deviceAuthorization.preparingConnection': 'Forbereder en sikker forbindelse...',
   'deviceAuthorization.requestDeclined': 'Anmodningen blev afvist',

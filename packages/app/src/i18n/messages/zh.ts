@@ -3198,7 +3198,8 @@ export const zhMessages = {
   'deviceAuthorization.copyFailedDescription': '选择代码并手动复制。',
   'deviceAuthorization.createNewCode': '创建新代码',
   'deviceAuthorization.defaultDeviceName': '{device}上的Navet',
-  'deviceAuthorization.enterCode': '或在登录设备上输入此代码',
+  'deviceAuthorization.enterCode':
+    '在主设备上打开 Navet → 设置 → 系统 → 已授权设备。输入此代码，检查并批准访问。',
   'deviceAuthorization.preparingApproval': '正在准备设备审批…',
   'deviceAuthorization.preparingConnection': '正在准备安全连接……',
   'deviceAuthorization.requestDeclined': '申请已被拒绝',

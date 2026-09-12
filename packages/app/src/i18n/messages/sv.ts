@@ -3448,7 +3448,8 @@ export const svMessages = {
   'deviceAuthorization.copyFailedDescription': 'Välj koden och kopiera den manuellt.',
   'deviceAuthorization.createNewCode': 'Skapa en ny kod',
   'deviceAuthorization.defaultDeviceName': 'Navet på {device}',
-  'deviceAuthorization.enterCode': 'Eller ange den här koden på din inloggade enhet',
+  'deviceAuthorization.enterCode':
+    'Öppna Navet → Inställningar → System → Auktoriserade enheter på din primära enhet. Ange denna kod, granska och godkänn åtkomsten.',
   'deviceAuthorization.preparingApproval': 'Förbereder enhetsgodkännande...',
   'deviceAuthorization.preparingConnection': 'Förbereder en säker anslutning...',
   'deviceAuthorization.requestDeclined': 'Förfrågan avböjd',
