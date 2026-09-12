@@ -2,6 +2,5 @@
 
 ## In Progress
 
-- Current Navet Dev scope since `v0.16.0`.
-- No committed changes have landed after `v0.16.0` yet.
-- Current staged work includes Home Assistant shell and kiosk integration and Dev release tooling.
+- Current Navet Dev scope since `navet-dev-0.16.2-dev.20260912172646`.
+- Refine dashboard customization and household workflows

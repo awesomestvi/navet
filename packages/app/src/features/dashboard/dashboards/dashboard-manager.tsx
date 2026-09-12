@@ -1,4 +1,4 @@
-import { Button, Input, ModalSurface } from '@navet/app/components/primitives';
+import { Badge, Button, Input, ModalSurface } from '@navet/app/components/primitives';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -182,11 +182,9 @@ export function DashboardManager({ styles }: DashboardManagerProps) {
                             {dashboard.name}
                           </p>
                           {collection.defaultDashboardId === dashboard.id ? (
-                            <span
-                              className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${styles.borderColor} ${styles.subtleColor}`}
-                            >
+                            <Badge tone="neutral" size="small" className="text-[10px]">
                               {t('dashboard.multiple.manager.default')}
-                            </span>
+                            </Badge>
                           ) : null}
                         </div>
                         <p className={`mt-1 text-xs ${styles.subtleColor}`}>
@@ -217,15 +215,18 @@ export function DashboardManager({ styles }: DashboardManagerProps) {
                   {!isEditing ? (
                     <DropdownMenu modal={false}>
                       <DropdownMenuTrigger asChild>
-                        <button
+                        <Button
                           type="button"
-                          aria-label={t('dashboard.multiple.manager.actions', {
+                          size="small"
+                          variant="ghost"
+                          iconOnly
+                          label={t('dashboard.multiple.manager.actions', {
                             name: dashboard.name,
                           })}
-                          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[16px] transition-colors ${styles.hoverBg} ${styles.mutedColor}`}
+                          className="shrink-0"
                         >
                           <MoreHorizontal className="h-4.5 w-4.5" />
-                        </button>
+                        </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-56">
                         <DropdownMenuItem onSelect={() => openDashboardPreview(dashboard.id)}>

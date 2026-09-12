@@ -7,14 +7,11 @@ import { DashboardOverlays } from '../dashboard-overlays';
 
 const addCardDialogSpy = vi.fn();
 
-vi.mock('../add-card-dialog', () => ({
-  AddCardDialogContainer: (props: unknown) => {
+vi.mock('../add-entity-dialog', () => ({
+  AddEntityDialogPrimitive: (props: unknown) => {
     addCardDialogSpy(props);
     return <div data-testid="add-card-dialog" />;
   },
-}));
-
-vi.mock('../add-entity-dialog', () => ({
   AddEntityDialog: () => <div data-testid="add-entity-dialog" />,
 }));
 

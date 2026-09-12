@@ -11,6 +11,9 @@ import {
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import path from 'node:path'
 import type { InstallationCookieNames } from './installation-cookie-scope.ts'
+import type { ViteDeviceSessionAuthority } from './vite-device-session-authority.ts'
+
+export type ViteProviderId = 'home_assistant' | 'homey' | 'openhab'
 
 const COOKIE_ID_PATTERN = /^[a-f0-9]{64}$/
 const SESSION_IDLE_TTL_MS = 90 * 24 * 60 * 60 * 1000
@@ -77,6 +80,8 @@ export interface ViteProviderSessionStore<T extends { updatedAt: number }> {
   readSession(cookieId: string): T | null
   rotateSession(previousCookieId: string, session: T): { cookieId: string; session: T }
   writeSession(cookieId: string, session: T): void
+  deviceSessionAuthority?: ViteDeviceSessionAuthority
+  providerId?: ViteProviderId
 }
 
 interface ViteProviderSessionStoreOptions<T extends { updatedAt: number }> {
@@ -88,6 +93,8 @@ interface ViteProviderSessionStoreOptions<T extends { updatedAt: number }> {
   maxSessions?: number
   idleTtlMs?: number
   sessionsDirectory: string
+  deviceSessionAuthority?: ViteDeviceSessionAuthority
+  providerId?: ViteProviderId
 }
 
 function normalizeIngressPath(value: unknown) {
@@ -430,6 +437,13 @@ export function createViteProviderSessionStore<T extends { updatedAt: number }>(
 
   const deleteSession = (cookieId: string) => {
     if (COOKIE_ID_PATTERN.test(cookieId)) {
+      if (
+        options.deviceSessionAuthority &&
+        options.providerId &&
+        options.deviceSessionAuthority.hasDependentDevices(options.providerId, cookieId)
+      ) {
+        return
+      }
       rmSync(getSessionPath(cookieId), { force: true })
     }
   }
@@ -467,6 +481,8 @@ export function createViteProviderSessionStore<T extends { updatedAt: number }>(
     },
     rotateSession,
     writeSession,
+    deviceSessionAuthority: options.deviceSessionAuthority,
+    providerId: options.providerId,
   }
 }
 
@@ -485,22 +501,30 @@ export function getViteProviderRequestSessions<T extends { updatedAt: number }>(
 ) {
   const names = normalizeCookieNames(cookieNames)
   let contexts: Array<{ cookieId: string; session: T }> = []
-  for (const cookieId of getViteProviderCookieIds(req, names)) {
-    const session = store.readSession(cookieId)
-    if (session) {
-      contexts.push({ cookieId, session })
+  const hasDeviceCookie = store.deviceSessionAuthority?.hasPresentedDeviceCookie(req) ?? false
+  if (!hasDeviceCookie) {
+    for (const cookieId of getViteProviderCookieIds(req, names)) {
+      const session = store.readSession(cookieId)
+      if (session) {
+        contexts.push({ cookieId, session })
+      }
+    }
+    if (contexts.length === 0 && names.scoped) {
+      const legacyNames: InstallationCookieNames = {
+        currentName: names.legacyName,
+        legacyName: names.legacyName,
+        scoped: false,
+      }
+      contexts = getViteProviderCookieIds(req, legacyNames).flatMap((cookieId) => {
+        const session = store.readSession(cookieId)
+        return session ? [{ cookieId, session }] : []
+      })
     }
   }
-  if (contexts.length === 0 && names.scoped) {
-    const legacyNames: InstallationCookieNames = {
-      currentName: names.legacyName,
-      legacyName: names.legacyName,
-      scoped: false,
-    }
-    contexts = getViteProviderCookieIds(req, legacyNames).flatMap((cookieId) => {
-      const session = store.readSession(cookieId)
-      return session ? [{ cookieId, session }] : []
-    })
+  if (contexts.length === 0 && store.deviceSessionAuthority && store.providerId) {
+    const cookieId = store.deviceSessionAuthority.getProviderCookieId(req, store.providerId)
+    const session = store.readSession(cookieId)
+    if (session) contexts = [{ cookieId, session }]
   }
   contexts.sort((left, right) => {
     const leftAuthenticated =
@@ -540,6 +564,14 @@ export function deleteViteProviderRequestSessions<
   store: ViteProviderSessionStore<T>,
   preserveCookieId = ''
 ) {
+  if (
+    store.deviceSessionAuthority &&
+    store.providerId &&
+    store.deviceSessionAuthority.isDelegatedRequest(req, store.providerId)
+  ) {
+    store.deviceSessionAuthority.revokeCurrentDevice(req)
+    return
+  }
   const names = normalizeCookieNames(cookieNames)
   const cookieIds = getViteProviderCookieIds(req, names)
   if (names.scoped) {
@@ -571,6 +603,14 @@ export function rotateViteProviderRequestSession<
   previousCookieId: string,
   session: T
 ) {
+  if (
+    store.deviceSessionAuthority &&
+    store.providerId &&
+    store.deviceSessionAuthority.isDelegatedRequest(req, store.providerId)
+  ) {
+    store.writeSession(previousCookieId, session)
+    return { cookieId: previousCookieId, session }
+  }
   const names = normalizeCookieNames(cookieNames)
   const staleCookieIds = getViteProviderCookieIds(req, names)
   if (names.scoped) {
@@ -587,6 +627,13 @@ export function rotateViteProviderRequestSession<
   }
   const rotated = store.rotateSession(previousCookieId, session)
   setViteProviderSessionCookie(req, res, names, rotated.cookieId)
+  if (store.deviceSessionAuthority && store.providerId && previousCookieId) {
+    store.deviceSessionAuthority.replaceProviderCookieId(
+      store.providerId,
+      previousCookieId,
+      rotated.cookieId
+    )
+  }
   for (const cookieId of staleCookieIds) {
     if (cookieId !== rotated.cookieId) {
       store.deleteSession(cookieId)
@@ -603,7 +650,13 @@ export function createViteProviderRequestSession<T extends { updatedAt: number }
 ) {
   const existing = getViteProviderRequestSession(req, cookieNames, store)
   if (existing) {
-    setViteProviderSessionCookie(req, res, cookieNames, existing.cookieId)
+    if (
+      !store.deviceSessionAuthority ||
+      !store.providerId ||
+      !store.deviceSessionAuthority.isDelegatedRequest(req, store.providerId)
+    ) {
+      setViteProviderSessionCookie(req, res, cookieNames, existing.cookieId)
+    }
     return existing
   }
 

@@ -38,6 +38,11 @@ screens, the same library keeps the navigation and results visible side by side.
 Generic entity cards are available when Navet recognizes an entity but has no richer dedicated
 card for it.
 
+Where a dashboard offers **Add entity**, it uses the same searchable library, room filter,
+sorting, and device-type navigation as Home. The list contains entities eligible for that
+dashboard; adding an entity keeps the dashboard’s existing behavior. Custom-card authoring
+remains available through **Add Card**.
+
 ## Configure the card
 
 Depending on the card type, choose:

@@ -54,6 +54,14 @@ fi
 chmod 600 "${INSTALLATION_KEY_PATH}"
 chown nginx:nginx "${INSTALLATION_KEY_PATH}" 2>/dev/null || true
 
+INSTALLATION_SETUP_MARKER_PATH="/data/navet-setup-code-initialized"
+if [[ ! -f "${INSTALLATION_SETUP_MARKER_PATH}" ]]; then
+  /usr/local/bin/navet-setup-code >&2
+  touch "${INSTALLATION_SETUP_MARKER_PATH}"
+  chmod 600 "${INSTALLATION_SETUP_MARKER_PATH}"
+  chown nginx:nginx "${INSTALLATION_SETUP_MARKER_PATH}" 2>/dev/null || true
+fi
+
 INSTALLATION_CONFIG_PATH="/data/navet-installation-config.json"
 printf '{"version":1,"hassUrl":null,"openhabUrl":null}\n' \
   > "${INSTALLATION_CONFIG_PATH}.tmp"

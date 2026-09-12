@@ -8,6 +8,12 @@ export type SecurityActivityKind =
   | 'hazard-cleared'
   | 'locked'
   | 'motion'
+  | 'sound'
+  | 'vibration'
+  | 'locking'
+  | 'unlocking'
+  | 'opening'
+  | 'closing'
   | 'opened'
   | 'system'
   | 'unlocked';
@@ -88,27 +94,32 @@ function classifySecurityActivity(
   }
 
   if (device.type === 'locks' || device.securityKind === 'lock') {
-    if (normalized === 'unlocked' || normalized === 'unlocking' || normalized === 'open') {
+    if (normalized === 'locking' || normalized === 'unlocking') return normalized;
+    if (normalized === 'unlocked' || normalized === 'open') {
       return 'unlocked';
     }
-    if (normalized === 'locked' || normalized === 'locking' || normalized === 'closed') {
+    if (normalized === 'locked' || normalized === 'closed') {
       return 'locked';
     }
     return null;
   }
 
-  if (OPENING_KINDS.has(device.securityKind ?? '')) {
-    if (normalized === 'open' || normalized === 'opening' || normalized === 'on') {
+  if (device.type === 'covers' || OPENING_KINDS.has(device.securityKind ?? '')) {
+    if (normalized === 'opening' || normalized === 'closing') return normalized;
+    if (normalized === 'open' || normalized === 'on') {
       return 'opened';
     }
-    if (normalized === 'closed' || normalized === 'closing' || normalized === 'off') {
+    if (normalized === 'closed' || normalized === 'off') {
       return 'closed';
     }
     return null;
   }
 
   if (ACTIVITY_KINDS.has(device.securityKind ?? '')) {
-    return isActiveState(normalized) ? 'motion' : null;
+    if (!isActiveState(normalized)) return null;
+    return device.securityKind === 'sound' || device.securityKind === 'vibration'
+      ? device.securityKind
+      : 'motion';
   }
 
   if (HAZARD_KINDS.has(device.securityKind ?? '')) {

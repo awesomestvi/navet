@@ -1,6 +1,4 @@
-import { CardEmptyState } from '@navet/app/components/patterns';
 import {
-  Badge,
   BaseCard,
   Button,
   EntityCardHeaderIcon,
@@ -27,6 +25,8 @@ import {
   Radio,
   ShieldCheck,
   TriangleAlert,
+  Vibrate,
+  Volume2,
   Wind,
 } from 'lucide-react';
 import { type CSSProperties, type ReactNode, useMemo } from 'react';
@@ -39,7 +39,10 @@ import type {
   SecurityActivityEvent,
   SecurityActivityKind,
 } from '../utils/security-activity-history';
-import type { CameraDashboardModel } from '../utils/security-camera-dashboard-model';
+import {
+  type CameraDashboardModel,
+  getSecuritySeverity,
+} from '../utils/security-camera-dashboard-model';
 import { SecurityPanelCard } from './alarm-panel-card';
 import { getSecurityStateSurfaceProps } from './security-card-surface-tokens';
 
@@ -47,24 +50,17 @@ interface SecurityCommandCenterProps {
   model: CameraDashboardModel;
   alarms: NavetAlarmEntity[];
   surface: ReturnType<typeof getThemeSurfaceTokens>;
-  renderOverviewContent: (columnCount: number, isMobile: boolean) => ReactNode;
+  renderQuickviewContent?: (
+    columnCount: number,
+    layout: 'grid' | 'mobile-carousel' | 'portrait-mosaic'
+  ) => ReactNode;
   renderDetailsContent?: (columnCount: number) => ReactNode;
   onSelectEntity: (device: DeviceWithType) => void;
   onSelectCamera: (camera: CameraDevice) => void;
 }
 
 function readSeverity(device: DeviceWithType): SecuritySeverity {
-  if (device.type === 'covers') {
-    return device.position > 0 ? 'warning' : 'normal';
-  }
-  if (device.type === 'cameras') {
-    return device.securitySeverity === 'unknown'
-      ? 'unknown'
-      : device.state === 'streaming' || device.state === 'recording' || device.state === 'on'
-        ? 'active'
-        : 'normal';
-  }
-  return device.securitySeverity ?? 'normal';
+  return getSecuritySeverity(device);
 }
 
 function getAttentionIcon(device: DeviceWithType) {
@@ -87,6 +83,7 @@ function getAttentionIcon(device: DeviceWithType) {
 
 function getAlertTone(device: DeviceWithType) {
   const severity = readSeverity(device);
+  if (severity === 'unknown') return 'neutral' as const;
 
   if (severity === 'critical' || (device.type === 'locks' && device.state === false)) {
     return 'red' as const;
@@ -106,7 +103,11 @@ function formatAlertTitle(device: DeviceWithType, t: ReturnType<typeof useI18n>[
   if (device.type === 'locks' && device.state === false) {
     return t('security.activity.unlocked', { name: device.name });
   }
-  if (device.type === 'covers' && device.position > 0) {
+  if (
+    (device.type === 'covers' && device.position > 0) ||
+    (['door', 'window', 'garageDoor', 'opening'].includes(device.securityKind ?? '') &&
+      readSeverity(device) === 'warning')
+  ) {
     return t('security.activity.opened', { name: device.name });
   }
   if (
@@ -128,6 +129,17 @@ function getActivityIcon(kind: SecurityActivityKind) {
   switch (kind) {
     case 'motion':
       return Radio;
+    case 'sound':
+      return Volume2;
+    case 'vibration':
+      return Vibrate;
+    case 'locking':
+      return Lock;
+    case 'unlocking':
+      return LockOpen;
+    case 'opening':
+    case 'closing':
+      return DoorOpen;
     case 'unlocked':
       return LockOpen;
     case 'locked':
@@ -144,19 +156,30 @@ function getActivityIcon(kind: SecurityActivityKind) {
   }
 }
 
-function getActivityTone(kind: SecurityActivityKind) {
+function getActivityTone(kind: SecurityActivityKind, state: string) {
   switch (kind) {
     case 'locked':
     case 'closed':
     case 'hazard-cleared':
       return 'green' as const;
     case 'motion':
-      return 'yellow' as const;
+    case 'sound':
+    case 'vibration':
+    case 'locking':
+    case 'unlocking':
+    case 'opening':
+    case 'closing':
     case 'unlocked':
     case 'opened':
+      return 'neutral' as const;
     case 'hazard':
-    case 'alarm':
       return 'red' as const;
+    case 'alarm':
+      return state === 'triggered'
+        ? ('red' as const)
+        : state.startsWith('armed_')
+          ? ('green' as const)
+          : ('neutral' as const);
     case 'system':
       return 'amber' as const;
   }
@@ -164,8 +187,15 @@ function getActivityTone(kind: SecurityActivityKind) {
 
 function formatActivityTitle(event: SecurityActivityEvent, t: ReturnType<typeof useI18n>['t']) {
   switch (event.kind) {
+    case 'sound':
+    case 'vibration':
+    case 'locking':
+    case 'unlocking':
+    case 'opening':
+    case 'closing':
+      return t(`security.activity.${event.kind}`, { name: event.device.name });
     case 'motion':
-      return t('security.activity.motion', { name: event.device.name });
+      return t('security.activity.motionDetected');
     case 'unlocked':
       return t('security.activity.unlocked', { name: event.device.name });
     case 'locked':
@@ -235,7 +265,7 @@ function SecurityStatusHeader({
           {eyebrow}
         </p>
         <h3
-          className={`truncate text-lg font-bold leading-[22px] tracking-[-0.035em] ${surface.textPrimary}`}
+          className={`text-pretty text-lg font-bold leading-[22px] tracking-[-0.035em] ${surface.textPrimary}`}
         >
           {title}
         </h3>
@@ -314,7 +344,11 @@ function OutcomePanel({
       fullBleed
       header={
         <SecurityStatusHeader
-          title={model.summary.title}
+          title={
+            model.summary.highestSeverity === 'active'
+              ? model.summary.subtitle
+              : model.summary.title
+          }
           eyebrow={`${count} ${label}`}
           Icon={Icon}
           tone={tone}
@@ -331,7 +365,9 @@ function OutcomePanel({
       data-testid="security-outcome-panel"
       className="h-auto"
     >
-      {null}
+      {model.summary.highestSeverity !== 'active' ? (
+        <p className={`px-3 py-2 text-xs ${surface.textSecondary}`}>{model.summary.subtitle}</p>
+      ) : null}
     </BaseCard>
   );
 }
@@ -351,13 +387,15 @@ function SecurityAlertsPanel({
   if (items.length === 0) return null;
 
   let criticalCount = 0;
+  let dangerCount = 0;
   let warningCount = 0;
   for (const device of items) {
     const tone = getAlertTone(device);
-    if (tone === 'red') criticalCount += 1;
-    if (tone === 'yellow') warningCount += 1;
+    if (tone === 'red') dangerCount += 1;
+    if (readSeverity(device) === 'critical') criticalCount += 1;
+    if (readSeverity(device) === 'warning') warningCount += 1;
   }
-  const headerTone = criticalCount > 0 ? 'red' : warningCount > 0 ? 'yellow' : 'neutral';
+  const headerTone = dangerCount > 0 ? 'red' : warningCount > 0 ? 'yellow' : 'neutral';
   const stateSurface = getSecurityStateSurfaceProps(
     headerTone === 'red' ? 'danger' : headerTone === 'yellow' ? 'warning' : 'neutral',
     theme,
@@ -459,6 +497,10 @@ function ActivityPanel({
   isLoading,
   isLoadingMore,
   loadMore,
+  historyAvailable,
+  historyError,
+  lastUpdatedAt,
+  retry,
   surface,
   onSelectEntity,
   onSelectCamera,
@@ -468,6 +510,10 @@ function ActivityPanel({
   isLoading: boolean;
   isLoadingMore: boolean;
   loadMore: () => Promise<void>;
+  historyAvailable: boolean;
+  historyError: 'refresh' | 'older' | null;
+  lastUpdatedAt: number | null;
+  retry: () => Promise<void>;
   surface: ReturnType<typeof getThemeSurfaceTokens>;
   onSelectEntity: (device: DeviceWithType) => void;
   onSelectCamera: (camera: CameraDevice) => void;
@@ -543,68 +589,59 @@ function ActivityPanel({
         className={dayIndex > 0 ? 'relative z-10 pt-2' : 'relative z-10'}
         data-testid="security-activity-day"
       >
-        <header className="sticky top-0 z-30 flex min-h-11 items-center justify-center px-3">
-          <h4 data-testid="security-activity-day-label">
-            <Badge
-              size="small"
-              className={`${surface.iconBg} ${surface.textSecondary} font-semibold`}
-            >
-              {dayLabel}
-            </Badge>
+        <header className="grid grid-cols-[3rem_1.75rem_minmax(0,1fr)] gap-x-2.5 px-3 py-1">
+          <h4
+            className={`col-start-3 text-[11px] font-medium ${surface.textMuted}`}
+            data-testid="security-activity-day-label"
+          >
+            {dayLabel}
           </h4>
         </header>
         <div>
           {day.minuteGroups.flatMap((minuteGroup, minuteGroupIndex) =>
             minuteGroup.events.map((event, eventIndex) => {
               const Icon = getActivityIcon(event.kind);
-              const tone = getActivityTone(event.kind);
+              const tone = getActivityTone(event.kind, event.state);
               const room = getDeviceRoomLabel(event.device);
               const isFirstEvent = minuteGroupIndex === 0 && eventIndex === 0;
               const isLastEventInMinuteGroup = eventIndex === minuteGroup.events.length - 1;
               const isLastEvent =
                 minuteGroupIndex === day.minuteGroups.length - 1 && isLastEventInMinuteGroup;
-              const showMinuteGroupDivider = isLastEventInMinuteGroup && !isLastEvent;
               return (
                 <button
                   key={event.id}
                   type="button"
+                  aria-label={`${formatActivityTitle(event, t)}${event.kind === 'motion' ? ` · ${event.device.name}` : ''} · ${room} · ${minuteGroup.date ? formatTime(minuteGroup.date) : t('security.activity.current')}`}
                   onClick={() =>
                     event.device.type === 'cameras'
                       ? onSelectCamera(event.device)
                       : onSelectEntity(event.device)
                   }
-                  className={`relative grid min-h-12 w-full grid-cols-[3rem_1.75rem_minmax(0,1fr)] items-start gap-x-2.5 px-3 pt-2 text-left [contain-intrinsic-size:auto_48px] [content-visibility:auto] ${surface.hoverBg} ${getThemeFocusRingClassName(theme)}`}
+                  className={`relative grid min-h-12 w-full grid-cols-[3rem_1.75rem_minmax(0,1fr)] items-center gap-x-2.5 px-3 py-2 text-left [contain-intrinsic-size:auto_48px] [content-visibility:auto] ${surface.hoverBg} ${getThemeFocusRingClassName(theme)}`}
                 >
-                  {eventIndex > 0 ? (
-                    <span
-                      aria-hidden="true"
-                      className={`pointer-events-none absolute left-[6.75rem] right-3 top-0 z-10 border-t opacity-50 ${surface.dividerBorder}`}
-                      data-testid="security-activity-same-time-divider"
-                    />
-                  ) : null}
                   {!isFirstEvent ? (
                     <span
                       aria-hidden="true"
-                      className={`pointer-events-none absolute left-[5.25rem] top-0 z-10 h-2 border-l ${surface.border}`}
+                      className={`pointer-events-none absolute bottom-1/2 left-[5.25rem] top-0 z-10 border-l opacity-50 ${surface.border}`}
                       data-testid="security-activity-timeline-line-incoming"
                     />
                   ) : null}
                   {!isLastEvent ? (
                     <span
                       aria-hidden="true"
-                      className={`pointer-events-none absolute bottom-0 left-[5.25rem] top-9 z-10 border-l ${surface.border}`}
+                      className={`pointer-events-none absolute bottom-0 left-[5.25rem] top-1/2 z-10 border-l opacity-50 ${surface.border}`}
                       data-testid="security-activity-timeline-line"
                     />
                   ) : null}
                   <span
-                    className={`pt-1.5 text-right text-[10px] leading-4 tabular-nums ${surface.textMuted}`}
+                    className={`text-right text-[10px] leading-4 tabular-nums ${surface.textMuted}`}
                     data-testid={eventIndex === 0 ? 'security-activity-time' : undefined}
                     aria-hidden={eventIndex === 0 ? undefined : true}
                   >
                     {eventIndex === 0
                       ? minuteGroup.date
                         ? formatTime(minuteGroup.date)
-                        : t('security.activity.now')
+                        : t('security.activity.current')
                       : null}
                   </span>
                   <span
@@ -621,10 +658,7 @@ function ActivityPanel({
                       glyphClassName="!drop-shadow-none"
                     />
                   </span>
-                  <span
-                    className={`min-w-0 self-stretch pb-2 ${showMinuteGroupDivider ? `border-b ${surface.dividerBorder}` : ''}`}
-                    data-testid="security-activity-event-content"
-                  >
+                  <span className="min-w-0" data-testid="security-activity-event-content">
                     <span className={`block truncate text-xs font-medium ${surface.textPrimary}`}>
                       {formatActivityTitle(event, t)}
                     </span>
@@ -643,21 +677,41 @@ function ActivityPanel({
 
   const activityContent = (
     <div className="relative isolate" data-testid="security-activity-content">
+      {historyError || (!isLoading && !historyAvailable) ? (
+        <div
+          className={`flex items-center gap-2 px-3 py-2 text-xs ${surface.textSecondary}`}
+          role="status"
+        >
+          <p className="min-w-0 flex-1">
+            {t(
+              historyError === 'refresh'
+                ? 'security.activity.refreshFailed'
+                : historyError === 'older'
+                  ? 'security.activity.olderFailed'
+                  : 'security.activity.historyUnavailable'
+            )}
+          </p>
+          {historyError ? (
+            <Button
+              variant="ghost"
+              size="small"
+              disabled={isLoading || isLoadingMore}
+              onClick={() => void (historyError === 'older' ? loadMore() : retry())}
+            >
+              {t('security.activity.retry')}
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
       {visibleEvents.length > 0 ? (
         activityTimeline
       ) : isLoading ? (
         <p className={`px-3 py-4 text-xs ${surface.textMuted}`} role="status">
           {t('common.loading')}
         </p>
-      ) : (
-        <CardEmptyState
-          title={t('security.activity.title')}
-          description={t('security.activity.empty')}
-          icon={Activity}
-          size="large"
-          className="min-h-36 px-4 py-6"
-        />
-      )}
+      ) : historyAvailable && !historyError ? (
+        <p className={`px-3 py-4 text-xs ${surface.textMuted}`}>{t('security.activity.empty')}</p>
+      ) : null}
       {hasMore && visibleEvents.length > 0 ? (
         <div
           className={`relative z-30 flex justify-center border-t px-3 py-2 ${surface.dividerBorder}`}
@@ -678,8 +732,19 @@ function ActivityPanel({
   return (
     <BaseCard
       size="large"
-      fullBleed
       aria-label={t('security.activity.title')}
+      title={t('security.activity.title')}
+      subtitle={
+        lastUpdatedAt
+          ? t('security.activity.updated', { time: formatTime(new Date(lastUpdatedAt)) })
+          : undefined
+      }
+      headerLayout="title-first"
+      headerMarginBottomClassName="mb-4"
+      headerClassName={theme === 'light' ? '[&_h3]:!text-slate-900' : '[&_h3]:!text-white'}
+      headerLeading={
+        <EntityCardHeaderIcon IconComponent={Activity} isActive={false} size="large" />
+      }
       data-testid="security-activity-panel"
       className="h-auto"
     >
@@ -721,7 +786,17 @@ function SecurityActivitySidebar({
   onSelectEntity: (device: DeviceWithType) => void;
   onSelectCamera: (camera: CameraDevice) => void;
 }) {
-  const { events, hasMore, isLoading, isLoadingMore, loadMore } = useSecurityActivityHistory({
+  const {
+    events,
+    hasMore,
+    isLoading,
+    isLoadingMore,
+    loadMore,
+    historyAvailable,
+    historyError,
+    lastUpdatedAt,
+    retry,
+  } = useSecurityActivityHistory({
     entities: model.allEntities,
     currentActivity: model.summary.activityItems,
   });
@@ -746,13 +821,17 @@ function SecurityActivitySidebar({
           <SecurityPanelCard alarms={alarms} presentation="compact" />
         </div>
       ) : null}
-      <div className="order-5 min-w-0" style={fullWidthGridStyle}>
+      <div className="order-last min-w-0 md:order-none" style={fullWidthGridStyle}>
         <ActivityPanel
           events={events}
           hasMore={hasMore}
           isLoading={isLoading}
           isLoadingMore={isLoadingMore}
           loadMore={loadMore}
+          historyAvailable={historyAvailable}
+          historyError={historyError}
+          lastUpdatedAt={lastUpdatedAt}
+          retry={retry}
           surface={surface}
           onSelectEntity={onSelectEntity}
           onSelectCamera={onSelectCamera}
@@ -766,7 +845,7 @@ export function SecurityCommandCenter({
   model,
   alarms,
   surface,
-  renderOverviewContent,
+  renderQuickviewContent,
   renderDetailsContent,
   onSelectEntity,
   onSelectCamera,
@@ -811,14 +890,23 @@ export function SecurityCommandCenter({
               className="contents min-w-0 md:order-1 md:flex md:flex-col md:gap-7"
               style={mainGridStyle}
             >
-              <section
-                aria-label={t('security.overview.customize.previewLabel')}
-                data-testid="security-overview-grid"
-                className="order-4 min-w-0"
-                style={fullWidthGridStyle}
-              >
-                {renderOverviewContent(mainSpan, breakpointCols <= 2)}
-              </section>
+              {renderQuickviewContent ? (
+                <section
+                  aria-label={t('security.quickview.label')}
+                  data-testid="security-quickview-grid"
+                  className="order-4 min-w-0"
+                  style={fullWidthGridStyle}
+                >
+                  {renderQuickviewContent(
+                    mainSpan,
+                    breakpointCols <= 2
+                      ? 'mobile-carousel'
+                      : mainSpan <= 4
+                        ? 'portrait-mosaic'
+                        : 'grid'
+                  )}
+                </section>
+              ) : null}
               {renderDetailsContent ? (
                 <div
                   data-testid="security-command-main-details"

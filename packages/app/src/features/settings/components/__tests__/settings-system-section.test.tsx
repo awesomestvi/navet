@@ -2,23 +2,16 @@ import { getDashboardClientIdentity } from '@navet/app/features/dashboard/client
 import { useDashboardProfileRuntimeStore } from '@navet/app/features/dashboard/clients/dashboard-profile-runtime-store';
 import { emptyDeviceDisplayProfilePolicy } from '@navet/app/features/dashboard/clients/device-display-profile';
 import { useDeviceDisplayProfileRuntimeStore } from '@navet/app/features/dashboard/clients/device-display-profile-runtime-store';
-import {
-  DASHBOARD_PROFILE_REBIND_EVENT,
-  DASHBOARD_PROFILE_REFRESH_EVENT,
-} from '@navet/app/features/dashboard/hooks/use-dashboard-profile-sync';
 import { getSettingsSectionStyles } from '@navet/app/features/settings/hooks/settings-section-styles';
 import type { SettingsSectionController } from '@navet/app/features/settings/hooks/use-settings-section-controller';
-import { DASHBOARD_PROFILE_ERROR_CODES } from '@navet/app/services/dashboard-profile.contract';
+import { resetRuntimeContextForTests } from '@navet/app/infrastructure/home-assistant/runtime/runtime-detector';
 import { renderWithProviders } from '@navet/app/test/render';
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SettingsSystemSection } from '../settings-system-section';
 
 const dashboardProfileServiceMocks = vi.hoisted(() => ({
   copyDashboardDisplaySettings: vi.fn(),
-  forgetDashboardProfileClient: vi.fn(),
-  loadDashboardProfileHistory: vi.fn(),
-  restoreDashboardProfileRevision: vi.fn(),
 }));
 
 vi.mock('@navet/app/services/dashboard-profile.service', async (importOriginal) => {
@@ -182,8 +175,6 @@ describe('SettingsSystemSection', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    dashboardProfileServiceMocks.forgetDashboardProfileClient.mockResolvedValue(false);
-    dashboardProfileServiceMocks.loadDashboardProfileHistory.mockResolvedValue(null);
     localStorage.clear();
     useDashboardProfileRuntimeStore.getState().reset();
     useDeviceDisplayProfileRuntimeStore.setState({
@@ -203,31 +194,28 @@ describe('SettingsSystemSection', () => {
     controller = createController();
   });
 
+  afterEach(() => {
+    window.__NAVET_PANEL__ = undefined;
+    window.__NAVET_CONFIG__ = undefined;
+    resetRuntimeContextForTests();
+  });
+
   it('shows connected providers immediately and keeps disconnected ones in provider management', () => {
-    const { container } = renderWithProviders(<SettingsSystemSection controller={controller} />);
+    renderWithProviders(<SettingsSystemSection controller={controller} />);
 
     expect(screen.getByText('Providers')).toBeInTheDocument();
     expect(screen.getByText('Home Assistant')).toBeInTheDocument();
-    const providerActions = container.querySelector<HTMLElement>(
-      '[data-provider-actions="home_assistant"]'
+    expect(screen.queryByRole('link', { name: 'Open' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Disconnect' })).not.toBeInTheDocument();
+    const providerActions = screen.getByRole('button', { name: 'More actions: Home Assistant' });
+    expect(providerActions).toHaveClass('self-center');
+    fireEvent.pointerDown(providerActions);
+    expect(screen.getByRole('menuitem', { name: 'Open' })).toHaveAttribute(
+      'href',
+      'https://ha.example.com'
     );
-    expect(providerActions).not.toBeNull();
-    if (providerActions) {
-      const openAction = within(providerActions).getByRole('link', { name: 'Open' });
-      const disconnectAction = within(providerActions).getByRole('button', {
-        name: 'Disconnect',
-      });
-      expect(openAction).toBeInTheDocument();
-      expect(
-        within(providerActions).getByRole('button', { name: 'Disconnect' })
-      ).toBeInTheDocument();
-      expect(Array.from(providerActions.children)).toHaveLength(3);
-      for (const action of Array.from(providerActions.children)) {
-        expect(action).toHaveClass('flex-1');
-        expect(action).not.toHaveClass('sm:flex-none');
-      }
-      expect(disconnectAction).toHaveClass('flex-1');
-    }
+    expect(screen.getByRole('menuitem', { name: 'Edit URL' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Disconnect' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Manage 2 other providers' })).toBeInTheDocument();
     expect(screen.queryByText('openHAB')).not.toBeInTheDocument();
     expect(screen.queryByText('Camera live streams')).not.toBeInTheDocument();
@@ -238,7 +226,17 @@ describe('SettingsSystemSection', () => {
     expect(screen.getByText('Homey')).toBeInTheDocument();
     expect(screen.getByText('openHAB')).toBeInTheDocument();
     expect(screen.getAllByText('Not connected on this device').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Connected')[0]).toBeInTheDocument();
+    const connectedBadge = screen.getAllByText('Connected')[0];
+    expect(connectedBadge).toBeInTheDocument();
+    expect(connectedBadge).toHaveClass(
+      'rounded-full',
+      'border',
+      'px-2',
+      'py-0.5',
+      'text-[10px]',
+      'border-emerald-500/30',
+      'bg-emerald-500/10'
+    );
     expect(screen.queryByText('Active')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Make active' })).not.toBeInTheDocument();
     expect(screen.queryByText('Lighting')).not.toBeInTheDocument();
@@ -246,10 +244,28 @@ describe('SettingsSystemSection', () => {
     expect(screen.queryByRole('link', { name: 'View supported entities' })).not.toBeInTheDocument();
   });
 
+  it.each([
+    ['Home Assistant add-on', () => (window.__NAVET_CONFIG__ = { runtime: 'ha-ingress' })],
+    ['HACS panel', () => (window.__NAVET_PANEL__ = true)],
+  ])('hides Homey and openHAB for a %s installation', (_installation, configureRuntime) => {
+    configureRuntime();
+    resetRuntimeContextForTests();
+
+    renderWithProviders(<SettingsSystemSection controller={controller} />);
+
+    expect(screen.getByText('Home Assistant')).toBeInTheDocument();
+    expect(screen.queryByText('Homey')).not.toBeInTheDocument();
+    expect(screen.queryByText('openHAB')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /Manage .* other providers/ })
+    ).not.toBeInTheDocument();
+  });
+
   it('starts a fresh Home Assistant connection from its current address', () => {
     renderWithProviders(<SettingsSystemSection controller={controller} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Edit URL' }));
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions: Home Assistant' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Edit URL' }));
     const urlInput = screen.getByLabelText('URL');
     expect(urlInput).toHaveValue('https://ha.example.com');
     fireEvent.change(urlInput, {
@@ -342,14 +358,15 @@ describe('SettingsSystemSection', () => {
     expect(
       screen.queryByRole('button', { name: /Manage .* other providers/ })
     ).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Make active' })).toBeInTheDocument();
-    expect(screen.getAllByRole('link', { name: 'Open' }).length).toBeGreaterThan(0);
     expect(screen.getByText('Active')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Make active' }));
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions: Home Assistant' }));
+    expect(screen.getByRole('menuitem', { name: 'Open' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Make active' }));
     expect(controller.setActiveProvider).toHaveBeenCalledWith('home_assistant');
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Disconnect' })[0]);
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions: Home Assistant' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Disconnect' }));
     expect(controller.handleDisconnectProvider).toHaveBeenCalledWith('home_assistant');
   });
 
@@ -429,7 +446,8 @@ describe('SettingsSystemSection', () => {
       undefined
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions: Homey' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Disconnect' }));
     expect(controller.handleDisconnectProvider).toHaveBeenCalledWith('homey');
   });
 
@@ -488,132 +506,11 @@ describe('SettingsSystemSection', () => {
     );
   });
 
-  it('shows sync state, attributed changes, and lets this device be renamed', () => {
-    const currentClient = useDashboardProfileRuntimeStore.getState().client;
-    expect(currentClient).not.toBeNull();
-    useDashboardProfileRuntimeStore.getState().setClients([
-      {
-        id: currentClient?.id ?? 'current',
-        name: currentClient?.name ?? 'Phone 5555',
-        kind: 'phone',
-        firstSeenAt: '2026-07-25T08:00:00.000Z',
-        lastSeenAt: '2026-07-25T08:00:00.000Z',
-        lastRevision: 4,
-      },
-      {
-        id: 'kitchen_panel',
-        name: 'Kitchen panel',
-        kind: 'wall_panel',
-        firstSeenAt: '2026-07-24T08:00:00.000Z',
-        lastSeenAt: '2026-07-25T09:00:00.000Z',
-        lastRevision: 5,
-        userName: 'Vishal',
-      },
-    ]);
-    useDashboardProfileRuntimeStore.getState().markSynced({
-      revision: 5,
-      workspaceId: 'workspace_1',
-      activity: {
-        id: 'workspace_1:5',
-        revision: 5,
-        changedAt: '2026-07-25T09:00:00.000Z',
-        changedPaths: ['/theme/primaryColor'],
-        actor: {
-          clientId: 'kitchen_panel',
-          clientName: 'Kitchen panel',
-          clientKind: 'wall_panel',
-          userName: 'Vishal',
-        },
-      },
-    });
-
+  it('uses authorized devices as the only device roster', () => {
     renderWithProviders(<SettingsSystemSection controller={controller} />);
 
-    expect(screen.getByText('Displays and sync')).toBeInTheDocument();
-    expect(screen.getByText('Connected displays')).toBeInTheDocument();
+    expect(screen.queryByText('Connected displays')).not.toBeInTheDocument();
     expect(screen.getByText('Device settings')).toBeInTheDocument();
-    expect(screen.getByText('This display')).toBeInTheDocument();
-    expect(screen.getByText('Other displays')).toBeInTheDocument();
-    expect(screen.queryByText(/Browser ID/)).not.toBeInTheDocument();
-    expect(screen.getByText('Synced')).toBeInTheDocument();
-    expect(screen.getAllByText('Revision 5')).toHaveLength(2);
-    expect(screen.getByText('Dashboard updated from Kitchen panel')).toBeInTheDocument();
-    expect(screen.getByText('Signed in as Vishal')).toBeInTheDocument();
-
-    expect(screen.queryByRole('textbox', { name: 'Display name' })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Rename display' }));
-
-    fireEvent.change(screen.getByRole('textbox', { name: 'Display name' }), {
-      target: { value: 'Vishal’s phone' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Save name' }));
-    expect(useDashboardProfileRuntimeStore.getState().client?.name).toBe('Vishal’s phone');
-    expect(screen.queryByRole('textbox', { name: 'Display name' })).not.toBeInTheDocument();
-  });
-
-  it('hides the other displays section when this is the only registered client', () => {
-    const currentClient = useDashboardProfileRuntimeStore.getState().client;
-    expect(currentClient).not.toBeNull();
-    if (!currentClient) return;
-
-    useDashboardProfileRuntimeStore.getState().setClients([
-      {
-        id: currentClient.id,
-        name: currentClient.name,
-        kind: currentClient.kind,
-        firstSeenAt: '2026-07-25T08:00:00.000Z',
-        lastSeenAt: '2026-07-25T08:00:00.000Z',
-        lastRevision: 5,
-      },
-    ]);
-
-    renderWithProviders(<SettingsSystemSection controller={controller} />);
-
-    expect(screen.queryByText('Other displays')).not.toBeInTheDocument();
-    expect(
-      screen.queryByText('No other display has connected to this Navet installation yet.')
-    ).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Rename display' })).toBeInTheDocument();
-  });
-
-  it('shows four recent displays and moves older displays into history', () => {
-    const currentClient = useDashboardProfileRuntimeStore.getState().client;
-    expect(currentClient).not.toBeNull();
-    if (!currentClient) return;
-
-    useDashboardProfileRuntimeStore.getState().setClients([
-      {
-        id: currentClient.id,
-        name: currentClient.name,
-        kind: currentClient.kind,
-        firstSeenAt: '2026-07-25T08:00:00.000Z',
-        lastSeenAt: '2026-07-25T08:00:00.000Z',
-        lastRevision: 5,
-      },
-      ...Array.from({ length: 6 }, (_, index) => ({
-        id: `display_${index + 1}`,
-        name: `Display ${index + 1}`,
-        kind: 'phone' as const,
-        firstSeenAt: `2026-07-${24 - index}T08:00:00.000Z`,
-        lastSeenAt: `2026-07-${24 - index}T08:00:00.000Z`,
-        lastRevision: 4 - index,
-      })),
-    ]);
-
-    renderWithProviders(<SettingsSystemSection controller={controller} />);
-
-    for (const name of ['Display 1', 'Display 2', 'Display 3', 'Display 4']) {
-      expect(screen.getByText(name)).toBeInTheDocument();
-    }
-    expect(screen.queryByText('Display 5')).not.toBeInTheDocument();
-    expect(screen.queryByText('Display 6')).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: 'History' }));
-
-    expect(screen.getByText('Earlier displays')).toBeInTheDocument();
-    expect(screen.getByText('Display 5')).toBeInTheDocument();
-    expect(screen.getByText('Display 6')).toBeInTheDocument();
-    expect(screen.getByText('Dashboard revisions')).toBeInTheDocument();
   });
 
   it('copies display settings once or creates an automatic linked profile', async () => {
@@ -680,324 +577,5 @@ describe('SettingsSystemSection', () => {
     expect(
       useDeviceDisplayProfileRuntimeStore.getState().policy.profileIdByClientId[currentClient.id]
     ).toBeTruthy();
-  });
-
-  it('loads revision history on demand and restores an older snapshot as a new revision', async () => {
-    const currentClient = useDashboardProfileRuntimeStore.getState().client;
-    expect(currentClient).not.toBeNull();
-    if (!currentClient) return;
-
-    useDashboardProfileRuntimeStore.getState().markSynced({
-      revision: 5,
-      workspaceId: 'workspace_1',
-    });
-    dashboardProfileServiceMocks.loadDashboardProfileHistory.mockResolvedValue({
-      workspace: {
-        contractVersion: 1,
-        installationId: 'installation_1',
-        workspaceId: 'workspace_1',
-        defaultProfileId: 'default',
-        createdAt: '2026-07-20T08:00:00.000Z',
-      },
-      entries: [
-        {
-          contractVersion: 1,
-          installationId: 'installation_1',
-          workspaceId: 'workspace_1',
-          profileId: 'default',
-          revision: 5,
-          generation: 'generation_5',
-          kind: 'update',
-          updatedAt: '2026-07-25T09:00:00.000Z',
-          author: {
-            id: currentClient.id,
-            name: currentClient.name,
-            kind: currentClient.kind,
-            providerId: 'home_assistant',
-            userId: 'user_1',
-            userName: 'Vishal',
-          },
-          changedPaths: ['/theme/primaryColor'],
-          hasProfile: true,
-        },
-        {
-          contractVersion: 1,
-          installationId: 'installation_1',
-          workspaceId: 'workspace_1',
-          profileId: 'default',
-          revision: 3,
-          generation: 'generation_3',
-          kind: 'update',
-          updatedAt: '2026-07-24T09:00:00.000Z',
-          author: {
-            id: 'kitchen_panel',
-            name: 'Kitchen panel',
-            kind: 'wall_panel',
-            providerId: 'home_assistant',
-            userId: 'user_1',
-            userName: 'Vishal',
-          },
-          changedPaths: ['/homeDashboardLayout/sections'],
-          hasProfile: true,
-        },
-      ],
-    });
-    dashboardProfileServiceMocks.restoreDashboardProfileRevision.mockResolvedValue({
-      saved: true,
-      unauthorized: false,
-      permanentFailure: false,
-      preconditionFailed: false,
-      preconditionRequired: false,
-      etag: '"revision-6"',
-      lastModified: '2026-07-25T10:00:00.000Z',
-      generation: 'generation_6',
-      revision: 6,
-      workspace: {
-        contractVersion: 1,
-        installationId: 'installation_1',
-        workspaceId: 'workspace_1',
-        defaultProfileId: 'default',
-        createdAt: '2026-07-20T08:00:00.000Z',
-      },
-      metadata: {
-        contractVersion: 1,
-        installationId: 'installation_1',
-        workspaceId: 'workspace_1',
-        profileId: 'default',
-        revision: 6,
-        generation: 'generation_6',
-        kind: 'restore',
-        updatedAt: '2026-07-25T10:00:00.000Z',
-        author: {
-          id: currentClient.id,
-          name: currentClient.name,
-          kind: currentClient.kind,
-          providerId: 'home_assistant',
-          userId: 'user_1',
-          userName: 'Vishal',
-        },
-        changedPaths: ['/'],
-        restoredFromRevision: 3,
-      },
-      recovery: {
-        status: 'active',
-        resetRevision: null,
-        latestRecoverableRevision: null,
-      },
-    });
-    const refreshListener = vi.fn();
-    window.addEventListener(DASHBOARD_PROFILE_REFRESH_EVENT, refreshListener);
-
-    renderWithProviders(<SettingsSystemSection controller={controller} />);
-
-    expect(dashboardProfileServiceMocks.loadDashboardProfileHistory).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', { name: 'History' }));
-
-    await waitFor(() => {
-      expect(dashboardProfileServiceMocks.loadDashboardProfileHistory).toHaveBeenCalledTimes(1);
-    });
-    expect(screen.getByText('Current')).toBeInTheDocument();
-    expect(screen.getByText('Revision 3')).toBeInTheDocument();
-    const historyViewport = screen.getByRole('region', { name: 'History' });
-    expect(historyViewport).toHaveClass(
-      'max-h-[min(22rem,55vh)]',
-      'overflow-y-auto',
-      'overscroll-contain'
-    );
-    expect(historyViewport.querySelector('[class*="content-visibility:auto"]')).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Restore' }));
-    const confirmation = screen.getByRole('group', { name: 'Restore revision 3?' });
-    expect(
-      within(confirmation).getByText(/records the restore as a new revision/)
-    ).toBeInTheDocument();
-    expect(dashboardProfileServiceMocks.restoreDashboardProfileRevision).not.toHaveBeenCalled();
-
-    fireEvent.click(within(confirmation).getByRole('button', { name: 'Restore' }));
-
-    await waitFor(() => {
-      expect(dashboardProfileServiceMocks.restoreDashboardProfileRevision).toHaveBeenCalledWith(3, {
-        author: currentClient,
-        baseRevision: 5,
-      });
-    });
-    expect(useDashboardProfileRuntimeStore.getState().revision).toBe(6);
-    expect(refreshListener).toHaveBeenCalledTimes(1);
-    expect(
-      screen.getByText('Revision 3 was restored and saved as a new revision.')
-    ).toBeInTheDocument();
-
-    window.removeEventListener(DASHBOARD_PROFILE_REFRESH_EVENT, refreshListener);
-  });
-
-  it('refreshes sync and history after a stale restore attempt', async () => {
-    const currentClient = useDashboardProfileRuntimeStore.getState().client;
-    expect(currentClient).not.toBeNull();
-    if (!currentClient) return;
-
-    useDashboardProfileRuntimeStore.getState().markSynced({
-      revision: 5,
-      workspaceId: 'workspace_1',
-    });
-    dashboardProfileServiceMocks.loadDashboardProfileHistory.mockResolvedValue({
-      workspace: {
-        contractVersion: 1,
-        installationId: 'installation_1',
-        workspaceId: 'workspace_1',
-        defaultProfileId: 'default',
-        createdAt: '2026-07-20T08:00:00.000Z',
-      },
-      entries: [
-        {
-          contractVersion: 1,
-          installationId: 'installation_1',
-          workspaceId: 'workspace_1',
-          profileId: 'default',
-          revision: 3,
-          generation: 'generation_3',
-          kind: 'update',
-          updatedAt: '2026-07-24T09:00:00.000Z',
-          author: {
-            id: 'kitchen_panel',
-            name: 'Kitchen panel',
-            kind: 'wall_panel',
-            providerId: 'home_assistant',
-            userId: 'user_1',
-            userName: 'Vishal',
-          },
-          changedPaths: ['/homeDashboardLayout/sections'],
-          hasProfile: true,
-        },
-      ],
-    });
-    dashboardProfileServiceMocks.restoreDashboardProfileRevision.mockResolvedValue({
-      saved: false,
-      unauthorized: false,
-      permanentFailure: false,
-      preconditionFailed: true,
-      preconditionRequired: false,
-      etag: '"revision-6"',
-      lastModified: '2026-07-25T10:00:00.000Z',
-      generation: 'generation_6',
-      revision: 6,
-      workspace: {
-        contractVersion: 1,
-        installationId: 'installation_1',
-        workspaceId: 'workspace_1',
-        defaultProfileId: 'default',
-        createdAt: '2026-07-20T08:00:00.000Z',
-      },
-      metadata: null,
-      recovery: {
-        status: 'active',
-        resetRevision: null,
-        latestRecoverableRevision: null,
-      },
-    });
-    const refreshListener = vi.fn();
-    window.addEventListener(DASHBOARD_PROFILE_REFRESH_EVENT, refreshListener);
-
-    renderWithProviders(<SettingsSystemSection controller={controller} />);
-    fireEvent.click(screen.getByRole('button', { name: 'History' }));
-    await waitFor(() => {
-      expect(dashboardProfileServiceMocks.loadDashboardProfileHistory).toHaveBeenCalledTimes(1);
-    });
-
-    fireEvent.click(screen.getByRole('button', { name: 'Restore' }));
-    fireEvent.click(
-      within(screen.getByRole('group', { name: 'Restore revision 3?' })).getByRole('button', {
-        name: 'Restore',
-      })
-    );
-
-    await waitFor(() => {
-      expect(dashboardProfileServiceMocks.loadDashboardProfileHistory).toHaveBeenCalledTimes(2);
-      expect(refreshListener).toHaveBeenCalledTimes(1);
-    });
-    expect(
-      screen.getByText(
-        'The dashboard changed before the restore finished. Refresh the history and try again.'
-      )
-    ).toBeInTheDocument();
-    expect(screen.queryByRole('group', { name: 'Restore revision 3?' })).not.toBeInTheDocument();
-
-    window.removeEventListener(DASHBOARD_PROFILE_REFRESH_EVENT, refreshListener);
-  });
-
-  it('does not offer shared revision history when this dashboard is local only', () => {
-    useDashboardProfileRuntimeStore.getState().markDisabled();
-
-    renderWithProviders(<SettingsSystemSection controller={controller} />);
-
-    expect(screen.getByText('Local only')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'History' })).not.toBeInTheDocument();
-  });
-
-  it('offers a manual recovery action when dashboard sync needs attention', () => {
-    useDashboardProfileRuntimeStore
-      .getState()
-      .markError('Shared dashboard sync is unavailable. Local settings are preserved.');
-    const refreshListener = vi.fn();
-    window.addEventListener(DASHBOARD_PROFILE_REFRESH_EVENT, refreshListener);
-
-    renderWithProviders(<SettingsSystemSection controller={controller} />);
-
-    fireEvent.click(screen.getByRole('button', { name: 'Retry sync' }));
-    expect(refreshListener).toHaveBeenCalledTimes(1);
-
-    window.removeEventListener(DASHBOARD_PROFILE_REFRESH_EVENT, refreshListener);
-  });
-
-  it('confirms before replacing a mismatched workspace with this local dashboard', () => {
-    useDashboardProfileRuntimeStore
-      .getState()
-      .markError(
-        'This shared dashboard belongs to a different Home Assistant address.',
-        DASHBOARD_PROFILE_ERROR_CODES.workspaceTenantMismatch
-      );
-    const rebindListener = vi.fn();
-    window.addEventListener(DASHBOARD_PROFILE_REBIND_EVENT, rebindListener);
-
-    renderWithProviders(<SettingsSystemSection controller={controller} />);
-
-    fireEvent.click(screen.getByRole('button', { name: 'Use this dashboard' }));
-    const confirmation = screen.getByRole('group', { name: 'Start a new shared sync?' });
-    expect(
-      within(confirmation).getByText(/keeps this device’s current dashboard/i)
-    ).toBeInTheDocument();
-    fireEvent.click(within(confirmation).getByRole('button', { name: 'Start new sync' }));
-    expect(rebindListener).toHaveBeenCalledTimes(1);
-
-    window.removeEventListener(DASHBOARD_PROFILE_REBIND_EVENT, rebindListener);
-  });
-
-  it('lists another display without exposing a removal control', () => {
-    const currentClient = useDashboardProfileRuntimeStore.getState().client;
-    expect(currentClient).not.toBeNull();
-    if (!currentClient) return;
-
-    useDashboardProfileRuntimeStore.getState().setClients([
-      {
-        id: currentClient.id,
-        name: currentClient.name,
-        kind: currentClient.kind,
-        firstSeenAt: '2026-07-25T08:00:00.000Z',
-        lastSeenAt: '2026-07-25T08:00:00.000Z',
-        lastRevision: 5,
-      },
-      {
-        id: 'kitchen_panel',
-        name: 'Kitchen panel',
-        kind: 'wall_panel',
-        firstSeenAt: '2026-07-24T08:00:00.000Z',
-        lastSeenAt: '2026-07-25T09:00:00.000Z',
-        lastRevision: 5,
-      },
-    ]);
-    renderWithProviders(<SettingsSystemSection controller={controller} />);
-
-    expect(screen.getByText('Kitchen panel')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Remove device' })).not.toBeInTheDocument();
-    expect(dashboardProfileServiceMocks.forgetDashboardProfileClient).not.toHaveBeenCalled();
   });
 });

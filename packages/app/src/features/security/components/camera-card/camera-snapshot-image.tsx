@@ -8,6 +8,7 @@ interface CameraSnapshotImageProps {
   className: string;
   fallback?: ReactNode;
   onError: () => void;
+  onLoad?: () => void;
 }
 
 function isVersionedCameraProxySnapshot(src: string) {
@@ -21,6 +22,7 @@ export function CameraSnapshotImage({
   className,
   fallback,
   onError,
+  onLoad,
 }: CameraSnapshotImageProps) {
   const [displayedSrc, setDisplayedSrc] = useState(src);
   const [isDisplayedLoaded, setIsDisplayedLoaded] = useState(false);
@@ -76,7 +78,10 @@ export function CameraSnapshotImage({
             className={`${className} ${isDisplayedLoaded ? 'opacity-100' : 'opacity-0'} [backface-visibility:hidden] [transform:translateZ(0)]`}
             style={{ imageRendering: 'auto' }}
             draggable={false}
-            onLoad={() => setIsDisplayedLoaded(true)}
+            onLoad={() => {
+              setIsDisplayedLoaded(true);
+              onLoad?.();
+            }}
             onError={() => {
               setIsDisplayedLoaded(false);
               onError();
@@ -101,6 +106,7 @@ export function CameraSnapshotImage({
             style={{ imageRendering: 'auto' }}
             draggable={false}
             onLoad={() => {
+              onLoad?.();
               setDisplayedSrc(pendingSrc);
               setIsDisplayedLoaded(true);
               setPendingSrc(null);

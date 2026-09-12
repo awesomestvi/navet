@@ -134,8 +134,8 @@ Start Navet Dev:
 docker compose up -d
 ```
 
-For a fresh unpinned installation, run `docker compose logs navet-dev` and open the complete Navet
-URL containing `#navet_pairing=<64-character-key>` before enrolling the first provider. Then open
+For a fresh unpinned installation, run `docker compose logs navet-dev`, open Navet, and enter the
+temporary setup code when prompted before connecting the first provider. Then open
 `http://localhost:8081` when Docker runs on this computer, or replace `localhost` with the Docker
 host's LAN, VPN, or public name from another device. Port `8081` lets this Dev container run
 alongside a stable Navet container using port `8080`. Navet stores provider sessions and dashboard

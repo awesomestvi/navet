@@ -6,6 +6,7 @@ import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { useThemeStore } from '@navet/app/stores/theme-store';
 import { setMediaQueryMatch, setVisualViewportSize } from '@navet/app/test/browser-mocks';
 import { renderWithProviders } from '@navet/app/test/render';
+import { notifyPersistedStateChanged } from '@navet/app/utils/persisted-state-events';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import type { ComponentProps } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -358,7 +359,7 @@ describe('EnergyDashboardPage', () => {
     );
     expect(screen.getByTestId('energy-usage-metric-energy')).toHaveTextContent('Week total');
     expect(screen.getByTestId('energy-usage-metric-energy')).not.toHaveTextContent('Selected day');
-    expect(usageCard).toHaveClass('row-span-4');
+    expect(usageCard.parentElement?.style.gridRow).toBe('span 4');
     expect(usageCard).not.toHaveClass('sm:row-span-3');
     expect(
       within(usageCard).queryByRole('slider', { name: 'Energy usage by period' })
@@ -366,7 +367,7 @@ describe('EnergyDashboardPage', () => {
 
     fireEvent.click(within(usageCard).getByRole('button', { name: 'Back to chart' }));
     expect(screen.queryByTestId('energy-selected-period-details')).not.toBeInTheDocument();
-    expect(usageCard).toHaveClass('row-span-4');
+    expect(usageCard.parentElement?.style.gridRow).toBe('span 4');
     expect(usageCard).not.toHaveClass('sm:row-span-3');
     expect(
       within(usageCard).getByRole('slider', { name: 'Energy usage by period' })
@@ -426,7 +427,7 @@ describe('EnergyDashboardPage', () => {
 
     expect(
       await within(usageCard).findByRole('slider', { name: 'Energy usage by period' })
-    ).toHaveAttribute('aria-valuemax', '23');
+    ).toHaveAttribute('aria-valuemax', '287');
     expect(screen.getByRole('button', { name: 'Previous day' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Next day' })).toBeDisabled();
     fireEvent.click(screen.getByRole('button', { name: 'Previous day' }));
@@ -680,18 +681,11 @@ describe('EnergyDashboardPage', () => {
     expect(screen.queryByRole('button', { name: 'History' })).not.toBeInTheDocument();
   });
 
-  it('lets edit mode hide and restore built-in Energy modules', () => {
+  it('keeps Energy customization free of section separator banners', () => {
     const { container } = renderDashboardPage('default', { isEditMode: true });
-
-    expect(screen.queryByRole('button', { name: 'KPIs' })).not.toBeInTheDocument();
-    expect(container.querySelector('[data-overview-edit-banner="live"]')).not.toBeInTheDocument();
-    expect(container.querySelector('[data-overview-edit-banner="devices"]')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Hide Device cards' }));
-    expect(screen.getByText('Hidden Energy modules')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Add Device cards' })).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Add Device cards' }));
-    expect(screen.getByRole('button', { name: 'Hide Device cards' })).toBeInTheDocument();
+    expect(container.querySelector('[data-overview-edit-banner]')).not.toBeInTheDocument();
+    expect(screen.queryByText('Device cards')).not.toBeInTheDocument();
+    expect(container.querySelector('[data-overview-module="devices"]')).toBeInTheDocument();
   });
 
   it('keeps Energy layout templates out of the dashboard grid', () => {
@@ -702,34 +696,48 @@ describe('EnergyDashboardPage', () => {
     expect(screen.queryByRole('button', { name: 'Balanced' })).not.toBeInTheDocument();
   });
 
-  it('lets users pin four Energy KPIs and persists the provider-scoped choice', async () => {
-    renderDashboardPage('default', {
-      isEditMode: true,
-      isKpiCustomizationOpen: true,
-      onKpiCustomizationOpenChange: vi.fn(),
-    });
+  it('hides all KPIs without hiding the usage chart and restores the selected KPIs', async () => {
+    localStorage.setItem('navet-energy-kpis-hidden', 'true');
+    localStorage.setItem(
+      'navet-energy-kpi-preferences-v1',
+      JSON.stringify({
+        version: 1,
+        byProvider: {
+          home_assistant: { mode: 'custom', metricIds: ['energy', 'peak', 'low', 'average'] },
+        },
+      })
+    );
+    renderDashboardPage('default', { isEditMode: true });
+    expect(screen.queryAllByTestId(/^energy-usage-metric-/)).toHaveLength(0);
+    expect(screen.getByTestId('energy-usage-card')).toBeInTheDocument();
+    act(() => notifyPersistedStateChanged('navet-energy-kpis-hidden', false));
+    await waitFor(() => expect(screen.getAllByTestId(/^energy-usage-metric-/)).toHaveLength(4));
+    expect(screen.getByTestId('energy-usage-metric-energy')).toBeInTheDocument();
+    expect(localStorage.getItem('navet-energy-kpis-hidden')).toBe('false');
+  });
 
-    const dialog = screen.getByRole('dialog', { name: 'Energy KPIs' });
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Manual' }));
-
-    const solarMetric = within(dialog).getByRole('button', { name: /^Solar production/ });
-    expect(solarMetric).toHaveAttribute('aria-pressed', 'true');
-    expect(solarMetric).toHaveStyle({ borderColor: 'rgba(249, 115, 22, 0.42)' });
-    fireEvent.click(solarMetric);
-    fireEvent.click(within(dialog).getByRole('button', { name: /Energy used/ }));
-
-    expect(within(dialog).queryByRole('button', { name: /^Move / })).not.toBeInTheDocument();
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Order' }));
-    expect(within(dialog).getByText('Order dashboard KPIs')).toBeInTheDocument();
-    expect(await within(dialog).findAllByRole('button', { name: /^Move / })).toHaveLength(8);
-
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Apply' }));
-
-    await waitFor(() => {
-      expect(screen.getByTestId('energy-usage-metric-energy')).toBeInTheDocument();
-      expect(screen.queryByTestId('energy-usage-metric-solar')).not.toBeInTheDocument();
-    });
-
+  it('replaces one KPI from its edit dock using the shared card picker and persists the choice', async () => {
+    renderDashboardPage('default', { isEditMode: true });
+    const originalIds = screen
+      .getAllByTestId(/^energy-usage-metric-/)
+      .map((card) => card.getAttribute('data-testid'));
+    const solar = screen
+      .getByTestId('energy-usage-metric-solar')
+      .closest('[data-energy-card-id]') as HTMLElement;
+    fireEvent.click(within(solar).getByRole('button', { name: 'Edit Solar production' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Energy KPIs' });
+    expect(within(dialog).queryByRole('button', { name: 'Manual' })).not.toBeInTheDocument();
+    const row = within(dialog)
+      .getByText('Energy used')
+      .closest('[data-dashboard-library-row]') as HTMLElement;
+    fireEvent.click(within(row).getByRole('button', { name: 'Save: Energy used' }));
+    await waitFor(() =>
+      expect(screen.getByTestId('energy-usage-metric-energy')).toBeInTheDocument()
+    );
+    expect(screen.queryByTestId('energy-usage-metric-solar')).not.toBeInTheDocument();
+    for (const id of originalIds.filter((id) => id !== 'energy-usage-metric-solar')) {
+      expect(screen.getByTestId(id as string)).toBeInTheDocument();
+    }
     expect(localStorage.getItem('navet-energy-kpi-preferences-v1')).toContain('"mode":"custom"');
   });
 
@@ -867,6 +875,35 @@ describe('EnergyDashboardPage', () => {
     expect(screen.getByTestId('load-orb-consumption')).toHaveTextContent('20.0 kWh today');
   });
 
+  it('allows arranging Energy usage and KPI cards in Customize and restores their order', () => {
+    localStorage.setItem('navet-energy-usage-card-order', JSON.stringify(['usage', 'kpi:peak']));
+    renderDashboardPage('default', { isEditMode: true });
+    const usage = screen.getByTestId('energy-usage-card');
+    expect(screen.getByRole('button', { name: 'Arrange Energy usage' })).toBeInTheDocument();
+    const metrics = screen.getAllByTestId(/^energy-usage-metric-/);
+    for (const metric of metrics) {
+      expect(
+        metric.closest('[data-energy-card-id]')?.querySelector('[data-dashboard-drag-handle]')
+      ).toBeInTheDocument();
+      expect(usage.compareDocumentPosition(metric)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    }
+  });
+
+  it('keeps device cards in the overview grid during Customize so they can fill gaps beside Live Energy', () => {
+    renderDashboardPage('default', { isEditMode: true });
+    expect(screen.getByTestId('energy-overview-grid')).toHaveClass('grid-flow-row-dense');
+    const devices = document.querySelector('[data-overview-module="devices"]') as HTMLElement;
+    expect(devices).toHaveClass('contents');
+    expect(devices.style.gridColumn).toBe('');
+    const card = devices.querySelector('[data-energy-card-id]');
+    expect(card).toBeInTheDocument();
+    let ancestor = card?.parentElement;
+    while (ancestor && ancestor !== devices) {
+      expect(ancestor).toHaveClass('contents');
+      ancestor = ancestor.parentElement;
+    }
+  });
+
   it('places Energy modules in the shared flowing dashboard grid', () => {
     renderDashboardPage('default');
 
@@ -885,8 +922,8 @@ describe('EnergyDashboardPage', () => {
           metric.classList.contains('col-span-2') && metric.classList.contains('row-span-2')
       )
     ).toBe(true);
-    expect(usage.style.gridColumn).toContain('span');
-    expect(usage).toHaveClass('row-span-4');
+    expect(usage.parentElement?.style.gridColumn).toContain('span');
+    expect(usage.parentElement?.style.gridRow).toBe('span 4');
     expect((live as HTMLElement).style.gridColumn).toContain('span');
     expect(devices).toHaveClass('contents');
     expect((live as HTMLElement).compareDocumentPosition(usage)).toBe(
@@ -926,9 +963,9 @@ describe('EnergyDashboardPage', () => {
 
     const usageMetrics = screen.getAllByTestId(/^energy-usage-metric-/);
     expect(usageMetrics).toHaveLength(4);
-    expect(usageMetrics.every((metric) => metric.style.gridColumn === 'span 3 / span 3')).toBe(
-      true
-    );
+    expect(
+      usageMetrics.every((metric) => metric.parentElement?.style.gridColumn === 'span 3')
+    ).toBe(true);
   });
 
   it('uses the full Home grid width for Live Energy and Energy usage in portrait', () => {
@@ -943,7 +980,7 @@ describe('EnergyDashboardPage', () => {
     expect(grid).toHaveAttribute('data-orientation-layout', 'portrait');
     expect(live.style.gridColumn).toBe('span 8 / span 8');
     expect(live.style.gridRow).toBe('span 5 / span 5');
-    expect(usage.style.gridColumn).toBe('span 8 / span 8');
+    expect(usage.parentElement?.style.gridColumn).toBe('span 8 / span 8');
     expect(liveLayout).toHaveAttribute('data-layout', 'split');
     expect(liveLayout).toHaveClass('grid');
   });

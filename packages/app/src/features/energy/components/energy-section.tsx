@@ -14,9 +14,7 @@ interface EnergySectionProps {
   energyCustomCards?: CustomCard[];
   energyOrderedCardIds?: string[];
   isEditMode?: boolean;
-  isKpiCustomizationOpen?: boolean;
   onDeleteCard?: (cardId: string) => void;
-  onKpiCustomizationOpenChange?: (open: boolean) => void;
   onUpdateCard?: (cardId: string, updates: Partial<Omit<CustomCard, 'id' | 'createdAt'>>) => void;
 }
 
@@ -24,9 +22,7 @@ export const EnergySection = memo(function EnergySection({
   energyCustomCards = [],
   energyOrderedCardIds = [],
   isEditMode = false,
-  isKpiCustomizationOpen = false,
   onDeleteCard,
-  onKpiCustomizationOpenChange,
   onUpdateCard,
 }: EnergySectionProps) {
   const { t } = useI18n();
@@ -123,9 +119,7 @@ export const EnergySection = memo(function EnergySection({
       energyCustomCards={energyCustomCards}
       energyOrderedCardIds={energyOrderedCardIds}
       isEditMode={isEditMode}
-      isKpiCustomizationOpen={isKpiCustomizationOpen}
       onDeleteCard={onDeleteCard}
-      onKpiCustomizationOpenChange={onKpiCustomizationOpenChange}
       onUpdateCard={onUpdateCard}
       onRangeChange={setRange}
       currentLoadStatisticId={currentLoadStatisticId}

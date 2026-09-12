@@ -69,6 +69,7 @@ COPY docker/njs/chore-calendar-policy.js /etc/nginx/njs/chore-calendar-policy.js
 COPY docker/njs/auth-store.js /etc/nginx/njs/auth-store.js
 COPY docker/njs/provider-session-store.js /etc/nginx/njs/provider-session-store.js
 COPY docker/njs/installation-authority.js /etc/nginx/njs/installation-authority.js
+COPY docker/njs/device-session-authority.js /etc/nginx/njs/device-session-authority.js
 COPY docker/njs/installation-cookie-scope.js /etc/nginx/njs/installation-cookie-scope.js
 COPY docker/njs/openhab-store.js /etc/nginx/njs/openhab-store.js
 COPY docker/njs/openhab-proxy.js /etc/nginx/njs/openhab-proxy.js
@@ -80,6 +81,7 @@ COPY docker/snippets/navet-rss-transport.conf /etc/nginx/snippets/navet-rss-tran
 COPY docker/snippets/navet-profile-store.conf /etc/nginx/snippets/navet-profile-store.conf
 COPY docker/snippets/navet-chore-store.conf /etc/nginx/snippets/navet-chore-store.conf
 COPY docker/snippets/navet-auth-store.conf /etc/nginx/snippets/navet-auth-store.conf
+COPY docker/snippets/navet-device-session-store.conf /etc/nginx/snippets/navet-device-session-store.conf
 COPY docker/snippets/navet-openhab-store.conf /etc/nginx/snippets/navet-openhab-store.conf
 COPY docker/snippets/navet-homey-store.conf /etc/nginx/snippets/navet-homey-store.conf
 COPY docker/snippets/navet-discovery.conf /etc/nginx/snippets/navet-discovery.conf
@@ -90,12 +92,13 @@ COPY docker/config.js.template /usr/share/nginx/html/config.js.template
 COPY docker/30-navet-config.sh /docker-entrypoint.d/30-navet-config.sh
 COPY docker/navet-runtime.sh /usr/local/bin/navet-runtime
 COPY docker/navet-entrypoint.sh /usr/local/bin/navet-entrypoint
+COPY docker/navet-setup-code.sh /usr/local/bin/navet-setup-code
 COPY --from=rss-transport-build /out/rss-transport /etc/navet/rss-transport
 COPY --from=build /app/apps/standalone/dist /usr/share/nginx/html
 
 RUN mkdir -p /data \
   && chown -R nginx:nginx /data \
-  && chmod +x /docker-entrypoint.d/30-navet-config.sh /usr/local/bin/navet-runtime /usr/local/bin/navet-entrypoint
+  && chmod +x /docker-entrypoint.d/30-navet-config.sh /usr/local/bin/navet-runtime /usr/local/bin/navet-entrypoint /usr/local/bin/navet-setup-code
 
 ENTRYPOINT ["/usr/local/bin/navet-entrypoint"]
 CMD ["nginx", "-g", "daemon off;"]

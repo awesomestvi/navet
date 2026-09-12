@@ -2,7 +2,6 @@ import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import { usePersistedState } from '@navet/app/hooks/use-persisted-state';
 
 export type EnergyOverviewModuleId = 'live' | 'devices';
-export type EnergyOverviewTemplate = 'essentials' | 'balanced';
 
 export interface EnergyOverviewLayout {
   version?: 2;
@@ -17,21 +16,6 @@ export const DEFAULT_ENERGY_OVERVIEW_LAYOUT: EnergyOverviewLayout = {
   hidden: [],
   sizes: {},
 };
-
-export function getEnergyOverviewTemplateLayout(
-  template: EnergyOverviewTemplate
-): EnergyOverviewLayout {
-  if (template === 'essentials') {
-    return {
-      version: 2,
-      order: ['live', 'devices'],
-      hidden: ['devices'],
-      sizes: {},
-    };
-  }
-
-  return DEFAULT_ENERGY_OVERVIEW_LAYOUT;
-}
 
 export function normalizeEnergyOverviewLayout(value: EnergyOverviewLayout): EnergyOverviewLayout {
   const validIds: EnergyOverviewModuleId[] = ['live', 'devices'];

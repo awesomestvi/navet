@@ -1,4 +1,4 @@
-import type { CardTemplate } from '@navet/app/features/dashboard/components/add-card-dialog/index';
+import type { CardTemplate } from '@navet/app/features/dashboard/components/add-entity-dialog/index';
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { useDashboardCardActions } from '../use-dashboard-card-actions';

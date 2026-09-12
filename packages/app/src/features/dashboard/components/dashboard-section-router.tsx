@@ -7,23 +7,20 @@ import { DashboardEmptyState } from '@navet/app/components/patterns';
 import { LoadingSpinner } from '@navet/app/components/primitives/loading-spinner';
 import { RenderProfiler } from '@navet/app/components/shared/render-profiler';
 import { ALL_ROOMS_ID, isAllRooms } from '@navet/app/constants/rooms';
+import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import { getRoomTodayChores } from '@navet/app/features/chores/chore-dashboard-selectors';
 import { useChoreWorkspaceStore } from '@navet/app/features/chores/chore-workspace-store';
 import { useChoreWorkspaceSync } from '@navet/app/features/chores/use-chore-workspace-sync';
 import { getClimateDashboardGroup } from '@navet/app/features/climate/utils/climate-dashboard-group';
 import { useRoomWorkspaceStore } from '@navet/app/features/dashboard/rooms/room-workspace-store';
 import { getRoomWorkspaceSectionsV2 } from '@navet/app/features/dashboard/rooms/room-workspace-v2';
-import {
-  getEnergyOverviewTemplateLayout,
-  useEnergyOverviewLayout,
-} from '@navet/app/features/energy/components/dashboard/energy-overview-layout';
 import { buildRoomStatusSummaryItems } from '@navet/app/features/sensors/components/home-status-summary-model';
 import {
   SummaryBar,
   SummaryBarStack,
 } from '@navet/app/features/sensors/components/info-badge-strip';
 import { useTaskRoutines } from '@navet/app/features/tasks/hooks/use-task-automation-groups';
-import { useI18n, useIntegrationStore } from '@navet/app/hooks';
+import { useI18n, useIntegrationStore, usePersistedState } from '@navet/app/hooks';
 import { useNavigationStore, useSettingsStore } from '@navet/app/stores';
 import { integrationSelectors, settingsSelectors } from '@navet/app/stores/selectors';
 import { getDeviceRoomLabel } from '@navet/app/utils/device-location';
@@ -124,13 +121,13 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
   const routines = useTaskRoutines({
     enabled: shouldSubscribeTaskRoutines(controller.activeSection, showSummaryBar),
   });
+  const [energyKpisHidden, setEnergyKpisHidden] = usePersistedState(
+    STORAGE_KEYS.energyKpisHidden,
+    false
+  );
   const [isAddLightEntityDialogOpen, setIsAddLightEntityDialogOpen] = useState(false);
   const [isAddClimateEntityDialogOpen, setIsAddClimateEntityDialogOpen] = useState(false);
   const [isRoomManagementOpen, setIsRoomManagementOpen] = useState(false);
-  const [isEnergyKpiCustomizationOpen, setIsEnergyKpiCustomizationOpen] = useState(false);
-  const [isSecurityOverviewCustomizationOpen, setIsSecurityOverviewCustomizationOpen] =
-    useState(false);
-  const [, setEnergyOverviewLayout] = useEnergyOverviewLayout();
   const [securityAddEntityRequestKey, setSecurityAddEntityRequestKey] = useState(0);
   const {
     activeRoom,
@@ -160,12 +157,6 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
   } = controller;
   useEffect(() => {
     if (activeSection !== 'energy' || !isEditMode) {
-      setIsEnergyKpiCustomizationOpen(false);
-    }
-  }, [activeSection, isEditMode]);
-  useEffect(() => {
-    if (activeSection !== 'security' || !isEditMode) {
-      setIsSecurityOverviewCustomizationOpen(false);
     }
   }, [activeSection, isEditMode]);
   useChoreWorkspaceSync(choresEnabled && activeSection === 'home' && !isAllRooms(activeRoom));
@@ -395,8 +386,6 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
         <SecuritySection
           openAddEntityRequestKey={securityAddEntityRequestKey}
           suppressEditActions={isEditMode}
-          isOverviewCustomizationOpen={isSecurityOverviewCustomizationOpen}
-          onOverviewCustomizationOpenChange={setIsSecurityOverviewCustomizationOpen}
         />
       </Suspense>
     );
@@ -409,9 +398,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
               energyCustomCards={sectionData.energyCustomCards}
               energyOrderedCardIds={sectionData.energyOrderedCardIds}
               isEditMode={isEditMode}
-              isKpiCustomizationOpen={isEnergyKpiCustomizationOpen}
               onDeleteCard={handleDeleteCard}
-              onKpiCustomizationOpenChange={setIsEnergyKpiCustomizationOpen}
               onUpdateCard={handleUpdateCard}
             />
           </div>
@@ -686,7 +673,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
     <DashboardLayout
       densePerformanceMode={controller.densePerformanceMode}
       mobileEditActions={
-        isEditMode || activeSection === 'tasks'
+        isEditMode || activeSection === 'tasks' || activeSection === 'settings'
           ? undefined
           : {
               isEditMode,
@@ -704,7 +691,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
         groups: roomNavigationGroups,
       }}
     >
-      {isEditMode ? (
+      {isEditMode && activeSection !== 'tasks' && activeSection !== 'settings' ? (
         <>
           <HomeEditCommandBar
             addActionLabel={headerAddLabel}
@@ -723,17 +710,10 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
                 : undefined
             }
             onApplyPack={isHomeOverviewEditMode ? controller.handleApplyDashboardPack : undefined}
-            onApplyEnergyLayout={
+            energyKpisHidden={energyKpisHidden}
+            onToggleEnergyKpis={
               activeSection === 'energy'
-                ? (template) => setEnergyOverviewLayout(getEnergyOverviewTemplateLayout(template))
-                : undefined
-            }
-            onConfigureKpis={
-              activeSection === 'energy' ? () => setIsEnergyKpiCustomizationOpen(true) : undefined
-            }
-            onConfigureSecurityOverview={
-              activeSection === 'security'
-                ? () => setIsSecurityOverviewCustomizationOpen(true)
+                ? () => setEnergyKpisHidden((hidden) => !hidden)
                 : undefined
             }
             onManageRooms={roomManagement ? () => setIsRoomManagementOpen(true) : undefined}

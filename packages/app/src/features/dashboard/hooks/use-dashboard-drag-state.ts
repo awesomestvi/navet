@@ -1,6 +1,7 @@
 import {
   type DragEndEvent,
   type DragOverEvent,
+  type KeyboardCoordinateGetter,
   KeyboardSensor,
   MouseSensor,
   TouchSensor,
@@ -115,6 +116,22 @@ function resolveDropMeta(
   return undefined;
 }
 
+/** Shared mouse/touch activation protects card controls and supports keyboard dragging. */
+export function useDashboardDragSensors(
+  coordinateGetter: KeyboardCoordinateGetter = sortableKeyboardCoordinates
+) {
+  return useSensors(
+    useSensor(DashboardMouseSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(DashboardTouchSensor, {
+      activationConstraint: {
+        delay: 180,
+        tolerance: 10,
+      },
+    }),
+    useSensor(KeyboardSensor, { coordinateGetter })
+  );
+}
+
 interface UseDashboardDragStateParams {
   allCards: Map<string, DeviceWithType | CustomCard>;
   cardSizes: Record<string, CardSize>;
@@ -139,16 +156,7 @@ export function useDashboardDragState({
   const [activeColumnDropTarget, setActiveColumnDropTarget] = useState<string | null>(null);
   const lastResolvedOverRef = useRef<DropMeta | null>(null);
 
-  const sensors = useSensors(
-    useSensor(DashboardMouseSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(DashboardTouchSensor, {
-      activationConstraint: {
-        delay: 180,
-        tolerance: 10,
-      },
-    }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  );
+  const sensors = useDashboardDragSensors();
 
   const activeDragSize = useMemo<CardSize | null>(() => {
     if (!activeDragCard) return null;

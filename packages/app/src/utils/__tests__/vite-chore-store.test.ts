@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -684,6 +684,84 @@ describe('Vite chore workspace store', () => {
       unprotected.response
     );
     expect(unprotected.status).toBe(200);
+  });
+
+  it('keeps an existing workspace across provider identity changes and server restarts', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'navet-chore-identity-'));
+    tempDirs.push(directory);
+    const filePath = join(directory, 'chores.json');
+    const original = createViteChoreStoreRequestHandler({
+      filePath,
+      resolvePrincipal: () => PRINCIPAL,
+    });
+    const setup = createResponse();
+    await original(
+      createRequest(
+        'POST',
+        '/commands',
+        { 'x-navet-base-revision': '0' },
+        participantActionBody('setup', 0)
+      ),
+      setup.response
+    );
+    expect(setup.status).toBe(200);
+    const configure = createResponse();
+    await original(
+      createRequest(
+        'POST',
+        '/management/pin',
+        {},
+        JSON.stringify({ actorParticipantId: 'maya', pin: '2468' })
+      ),
+      configure.response
+    );
+    expect(configure.status).toBe(200);
+    const originalPin = JSON.parse(readFileSync(`${filePath}.management`, 'utf8'));
+    writeFileSync(
+      `${filePath}.management`,
+      JSON.stringify({ ...originalPin, tenantId: TENANT_ID })
+    );
+    const before = JSON.parse(readFileSync(filePath, 'utf8'));
+    // Supported persisted format from before installation-owned authorization.
+    writeFileSync(filePath, JSON.stringify({ ...before, tenantId: TENANT_ID }));
+    const restarted = createViteChoreStoreRequestHandler({
+      filePath,
+      resolvePrincipal: () => ({ sessionId: 'a-different-authorized-provider-session' }),
+    });
+    const loaded = createResponse();
+    await restarted(createRequest('GET', '/workspace'), loaded.response);
+    expect(loaded.status).toBe(200);
+    expect(JSON.parse(loaded.body).data).toEqual(before.data);
+    expect(JSON.parse(readFileSync(filePath, 'utf8')).tenantId).toBe(before.tenantId);
+    expect(JSON.parse(readFileSync(`${filePath}.management`, 'utf8'))).toMatchObject({
+      salt: originalPin.salt,
+      pinHash: originalPin.pinHash,
+      tenantId: originalPin.tenantId,
+    });
+    expect(JSON.parse(loaded.body).management.pinConfigured).toBe(true);
+    const unlock = createResponse();
+    await restarted(
+      createRequest('POST', '/management/verify', {}, JSON.stringify({ pin: '2468' })),
+      unlock.response
+    );
+    expect(unlock.status).toBe(200);
+    const protectedAction = createResponse();
+    await restarted(
+      createRequest(
+        'POST',
+        '/commands',
+        { 'x-navet-base-revision': String(JSON.parse(loaded.body).revision) },
+        participantActionBody('without-pin', JSON.parse(loaded.body).revision, 'sofia')
+      ),
+      protectedAction.response
+    );
+    expect(protectedAction.status).toBe(403);
+
+    const revoked = createViteChoreStoreRequestHandler({ filePath, resolvePrincipal: () => null });
+    const denied = createResponse();
+    await revoked(createRequest('GET', '/workspace'), denied.response);
+    expect(denied.status).toBe(401);
+    expect(JSON.parse(readFileSync(filePath, 'utf8')).data).toEqual(before.data);
   });
 
   it('migrates a persisted schema version 1 workspace before serving it', async () => {

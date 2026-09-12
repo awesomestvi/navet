@@ -31,6 +31,7 @@ interface CameraCardViewProps {
   now: number;
   size: CardSize;
   isEditMode: boolean;
+  presentation?: 'card' | 'mosaic-tile';
   cameraViewMode: CameraViewMode;
   fitMode: CameraFitMode;
   isStreamCapable: boolean;
@@ -100,7 +101,7 @@ export function CameraCardView({
   imageSources,
   streamHost,
   cameraState,
-  statusChangedAt,
+  statusChangedAt: _statusChangedAt,
   motionDetected,
   motionDetectionTarget,
   motionChangedAt,
@@ -108,6 +109,7 @@ export function CameraCardView({
   now,
   size,
   isEditMode,
+  presentation = 'card',
   cameraViewMode,
   fitMode,
   isStreamCapable,
@@ -132,6 +134,7 @@ export function CameraCardView({
   }, [imageUrl]);
 
   const surface = getThemeSurfaceTokens(theme);
+  const isMosaicTile = presentation === 'mosaic-tile';
   const isCompact = isCompactCardSize(size);
   const isLightTheme = theme === 'light';
   const isGlassTheme = theme === 'glass';
@@ -146,7 +149,11 @@ export function CameraCardView({
   const hasLiveStream = Boolean(streamHost) && !isUnavailable;
   const motionLabel = motionDetected ? t('camera.motion.detected') : null;
   const MotionDetectedIcon = motionDetectionTarget === 'person' ? PersonStanding : Radio;
-  const statusElapsed = formatElapsedCompact(now, statusChangedAt);
+  const [snapshotLoadedAt, setSnapshotLoadedAt] = useState<number | null>(null);
+  useEffect(() => {
+    setSnapshotLoadedAt(null);
+  }, [id]);
+  const snapshotAge = formatElapsedCompact(now, snapshotLoadedAt);
   const motionElapsed = formatElapsedCompact(now, motionChangedAt);
   let streamLabel = isStreamCapable
     ? t('camera.viewer.streamCapable')
@@ -170,13 +177,20 @@ export function CameraCardView({
     hasLiveStream && streamKind !== 'snapshot' && !isStreamReadinessOpaque && isStreamReady;
   const isStreamPending =
     hasLiveStream && streamKind !== 'snapshot' && !isStreamReadinessOpaque && !isStreamReady;
-  const statusLabel = isStreamReadinessOpaque
-    ? resolvedStreamLabel
-    : getCameraStatusLabel(t, cameraState, isFeedRunning, isStreamPending);
+  const statusLabel = isUnavailable
+    ? t('camera.status.unavailable')
+    : cameraState === 'off'
+      ? t('common.off')
+      : !hasLiveStream
+        ? t('camera.settings.viewMode.snapshot')
+        : isStreamReadinessOpaque
+          ? resolvedStreamLabel
+          : getCameraStatusLabel(t, cameraState, isFeedRunning, isStreamPending);
   const showStreamLabel = Boolean(
-    !isStreamReadinessOpaque &&
+    hasLiveStream &&
+      !isStreamReadinessOpaque &&
       resolvedStreamLabel &&
-      (!isCompact || streamKind === 'snapshot' || isStreamFallback || streamLabelOverride)
+      (streamKind === 'snapshot' || isStreamFallback)
   );
   const snapshotFitClassName = fitMode === 'contain' ? 'object-contain' : 'object-cover';
   const overlayButtonClassName = isLightTheme
@@ -221,9 +235,9 @@ export function CameraCardView({
   const snapshotFallback = (
     <div className={emptyStateClassName} data-testid="camera-snapshot-fallback">
       <Camera className={emptyStateIconClassName} />
-      <span className={emptyStateTextClassName}>
-        {isUnavailable ? t('camera.status.unavailable') : t('camera.status.noSnapshot')}
-      </span>
+      {!isUnavailable ? (
+        <span className={emptyStateTextClassName}>{t('camera.status.noSnapshot')}</span>
+      ) : null}
     </div>
   );
 
@@ -231,11 +245,11 @@ export function CameraCardView({
     <div ref={cardRef} className="h-full w-full" data-entity-id={id}>
       <BaseCard
         size={size}
-        className="isolate"
+        className={`isolate ${isMosaicTile ? 'rounded-none border-0' : ''}`}
         fullBleed
         interactive={!isEditMode}
         frameClassName={isLightTheme ? surface.cardShadow : isGlassTheme ? '' : 'bg-zinc-900'}
-        disableDefaultSheen={!isGlassTheme}
+        disableDefaultSheen={isMosaicTile || !isGlassTheme}
         role={!isEditMode ? 'button' : undefined}
         tabIndex={!isEditMode ? 0 : undefined}
         onClick={!isEditMode ? onOpenViewer : undefined}
@@ -262,6 +276,7 @@ export function CameraCardView({
                 alt={name}
                 className={`absolute inset-0 h-full w-full ${snapshotFitClassName}`}
                 fallback={snapshotFallback}
+                onLoad={() => setSnapshotLoadedAt(Date.now())}
                 onError={() => {
                   setSnapshotFailed(true);
                   onImageError();
@@ -295,7 +310,7 @@ export function CameraCardView({
           </>
         ) : null}
 
-        {showRefreshButton && (
+        {showRefreshButton && !isMosaicTile && (
           <button
             type="button"
             onClick={(event) => {
@@ -326,8 +341,10 @@ export function CameraCardView({
             />
             {statusLabel ? <span>{statusLabel}</span> : null}
           </div>
-          {!motionDetected && statusElapsed ? (
-            <span className={statusMutedTextClassName}>{statusElapsed}</span>
+          {!hasLiveStream && !isUnavailable && snapshotAge ? (
+            <span className={statusMutedTextClassName}>
+              {t('camera.snapshot.loaded', { age: snapshotAge })}
+            </span>
           ) : null}
           {motionLabel ? (
             <>
@@ -361,7 +378,10 @@ export function CameraCardView({
           ) : null}
         </div>
 
-        <div className="absolute inset-x-0 bottom-0 z-20 px-3 pb-3 pt-10">
+        <div
+          data-testid="camera-card-identity"
+          className="absolute inset-x-0 bottom-0 z-20 px-3 pt-10 pb-3"
+        >
           <div className="flex items-end justify-between gap-2">
             <div className="min-w-0 flex-1">
               <EntityCardHeader
@@ -376,7 +396,7 @@ export function CameraCardView({
               />
             </div>
 
-            {!isEditMode && (
+            {!isEditMode && !isMosaicTile && (
               <div className="flex shrink-0 items-center gap-2">
                 {motionDetectionEnabled !== null ? (
                   <button

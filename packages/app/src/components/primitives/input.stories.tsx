@@ -40,6 +40,9 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
+export const Small: Story = {
+  args: { size: 'small', placeholder: 'Enter one-time code' },
+};
 export const WithLeadingIcon: Story = {
   args: { leading: <Search className="h-4 w-4 text-current/60" /> },
 };

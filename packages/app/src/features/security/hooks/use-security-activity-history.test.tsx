@@ -35,6 +35,93 @@ describe('useSecurityActivityHistory', () => {
     getIntegrationEntityHistoriesMock.mockReset();
   });
 
+  it('exposes refresh failure, retries, and distinguishes supported empty history', async () => {
+    getIntegrationEntityHistoriesMock
+      .mockRejectedValueOnce(new Error('Disconnected'))
+      .mockResolvedValue([{ entityId: 'lock.front_door', points: [] }]);
+    const device = lock(true);
+    const { result } = renderHook(() =>
+      useSecurityActivityHistory({ entities: [device], currentActivity: [] })
+    );
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.historyError).toBe('refresh');
+    expect(result.current.lastUpdatedAt).toBeNull();
+    await act(() => result.current.retry());
+    expect(result.current.historyError).toBeNull();
+    expect(result.current.historyAvailable).toBe(true);
+    expect(result.current.events).toEqual([]);
+    expect(result.current.lastUpdatedAt).not.toBeNull();
+    expect(getIntegrationEntityHistoriesMock).toHaveBeenCalledWith(expect.any(Object), {
+      requireComplete: true,
+    });
+  });
+
+  it('retains activity and the last successful refresh time when a refresh fails', async () => {
+    getIntegrationEntityHistoriesMock
+      .mockResolvedValueOnce([
+        {
+          entityId: 'lock.front_door',
+          points: [
+            { state: 'unlocked', changedAt: new Date(Date.now() - 120_000).toISOString() },
+            { state: 'locked', changedAt: new Date(Date.now() - 60_000).toISOString() },
+          ],
+        },
+      ])
+      .mockRejectedValueOnce(new Error('Offline'));
+    const device = lock(true);
+    const { result } = renderHook(() =>
+      useSecurityActivityHistory({ entities: [device], currentActivity: [] })
+    );
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    const updated = result.current.lastUpdatedAt;
+    expect(result.current.events).toHaveLength(1);
+    await act(() => result.current.retry());
+    expect(result.current.historyError).toBe('refresh');
+    expect(result.current.events).toHaveLength(1);
+    expect(result.current.lastUpdatedAt).toBe(updated);
+  });
+
+  it('distinguishes unavailable history from a successfully empty feed', async () => {
+    getIntegrationEntityHistoriesMock.mockResolvedValue([]);
+    const device = lock(true);
+    const { result } = renderHook(() =>
+      useSecurityActivityHistory({ entities: [device], currentActivity: [] })
+    );
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.historyAvailable).toBe(false);
+    expect(result.current.historyError).toBeNull();
+    expect(result.current.hasMore).toBe(false);
+  });
+
+  it('keeps existing activity and retries the same older page after a failure', async () => {
+    getIntegrationEntityHistoriesMock
+      .mockResolvedValueOnce([
+        {
+          entityId: 'lock.front_door',
+          points: [
+            { state: 'unlocked', changedAt: new Date(Date.now() - 120_000).toISOString() },
+            { state: 'locked', changedAt: new Date(Date.now() - 60_000).toISOString() },
+          ],
+        },
+      ])
+      .mockRejectedValueOnce(new Error('Offline'))
+      .mockResolvedValueOnce([{ entityId: 'lock.front_door', points: [] }]);
+    const device = lock(true);
+    const { result } = renderHook(() =>
+      useSecurityActivityHistory({ entities: [device], currentActivity: [] })
+    );
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    await act(() => result.current.loadMore());
+    expect(result.current.historyError).toBe('older');
+    expect(result.current.events).toHaveLength(1);
+    expect(result.current.hasMore).toBe(true);
+    await act(() => result.current.loadMore());
+    expect(result.current.historyError).toBeNull();
+    expect(getIntegrationEntityHistoriesMock.mock.calls[2]?.[0].endTime).toBe(
+      getIntegrationEntityHistoriesMock.mock.calls[1]?.[0].endTime
+    );
+  });
+
   it('appends older pages, keeps sparse activity loadable, and stops at the lookback limit', async () => {
     const nowMs = Date.parse('2026-08-24T12:00:00.000Z');
     vi.spyOn(Date, 'now').mockReturnValue(nowMs);

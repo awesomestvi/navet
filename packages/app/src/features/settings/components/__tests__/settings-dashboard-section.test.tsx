@@ -164,14 +164,23 @@ describe('SettingsDashboardSection', () => {
 
     const homeDashboard = screen.getByTestId('dashboard-manager-home');
     const upstairsDashboard = screen.getByTestId('dashboard-manager-upstairs');
+    expect(within(homeDashboard).getByText('Default')).toHaveClass(
+      'rounded-full',
+      'border',
+      'px-2',
+      'py-0.5',
+      'text-[10px]'
+    );
     expect(homeDashboard).toHaveTextContent('Used by 2 displays');
     expect(within(homeDashboard).queryByText('Sonoff upstairs')).not.toBeInTheDocument();
     expect(within(homeDashboard).queryByText('This display')).not.toBeInTheDocument();
     expect(upstairsDashboard).toHaveTextContent('Not assigned');
 
-    fireEvent.pointerDown(
-      screen.getByRole('button', { name: 'Dashboard actions for Upstairs lights' })
-    );
+    const dashboardActions = screen.getByRole('button', {
+      name: 'Dashboard actions for Upstairs lights',
+    });
+    expect(dashboardActions).toHaveClass('h-9', 'w-9', 'rounded-full');
+    fireEvent.pointerDown(dashboardActions);
     fireEvent.click(await screen.findByRole('menuitem', { name: 'Assign displays' }));
 
     const dialog = await screen.findByRole('dialog', { name: 'Assign Upstairs lights' });

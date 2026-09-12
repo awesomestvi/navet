@@ -88,15 +88,11 @@ function getSecuritySectionAbsorbedEntityIds(
 interface SecuritySectionProps {
   openAddEntityRequestKey?: number;
   suppressEditActions?: boolean;
-  isOverviewCustomizationOpen?: boolean;
-  onOverviewCustomizationOpenChange?: (open: boolean) => void;
 }
 
 export function SecuritySection({
   openAddEntityRequestKey = 0,
   suppressEditActions = false,
-  isOverviewCustomizationOpen = false,
-  onOverviewCustomizationOpenChange,
 }: SecuritySectionProps) {
   const { t } = useI18n();
   const theme = useThemeMode();
@@ -214,8 +210,6 @@ export function SecuritySection({
             updateCardSize={updateCardSize}
             onRemoveEntity={handleRemoveEntity}
             surface={surface}
-            isOverviewCustomizationOpen={isOverviewCustomizationOpen}
-            onOverviewCustomizationOpenChange={onOverviewCustomizationOpenChange}
           />
         ) : null}
         {model.summary.totalEntities === 0 &&

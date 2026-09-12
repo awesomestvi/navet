@@ -2,6 +2,7 @@ import hashCrypto from 'crypto';
 import fs from 'fs';
 import installationAuthorityModule from './installation-authority.js';
 import installationCookieScope from './installation-cookie-scope.js';
+import deviceSessionAuthority from './device-session-authority.js';
 
 const AUTH_COOKIE_NAME = 'navet_auth_session';
 const AUTH_COOKIE_ID_PATTERN = /^[a-f0-9]{64}$/;
@@ -799,6 +800,16 @@ function createAuthSessionStore(options) {
   }
 
   function getStoredRequestContexts(r) {
+    if (deviceSessionAuthority.hasPresentedDeviceCookie(r)) {
+      const delegatedCookieId = deviceSessionAuthority.getProviderCookieId(
+        r,
+        'home_assistant'
+      );
+      const delegatedSession = readSession(delegatedCookieId);
+      return delegatedSession
+        ? [{ cookieId: delegatedCookieId, session: delegatedSession }]
+        : [];
+    }
     const currentContexts = getCurrentCookieIds(r)
       .map(function (cookieId) {
         const session = readSession(cookieId);
@@ -807,10 +818,10 @@ function createAuthSessionStore(options) {
       .filter(function (context) {
         return Boolean(context);
       });
-    if (currentContexts.length > 0 || !hasScopedCookie) {
+    if (currentContexts.length > 0) {
       return currentContexts;
     }
-    return getRecognizedLegacyCookieIds(r)
+    const legacyContexts = getRecognizedLegacyCookieIds(r)
       .map(function (cookieId) {
         const session = readSession(cookieId);
         return session ? { cookieId: cookieId, session: session } : null;
@@ -818,9 +829,23 @@ function createAuthSessionStore(options) {
       .filter(function (context) {
         return Boolean(context);
       });
+    if (legacyContexts.length > 0) {
+      return legacyContexts;
+    }
+    const delegatedCookieId = deviceSessionAuthority.getProviderCookieId(
+      r,
+      'home_assistant'
+    );
+    const delegatedSession = readSession(delegatedCookieId);
+    return delegatedSession
+      ? [{ cookieId: delegatedCookieId, session: delegatedSession }]
+      : [];
   }
 
   function setSessionCookie(r, cookieId) {
+    if (deviceSessionAuthority.isDelegatedRequest(r, 'home_assistant')) {
+      return;
+    }
     r.headersOut['Set-Cookie'] = buildSessionCookie(
       r,
       cookieName,
@@ -830,6 +855,10 @@ function createAuthSessionStore(options) {
   }
 
   function clearSessionCookie(r) {
+    if (deviceSessionAuthority.isDelegatedRequest(r, 'home_assistant')) {
+      deviceSessionAuthority.revokeCurrentDevice(r);
+      return;
+    }
     r.headersOut['Set-Cookie'] = buildSessionCookieDeletion(r, cookieName);
   }
 
@@ -964,6 +993,9 @@ function createAuthSessionStore(options) {
       return;
     }
 
+    if (deviceSessionAuthority.hasDependentDevices('home_assistant', cookieId)) {
+      return;
+    }
     deletePath(getSessionPath(cookieId));
   }
 
@@ -1023,6 +1055,10 @@ function createAuthSessionStore(options) {
   }
 
   function rotateRequestSession(r, previousCookieId, session) {
+    if (deviceSessionAuthority.isDelegatedRequest(r, 'home_assistant')) {
+      writeSession(previousCookieId, session);
+      return { cookieId: previousCookieId, session: session };
+    }
     const cookieId = secureRandomHex(32);
     if (previousCookieId && readSession(previousCookieId)) {
       writeSessionFile(cookieId, session);
@@ -1031,6 +1067,11 @@ function createAuthSessionStore(options) {
     }
     setSessionCookie(r, cookieId);
     if (previousCookieId) {
+      deviceSessionAuthority.replaceProviderCookieId(
+        'home_assistant',
+        previousCookieId,
+        cookieId
+      );
       deleteSession(previousCookieId);
     }
     return { cookieId: cookieId, session: session };
@@ -1603,6 +1644,46 @@ function createAuthSessionStore(options) {
 
   async function handleRequest(r) {
     const uri = String((r && r.uri) || '');
+
+    if (uri === '/__navet_auth__/setup') {
+      if (r.method === 'POST') {
+        if (!isSameOriginMutation(r)) {
+          sendJson(r, 403, { error: 'Cross-origin setup approval is not allowed' });
+          return;
+        }
+        const body = parseJson(r.requestText || '') || {};
+        const exchange = installationAuthority.exchangeSetupCode(r, body.code);
+        if (!exchange.approved) {
+          sendJson(r, exchange.reason === 'rate_limited' ? 429 : 403, {
+            error:
+              exchange.reason === 'rate_limited'
+                ? 'Too many setup attempts. Wait a few minutes and try again.'
+                : 'That setup code is invalid, expired, or already used',
+            code:
+              exchange.reason === 'rate_limited'
+                ? 'setup-rate-limited'
+                : 'setup-code-rejected',
+          });
+          return;
+        }
+        r.headersOut['Set-Cookie'] = exchange.setCookie;
+        sendJson(r, 200, { approved: true });
+        return;
+      }
+      if (r.method !== 'GET') {
+        r.headersOut.Allow = 'GET, POST';
+        sendJson(r, 405, { error: 'Method not allowed' });
+        return;
+      }
+      const providerId = String((r.args && r.args.providerId) || '').trim();
+      const status = installationAuthority.getProviderSetupStatus(r, providerId);
+      sendJson(r, 200, {
+        providerId: providerId,
+        state: status.state,
+        authorization: status.authorization,
+      });
+      return;
+    }
 
     if (uri === '/__navet_auth__/callback') {
       if (r.method !== 'GET') {

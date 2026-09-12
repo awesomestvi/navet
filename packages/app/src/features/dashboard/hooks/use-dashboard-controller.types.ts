@@ -5,7 +5,7 @@ import type { DeviceWithType } from '@navet/app/types/device.types';
 import type { DashboardEntityView } from '@navet/ui/dashboard-entity-view';
 import type { ClimateDashboardSection } from '../../climate/types/climate-dashboard';
 import type { AllViewGrouping } from '../all-view-grid';
-import type { CardTemplate } from '../components/add-card-dialog';
+import type { CardTemplate } from '../components/add-entity-dialog';
 import type { DashboardPackId } from '../packs/dashboard-packs';
 import type { CustomCard } from '../stores/custom-cards-store';
 import type { ZoneName } from '../zones/zone-types';

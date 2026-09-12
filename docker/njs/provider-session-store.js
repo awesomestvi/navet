@@ -1,4 +1,5 @@
 import fs from 'fs';
+import deviceSessionAuthority from './device-session-authority.js';
 import installationCookieScope from './installation-cookie-scope.js';
 
 const COOKIE_ID_PATTERN = /^[a-f0-9]{64}$/;
@@ -168,6 +169,7 @@ function createProviderSessionStore(options) {
   const isValidRecord = settings.isValidRecord;
   const idleTtlMs = settings.idleTtlMs || SESSION_IDLE_TTL_MS;
   const maxSessions = settings.maxSessions || DEFAULT_MAX_SESSIONS;
+  const providerId = settings.providerId;
   // nginx evaluates the proxy URL, authorization, and cookie js_set handlers
   // against the same request. Keep that request's parsed record without
   // retaining browser credentials in a process-wide session cache. njs 0.8.10
@@ -382,7 +384,8 @@ function createProviderSessionStore(options) {
   function getRequestSessions(r) {
     discardLegacyGlobalSession();
     let contexts = [];
-    const currentCookieIds = getCookieIds(r, cookieName);
+    const hasDeviceCookie = deviceSessionAuthority.hasPresentedDeviceCookie(r);
+    const currentCookieIds = hasDeviceCookie ? [] : getCookieIds(r, cookieName);
     let index;
     for (index = 0; index < currentCookieIds.length; index += 1) {
       const session = readSession(currentCookieIds[index]);
@@ -393,7 +396,7 @@ function createProviderSessionStore(options) {
         });
       }
     }
-    if (contexts.length === 0 && hasScopedCookie) {
+    if (contexts.length === 0 && hasScopedCookie && !hasDeviceCookie) {
       const legacyCookieIds = getCookieIds(r, legacyCookieName);
       for (index = 0; index < legacyCookieIds.length; index += 1) {
         const legacySession = readSession(legacyCookieIds[index]);
@@ -403,6 +406,13 @@ function createProviderSessionStore(options) {
             session: legacySession,
           });
         }
+      }
+    }
+    if (contexts.length === 0 && providerId) {
+      const delegatedCookieId = deviceSessionAuthority.getProviderCookieId(r, providerId);
+      const delegatedSession = readSession(delegatedCookieId);
+      if (delegatedSession) {
+        contexts.push({ cookieId: delegatedCookieId, session: delegatedSession });
       }
     }
     contexts.sort(function (left, right) {
@@ -549,6 +559,9 @@ function createProviderSessionStore(options) {
       return;
     }
 
+    if (providerId && deviceSessionAuthority.hasDependentDevices(providerId, cookieId)) {
+      return;
+    }
     deleteSessionPath(getSessionPath(cookieId));
   }
 
@@ -575,6 +588,9 @@ function createProviderSessionStore(options) {
   }
 
   function setSessionCookie(r, cookieId) {
+    if (providerId && deviceSessionAuthority.isDelegatedRequest(r, providerId)) {
+      return;
+    }
     r.headersOut['Set-Cookie'] = buildSessionCookie(
       r,
       cookieName,
@@ -584,6 +600,10 @@ function createProviderSessionStore(options) {
   }
 
   function clearSessionCookie(r) {
+    if (providerId && deviceSessionAuthority.isDelegatedRequest(r, providerId)) {
+      deviceSessionAuthority.revokeCurrentDevice(r);
+      return;
+    }
     const ingressPath = normalizeIngressPath(getHeader(r && r.headersIn, 'X-Ingress-Path'));
     r.headersOut['Set-Cookie'] = ingressPath
       ? [
@@ -609,6 +629,10 @@ function createProviderSessionStore(options) {
   }
 
   function rotateRequestSession(r, previousCookieId, record) {
+    if (providerId && deviceSessionAuthority.isDelegatedRequest(r, providerId)) {
+      writeSession(previousCookieId, record);
+      return cacheRequestSession(r, { cookieId: previousCookieId, session: record });
+    }
     const staleCookieIds = getCookieIds(r, cookieName);
     if (hasScopedCookie) {
       const legacyCookieIds = getCookieIds(r, legacyCookieName);
@@ -636,6 +660,9 @@ function createProviderSessionStore(options) {
       writeSession(cookieId, record);
     }
     setSessionCookie(r, cookieId);
+    if (providerId && previousCookieId) {
+      deviceSessionAuthority.replaceProviderCookieId(providerId, previousCookieId, cookieId);
+    }
     let index;
     for (index = 0; index < staleCookieIds.length; index += 1) {
       if (staleCookieIds[index] !== cookieId) {
@@ -698,6 +725,9 @@ function createProviderSessionStore(options) {
       });
     }
 
+    if (providerId && deviceSessionAuthority.isDelegatedRequest(r, providerId)) {
+      return '';
+    }
     return buildSessionCookie(
       r,
       cookieName,

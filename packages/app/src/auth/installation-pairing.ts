@@ -70,6 +70,16 @@ export function getInstallationPairingHeaders(): Record<string, string> {
   };
 }
 
+export function setInstallationPairingKey(value: string): boolean {
+  const candidate = value.trim().toLowerCase();
+  clearPairingKeyBytes();
+  if (!INSTALLATION_PAIRING_KEY_PATTERN.test(candidate)) {
+    return false;
+  }
+  pairingKeyBytes = decodePairingKey(candidate);
+  return true;
+}
+
 export function clearInstallationPairingKey(): void {
   clearPairingKeyBytes();
 }

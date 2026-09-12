@@ -1,4 +1,5 @@
-import { DashboardGroupingNavigation } from '@navet/app/components/patterns';
+import { DashboardEmptyState, DashboardGroupingNavigation } from '@navet/app/components/patterns';
+import { BaseCard } from '@navet/app/components/primitives';
 import {
   type CardSize,
   getCardGridAutoRowsStyle,
@@ -36,30 +37,33 @@ import {
 import type { CameraDevice, DeviceWithType } from '@navet/app/types/device.types';
 import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
 import type { NavetAlarmEntity } from '@navet/core/alarm-types';
-import { CircleAlert, CircleOff, Radio, ShieldCheck, TriangleAlert } from 'lucide-react';
 import {
-  type CSSProperties,
-  lazy,
-  Suspense,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+  CircleAlert,
+  CircleOff,
+  Pin,
+  Radio,
+  ShieldCheck,
+  TriangleAlert,
+  Video,
+} from 'lucide-react';
+import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { resolveDashboardPerformanceProfile } from '../../dashboard/hooks/use-dashboard-performance-mode';
 import type {
   CameraDashboardModel,
   SecurityGroupSummary,
 } from '../utils/security-camera-dashboard-model';
-import { buildSecurityRoomGroupSummaries } from '../utils/security-camera-dashboard-model';
 import {
-  DEFAULT_SECURITY_OVERVIEW_PREFERENCE,
-  getAutomaticSecurityOverviewEntityIds,
-  normalizeSecurityOverviewPreference,
-  resolveSecurityOverviewEntities,
-} from '../utils/security-overview-preferences';
+  buildSecurityRoomGroupSummaries,
+  getSecuritySeverity,
+} from '../utils/security-camera-dashboard-model';
+import {
+  DEFAULT_SECURITY_QUICKVIEW_PREFERENCE,
+  normalizeSecurityQuickviewPreference,
+  placeSecurityQuickviewEntity,
+  resolveSecurityQuickviewEntities,
+} from '../utils/security-quickview-preferences';
+import { CameraCard } from './camera-card';
 import { CameraLiveViewer } from './camera-card/camera-live-viewer';
 import {
   appendCameraCacheBuster,
@@ -68,11 +72,11 @@ import {
 } from './camera-card/camera-view-mode';
 import { useProviderCameraLiveData } from './camera-card/use-provider-camera-live-data';
 import { SecurityCommandCenter } from './security-command-center';
-
-const SecurityOverviewCustomizationDialog = lazy(async () => {
-  const module = await import('./security-overview-customization-dialog');
-  return { default: module.SecurityOverviewCustomizationDialog };
-});
+import {
+  SecurityQuickviewCard,
+  SecurityQuickviewDropZone,
+  SecurityQuickviewEditor,
+} from './security-quickview-editor';
 
 interface SecurityCameraDashboardProps {
   model: CameraDashboardModel;
@@ -84,8 +88,6 @@ interface SecurityCameraDashboardProps {
   updateCardSize: (id: string, size: CardSize) => void;
   onRemoveEntity?: (entityId: string) => void;
   surface: ReturnType<typeof getThemeSurfaceTokens>;
-  isOverviewCustomizationOpen?: boolean;
-  onOverviewCustomizationOpenChange?: (open: boolean) => void;
 }
 
 const SECURITY_DASHBOARD_SELECTED_GROUP_KEY = 'navet-security-dashboard-selected-group';
@@ -260,17 +262,22 @@ function DetailsGrid({
   updateCardSize,
   isEditMode,
   onRemoveEntity,
+  onRemoveFromQuickview,
   allowEntityRemoval = true,
   embeddedColumnCount,
+  location = 'devices',
 }: {
   devices: DeviceWithType[];
   cardSizes: Record<string, CardSize>;
   updateCardSize: (id: string, size: CardSize) => void;
   isEditMode: boolean;
   onRemoveEntity?: (entityId: string) => void;
+  onRemoveFromQuickview?: (entityId: string) => void;
   allowEntityRemoval?: boolean;
   embeddedColumnCount?: number;
+  location?: 'quickview' | 'devices';
 }) {
+  const { t } = useI18n();
   const breakpointCols = useBreakpointCols();
   const { disableAnimations, effectsQuality, lowPowerMode } = useSettingsStore(
     useShallow((state) => ({
@@ -343,7 +350,11 @@ function DetailsGrid({
         };
 
   return (
-    <DashboardEditActions isEditMode={isEditMode} onRemoveEntity={onRemoveEntity}>
+    <DashboardEditActions
+      isEditMode={isEditMode}
+      onRemoveEntity={onRemoveEntity}
+      onRemoveFromLayout={onRemoveFromQuickview}
+    >
       <div ref={outerRef} className="relative w-full" style={outerContainerStyle}>
         <div
           ref={innerRef}
@@ -359,7 +370,10 @@ function DetailsGrid({
               const placement = gridPlacements.get(device.id);
 
               return (
-                <div
+                <SecurityQuickviewCard
+                  device={device}
+                  location={location}
+                  isEditMode={isEditMode}
                   key={device.id}
                   data-security-entity-id={device.id}
                   tabIndex={-1}
@@ -379,11 +393,17 @@ function DetailsGrid({
                     size={size}
                     isEditMode={isEditMode}
                     handleSizeChange={updateCardSize}
+                    onRemoveFromLayout={onRemoveFromQuickview}
+                    removeFromLayoutLabel={
+                      onRemoveFromQuickview
+                        ? t('security.quickview.unpin', { name: device.name })
+                        : undefined
+                    }
                     onRemoveEntity={onRemoveEntity}
                     allowEntityRemoval={allowEntityRemoval}
                     usesHideAction
                   />
-                </div>
+                </SecurityQuickviewCard>
               );
             })}
           </div>
@@ -393,7 +413,7 @@ function DetailsGrid({
   );
 }
 
-function MobileOverviewCarousel({
+function MobileQuickviewCarousel({
   devices,
   cardSizes,
   updateCardSize,
@@ -409,9 +429,9 @@ function MobileOverviewCarousel({
 
   return (
     <section
-      aria-label={t('security.overview.customize.previewLabel')}
+      aria-label={t('security.quickview.label')}
       className="-mx-1 snap-x snap-mandatory overflow-x-auto overscroll-x-contain px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      data-testid="security-overview-carousel"
+      data-testid="security-quickview-carousel"
     >
       <div className="flex gap-3">
         {devices.map((device) => {
@@ -425,7 +445,7 @@ function MobileOverviewCarousel({
                 hasMultipleCards ? 'w-[84%] max-w-96' : 'w-full'
               }`}
               data-security-entity-id={device.id}
-              data-testid="security-overview-carousel-item"
+              data-testid="security-quickview-carousel-item"
             >
               <DashboardCardItem
                 id={device.id}
@@ -441,6 +461,77 @@ function MobileOverviewCarousel({
         })}
       </div>
     </section>
+  );
+}
+
+function getCameraMosaicCellClassName(index: number, count: number) {
+  if (count === 3 && index === 0) {
+    return 'row-span-2';
+  }
+
+  return '';
+}
+
+function CameraQuickviewMosaic({
+  cameras,
+  updateCardSize,
+  isEditMode,
+  columnCount,
+}: {
+  cameras: CameraDevice[];
+  updateCardSize: (id: string, size: CardSize) => void;
+  isEditMode: boolean;
+  columnCount: number;
+}) {
+  const visibleCameras = cameras.slice(0, 4);
+  const gridClassName =
+    visibleCameras.length === 1
+      ? 'grid-cols-1 grid-rows-1'
+      : visibleCameras.length === 2
+        ? 'grid-cols-2 grid-rows-1'
+        : 'grid-cols-2 grid-rows-2';
+
+  return (
+    <div
+      data-testid="security-camera-mosaic-layout"
+      className="grid w-full grid-flow-row-dense gap-3 lg:gap-4"
+      style={{
+        ...getCardGridAutoRowsStyle(columnCount),
+        gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
+      }}
+    >
+      <div className={`${getCardSpanClass('large')} [&>*]:h-full`}>
+        <BaseCard size="large" fullBleed data-testid="security-camera-mosaic">
+          <div className={`grid h-full w-full gap-px bg-black/70 ${gridClassName}`}>
+            {visibleCameras.map((camera, index) => (
+              <div
+                key={camera.id}
+                className={`min-h-0 min-w-0 overflow-hidden ${getCameraMosaicCellClassName(
+                  index,
+                  visibleCameras.length
+                )}`}
+                data-security-entity-id={camera.id}
+                data-testid="security-camera-mosaic-cell"
+              >
+                <CameraCard
+                  id={camera.id}
+                  name={camera.name}
+                  room={camera.room}
+                  entityPicture={camera.entityPicture}
+                  entityPictureSources={camera.entityPictureSources}
+                  supportedFeatures={camera.supportedFeatures}
+                  isStreamCapable={camera.isStreamCapable}
+                  size="small"
+                  onSizeChange={updateCardSize}
+                  isEditMode={isEditMode}
+                  presentation="mosaic-tile"
+                />
+              </div>
+            ))}
+          </div>
+        </BaseCard>
+      </div>
+    </div>
   );
 }
 
@@ -525,29 +616,38 @@ export function SecurityCameraDashboard({
   updateCardSize,
   onRemoveEntity,
   surface,
-  isOverviewCustomizationOpen = false,
-  onOverviewCustomizationOpenChange,
 }: SecurityCameraDashboardProps) {
   const { t } = useI18n();
+  const [summaryFilter, setSummaryFilter] = useState<
+    'critical' | 'attention' | 'unavailable' | 'cameras' | null
+  >(null);
   const [viewerCamera, setViewerCamera] = useState<CameraDevice | null>(null);
   const detailsRef = useRef<HTMLDivElement | null>(null);
   const [pendingNavigationEntityId, setPendingNavigationEntityId] = useState<string | null>(null);
-  const [storedOverviewPreference, setStoredOverviewPreference] = usePersistedState(
-    STORAGE_KEYS.securityOverviewPreferences,
-    DEFAULT_SECURITY_OVERVIEW_PREFERENCE
+  const [storedQuickviewPreference, setStoredQuickviewPreference] = usePersistedState(
+    STORAGE_KEYS.securityQuickviewPreferences,
+    DEFAULT_SECURITY_QUICKVIEW_PREFERENCE
   );
-  const overviewPreference = useMemo(
-    () => normalizeSecurityOverviewPreference(storedOverviewPreference),
-    [storedOverviewPreference]
+  const quickviewPreference = useMemo(
+    () => normalizeSecurityQuickviewPreference(storedQuickviewPreference),
+    [storedQuickviewPreference]
   );
-  const automaticOverviewEntityIds = useMemo(
-    () => getAutomaticSecurityOverviewEntityIds(model.allEntities),
-    [model.allEntities]
+  const quickviewEntities = useMemo(
+    () => resolveSecurityQuickviewEntities(quickviewPreference, model.allEntities),
+    [model.allEntities, quickviewPreference]
   );
-  const overviewEntities = useMemo(
-    () => resolveSecurityOverviewEntities(overviewPreference, model.allEntities),
-    [model.allEntities, overviewPreference]
-  );
+  const portraitMosaicCameras = useMemo(() => {
+    const sourceEntities = quickviewEntities;
+
+    return sourceEntities
+      .filter(
+        (entity): entity is Extract<DeviceWithType, { type: 'cameras' }> =>
+          entity.type === 'cameras'
+      )
+      .slice(0, 4);
+  }, [model.allEntities, quickviewEntities, quickviewPreference.mode]);
+  const canUsePortraitMosaic =
+    portraitMosaicCameras.length > 0 && portraitMosaicCameras.length === quickviewEntities.length;
   const roomGroupSummaries = useMemo(
     () => buildSecurityRoomGroupSummaries(model.allEntities, t),
     [model.allEntities, t]
@@ -567,11 +667,63 @@ export function SecurityCameraDashboard({
   const [selectedRoomGroupId, setSelectedRoomGroupId] = useState(
     () => roomGroupSummaries[0]?.id ?? ''
   );
-  const groupSummaries =
+  const baseGroupSummaries =
     groupingMode === 'type' ? model.summary.groupSummaries : roomGroupSummaries;
-  const selectedGroupId = groupingMode === 'type' ? selectedTypeGroupId : selectedRoomGroupId;
+  const filteredEntities =
+    summaryFilter === 'critical'
+      ? model.summary.attentionEntities.filter(
+          (entity) => getSecuritySeverity(entity) === 'critical'
+        )
+      : summaryFilter === 'attention'
+        ? model.summary.attentionEntities.filter(
+            (entity) => getSecuritySeverity(entity) === 'warning'
+          )
+        : summaryFilter === 'unavailable'
+          ? model.summary.unknownItems
+          : model.summary.liveItems;
+  const filterGroup: SecurityGroupSummary | null = summaryFilter
+    ? {
+        id: `filter-${summaryFilter}`,
+        label: t(
+          summaryFilter === 'critical'
+            ? 'security.severity.critical'
+            : summaryFilter === 'attention'
+              ? 'security.severity.attention'
+              : summaryFilter === 'unavailable'
+                ? 'security.dashboard.unavailable'
+                : 'security.dashboard.availableCameras'
+        ),
+        severity:
+          summaryFilter === 'critical'
+            ? 'critical'
+            : summaryFilter === 'attention'
+              ? 'warning'
+              : summaryFilter === 'unavailable'
+                ? 'unknown'
+                : 'active',
+        total: filteredEntities.length,
+        critical: filteredEntities.filter((entity) => getSecuritySeverity(entity) === 'critical')
+          .length,
+        warning: filteredEntities.filter((entity) => getSecuritySeverity(entity) === 'warning')
+          .length,
+        active: filteredEntities.filter((entity) => getSecuritySeverity(entity) === 'active')
+          .length,
+        unknown: filteredEntities.filter((entity) => getSecuritySeverity(entity) === 'unknown')
+          .length,
+        normal: filteredEntities.filter((entity) => getSecuritySeverity(entity) === 'normal')
+          .length,
+        summaryText: '',
+        entities: filteredEntities,
+        defaultExpanded: true,
+      }
+    : null;
+  const groupSummaries = filterGroup ? [filterGroup, ...baseGroupSummaries] : baseGroupSummaries;
+  const selectedGroupId =
+    filterGroup?.id ?? (groupingMode === 'type' ? selectedTypeGroupId : selectedRoomGroupId);
   const selectGroup = useCallback(
     (groupId: string) => {
+      if (groupId.startsWith('filter-')) return;
+      setSummaryFilter(null);
       if (groupingMode === 'type') {
         setSelectedTypeGroupId(groupId);
       } else {
@@ -614,9 +766,19 @@ export function SecurityCameraDashboard({
 
       if (target) {
         target.focus({ preventScroll: true });
-        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        target.scrollIntoView({
+          behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+            ? 'auto'
+            : 'smooth',
+          block: 'center',
+        });
       } else {
-        detailsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        detailsRef.current?.scrollIntoView({
+          behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+            ? 'auto'
+            : 'smooth',
+          block: 'start',
+        });
       }
       setPendingNavigationEntityId(null);
     });
@@ -648,24 +810,41 @@ export function SecurityCameraDashboard({
   );
 
   const handleAttentionItemClick = (device: DeviceWithType) => {
+    if (device.securityKind === 'motion' || device.securityKind === 'occupancy') {
+      const camera = model.allEntities.find(
+        (entity): entity is CameraDevice & { type: 'cameras' } =>
+          entity.type === 'cameras' &&
+          Boolean(device.underlyingDeviceId) &&
+          entity.underlyingDeviceId === device.underlyingDeviceId
+      );
+      if (camera) {
+        setViewerCamera(camera);
+        return;
+      }
+    }
     navigateToEntity(device);
   };
 
-  const handleUnavailableSummaryClick = useCallback(() => {
-    const firstUnavailableDevice = model.summary.unknownItems[0];
-    if (firstUnavailableDevice) {
-      navigateToEntity(firstUnavailableDevice);
-    }
-  }, [model.summary.unknownItems, navigateToEntity]);
-
-  const handleAttentionSummaryClick = useCallback(() => {
-    const firstAttentionDevice = model.summary.attentionEntities.find(
-      (entity) => entity.securitySeverity !== 'critical' && entity.securitySeverity !== 'unknown'
-    );
-    if (firstAttentionDevice) {
-      navigateToEntity(firstAttentionDevice);
-    }
-  }, [model.summary.attentionEntities, navigateToEntity]);
+  const focusDetails = useCallback(() => {
+    requestAnimationFrame(() => {
+      detailsRef.current
+        ?.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]')
+        ?.focus({ preventScroll: true });
+      detailsRef.current?.scrollIntoView({
+        behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+          ? 'auto'
+          : 'smooth',
+        block: 'start',
+      });
+    });
+  }, []);
+  const showSummaryFilter = useCallback(
+    (filter: 'critical' | 'attention' | 'unavailable' | 'cameras') => {
+      setSummaryFilter(filter);
+      focusDetails();
+    },
+    [focusDetails]
+  );
 
   const summaryItems = useMemo<HomeStatusSummaryItem[]>(() => {
     const items: HomeStatusSummaryItem[] = [];
@@ -674,11 +853,12 @@ export function SecurityCameraDashboard({
     );
     if (model.summary.liveItems.length > 0) {
       items.push({
-        id: 'security-live',
-        title: t('security.dashboard.live'),
-        value: t('security.summary.live', { count: model.summary.liveItems.length }),
-        icon: Radio,
+        id: 'security-cameras',
+        title: t('security.group.cameras'),
+        value: t('security.summary.available', { count: model.summary.liveItems.length }),
+        icon: Video,
         iconColor: '#94a3b8',
+        onSelect: () => showSummaryFilter('cameras'),
       });
     }
     if (model.summary.criticalCount > 0) {
@@ -690,6 +870,7 @@ export function SecurityCameraDashboard({
         iconColor: '#ef4444',
         priority: 'critical',
         tone: 'danger',
+        onSelect: () => showSummaryFilter('critical'),
       });
     }
     if (model.summary.warningCount > 0) {
@@ -701,7 +882,7 @@ export function SecurityCameraDashboard({
         iconColor: hasDangerAttention ? '#ef4444' : '#f59e0b',
         priority: hasDangerAttention ? 'critical' : 'attention',
         tone: hasDangerAttention ? 'danger' : 'warning',
-        onSelect: handleAttentionSummaryClick,
+        onSelect: () => showSummaryFilter('attention'),
       });
     }
     if (model.summary.unknownCount > 0) {
@@ -713,97 +894,155 @@ export function SecurityCameraDashboard({
         iconColor: '#94a3b8',
         priority: 'attention',
         tone: 'neutral',
-        onSelect: handleUnavailableSummaryClick,
+        onSelect: () => showSummaryFilter('unavailable'),
       });
     }
-    if (model.summary.normalCount > 0) {
+    for (const group of model.summary.groupSummaries) {
+      if (!['doors-windows', 'locks', 'hazards', 'motion-occupancy', 'system'].includes(group.id))
+        continue;
       items.push({
-        id: 'security-secure',
-        title: t('security.severity.normal'),
-        value: String(model.summary.normalCount),
-        icon: ShieldCheck,
-        iconColor: '#94a3b8',
+        id: `security-group-${group.id}`,
+        title: group.label,
+        value: group.summaryText,
+        icon: group.id === 'motion-occupancy' ? Radio : ShieldCheck,
+        iconColor: group.critical > 0 ? '#ef4444' : group.warning > 0 ? '#f59e0b' : '#94a3b8',
+        tone: group.critical > 0 ? 'danger' : group.warning > 0 ? 'warning' : 'neutral',
+        onSelect: () => {
+          setSummaryFilter(null);
+          setGroupingMode('type');
+          setSelectedTypeGroupId(group.id);
+          focusDetails();
+        },
       });
     }
     return items;
-  }, [handleAttentionSummaryClick, handleUnavailableSummaryClick, model.summary, t]);
+  }, [model.summary, t, showSummaryFilter, setSelectedTypeGroupId, focusDetails]);
+
+  const quickviewIds =
+    quickviewPreference.mode === 'custom'
+      ? quickviewPreference.entityIds
+      : quickviewEntities.map((entity) => entity.id);
+  const pinQuickviewEntity = (entityId: string, beforeId?: string) => {
+    setStoredQuickviewPreference(placeSecurityQuickviewEntity(quickviewIds, entityId, beforeId));
+  };
+  const unpinQuickviewEntity = (entityId: string) => {
+    setStoredQuickviewPreference({
+      mode: 'custom',
+      entityIds: quickviewIds.filter((id) => id !== entityId),
+    });
+  };
 
   return (
-    <div className="space-y-7">
-      <SummaryBarStack>
-        <SummaryBar items={summaryItems} ariaLabel={t('homeSummary.security')} />
-        <SecurityCommandCenter
-          model={model}
-          alarms={alarms}
-          surface={surface}
-          renderOverviewContent={(columnCount, isMobile) =>
-            isMobile ? (
-              <MobileOverviewCarousel
-                devices={overviewEntities}
-                cardSizes={cardSizes}
-                updateCardSize={updateCardSize}
-                isEditMode={isEditMode}
-              />
-            ) : (
-              <DetailsGrid
-                devices={overviewEntities}
-                cardSizes={cardSizes}
-                updateCardSize={updateCardSize}
-                isEditMode={isEditMode}
-                allowEntityRemoval={false}
-                embeddedColumnCount={columnCount}
-              />
-            )
-          }
-          renderDetailsContent={
-            model.summary.totalEntities > 0
-              ? (columnCount) => (
-                  <div ref={detailsRef}>
-                    <DetailsSection
-                      groupSummaries={groupSummaries}
-                      selectedGroupId={selectedGroupId}
-                      groupingMode={groupingMode}
-                      onSelectGroup={selectGroup}
-                      onGroupingModeChange={setGroupingMode}
-                      cardSizes={cardSizes}
-                      updateCardSize={updateCardSize}
+    <SecurityQuickviewEditor
+      entities={model.allEntities}
+      entityIds={quickviewIds}
+      onPin={pinQuickviewEntity}
+      onUnpin={unpinQuickviewEntity}
+    >
+      <div className="space-y-7">
+        <SummaryBarStack>
+          <SummaryBar items={summaryItems} ariaLabel={t('homeSummary.security')} />
+          <SecurityCommandCenter
+            model={model}
+            alarms={alarms}
+            surface={surface}
+            renderQuickviewContent={
+              quickviewEntities.length === 0 && !isEditMode
+                ? undefined
+                : (columnCount, layout) => (
+                    <SecurityQuickviewDropZone
+                      location="quickview"
                       isEditMode={isEditMode}
-                      onRemoveEntity={onRemoveEntity}
-                      embeddedColumnCount={columnCount}
-                    />
-                  </div>
-                )
-              : undefined
-          }
-          onSelectEntity={handleAttentionItemClick}
-          onSelectCamera={setViewerCamera}
-        />
-      </SummaryBarStack>
-
-      {viewerCamera ? (
-        <SummaryCameraViewer
-          camera={viewerCamera}
-          isOpen={viewerCamera !== null}
-          onOpenChange={(open) => {
-            if (!open) {
-              setViewerCamera(null);
+                      showHeader={quickviewEntities.length > 0}
+                    >
+                      {quickviewEntities.length === 0 ? (
+                        <DashboardEmptyState
+                          compact
+                          icon={Pin}
+                          title={t('security.quickview.emptyTitle')}
+                          description={t('security.quickview.dropHint')}
+                          surface={surface}
+                        />
+                      ) : isEditMode ? (
+                        <DetailsGrid
+                          devices={quickviewEntities}
+                          cardSizes={cardSizes}
+                          updateCardSize={updateCardSize}
+                          isEditMode
+                          allowEntityRemoval={false}
+                          embeddedColumnCount={columnCount}
+                          location="quickview"
+                          onRemoveFromQuickview={unpinQuickviewEntity}
+                        />
+                      ) : layout === 'mobile-carousel' ? (
+                        <MobileQuickviewCarousel
+                          devices={quickviewEntities}
+                          cardSizes={cardSizes}
+                          updateCardSize={updateCardSize}
+                          isEditMode={isEditMode}
+                        />
+                      ) : layout === 'portrait-mosaic' && canUsePortraitMosaic ? (
+                        <CameraQuickviewMosaic
+                          cameras={portraitMosaicCameras}
+                          updateCardSize={updateCardSize}
+                          isEditMode={isEditMode}
+                          columnCount={columnCount}
+                        />
+                      ) : (
+                        <DetailsGrid
+                          devices={quickviewEntities}
+                          cardSizes={cardSizes}
+                          updateCardSize={updateCardSize}
+                          isEditMode={isEditMode}
+                          allowEntityRemoval={false}
+                          embeddedColumnCount={columnCount}
+                        />
+                      )}
+                    </SecurityQuickviewDropZone>
+                  )
             }
-          }}
-        />
-      ) : null}
-
-      {isOverviewCustomizationOpen ? (
-        <Suspense fallback={null}>
-          <SecurityOverviewCustomizationDialog
-            automaticEntityIds={automaticOverviewEntityIds}
-            entities={model.allEntities}
-            isOpen={isOverviewCustomizationOpen}
-            onOpenChange={(open) => onOverviewCustomizationOpenChange?.(open)}
-            onSave={setStoredOverviewPreference}
-            preference={overviewPreference}
+            renderDetailsContent={
+              model.summary.totalEntities > 0
+                ? (columnCount) => (
+                    <div ref={detailsRef}>
+                      <SecurityQuickviewDropZone location="devices" isEditMode={isEditMode}>
+                        <DetailsSection
+                          groupSummaries={groupSummaries}
+                          selectedGroupId={selectedGroupId}
+                          groupingMode={groupingMode}
+                          onSelectGroup={selectGroup}
+                          onGroupingModeChange={(mode) => {
+                            setSummaryFilter(null);
+                            setGroupingMode(mode);
+                          }}
+                          cardSizes={cardSizes}
+                          updateCardSize={updateCardSize}
+                          isEditMode={isEditMode}
+                          onRemoveEntity={onRemoveEntity}
+                          embeddedColumnCount={columnCount}
+                        />
+                      </SecurityQuickviewDropZone>
+                    </div>
+                  )
+                : undefined
+            }
+            onSelectEntity={handleAttentionItemClick}
+            onSelectCamera={setViewerCamera}
           />
-        </Suspense>
-      ) : null}
-    </div>
+        </SummaryBarStack>
+
+        {viewerCamera ? (
+          <SummaryCameraViewer
+            camera={viewerCamera}
+            isOpen={viewerCamera !== null}
+            onOpenChange={(open) => {
+              if (!open) {
+                setViewerCamera(null);
+              }
+            }}
+          />
+        ) : null}
+      </div>
+    </SecurityQuickviewEditor>
   );
 }

@@ -2,7 +2,7 @@ import { integrationStore } from '@navet/app/stores/integration-store';
 import { renderWithProviders } from '@navet/app/test/render';
 import { fireEvent, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { AddCardDialogContainer } from './container';
+import { AddEntityDialogPrimitive } from './primitive';
 
 const demoLibraryCards = [
   {
@@ -27,10 +27,10 @@ const demoLibraryCards = [
   },
 ];
 
-describe('AddCardDialogContainer', () => {
+describe('AddEntityDialogPrimitive', () => {
   it('renders the expanded workspace with responsive card navigation', () => {
     renderWithProviders(
-      <AddCardDialogContainer
+      <AddEntityDialogPrimitive
         open
         onClose={() => {}}
         onAddCard={vi.fn()}
@@ -105,7 +105,7 @@ describe('AddCardDialogContainer', () => {
 
   it('filters normal cards from the entity-type sidebar', () => {
     renderWithProviders(
-      <AddCardDialogContainer
+      <AddEntityDialogPrimitive
         open
         onClose={() => {}}
         onAddCard={vi.fn()}
@@ -126,7 +126,7 @@ describe('AddCardDialogContainer', () => {
     const onAddLibraryCard = vi.fn();
 
     renderWithProviders(
-      <AddCardDialogContainer
+      <AddEntityDialogPrimitive
         open
         onClose={() => {}}
         onAddCard={vi.fn()}
@@ -144,7 +144,7 @@ describe('AddCardDialogContainer', () => {
 
   it('filters cards by room beside search', () => {
     renderWithProviders(
-      <AddCardDialogContainer
+      <AddEntityDialogPrimitive
         open
         onClose={() => {}}
         onAddCard={vi.fn()}
@@ -179,7 +179,7 @@ describe('AddCardDialogContainer', () => {
 
   it('cycles entity-card sorting through ascending, descending, and default order', () => {
     renderWithProviders(
-      <AddCardDialogContainer
+      <AddEntityDialogPrimitive
         open
         onClose={() => {}}
         onAddCard={vi.fn()}
@@ -244,7 +244,7 @@ describe('AddCardDialogContainer', () => {
     const onClose = vi.fn();
 
     renderWithProviders(
-      <AddCardDialogContainer
+      <AddEntityDialogPrimitive
         open
         onClose={onClose}
         onAddCard={vi.fn()}
@@ -264,7 +264,7 @@ describe('AddCardDialogContainer', () => {
     const onAddCard = vi.fn();
 
     renderWithProviders(
-      <AddCardDialogContainer
+      <AddEntityDialogPrimitive
         open
         onClose={() => {}}
         onAddCard={onAddCard}
@@ -296,7 +296,7 @@ describe('AddCardDialogContainer', () => {
     const onAddCard = vi.fn();
 
     renderWithProviders(
-      <AddCardDialogContainer
+      <AddEntityDialogPrimitive
         open
         onClose={() => {}}
         onAddCard={onAddCard}
@@ -309,6 +309,12 @@ describe('AddCardDialogContainer', () => {
     );
 
     expect(screen.getByText('Energy Now')).toBeInTheDocument();
+    const sidebar = screen.getByRole('navigation', { name: 'Add Card' });
+    expect(within(sidebar).getByRole('button', { name: /Custom cards/ })).toHaveAttribute(
+      'aria-current',
+      'page'
+    );
+    expect(within(sidebar).queryByRole('button', { name: /All cards/ })).not.toBeInTheDocument();
     fireEvent.click(screen.getByText('Energy Metric').closest('button') as HTMLButtonElement);
     fireEvent.click(screen.getByRole('button', { name: /add widget/i }));
 
@@ -328,7 +334,7 @@ describe('AddCardDialogContainer', () => {
 
   it('does not expose extra-small sizing for the energy metric template', () => {
     renderWithProviders(
-      <AddCardDialogContainer
+      <AddEntityDialogPrimitive
         open
         onClose={() => {}}
         onAddCard={vi.fn()}
@@ -347,7 +353,7 @@ describe('AddCardDialogContainer', () => {
 
   it('hides the media stack template from the custom card chooser', () => {
     renderWithProviders(
-      <AddCardDialogContainer
+      <AddEntityDialogPrimitive
         open
         onClose={() => {}}
         onAddCard={vi.fn()}
@@ -376,7 +382,7 @@ describe('AddCardDialogContainer', () => {
     });
 
     renderWithProviders(
-      <AddCardDialogContainer
+      <AddEntityDialogPrimitive
         open
         onClose={() => {}}
         onAddCard={vi.fn()}
@@ -393,7 +399,7 @@ describe('AddCardDialogContainer', () => {
 
   it('sorts custom cards by translated name in ascending order', () => {
     renderWithProviders(
-      <AddCardDialogContainer
+      <AddEntityDialogPrimitive
         open
         onClose={() => {}}
         onAddCard={vi.fn()}
@@ -429,7 +435,7 @@ describe('AddCardDialogContainer', () => {
 
   it('does not match hidden entity ids for plain entity search terms', () => {
     renderWithProviders(
-      <AddCardDialogContainer
+      <AddEntityDialogPrimitive
         open
         onClose={() => {}}
         onAddCard={vi.fn()}
@@ -472,7 +478,7 @@ describe('AddCardDialogContainer', () => {
 
   it('matches native entity ids supplied by the manual entity catalog', () => {
     renderWithProviders(
-      <AddCardDialogContainer
+      <AddEntityDialogPrimitive
         open
         onClose={() => {}}
         onAddCard={vi.fn()}

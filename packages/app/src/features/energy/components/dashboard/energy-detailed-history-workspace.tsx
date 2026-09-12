@@ -1,17 +1,15 @@
-import { CardDialogSection, NavigationWorkspace } from '@navet/app/components/patterns';
 import {
   BaseCard,
-  BaseCardDialog,
   Button,
   InteractivePill,
   OverlayScrollArea,
-  SheetSurfaceHeader,
 } from '@navet/app/components/primitives';
 import { EntityCardHeaderIcon } from '@navet/app/components/primitives/entity-card-header-icon';
-import { withTintAlpha } from '@navet/app/components/shared/theme/custom-card-tint-surface';
+import { CardEditActionButton } from '@navet/app/components/shared/card-edit-action-button';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { cn } from '@navet/app/components/ui/utils';
 import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
+import { AddEntityDialogPrimitive } from '@navet/app/features/dashboard/components/add-entity-dialog';
 import { useEnergyHistoryWorkspace } from '@navet/app/features/energy/hooks/use-energy-history-workspace';
 import { useProviderEnergyKpiMetrics } from '@navet/app/features/energy/hooks/use-provider-energy-kpi-metrics';
 import type {
@@ -42,14 +40,12 @@ import { integrationSelectors } from '@navet/app/stores/selectors';
 import {
   ArrowLeft,
   BatteryCharging,
-  Check,
   ChevronLeft,
   ChevronRight,
   CircleDollarSign,
   Gauge,
-  GripVertical,
   type LucideIcon,
-  SlidersHorizontal,
+  Pencil,
   SunMedium,
   TrendingDown,
   TrendingUp,
@@ -57,9 +53,10 @@ import {
   WalletCards,
   Zap,
 } from 'lucide-react';
-import { type CSSProperties, lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { type CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
 import { EnergyHistoryBarChart } from '../charts/energy-history-bar-chart';
 import { EnergySparkline } from '../charts/energy-sparkline';
+import { EnergyCardArrangement } from './energy-card-arrangement';
 
 type EnergyUsageRange = 'live' | EnergyHistoryRange;
 
@@ -95,8 +92,6 @@ interface EnergyKpiPreference {
   metricIds: string[];
 }
 
-type EnergyKpiEditorSection = 'automatic' | 'selection' | 'order';
-
 interface EnergyKpiPreferences {
   version: 1;
   byProvider: Record<string, EnergyKpiPreference>;
@@ -106,11 +101,6 @@ const DEFAULT_ENERGY_KPI_PREFERENCES: EnergyKpiPreferences = {
   version: 1,
   byProvider: {},
 };
-
-const EnergyKpiOrderEditor = lazy(async () => {
-  const module = await import('./energy-kpi-order-editor');
-  return { default: module.EnergyKpiOrderEditor };
-});
 
 const RANGE_LABELS: Record<EnergyUsageRange, TranslationKey> = {
   live: 'energy.range.live',
@@ -138,10 +128,9 @@ export function EnergyDetailedHistoryWorkspace({
   mainCardStyle,
   metricRowSpan,
   useBentoLayout = false,
+  isEditMode = false,
   statisticsLoader,
   sources = EMPTY_HISTORY_SOURCES,
-  isKpiCustomizationOpen = false,
-  onKpiCustomizationOpenChange,
 }: {
   currentLoadStatisticId?: string;
   accentColor: string;
@@ -157,18 +146,23 @@ export function EnergyDetailedHistoryWorkspace({
   mainCardStyle?: CSSProperties;
   metricRowSpan?: number;
   useBentoLayout?: boolean;
+  isEditMode?: boolean;
   statisticsLoader?: (
     request: PlatformStatisticsHistoryRequest
   ) => Promise<PlatformStatisticsHistorySeries | null>;
   sources?: EnergyHistorySource[];
-  isKpiCustomizationOpen?: boolean;
-  onKpiCustomizationOpenChange?: (open: boolean) => void;
 }) {
   const { theme } = useTheme();
+  const [usageCardOrder, setUsageCardOrder] = usePersistedState<string[]>(
+    STORAGE_KEYS.energyUsageCardOrder,
+    []
+  );
   const { locale, t } = useI18n();
   const isPhone = useMediaQuery('(max-width: 639px)');
   const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
   const providerKpiMetrics = useProviderEnergyKpiMetrics();
+  const [kpisHidden] = usePersistedState(STORAGE_KEYS.energyKpisHidden, false);
+  const [editingKpiIndex, setEditingKpiIndex] = useState<number | null>(null);
   const [kpiPreferences, setKpiPreferences] = usePersistedState<EnergyKpiPreferences>(
     STORAGE_KEYS.energyKpiPreferences,
     DEFAULT_ENERGY_KPI_PREFERENCES
@@ -579,269 +573,296 @@ export function EnergyDetailedHistoryWorkspace({
       ? priorityData.totals.costToday
       : undefined;
 
+  const usageCard = (
+    <BaseCard
+      size="extra-large"
+      fullBleed
+      surfaceVariant="muted"
+      className={cn('h-full min-w-0 w-full overflow-hidden', useBentoLayout && 'h-full')}
+      data-testid="energy-usage-card"
+      data-overview-module="usage"
+      style={useBentoLayout ? undefined : mainCardStyle}
+      title={
+        selectedBucket
+          ? t('energy.historyWorkspace.selected', { period: selectedBucketUnit })
+          : t('energy.historyWorkspace.usage')
+      }
+      subtitle={
+        isLiveChart
+          ? t('energy.historyWorkspace.liveDemand')
+          : selectedBucket
+            ? formatTimeWindow(selectedBucket.startMs, selectedBucket.endMs, locale)
+            : t('energy.historyWorkspace.inspectPeriod', { period: historyPeriodContext })
+      }
+      headerLayout="title-first"
+      headerLeading={
+        selectedBucket ? (
+          <div className="flex items-start gap-1.5">
+            <Button
+              iconOnly
+              label={t('energy.historyWorkspace.backToChart')}
+              size="compact"
+              variant="ghost"
+              className="h-8 w-8"
+              onClick={() => setSelectedBucketIndex(null)}
+            >
+              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+            </Button>
+            <EntityCardHeaderIcon
+              IconComponent={Gauge}
+              isActive
+              size="extra-large"
+              baseColor={selectedSourceColor}
+            />
+          </div>
+        ) : (
+          <EntityCardHeaderIcon
+            IconComponent={TrendingUp}
+            isActive
+            size="extra-large"
+            baseColor={selectedSourceColor}
+          />
+        )
+      }
+      headerTrailing={
+        selectedBucket ? undefined : (
+          <div
+            className="flex min-w-0 flex-row items-center justify-between gap-2 sm:justify-start"
+            data-testid="energy-usage-toolbar"
+          >
+            {!isLiveChart && historyNavigationUnit ? (
+              <fieldset className="order-2 m-0 flex min-w-0 flex-1 items-center justify-end gap-0.5 border-0 p-0 sm:order-1 sm:flex-none sm:gap-1">
+                <legend className="sr-only">
+                  {t('energy.historyWorkspace.displayed', { period: historyNavigationUnit })}
+                </legend>
+                <Button
+                  iconOnly
+                  label={t('energy.historyWorkspace.previous', {
+                    period: historyNavigationUnit,
+                  })}
+                  size="compact"
+                  variant="ghost"
+                  className="h-9 w-9 shrink-0"
+                  onClick={() =>
+                    onReferenceDateChange(shiftHistoryReference(insightsRange, referenceDateMs, -1))
+                  }
+                >
+                  <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+                </Button>
+                <span
+                  className={cn(
+                    'min-w-0 flex-1 truncate px-0.5 text-center text-[11px] font-semibold tabular-nums sm:min-w-28 sm:flex-none sm:px-1 sm:text-xs',
+                    surface.textPrimary
+                  )}
+                >
+                  {historyPeriodContext}
+                </span>
+                <Button
+                  iconOnly
+                  label={t('energy.historyWorkspace.next', { period: historyNavigationUnit })}
+                  size="compact"
+                  variant="ghost"
+                  className="h-9 w-9 shrink-0"
+                  disabled={isCurrentHistoryPeriod}
+                  onClick={() =>
+                    onReferenceDateChange(shiftHistoryReference(insightsRange, referenceDateMs, 1))
+                  }
+                >
+                  <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                </Button>
+              </fieldset>
+            ) : null}
+            <nav
+              className="order-1 flex shrink-0 gap-1 sm:order-2 sm:gap-1.5"
+              aria-label={t('energy.historyWorkspace.view')}
+            >
+              <InteractivePill
+                active={isLiveChart}
+                aria-pressed={isLiveChart}
+                size="compact"
+                className="px-2.5 sm:px-3"
+                onClick={() => {
+                  setChartMode('live');
+                  setSelectedBucketIndex(null);
+                }}
+              >
+                {t('energy.range.live')}
+              </InteractivePill>
+              <InteractivePill
+                active={!isLiveChart}
+                aria-pressed={!isLiveChart}
+                size="compact"
+                className="px-2.5 sm:px-3"
+                onClick={() => {
+                  setChartMode('insights');
+                  setSelectedBucketIndex(null);
+                }}
+              >
+                {t(RANGE_LABELS[insightsRange])}
+              </InteractivePill>
+            </nav>
+          </div>
+        )
+      }
+      headerClassName={
+        selectedBucket
+          ? 'px-3 pt-3'
+          : 'flex-wrap px-3 pt-3 [&>div:last-child]:w-full [&>div:last-child]:basis-full lg:flex-nowrap lg:[&>div:last-child]:w-auto lg:[&>div:last-child]:basis-auto'
+      }
+      headerMarginBottomClassName="mb-3"
+    >
+      <div className="flex h-full min-h-0 flex-col">
+        {!isLiveChart && !selectedBucket && shouldShowSourceSelector ? (
+          <div className="scrollbar-hide flex gap-1.5 overflow-x-auto px-3 pb-3">
+            {availableSources.map((source) => (
+              <InteractivePill
+                key={source.id}
+                active={selectedSource?.id === source.id}
+                aria-pressed={selectedSource?.id === source.id}
+                size="compact"
+                onClick={() => {
+                  setSelectedSourceId(source.id);
+                  setSelectedBucketIndex(null);
+                }}
+              >
+                {source.label}
+              </InteractivePill>
+            ))}
+          </div>
+        ) : null}
+
+        {isLiveChart ? (
+          <>
+            {!useBentoLayout ? <HistoryMetricRow metrics={usageMetrics} /> : null}
+            {livePoints.length >= 2 ? (
+              <div className="relative min-h-0 flex-1">
+                <div className="absolute inset-x-0 top-2 bottom-0 overflow-visible">
+                  <EnergySparkline
+                    data={livePoints}
+                    accentColor={selectedSourceColor}
+                    height={52}
+                    className="h-full w-full"
+                    showYAxisMarks
+                    showPowerRange
+                    fillOpacity={0.12}
+                    padX={0}
+                    strokeWidth={1}
+                    valueKind="power"
+                  />
+                </div>
+                <div
+                  className={`pointer-events-none absolute inset-x-0 bottom-0 z-10 flex justify-between gap-3 px-3 pb-3 text-xs ${surface.textMuted}`}
+                >
+                  {livePoints
+                    .filter((_, index) => liveTickIndexes.has(index))
+                    .map((point, index) => (
+                      <span
+                        key={`${point.timestampMs ?? point.label}-${index}`}
+                        className="min-w-0 flex-1 truncate text-center first:text-left last:text-right"
+                      >
+                        {point.label}
+                      </span>
+                    ))}
+                </div>
+              </div>
+            ) : (
+              <div
+                className={`m-3 flex min-h-32 flex-1 items-center justify-center rounded-2xl border border-dashed px-4 text-center text-sm ${surface.border} ${surface.textMuted}`}
+              >
+                {t('energy.historyWorkspace.liveEmpty')}
+              </div>
+            )}
+          </>
+        ) : isLoading ? (
+          <div className="flex min-h-64 flex-1 items-center justify-center">
+            <EnergyLoadingIndicator />
+          </div>
+        ) : error ? (
+          <div
+            className={`flex min-h-64 flex-1 items-center justify-center px-6 text-sm ${surface.textSecondary}`}
+          >
+            {t('energy.historyWorkspace.historyError')}
+          </div>
+        ) : !model || chartData.length === 0 ? (
+          <div
+            className={`flex min-h-64 flex-1 items-center justify-center px-6 text-center text-sm ${surface.textSecondary}`}
+          >
+            {t('energy.historyWorkspace.historyEmpty')}
+          </div>
+        ) : selectedBucket ? (
+          <SelectedPeriodView
+            bucket={selectedBucket}
+            contributions={model.deviceBreakdown}
+            untrackedEnergyKWh={model.untrackedEnergyKWh}
+            isBreakdownLoading={isBreakdownLoading}
+            showDeviceBreakdown={selectedSource?.id === 'home'}
+            periodCost={selectedBucketCost}
+          />
+        ) : (
+          <>
+            {!useBentoLayout ? <HistoryMetricRow metrics={usageMetrics} /> : null}
+            <div className="mx-3 mb-3 flex min-h-0 flex-1 flex-col pt-2">
+              <div className="min-h-0 flex-1">
+                <EnergyHistoryBarChart
+                  data={chartData}
+                  showPowerRange={selectedSource?.valueKind === 'power'}
+                  accentColor={selectedSourceColor}
+                  ariaLabel={t('energy.history.usageByPeriod')}
+                  className="h-full w-full"
+                  selectionDetailsId="energy-selected-period-details"
+                  selectedIndex={selectedBucketIndex}
+                  onSelectedIndexChange={setSelectedBucketIndex}
+                />
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </BaseCard>
+  );
+
   return (
     <>
       <div
         className={useBentoLayout ? 'contents' : 'space-y-3'}
         data-testid="energy-history-workspace"
       >
-        {useBentoLayout
-          ? usageMetrics.map((metric, index) => (
-              <EnergyUsageMetricCard
-                key={metric.id}
-                metric={metric}
-                gridColumnSpan={metricCardSpans[index]}
-                compactHeader={isPhone}
-              />
-            ))
-          : null}
-        <BaseCard
-          size="extra-large"
-          fullBleed
-          surfaceVariant="muted"
-          className={cn('h-full min-w-0 w-full overflow-hidden', useBentoLayout && 'row-span-4')}
-          data-testid="energy-usage-card"
-          data-overview-module="usage"
-          style={mainCardStyle}
-          title={
-            selectedBucket
-              ? t('energy.historyWorkspace.selected', { period: selectedBucketUnit })
-              : t('energy.historyWorkspace.usage')
-          }
-          subtitle={
-            isLiveChart
-              ? t('energy.historyWorkspace.liveDemand')
-              : selectedBucket
-                ? formatTimeWindow(selectedBucket.startMs, selectedBucket.endMs, locale)
-                : t('energy.historyWorkspace.inspectPeriod', { period: historyPeriodContext })
-          }
-          headerLayout="title-first"
-          headerLeading={
-            selectedBucket ? (
-              <div className="flex items-start gap-1.5">
-                <Button
-                  iconOnly
-                  label={t('energy.historyWorkspace.backToChart')}
-                  size="compact"
-                  variant="ghost"
-                  className="h-8 w-8"
-                  onClick={() => setSelectedBucketIndex(null)}
-                >
-                  <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-                </Button>
-                <EntityCardHeaderIcon
-                  IconComponent={Gauge}
-                  isActive
-                  size="extra-large"
-                  baseColor={selectedSourceColor}
-                />
-              </div>
-            ) : (
-              <EntityCardHeaderIcon
-                IconComponent={TrendingUp}
-                isActive
-                size="extra-large"
-                baseColor={selectedSourceColor}
-              />
-            )
-          }
-          headerTrailing={
-            selectedBucket ? undefined : (
-              <div
-                className="flex min-w-0 flex-row items-center justify-between gap-2 sm:justify-start"
-                data-testid="energy-usage-toolbar"
-              >
-                {!isLiveChart && historyNavigationUnit ? (
-                  <fieldset className="order-2 m-0 flex min-w-0 flex-1 items-center justify-end gap-0.5 border-0 p-0 sm:order-1 sm:flex-none sm:gap-1">
-                    <legend className="sr-only">
-                      {t('energy.historyWorkspace.displayed', { period: historyNavigationUnit })}
-                    </legend>
-                    <Button
-                      iconOnly
-                      label={t('energy.historyWorkspace.previous', {
-                        period: historyNavigationUnit,
-                      })}
-                      size="compact"
-                      variant="ghost"
-                      className="h-9 w-9 shrink-0"
-                      onClick={() =>
-                        onReferenceDateChange(
-                          shiftHistoryReference(insightsRange, referenceDateMs, -1)
-                        )
-                      }
-                    >
-                      <ChevronLeft className="h-4 w-4" aria-hidden="true" />
-                    </Button>
-                    <span
-                      className={cn(
-                        'min-w-0 flex-1 truncate px-0.5 text-center text-[11px] font-semibold tabular-nums sm:min-w-28 sm:flex-none sm:px-1 sm:text-xs',
-                        surface.textPrimary
-                      )}
-                    >
-                      {historyPeriodContext}
-                    </span>
-                    <Button
-                      iconOnly
-                      label={t('energy.historyWorkspace.next', { period: historyNavigationUnit })}
-                      size="compact"
-                      variant="ghost"
-                      className="h-9 w-9 shrink-0"
-                      disabled={isCurrentHistoryPeriod}
-                      onClick={() =>
-                        onReferenceDateChange(
-                          shiftHistoryReference(insightsRange, referenceDateMs, 1)
-                        )
-                      }
-                    >
-                      <ChevronRight className="h-4 w-4" aria-hidden="true" />
-                    </Button>
-                  </fieldset>
-                ) : null}
-                <nav
-                  className="order-1 flex shrink-0 gap-1 sm:order-2 sm:gap-1.5"
-                  aria-label={t('energy.historyWorkspace.view')}
-                >
-                  <InteractivePill
-                    active={isLiveChart}
-                    aria-pressed={isLiveChart}
-                    size="compact"
-                    className="px-2.5 sm:px-3"
-                    onClick={() => {
-                      setChartMode('live');
-                      setSelectedBucketIndex(null);
-                    }}
-                  >
-                    {t('energy.range.live')}
-                  </InteractivePill>
-                  <InteractivePill
-                    active={!isLiveChart}
-                    aria-pressed={!isLiveChart}
-                    size="compact"
-                    className="px-2.5 sm:px-3"
-                    onClick={() => {
-                      setChartMode('insights');
-                      setSelectedBucketIndex(null);
-                    }}
-                  >
-                    {t(RANGE_LABELS[insightsRange])}
-                  </InteractivePill>
-                </nav>
-              </div>
-            )
-          }
-          headerClassName={
-            selectedBucket
-              ? 'px-3 pt-3'
-              : 'flex-wrap px-3 pt-3 [&>div:last-child]:w-full [&>div:last-child]:basis-full lg:flex-nowrap lg:[&>div:last-child]:w-auto lg:[&>div:last-child]:basis-auto'
-          }
-          headerMarginBottomClassName="mb-3"
-        >
-          <div className="flex h-full min-h-0 flex-col">
-            {!isLiveChart && !selectedBucket && shouldShowSourceSelector ? (
-              <div className="scrollbar-hide flex gap-1.5 overflow-x-auto px-3 pb-3">
-                {availableSources.map((source) => (
-                  <InteractivePill
-                    key={source.id}
-                    active={selectedSource?.id === source.id}
-                    aria-pressed={selectedSource?.id === source.id}
-                    size="compact"
-                    onClick={() => {
-                      setSelectedSourceId(source.id);
-                      setSelectedBucketIndex(null);
-                    }}
-                  >
-                    {source.label}
-                  </InteractivePill>
-                ))}
-              </div>
-            ) : null}
-
-            {isLiveChart ? (
-              <>
-                {!useBentoLayout ? <HistoryMetricRow metrics={usageMetrics} /> : null}
-                {livePoints.length >= 2 ? (
-                  <div className="relative min-h-0 flex-1">
-                    <div className="absolute inset-x-0 top-2 bottom-0 overflow-visible">
-                      <EnergySparkline
-                        data={livePoints}
-                        accentColor={selectedSourceColor}
-                        height={52}
-                        className="h-full w-full"
-                        showYAxisMarks
-                        fillOpacity={0.12}
-                        padX={0}
-                        strokeWidth={1}
-                        valueKind="power"
-                      />
-                    </div>
-                    <div
-                      className={`pointer-events-none absolute inset-x-0 bottom-0 z-10 flex justify-between gap-3 px-3 pb-3 text-xs ${surface.textMuted}`}
-                    >
-                      {livePoints
-                        .filter((_, index) => liveTickIndexes.has(index))
-                        .map((point, index) => (
-                          <span
-                            key={`${point.timestampMs ?? point.label}-${index}`}
-                            className="min-w-0 flex-1 truncate text-center first:text-left last:text-right"
-                          >
-                            {point.label}
-                          </span>
-                        ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div
-                    className={`m-3 flex min-h-32 flex-1 items-center justify-center rounded-2xl border border-dashed px-4 text-center text-sm ${surface.border} ${surface.textMuted}`}
-                  >
-                    {t('energy.historyWorkspace.liveEmpty')}
-                  </div>
-                )}
-              </>
-            ) : isLoading ? (
-              <div className="flex min-h-64 flex-1 items-center justify-center">
-                <EnergyLoadingIndicator />
-              </div>
-            ) : error ? (
-              <div
-                className={`flex min-h-64 flex-1 items-center justify-center px-6 text-sm ${surface.textSecondary}`}
-              >
-                {t('energy.historyWorkspace.historyError')}
-              </div>
-            ) : !model || chartData.length === 0 ? (
-              <div
-                className={`flex min-h-64 flex-1 items-center justify-center px-6 text-center text-sm ${surface.textSecondary}`}
-              >
-                {t('energy.historyWorkspace.historyEmpty')}
-              </div>
-            ) : selectedBucket ? (
-              <SelectedPeriodView
-                bucket={selectedBucket}
-                contributions={model.deviceBreakdown}
-                untrackedEnergyKWh={model.untrackedEnergyKWh}
-                isBreakdownLoading={isBreakdownLoading}
-                showDeviceBreakdown={selectedSource?.id === 'home'}
-                periodCost={selectedBucketCost}
-              />
-            ) : (
-              <>
-                {!useBentoLayout ? <HistoryMetricRow metrics={usageMetrics} /> : null}
-                <div className="mx-3 mb-3 flex min-h-0 flex-1 flex-col pt-2">
-                  <div className="min-h-0 flex-1">
-                    <EnergyHistoryBarChart
-                      data={chartData}
-                      accentColor={selectedSourceColor}
-                      ariaLabel="Energy usage by period"
-                      className="h-full w-full"
-                      selectionDetailsId="energy-selected-period-details"
-                      selectedIndex={selectedBucketIndex}
-                      onSelectedIndexChange={setSelectedBucketIndex}
-                    />
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        </BaseCard>
+        {useBentoLayout ? (
+          <EnergyCardArrangement
+            cards={[
+              ...(kpisHidden ? [] : usageMetrics).map((metric, index) => ({
+                id: `kpi:${metric.id}`,
+                name: metric.label,
+                size: 'small' as const,
+                style: { gridColumn: `span ${metricCardSpans[index] ?? 2}`, gridRow: 'span 2' },
+                content: <EnergyUsageMetricCard metric={metric} compactHeader={isPhone} />,
+                editActions: (
+                  <CardEditActionButton
+                    cardSize="small"
+                    Icon={Pencil}
+                    inline
+                    theme={theme}
+                    aria-label={t('common.editItem', { item: metric.label })}
+                    onClick={() => setEditingKpiIndex(index)}
+                  />
+                ),
+              })),
+              {
+                id: 'usage',
+                name: t('energy.historyWorkspace.usage'),
+                size: 'extra-large' as const,
+                style: { ...mainCardStyle, gridRow: 'span 4' },
+                content: usageCard,
+              },
+            ]}
+            order={usageCardOrder}
+            isEditMode={isEditMode}
+            onOrderChange={(ids) =>
+              setUsageCardOrder((current) => [...ids, ...current.filter((id) => !ids.includes(id))])
+            }
+          />
+        ) : null}
+        {!useBentoLayout ? usageCard : null}
 
         {model && chartData.length > 0 && selectedSource?.id !== 'home' ? (
           <section
@@ -889,13 +910,44 @@ export function EnergyDetailedHistoryWorkspace({
         ) : null}
       </div>
 
-      <EnergyKpiPicker
-        isOpen={isKpiCustomizationOpen}
-        onOpenChange={(open) => onKpiCustomizationOpenChange?.(open)}
-        preference={currentKpiPreference}
-        metrics={selectableUsageMetrics}
-        automaticMetricIds={automaticUsageMetrics.map((metric) => metric.id)}
-        onSave={updateKpiPreference}
+      <AddEntityDialogPrimitive
+        open={editingKpiIndex !== null}
+        onClose={() => setEditingKpiIndex(null)}
+        title={t('energy.historyWorkspace.kpis')}
+        actionLabel={t('common.save')}
+        currentRoom=""
+        libraryOnly
+        libraryCards={selectableUsageMetrics
+          .filter(
+            (metric) =>
+              !usageMetrics.some(
+                (selected, index) => selected.id === metric.id && index !== editingKpiIndex
+              )
+          )
+          .map((metric) => ({
+            id: metric.id,
+            title: metric.label,
+            subtitle: metric.detail,
+            meta: metric.value,
+            kind: 'widget' as const,
+            icon: metric.icon,
+            entityType: 'energy',
+            entityTypeLabel: t('homeSummary.energy'),
+          }))}
+        onAddCard={() => {}}
+        onAddLibraryCard={(id) => {
+          if (editingKpiIndex === null) return;
+          const metricIds = usageMetrics.map((metric, index) =>
+            index === editingKpiIndex ? id : metric.id
+          );
+          updateKpiPreference({ mode: 'custom', metricIds });
+          setUsageCardOrder((current) =>
+            current.map((cardId) =>
+              cardId === `kpi:${usageMetrics[editingKpiIndex]?.id}` ? `kpi:${id}` : cardId
+            )
+          );
+          setEditingKpiIndex(null);
+        }}
       />
     </>
   );
@@ -983,395 +1035,6 @@ function resolveSelectedUsageMetrics(
   );
 }
 
-function EnergyKpiPicker({
-  automaticMetricIds,
-  isOpen,
-  metrics,
-  onOpenChange,
-  onSave,
-  preference,
-}: {
-  automaticMetricIds: string[];
-  isOpen: boolean;
-  metrics: EnergyUsageMetric[];
-  onOpenChange: (open: boolean) => void;
-  onSave: (preference: EnergyKpiPreference) => void;
-  preference: EnergyKpiPreference;
-}) {
-  const { t } = useI18n();
-  const { theme, accentColor } = useTheme();
-  const surface = getThemeSurfaceTokens(theme);
-  const [draftMode, setDraftMode] = useState<EnergyKpiPreference['mode']>(preference.mode);
-  const [draftMetricIds, setDraftMetricIds] = useState<string[]>(preference.metricIds);
-  const [activeSection, setActiveSection] = useState<EnergyKpiEditorSection>(
-    preference.mode === 'custom' ? 'selection' : 'automatic'
-  );
-  const wasOpenRef = useRef(false);
-
-  useEffect(() => {
-    if (isOpen && !wasOpenRef.current) {
-      setDraftMode(preference.mode);
-      setDraftMetricIds(
-        preference.mode === 'custom' ? preference.metricIds : automaticMetricIds.slice(0, 4)
-      );
-      setActiveSection(preference.mode === 'custom' ? 'selection' : 'automatic');
-    }
-    wasOpenRef.current = isOpen;
-  }, [automaticMetricIds, isOpen, preference.metricIds, preference.mode]);
-
-  const providerMetrics = metrics.filter((metric) => metric.id.startsWith('provider-metric:'));
-  const insightMetrics = metrics.filter((metric) => !metric.id.startsWith('provider-metric:'));
-  const canApply = draftMode === 'auto' || draftMetricIds.length === 4;
-  const chooseCustomMode = () => {
-    setDraftMode('custom');
-    setActiveSection('selection');
-  };
-  const toggleMetric = (metricId: string) => {
-    chooseCustomMode();
-    setDraftMetricIds((current) =>
-      current.includes(metricId)
-        ? current.filter((id) => id !== metricId)
-        : current.length < 4
-          ? [...current, metricId]
-          : current
-    );
-  };
-
-  return (
-    <BaseCardDialog
-      variant="fullscreen"
-      isOpen={isOpen}
-      onOpenChange={onOpenChange}
-      title={t('energy.historyWorkspace.kpis')}
-      description={t('energy.historyWorkspace.kpisDescription')}
-      theme={theme}
-      contentClassName={cn(
-        'md:left-1/2 md:right-auto md:w-[calc(100%-4rem)] md:max-w-[1200px] md:-translate-x-1/2',
-        surface.shellPanel,
-        surface.border
-      )}
-      shellBodyClassName="h-full min-h-0"
-    >
-      <NavigationWorkspace.Frame className="h-full min-h-0 max-h-full rounded-none border-0 bg-transparent shadow-none">
-        <NavigationWorkspace.Header>
-          <SheetSurfaceHeader
-            title={t('energy.historyWorkspace.kpis')}
-            description={t('energy.historyWorkspace.kpisDescription')}
-            closeLabel={t('energy.historyWorkspace.closeKpis')}
-            onClose={() => onOpenChange(false)}
-            className="md:px-6"
-          />
-        </NavigationWorkspace.Header>
-
-        <NavigationWorkspace.Body className="grid-rows-[auto_minmax(0,1fr)] md:grid-cols-[18rem_minmax(0,1fr)] md:grid-rows-1">
-          <NavigationWorkspace.Sidebar className="border-r-0 border-b p-4 md:border-r md:border-b-0 md:p-5">
-            <p className={`text-sm font-semibold ${surface.textPrimary}`}>
-              {t('energy.historyWorkspace.kpiSetup')}
-            </p>
-            <p className={`mt-1 text-xs leading-relaxed ${surface.textSecondary}`}>
-              {t('energy.historyWorkspace.setupDescription')}
-            </p>
-            <nav aria-label={t('energy.historyWorkspace.kpiSetup')} className="mt-4 space-y-1">
-              <NavigationWorkspace.Item
-                active={activeSection === 'automatic'}
-                accentColor={accentColor}
-              >
-                <NavigationWorkspace.ItemButton
-                  aria-label={t('security.overview.customize.automatic')}
-                  aria-pressed={activeSection === 'automatic'}
-                  onClick={() => {
-                    setDraftMode('auto');
-                    setDraftMetricIds(automaticMetricIds.slice(0, 4));
-                    setActiveSection('automatic');
-                  }}
-                  className="!items-start py-2.5"
-                >
-                  <NavigationWorkspace.ItemIcon>
-                    <Gauge className="h-4 w-4" />
-                  </NavigationWorkspace.ItemIcon>
-                  <NavigationWorkspace.ItemText
-                    title={t('security.overview.customize.automatic')}
-                    description={t('energy.historyWorkspace.automaticDescription')}
-                    descriptionClassName="!overflow-visible !text-clip !whitespace-normal break-words leading-4"
-                  />
-                </NavigationWorkspace.ItemButton>
-              </NavigationWorkspace.Item>
-              <NavigationWorkspace.Item
-                active={activeSection === 'selection'}
-                accentColor={accentColor}
-              >
-                <NavigationWorkspace.ItemButton
-                  aria-label={t('security.overview.customize.manual')}
-                  aria-pressed={activeSection === 'selection'}
-                  onClick={chooseCustomMode}
-                  className="!items-start py-2.5"
-                >
-                  <NavigationWorkspace.ItemIcon>
-                    <SlidersHorizontal className="h-4 w-4" />
-                  </NavigationWorkspace.ItemIcon>
-                  <NavigationWorkspace.ItemText
-                    title={t('security.overview.customize.manual')}
-                    description={
-                      draftMode === 'custom'
-                        ? t('energy.historyWorkspace.selectedCount', {
-                            count: draftMetricIds.length,
-                          })
-                        : t('energy.historyWorkspace.pinSet')
-                    }
-                    descriptionClassName="!overflow-visible !text-clip !whitespace-normal break-words leading-4"
-                  />
-                </NavigationWorkspace.ItemButton>
-              </NavigationWorkspace.Item>
-              <NavigationWorkspace.Item
-                active={activeSection === 'order'}
-                accentColor={accentColor}
-              >
-                <NavigationWorkspace.ItemButton
-                  aria-label={t('security.overview.customize.order')}
-                  aria-pressed={activeSection === 'order'}
-                  onClick={() => {
-                    setDraftMode('custom');
-                    setActiveSection('order');
-                  }}
-                  className="!items-start py-2.5"
-                >
-                  <NavigationWorkspace.ItemIcon>
-                    <GripVertical className="h-4 w-4" />
-                  </NavigationWorkspace.ItemIcon>
-                  <NavigationWorkspace.ItemText
-                    title={t('security.overview.customize.order')}
-                    description={t('energy.historyWorkspace.orderDescription')}
-                    descriptionClassName="!overflow-visible !text-clip !whitespace-normal break-words leading-4"
-                  />
-                </NavigationWorkspace.ItemButton>
-              </NavigationWorkspace.Item>
-            </nav>
-          </NavigationWorkspace.Sidebar>
-
-          <NavigationWorkspace.Content>
-            <NavigationWorkspace.ScrollArea className="p-4 md:p-6">
-              {activeSection === 'selection' ? (
-                <div className="w-full">
-                  <div className="mb-6">
-                    <p className={`text-base font-semibold ${surface.textPrimary}`}>
-                      {t('energy.historyWorkspace.manualTitle')}
-                    </p>
-                    <p className={`mt-2 text-sm leading-relaxed ${surface.textSecondary}`}>
-                      {t('energy.historyWorkspace.manualDescription')}
-                    </p>
-                  </div>
-                  <EnergyKpiPickerGroup
-                    label={t('energy.historyWorkspace.energyInsights')}
-                    metrics={insightMetrics}
-                    selectedMetricIds={draftMetricIds}
-                    onToggle={toggleMetric}
-                  />
-                  {providerMetrics.length > 0 ? (
-                    <EnergyKpiPickerGroup
-                      label={t('energy.historyWorkspace.providerReadings')}
-                      description={t('energy.historyWorkspace.providerDescription')}
-                      metrics={providerMetrics}
-                      selectedMetricIds={draftMetricIds}
-                      onToggle={toggleMetric}
-                    />
-                  ) : null}
-                </div>
-              ) : activeSection === 'order' ? (
-                <div className="w-full">
-                  <div className="mb-6">
-                    <p className={`text-base font-semibold ${surface.textPrimary}`}>
-                      {t('energy.historyWorkspace.orderTitle')}
-                    </p>
-                    <p className={`mt-2 text-sm leading-relaxed ${surface.textSecondary}`}>
-                      {t('energy.historyWorkspace.orderHelp')}
-                    </p>
-                  </div>
-                  <Suspense
-                    fallback={
-                      <div className="flex min-h-32 items-center justify-center">
-                        <EnergyLoadingIndicator />
-                      </div>
-                    }
-                  >
-                    <EnergyKpiOrderEditor
-                      metrics={resolveSelectedUsageMetrics(draftMetricIds, metrics, t)}
-                      orderedMetricIds={draftMetricIds}
-                      onOrderChange={setDraftMetricIds}
-                    />
-                  </Suspense>
-                </div>
-              ) : (
-                <div className="w-full">
-                  <p className={`text-base font-semibold ${surface.textPrimary}`}>
-                    {t('energy.historyWorkspace.automaticTitle')}
-                  </p>
-                  <p className={`mt-2 text-sm leading-relaxed ${surface.textSecondary}`}>
-                    {t('energy.historyWorkspace.automaticHelp')}
-                  </p>
-                  <div className="mt-5 grid gap-2 sm:grid-cols-2">
-                    {automaticMetricIds.slice(0, 4).map((metricId) => {
-                      const metric = metrics.find((candidate) => candidate.id === metricId);
-                      return metric ? (
-                        <EnergyKpiPickerPreview key={metric.id} metric={metric} />
-                      ) : null;
-                    })}
-                  </div>
-                </div>
-              )}
-            </NavigationWorkspace.ScrollArea>
-          </NavigationWorkspace.Content>
-        </NavigationWorkspace.Body>
-
-        <div
-          className={cn(
-            'flex shrink-0 items-center justify-end gap-2 border-t px-4 py-3 md:px-6',
-            surface.panel,
-            surface.border
-          )}
-        >
-          <Button variant="soft" size="small" onClick={() => onOpenChange(false)}>
-            {t('common.cancel')}
-          </Button>
-          <Button
-            variant="primary"
-            size="small"
-            disabled={!canApply}
-            onClick={() => {
-              onSave({
-                mode: draftMode,
-                metricIds: draftMode === 'custom' ? draftMetricIds : [],
-              });
-              onOpenChange(false);
-            }}
-          >
-            {t('energy.historyWorkspace.apply')}
-          </Button>
-        </div>
-      </NavigationWorkspace.Frame>
-    </BaseCardDialog>
-  );
-}
-
-function EnergyKpiPickerPreview({ metric }: { metric: EnergyUsageMetric }) {
-  const { theme } = useTheme();
-  const surface = getThemeSurfaceTokens(theme);
-
-  return (
-    <div
-      className={cn(
-        'flex items-center gap-3 rounded-2xl border p-3',
-        surface.border,
-        surface.subtleBg
-      )}
-    >
-      <EntityCardHeaderIcon
-        IconComponent={metric.icon}
-        isActive={false}
-        size="small"
-        baseColor={metric.color}
-      />
-      <span className="min-w-0 flex-1">
-        <span className={`block truncate text-sm font-semibold ${surface.textPrimary}`}>
-          {metric.label}
-        </span>
-        <span className={`block truncate text-xs ${surface.textSecondary}`}>{metric.period}</span>
-      </span>
-      <span className={`shrink-0 text-sm font-semibold ${surface.textPrimary}`}>
-        {metric.value}
-      </span>
-    </div>
-  );
-}
-
-function EnergyKpiPickerGroup({
-  description,
-  label,
-  metrics,
-  onToggle,
-  selectedMetricIds,
-}: {
-  description?: string;
-  label: string;
-  metrics: EnergyUsageMetric[];
-  onToggle: (metricId: string) => void;
-  selectedMetricIds: string[];
-}) {
-  const { theme, accentColor } = useTheme();
-  const surface = getThemeSurfaceTokens(theme);
-
-  return (
-    <CardDialogSection label={label} helperText={description}>
-      <div className="grid gap-2 lg:grid-cols-2">
-        {metrics.map((metric) => {
-          const selected = selectedMetricIds.includes(metric.id);
-          const disabled = !selected && selectedMetricIds.length >= 4;
-          return (
-            <button
-              key={metric.id}
-              type="button"
-              aria-pressed={selected}
-              disabled={disabled}
-              onClick={() => onToggle(metric.id)}
-              className={cn(
-                'flex min-h-16 min-w-0 items-center gap-3 rounded-2xl border px-3.5 py-3 text-left transition-colors disabled:opacity-45',
-                surface.border,
-                selected ? undefined : surface.hoverBg
-              )}
-              style={
-                selected
-                  ? {
-                      backgroundColor: withTintAlpha(accentColor, theme === 'light' ? 0.08 : 0.14),
-                      borderColor: withTintAlpha(accentColor, 0.42),
-                    }
-                  : undefined
-              }
-            >
-              <EntityCardHeaderIcon
-                IconComponent={metric.icon}
-                isActive={selected}
-                size="small"
-                baseColor={selected ? accentColor : metric.color}
-              />
-              <span className="min-w-0 flex-1">
-                <span className={`block truncate text-sm font-semibold ${surface.textPrimary}`}>
-                  {metric.label}
-                </span>
-                <span className={`block truncate text-xs ${surface.textSecondary}`}>
-                  {metric.detail}
-                </span>
-              </span>
-              <span className="shrink-0 text-right">
-                <span
-                  className={`block text-sm font-semibold ${surface.textPrimary}`}
-                  style={selected ? { color: accentColor } : undefined}
-                >
-                  {metric.value}
-                </span>
-                <span className={`block text-[10px] ${surface.textSecondary}`}>
-                  {metric.period}
-                </span>
-              </span>
-              <span
-                className={cn(
-                  'flex h-6 w-6 shrink-0 items-center justify-center rounded-full border',
-                  surface.border,
-                  selected ? 'text-white' : surface.textMuted
-                )}
-                style={
-                  selected ? { backgroundColor: accentColor, borderColor: accentColor } : undefined
-                }
-                aria-hidden="true"
-              >
-                {selected ? <Check className="h-3.5 w-3.5" /> : null}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-    </CardDialogSection>
-  );
-}
-
 function EnergyUsageMetricCard({
   metric,
   gridColumnSpan,
@@ -1388,7 +1051,7 @@ function EnergyUsageMetricCard({
     <BaseCard
       size="small"
       surfaceVariant="muted"
-      className="col-span-2 row-span-2 min-w-0"
+      className="h-full col-span-2 row-span-2 min-w-0"
       title={metric.label}
       subtitle={metric.period}
       headerCompact={compactHeader}

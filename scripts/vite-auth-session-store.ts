@@ -11,6 +11,7 @@ import {
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import path from 'node:path'
 import type { ViteInstallationAuthority } from './vite-installation-authority.ts'
+import type { ViteDeviceSessionAuthority } from './vite-device-session-authority.ts'
 import {
   createInstallationCookieNames,
   type InstallationCookieNames,
@@ -187,6 +188,7 @@ export interface ViteAuthSessionStore {
   ): { cookieId: string; session: ViteStoredAuthSession }
   sanitizeSession(session: ViteStoredAuthSession): ViteAuthSessionMetadata
   writeSession(cookieId: string, session: ViteStoredAuthSession): void
+  deviceSessionAuthority?: ViteDeviceSessionAuthority
 }
 
 export function normalizeHassUrl(value: unknown): string {
@@ -387,7 +389,8 @@ export function createViteAuthSessionStore(
     path.dirname(sessionsDirectory),
     'navet-auth-session.json'
   ),
-  cookieNames = createInstallationCookieNames(AUTH_COOKIE_NAME)
+  cookieNames = createInstallationCookieNames(AUTH_COOKIE_NAME),
+  deviceSessionAuthority?: ViteDeviceSessionAuthority
 ): ViteAuthSessionStore {
   const bindingSecret = randomBytes(32)
   const getSessionPath = (cookieId: string) =>
@@ -588,6 +591,9 @@ export function createViteAuthSessionStore(
     },
     deleteSession(cookieId) {
       if (COOKIE_ID_PATTERN.test(cookieId)) {
+        if (deviceSessionAuthority?.hasDependentDevices('home_assistant', cookieId)) {
+          return
+        }
         rmSync(getSessionPath(cookieId), { force: true })
       }
     },
@@ -598,6 +604,7 @@ export function createViteAuthSessionStore(
     rotateSession,
     sanitizeSession: sanitizeAuthSession,
     writeSession,
+    deviceSessionAuthority,
   }
 }
 
@@ -785,24 +792,58 @@ function getStoredRequestContexts(
 ): ViteAuthRequestContext[] {
   store.discardLegacyGlobalSession()
   let contexts: ViteAuthRequestContext[] = []
-  for (const cookieId of parseViteAuthCookies(
-    req,
-    store.cookieNames.currentName
-  )) {
-    const session = store.readSession(cookieId)
-    if (session) {
-      contexts.push({ cookieId, session })
+  const hasDeviceCookie = store.deviceSessionAuthority?.hasPresentedDeviceCookie(req) ?? false
+  if (!hasDeviceCookie) {
+    for (const cookieId of parseViteAuthCookies(
+      req,
+      store.cookieNames.currentName
+    )) {
+      const session = store.readSession(cookieId)
+      if (session) {
+        contexts.push({ cookieId, session })
+      }
+    }
+    if (contexts.length === 0 && store.cookieNames.scoped) {
+      contexts = parseViteAuthCookies(req, store.cookieNames.legacyName).flatMap(
+        (cookieId) => {
+          const session = store.readSession(cookieId)
+          return session ? [{ cookieId, session }] : []
+        }
+      )
     }
   }
-  if (contexts.length === 0 && store.cookieNames.scoped) {
-    contexts = parseViteAuthCookies(req, store.cookieNames.legacyName).flatMap(
-      (cookieId) => {
-        const session = store.readSession(cookieId)
-        return session ? [{ cookieId, session }] : []
-      }
+  if (contexts.length === 0 && store.deviceSessionAuthority) {
+    const cookieId = store.deviceSessionAuthority.getProviderCookieId(
+      req,
+      'home_assistant'
     )
+    const session = store.readSession(cookieId)
+    if (session) contexts = [{ cookieId, session }]
   }
   return contexts
+}
+
+function isDelegatedAuthRequest(
+  req: IncomingMessage,
+  store: ViteAuthSessionStore
+) {
+  return Boolean(
+    store.deviceSessionAuthority?.isDelegatedRequest(req, 'home_assistant')
+  )
+}
+
+function setViteAuthSessionCookie(
+  req: IncomingMessage,
+  res: ServerResponse,
+  store: ViteAuthSessionStore,
+  cookieId: string
+) {
+  if (!isDelegatedAuthRequest(req, store)) {
+    res.setHeader(
+      'Set-Cookie',
+      serializeViteAuthCookieForStore(req, store, cookieId)
+    )
+  }
 }
 
 function getLocallyBackedPresentedContexts(
@@ -870,7 +911,7 @@ function getRequestContext(
   // session ID allows the next OAuth request without writing an anonymous
   // session file.
   const cookieId = randomBytes(32).toString('hex')
-  res.setHeader('Set-Cookie', serializeViteAuthCookieForStore(req, store, cookieId))
+  setViteAuthSessionCookie(req, res, store, cookieId)
   return { cookieId, session: store.createEphemeralSession(cookieId) }
 }
 
@@ -887,10 +928,7 @@ function renewViteAuthRequestSession(
   if (next.auth || next.pending) {
     store.writeSession(context.cookieId, next)
   }
-  res.setHeader(
-    'Set-Cookie',
-    serializeViteAuthCookieForStore(req, store, context.cookieId)
-  )
+  setViteAuthSessionCookie(req, res, store, context.cookieId)
   return { cookieId: context.cookieId, session: next }
 }
 
@@ -1160,6 +1198,53 @@ export function createViteAuthRequestHandler(
   const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
     const route = resolveAuthRoute(req)
 
+    if (route === '/setup') {
+      if (req.method === 'POST') {
+        if (!isSameOriginMutation(req)) {
+          sendJson(res, 403, { error: 'Cross-origin setup approval is not allowed' })
+          return
+        }
+        let code = ''
+        try {
+          const body = JSON.parse(await readRequestBody(req)) as { code?: unknown }
+          code = typeof body.code === 'string' ? body.code : ''
+        } catch {
+          sendJson(res, 400, { error: 'Invalid setup request' })
+          return
+        }
+        const exchange = installationAuthority.exchangeSetupCode?.(req, code)
+        if (!exchange?.approved || !exchange.setCookie) {
+          sendJson(res, exchange?.reason === 'rate_limited' ? 429 : 403, {
+            error:
+              exchange?.reason === 'rate_limited'
+                ? 'Too many setup attempts. Wait a few minutes and try again.'
+                : 'That setup code is invalid, expired, or already used',
+            code:
+              exchange?.reason === 'rate_limited'
+                ? 'setup-rate-limited'
+                : 'setup-code-rejected',
+          })
+          return
+        }
+        res.setHeader('Set-Cookie', exchange.setCookie)
+        sendJson(res, 200, { approved: true })
+        return
+      }
+      if (req.method !== 'GET') {
+        res.setHeader('Allow', 'GET, POST')
+        sendJson(res, 405, { error: 'Method not allowed' })
+        return
+      }
+      const requestUrl = new URL(req.url ?? '/', 'http://navet.local')
+      const providerId = requestUrl.searchParams.get('providerId')?.trim() ?? ''
+      const status = installationAuthority.getProviderSetupStatus?.(req, providerId) ?? {
+        state: 'unavailable',
+        authorization: 'none',
+      }
+      sendJson(res, 200, { providerId, ...status })
+      return
+    }
+
     if (route === '/callback') {
       if (req.method !== 'GET') {
         res.setHeader('Allow', 'GET')
@@ -1322,7 +1407,20 @@ export function createViteAuthRequestHandler(
         }
         const presentedContexts = getStoredRequestContexts(req, store)
         advanceMutationGeneration(context.cookieId)
-        const rotated = store.rotateSession(context.cookieId, next)
+        const delegated = isDelegatedAuthRequest(req, store)
+        const rotated = delegated
+          ? (store.writeSession(context.cookieId, next), {
+              cookieId: context.cookieId,
+              session: next,
+            })
+          : store.rotateSession(context.cookieId, next)
+        if (!delegated && context.cookieId) {
+          store.deviceSessionAuthority?.replaceProviderCookieId(
+            'home_assistant',
+            context.cookieId,
+            rotated.cookieId
+          )
+        }
         for (const presentedContext of presentedContexts) {
           if (presentedContext.cookieId !== context.cookieId) {
             advanceMutationGeneration(presentedContext.cookieId)
@@ -1331,10 +1429,7 @@ export function createViteAuthRequestHandler(
         }
         res.statusCode = 302
         res.setHeader('Cache-Control', 'no-store')
-        res.setHeader(
-          'Set-Cookie',
-          serializeViteAuthCookieForStore(req, store, rotated.cookieId)
-        )
+        setViteAuthSessionCookie(req, res, store, rotated.cookieId)
         res.setHeader('Location', appendOAuthCallbackMarker(pending.returnTo))
         res.end()
       } catch {
@@ -1604,10 +1699,7 @@ export function createViteAuthRequestHandler(
           JSON.stringify(current?.auth) === JSON.stringify(refreshedAuth)
         if (!current || current.sessionId !== context.session.sessionId) {
           if (unchanged && current) {
-            res.setHeader(
-              'Set-Cookie',
-              serializeViteAuthCookieForStore(req, store, context.cookieId)
-            )
+            setViteAuthSessionCookie(req, res, store, context.cookieId)
             sendJson(res, 200, store.sanitizeSession(current))
             return
           }
@@ -1627,19 +1719,13 @@ export function createViteAuthRequestHandler(
             !current.auth ||
             refreshedAuth.expires <= current.auth.expires
           ) {
-            res.setHeader(
-              'Set-Cookie',
-              serializeViteAuthCookieForStore(req, store, context.cookieId)
-            )
+            setViteAuthSessionCookie(req, res, store, context.cookieId)
             sendJson(res, 200, store.sanitizeSession(current))
             return
           }
         } else if (expectedRevision !== getAuthRevision(current)) {
           if (unchanged) {
-            res.setHeader(
-              'Set-Cookie',
-              serializeViteAuthCookieForStore(req, store, context.cookieId)
-            )
+            setViteAuthSessionCookie(req, res, store, context.cookieId)
             sendJson(res, 200, store.sanitizeSession(current))
             return
           }
@@ -1651,10 +1737,7 @@ export function createViteAuthRequestHandler(
           return
         }
         if (unchanged) {
-          res.setHeader(
-            'Set-Cookie',
-            serializeViteAuthCookieForStore(req, store, context.cookieId)
-          )
+          setViteAuthSessionCookie(req, res, store, context.cookieId)
           sendJson(res, 200, store.sanitizeSession(current))
           return
         }
@@ -1678,10 +1761,7 @@ export function createViteAuthRequestHandler(
           return
         }
         store.writeSession(context.cookieId, next)
-        res.setHeader(
-          'Set-Cookie',
-          serializeViteAuthCookieForStore(req, store, context.cookieId)
-        )
+        setViteAuthSessionCookie(req, res, store, context.cookieId)
         sendJson(res, 200, store.sanitizeSession(next))
       } catch (error) {
         if (sendSessionStoreError(res, error)) {
@@ -1697,6 +1777,12 @@ export function createViteAuthRequestHandler(
         sendJson(res, 403, {
           error: 'Cross-origin session mutation is not allowed',
         })
+        return
+      }
+
+      if (isDelegatedAuthRequest(req, store)) {
+        store.deviceSessionAuthority?.revokeCurrentDevice(req, res)
+        sendJson(res, 200, { ok: true })
         return
       }
 

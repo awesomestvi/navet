@@ -1,4 +1,6 @@
 import {
+  createHash,
+  createHmac,
   randomBytes,
   timingSafeEqual,
 } from 'node:crypto'
@@ -22,6 +24,10 @@ export const INSTALLATION_KEY_HEADER = 'X-Navet-Installation-Key'
 const INSTALLATION_KEY_PATTERN = /^[a-f0-9]{64}$/
 const SESSION_IDLE_TTL_MS = 90 * 24 * 60 * 60 * 1000
 const MAX_AUTHORITY_BYTES = 64 * 1024
+const SETUP_GRANT_TTL_SECONDS = 10 * 60
+const SETUP_CODE_PATTERN = /^[a-f0-9]{16}$/
+const SETUP_ATTEMPT_LIMIT = 8
+const SETUP_ATTEMPT_WINDOW_MS = 5 * 60 * 1000
 
 interface InstallationAuthorityState {
   version: 1
@@ -65,6 +71,17 @@ export interface ViteInstallationAuthority {
     pairingVerified: boolean
   ): boolean
   getCookieNames(baseName: string): InstallationCookieNames
+  getProviderSetupStatus?(
+    req: IncomingMessage,
+    providerId: string
+  ): {
+    state: 'ready' | 'approval_required' | 'unavailable'
+    authorization: string
+  }
+  exchangeSetupCode?(
+    req: IncomingMessage,
+    code: unknown
+  ): { approved: boolean; setCookie?: string; reason?: 'invalid' | 'rate_limited' }
 }
 
 function emptyState(): InstallationAuthorityState {
@@ -118,6 +135,7 @@ export function createViteInstallationAuthority(
     keyPath?: string
     openHABSessionsDirectory?: string
     openhabUrlPin?: string
+    setupCodePath?: string
     statePath?: string
     trustIngress?: boolean
   } = {}
@@ -129,6 +147,8 @@ export function createViteInstallationAuthority(
   const statePath =
     options.statePath ??
     path.join(cacheDirectory, 'navet-installation-authority.json')
+  const setupCodePath =
+    options.setupCodePath ?? path.join(cacheDirectory, 'navet-setup-code.json')
   const authSessionsDirectory =
     options.authSessionsDirectory ??
     path.join(cacheDirectory, 'navet-auth-sessions')
@@ -138,6 +158,23 @@ export function createViteInstallationAuthority(
   const openHABSessionsDirectory =
     options.openHABSessionsDirectory ??
     path.join(cacheDirectory, 'navet-provider-sessions', 'openhab')
+  const setupAttemptBuckets = new Map<string, { count: number; resetAt: number }>()
+
+  const consumeSetupAttempt = (req: IncomingMessage) => {
+    const forwarded = String(req.headers['x-real-ip'] ?? '')
+    const address = req.socket?.remoteAddress || forwarded || 'local'
+    const now = Date.now()
+    const bucket = setupAttemptBuckets.get(address)
+    if (!bucket || bucket.resetAt <= now) {
+      setupAttemptBuckets.set(address, {
+        count: 1,
+        resetAt: now + SETUP_ATTEMPT_WINDOW_MS,
+      })
+      return true
+    }
+    bucket.count += 1
+    return bucket.count <= SETUP_ATTEMPT_LIMIT
+  }
 
   const resolveInstallationKey = () => {
     const configured =
@@ -194,14 +231,62 @@ export function createViteInstallationAuthority(
       return persisted
     }
     if (!configured) {
-      console.warn(
-        'Navet operator pairing key created. Append ' +
-          `#navet_pairing=${candidate} to your trusted Navet URL for first enrollment.`
-      )
+      console.warn('Navet installation security initialized.')
     }
     return candidate
   }
   const installationKey = resolveInstallationKey()
+
+  const createSetupCode = () => {
+    const raw = randomBytes(8).toString('hex')
+    const code = raw.match(/.{1,4}/g)?.join('-') ?? raw
+    mkdirSync(path.dirname(setupCodePath), { recursive: true, mode: 0o700 })
+    writeFileSync(
+      setupCodePath,
+      JSON.stringify({ version: 1, code, expiresAt: Date.now() + 10 * 60 * 1000 }),
+      { encoding: 'utf8', mode: 0o600 }
+    )
+    console.warn(`Navet setup code: ${code} (valid for 10 minutes).`)
+  }
+  try {
+    const stored = JSON.parse(readFileSync(setupCodePath, 'utf8')) as { expiresAt?: unknown }
+    if (typeof stored.expiresAt !== 'number' || stored.expiresAt < Date.now()) {
+      createSetupCode()
+    }
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException)?.code === 'ENOENT' || error instanceof SyntaxError) {
+      createSetupCode()
+    } else {
+      throw error
+    }
+  }
+
+  const setupCookieName = `navet_setup_grant_${createHash('sha256')
+    .update(installationKey)
+    .digest('hex')
+    .slice(0, 12)}`
+  const readCookie = (req: IncomingMessage, name: string) => {
+    for (const entry of header(req, 'cookie').split(';')) {
+      const separator = entry.indexOf('=')
+      if (separator > 0 && entry.slice(0, separator).trim() === name) {
+        return entry.slice(separator + 1).trim()
+      }
+    }
+    return ''
+  }
+  const hasValidSetupGrant = (req: IncomingMessage) => {
+    const [expiresAt, signature] = readCookie(req, setupCookieName).split('.')
+    if (!expiresAt || !signature || Number(expiresAt) < Date.now()) {
+      return false
+    }
+    const expected = createHmac('sha256', installationKey)
+      .update(`setup-grant:${expiresAt}`)
+      .digest('hex')
+    return (
+      /^[a-f0-9]{64}$/.test(signature) &&
+      timingSafeEqual(Buffer.from(signature), Buffer.from(expected))
+    )
+  }
 
   const hasValidPairingKey = (req: IncomingMessage) => {
     const candidate = header(req, INSTALLATION_KEY_HEADER).trim()
@@ -210,7 +295,7 @@ export function createViteInstallationAuthority(
     return (
       INSTALLATION_KEY_PATTERN.test(candidate) &&
       timingSafeEqual(candidateBuffer, expectedBuffer)
-    )
+    ) || hasValidSetupGrant(req)
   }
 
   const readState = (): InstallationAuthorityState => {
@@ -461,40 +546,11 @@ export function createViteInstallationAuthority(
   }
 
   return {
-    authorizeHomeAssistant(_req, target, normalizeTarget) {
-      if (options.trustIngress) {
-        return { allowed: true, pairingVerified: false }
-      }
-      const normalizedTarget = normalizeTarget(target)
-      if (!normalizedTarget) {
-        return { allowed: false, pairingVerified: false }
-      }
-      const rawPin = options.hassUrlPin
-      const pin = rawPin ? normalizeTarget(rawPin) : ''
-      if (rawPin) {
-        return {
-          allowed: Boolean(pin && pin === normalizedTarget),
-          pairingVerified: false,
-        }
-      }
-      // A successful Home Assistant OAuth grant authorizes only this browser
-      // connection. Different installations are isolated by tenant identity.
-      return { allowed: true, pairingVerified: true }
+    authorizeHomeAssistant(req, target, normalizeTarget) {
+      return authorizeTarget(req, 'home_assistant', target, normalizeTarget, true)
     },
-    authorizeHomeAssistantChange(_req, target, normalizeTarget) {
-      if (options.trustIngress) {
-        return { allowed: true, pairingVerified: false }
-      }
-      const normalizedTarget = normalizeTarget(target)
-      if (!normalizedTarget) {
-        return { allowed: false, pairingVerified: false }
-      }
-      const rawPin = options.hassUrlPin
-      const pin = rawPin ? normalizeTarget(rawPin) : ''
-      if (rawPin && pin !== normalizedTarget) {
-        return { allowed: false, pairingVerified: false }
-      }
-      return { allowed: true, pairingVerified: true }
+    authorizeHomeAssistantChange(req, target, normalizeTarget) {
+      return authorizeTarget(req, 'home_assistant', target, normalizeTarget, false)
     },
     authorizeHomeyStart(req) {
       if (options.trustIngress) {
@@ -547,6 +603,77 @@ export function createViteInstallationAuthority(
     },
     getCookieNames(baseName) {
       return createInstallationCookieNames(baseName, installationKey)
+    },
+    getProviderSetupStatus(req, providerId) {
+      if (options.trustIngress) {
+        return { state: 'ready', authorization: 'trusted_runtime' }
+      }
+      if (hasValidPairingKey(req)) {
+        return { state: 'ready', authorization: 'setup_proof' }
+      }
+
+      const state = readState()
+      let configured = false
+      if (providerId === 'home_assistant') {
+        configured = Boolean(
+          options.hassUrlPin ||
+            state.homeAssistantTarget ||
+            readRecords(authSessionsDirectory).length > 0
+        )
+      } else if (providerId === 'openhab') {
+        configured = Boolean(
+          options.openhabUrlPin ||
+            state.openHABTarget ||
+            readRecords(openHABSessionsDirectory).length > 0
+        )
+      } else if (providerId === 'homey') {
+        configured = knownHomeyIds().length > 0
+      } else {
+        return { state: 'unavailable', authorization: 'none' }
+      }
+      return {
+        state: configured ? 'ready' : 'approval_required',
+        authorization: configured ? 'approved_connection' : 'none',
+      }
+    },
+    exchangeSetupCode(req, code) {
+      if (!consumeSetupAttempt(req)) {
+        return { approved: false, reason: 'rate_limited' }
+      }
+      let record: { code?: unknown; expiresAt?: unknown }
+      try {
+        record = JSON.parse(readFileSync(setupCodePath, 'utf8')) as typeof record
+      } catch {
+        return { approved: false, reason: 'invalid' }
+      }
+      const presented = String(code ?? '')
+        .toLowerCase()
+        .replace(/[^a-f0-9]/g, '')
+      const expected = String(record.code ?? '')
+        .toLowerCase()
+        .replace(/[^a-f0-9]/g, '')
+      if (
+        !SETUP_CODE_PATTERN.test(presented) ||
+        !SETUP_CODE_PATTERN.test(expected) ||
+        typeof record.expiresAt !== 'number' ||
+        record.expiresAt < Date.now() ||
+        !timingSafeEqual(Buffer.from(presented), Buffer.from(expected))
+      ) {
+        return { approved: false, reason: 'invalid' }
+      }
+      try {
+        rmSync(setupCodePath)
+      } catch {
+        return { approved: false, reason: 'invalid' }
+      }
+      const expiresAt = Date.now() + SETUP_GRANT_TTL_SECONDS * 1000
+      const signature = createHmac('sha256', installationKey)
+        .update(`setup-grant:${expiresAt}`)
+        .digest('hex')
+      return {
+        approved: true,
+        setCookie: `${setupCookieName}=${expiresAt}.${signature}; Path=/; Max-Age=${SETUP_GRANT_TTL_SECONDS}; HttpOnly; SameSite=Strict`,
+      }
     },
   }
 }

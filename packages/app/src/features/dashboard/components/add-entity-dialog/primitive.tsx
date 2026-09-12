@@ -6,8 +6,8 @@ import { integrationSelectors } from '@navet/app/stores/selectors';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { DashboardLibraryCard, DashboardLibraryEntityType } from '../dashboard-library-list';
 import { createCardTemplates } from './templates';
-import type { AddCardDialogContainerProps, CardTemplateId } from './types';
-import { AddCardDialogView } from './view';
+import type { AddEntityDialogPrimitiveProps, CardTemplateId } from './types';
+import { AddEntityDialogView } from './view';
 
 function resolveLibraryEntityType(card: DashboardLibraryCard) {
   const explicitType = card.entityType?.trim().toLowerCase();
@@ -23,7 +23,7 @@ function resolveLibraryRoom(card: DashboardLibraryCard) {
   return card.room?.trim() || card.subtitle.trim();
 }
 
-export function AddCardDialogContainer({
+export function AddEntityDialogPrimitive({
   open,
   onClose,
   onAddCard,
@@ -31,14 +31,19 @@ export function AddCardDialogContainer({
   currentRoom,
   libraryCards,
   showCardsTab = true,
+  libraryOnly = false,
+  title,
+  description,
+  actionLabel,
+  libraryEmptyText,
   allowedTemplateIds,
-}: AddCardDialogContainerProps) {
+}: AddEntityDialogPrimitiveProps) {
   const { locale, t } = useI18n();
   const { theme, primaryColor } = useTheme();
   const providerSessions = useIntegrationStore(integrationSelectors.providerSessions);
   const hasHomeAssistantSession = Boolean(providerSessions.home_assistant);
   const [activeTab, setActiveTab] = useState<'cards' | 'widgets'>(
-    showCardsTab ? 'cards' : 'widgets'
+    showCardsTab || libraryOnly ? 'cards' : 'widgets'
   );
   const [libraryQuery, setLibraryQuery] = useState('');
   const [recentlyAddedLibraryCardIds, setRecentlyAddedLibraryCardIds] = useState<string[]>([]);
@@ -54,6 +59,7 @@ export function AddCardDialogContainer({
   const [selectedSize, setSelectedSize] = useState<CardSize>('medium');
   const resolveColorValue = (color: string) => getThemeColorValue(color as typeof primaryColor);
   const cardTemplates = useMemo(() => {
+    if (libraryOnly) return [];
     const templates = createCardTemplates(t);
     const allowedIds = allowedTemplateIds?.length ? new Set(allowedTemplateIds) : null;
     const providerEligibleTemplates = hasHomeAssistantSession
@@ -66,14 +72,14 @@ export function AddCardDialogContainer({
     return visibleTemplates.sort((left, right) =>
       t(left.nameKey).localeCompare(t(right.nameKey), locale)
     );
-  }, [allowedTemplateIds, hasHomeAssistantSession, locale, t]);
+  }, [allowedTemplateIds, hasHomeAssistantSession, libraryOnly, locale, t]);
 
   useEffect(() => {
     if (!open) {
       return;
     }
 
-    setActiveTab(showCardsTab ? 'cards' : 'widgets');
+    setActiveTab(showCardsTab || libraryOnly ? 'cards' : 'widgets');
     setLibraryQuery('');
     setRecentlyAddedLibraryCardIds([]);
     setSelectedLibraryEntityType(null);
@@ -84,7 +90,7 @@ export function AddCardDialogContainer({
     setSelectedCustomCardSize(null);
     setSelectedType(null);
     setSelectedSize('medium');
-  }, [open, showCardsTab]);
+  }, [open, showCardsTab, libraryOnly]);
 
   const handleAdd = () => {
     const selectedTemplate = cardTemplates.find((template) => template.id === selectedType);
@@ -274,13 +280,18 @@ export function AddCardDialogContainer({
   ]);
 
   return (
-    <AddCardDialogView
+    <AddEntityDialogView
       open={open}
       onClose={onClose}
       currentRoom={currentRoom}
       activeTab={activeTab}
       setActiveTab={setActiveTab}
-      showCardsTab={showCardsTab}
+      showCardsTab={showCardsTab || libraryOnly}
+      libraryOnly={libraryOnly}
+      title={title}
+      description={description}
+      actionLabel={actionLabel}
+      libraryEmptyText={libraryEmptyText}
       libraryQuery={libraryQuery}
       setLibraryQuery={setLibraryQuery}
       hasLibraryQuery={hasLibraryQuery}

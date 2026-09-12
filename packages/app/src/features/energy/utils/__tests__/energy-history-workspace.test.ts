@@ -68,6 +68,7 @@ describe('energy history workspace', () => {
     });
 
     const previousStart = new Date(window.previousStartMs);
+    expect(window.period).toBe('5minute');
     const previousEnd = new Date(window.previousEndMs);
     expect(previousStart.getDate()).toBe(19);
     expect(previousStart.getHours()).toBe(0);
@@ -75,6 +76,38 @@ describe('energy history workspace', () => {
     expect(previousEnd.getHours()).toBe(14);
     expect(previousEnd.getMinutes()).toBe(30);
     expect(new Date(window.displayEndMs ?? 0)).toEqual(new Date(2026, 7, 21));
+  });
+
+  it('keeps adjacent five-minute readings separate in the Day view', () => {
+    const window = resolveEnergyHistoryWindow({
+      range: 'today',
+      now: new Date(2026, 7, 20, 10, 30),
+    });
+    const startMs = new Date(2026, 7, 20, 8).getTime();
+    const stepMs = 5 * 60 * 1000;
+    const model = buildEnergyHistoryWorkspaceModel({
+      wholeHomeEntityId: 'sensor.house_power',
+      consumers: [],
+      window,
+      series: {
+        'sensor.house_power': [
+          { startMs, endMs: startMs + stepMs, mean: 1200, min: 300, max: 5400 },
+          { startMs: startMs + stepMs, endMs: startMs + 2 * stepMs, mean: 600, min: 200, max: 900 },
+        ],
+      },
+    });
+    expect(model.buckets).toHaveLength(288);
+    expect(model.buckets[96]).toMatchObject({
+      averagePowerW: 1200,
+      lowPowerW: 300,
+      peakPowerW: 5400,
+      energyKWh: 0.1,
+      hasData: true,
+    });
+    expect(model.buckets[97]).toMatchObject({ averagePowerW: 600, energyKWh: 0.05, hasData: true });
+    expect(model.buckets[96].label).not.toBe(model.buckets[97].label);
+    expect(model.buckets[98].hasData).toBe(false);
+    expect(model.totalEnergyKWh).toBeCloseTo(0.15);
   });
 
   it('fills the Day view with one bucket for every calendar hour', () => {

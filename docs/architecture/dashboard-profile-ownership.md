@@ -98,7 +98,7 @@ workspace.
 The profile workspace binds on first authenticated use. Home Assistant itself authenticates every
 standalone connection, so entering a new address proceeds directly to its OAuth login. A different
 installation receives an isolated tenant workspace. `NAVET_HASS_URL` remains an optional exact
-operator pin. The installation pairing key remains available for providers whose enrollment does
+operator pin. A short-lived setup grant remains available for providers whose enrollment does
 not have an equivalent browser login boundary, including unknown openHAB targets and the first
 Homey account.
 
@@ -190,7 +190,7 @@ still require the access controls described below.
   callback, refresh token, access token, and proxy requests are bound to that one server session.
 - Standalone Home Assistant enrollment proceeds through a fresh OAuth login for the entered URL.
   An optional operator URL pin can restrict it to one exact address. Other provider enrollment may
-  additionally require the installation pairing key. The pairing header is stripped from every
+  additionally require a short-lived setup grant. The setup header is stripped from every
   upstream HTTP and WebSocket proxy request.
 - Home Assistant add-on Ingress may use the official `X-Remote-User-*` identity headers only in the
   explicit Ingress handler. This trusted, Ingress-only runtime bypasses standalone pairing.

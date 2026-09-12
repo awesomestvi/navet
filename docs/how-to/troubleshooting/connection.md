@@ -74,19 +74,19 @@ from a LAN-only address to a Tailscale address for the same Home Assistant insta
 
 1. Confirm the replacement address returns the same Home Assistant installation and is reachable
    from the Navet host or container.
-2. Recover the existing installation key. Replace `navet` if your container has another name:
+2. Run the following command to generate a temporary setup code. Replace `navet` if your container
+   has another name:
 
    ```bash
-   docker exec navet cat /data/navet-installation-key
+   docker exec navet navet-setup-code
    ```
 
-3. Append `#navet_pairing=<key>` to the trusted Navet URL and load that complete URL once. If you
-   only change the fragment in an already open Navet tab, reload the page so Navet can consume it.
-4. Continue in that same tab, choose **Home Assistant**, enter the replacement address, and finish
-   sign-in. Navet removes the key from the address immediately and updates the trusted upstream
-   only after Home Assistant accepts the sign-in.
+3. Copy the temporary code printed by the command, open Navet, choose **Home Assistant**, and enter
+   the code when prompted.
+4. Enter the replacement address and finish sign-in. Navet updates the trusted upstream only after
+   Home Assistant accepts the sign-in.
 
-Keep the installation key private. If `NAVET_HASS_URL` pins the upstream in Compose, update that
+Keep the setup code private. If `NAVET_HASS_URL` pins the upstream in Compose, update that
 setting and recreate the container instead; pairing cannot override a configured pin.
 
 **Restart onboarding** in Dashboard settings only reopens dashboard setup. It does not clear the

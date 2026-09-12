@@ -3,6 +3,7 @@ import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import { renderWithProviders } from '@navet/app/test/render';
 import type {
   CameraDevice,
+  DeviceWithType,
   LockDevice,
   SecurityKind,
   SecuritySeverity,
@@ -10,7 +11,6 @@ import type {
 } from '@navet/app/types/device.types';
 import type { NavetAlarmEntity } from '@navet/core/alarm-types';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
-import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SecurityActivityKind } from '../../utils/security-activity-history';
 import { buildSecurityCameraDashboardModel } from '../../utils/security-camera-dashboard-model';
@@ -21,13 +21,16 @@ const activityEventsMock = vi.hoisted(() => ({
   events: [] as Array<{
     id: string;
     entityId: string;
-    device: CameraDevice & { type: 'cameras' };
+    device: DeviceWithType;
     kind: SecurityActivityKind;
     source: 'current';
     state: string;
     timestampMs: number | null;
   }>,
-  historyAvailable: false,
+  historyAvailable: true,
+  historyError: null as 'refresh' | 'older' | null,
+  lastUpdatedAt: null as number | null,
+  retry: vi.fn(async () => {}),
   hasMore: false,
   isLoading: false,
   isLoadingMore: false,
@@ -35,12 +38,37 @@ const activityEventsMock = vi.hoisted(() => ({
 }));
 const scrollIntoViewMock = vi.fn();
 
-vi.mock('@navet/app/features/dashboard', () => ({
-  DashboardCardItem: ({ device }: { device: { id: string; name: string } }) => (
-    <div data-testid={`detail-card:${device.id}`}>{device.name}</div>
-  ),
-  DashboardEditActions: ({ children }: { children: ReactNode }) => <>{children}</>,
-}));
+vi.mock('@navet/app/features/dashboard', async () => {
+  const { DashboardEditActions } = await import(
+    '@navet/app/features/dashboard/components/dashboard-edit-actions'
+  );
+  return {
+    DashboardCardItem: ({
+      device,
+      onRemoveFromLayout,
+      removeFromLayoutLabel,
+    }: {
+      device: { id: string; name: string };
+      onRemoveFromLayout?: (id: string) => void;
+      removeFromLayoutLabel?: string;
+    }) => (
+      <div data-testid={`detail-card:${device.id}`}>
+        {device.name}
+        {onRemoveFromLayout ? (
+          <button
+            type="button"
+            data-dashboard-edit-action="remove-layout"
+            data-card-id={device.id}
+            aria-label={removeFromLayoutLabel}
+          >
+            Remove
+          </button>
+        ) : null}
+      </div>
+    ),
+    DashboardEditActions,
+  };
+});
 
 vi.mock('@navet/app/hooks/use-breakpoint-cols', () => ({
   useBreakpointCols: () => activityEventsMock.breakpointCols,
@@ -124,7 +152,9 @@ function sensor(
 
 function renderDashboard(
   overrides: Partial<Parameters<typeof buildSecurityCameraDashboardModel>[0]> = {},
-  alarms: NavetAlarmEntity[] = []
+  alarms: NavetAlarmEntity[] = [],
+  isEditMode = false,
+  onToggleEditMode = vi.fn()
 ) {
   const devices = {
     cameras: overrides.cameras ?? [],
@@ -138,7 +168,8 @@ function renderDashboard(
     <SecurityCameraDashboard
       model={buildSecurityCameraDashboardModel(devices)}
       alarms={alarms}
-      isEditMode={false}
+      isEditMode={isEditMode}
+      onToggleEditMode={onToggleEditMode}
       cardSizes={{}}
       updateCardSize={vi.fn()}
       surface={getThemeSurfaceTokens('dark')}
@@ -146,9 +177,9 @@ function renderDashboard(
   );
 }
 
-function selectOverviewEntities(entityIds: string[]) {
+function selectQuickviewEntities(entityIds: string[]) {
   localStorage.setItem(
-    STORAGE_KEYS.securityOverviewPreferences,
+    STORAGE_KEYS.securityQuickviewPreferences,
     JSON.stringify({ mode: 'custom', entityIds })
   );
 }
@@ -158,7 +189,9 @@ describe('SecurityCameraDashboard', () => {
     localStorage.clear();
     activityEventsMock.breakpointCols = 4;
     activityEventsMock.events = [];
-    activityEventsMock.historyAvailable = false;
+    activityEventsMock.historyAvailable = true;
+    activityEventsMock.historyError = null;
+    activityEventsMock.lastUpdatedAt = null;
     activityEventsMock.hasMore = false;
     activityEventsMock.isLoading = false;
     activityEventsMock.isLoadingMore = false;
@@ -170,23 +203,155 @@ describe('SecurityCameraDashboard', () => {
     });
   });
 
+  it('pins a device through its button without hiding it from the device list', () => {
+    selectQuickviewEntities([]);
+    renderDashboard({ cameras: [camera({ id: 'camera.front', name: 'Front Door' })] }, [], true);
+    fireEvent.click(screen.getByRole('button', { name: 'Pin Front Door to quickview' }));
+    expect(
+      within(screen.getByTestId('security-quickview-grid')).getByTestId('detail-card:camera.front')
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('security-command-main-details')).getByTestId(
+        'detail-card:camera.front'
+      )
+    ).toBeInTheDocument();
+  });
+
+  it('shows failed history refreshes with a retry and last successful update', () => {
+    activityEventsMock.historyError = 'refresh';
+    activityEventsMock.lastUpdatedAt = Date.now() - 300_000;
+    renderDashboard({ cameras: [camera({ id: 'camera.front', name: 'Front Door' })] });
+    const panel = within(screen.getByTestId('security-activity-panel'));
+    expect(panel.getByText('Couldn’t refresh activity.')).toBeInTheDocument();
+    expect(panel.getByText(/Last updated/)).toBeInTheDocument();
+    expect(panel.queryByText('No recent activity.')).not.toBeInTheDocument();
+    fireEvent.click(panel.getByRole('button', { name: 'Retry' }));
+    expect(activityEventsMock.retry).toHaveBeenCalledOnce();
+  });
+
+  it('opens all critical devices and lets the user return to the normal groups', () => {
+    renderDashboard({
+      locks: [lock({ id: 'lock.front', name: 'Front Door' })],
+      sensors: [
+        sensor({
+          id: 'sensor.smoke',
+          name: 'Smoke',
+          securityKind: 'smoke',
+          securitySeverity: 'critical',
+        }),
+        sensor({
+          id: 'sensor.leak',
+          name: 'Leak',
+          securityKind: 'waterLeak',
+          securitySeverity: 'critical',
+        }),
+      ],
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Open Critical' }));
+    const details = within(screen.getByTestId('security-command-main-details'));
+    expect(details.getByTestId('detail-card:sensor.smoke')).toBeInTheDocument();
+    expect(details.getByTestId('detail-card:sensor.leak')).toBeInTheDocument();
+    expect(details.queryByTestId('detail-card:lock.front')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: 'Locks' }));
+    expect(details.getByTestId('detail-card:lock.front')).toBeInTheDocument();
+  });
+
+  it('labels camera availability without implying verified live playback', () => {
+    renderDashboard({
+      cameras: [
+        camera({ id: 'camera.front', name: 'Front Door', state: 'idle' }),
+        camera({ id: 'camera.side', name: 'Side Gate', state: 'unavailable' }),
+      ],
+    });
+    const summary = screen.getByRole('button', { name: 'Open Cameras' });
+    expect(summary).toHaveTextContent('1 available');
+    fireEvent.click(summary);
+    expect(screen.getByRole('tab', { name: 'Available cameras' })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    );
+    const details = within(screen.getByTestId('security-command-main-details'));
+    expect(details.getByTestId('detail-card:camera.front')).toBeInTheDocument();
+    expect(details.queryByTestId('detail-card:camera.side')).not.toBeInTheDocument();
+  });
+
+  it('opens a camera for a linked detection event using the device relationship', () => {
+    const linkedCamera = {
+      ...camera({ id: 'camera.front', name: 'Front Door' }),
+      underlyingDeviceId: 'device.front',
+    };
+    const detection = {
+      ...sensor({ id: 'sensor.person', name: 'Person', securityKind: 'motion' }),
+      underlyingDeviceId: 'device.front',
+    };
+    activityEventsMock.events = [
+      {
+        id: 'motion.front',
+        entityId: detection.id,
+        device: { ...detection, type: 'sensors' },
+        kind: 'motion',
+        source: 'current',
+        state: 'on',
+        timestampMs: null,
+      },
+    ];
+    renderDashboard({ cameras: [linkedCamera], sensors: [detection] });
+    fireEvent.click(
+      within(screen.getByTestId('security-activity-panel')).getByRole('button', {
+        name: /Motion detected · Person/,
+      })
+    );
+    expect(screen.getByText('Viewer:Front Door')).toBeInTheDocument();
+  });
+
+  it('keeps an empty saved quickview available as a drop target', () => {
+    selectQuickviewEntities([]);
+    renderDashboard({ cameras: [camera({ id: 'camera.front', name: 'Front Door' })] }, [], true);
+    const quickview = within(screen.getByTestId('security-quickview-grid'));
+    expect(quickview.queryByTestId('detail-card:camera.front')).not.toBeInTheDocument();
+    expect(quickview.getByText('Drag cards here to pin them.')).toBeInTheDocument();
+    expect(screen.getByTestId('security-command-main-details')).toHaveTextContent('Front Door');
+  });
+
+  it('omits an empty quickview section from the DOM outside edit mode', () => {
+    selectQuickviewEntities([]);
+    renderDashboard({ cameras: [camera({ id: 'camera.front', name: 'Front Door' })] });
+    expect(screen.queryByTestId('security-quickview-grid')).not.toBeInTheDocument();
+    expect(document.querySelector('[data-security-drop-zone="quickview"]')).toBeNull();
+    expect(screen.getByTestId('security-command-main-details')).toHaveTextContent('Front Door');
+  });
+
+  it('removes a quickview card through its bottom dock without hiding the device', async () => {
+    selectQuickviewEntities(['camera.front']);
+    renderDashboard({ cameras: [camera({ id: 'camera.front', name: 'Front Door' })] }, [], true);
+    const quickview = within(screen.getByTestId('security-quickview-grid'));
+    fireEvent.click(quickview.getByRole('button', { name: 'Remove Front Door from quickview' }));
+    expect(quickview.queryByTestId('detail-card:camera.front')).not.toBeInTheDocument();
+    expect(screen.getByTestId('security-command-main-details')).toHaveTextContent('Front Door');
+    await waitFor(() =>
+      expect(
+        JSON.parse(localStorage.getItem(STORAGE_KEYS.securityQuickviewPreferences) ?? '{}')
+      ).toEqual({ mode: 'custom', entityIds: [] })
+    );
+  });
+
   it('uses a camera-first command center without the retired All Security row', () => {
-    selectOverviewEntities(['camera.front']);
+    selectQuickviewEntities(['camera.front']);
     renderDashboard({
       cameras: [camera({ id: 'camera.front', name: 'Front Door' })],
       locks: [lock({ id: 'lock.front', name: 'Front Door Lock' })],
     });
 
-    const overview = within(screen.getByTestId('security-overview-grid'));
+    const overview = within(screen.getByTestId('security-quickview-grid'));
     expect(screen.getByTestId('security-command-center')).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Live cameras' })).not.toBeInTheDocument();
-    expect(overview.getByTestId('detail-card:camera.front')).toBeInTheDocument();
+    expect(overview.getByTestId('camera-card:camera.front')).toBeInTheDocument();
     expect(overview.queryByTestId('detail-card:lock.front')).not.toBeInTheDocument();
     expect(screen.queryByText('All Security')).not.toBeInTheDocument();
     expect(screen.queryByTestId('security-status-card')).not.toBeInTheDocument();
   });
 
-  it('automatically shows the first two available camera feeds', () => {
+  it('automatically prioritizes two camera feeds in quickview', () => {
     renderDashboard({
       cameras: [
         camera({ id: 'camera.front', name: 'Front Door' }),
@@ -195,11 +360,11 @@ describe('SecurityCameraDashboard', () => {
       ],
     });
 
-    const overview = within(screen.getByTestId('security-overview-grid'));
-    expect(overview.getAllByTestId(/^detail-card:/)).toHaveLength(2);
-    expect(overview.getByTestId('detail-card:camera.front')).toBeInTheDocument();
-    expect(overview.getByTestId('detail-card:camera.garden')).toBeInTheDocument();
-    expect(overview.queryByTestId('detail-card:camera.side')).not.toBeInTheDocument();
+    const overview = within(screen.getByTestId('security-quickview-grid'));
+    expect(overview.getAllByTestId(/^camera-card:/)).toHaveLength(2);
+    expect(overview.getByTestId('camera-card:camera.front')).toBeInTheDocument();
+    expect(overview.getByTestId('camera-card:camera.garden')).toBeInTheDocument();
+    expect(overview.queryByTestId('camera-card:camera.side')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Choose camera feeds' })).not.toBeInTheDocument();
     const outcome = screen.getByTestId('security-outcome-panel');
     expect(within(outcome).getByRole('heading')).toHaveClass('text-lg', 'font-bold');
@@ -215,14 +380,95 @@ describe('SecurityCameraDashboard', () => {
       ],
     });
 
-    const overview = within(screen.getByTestId('security-overview-grid'));
-    const carousel = overview.getByTestId('security-overview-carousel');
-    const items = overview.getAllByTestId('security-overview-carousel-item');
+    const overview = within(screen.getByTestId('security-quickview-grid'));
+    const carousel = overview.getByTestId('security-quickview-carousel');
+    const items = overview.getAllByTestId('security-quickview-carousel-item');
 
     expect(carousel).toHaveClass('snap-x', 'snap-mandatory', 'overflow-x-auto');
     expect(items).toHaveLength(2);
     expect(items[0]).toHaveClass('snap-start', 'w-[84%]');
+    expect(overview.queryByTestId('security-camera-mosaic')).not.toBeInTheDocument();
     expect(overview.queryByTestId('security-card-grid')).not.toBeInTheDocument();
+  });
+
+  it('uses a dominant feed with two stacked feeds for three pinned portrait cameras', () => {
+    selectQuickviewEntities(['camera.front', 'camera.garden', 'camera.side']);
+    activityEventsMock.breakpointCols = 4;
+    renderDashboard({
+      cameras: [
+        camera({ id: 'camera.front', name: 'Front Door' }),
+        camera({ id: 'camera.garden', name: 'Garden' }),
+        camera({ id: 'camera.side', name: 'Side Gate' }),
+      ],
+    });
+
+    const overview = within(screen.getByTestId('security-quickview-grid'));
+    const mosaic = overview.getByTestId('security-camera-mosaic');
+    const mosaicLayout = overview.getByTestId('security-camera-mosaic-layout');
+    const cells = overview.getAllByTestId('security-camera-mosaic-cell');
+
+    expect(mosaic).not.toHaveClass('aspect-video');
+    expect(mosaic.parentElement).toHaveClass('col-span-4', 'row-span-4');
+    expect(mosaicLayout).toHaveStyle({
+      gridAutoRows: '82px',
+      gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+    });
+    expect(cells).toHaveLength(3);
+    expect(cells[0]).toHaveClass('row-span-2');
+    expect(cells[1]).not.toHaveClass('row-span-2');
+    expect(overview.queryByTestId('security-quickview-carousel')).not.toBeInTheDocument();
+    expect(overview.queryByTestId('security-card-grid')).not.toBeInTheDocument();
+  });
+
+  it('uses four equal mosaic cells for four pinned portrait cameras', () => {
+    selectQuickviewEntities(['camera.front', 'camera.garden', 'camera.side', 'camera.deck']);
+    activityEventsMock.breakpointCols = 4;
+    renderDashboard({
+      cameras: [
+        camera({ id: 'camera.front', name: 'Front Door' }),
+        camera({ id: 'camera.garden', name: 'Garden' }),
+        camera({ id: 'camera.side', name: 'Side Gate' }),
+        camera({ id: 'camera.deck', name: 'Deck' }),
+      ],
+    });
+
+    const mosaic = screen.getByTestId('security-camera-mosaic');
+    const cells = screen.getAllByTestId('security-camera-mosaic-cell');
+
+    expect(mosaic.querySelector('.grid-cols-2.grid-rows-2')).toBeInTheDocument();
+    expect(cells).toHaveLength(4);
+    for (const cell of cells) {
+      expect(cell).not.toHaveClass('row-span-2');
+    }
+  });
+
+  it('keeps independent camera cards in the wide desktop grid', () => {
+    activityEventsMock.breakpointCols = 6;
+    renderDashboard({
+      cameras: [
+        camera({ id: 'camera.front', name: 'Front Door' }),
+        camera({ id: 'camera.garden', name: 'Garden' }),
+      ],
+    });
+
+    const overview = within(screen.getByTestId('security-quickview-grid'));
+    expect(overview.getByTestId('security-card-grid')).toBeInTheDocument();
+    expect(overview.queryByTestId('security-camera-mosaic')).not.toBeInTheDocument();
+    expect(overview.queryByTestId('security-quickview-carousel')).not.toBeInTheDocument();
+  });
+
+  it('places the internally scrollable Activity card last on mobile', () => {
+    activityEventsMock.breakpointCols = 2;
+    renderDashboard({
+      cameras: [camera({ id: 'camera.front', name: 'Front Door' })],
+      locks: [lock({ id: 'lock.front', name: 'Front Door Lock' })],
+    });
+
+    expect(screen.getByTestId('security-activity-panel').parentElement).toHaveClass(
+      'order-last',
+      'md:order-none'
+    );
+    expect(screen.getByTestId('security-command-main-details')).toHaveClass('order-6');
   });
 
   it('groups critical hazards inside the Security sidebar', () => {
@@ -246,7 +492,7 @@ describe('SecurityCameraDashboard', () => {
     expect(alert).toHaveAttribute('role', 'alert');
     expect(alert).toHaveAttribute('data-alert-tone', 'red');
     expect(alert).toHaveTextContent('Needs attention');
-    expect(alert).toHaveTextContent(/2 critical/i);
+    expect(alert).toHaveTextContent(/1 critical/i);
     expect(within(alert).queryByTestId('security-alert-count')).not.toBeInTheDocument();
     expect(alert).toHaveTextContent('Kitchen Smoke');
     expect(alert).toHaveTextContent('Smoke detected');
@@ -265,7 +511,7 @@ describe('SecurityCameraDashboard', () => {
 
     const alerts = screen.getByTestId('security-alerts-panel');
     expect(alerts).toHaveAttribute('data-alert-tone', 'red');
-    expect(alerts).toHaveTextContent(/1 critical/i);
+    expect(alerts).toHaveTextContent(/1 attention/i);
     const summaryAlertIcon = screen.getByTestId('info-badge-strip-icon-security-attention');
     expect(summaryAlertIcon).toHaveClass('border-red-400/45', 'bg-red-500/22');
     expect(summaryAlertIcon.querySelector('svg')).toHaveClass('lucide-triangle-alert');
@@ -284,7 +530,7 @@ describe('SecurityCameraDashboard', () => {
     expect(alerts.parentElement).toHaveClass('order-1');
     expect(screen.queryByTestId('security-exception-panel')).not.toBeInTheDocument();
     expect(screen.queryByTestId('security-outcome-panel')).not.toBeInTheDocument();
-    expect(screen.getByTestId('security-overview-grid')).toHaveClass('order-4');
+    expect(screen.getByTestId('security-quickview-grid')).toHaveClass('order-4');
     expect(screen.getByTestId('security-command-main')).toHaveClass(
       'contents',
       'md:flex',
@@ -307,10 +553,10 @@ describe('SecurityCameraDashboard', () => {
     expect(screen.getByTestId('security-command-grid').style.gridTemplateColumns).toContain(
       'repeat(8'
     );
-    expect(
-      within(screen.getByTestId('security-overview-grid')).getByTestId('security-card-grid').style
-        .gridTemplateColumns
-    ).toBe('repeat(4, minmax(0, 1fr))');
+    const overview = within(screen.getByTestId('security-quickview-grid'));
+    expect(overview.getByTestId('security-camera-mosaic')).toBeInTheDocument();
+    expect(overview.queryByTestId('security-quickview-carousel')).not.toBeInTheDocument();
+    expect(overview.queryByTestId('security-card-grid')).not.toBeInTheDocument();
     expect(
       within(screen.getByTestId('security-command-main-details')).getByTestId('security-card-grid')
         .style.gridTemplateColumns
@@ -334,7 +580,7 @@ describe('SecurityCameraDashboard', () => {
     expect(screen.getByRole('button', { name: 'Side Door: Unavailable' })).toBeInTheDocument();
   });
 
-  it('pins the unavailable device in its existing group from the summary pill', async () => {
+  it('opens all unavailable devices from the summary pill', async () => {
     renderDashboard({
       cameras: [camera({ id: 'camera.front', name: 'Front Door' })],
       sensors: [
@@ -351,17 +597,15 @@ describe('SecurityCameraDashboard', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Open Unavailable' }));
 
-    expect(screen.getByRole('tab', { name: 'Doors & windows' })).toHaveAttribute(
+    expect(screen.getByRole('tab', { name: 'Unavailable' })).toHaveAttribute(
       'aria-selected',
       'true'
     );
-    const unavailableCard = screen.getByTestId('detail-card:binary_sensor.side_door');
-    const unavailableCardAnchor = unavailableCard.closest<HTMLElement>('[data-security-entity-id]');
-    await waitFor(() => expect(unavailableCardAnchor).toHaveFocus());
-    expect(scrollIntoViewMock).toHaveBeenCalledWith({ behavior: 'smooth', block: 'center' });
+    expect(screen.getByTestId('detail-card:binary_sensor.side_door')).toBeInTheDocument();
+    expect(screen.queryByTestId('detail-card:camera.front')).not.toBeInTheDocument();
   });
 
-  it('pins the first attention device in its existing group from the summary pill', async () => {
+  it('opens all attention devices from the summary pill', async () => {
     localStorage.setItem('navet-security-dashboard-selected-group', JSON.stringify('cameras'));
     renderDashboard({
       cameras: [camera({ id: 'camera.front', name: 'Front Door' })],
@@ -370,11 +614,12 @@ describe('SecurityCameraDashboard', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Open Attention' }));
 
-    expect(screen.getByRole('tab', { name: 'Locks' })).toHaveAttribute('aria-selected', 'true');
-    const attentionCard = screen.getByTestId('detail-card:lock.back');
-    const attentionCardAnchor = attentionCard.closest<HTMLElement>('[data-security-entity-id]');
-    await waitFor(() => expect(attentionCardAnchor).toHaveFocus());
-    expect(scrollIntoViewMock).toHaveBeenCalledWith({ behavior: 'smooth', block: 'center' });
+    expect(screen.getByRole('tab', { name: 'Attention' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByTestId('detail-card:lock.back')).toBeInTheDocument();
+    expect(screen.queryByTestId('detail-card:camera.front')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: 'Cameras' }));
+    expect(screen.getByTestId('detail-card:camera.front')).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Attention' })).not.toBeInTheDocument();
   });
 
   it('groups security cards by type by default and can regroup them by room', () => {
@@ -406,14 +651,14 @@ describe('SecurityCameraDashboard', () => {
   });
 
   it('renders a manually ordered mix of security entity types', () => {
-    selectOverviewEntities(['lock.front', 'camera.a', 'binary_sensor.smoke']);
+    selectQuickviewEntities(['lock.front', 'camera.a', 'binary_sensor.smoke']);
     renderDashboard({
       cameras: [camera({ id: 'camera.a', name: 'A Camera' })],
       locks: [lock({ id: 'lock.front', name: 'Front Door Lock' })],
       sensors: [sensor({ id: 'binary_sensor.smoke', name: 'Smoke', securityKind: 'smoke' })],
     });
 
-    const cards = within(screen.getByTestId('security-overview-grid')).getAllByTestId(
+    const cards = within(screen.getByTestId('security-quickview-grid')).getAllByTestId(
       /^detail-card:/
     );
     expect(cards.map((item) => item.textContent)).toEqual(['Front Door Lock', 'A Camera', 'Smoke']);
@@ -438,7 +683,7 @@ describe('SecurityCameraDashboard', () => {
     expect(alarm.querySelector('.navet-entity-card-header')).toBeNull();
     expect(screen.getByRole('button', { name: 'Arm Away' })).toBeInTheDocument();
     expect(alarm.parentElement).toHaveClass('order-3');
-    expect(screen.getByTestId('security-overview-grid')).toHaveClass('order-4');
+    expect(screen.getByTestId('security-quickview-grid')).toHaveClass('order-4');
   });
 
   it('navigates alert rows to their existing entity card and activity rows to camera details', async () => {
@@ -472,7 +717,7 @@ describe('SecurityCameraDashboard', () => {
     await waitFor(() => expect(lockCardAnchor).toHaveFocus());
     expect(scrollIntoViewMock).toHaveBeenCalledWith({ behavior: 'smooth', block: 'center' });
 
-    fireEvent.click(screen.getByRole('button', { name: /Motion at Garden Camera/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Motion detected · Garden Camera/i }));
     expect(screen.getByText('Viewer:Garden Camera')).toBeInTheDocument();
   });
 
@@ -538,7 +783,17 @@ describe('SecurityCameraDashboard', () => {
 
     expect(
       screen.getAllByTestId('security-activity-marker').map((marker) => marker.dataset.activityTone)
-    ).toEqual(['green', 'green', 'green', 'yellow', 'red', 'red', 'red', 'red', 'amber']);
+    ).toEqual([
+      'green',
+      'green',
+      'green',
+      'neutral',
+      'neutral',
+      'neutral',
+      'red',
+      'neutral',
+      'amber',
+    ]);
   });
 
   it('groups activity by day and minute and only fetches older events explicitly', () => {
@@ -560,10 +815,12 @@ describe('SecurityCameraDashboard', () => {
     renderDashboard({ cameras: [motionCamera] });
 
     const activity = within(screen.getByTestId('security-activity-panel'));
-    const activityRows = activity.getAllByRole('button', { name: /Motion at Garden Camera/i });
+    const activityRows = activity.getAllByRole('button', {
+      name: /Motion detected · Garden Camera/i,
+    });
     expect(activityRows).toHaveLength(7);
     for (const activityRow of activityRows) {
-      expect(activityRow).toHaveClass('w-full', 'items-start', 'pt-2');
+      expect(activityRow).toHaveClass('w-full', 'items-center', 'py-2');
       expect(activityRow).not.toHaveClass('border-b');
       expect(activityRow).toHaveClass('min-h-12', '[contain-intrinsic-size:auto_48px]');
     }
@@ -572,26 +829,21 @@ describe('SecurityCameraDashboard', () => {
     for (const dayLabel of dayLabels) {
       expect(dayLabel.tagName).toBe('H4');
       expect(dayLabel.parentElement?.tagName).toBe('HEADER');
-      expect(dayLabel.parentElement).toHaveClass('flex', 'items-center', 'justify-center');
-      expect(dayLabel.parentElement).toHaveClass('sticky', 'top-0');
-      expect(dayLabel.firstElementChild).toHaveClass(
-        'inline-flex',
-        'rounded-full',
-        'px-2',
-        'py-0.5',
-        'font-semibold'
-      );
+      expect(dayLabel.parentElement).toHaveClass('grid');
+      expect(dayLabel.parentElement).not.toHaveClass('sticky');
+      expect(dayLabel).toHaveClass('col-start-3', 'font-medium');
+      expect(dayLabel.children).toHaveLength(0);
     }
     expect(activity.queryByTestId('security-activity-floating-day-label')).not.toBeInTheDocument();
     expect(activity.getAllByTestId('security-activity-time')).toHaveLength(6);
     for (const timestamp of activity.getAllByTestId('security-activity-time')) {
-      expect(timestamp).toHaveClass('pt-1.5', 'text-right', 'tabular-nums');
+      expect(timestamp).toHaveClass('text-right', 'tabular-nums');
     }
-    expect(activity.queryByText('Recent activity')).not.toBeInTheDocument();
+    expect(activity.getByRole('heading', { name: 'Recent activity' })).toBeInTheDocument();
     expect(activity.queryByText('24 hours')).not.toBeInTheDocument();
     expect(
       screen.getByTestId('security-activity-panel').querySelector('.navet-entity-card-header')
-    ).not.toBeInTheDocument();
+    ).toBeInTheDocument();
     expect(activity.getByTestId('security-activity-scroll')).toHaveClass(
       'overflow-y-auto',
       'overscroll-contain',
@@ -623,29 +875,33 @@ describe('SecurityCameraDashboard', () => {
     }
     const eventContent = activity.getAllByTestId('security-activity-event-content');
     for (const content of eventContent) {
-      expect(content).toHaveClass('self-stretch', 'pb-2');
+      expect(content).not.toHaveClass('border-b');
     }
     expect(eventContent.filter((content) => content.classList.contains('border-b'))).toHaveLength(
-      4
+      0
     );
     expect(eventContent[0]).not.toHaveClass('border-b');
-    const sameTimeDividers = activity.getAllByTestId('security-activity-same-time-divider');
-    expect(sameTimeDividers).toHaveLength(1);
-    expect(sameTimeDividers[0]).toHaveClass(
-      'left-[6.75rem]',
-      'right-3',
-      'top-0',
-      'border-t',
-      'opacity-50'
-    );
+    expect(activity.queryByTestId('security-activity-same-time-divider')).not.toBeInTheDocument();
     for (const timelineLine of activity.getAllByTestId('security-activity-timeline-line')) {
-      expect(timelineLine).toHaveClass('border-l', 'top-9', 'bottom-0', 'left-[5.25rem]');
+      expect(timelineLine).toHaveClass(
+        'border-l',
+        'top-1/2',
+        'bottom-0',
+        'opacity-50',
+        'left-[5.25rem]'
+      );
       expect(timelineLine).not.toHaveClass('border-dashed');
     }
     for (const timelineLine of activity.getAllByTestId(
       'security-activity-timeline-line-incoming'
     )) {
-      expect(timelineLine).toHaveClass('border-l', 'top-0', 'h-2', 'left-[5.25rem]');
+      expect(timelineLine).toHaveClass(
+        'border-l',
+        'top-0',
+        'bottom-1/2',
+        'opacity-50',
+        'left-[5.25rem]'
+      );
       expect(timelineLine).not.toHaveClass('border-dashed');
     }
     expect(activity.getByTestId('security-activity-scroll')).toHaveAttribute('tabindex', '0');

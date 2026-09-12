@@ -54,6 +54,7 @@ RUN apk add --no-cache bash gettext nginx nginx-mod-http-js su-exec
 
 COPY platform/home-assistant/addons/navet/run.sh /run.sh
 COPY docker/navet-runtime.sh /usr/local/bin/navet-runtime
+COPY docker/navet-setup-code.sh /usr/local/bin/navet-setup-code
 COPY --from=rss-transport-build /out/rss-transport /etc/navet/rss-transport
 COPY platform/home-assistant/addons/navet/rootfs/ /
 COPY docker/njs/rss-proxy.js /etc/nginx/njs/rss-proxy.js
@@ -66,6 +67,7 @@ COPY docker/njs/chore-calendar-policy.js /etc/nginx/njs/chore-calendar-policy.js
 COPY docker/njs/auth-store.js /etc/nginx/njs/auth-store.js
 COPY docker/njs/provider-session-store.js /etc/nginx/njs/provider-session-store.js
 COPY docker/njs/installation-authority.js /etc/nginx/njs/installation-authority.js
+COPY docker/njs/device-session-authority.js /etc/nginx/njs/device-session-authority.js
 COPY docker/njs/installation-cookie-scope.js /etc/nginx/njs/installation-cookie-scope.js
 COPY docker/njs/openhab-store.js /etc/nginx/njs/openhab-store.js
 COPY docker/njs/openhab-proxy.js /etc/nginx/njs/openhab-proxy.js
@@ -81,6 +83,7 @@ COPY docker/snippets/navet-profile-store-ingress.conf /etc/nginx/snippets/navet-
 COPY docker/snippets/navet-chore-store.conf /etc/nginx/snippets/navet-chore-store.conf
 COPY docker/snippets/navet-chore-store-ingress.conf /etc/nginx/snippets/navet-chore-store-ingress.conf
 COPY docker/snippets/navet-auth-store.conf /etc/nginx/snippets/navet-auth-store.conf
+COPY docker/snippets/navet-device-session-store.conf /etc/nginx/snippets/navet-device-session-store.conf
 COPY docker/snippets/navet-openhab-store.conf /etc/nginx/snippets/navet-openhab-store.conf
 COPY docker/snippets/navet-homey-store.conf /etc/nginx/snippets/navet-homey-store.conf
 COPY docker/snippets/navet-discovery.conf /etc/nginx/snippets/navet-discovery.conf
@@ -89,7 +92,7 @@ COPY --from=build /app/apps/standalone/dist /usr/share/nginx/html
 
 RUN mkdir -p /data \
   && chown -R nginx:nginx /data \
-  && chmod a+x /run.sh /usr/local/bin/navet-runtime
+  && chmod a+x /run.sh /usr/local/bin/navet-runtime /usr/local/bin/navet-setup-code
 
 LABEL \
   io.hass.version="${BUILD_VERSION}" \

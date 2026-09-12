@@ -46,13 +46,18 @@ function cardSizeKey(size: CardSize): `dashboard.addCard.size.${CardSize}` {
   return `dashboard.addCard.size.${size}`;
 }
 
-interface AddCardDialogViewProps {
+interface AddEntityDialogViewProps {
   open: boolean;
   onClose: () => void;
   currentRoom: string;
   activeTab: 'cards' | 'widgets';
   setActiveTab: (tab: 'cards' | 'widgets') => void;
   showCardsTab: boolean;
+  libraryOnly?: boolean;
+  title?: string;
+  description?: string;
+  actionLabel?: string;
+  libraryEmptyText?: string;
   libraryQuery: string;
   setLibraryQuery: (query: string) => void;
   hasLibraryQuery: boolean;
@@ -86,13 +91,18 @@ interface AddCardDialogViewProps {
   handleAddFromLibrary: (cardId: string) => void;
 }
 
-export function AddCardDialogView({
+export function AddEntityDialogView({
   open,
   onClose,
   currentRoom,
   activeTab,
   setActiveTab,
   showCardsTab,
+  libraryOnly = false,
+  title,
+  description,
+  actionLabel,
+  libraryEmptyText,
   libraryQuery,
   setLibraryQuery,
   hasLibraryQuery,
@@ -124,7 +134,7 @@ export function AddCardDialogView({
   getColorValue,
   handleAdd,
   handleAddFromLibrary,
-}: AddCardDialogViewProps) {
+}: AddEntityDialogViewProps) {
   const { t } = useI18n();
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   if (!open) return null;
@@ -181,9 +191,12 @@ export function AddCardDialogView({
   const selectedTemplate = cardTemplates.find((template) => template.id === selectedType);
   const sizeOptions = selectedTemplate?.supportedSizes ?? [];
   const roomLabel = isAllRooms(currentRoom) ? t('dashboard.addCard.allRooms') : currentRoom;
-  const heroTitle = cardsTabActive
-    ? t('dashboard.addCard.libraryDescription')
-    : t('dashboard.addCard.description', { room: roomLabel });
+  const dialogTitle = title ?? t('dashboard.addCard.title');
+  const heroTitle =
+    description ??
+    (cardsTabActive
+      ? t('dashboard.addCard.libraryDescription')
+      : t('dashboard.addCard.description', { room: roomLabel }));
 
   return (
     <BaseCardDialog
@@ -194,7 +207,7 @@ export function AddCardDialogView({
           onClose();
         }
       }}
-      title={t('dashboard.addCard.title')}
+      title={dialogTitle}
       description={heroTitle}
       theme={theme}
       disableOpenAutoFocus
@@ -203,7 +216,7 @@ export function AddCardDialogView({
       shellBodyClassName="h-full min-h-0"
     >
       <NavigationWorkspace.Frame
-        aria-label={t('dashboard.addCard.title')}
+        aria-label={dialogTitle}
         className="h-full max-h-full rounded-none border-0 bg-none bg-transparent shadow-none"
       >
         <NavigationWorkspace.Header
@@ -216,7 +229,7 @@ export function AddCardDialogView({
           )}
         >
           <CardDialogHeader
-            title={t('dashboard.addCard.title')}
+            title={dialogTitle}
             description={heroTitle}
             theme={theme}
             editableTitle={false}
@@ -224,7 +237,7 @@ export function AddCardDialogView({
             className="mb-0"
           />
 
-          {showCardsTab ? (
+          {showCardsTab && !libraryOnly ? (
             <div className="mt-3 flex flex-wrap gap-2 md:hidden">
               <InteractivePill
                 active={activeTab === 'cards'}
@@ -254,15 +267,11 @@ export function AddCardDialogView({
           ) : null}
         </NavigationWorkspace.Header>
 
-        <NavigationWorkspace.Body
-          className={
-            showCardsTab ? 'grid-cols-1 md:grid-cols-[16rem_minmax(0,1fr)]' : 'grid-cols-1'
-          }
-        >
-          {showCardsTab ? (
-            <NavigationWorkspace.Sidebar className="hidden md:block">
-              <NavigationWorkspace.ScrollArea className="p-4">
-                <nav aria-label={t('dashboard.addCard.title')} className="grid gap-1">
+        <NavigationWorkspace.Body className="grid-cols-1 md:grid-cols-[16rem_minmax(0,1fr)]">
+          <NavigationWorkspace.Sidebar className="hidden md:block">
+            <NavigationWorkspace.ScrollArea className="p-4">
+              <nav aria-label={dialogTitle} className="grid gap-1">
+                {showCardsTab ? (
                   <NavigationWorkspace.Item
                     active={cardsTabActive && selectedLibraryEntityType === null}
                     accentColor={accent}
@@ -289,7 +298,9 @@ export function AddCardDialogView({
                       />
                     </NavigationWorkspace.ItemButton>
                   </NavigationWorkspace.Item>
+                ) : null}
 
+                {!libraryOnly ? (
                   <NavigationWorkspace.Item active={!cardsTabActive} accentColor={accent}>
                     <NavigationWorkspace.ItemButton
                       aria-current={!cardsTabActive ? 'page' : undefined}
@@ -306,10 +317,12 @@ export function AddCardDialogView({
                       />
                     </NavigationWorkspace.ItemButton>
                   </NavigationWorkspace.Item>
+                ) : null}
 
-                  <NavigationWorkspace.Separator className="my-2" />
+                {showCardsTab ? <NavigationWorkspace.Separator className="my-2" /> : null}
 
-                  {libraryEntityTypes.map((entityType) => {
+                {showCardsTab &&
+                  libraryEntityTypes.map((entityType) => {
                     const EntityTypeIcon = entityType.icon ?? Layers2;
                     const active = cardsTabActive && selectedLibraryEntityType === entityType.key;
 
@@ -339,10 +352,9 @@ export function AddCardDialogView({
                       </NavigationWorkspace.Item>
                     );
                   })}
-                </nav>
-              </NavigationWorkspace.ScrollArea>
-            </NavigationWorkspace.Sidebar>
-          ) : null}
+              </nav>
+            </NavigationWorkspace.ScrollArea>
+          </NavigationWorkspace.Sidebar>
 
           <NavigationWorkspace.Content className="flex min-h-0 flex-col px-4 py-4 sm:px-5 sm:py-5">
             <div className="min-h-0 flex-1">
@@ -433,8 +445,8 @@ export function AddCardDialogView({
                     <DashboardLibraryList
                       cards={filteredLibraryCards}
                       surface={surface}
-                      addLabel={t('dashboard.addEntity.action')}
-                      emptyText={t('dashboard.addCard.libraryEmpty')}
+                      addLabel={actionLabel ?? t('dashboard.addEntity.action')}
+                      emptyText={libraryEmptyText ?? t('dashboard.addCard.libraryEmpty')}
                       onAdd={handleAddFromLibrary}
                       fillAvailable
                     />

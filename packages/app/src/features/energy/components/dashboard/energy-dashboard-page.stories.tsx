@@ -18,7 +18,7 @@ import type { ThemeMode } from '@navet/app/stores/theme-store';
 import { useThemeStore } from '@navet/app/stores/theme-store';
 import type { Decorator, Meta, StoryObj } from '@storybook/react-vite';
 import { type ReactNode, useEffect } from 'react';
-import { expect, within } from 'storybook/test';
+import { expect, waitFor, within } from 'storybook/test';
 import { EnergyDashboardPage } from './energy-dashboard-page';
 
 function ThemeDecorator({ theme, children }: { theme: ThemeMode; children: ReactNode }) {
@@ -575,5 +575,29 @@ export const BlackTheme: Story = {
     backgrounds: {
       value: 'canvas-black',
     },
+  },
+};
+
+export const KpiReplacement: Story = {
+  ...buildScenarioStory('default'),
+  args: {
+    dashboard: defaultScenario.dashboard,
+    sourceDiagnostics: getMockEnergySourceDiagnostics(defaultScenario.dashboard),
+    isEditMode: true,
+  },
+  play: async ({ canvas, userEvent }) => {
+    const edits = canvas.getAllByRole('button', { name: /^Edit / });
+    const edit = edits[0];
+    if (!edit) throw new Error('Expected a KPI edit action');
+    await userEvent.click(edit);
+    const dialog = await within(document.body).findByRole('dialog', { name: 'Energy KPIs' });
+    await waitFor(() =>
+      expect(within(dialog).getAllByRole('button', { name: /^Save: / })[0]).toBeVisible()
+    );
+    const replacement = within(dialog).getAllByRole('button', { name: /^Save: / })[0];
+    if (!replacement) throw new Error('Expected a replacement choice');
+    await userEvent.click(replacement);
+    await waitFor(() => expect(dialog).not.toBeInTheDocument());
+    expect(localStorage.getItem('navet-energy-kpi-preferences-v1')).toContain('"mode":"custom"');
   },
 };

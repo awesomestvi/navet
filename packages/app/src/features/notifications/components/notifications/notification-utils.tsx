@@ -97,7 +97,7 @@ function renderInlineMarkdown(
           key={`${imageUrl}-${match.index}`}
           src={safeImageUrl}
           alt={imageAlt || imageAltText || ''}
-          className="mt-2 max-h-36 w-full rounded-2xl border border-white/10 object-cover"
+          className="mt-2 h-auto w-full rounded-2xl border border-white/10 object-contain"
         />
       );
     } else if (linkUrl && linkLabel) {

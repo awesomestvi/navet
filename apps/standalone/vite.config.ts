@@ -15,6 +15,7 @@ import {
   createViteInstallationAuthority,
   type ViteInstallationAuthority,
 } from '../../scripts/vite-installation-authority.ts';
+import { createViteDeviceSessionAuthority } from '../../scripts/vite-device-session-authority.ts';
 import { createInstallationCookieNames } from '../../scripts/installation-cookie-scope.ts';
 import { getVendorChunkName, isLazyHtmlPreload } from '../../scripts/vite-chunking.ts';
 import {
@@ -34,6 +35,7 @@ import {
   authSessionStorePlugin,
   choreStorePlugin,
   dashboardProfileStorePlugin,
+  deviceSessionStorePlugin,
 } from '../../scripts/vite-workspace-plugins.ts';
 import { homeySessionStorePlugin } from '../../scripts/vite-homey-session-plugin.ts';
 import { openhabSessionStorePlugin } from '../../scripts/vite-openhab-session-plugin.ts';
@@ -174,16 +176,34 @@ export default defineConfig(({ command, mode }) => {
             openhabUrlPin: env.NAVET_OPENHAB_URL?.trim(),
           })
         : DISABLED_INSTALLATION_AUTHORITY;
-    const authSessionPlugin = authSessionStorePlugin(installationAuthority);
+    const deviceSessionAuthority =
+      command === 'serve' && mode !== 'test' && !isStorybook
+        ? createViteDeviceSessionAuthority(installationAuthority)
+        : undefined;
+    const authSessionPlugin = authSessionStorePlugin(
+      installationAuthority,
+      deviceSessionAuthority
+    );
     const resolveAuthenticatedPrincipal = (req: IncomingMessage) =>
       authSessionPlugin.api.resolveAuthenticatedPrincipal(req, { trustIngressHeaders: false });
     const dashboardProfilePlugin = dashboardProfileStorePlugin(
       installationAuthority,
       resolveAuthenticatedPrincipal
     );
-    const choresPlugin = choreStorePlugin(resolveAuthenticatedPrincipal);
-    const homeySessionPlugin = homeySessionStorePlugin(installationAuthority);
-    const openhabSessionPlugin = openhabSessionStorePlugin(installationAuthority);
+    const homeySessionPlugin = homeySessionStorePlugin(
+      installationAuthority,
+      deviceSessionAuthority
+    );
+    const openhabSessionPlugin = openhabSessionStorePlugin(
+      installationAuthority,
+      deviceSessionAuthority
+    );
+    const choresPlugin = choreStorePlugin((req) =>
+      resolveAuthenticatedPrincipal(req) ??
+      (homeySessionPlugin.api.getHomeySession(req) || openhabSessionPlugin.api.getOpenHABSession(req)
+        ? { sessionId: 'authenticated-provider-session' }
+        : null)
+    );
     const appPlugins: PluginOption[] = [
       react(),
       babel({
@@ -200,6 +220,9 @@ export default defineConfig(({ command, mode }) => {
         )
       ),
       spotifyMetadataPlugin(),
+      ...(deviceSessionAuthority
+        ? [deviceSessionStorePlugin(deviceSessionAuthority)]
+        : []),
       authSessionPlugin,
       dashboardProfilePlugin,
       choresPlugin,

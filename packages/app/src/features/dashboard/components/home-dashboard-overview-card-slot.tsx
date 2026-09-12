@@ -5,6 +5,7 @@ import type { DragMeta, DropMeta } from '../hooks/use-home-dashboard-editor';
 
 function SortableHomeCard({
   cardId,
+  cardLabel,
   sectionId,
   isPreviewHidden,
   className,
@@ -12,6 +13,7 @@ function SortableHomeCard({
   children,
 }: {
   cardId: string;
+  cardLabel?: string;
   sectionId?: string;
   isPreviewHidden: boolean;
   className: string;
@@ -27,7 +29,7 @@ function SortableHomeCard({
   return (
     <div
       ref={setNodeRef}
-      {...attributes}
+      {...{ ...attributes, 'aria-label': cardLabel ?? cardId }}
       {...listeners}
       style={isDragging ? undefined : getDndTransformStyle(transform, transition)}
       className={`${className} relative h-full cursor-grab active:cursor-grabbing ${
@@ -37,10 +39,11 @@ function SortableHomeCard({
       data-card-drag-surface="true"
     >
       <div
+        inert
         className={
           optimizeOffscreenPaint
-            ? 'h-full min-h-40 [content-visibility:auto] [contain-intrinsic-block-size:10rem]'
-            : 'h-full min-h-0'
+            ? 'pointer-events-none h-full min-h-40 [content-visibility:auto] [contain-intrinsic-block-size:10rem]'
+            : 'pointer-events-none h-full min-h-0'
         }
       >
         {children}
@@ -52,6 +55,7 @@ function SortableHomeCard({
 export function HomeCardSlot({
   sortable,
   cardId,
+  cardLabel,
   sectionId,
   isPreviewHidden,
   className,
@@ -60,6 +64,7 @@ export function HomeCardSlot({
 }: {
   sortable: boolean;
   cardId: string;
+  cardLabel?: string;
   sectionId?: string;
   isPreviewHidden: boolean;
   className: string;
@@ -83,6 +88,7 @@ export function HomeCardSlot({
   return (
     <SortableHomeCard
       cardId={cardId}
+      cardLabel={cardLabel}
       sectionId={sectionId}
       isPreviewHidden={isPreviewHidden}
       className={className}

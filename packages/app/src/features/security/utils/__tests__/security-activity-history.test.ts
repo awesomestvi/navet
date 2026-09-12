@@ -40,6 +40,47 @@ function typedSensor(
 }
 
 describe('security activity history', () => {
+  it('preserves transitional states until a lock or opening confirms completion', () => {
+    const door = typedSensor('binary_sensor.patio', 'door', 'on');
+    const events = buildSecurityActivityEvents({
+      devices: [typedLock(false), door],
+      nowMs: now,
+      histories: [
+        {
+          entityId: 'lock.front_door',
+          points: [
+            { state: 'unlocked', changedAt: '2026-08-23T10:00:00Z' },
+            { state: 'locking', changedAt: '2026-08-23T10:01:00Z' },
+            { state: 'locked', changedAt: '2026-08-23T10:02:00Z' },
+            { state: 'unlocking', changedAt: '2026-08-23T10:03:00Z' },
+          ],
+        },
+        {
+          entityId: door.id,
+          points: [
+            { state: 'open', changedAt: '2026-08-23T10:00:00Z' },
+            { state: 'closing', changedAt: '2026-08-23T10:01:00Z' },
+          ],
+        },
+      ],
+    });
+    expect(
+      events.filter((event) => event.entityId === 'lock.front_door').map((event) => event.kind)
+    ).toEqual(['unlocking', 'locked', 'locking']);
+    expect(events.find((event) => event.entityId === door.id)?.kind).toBe('closing');
+    expect(events.some((event) => event.kind === 'closed')).toBe(false);
+  });
+
+  it('keeps sound and vibration distinct from motion', () => {
+    for (const kind of ['sound', 'vibration'] as const) {
+      const device = {
+        ...typedSensor('binary_sensor.activity', 'motion', 'on'),
+        securityKind: kind,
+      };
+      expect(buildCurrentSecurityActivityEvents([device])[0]?.kind).toBe(kind);
+    }
+  });
+
   it('turns lock, opening, motion, and hazard transitions into recent events', () => {
     const devices = [
       typedLock(false),

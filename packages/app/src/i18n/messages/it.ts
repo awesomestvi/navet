@@ -2,6 +2,12 @@ import { enMessages } from './en';
 
 export const itMessages = {
   ...enMessages,
+  'energy.history.noData': 'Nessun dato',
+  'energy.history.noPeriodSelected': 'Nessun periodo selezionato',
+  'energy.history.usageByPeriod': 'Consumo energetico per periodo',
+  'energy.dashboard.status.notConfigured': 'Non configurato',
+  'energy.edit.hideKpis': 'Nascondi indicatori',
+  'energy.edit.showKpis': 'Mostra indicatori',
   'household.title': 'Famiglia',
   'household.description': 'Faccende, responsabilità e routine per tutti in casa.',
   'household.tabs.today': 'Oggi',
@@ -571,6 +577,8 @@ export const itMessages = {
   'settings.appearance.ambience.contained': 'Contenuta',
   'settings.appearance.ambience.disabledInLowPower':
     'Disponibile solo con qualità visiva Alta. Le schede luce usano la modalità Contenuta con qualità Media e Bassa.',
+  'settings.appearance.wallpaper.showAll': 'Mostra tutti gli sfondi',
+  'settings.appearance.wallpaper.showLess': 'Mostra meno',
   'settings.appearance.wallpaper.title': 'Sfondo',
   'settings.appearance.wallpaper.description':
     'Aggiungi un’immagine di sfondo che si integri con accento e tema attivi.',
@@ -1679,6 +1687,7 @@ export const itMessages = {
   'energy.range.month': 'Mese',
   'energy.history.usage': 'Consumo',
   'energy.history.low': 'Minimo',
+  'energy.history.high': 'Alta',
   'energy.history.average': 'Media',
   'energy.stats.currentPower': 'Potenza attuale',
   'energy.stats.today': 'Oggi',
@@ -2847,6 +2856,7 @@ export const itMessages = {
   'energy.dashboard.wattsNow': 'Watt adesso',
   'energy.dashboard.kwhToday': '{value} kWh oggi',
   'energy.dashboard.liveEnergy': 'Energia viva',
+  'energy.dashboard.orbHelp': 'Tocca i colori per i consumi; grigio non monitorato.',
   'energy.dashboard.liveEnergyDescription': 'Scopri da dove proviene il consumo in questo momento.',
   'energy.dashboard.devices': 'Dispositivi',
   'energy.dashboard.sources': 'Fonti',
@@ -3239,6 +3249,20 @@ export const itMessages = {
   'security.attention.title': 'Richiede attenzione',
   'security.critical.title': '{name} rilevato',
   'security.critical.view': 'Mostra avviso',
+  'security.dashboard.availableCameras': 'Telecamere disponibili',
+  'security.activity.historyUnavailable':
+    'Cronologia non disponibile. Viene mostrata l’attività attuale.',
+  'security.activity.refreshFailed': 'Impossibile aggiornare l’attività.',
+  'security.activity.olderFailed': 'Impossibile caricare le attività precedenti.',
+  'security.activity.updated': 'Ultimo aggiornamento: {time}',
+  'security.activity.retry': 'Riprova',
+  'security.activity.sound': 'Suono presso {name}',
+  'security.activity.vibration': 'Vibrazione presso {name}',
+  'security.activity.locking': '{name} in blocco',
+  'security.activity.unlocking': '{name} in sblocco',
+  'security.activity.opening': '{name} in apertura',
+  'security.activity.closing': '{name} in chiusura',
+  'camera.snapshot.loaded': 'Caricata {age} fa',
   'security.activity.title': 'Attività recente',
   'security.activity.last24Hours': '24 ore',
   'security.activity.current': 'Attuale',
@@ -3246,6 +3270,7 @@ export const itMessages = {
   'security.activity.empty': 'Nessuna attività recente.',
   'security.activity.loadOlder': 'Carica attività precedente',
   'security.activity.motion': 'Movimento presso {name}',
+  'security.activity.motionDetected': 'Movimento rilevato',
   'security.activity.unlocked': '{name} sbloccato',
   'security.activity.locked': '{name} bloccato',
   'security.activity.opened': '{name} aperto',
@@ -3253,33 +3278,6 @@ export const itMessages = {
   'security.activity.hazard': '{name} rilevato',
   'security.activity.hazardCleared': '{name} ripristinato',
   'security.activity.changed': '{name} – {state}',
-  'security.overview.customize.action': 'Panoramica',
-  'security.overview.customize.title': 'Personalizza la panoramica sicurezza',
-  'security.overview.customize.description':
-    'Scegli e ordina le entità mostrate nella parte superiore di Sicurezza.',
-  'security.overview.customize.close': 'Chiudi la panoramica sicurezza',
-  'security.overview.customize.setup': 'Configurazione panoramica',
-  'security.overview.customize.setupDescription':
-    'Usa la priorità automatica delle telecamere o crea la tua panoramica.',
-  'security.overview.customize.automatic': 'Automatico',
-  'security.overview.customize.automaticDescription': 'Mostra fino a due telecamere',
-  'security.overview.customize.manual': 'Manuale',
-  'security.overview.customize.selected': '{count} selezionate',
-  'security.overview.customize.order': 'Ordine',
-  'security.overview.customize.orderDescription': 'Ordina le entità selezionate',
-  'security.overview.customize.selectionTitle': 'Scegli le entità della panoramica',
-  'security.overview.customize.selectionDescription':
-    'Aggiungi telecamere, serrature, sensori, persone o altre entità di sicurezza.',
-  'security.overview.customize.noMatches': 'Nessuna entità corrisponde alla ricerca.',
-  'security.overview.customize.orderTitle': 'Ordina le entità della panoramica',
-  'security.overview.customize.orderHelp':
-    'Usa le frecce per disporre le entità nell’ordine del pannello.',
-  'security.overview.customize.automaticTitle': 'Priorità automatica',
-  'security.overview.customize.automaticHelp':
-    'Navet mostra la prima o le prime due telecamere disponibili. Se non ci sono telecamere, mostra invece due entità di sicurezza.',
-  'security.overview.customize.moveEarlier': 'Sposta {name} prima',
-  'security.overview.customize.moveLater': 'Sposta {name} dopo',
-  'security.overview.customize.previewLabel': 'Entità della panoramica sicurezza',
   'security.alarm.controls': 'Controlli allarme',
   'widgets.assist.title': 'Assist',
   'widgets.assist.description': 'Chiedi a Home Assistant scrivendo o parlando.',
@@ -3315,6 +3313,7 @@ export const itMessages = {
   'energy.edit.moveEarlier': 'Sposta {name} prima',
   'energy.edit.moveLater': 'Sposta {name} dopo',
   'energy.edit.hide': 'Nascondi {name}',
+  'energy.edit.arrangeCard': 'Riordina {name}',
   'energy.edit.deviceCards': 'Schede dei dispositivi',
   'energy.range.year': 'Anno',
   'energy.range.insightsPeriod': 'Periodo di analisi',
@@ -3458,4 +3457,114 @@ export const itMessages = {
   'energy.historyCopy.year': 'anno',
   'energy.historyCopy.period': 'periodo',
   'energy.historyCopy.periods': '{count} periodi',
+  'deviceAuthorization.approval.approveDevice': 'Approva dispositivo',
+  'deviceAuthorization.approval.approvedDescription':
+    "L'altra schermata si sta collegando a Navet ora.",
+  'deviceAuthorization.approval.approving': 'Approvazione in corso...',
+  'deviceAuthorization.approval.connections': 'Connessioni: {providers}',
+  'deviceAuthorization.approval.description':
+    'Approva solo la schermata in cui è visibile questo codice corrispondente.',
+  'deviceAuthorization.approval.deviceApproved': 'Dispositivo approvato',
+  'deviceAuthorization.approval.matchingCode': 'Codice corrispondente',
+  'deviceAuthorization.approval.requestingDevice': 'Schermata di richiesta: {device}',
+  'deviceAuthorization.approval.revocableSession':
+    'Lo schermo riceve la propria sessione Navet revocabile.',
+  'deviceAuthorization.approval.title': 'Collegare un altro dispositivo?',
+  'deviceAuthorization.clickToCopy': 'Clicca per copiare',
+  'deviceAuthorization.connectWithAnotherDevice': 'Connettiti con un altro dispositivo',
+  'deviceAuthorization.connectingDevice': 'Connessione di questo dispositivo in corso...',
+  'deviceAuthorization.copied': 'Copiato',
+  'deviceAuthorization.copyCodeLabel': 'Copia il codice di connessione del dispositivo',
+  'deviceAuthorization.copyFailed': 'Impossibile copiare il codice.',
+  'deviceAuthorization.copyFailedDescription': 'Seleziona il codice e copialo manualmente.',
+  'deviceAuthorization.createNewCode': 'Crea un nuovo codice',
+  'deviceAuthorization.defaultDeviceName': 'Navet su {device}',
+  'deviceAuthorization.enterCode':
+    'Sul dispositivo principale, apri Navet → Impostazioni → Sistema → Dispositivi autorizzati. Inserisci questo codice, verifica e approva l’accesso.',
+  'deviceAuthorization.preparingApproval':
+    "Preparazione dell'approvazione del dispositivo in corso...",
+  'deviceAuthorization.preparingConnection': 'Preparazione di una connessione sicura...',
+  'deviceAuthorization.requestDeclined': 'Richiesta rifiutata',
+  'deviceAuthorization.requestDeclinedDescription':
+    "L'altro dispositivo non ha concesso l'accesso. Crea un nuovo codice o accedi normalmente.",
+  'deviceAuthorization.signInInstead': 'Accedi invece',
+  'deviceAuthorization.unknownDevice': 'un altro dispositivo',
+  'deviceAuthorization.waitingForApproval': 'In attesa di approvazione · Scade tra {time}',
+  'login.setup.checkFailed':
+    'Navet non è riuscito a verificare se questa connessione è pronta. Verificare che questa installazione Navet sia raggiungibile, quindi riprovare.',
+  'login.setup.checkingConnection': 'Controllo della connessione in corso...',
+  'login.setup.codeLabel': 'Codice di configurazione',
+  'login.setup.codePlaceholder': 'Inserisci il tuo codice di configurazione',
+  'login.setup.description':
+    'Ciò impedisce a qualcuno che può raggiungere Navet di collegarlo a una casa intelligente diversa. Lo fai solo quando aggiungi o sostituisci un provider.',
+  'login.setup.dockerInstruction': 'Per Docker, eseguire',
+  'login.setup.otherInstruction':
+    'Per lo sviluppo locale, utilizzare il codice stampato dal server di sviluppo. Se qualcun altro ha installato Navet, chiedigli un codice.',
+  'login.setup.providerUnavailable':
+    'Questo provider non è disponibile nel runtime Navet corrente.',
+  'login.setup.title': 'Approvazione una tantum',
+  'settings.system.authorizedDevices.activity': '{providers} · Attivo {time}',
+  'settings.system.authorizedDevices.activityNow': '{providers} · Attivo ora',
+  'settings.system.authorizedDevices.approvalDescription':
+    'Accesso a {providers} con la propria sessione Navet revocabile.',
+  'settings.system.authorizedDevices.approvalTitle': 'Approvare {name}?',
+  'settings.system.authorizedDevices.choosePrimaryDescription':
+    'Questi accessi sono stati migrati come dispositivi primari. Scegli quale dispositivo deve gestire gli altri.',
+  'settings.system.authorizedDevices.choosePrimaryTitle': 'Scegli il dispositivo primario',
+  'settings.system.authorizedDevices.codeLabel': 'Codice di connessione del dispositivo',
+  'settings.system.authorizedDevices.codePlaceholder': 'XXXX-XXXX-XXXX',
+  'settings.system.authorizedDevices.connectDescription':
+    "Inserisci il codice monouso mostrato sull'altro dispositivo.",
+  'settings.system.authorizedDevices.connectTitle': 'Collega un altro dispositivo',
+  'settings.system.authorizedDevices.decline': 'Rifiuta',
+  'settings.system.authorizedDevices.description':
+    "Visualizza i dispositivi con accesso e gestiscili dall'accesso principale.",
+  'settings.system.authorizedDevices.deviceName': 'Nome del dispositivo',
+  'settings.system.authorizedDevices.feedback.approved': "L'altra schermata è stata approvata.",
+  'settings.system.authorizedDevices.feedback.declined':
+    'La richiesta del dispositivo è stata rifiutata.',
+  'settings.system.authorizedDevices.feedback.promoted': '{name} è ora un dispositivo principale.',
+  'settings.system.authorizedDevices.feedback.promotedDescription':
+    'Può collegare, rinominare e rimuovere i dispositivi autorizzati.',
+  'settings.system.authorizedDevices.feedback.removed': '{name} è stato rimosso.',
+  'settings.system.authorizedDevices.feedback.removedDescription':
+    'Non può più aprire questa installazione Navet.',
+  'settings.system.authorizedDevices.feedback.renamed': 'Dispositivo rinominato in {name}.',
+  'settings.system.authorizedDevices.loading':
+    'Caricamento dei dispositivi autorizzati in corso...',
+  'settings.system.authorizedDevices.makePrimary': 'Rendi primario',
+  'settings.system.authorizedDevices.originalSignIn': 'Accesso originale',
+  'settings.system.authorizedDevices.primary': 'Primario',
+  'settings.system.authorizedDevices.primarySignIn': 'Accesso principale',
+  'settings.system.authorizedDevices.primarySignInEmpty':
+    'Accesso principale · Nessun altro dispositivo',
+  'settings.system.authorizedDevices.promoteDescription':
+    '{name} sarà in grado di connettere, rinominare e rimuovere i dispositivi autorizzati. Le credenziali del provider rimangono protette sul server Navet.',
+  'settings.system.authorizedDevices.promoteTitle': 'Renderlo un dispositivo primario?',
+  'settings.system.authorizedDevices.readOnlyDescription':
+    "Puoi visualizzare i dispositivi con accesso qui. Connettili, rinominali o rimuovili dall'accesso principale.",
+  'settings.system.authorizedDevices.readOnlyTitle': 'Gestito dal dispositivo primario',
+  'settings.system.authorizedDevices.removeDescription':
+    "{name} perderà immediatamente l'accesso a Navet. Puoi ricollegarlo in un secondo momento con un nuovo codice di approvazione.",
+  'settings.system.authorizedDevices.removeNamed': 'Rimuovi {name}',
+  'settings.system.authorizedDevices.removeTitle': 'Rimuovere questo dispositivo autorizzato?',
+  'settings.system.authorizedDevices.rename': 'Rinomina dispositivo',
+  'settings.system.authorizedDevices.reviewCode': 'Codice di revisione',
+  'settings.system.authorizedDevices.saveName': 'Salva il nome del dispositivo',
+  'settings.system.authorizedDevices.thisDevice': 'Questo dispositivo',
+  'settings.system.authorizedDevices.title': 'Dispositivi autorizzati',
+  'energy.historyWorkspace.automatic': 'Automatico',
+  'energy.historyWorkspace.manual': 'Manuale',
+  'energy.historyWorkspace.order': 'Ordine',
+  'security.quickview.label': 'Vista rapida',
+  'security.quickview.devices': 'Dispositivi',
+  'security.quickview.dropHint': 'Trascina qui le schede per fissarle.',
+  'security.quickview.drag': 'Trascina {name}',
+  'security.quickview.pin': 'Fissa {name} nella vista rapida',
+  'security.quickview.unpin': 'Rimuovi {name} dalla vista rapida',
+  'security.quickview.keyboardInstructions':
+    'Premi Spazio per prendere, le frecce per spostare, Spazio per rilasciare ed Esc per annullare.',
+  'security.quickview.emptyTitle': 'Nessuna scheda in quickview',
+  'security.quickview.emptyDescription':
+    'Scegli Personalizza, poi trascina qui le schede dei dispositivi per mostrarle in quickview.',
 } as const satisfies Record<keyof typeof enMessages, string>;

@@ -161,6 +161,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   isStreamCapable: initialIsStreamCapable,
   size,
   isEditMode,
+  presentation = 'card',
 }: CameraCardProps) {
   const { t } = useI18n();
   const providerEntity = useProviderEntityModel(id);
@@ -638,6 +639,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
         now={now}
         size={size}
         isEditMode={isEditMode}
+        presentation={presentation}
         cameraViewMode={effectiveDashboardCameraViewMode}
         fitMode={cameraFitMode}
         isStreamCapable={playbackModel?.supportsStreaming ?? isStreamCapable}

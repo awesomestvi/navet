@@ -13,6 +13,7 @@ chown nginx:nginx /data 2>/dev/null || true
 
 INSTALLATION_KEY_PATH="/data/navet-installation-key"
 INSTALLATION_CONFIG_PATH="/data/navet-installation-config.json"
+INSTALLATION_SETUP_MARKER_PATH="/data/navet-setup-code-initialized"
 PAIRING_KEY_GENERATED=false
 
 if [ -n "${NAVET_INSTALLATION_KEY}" ] &&
@@ -46,6 +47,13 @@ else
 fi
 chmod 600 "${INSTALLATION_KEY_PATH}"
 chown nginx:nginx "${INSTALLATION_KEY_PATH}" 2>/dev/null || true
+
+if [ ! -f "${INSTALLATION_SETUP_MARKER_PATH}" ]; then
+  /usr/local/bin/navet-setup-code >&2
+  touch "${INSTALLATION_SETUP_MARKER_PATH}"
+  chmod 600 "${INSTALLATION_SETUP_MARKER_PATH}"
+  chown nginx:nginx "${INSTALLATION_SETUP_MARKER_PATH}" 2>/dev/null || true
+fi
 
 write_runtime_resolver() {
   resolver_addresses="$(
@@ -190,11 +198,8 @@ mv "${INSTALLATION_CONFIG_PATH}.tmp" "${INSTALLATION_CONFIG_PATH}"
 chown nginx:nginx "${INSTALLATION_CONFIG_PATH}" 2>/dev/null || true
 
 if [ "${PAIRING_KEY_GENERATED}" = "true" ]; then
-  echo "Navet operator pairing key created." >&2
-  echo "Append #navet_pairing=${NAVET_INSTALLATION_KEY} to your trusted Navet URL for first enrollment." >&2
-  echo "The fragment remains browser-local and is removed before Navet sends network requests." >&2
+  echo "Navet installation security initialized." >&2
 fi
-
 export NAVET_HASS_URL NAVET_HASS_URL_JS NAVET_DASHBOARD_CONFIG_URL_JS NAVET_PROVIDER_TLS_VERIFY
 
 envsubst '${NAVET_HASS_URL}' \

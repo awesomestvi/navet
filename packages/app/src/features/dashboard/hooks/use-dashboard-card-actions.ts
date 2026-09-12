@@ -3,7 +3,7 @@ import { ENERGY_WIDGET_ROOM, HOME_WIDGET_ROOM, isAllRooms } from '@navet/app/con
 import type { TranslateFn } from '@navet/app/hooks';
 import { useCallback } from 'react';
 import { toast } from 'sonner';
-import type { CardTemplate, CardType } from '../components/add-card-dialog';
+import type { CardTemplate, CardType } from '../components/add-entity-dialog';
 import type { CustomCard } from '../stores/custom-cards-store';
 
 interface UseDashboardCardActionsParams {

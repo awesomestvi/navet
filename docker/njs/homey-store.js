@@ -605,6 +605,7 @@ function createHomeySessionStore(options) {
       ? ngx.fetch.bind(ngx)
       : null);
   const bindingStore = createProviderSessionStore({
+    providerId: 'homey',
     cookieName: HOMEY_COOKIE_NAME,
     cookieNames: settings.cookieNames,
     installationKey: settings.installationKey,

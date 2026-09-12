@@ -1,4 +1,5 @@
 import { useAuthBaseUrl, useOptionalAuthSession } from '@navet/app/auth/AuthProvider';
+import { invalidateAuthorizedProvider } from '@navet/app/auth/device-authorization';
 import { PRIMARY_COLOR_OPTIONS, THEME_OPTIONS } from '@navet/app/constants/theme-options';
 import { useDashboardEntitiesStore } from '@navet/app/features/dashboard';
 import { useI18n, useIntegrationStore, useProviderHealth, useTheme } from '@navet/app/hooks';
@@ -157,6 +158,7 @@ export function useSettingsSectionController() {
       await login?.({ providerId, hassUrl, username, password });
     },
     disconnectProvider: async (providerId) => {
+      await invalidateAuthorizedProvider(providerId);
       await logout?.(providerId);
     },
   });
