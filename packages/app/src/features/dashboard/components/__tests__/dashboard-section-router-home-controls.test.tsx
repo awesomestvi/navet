@@ -6,7 +6,7 @@ import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { renderWithProviders } from '@navet/app/test/render';
 import { resetAppStores } from '@navet/app/test/store-reset';
 import type { DeviceWithType } from '@navet/app/types/device.types';
-import { act, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -372,8 +372,18 @@ describe('DashboardSectionRouter home controls', () => {
     };
 
     expect(layoutProps.mobileEditActions).toBeUndefined();
-    expect(screen.getByRole('button', { name: 'KPIs' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Layout' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'KPIs' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Layout' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Hide KPIs' }));
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Show KPIs' })).toBeInTheDocument()
+    );
+    expect(localStorage.getItem('navet-energy-kpis-hidden')).toBe('true');
+    fireEvent.click(screen.getByRole('button', { name: 'Show KPIs' }));
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Hide KPIs' })).toBeInTheDocument()
+    );
+    expect(localStorage.getItem('navet-energy-kpis-hidden')).toBe('false');
   });
 
   it('suppresses duplicated edit actions for security without manage rooms', async () => {

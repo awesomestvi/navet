@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.16.3 - 2026-09-13
+
+## New features
+
+- Added short-code approval for additional devices, with access management in System settings.
+- Household chores now share one installation workspace across standalone Home Assistant, Homey, and openHAB connections.
+
+## Improvements and bug fixes
+
+- Added searchable entity selection with room filters, sorting, and device-type navigation across dashboards.
+- Energy cards can now be rearranged directly, with controls to hide or restore KPIs.
+- Today's Energy history now shows five-minute intervals.
+- Security quickview now supports pinning and drag-and-drop arrangement, with linked motion events opening their camera.
+- Security activity now shows failed refreshes, the last successful update, and a retry action.
+- Improved portrait camera viewing and distinguished verified live playback from snapshot load age.
+- Added larger theme and wallpaper previews with responsive appearance controls.
+
+## Security
+
+- Provider credentials stay within your Navet installation while approved devices receive individually revocable sessions.
+- Replaced installation pairing keys with short-lived setup codes for first-time connections.
+
 ## 0.16.2 - 2026-09-11
 
 ## Improvements and bug fixes
