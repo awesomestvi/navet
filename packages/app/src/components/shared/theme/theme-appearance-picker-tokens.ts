@@ -6,6 +6,36 @@ export function getThemeAppearancePickerTokens(previewTheme: ThemeType, accentCo
   const isBlack = previewTheme === 'black';
 
   return {
+    // Small material studies: only Glass shows a translucent surface over color.
+    materialBackground: isGlass
+      ? 'radial-gradient(ellipse at 15% 85%, #7faeae 0%, transparent 65%), radial-gradient(ellipse at 85% 0%, #9b8bba 0%, transparent 65%), #344b60'
+      : isLight
+        ? '#e9edf2'
+        : isBlack
+          ? '#000000'
+          : '#202329',
+    materialPanel: isGlass
+      ? 'rgba(255,255,255,0.2)'
+      : isLight
+        ? '#ffffff'
+        : isBlack
+          ? '#050505'
+          : '#30343b',
+    materialTile: isGlass
+      ? 'rgba(255,255,255,0.16)'
+      : isLight
+        ? '#f3f5f8'
+        : isBlack
+          ? '#111111'
+          : '#3b4049',
+    materialEdge: isGlass
+      ? 'rgba(255,255,255,0.35)'
+      : isLight
+        ? '#dce2e9'
+        : isBlack
+          ? '#303030'
+          : '#515660',
+
     textClassName: isLight ? 'text-slate-950' : 'text-white',
     mutedClassName: isLight ? 'text-slate-700' : 'text-gray-300',
     optionCardClassName: isLight

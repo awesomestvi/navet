@@ -11,7 +11,6 @@ import {
 } from '@navet/app/auth/device-authorization';
 import { formatOneTimeCode } from '@navet/app/auth/one-time-code';
 import { Badge, Button, Input } from '@navet/app/components/primitives';
-import { themeColorValues } from '@navet/app/components/shared/theme/theme-colors';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,6 +21,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@navet/app/components/ui/alert-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@navet/app/components/ui/dropdown-menu';
 import { getCurrentDevicePairingPreferences } from '@navet/app/features/auth/device-pairing-preferences';
 import { getDashboardClientIdentity } from '@navet/app/features/dashboard/clients/dashboard-client-identity';
 import type { SettingsSectionStyles } from '@navet/app/features/settings/hooks/settings-section-styles';
@@ -31,6 +37,7 @@ import {
   KeyRound,
   Link2,
   Loader2,
+  MoreHorizontal,
   Pencil,
   RefreshCw,
   ShieldCheck,
@@ -72,6 +79,21 @@ export function SettingsAuthorizedDevices({ styles }: { styles: SettingsSectionS
   const [deviceToRemove, setDeviceToRemove] = useState<AuthorizedDevice | null>(null);
   const [dashboardClient] = useState(() => getDashboardClientIdentity());
   const approvalSyncGeneration = useRef(0);
+
+  const formatDeviceActivity = (device: AuthorizedDevice) => {
+    const providers = device.providers.map(formatProvider).join(', ');
+    if (device.id === currentDeviceId) return `${providers} · ${t('sidebar.current')}`;
+
+    const relativeActivity = getRelativeActivity(device.lastActivityAt);
+    if (relativeActivity.value === 0) {
+      return t('settings.system.authorizedDevices.activityNow', { providers });
+    }
+
+    return t('settings.system.authorizedDevices.activity', {
+      providers,
+      time: formatRelativeTime(relativeActivity.value, relativeActivity.unit),
+    });
+  };
 
   const loadAuthorizedDevices = useCallback(
     () => listAuthorizedDevices({ id: dashboardClient.id, name: dashboardClient.name }),
@@ -243,13 +265,13 @@ export function SettingsAuthorizedDevices({ styles }: { styles: SettingsSectionS
         className={`overflow-hidden rounded-[22px] border ${styles.insetBorderColor} ${styles.insetBg}`}
       >
         {access === 'primary' ? (
-          <div className="p-4 md:p-5">
-            <div className="flex items-start gap-3">
+          <div className="p-3.5 md:p-4">
+            <div className="flex items-start gap-2.5">
               <span
                 aria-hidden="true"
-                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] border ${styles.borderColor} ${styles.iconBg} ${styles.mutedColor}`}
+                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border ${styles.borderColor} ${styles.iconBg} ${styles.mutedColor}`}
               >
-                <KeyRound className="h-4.5 w-4.5" />
+                <KeyRound className="h-4 w-4" />
               </span>
               <div className="min-w-0 flex-1">
                 <p className={`text-sm font-medium ${styles.textColor}`}>
@@ -261,9 +283,10 @@ export function SettingsAuthorizedDevices({ styles }: { styles: SettingsSectionS
               </div>
             </div>
 
-            <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="mt-2.5 flex flex-col gap-2 sm:flex-row sm:items-center">
               <Input
                 aria-label={t('settings.system.authorizedDevices.codeLabel')}
+                size="small"
                 value={code}
                 onChange={(event) => {
                   setCode(formatOneTimeCode(event.target.value, 12));
@@ -297,12 +320,12 @@ export function SettingsAuthorizedDevices({ styles }: { styles: SettingsSectionS
             </div>
           </div>
         ) : access === 'authorized' ? (
-          <div className="flex items-start gap-3 p-4 md:p-5">
+          <div className="flex items-start gap-2.5 p-3.5 md:p-4">
             <span
               aria-hidden="true"
-              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] border ${styles.borderColor} ${styles.iconBg} ${styles.mutedColor}`}
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border ${styles.borderColor} ${styles.iconBg} ${styles.mutedColor}`}
             >
-              <KeyRound className="h-4.5 w-4.5" />
+              <KeyRound className="h-4 w-4" />
             </span>
             <div className="min-w-0 flex-1">
               <p className={`text-sm font-medium ${styles.textColor}`}>
@@ -316,8 +339,8 @@ export function SettingsAuthorizedDevices({ styles }: { styles: SettingsSectionS
         ) : null}
 
         {access === 'primary' && pendingPreview ? (
-          <div className={`border-t p-4 md:p-5 ${styles.dividerBorderColor}`}>
-            <div className={`rounded-[18px] border p-4 ${styles.borderColor} ${styles.softBg}`}>
+          <div className={`border-t p-3.5 md:p-4 ${styles.dividerBorderColor}`}>
+            <div className={`rounded-[18px] border p-3.5 ${styles.borderColor} ${styles.softBg}`}>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
@@ -364,7 +387,7 @@ export function SettingsAuthorizedDevices({ styles }: { styles: SettingsSectionS
         <div className={`border-t ${styles.dividerBorderColor}`}>
           {loading ? (
             <p
-              className={`flex items-center gap-2 px-4 py-4 text-sm md:px-5 ${styles.subtleColor}`}
+              className={`flex items-center gap-2 px-3.5 py-3 text-sm md:px-4 ${styles.subtleColor}`}
               role="status"
             >
               <Loader2 className="h-4 w-4 animate-spin" />{' '}
@@ -373,29 +396,19 @@ export function SettingsAuthorizedDevices({ styles }: { styles: SettingsSectionS
           ) : error ? null : (
             <div className={`divide-y ${styles.dividerColor}`}>
               {devices.some((device) => device.role === 'primary') ? null : (
-                <div className="flex min-w-0 items-center gap-3 px-4 py-3.5 md:px-5">
+                <div className="flex min-w-0 items-center gap-2 px-3 py-2 md:px-3.5">
                   <span
                     aria-hidden="true"
-                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border ${styles.borderColor} ${styles.softBg} ${styles.mutedColor}`}
+                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-[9px] border ${styles.borderColor} ${styles.softBg} ${styles.mutedColor}`}
                   >
                     <Smartphone className="h-4 w-4" />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className={`text-sm font-medium ${styles.textColor}`}>
-                        {access === 'primary' && currentDeviceId === null
-                          ? t('settings.system.authorizedDevices.thisDevice')
-                          : t('settings.system.authorizedDevices.originalSignIn')}
-                      </p>
-                      {access === 'primary' && currentDeviceId === null ? (
-                        <span
-                          className="shrink-0 text-[11px] font-medium leading-[14px]"
-                          style={{ color: themeColorValues.green }}
-                        >
-                          {t('sidebar.current')}
-                        </span>
-                      ) : null}
-                    </div>
+                    <p className={`text-sm font-medium ${styles.textColor}`}>
+                      {access === 'primary' && currentDeviceId === null
+                        ? t('settings.system.authorizedDevices.thisDevice')
+                        : t('settings.system.authorizedDevices.originalSignIn')}
+                    </p>
                     <p className={`mt-0.5 text-xs ${styles.subtleColor}`}>
                       {devices.length === 0
                         ? t('settings.system.authorizedDevices.primarySignInEmpty')
@@ -406,11 +419,11 @@ export function SettingsAuthorizedDevices({ styles }: { styles: SettingsSectionS
               )}
 
               {devices.map((device) => (
-                <div key={device.id} className="px-4 py-3.5 md:px-5">
-                  <div className="flex min-w-0 items-start gap-3">
+                <div key={device.id} className="px-3 py-2 md:px-3.5">
+                  <div className="flex min-w-0 items-center gap-2">
                     <span
                       aria-hidden="true"
-                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border ${styles.borderColor} ${styles.softBg} ${styles.mutedColor}`}
+                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-[9px] border ${styles.borderColor} ${styles.softBg} ${styles.mutedColor}`}
                     >
                       <Smartphone className="h-4 w-4" />
                     </span>
@@ -424,89 +437,75 @@ export function SettingsAuthorizedDevices({ styles }: { styles: SettingsSectionS
                           size="small"
                         />
                       ) : (
-                        <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-1.5">
                           <p className={`truncate text-sm font-medium ${styles.textColor}`}>
                             {device.name}
                           </p>
-                          {device.id === currentDeviceId ? (
-                            <span
-                              className="shrink-0 text-[11px] font-medium leading-[14px]"
-                              style={{ color: themeColorValues.green }}
-                            >
-                              {t('sidebar.current')}
-                            </span>
-                          ) : null}
                           {device.role === 'primary' ? (
-                            <Badge tone="neutral" className="text-[10px]">
+                            <Badge tone="neutral" size="small" className="text-[10px]">
                               {t('settings.system.authorizedDevices.primary')}
                             </Badge>
                           ) : null}
                         </div>
                       )}
-                      <p className={`mt-0.5 text-xs leading-5 ${styles.subtleColor}`}>
-                        {t('settings.system.authorizedDevices.activity', {
-                          providers: device.providers.map(formatProvider).join(', '),
-                          time: formatRelativeTime(
-                            getRelativeActivity(device.lastActivityAt).value,
-                            getRelativeActivity(device.lastActivityAt).unit
-                          ),
-                        })}
+                      <p className={`mt-0.5 text-xs leading-4 ${styles.subtleColor}`}>
+                        {formatDeviceActivity(device)}
                       </p>
                     </div>
                     {access === 'primary' && device.id !== currentDeviceId ? (
-                      <div className="flex shrink-0 items-center gap-1">
-                        {device.role !== 'primary' ? (
-                          <Button
-                            type="button"
-                            size="small"
-                            variant="ghost"
-                            className="rounded-full"
-                            leading={<ShieldCheck className="h-4 w-4" />}
-                            disabled={working}
-                            onClick={() => setDeviceToPromote(device)}
-                          >
-                            {t('settings.system.authorizedDevices.makePrimary')}
-                          </Button>
-                        ) : null}
+                      editingId === device.id ? (
                         <Button
                           type="button"
                           size="small"
                           variant="ghost"
                           iconOnly
-                          label={
-                            editingId === device.id
-                              ? t('settings.system.authorizedDevices.saveName')
-                              : t('settings.system.authorizedDevices.rename')
-                          }
+                          label={t('settings.system.authorizedDevices.saveName')}
                           disabled={working}
-                          onClick={() => {
-                            if (editingId === device.id) void saveName(device);
-                            else {
-                              setEditingId(device.id);
-                              setEditingName(device.name);
-                            }
-                          }}
+                          onClick={() => void saveName(device)}
                         >
-                          {editingId === device.id ? (
-                            <Check className="h-4 w-4" />
-                          ) : (
-                            <Pencil className="h-4 w-4" />
-                          )}
+                          <Check className="h-4 w-4" />
                         </Button>
-                        <Button
-                          type="button"
-                          size="small"
-                          variant="ghost"
-                          iconOnly
-                          label={t('settings.system.authorizedDevices.removeNamed', {
-                            name: device.name,
-                          })}
-                          disabled={working}
-                          onClick={() => setDeviceToRemove(device)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      ) : (
+                        <DropdownMenu modal={false}>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              type="button"
+                              size="small"
+                              variant="ghost"
+                              iconOnly
+                              label={`${t('common.moreActions')}: ${device.name}`}
+                              disabled={working}
+                            >
+                              <MoreHorizontal className="h-4.5 w-4.5" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-52">
+                            {device.role !== 'primary' ? (
+                              <DropdownMenuItem onSelect={() => setDeviceToPromote(device)}>
+                                <ShieldCheck className="h-4 w-4" />
+                                {t('settings.system.authorizedDevices.makePrimary')}
+                              </DropdownMenuItem>
+                            ) : null}
+                            <DropdownMenuItem
+                              onSelect={() => {
+                                setEditingId(device.id);
+                                setEditingName(device.name);
+                              }}
+                            >
+                              <Pencil className="h-4 w-4" />
+                              {t('settings.system.authorizedDevices.rename')}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              variant="destructive"
+                              onSelect={() => setDeviceToRemove(device)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              {t('energy.setup.removeDevice')}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )
                     ) : null}
                   </div>
                 </div>
@@ -516,7 +515,7 @@ export function SettingsAuthorizedDevices({ styles }: { styles: SettingsSectionS
         </div>
 
         {!loading ? (
-          <div className={`border-t px-4 py-3 md:px-5 ${styles.dividerBorderColor}`}>
+          <div className={`border-t px-3 py-1 md:px-3.5 ${styles.dividerBorderColor}`}>
             <Button
               type="button"
               size="small"

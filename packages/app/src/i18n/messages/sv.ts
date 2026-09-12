@@ -560,6 +560,8 @@ export const svMessages = {
   'settings.appearance.ambience.contained': 'Inneslutet',
   'settings.appearance.ambience.disabledInLowPower':
     'Tillgängligt bara vid hög visuell kvalitet. Ljuskort använder inneslutet läge vid medium och låg.',
+  'settings.appearance.wallpaper.showAll': 'Visa alla bakgrunder',
+  'settings.appearance.wallpaper.showLess': 'Visa färre',
   'settings.appearance.wallpaper.title': 'Bakgrund',
   'settings.appearance.wallpaper.description':
     'Lägg till en bakgrundsbild som blandar sig med aktiv accentfärg och tema.',
@@ -3469,6 +3471,7 @@ export const svMessages = {
     'Denna leverantör är inte tillgänglig i den aktuella Navet-körtiden.',
   'login.setup.title': 'Engångsgodkännande',
   'settings.system.authorizedDevices.activity': '{providers} · Aktiv {time}',
+  'settings.system.authorizedDevices.activityNow': '{providers} · Aktiv nu',
   'settings.system.authorizedDevices.approvalDescription':
     'Tillgång till {providers} med en egen återkallelig Navet-session.',
   'settings.system.authorizedDevices.approvalTitle': 'Godkänn {name}?',

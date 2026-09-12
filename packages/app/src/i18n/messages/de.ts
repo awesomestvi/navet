@@ -564,6 +564,8 @@ export const deMessages = {
   'settings.appearance.ambience.contained': 'Begrenzt',
   'settings.appearance.ambience.disabledInLowPower':
     'Nur bei hoher visueller Qualität verfügbar. Lichtkarten verwenden bei Mittel und Niedrig den begrenzten Modus.',
+  'settings.appearance.wallpaper.showAll': 'Alle Hintergrundbilder anzeigen',
+  'settings.appearance.wallpaper.showLess': 'Weniger anzeigen',
   'settings.appearance.wallpaper.title': 'Hintergrundbild',
   'settings.appearance.wallpaper.description':
     'Füge ein Hintergrundbild hinzu, das mit aktivem Akzent und Thema zusammenarbeitet.',
@@ -3548,6 +3550,7 @@ export const deMessages = {
     'Dieser Anbieter ist in der aktuellen Navet-Laufzeit nicht verfügbar.',
   'login.setup.title': 'Einmalige Genehmigung',
   'settings.system.authorizedDevices.activity': '{providers} · Aktiv {time}',
+  'settings.system.authorizedDevices.activityNow': '{providers} · Jetzt aktiv',
   'settings.system.authorizedDevices.approvalDescription':
     'Zugriff auf {providers} mit einer eigenen widerruflichen Navet-Sitzung.',
   'settings.system.authorizedDevices.approvalTitle': '{name} genehmigen?',

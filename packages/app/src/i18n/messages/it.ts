@@ -571,6 +571,8 @@ export const itMessages = {
   'settings.appearance.ambience.contained': 'Contenuta',
   'settings.appearance.ambience.disabledInLowPower':
     'Disponibile solo con qualità visiva Alta. Le schede luce usano la modalità Contenuta con qualità Media e Bassa.',
+  'settings.appearance.wallpaper.showAll': 'Mostra tutti gli sfondi',
+  'settings.appearance.wallpaper.showLess': 'Mostra meno',
   'settings.appearance.wallpaper.title': 'Sfondo',
   'settings.appearance.wallpaper.description':
     'Aggiungi un’immagine di sfondo che si integri con accento e tema attivi.',
@@ -3505,6 +3507,7 @@ export const itMessages = {
     'Questo provider non è disponibile nel runtime Navet corrente.',
   'login.setup.title': 'Approvazione una tantum',
   'settings.system.authorizedDevices.activity': '{providers} · Attivo {time}',
+  'settings.system.authorizedDevices.activityNow': '{providers} · Attivo ora',
   'settings.system.authorizedDevices.approvalDescription':
     'Accesso a {providers} con la propria sessione Navet revocabile.',
   'settings.system.authorizedDevices.approvalTitle': 'Approvare {name}?',

@@ -559,6 +559,8 @@ export const noMessages = {
   'settings.appearance.ambience.contained': 'Inneholdt',
   'settings.appearance.ambience.disabledInLowPower':
     'Kun tilgjengelig på Høy visuell kvalitet. Lette kort bruker Contained-modus på Medium og Low.',
+  'settings.appearance.wallpaper.showAll': 'Vis alle bakgrunner',
+  'settings.appearance.wallpaper.showLess': 'Vis færre',
   'settings.appearance.wallpaper.title': 'Bakgrunn',
   'settings.appearance.wallpaper.description':
     'Legg til et bakgrunnsbilde som blander seg med den aktive aksenten og temaet.',
@@ -3479,6 +3481,7 @@ export const noMessages = {
     'Denne leverandøren er ikke tilgjengelig i gjeldende Navet-kjøretidsmodus.',
   'login.setup.title': 'Engangsgodkjenning',
   'settings.system.authorizedDevices.activity': '{providers} · Aktiv {time}',
+  'settings.system.authorizedDevices.activityNow': '{providers} · Aktiv nå',
   'settings.system.authorizedDevices.approvalDescription':
     'Tilgang til {providers} med egen tilbakekallbar Navet-økt.',
   'settings.system.authorizedDevices.approvalTitle': 'Godkjenn {name}?',

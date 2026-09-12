@@ -561,6 +561,8 @@ export const ptMessages = {
   'settings.appearance.ambience.contained': 'Contido',
   'settings.appearance.ambience.disabledInLowPower':
     'Disponível somente na qualidade Alta. Cards de luz usam o modo Contido nas qualidades Média e Baixa.',
+  'settings.appearance.wallpaper.showAll': 'Mostrar todos os fundos',
+  'settings.appearance.wallpaper.showLess': 'Mostrar menos',
   'settings.appearance.wallpaper.title': 'Papel de parede',
   'settings.appearance.wallpaper.description':
     'Adicione uma imagem de fundo que se mistura com a cor de destaque e o tema ativos.',
@@ -3500,6 +3502,7 @@ export const ptMessages = {
     'Este provedor não está disponível no tempo de execução atual da Navet.',
   'login.setup.title': 'Aprovação única',
   'settings.system.authorizedDevices.activity': '{providers} · Ativo {time}',
+  'settings.system.authorizedDevices.activityNow': '{providers} · Ativo agora',
   'settings.system.authorizedDevices.approvalDescription':
     'Acesso a {providers} com a sua própria sessão Navet revogável.',
   'settings.system.authorizedDevices.approvalTitle': 'Aprovar {name}?',

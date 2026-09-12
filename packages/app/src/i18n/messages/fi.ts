@@ -560,6 +560,8 @@ export const fiMessages = {
   'settings.appearance.ambience.contained': 'Sisältää',
   'settings.appearance.ambience.disabledInLowPower':
     'Saatavilla vain korkealla visuaalisella laadulla. Vaaleat kortit käyttävät Sisällytetty-tilaa keskitasolla ja matalalla.',
+  'settings.appearance.wallpaper.showAll': 'Näytä kaikki taustakuvat',
+  'settings.appearance.wallpaper.showLess': 'Näytä vähemmän',
   'settings.appearance.wallpaper.title': 'Taustakuva',
   'settings.appearance.wallpaper.description':
     'Lisää taustakuva, joka sulautuu aktiiviseen korostukseen ja teemaan.',
@@ -3495,6 +3497,7 @@ export const fiMessages = {
     'Tämä palveluntarjoaja ei ole käytettävissä nykyisessä Navetin ajoajassa.',
   'login.setup.title': 'Kertahyväksyntä',
   'settings.system.authorizedDevices.activity': '{providers} · Aktiivinen {time}',
+  'settings.system.authorizedDevices.activityNow': '{providers} · Aktiivinen nyt',
   'settings.system.authorizedDevices.approvalDescription':
     '{providers}: n käyttöoikeus omalla peruutettavalla Navet-istunnollaan.',
   'settings.system.authorizedDevices.approvalTitle': 'Hyväksytäänkö {name}?',

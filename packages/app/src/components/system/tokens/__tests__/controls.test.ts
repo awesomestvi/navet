@@ -29,6 +29,7 @@ describe('system tokens', () => {
     expect(getButtonSizeTokens('touch').heightPx).toBe(42);
     expect(getButtonSizeTokens('small').iconOnlyClassName).toBe('h-9 w-9');
     expect(getInputSizeTokens('default').heightPx).toBe(40);
+    expect(getInputSizeTokens('small').heightPx).toBe(getButtonSizeTokens('small').heightPx);
     expect(getInputSizeTokens('small').leadingPaddingClassName).toBe('pl-10');
     expect(getInputSizeTokens('touch').heightPx).toBe(42);
     expect(getCardActionControlSizes('tiny').button).toBe('navet-card-action-control');

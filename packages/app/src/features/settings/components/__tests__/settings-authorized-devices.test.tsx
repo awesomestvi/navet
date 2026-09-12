@@ -130,7 +130,11 @@ describe('SettingsAuthorizedDevices', () => {
 
     await screen.findByText('Kitchen tablet');
     expect(screen.queryByRole('button', { name: 'Remove other devices' })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Remove Kitchen tablet' }));
+    expect(screen.queryByRole('button', { name: 'Remove Kitchen tablet' })).not.toBeInTheDocument();
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions: Kitchen tablet' }));
+    expect(screen.getByRole('menuitem', { name: 'Make primary' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Rename device' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Remove device' }));
 
     expect(authorizationMocks.revoke).not.toHaveBeenCalled();
     expect(screen.getByText('Remove this authorized device?')).toBeVisible();
@@ -175,7 +179,9 @@ describe('SettingsAuthorizedDevices', () => {
     expect(screen.getByText('Original sign-in')).toBeVisible();
     expect(screen.getByText('Kitchen tablet')).toBeVisible();
     expect(screen.getByText('Hallway display')).toBeVisible();
-    expect(screen.getByText('Current')).toBeVisible();
+    expect(screen.getByText('Home Assistant · Current')).toBeVisible();
+    expect(screen.getByText('Home Assistant · Active now')).toBeVisible();
+    expect(screen.queryByText('Current')).not.toBeInTheDocument();
     expect(screen.queryByText('Connect another device')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Rename device' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Remove / })).not.toBeInTheDocument();
@@ -212,7 +218,41 @@ describe('SettingsAuthorizedDevices', () => {
     expect(await screen.findByText('Computer A1B2')).toBeVisible();
     expect(screen.getByText('Phone C3D4')).toBeVisible();
     expect(screen.queryByText('Original sign-in')).not.toBeInTheDocument();
-    expect(screen.getByText('Current')).toBeVisible();
+    const primaryBadges = screen.getAllByText('Primary');
+    expect(screen.getByText('Home Assistant · Current')).toBeVisible();
+    expect(screen.queryByText('Current')).not.toBeInTheDocument();
+    expect(primaryBadges[0]).toHaveClass('rounded-full', 'border', 'px-2', 'py-0.5', 'text-[10px]');
+  });
+
+  it('opens device editing from the overflow menu and saves the new name', async () => {
+    authorizationMocks.list.mockResolvedValue(
+      primaryOverview([
+        {
+          id: 'device-1',
+          name: 'Kitchen tablet',
+          role: 'primary',
+          providers: ['home_assistant'],
+          createdAt: Date.now() - 10_000,
+          lastActivityAt: Date.now(),
+          expiresAt: Date.now() + 300_000,
+        },
+      ])
+    );
+    authorizationMocks.rename.mockResolvedValue(undefined);
+
+    renderWithProviders(<SettingsAuthorizedDevices styles={styles} />);
+    await screen.findByText('Kitchen tablet');
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions: Kitchen tablet' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Rename device' }));
+
+    const input = screen.getByRole('textbox', { name: 'Device name' });
+    fireEvent.change(input, { target: { value: 'Kitchen wall tablet' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save device name' }));
+
+    await waitFor(() =>
+      expect(authorizationMocks.rename).toHaveBeenCalledWith('device-1', 'Kitchen wall tablet')
+    );
+    expect(screen.getByText('Kitchen wall tablet')).toBeVisible();
   });
 
   it('lets a primary sign-in promote an authorized device', async () => {
@@ -232,7 +272,8 @@ describe('SettingsAuthorizedDevices', () => {
 
     renderWithProviders(<SettingsAuthorizedDevices styles={styles} />);
     await screen.findByText('Kitchen tablet');
-    fireEvent.click(screen.getByRole('button', { name: 'Make primary' }));
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions: Kitchen tablet' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Make primary' }));
 
     expect(authorizationMocks.promote).not.toHaveBeenCalled();
     expect(screen.getByText('Make this a primary device?')).toBeVisible();

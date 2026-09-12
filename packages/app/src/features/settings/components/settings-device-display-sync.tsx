@@ -236,7 +236,7 @@ export function SettingsDeviceDisplaySync({
       <div
         className={`overflow-hidden rounded-[22px] border ${styles.insetBorderColor} ${styles.insetBg}`}
       >
-        <div className="p-4 md:p-5">
+        <div className="p-4">
           <div className="min-w-0">
             <div className={`flex items-center gap-2 ${styles.mutedColor}`}>
               <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-current" aria-hidden="true" />
@@ -289,7 +289,7 @@ export function SettingsDeviceDisplaySync({
                     key={profile.id}
                     type="button"
                     onClick={() => openManage(profile.id)}
-                    className={`flex min-h-12 w-full items-center gap-3 px-4 py-3 text-left transition-colors md:px-5 ${styles.hoverBg}`}
+                    className={`flex min-h-12 w-full items-center gap-3 px-4 py-3 text-left transition-colors ${styles.hoverBg}`}
                   >
                     <Link2 className={`h-4 w-4 shrink-0 ${styles.mutedColor}`} />
                     <span className={`min-w-0 flex-1 truncate text-sm ${styles.textColor}`}>

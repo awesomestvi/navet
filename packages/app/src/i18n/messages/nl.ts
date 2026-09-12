@@ -561,6 +561,8 @@ export const nlMessages = {
   'settings.appearance.ambience.contained': 'Bevat',
   'settings.appearance.ambience.disabledInLowPower':
     'Alleen beschikbaar op Hoge visuele kwaliteit. Lichte kaarten gebruiken de Contained-modus op Medium en Low.',
+  'settings.appearance.wallpaper.showAll': 'Alle achtergronden tonen',
+  'settings.appearance.wallpaper.showLess': 'Minder tonen',
   'settings.appearance.wallpaper.title': 'Behang',
   'settings.appearance.wallpaper.description':
     'Voeg een achtergrondafbeelding toe die past bij het actieve accent en thema.',
@@ -3529,6 +3531,7 @@ export const nlMessages = {
     'Deze provider is niet beschikbaar in de huidige Navet-runtime.',
   'login.setup.title': 'Eenmalige goedkeuring',
   'settings.system.authorizedDevices.activity': '{providers} · Actief {time}',
+  'settings.system.authorizedDevices.activityNow': '{providers} · Nu actief',
   'settings.system.authorizedDevices.approvalDescription':
     'Toegang tot {providers} met een eigen herroepbare Navet-sessie.',
   'settings.system.authorizedDevices.approvalTitle': '{name} goedkeuren?',

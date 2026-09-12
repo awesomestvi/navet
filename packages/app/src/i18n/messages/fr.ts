@@ -566,6 +566,8 @@ export const frMessages = {
   'settings.appearance.ambience.contained': 'Contenu',
   'settings.appearance.ambience.disabledInLowPower':
     'Disponible uniquement avec la qualité visuelle Élevée. Les cartes lumière utilisent le mode contenu en qualité Moyenne et Faible.',
+  'settings.appearance.wallpaper.showAll': 'Voir tous les fonds d’écran',
+  'settings.appearance.wallpaper.showLess': 'Voir moins',
   'settings.appearance.wallpaper.title': 'Fond d’écran',
   'settings.appearance.wallpaper.description':
     'Ajoutez une image de fond qui se mélange avec l’accent et le thème actifs.',
@@ -3548,6 +3550,7 @@ export const frMessages = {
     "Ce fournisseur n'est pas disponible dans l'exécution actuelle de Navet.",
   'login.setup.title': 'Approbation unique',
   'settings.system.authorizedDevices.activity': '{providers} · Actif {time}',
+  'settings.system.authorizedDevices.activityNow': '{providers} · Actif maintenant',
   'settings.system.authorizedDevices.approvalDescription':
     'Accès à {providers} avec sa propre session Navet révocable.',
   'settings.system.authorizedDevices.approvalTitle': 'Approuver {name} ?',

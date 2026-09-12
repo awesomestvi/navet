@@ -560,6 +560,8 @@ export const daMessages = {
   'settings.appearance.ambience.contained': 'Indeholdt',
   'settings.appearance.ambience.disabledInLowPower':
     'Kun tilgængelig på høj visuel kvalitet. Lette kort bruger Indeholdt tilstand på Medium og Low.',
+  'settings.appearance.wallpaper.showAll': 'Vis alle baggrunde',
+  'settings.appearance.wallpaper.showLess': 'Vis færre',
   'settings.appearance.wallpaper.title': 'Tapet',
   'settings.appearance.wallpaper.description':
     'Tilføj et baggrundsbillede, der blander sig med den aktive accent og tema.',
@@ -3481,6 +3483,7 @@ export const daMessages = {
     'Denne udbyder er ikke tilgængelig i den aktuelle Navet runtime.',
   'login.setup.title': 'Engangsgodkendelse',
   'settings.system.authorizedDevices.activity': '{providers} · Aktiv {time}',
+  'settings.system.authorizedDevices.activityNow': '{providers} · Aktiv nu',
   'settings.system.authorizedDevices.approvalDescription':
     'Adgang til {providers} med sin egen genkaldelige Navet-session.',
   'settings.system.authorizedDevices.approvalTitle': 'Godkend {name}?',

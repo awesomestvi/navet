@@ -6,7 +6,7 @@ import { getSettingsSectionStyles } from '@navet/app/features/settings/hooks/set
 import type { SettingsSectionController } from '@navet/app/features/settings/hooks/use-settings-section-controller';
 import { resetRuntimeContextForTests } from '@navet/app/infrastructure/home-assistant/runtime/runtime-detector';
 import { renderWithProviders } from '@navet/app/test/render';
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SettingsSystemSection } from '../settings-system-section';
 
@@ -201,30 +201,21 @@ describe('SettingsSystemSection', () => {
   });
 
   it('shows connected providers immediately and keeps disconnected ones in provider management', () => {
-    const { container } = renderWithProviders(<SettingsSystemSection controller={controller} />);
+    renderWithProviders(<SettingsSystemSection controller={controller} />);
 
     expect(screen.getByText('Providers')).toBeInTheDocument();
     expect(screen.getByText('Home Assistant')).toBeInTheDocument();
-    const providerActions = container.querySelector<HTMLElement>(
-      '[data-provider-actions="home_assistant"]'
+    expect(screen.queryByRole('link', { name: 'Open' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Disconnect' })).not.toBeInTheDocument();
+    const providerActions = screen.getByRole('button', { name: 'More actions: Home Assistant' });
+    expect(providerActions).toHaveClass('self-center');
+    fireEvent.pointerDown(providerActions);
+    expect(screen.getByRole('menuitem', { name: 'Open' })).toHaveAttribute(
+      'href',
+      'https://ha.example.com'
     );
-    expect(providerActions).not.toBeNull();
-    if (providerActions) {
-      const openAction = within(providerActions).getByRole('link', { name: 'Open' });
-      const disconnectAction = within(providerActions).getByRole('button', {
-        name: 'Disconnect',
-      });
-      expect(openAction).toBeInTheDocument();
-      expect(
-        within(providerActions).getByRole('button', { name: 'Disconnect' })
-      ).toBeInTheDocument();
-      expect(Array.from(providerActions.children)).toHaveLength(3);
-      for (const action of Array.from(providerActions.children)) {
-        expect(action).toHaveClass('flex-1');
-        expect(action).not.toHaveClass('sm:flex-none');
-      }
-      expect(disconnectAction).toHaveClass('flex-1');
-    }
+    expect(screen.getByRole('menuitem', { name: 'Edit URL' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Disconnect' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Manage 2 other providers' })).toBeInTheDocument();
     expect(screen.queryByText('openHAB')).not.toBeInTheDocument();
     expect(screen.queryByText('Camera live streams')).not.toBeInTheDocument();
@@ -235,7 +226,17 @@ describe('SettingsSystemSection', () => {
     expect(screen.getByText('Homey')).toBeInTheDocument();
     expect(screen.getByText('openHAB')).toBeInTheDocument();
     expect(screen.getAllByText('Not connected on this device').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Connected')[0]).toBeInTheDocument();
+    const connectedBadge = screen.getAllByText('Connected')[0];
+    expect(connectedBadge).toBeInTheDocument();
+    expect(connectedBadge).toHaveClass(
+      'rounded-full',
+      'border',
+      'px-2',
+      'py-0.5',
+      'text-[10px]',
+      'border-emerald-500/30',
+      'bg-emerald-500/10'
+    );
     expect(screen.queryByText('Active')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Make active' })).not.toBeInTheDocument();
     expect(screen.queryByText('Lighting')).not.toBeInTheDocument();
@@ -263,7 +264,8 @@ describe('SettingsSystemSection', () => {
   it('starts a fresh Home Assistant connection from its current address', () => {
     renderWithProviders(<SettingsSystemSection controller={controller} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Edit URL' }));
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions: Home Assistant' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Edit URL' }));
     const urlInput = screen.getByLabelText('URL');
     expect(urlInput).toHaveValue('https://ha.example.com');
     fireEvent.change(urlInput, {
@@ -356,14 +358,15 @@ describe('SettingsSystemSection', () => {
     expect(
       screen.queryByRole('button', { name: /Manage .* other providers/ })
     ).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Make active' })).toBeInTheDocument();
-    expect(screen.getAllByRole('link', { name: 'Open' }).length).toBeGreaterThan(0);
     expect(screen.getByText('Active')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Make active' }));
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions: Home Assistant' }));
+    expect(screen.getByRole('menuitem', { name: 'Open' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Make active' }));
     expect(controller.setActiveProvider).toHaveBeenCalledWith('home_assistant');
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Disconnect' })[0]);
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions: Home Assistant' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Disconnect' }));
     expect(controller.handleDisconnectProvider).toHaveBeenCalledWith('home_assistant');
   });
 
@@ -443,7 +446,8 @@ describe('SettingsSystemSection', () => {
       undefined
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions: Homey' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Disconnect' }));
     expect(controller.handleDisconnectProvider).toHaveBeenCalledWith('homey');
   });
 

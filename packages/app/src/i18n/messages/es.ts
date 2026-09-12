@@ -562,6 +562,8 @@ export const esMessages = {
   'settings.appearance.ambience.contained': 'Contenido',
   'settings.appearance.ambience.disabledInLowPower':
     'Disponible solo con calidad visual Alta. Las tarjetas de luz usan el modo contenido en Media y Baja.',
+  'settings.appearance.wallpaper.showAll': 'Ver todos los fondos',
+  'settings.appearance.wallpaper.showLess': 'Ver menos',
   'settings.appearance.wallpaper.title': 'Fondo',
   'settings.appearance.wallpaper.description':
     'Agrega una imagen de fondo que combine con el acento y el tema activos.',
@@ -3523,6 +3525,7 @@ export const esMessages = {
     'Este proveedor no está disponible en el tiempo de ejecución actual de Navet.',
   'login.setup.title': 'Aprobación única',
   'settings.system.authorizedDevices.activity': '{providers} · Activo {time}',
+  'settings.system.authorizedDevices.activityNow': '{providers} · Activo ahora',
   'settings.system.authorizedDevices.approvalDescription':
     'Acceso a {providers} con su propia sesión Navet revocable.',
   'settings.system.authorizedDevices.approvalTitle': '¿Aprobar {name}?',

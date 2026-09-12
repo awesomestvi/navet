@@ -2,7 +2,6 @@ import homeAssistantLogo from '@navet/app/assets/providers/home-assistant.svg';
 import homeyLogo from '@navet/app/assets/providers/homey.svg';
 import openhabLogo from '@navet/app/assets/providers/openhab.svg';
 import { Badge, Button, Input, ModalSurface } from '@navet/app/components/primitives';
-import { themeColorValues } from '@navet/app/components/shared/theme/theme-colors';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,6 +12,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@navet/app/components/ui/alert-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@navet/app/components/ui/dropdown-menu';
 import { useI18n } from '@navet/app/hooks';
 import { supportsAdditionalSmartHomeProviders } from '@navet/app/runtime/app-mode';
 import type { IntegrationProviderId } from '@navet/app/types/provider';
@@ -24,6 +30,7 @@ import {
   Link2,
   LocateFixed,
   LogOut,
+  MoreHorizontal,
   RotateCcw,
   Server,
   Settings2,
@@ -98,10 +105,10 @@ function ProviderLogoMark({ provider }: { provider: ProviderCard }) {
 
   return (
     <div
-      className={`relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-[radial-gradient(circle_at_30%_25%,rgba(255,255,255,0.18),transparent_58%),linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] ring-1 ${accentClassName}`}
+      className={`relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-[14px] border border-white/10 bg-[radial-gradient(circle_at_30%_25%,rgba(255,255,255,0.18),transparent_58%),linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] ring-1 ${accentClassName}`}
     >
       {logoSrc ? (
-        <img src={logoSrc} alt="" width={28} height={28} className="h-7 w-7 object-contain" />
+        <img src={logoSrc} alt="" width={24} height={24} className="h-6 w-6 object-contain" />
       ) : (
         <span className="text-xs font-semibold tracking-[0.2em] text-white/90">
           {getProviderInitials(provider)}
@@ -186,30 +193,31 @@ function ProviderCardView({
   const displayUrl =
     provider.baseUrl ??
     (provider.id === 'home_assistant' && provider.isConnected ? configUrl : null);
+  const canMakeActive = showActiveControls && provider.isConnected && !provider.isActive;
+  const canEditUrl = provider.id === 'home_assistant' && provider.isConnected;
+  const hasProviderMenu = Boolean(openUrl || canMakeActive || canEditUrl || provider.canDisconnect);
+  const hasNonDestructiveMenuAction = Boolean(openUrl || canMakeActive || canEditUrl);
+  const canConnectHomey = provider.id === 'homey' && !provider.isConnected;
+  const canConnectWithUrl = usesUrlConnect && !provider.isConnected;
 
   return (
-    <div
-      className={`rounded-[22px] border p-4 md:p-5 ${styles.insetBorderColor} ${styles.insetBg}`}
-    >
+    <div className={`rounded-[22px] border p-4 ${styles.insetBorderColor} ${styles.insetBg}`}>
       <div className="min-w-0">
         <div className="min-w-0">
           <div className="flex items-start gap-3">
             <ProviderLogoMark provider={provider} />
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <p className={`truncate text-sm font-medium ${styles.textColor}`}>
                   {provider.label}
                 </p>
                 {provider.status === 'connected' ? (
                   <>
-                    <span
-                      className="shrink-0 text-[11px] font-medium leading-[14px]"
-                      style={{ color: themeColorValues.green }}
-                    >
+                    <Badge tone="success" size="small" className="text-[10px]">
                       {t('settings.system.providers.status.connected')}
-                    </span>
+                    </Badge>
                     {showActiveControls && provider.isActive ? (
-                      <Badge tone="accent" className="text-[10px]">
+                      <Badge tone="accent" size="small" className="text-[10px]">
                         {t('settings.system.providers.active')}
                       </Badge>
                     ) : null}
@@ -228,90 +236,91 @@ function ProviderCardView({
                 <p className="mt-2 text-sm leading-relaxed text-red-400">{provider.error}</p>
               ) : null}
             </div>
+            {hasProviderMenu ? (
+              <DropdownMenu modal={false}>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    size="small"
+                    variant="ghost"
+                    iconOnly
+                    label={`${t('common.moreActions')}: ${provider.label}`}
+                    className="self-center"
+                  >
+                    <MoreHorizontal className="h-4.5 w-4.5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-52">
+                  {openUrl ? (
+                    <DropdownMenuItem asChild>
+                      <a href={openUrl} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="h-4 w-4" />
+                        {t('common.open')}
+                      </a>
+                    </DropdownMenuItem>
+                  ) : null}
+                  {canMakeActive ? (
+                    <DropdownMenuItem onSelect={() => setActiveProvider(provider.id)}>
+                      <LocateFixed className="h-4 w-4" />
+                      {t('settings.system.providers.makeActive')}
+                    </DropdownMenuItem>
+                  ) : null}
+                  {canEditUrl ? (
+                    <DropdownMenuItem onSelect={() => openConnectDialog(provider.id)}>
+                      <Link2 className="h-4 w-4" />
+                      {t('common.editItem', { item: t('settings.system.providers.url') })}
+                    </DropdownMenuItem>
+                  ) : null}
+                  {provider.canDisconnect ? (
+                    <>
+                      {hasNonDestructiveMenuAction ? <DropdownMenuSeparator /> : null}
+                      <DropdownMenuItem
+                        variant="destructive"
+                        onSelect={() => void handleDisconnectProvider(provider.id)}
+                      >
+                        <Unplug className="h-4 w-4" />
+                        {t('settings.system.providers.disconnect')}
+                      </DropdownMenuItem>
+                    </>
+                  ) : null}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : null}
           </div>
         </div>
 
-        <div
-          className="mt-3 flex w-full flex-wrap items-center gap-2"
-          data-provider-actions={provider.id}
-        >
-          {openUrl ? (
-            <a
-              href={openUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`inline-flex h-9 min-w-32 flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-full border px-3.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor} ${styles.ringClass}`}
-            >
-              <ExternalLink className="h-4 w-4" />
-              <span>{t('common.open')}</span>
-            </a>
-          ) : null}
+        {canConnectHomey || canConnectWithUrl ? (
+          <div
+            className="mt-3 flex w-full flex-wrap items-center gap-2"
+            data-provider-actions={provider.id}
+          >
+            {canConnectHomey ? (
+              <Button
+                type="button"
+                variant="secondary"
+                size="small"
+                leading={<Link2 className="h-4 w-4" />}
+                className="min-w-32 flex-1 rounded-full"
+                onClick={() => void handleConnectProvider('homey')}
+              >
+                {t('settings.system.providers.connect')}
+              </Button>
+            ) : null}
 
-          {showActiveControls && provider.isConnected && !provider.isActive ? (
-            <Button
-              type="button"
-              variant="secondary"
-              size="small"
-              leading={<LocateFixed className="h-4 w-4" />}
-              className="min-w-32 flex-1 rounded-full"
-              onClick={() => setActiveProvider(provider.id)}
-            >
-              {t('settings.system.providers.makeActive')}
-            </Button>
-          ) : null}
-
-          {provider.id === 'homey' && !provider.isConnected ? (
-            <Button
-              type="button"
-              variant="secondary"
-              size="small"
-              leading={<Link2 className="h-4 w-4" />}
-              className="min-w-32 flex-1 rounded-full"
-              onClick={() => void handleConnectProvider('homey')}
-            >
-              {t('settings.system.providers.connect')}
-            </Button>
-          ) : null}
-
-          {usesUrlConnect && !provider.isConnected ? (
-            <Button
-              type="button"
-              variant="secondary"
-              size="small"
-              leading={<Link2 className="h-4 w-4" />}
-              className="min-w-32 flex-1 rounded-full"
-              onClick={() => openConnectDialog(provider.id)}
-            >
-              {t('settings.system.providers.connect')}
-            </Button>
-          ) : null}
-
-          {provider.id === 'home_assistant' && provider.isConnected ? (
-            <Button
-              type="button"
-              variant="secondary"
-              size="small"
-              leading={<Link2 className="h-4 w-4" />}
-              className="min-w-32 flex-1 rounded-full"
-              onClick={() => openConnectDialog(provider.id)}
-            >
-              {t('common.editItem', { item: t('settings.system.providers.url') })}
-            </Button>
-          ) : null}
-
-          {provider.canDisconnect ? (
-            <Button
-              type="button"
-              variant="destructive"
-              size="small"
-              leading={<Unplug className="h-4 w-4" />}
-              className="min-w-32 flex-1 rounded-full"
-              onClick={() => void handleDisconnectProvider(provider.id)}
-            >
-              {t('settings.system.providers.disconnect')}
-            </Button>
-          ) : null}
-        </div>
+            {canConnectWithUrl ? (
+              <Button
+                type="button"
+                variant="secondary"
+                size="small"
+                leading={<Link2 className="h-4 w-4" />}
+                className="min-w-32 flex-1 rounded-full"
+                onClick={() => openConnectDialog(provider.id)}
+              >
+                {t('settings.system.providers.connect')}
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     </div>
   );
@@ -669,5 +678,9 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
 }
 
 function ProviderStatusBadge({ label }: { label: string }) {
-  return <Badge tone="neutral">{label}</Badge>;
+  return (
+    <Badge tone="neutral" size="small">
+      {label}
+    </Badge>
+  );
 }

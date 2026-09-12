@@ -83,6 +83,8 @@ export const enMessages = {
   'settings.appearance.ambience.contained': 'Contained',
   'settings.appearance.ambience.disabledInLowPower':
     'Available only on High visual quality. Light cards use Contained mode on Medium and Low.',
+  'settings.appearance.wallpaper.showAll': 'Show all wallpapers',
+  'settings.appearance.wallpaper.showLess': 'Show less',
   'settings.appearance.wallpaper.title': 'Wallpaper',
   'settings.appearance.wallpaper.description':
     'Add a background image that blends with the active accent and theme.',
@@ -3463,6 +3465,7 @@ export const enMessages = {
   'login.setup.providerUnavailable': 'This provider is not available in the current Navet runtime.',
   'login.setup.title': 'One-time approval',
   'settings.system.authorizedDevices.activity': '{providers} · Active {time}',
+  'settings.system.authorizedDevices.activityNow': '{providers} · Active now',
   'settings.system.authorizedDevices.approvalDescription':
     'Access to {providers} with its own revocable Navet session.',
   'settings.system.authorizedDevices.approvalTitle': 'Approve {name}?',

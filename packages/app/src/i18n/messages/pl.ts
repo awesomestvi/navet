@@ -560,6 +560,8 @@ export const plMessages = {
   'settings.appearance.ambience.contained': 'W obrębie karty',
   'settings.appearance.ambience.disabledInLowPower':
     'Dostępne tylko przy wysokiej jakości wizualnej. Przy jakości średniej i niskiej kolor pozostaje w obrębie karty.',
+  'settings.appearance.wallpaper.showAll': 'Pokaż wszystkie tapety',
+  'settings.appearance.wallpaper.showLess': 'Pokaż mniej',
   'settings.appearance.wallpaper.title': 'Tapeta',
   'settings.appearance.wallpaper.description':
     'Dodaj obraz tła, który łączy się z aktywnym akcentem i motywem.',
@@ -3495,6 +3497,7 @@ export const plMessages = {
     'Ten dostawca nie jest dostępny w bieżącym środowisku uruchomieniowym Navet.',
   'login.setup.title': 'Jednorazowe zatwierdzenie',
   'settings.system.authorizedDevices.activity': '{providers} · Aktywny {time}',
+  'settings.system.authorizedDevices.activityNow': '{providers} · Aktywny teraz',
   'settings.system.authorizedDevices.approvalDescription':
     'Dostęp do {providers} z własną odwołalną sesją Navet.',
   'settings.system.authorizedDevices.approvalTitle': 'Zatwierdzić {name}?',
