@@ -39,11 +39,10 @@ function SortableHomeCard({
       data-card-drag-surface="true"
     >
       <div
-        inert
         className={
           optimizeOffscreenPaint
-            ? 'pointer-events-none h-full min-h-40 [content-visibility:auto] [contain-intrinsic-block-size:10rem]'
-            : 'pointer-events-none h-full min-h-0'
+            ? 'h-full min-h-40 [content-visibility:auto] [contain-intrinsic-block-size:10rem]'
+            : 'h-full min-h-0'
         }
       >
         {children}

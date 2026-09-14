@@ -4,6 +4,7 @@ import type { DeviceWithType } from '@navet/app/types/device.types';
 import { fireEvent, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DashboardCardItem } from '../dashboard-card-item';
+import { HomeCardSlot } from '../home-dashboard-overview-card-slot';
 
 const { childAction, renderCardMock, widgetCardMock } = vi.hoisted(() => ({
   childAction: vi.fn(),
@@ -139,6 +140,56 @@ describe('DashboardCardItem card locking', () => {
     widgetCardMock.mockClear();
     useDashboardEntitiesStore.setState(useDashboardEntitiesStore.getInitialState(), true);
   });
+
+  it.each(['device', 'custom', 'tiny'] as const)(
+    'disables only the %s card body inside a sortable edit slot, not its dock controls',
+    (kind) => {
+      const isCustom = kind === 'custom';
+      const size = kind === 'tiny' ? 'tiny' : 'small';
+      const id = isCustom ? 'custom-rss' : 'switch.espresso_machine';
+      const { container } = renderWithProviders(
+        <HomeCardSlot
+          sortable
+          cardId={id}
+          isPreviewHidden={false}
+          className=""
+          content={
+            <DashboardCardItem
+              id={id}
+              size={size}
+              isEditMode
+              handleSizeChange={vi.fn()}
+              device={isCustom ? undefined : createSwitchDevice()}
+              card={isCustom ? { id, type: 'rss', size, room: 'Kitchen', createdAt: 1 } : undefined}
+              onRemoveFromLayout={vi.fn()}
+            />
+          }
+        />
+      );
+
+      const bodyAction = screen.getByRole('button', {
+        name: isCustom ? 'widget action' : 'child action',
+      });
+      expect(bodyAction.closest('[inert]')).not.toBeNull();
+      expect(container.querySelector('[data-card-drag-surface="true"]')).not.toHaveAttribute(
+        'inert'
+      );
+
+      if (kind === 'tiny') {
+        const launcher = screen.getByRole('button', { name: 'More actions' });
+        expect(launcher.closest('[inert]')).toBeNull();
+        fireEvent.click(launcher);
+      }
+
+      const dock = document.querySelector('[data-card-edit-dock="true"]');
+      expect(dock).not.toBeNull();
+      const controls = dock?.querySelectorAll('button') ?? [];
+      for (const control of controls) {
+        expect(control.closest('[inert]')).toBeNull();
+      }
+      expect(controls.length).toBeGreaterThanOrEqual(3);
+    }
+  );
 
   it('marks locked cards inert and blocks pointer interaction outside edit mode', () => {
     useDashboardEntitiesStore.getState().lockCard('light.kitchen');
