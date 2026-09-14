@@ -140,8 +140,8 @@ describe('integration-registry.service', () => {
         rooms: true,
         lighting: true,
         sensors: true,
-        climate: false,
-        mediaControls: false,
+        climate: true,
+        mediaControls: true,
         mediaBrowse: false,
         mediaArtwork: false,
         cameraSnapshot: false,
@@ -149,7 +149,7 @@ describe('integration-registry.service', () => {
         energyNow: false,
         calendar: false,
         weather: false,
-        notifications: false,
+        notifications: true,
       },
     });
     expect(adapter.nativeActionFeatureService).toBeDefined();
@@ -189,12 +189,14 @@ describe('integration-registry.service', () => {
       lighting: true,
       sensors: true,
       rooms: true,
+      climate: true,
+      mediaControls: true,
       mediaBrowse: false,
-      notifications: false,
+      notifications: true,
     });
     expectProviderFeatureClaims(getIntegrationProviderAdapter('homey'), {
-      supported: ['rooms', 'lighting', 'sensors'],
-      unsupported: ['mediaBrowse', 'notifications', 'calendar'],
+      supported: ['rooms', 'lighting', 'sensors', 'climate', 'mediaControls', 'notifications'],
+      unsupported: ['mediaBrowse', 'calendar'],
     });
   });
 
