@@ -427,8 +427,16 @@ function hasPresentedDeviceCookie(r) {
   return SECRET_PATTERN.test(getCookie(r, scopedCookieName(DEVICE_COOKIE_BASE_NAME)));
 }
 
+function attachProviderCookieId(r, providerId, cookieId) {
+  const context = getDeviceSession(r);
+  if (!context || !PROVIDERS[providerId] || !SECRET_PATTERN.test(cookieId)) return;
+  context.record.providerCookieIds[providerId] = cookieId;
+  context.record.updatedAt = Date.now();
+  writeJson(SESSIONS_DIRECTORY + '/' + context.id + '.json', context.record);
+}
+
 function isDelegatedRequest(r, providerId) {
-  return hasPresentedDeviceCookie(r);
+  return Boolean(getProviderCookieId(r, providerId));
 }
 
 function replaceProviderCookieId(providerId, previousId, nextId) {
@@ -829,6 +837,9 @@ function invalidateProviderDevices(r) {
       writeJson(sessionPath(record.id), record);
     }
   }
+  if (hasPresentedDeviceCookie(r) && !getDeviceSession(r)) {
+    revokeCurrentDevice(r);
+  }
   sendJson(r, 200, { invalidated: true });
 }
 
@@ -896,6 +907,7 @@ async function handle(r) {
 }
 
 export default {
+  attachProviderCookieId: attachProviderCookieId,
   getProviderCookieId: getProviderCookieId,
   hasPresentedDeviceCookie: hasPresentedDeviceCookie,
   hasDependentDevices: hasDependentDevices,

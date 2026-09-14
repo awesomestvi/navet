@@ -62,6 +62,7 @@ export interface ViteDeviceSessionAuthority {
   hasDependentDevices(providerId: ProviderId, cookieId: string): boolean;
   isDelegatedRequest(req: IncomingMessage, providerId: ProviderId): boolean;
   replaceProviderCookieId(providerId: ProviderId, previousId: string, nextId: string): void;
+  attachProviderCookieId(req: IncomingMessage, providerId: ProviderId, cookieId: string): void;
   revokeCurrentDevice(req: IncomingMessage, res?: ServerResponse): boolean;
   handle(req: IncomingMessage, res: ServerResponse): Promise<void>;
 }
@@ -400,6 +401,13 @@ export function createViteDeviceSessionAuthority(
     hasPresentedDeviceCookie(req) {
       return SECRET_PATTERN.test(cookieValue(req, deviceCookieName));
     },
+    attachProviderCookieId(req, providerId, cookieId) {
+      const context = getDeviceSession(req);
+      if (!context || !SECRET_PATTERN.test(cookieId)) return;
+      context.record.providerCookieIds[providerId] = cookieId;
+      context.record.updatedAt = Date.now();
+      writeJson(sessionPath(context.id), context.record);
+    },
     hasDependentDevices(providerId, cookieId) {
       let names: string[] = [];
       try { names = readdirSync(sessionsDirectory); } catch { return false; }
@@ -414,8 +422,8 @@ export function createViteDeviceSessionAuthority(
         );
       });
     },
-    isDelegatedRequest(req, _providerId) {
-      return authority.hasPresentedDeviceCookie(req);
+    isDelegatedRequest(req, providerId) {
+      return Boolean(authority.getProviderCookieId(req, providerId));
     },
     replaceProviderCookieId(providerId, previousId, nextId) {
       let names: string[] = [];
@@ -779,6 +787,9 @@ export function createViteDeviceSessionAuthority(
             if (Object.keys(record.providerCookieIds).length === 0) record.revokedAt = Date.now();
             writeJson(sessionPath(record.id), record);
           }
+        }
+        if (authority.hasPresentedDeviceCookie(req) && !getDeviceSession(req)) {
+          authority.revokeCurrentDevice(req, res);
         }
         sendJson(res, 200, { invalidated: true });
         return;

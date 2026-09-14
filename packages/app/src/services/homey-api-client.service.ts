@@ -1,4 +1,4 @@
-import type { HomeySnapshot } from '@navet/provider-homey';
+import { loadHomeyResources, type HomeySnapshot } from '@navet/provider-homey';
 import { subscribeVisibilityAwareAsyncTask } from '../utils/visibility-aware-scheduler';
 import type { HomeyCapabilityCommand, HomeySnapshotClient } from './homey.service';
 import { homeyService } from './homey.service';
@@ -28,16 +28,19 @@ async function fetchHomeyJson<T>(path: string, init?: RequestInit): Promise<T> {
     throw new Error(`Homey request failed with status ${response.status}`);
   }
 
-  return (await response.json()) as T;
+  const body = await response.text();
+  return (body ? JSON.parse(body) : undefined) as T;
 }
 
 async function fetchHomeySnapshot(): Promise<HomeySnapshot> {
-  const [devices, zones] = await Promise.all([
+  const [devices, zones, resources] = await Promise.all([
     fetchHomeyJson<HomeySnapshot['devices']>('/api/manager/devices/device'),
     fetchHomeyJson<HomeySnapshot['zones']>('/api/manager/zones/zone'),
+    loadHomeyResources(fetchHomeyJson),
   ]);
 
   latestSnapshot = {
+    ...resources,
     connected: true,
     devices,
     zones,
@@ -107,6 +110,7 @@ function startSnapshotPolling() {
 }
 
 export const homeyApiClient: HomeySnapshotClient = {
+  request: fetchHomeyJson,
   async loadSnapshot(): Promise<HomeySnapshot> {
     return await fetchHomeySnapshot();
   },

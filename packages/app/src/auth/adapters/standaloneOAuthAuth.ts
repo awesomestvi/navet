@@ -140,10 +140,31 @@ function isSessionMetadata(value: unknown): value is StandaloneSessionMetadata {
   );
 }
 
-async function loadSessionMetadata(
+let pendingSessionMetadata: Promise<StandaloneSessionMetadata | null> | null = null;
+
+function loadSessionMetadata(
   timeoutMs = AUTH_SESSION_LOAD_TIMEOUT_MS
 ): Promise<StandaloneSessionMetadata | null> {
-  const response = await fetchWithTimeout(getAuthEndpoint(AUTH_SESSION_ENDPOINT), {}, timeoutMs);
+  if (pendingSessionMetadata) return pendingSessionMetadata;
+  const request = loadSessionMetadataOnce(timeoutMs);
+  pendingSessionMetadata = request;
+  const clear = () => {
+    if (pendingSessionMetadata === request) pendingSessionMetadata = null;
+  };
+  void request.then(clear, clear);
+  return request;
+}
+
+async function loadSessionMetadataOnce(
+  timeoutMs = AUTH_SESSION_LOAD_TIMEOUT_MS
+): Promise<StandaloneSessionMetadata | null> {
+  const response = await fetchWithTimeout(
+    getAuthEndpoint(AUTH_SESSION_ENDPOINT),
+    {
+      headers: latestSessionBinding ? { [AUTH_BINDING_HEADER]: latestSessionBinding } : {},
+    },
+    timeoutMs
+  );
   if (!response) {
     throw new DurableAuthSessionUnavailableError(
       'The Navet authentication service did not respond'

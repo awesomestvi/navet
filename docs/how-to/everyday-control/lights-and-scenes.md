@@ -35,6 +35,15 @@ Open the light card to use available controls:
 
 The card only shows controls supported by the entity.
 
+## Switch card measurements
+
+Switch cards automatically show available measurements, such as power, voltage, current, and
+energy. Card size determines how many readings fit. Readings remain visible when a switch is off,
+and new measurements appear as the provider supplies them.
+
+Open the switch card's settings and choose **Metrics** to remove or restore readings. Navet
+remembers removed measurements for that card, including when a reading temporarily disappears.
+
 ## Run a scene
 
 Choose a scene shortcut to ask the owning provider to activate it. Scene behavior comes from the

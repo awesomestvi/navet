@@ -6,3 +6,5 @@ export * from './homey-provider-state';
 export * from './homey-runtime-registration';
 export * from './homey-service';
 export * from './homey-types';
+export * from './homey-hub.service';
+export { getHomeyDeviceProfile } from './homey-device-profiles';

@@ -4,7 +4,7 @@ description: Connect a standalone Navet installation to Homey.
 editUrl: https://github.com/awesomestvi/navet/edit/main/docs/HOMEY.md
 ---
 
-Use this guide when you want Navet to connect to Homey as the primary provider in standalone mode.
+Use this guide to connect Navet to Homey in standalone mode.
 The same OAuth client settings can enable Homey as an additional provider in the Home Assistant
 App.
 
@@ -75,19 +75,14 @@ such as when Navet sits behind a reverse proxy or the public callback URL differ
 origin users open. Navet also supports a custom callback path if you register a different exact URL
 with Athom, such as `https://navet.example.com/callback`.
 
-Homey connections are not configured through the Home Assistant App. Use the standalone Docker
-deployment when you need Navet to connect to Homey.
-
 ### 3. Start Navet
 
 ```bash
 docker compose up -d
 ```
 
-For the first Homey connection, run `docker compose logs navet` and find the temporary Navet setup
-code. Open Navet, choose Homey, and enter that code when prompted. The code works once and expires
-after 10 minutes. It approves the connection; it is not a Homey credential and is not needed again
-while the `navet-data` volume is preserved. Restart the container to generate a new code if needed.
+Open Navet and choose Homey, or choose **Connect** under Homey in **Settings -> System**
+to add it to an existing dashboard. Sign in with your Athom account.
 
 ### 4. Sign in
 
@@ -101,9 +96,34 @@ while the `navet-data` volume is preserved. Restart the container to generate a 
 
 - Navet stores the Homey session through same-origin runtime endpoints in the Navet app.
 - Homey devices and zones load after sign-in.
-- The current Homey runtime contributes rooms, realtime entities, lighting, switches, and sensors.
-  Climate, media, cameras, energy, calendar, weather, notifications, tasks, history, security, and
-  provider-administration feature services are not registered for Homey yet.
+- Homey contributes rooms, lights, switches, fans, sensors, locks, covers, thermostats, speakers, people,
+  and notifications to Navet.
+- Lock cards show the device's locked or unlocked state. Lock and unlock actions use Homey's
+  writable `locked` capability.
+- Blinds, curtains, and sunshades use cover cards. Devices with a writable position capability
+  support percentage adjustments and open/close actions. Movement-only devices offer their
+  supported open, close, and stop controls. Stop is enabled only when Homey exposes that command;
+  tilt controls are unavailable through this adapter.
+- Thermostat cards show target and current temperatures, follow the device's temperature range,
+  and support target changes and available operating modes. Speakers provide playback, volume,
+  mute, and other controls when Homey exposes writable capabilities. Media browsing and speaker
+  grouping are not available through this adapter.
+- Manually runnable Flows and Advanced Flows, along with Moods, are available as scene cards.
+- Under **Settings → System → Providers**, open Homey's menu and choose **Browse and manage**
+  to view devices, zones, Flows, Moods, people, notifications, apps, your available Homeys, and
+  Insights. Your Homey account name and email appear in provider details. Device controls
+  follow Homey's writable capabilities. Favorite changes update the signed-in Homey user's
+  favorite devices and Flows; these are separate from Navet's dashboard favorites.
+- You can change your own presence and sleep status. Other household members are read-only.
+- Insights can show the last 24 hours, 7 days, or 31 days. Device sensor history is available when
+  Homey exposes a matching Insights log. This does not provide Home Assistant-style energy
+  configuration or statistics.
+- Hiding a Homey notification in Navet leaves the notification in Homey. App updates and hub
+  restarts remain managed in Homey.
+- Availability depends on your Homey version and the permissions granted to the OAuth client.
+  An unavailable resource category shows an error while devices remain usable.
+- Dedicated camera, calendar, weather, Assist, task, security, and provider room
+  administration services are not registered for Homey.
 - In a standalone installation, Homey can stay connected alongside Home Assistant or openHAB;
   selected providers are combined in shared dashboard collections.
 - You do not need to enter a separate Homey base URL.
@@ -113,9 +133,6 @@ while the `navet-data` volume is preserved. Restart the container to generate a 
 
 - If the `Homey` option does not appear on the login screen, check that
   `NAVET_HOMEY_CLIENT_ID` and `NAVET_HOMEY_CLIENT_SECRET` are set in the running Navet container.
-- If Navet asks for setup approval, run `docker exec navet navet-setup-code` and use the temporary
-  code it prints. Run the command again if the code expired. Preserve the `navet-data` volume so approved
-  connections remain trusted across updates.
 - If sign-in returns to the wrong URL, set `NAVET_HOMEY_REDIRECT_URI` to the exact callback URL
   registered in your Athom Web API client.
 - If Navet keeps asking you to choose a Homey again, confirm the selected Homey is still available

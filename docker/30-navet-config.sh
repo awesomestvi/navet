@@ -13,7 +13,6 @@ chown nginx:nginx /data 2>/dev/null || true
 
 INSTALLATION_KEY_PATH="/data/navet-installation-key"
 INSTALLATION_CONFIG_PATH="/data/navet-installation-config.json"
-INSTALLATION_SETUP_MARKER_PATH="/data/navet-setup-code-initialized"
 PAIRING_KEY_GENERATED=false
 
 if [ -n "${NAVET_INSTALLATION_KEY}" ] &&
@@ -48,12 +47,7 @@ fi
 chmod 600 "${INSTALLATION_KEY_PATH}"
 chown nginx:nginx "${INSTALLATION_KEY_PATH}" 2>/dev/null || true
 
-if [ ! -f "${INSTALLATION_SETUP_MARKER_PATH}" ]; then
-  /usr/local/bin/navet-setup-code >&2
-  touch "${INSTALLATION_SETUP_MARKER_PATH}"
-  chmod 600 "${INSTALLATION_SETUP_MARKER_PATH}"
-  chown nginx:nginx "${INSTALLATION_SETUP_MARKER_PATH}" 2>/dev/null || true
-fi
+
 
 write_runtime_resolver() {
   resolver_addresses="$(

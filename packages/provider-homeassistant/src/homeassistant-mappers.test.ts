@@ -18,6 +18,24 @@ function makeEntity(entity_id: string, state: string, attributes: Record<string,
 }
 
 describe('homeassistant-mappers', () => {
+  it('defaults cover cards to small while preserving their position controls', () => {
+    const [cover] = mapHomeAssistantEntitiesToNavetEntities({
+      entities: {
+        'cover.bedroom_blind': makeEntity('cover.bedroom_blind', 'open', {
+          current_position: 35,
+          supported_features: 7,
+        }),
+      },
+      areas: [],
+      deviceRegistry: [],
+      entityRegistry: [],
+    });
+    expect(cover).toMatchObject({
+      type: 'cover',
+      attributes: { size: 'small', position: 35, hasPosition: true, supportedFeatures: 7 },
+    });
+  });
+
   it('reuses unchanged normalized entities across a large one-entity update', () => {
     const mapper = createHomeAssistantEntityMapper();
     const entities = Object.fromEntries(

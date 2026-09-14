@@ -4,18 +4,64 @@ import type { DeviceMetric } from '@navet/app/types/device.types';
 import { storage } from '@navet/app/utils/storage';
 import { useEffect, useMemo, useState } from 'react';
 
-function normalizeStoredMetricLabels(value: unknown): string[] {
-  if (Array.isArray(value)) {
-    return value.filter((label): label is string => typeof label === 'string');
+type MetricPreference =
+  | { version: 1; hiddenLabels: string[]; priorityLabels?: string[] }
+  | { legacySelectedLabels: string[] };
+
+function readMetricPreference(key: string): MetricPreference {
+  const stored = storage.get<unknown>(key, null);
+  if (stored && typeof stored === 'object' && !Array.isArray(stored)) {
+    const value = stored as { version?: unknown; hiddenLabels?: unknown; priorityLabels?: unknown };
+    if (value.version === 1 && Array.isArray(value.hiddenLabels)) {
+      return {
+        version: 1,
+        hiddenLabels: value.hiddenLabels.filter(
+          (label): label is string => typeof label === 'string'
+        ),
+        ...(Array.isArray(value.priorityLabels)
+          ? {
+              priorityLabels: value.priorityLabels.filter(
+                (label): label is string => typeof label === 'string'
+              ),
+            }
+          : {}),
+      };
+    }
   }
-  if (typeof value === 'string' && value.length > 0) {
-    return [value];
-  }
-  return [];
+  const legacyLabels = Array.isArray(stored)
+    ? stored.filter((label): label is string => typeof label === 'string')
+    : typeof stored === 'string' && stored.length > 0
+      ? [stored]
+      : [];
+  // Earlier defaults wrote empty arrays before readings arrived. Only non-empty
+  // legacy selections can be distinguished from those automatic empty defaults.
+  return legacyLabels.length > 0
+    ? { legacySelectedLabels: legacyLabels }
+    : { version: 1, hiddenLabels: [] };
 }
 
-function areMetricLabelListsEqual(left: string[], right: string[]) {
-  return left.length === right.length && left.every((label, index) => label === right[index]);
+function getPreferredMetricLabels(preference: MetricPreference, metrics: DeviceMetric[]) {
+  if ('legacySelectedLabels' in preference) return preference.legacySelectedLabels;
+  const hiddenLabels = new Set(preference.hiddenLabels);
+  const eligibleLabels = metrics
+    .map((metric) => metric.label)
+    .filter((label) => !hiddenLabels.has(label));
+  const priorityLabels =
+    preference.priorityLabels?.filter((label) => eligibleLabels.includes(label)) ?? [];
+  return [...priorityLabels, ...eligibleLabels.filter((label) => !priorityLabels.includes(label))];
+}
+
+function getVisibleMetricLabels(
+  preference: MetricPreference,
+  metrics: DeviceMetric[],
+  limit: number
+) {
+  const preferredLabels = getPreferredMetricLabels(preference, metrics);
+  return (
+    'legacySelectedLabels' in preference
+      ? orderMetricLabelsByAvailability(preferredLabels, metrics)
+      : preferredLabels
+  ).slice(0, limit);
 }
 
 function orderMetricLabelsByAvailability(metricLabels: string[], availableMetrics: DeviceMetric[]) {
@@ -105,73 +151,100 @@ export function useSwitchMetricState({
     [fallbackMetrics, metrics]
   );
 
-  const availableMetrics = useMemo(() => allMetrics, [allMetrics]);
-
-  const [hasExplicitMetricPreference, setHasExplicitMetricPreference] = useState<boolean>(
-    () => storage.get<unknown>(metricPreferenceKey, null) !== null
-  );
-  const [selectedMetricLabels, setSelectedMetricLabels] = useState<string[]>(() =>
-    normalizeStoredMetricLabels(storage.get<unknown>(metricPreferenceKey, []))
-  );
+  const availableMetrics = allMetrics;
+  const [preferenceState, setPreferenceState] = useState(() => ({
+    key: metricPreferenceKey,
+    preference: readMetricPreference(metricPreferenceKey),
+    persist: false,
+  }));
 
   useEffect(() => {
-    setHasExplicitMetricPreference(storage.get<unknown>(metricPreferenceKey, null) !== null);
-    setSelectedMetricLabels(
-      normalizeStoredMetricLabels(storage.get<unknown>(metricPreferenceKey, []))
+    setPreferenceState((current) =>
+      current.key === metricPreferenceKey
+        ? current
+        : {
+            key: metricPreferenceKey,
+            preference: readMetricPreference(metricPreferenceKey),
+            persist: false,
+          }
     );
   }, [metricPreferenceKey]);
 
   useEffect(() => {
-    const knownMetricLabels = new Set(allMetrics.map((metric) => metric.label));
-    const nextLabels = selectedMetricLabels.filter((label) => knownMetricLabels.has(label));
-    const fallbackLabels = availableMetrics.slice(0, metricLimit).map((metric) => metric.label);
-
-    if (hasExplicitMetricPreference) {
-      return;
+    if (preferenceState.key === metricPreferenceKey && preferenceState.persist) {
+      storage.set(metricPreferenceKey, preferenceState.preference);
     }
+  }, [metricPreferenceKey, preferenceState]);
 
-    if (nextLabels.length === 0 && availableMetrics.length > 0) {
-      if (!areMetricLabelListsEqual(selectedMetricLabels, fallbackLabels)) {
-        setSelectedMetricLabels(fallbackLabels);
-      }
-      return;
-    }
-
-    if (!areMetricLabelListsEqual(selectedMetricLabels, nextLabels)) {
-      setSelectedMetricLabels(nextLabels);
-    }
-  }, [
-    allMetrics,
+  const preference =
+    preferenceState.key === metricPreferenceKey
+      ? preferenceState.preference
+      : readMetricPreference(metricPreferenceKey);
+  const visibleSelectedMetricLabels = getVisibleMetricLabels(
+    preference,
     availableMetrics,
-    hasExplicitMetricPreference,
-    metricLimit,
-    selectedMetricLabels,
-  ]);
-
-  useEffect(() => {
-    storage.set(metricPreferenceKey, selectedMetricLabels);
-  }, [metricPreferenceKey, selectedMetricLabels]);
-
-  const handleMetricToggle = (metricLabel: string) => {
-    setHasExplicitMetricPreference(true);
-    setSelectedMetricLabels((current) => {
-      if (current.includes(metricLabel)) return current.filter((label) => label !== metricLabel);
-      const orderedCurrent = orderMetricLabelsByAvailability(current, availableMetrics);
-      if (orderedCurrent.length >= metricLimit) {
-        const removableVisibleLabel = orderedCurrent[orderedCurrent.length - 1];
-        return [...current.filter((label) => label !== removableVisibleLabel), metricLabel];
-      }
-      return [...current, metricLabel];
-    });
-  };
-
-  const visibleSelectedMetricLabels = orderMetricLabelsByAvailability(
-    selectedMetricLabels,
-    availableMetrics
-  ).slice(0, metricLimit);
+    metricLimit
+  );
+  // Legacy selections retain unavailable labels so a temporarily missing reading
+  // returns to the same selection when it comes back.
+  const selectedMetricLabels =
+    'legacySelectedLabels' in preference
+      ? preference.legacySelectedLabels
+      : visibleSelectedMetricLabels;
   const selectedMetrics = availableMetrics.filter((metric) =>
     visibleSelectedMetricLabels.includes(metric.label)
   );
+
+  const handleMetricToggle = (metricLabel: string) => {
+    if (!availableMetrics.some((metric) => metric.label === metricLabel)) return;
+    setPreferenceState((current) => {
+      const currentPreference =
+        current.key === metricPreferenceKey
+          ? current.preference
+          : readMetricPreference(metricPreferenceKey);
+      const currentLabels = getPreferredMetricLabels(currentPreference, availableMetrics);
+      const visibleLabels = getVisibleMetricLabels(
+        currentPreference,
+        availableMetrics,
+        metricLimit
+      );
+      let priorityLabels =
+        'priorityLabels' in currentPreference ? (currentPreference.priorityLabels ?? []) : [];
+      const hiddenLabels = new Set(
+        'hiddenLabels' in currentPreference
+          ? currentPreference.hiddenLabels
+          : availableMetrics
+              .map((metric) => metric.label)
+              .filter((label) => !currentLabels.includes(label))
+      );
+      if (
+        'legacySelectedLabels' in currentPreference
+          ? currentLabels.includes(metricLabel)
+          : visibleLabels.includes(metricLabel)
+      ) {
+        hiddenLabels.add(metricLabel);
+        priorityLabels = priorityLabels.filter((label) => label !== metricLabel);
+      } else {
+        hiddenLabels.delete(metricLabel);
+        if (visibleLabels.length >= metricLimit) {
+          hiddenLabels.add(visibleLabels[visibleLabels.length - 1]);
+          priorityLabels = [
+            metricLabel,
+            ...priorityLabels.filter((label) => label !== metricLabel),
+          ];
+        }
+      }
+      return {
+        key: metricPreferenceKey,
+        preference: {
+          version: 1,
+          hiddenLabels: [...hiddenLabels],
+          ...(priorityLabels.length ? { priorityLabels } : {}),
+        },
+        persist: true,
+      };
+    });
+  };
 
   return {
     availableMetrics,

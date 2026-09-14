@@ -176,5 +176,30 @@ describe('buildClimateDashboardOverview', () => {
     expect(model.summaryItems).toEqual(
       expect.arrayContaining([expect.objectContaining({ id: 'climate-outdoor', value: '46.4°' })])
     );
+    const north = {
+      ...weather,
+      id: 'homey:north',
+      temperature: -24.4,
+      feelsLikeTemperature: undefined,
+    };
+    const selected = buildClimateDashboardOverview(
+      [north, weather],
+      'celsius',
+      undefined,
+      weather.id
+    );
+    expect(selected.outdoorTemperature).toBe('8°');
+    expect(selected.outdoorFeelsLike).toBe('6°');
+    const selectedNorth = buildClimateDashboardOverview(
+      [weather, north],
+      'celsius',
+      undefined,
+      north.id
+    );
+    expect(selectedNorth.outdoorTemperature).toBe('-24.4°');
+    expect(selectedNorth.outdoorFeelsLike).toBeNull();
+    expect(
+      buildClimateDashboardOverview([north, weather], 'celsius', undefined, null).outdoorTemperature
+    ).toBeNull();
   });
 });

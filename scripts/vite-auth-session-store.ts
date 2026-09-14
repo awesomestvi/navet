@@ -907,7 +907,10 @@ function getRequestContext(
     return null
   }
 
-  // Never reuse an unbacked caller-supplied cookie. The HMAC-bound public
+  const boundEphemeral = getBoundEphemeralRequestContext(req, store)
+  if (boundEphemeral) return boundEphemeral
+
+  // Never reuse an unverified caller-supplied cookie. The HMAC-bound public
   // session ID allows the next OAuth request without writing an anonymous
   // session file.
   const cookieId = randomBytes(32).toString('hex')
@@ -1638,6 +1641,15 @@ export function createViteAuthRequestHandler(
     if (req.method === 'GET') {
       const context = getRequestContext(req, res, store, true)!
       const renewed = renewViteAuthRequestSession(req, res, store, context)
+      const devices = store.deviceSessionAuthority
+      if (devices?.hasPresentedDeviceCookie(req) &&
+        !(['home_assistant', 'homey', 'openhab'] as const).some(id => devices.getProviderCookieId(req, id))) {
+        const authCookie = res.getHeader('Set-Cookie')
+        devices.revokeCurrentDevice(req, res)
+        const expiredDeviceCookie = res.getHeader('Set-Cookie')
+        res.setHeader('Set-Cookie', [authCookie, expiredDeviceCookie].flatMap(value =>
+          typeof value === 'string' ? [value] : Array.isArray(value) ? value : []))
+      }
       sendJson(res, 200, store.sanitizeSession(renewed.session))
       return
     }

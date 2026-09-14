@@ -1,4 +1,5 @@
 import type { NavetProviderContract, SmartHomeProviderAdapter } from './provider-contract';
+import type { ProviderHubFeatureService } from './provider-hub';
 import type {
   PlatformCameraStream,
   PlatformCameraStreamType,
@@ -82,6 +83,7 @@ export interface IntegrationProviderRuntimeRegistration {
   energyFeatureService?: ProviderEnergyFeatureService;
   entityRuntimeService?: ProviderEntityRuntimeService;
   historyFeatureService?: ProviderHistoryFeatureService;
+  hubFeatureService?: ProviderHubFeatureService;
   lightFeatureService?: ProviderLightFeatureService;
   mediaFeatureService?: ProviderMediaFeatureService;
   nativeActionFeatureService?: ProviderNativeActionFeatureService;

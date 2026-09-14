@@ -1036,7 +1036,13 @@ function createAuthSessionStore(options) {
       return existing;
     }
 
-    // Never reuse an unbacked caller-supplied cookie. A fresh cookie plus the
+    const bound = getBoundRequestSession(r, true);
+    if (bound) {
+      setSessionCookie(r, bound.cookieId);
+      return bound;
+    }
+
+    // Never reuse an unverified caller-supplied cookie. A fresh cookie plus the
     // server-authenticated public binding supports OAuth bootstrap without
     // creating one disk record per anonymous GET.
     const cookieId = secureRandomHex(32);
@@ -1135,6 +1141,12 @@ function createAuthSessionStore(options) {
   async function handleSessionGet(r) {
     const context = createRequestSession(r);
     const renewed = renewRequestSession(r, context);
+    if (deviceSessionAuthority.hasPresentedDeviceCookie(r) &&
+      !['home_assistant', 'homey', 'openhab'].some(function (id) { return deviceSessionAuthority.getProviderCookieId(r, id); })) {
+      const authCookie = r.headersOut['Set-Cookie'];
+      deviceSessionAuthority.revokeCurrentDevice(r);
+      r.headersOut['Set-Cookie'] = [].concat(authCookie || [], r.headersOut['Set-Cookie'] || []);
+    }
     sendJson(r, 200, sanitizeSession(renewed.session));
   }
 

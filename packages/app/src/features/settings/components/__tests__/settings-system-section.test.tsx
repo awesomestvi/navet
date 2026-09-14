@@ -6,7 +6,7 @@ import { getSettingsSectionStyles } from '@navet/app/features/settings/hooks/set
 import type { SettingsSectionController } from '@navet/app/features/settings/hooks/use-settings-section-controller';
 import { resetRuntimeContextForTests } from '@navet/app/infrastructure/home-assistant/runtime/runtime-detector';
 import { renderWithProviders } from '@navet/app/test/render';
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SettingsSystemSection } from '../settings-system-section';
 
@@ -237,8 +237,8 @@ describe('SettingsSystemSection', () => {
       'border-emerald-500/30',
       'bg-emerald-500/10'
     );
-    expect(screen.queryByText('Active')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Make active' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Primary')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Make primary' })).not.toBeInTheDocument();
     expect(screen.queryByText('Lighting')).not.toBeInTheDocument();
     expect(screen.queryByText('Notifications')).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'View supported entities' })).not.toBeInTheDocument();
@@ -256,12 +256,14 @@ describe('SettingsSystemSection', () => {
     expect(screen.getByText('Home Assistant')).toBeInTheDocument();
     expect(screen.queryByText('Homey')).not.toBeInTheDocument();
     expect(screen.queryByText('openHAB')).not.toBeInTheDocument();
+    expect(screen.queryByText('Authorized devices')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Refresh now' })).not.toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: /Manage .* other providers/ })
     ).not.toBeInTheDocument();
   });
 
-  it('starts a fresh Home Assistant connection from its current address', () => {
+  it('starts a fresh Home Assistant connection from its current address', async () => {
     renderWithProviders(<SettingsSystemSection controller={controller} />);
 
     fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions: Home Assistant' }));
@@ -279,6 +281,7 @@ describe('SettingsSystemSection', () => {
       undefined,
       undefined
     );
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
   it('uses the configured Home Assistant URL when the connected provider omits its base URL', () => {
@@ -358,19 +361,17 @@ describe('SettingsSystemSection', () => {
     expect(
       screen.queryByRole('button', { name: /Manage .* other providers/ })
     ).not.toBeInTheDocument();
-    expect(screen.getByText('Active')).toBeInTheDocument();
+    expect(screen.queryByText('Primary')).not.toBeInTheDocument();
 
     fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions: Home Assistant' }));
     expect(screen.getByRole('menuitem', { name: 'Open' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Make active' }));
-    expect(controller.setActiveProvider).toHaveBeenCalledWith('home_assistant');
+    expect(screen.queryByRole('menuitem', { name: 'Make primary' })).not.toBeInTheDocument();
 
-    fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions: Home Assistant' }));
     fireEvent.click(screen.getByRole('menuitem', { name: 'Disconnect' }));
     expect(controller.handleDisconnectProvider).toHaveBeenCalledWith('home_assistant');
   });
 
-  it('submits a Home Assistant URL and disconnects connected providers', () => {
+  it('submits a Home Assistant URL and disconnects connected providers', async () => {
     controller.providerCards = [
       {
         id: 'home_assistant',
@@ -446,70 +447,103 @@ describe('SettingsSystemSection', () => {
       undefined
     );
 
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions: Homey' }));
     fireEvent.click(screen.getByRole('menuitem', { name: 'Disconnect' }));
     expect(controller.handleDisconnectProvider).toHaveBeenCalledWith('homey');
   });
 
-  it('submits openHAB credentials from settings connect flow', () => {
-    controller.providerCards = [
-      {
-        id: 'openhab',
-        label: 'openHAB',
-        loginMode: 'url_session',
-        status: 'disconnected',
-        isActive: false,
-        isConnected: false,
-        canConnect: true,
-        canDisconnect: false,
-        baseUrl: null,
-        error: null,
-        implementationStatus: 'implemented',
-        featureMatrix: {
-          rooms: true,
-          lighting: true,
-          sensors: true,
-          climate: true,
-          mediaControls: false,
-          mediaBrowse: false,
-          mediaArtwork: false,
-          cameraSnapshot: false,
-          cameraStreams: false,
-          energyNow: false,
-          calendar: false,
-          weather: false,
-          notifications: false,
+  it.each([undefined, 'Unable to reach openHAB'])(
+    'shows openHAB connection progress until the request settles (%s)',
+    async (connectionError) => {
+      let finishConnection!: (error: string | undefined) => void;
+      vi.mocked(controller.handleConnectProvider).mockReturnValueOnce(
+        new Promise<string | undefined>((resolve) => {
+          finishConnection = resolve;
+        })
+      );
+      controller.providerCards = [
+        {
+          id: 'openhab',
+          label: 'openHAB',
+          loginMode: 'url_session',
+          status: 'disconnected',
+          isActive: false,
+          isConnected: false,
+          canConnect: true,
+          canDisconnect: false,
+          baseUrl: null,
+          error: null,
+          implementationStatus: 'implemented',
+          featureMatrix: {
+            rooms: true,
+            lighting: true,
+            sensors: true,
+            climate: true,
+            mediaControls: false,
+            mediaBrowse: false,
+            mediaArtwork: false,
+            cameraSnapshot: false,
+            cameraStreams: false,
+            energyNow: false,
+            calendar: false,
+            weather: false,
+            notifications: false,
+          },
         },
-      },
-    ] as typeof controller.providerCards;
+      ] as typeof controller.providerCards;
 
-    renderWithProviders(<SettingsSystemSection controller={controller} />);
+      renderWithProviders(<SettingsSystemSection controller={controller} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
 
-    fireEvent.change(screen.getByPlaceholderText('http://openhab.local:8080'), {
-      target: { value: 'http://openhab.local:8080' },
-    });
-    fireEvent.change(screen.getByLabelText('Username'), {
-      target: { value: 'navet' },
-    });
-    fireEvent.change(screen.getByLabelText('Password'), {
-      target: { value: 'secret' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+      fireEvent.change(screen.getByPlaceholderText('http://openhab.local:8080'), {
+        target: { value: 'http://openhab.local:8080' },
+      });
+      fireEvent.change(screen.getByLabelText('Username'), {
+        target: { value: 'navet' },
+      });
+      fireEvent.change(screen.getByLabelText('Password'), {
+        target: { value: 'secret' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
 
-    expect(controller.handleConnectProvider).toHaveBeenCalledWith(
-      'openhab',
-      'http://openhab.local:8080',
-      'navet',
-      'secret'
-    );
-  });
+      expect(controller.handleConnectProvider).toHaveBeenCalledWith(
+        'openhab',
+        'http://openhab.local:8080',
+        'navet',
+        'secret'
+      );
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Connecting...' })).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+      expect(screen.getByLabelText('Username')).toBeDisabled();
+      expect(screen.getByLabelText('Password')).toBeDisabled();
+      fireEvent.submit(screen.getByRole('button', { name: 'Connecting...' }).closest('form')!);
+      expect(controller.handleConnectProvider).toHaveBeenCalledTimes(1);
+
+      await act(async () => {
+        finishConnection(connectionError);
+      });
+      if (connectionError) {
+        expect(screen.getByRole('alert')).toHaveTextContent(connectionError);
+        expect(screen.getByLabelText('Username')).toHaveValue('navet');
+        expect(screen.getByLabelText('Password')).toHaveValue('secret');
+        expect(screen.getByRole('button', { name: 'Connect' })).toBeEnabled();
+        fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+        await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+        expect(controller.handleConnectProvider).toHaveBeenCalledTimes(2);
+      } else {
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      }
+    }
+  );
 
   it('uses authorized devices as the only device roster', () => {
     renderWithProviders(<SettingsSystemSection controller={controller} />);
 
     expect(screen.queryByText('Connected displays')).not.toBeInTheDocument();
+    expect(screen.getByText('Authorized devices')).toBeInTheDocument();
     expect(screen.getByText('Device settings')).toBeInTheDocument();
   });
 
@@ -521,6 +555,7 @@ describe('SettingsSystemSection', () => {
       id: 'kitchen_panel',
       name: 'Kitchen panel',
       kind: 'wall_panel' as const,
+      userName: 'Vishal',
       firstSeenAt: '2026-07-24T08:00:00.000Z',
       lastSeenAt: '2026-07-25T09:00:00.000Z',
       lastRevision: 5,
@@ -548,6 +583,13 @@ describe('SettingsSystemSection', () => {
 
     expect(screen.getByText('Not shared — changes affect only this device')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Copy settings once' }));
+    expect(screen.getByRole('button', { name: 'Copy settings' })).toBeDisabled();
+    expect(screen.getByText(/Signed in as Vishal/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Kitchen panel/ })).toHaveAttribute(
+      'aria-pressed',
+      'false'
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Kitchen panel/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Copy settings' }));
     await waitFor(() =>
       expect(dashboardProfileServiceMocks.copyDashboardDisplaySettings).toHaveBeenCalledWith(

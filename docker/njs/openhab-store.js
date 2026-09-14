@@ -115,7 +115,6 @@ function isAllowedOpenHABHostname(value) {
   }
   if (
     !hostname ||
-    hostname === 'localhost' ||
     hostname.length > 253 ||
     !/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*$/.test(
       hostname

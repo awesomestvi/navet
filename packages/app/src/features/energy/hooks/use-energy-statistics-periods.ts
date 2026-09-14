@@ -7,6 +7,7 @@ import { subscribeVisibilityAwareAsyncTask } from '@navet/app/utils/visibility-a
 import { useEffect, useState } from 'react';
 import { getCachedEnergyStatistics } from '../services/energy-statistics-cache';
 import { getEnergyStatisticsPeriods } from '../services/energy-statistics-service';
+import { parseProviderScopedId } from '@navet/app/utils/provider-ids';
 
 const REFRESH_MS = ENERGY_STATISTICS_REFRESH_INTERVAL;
 const CACHE_TTL_MS = Math.max(30_000, REFRESH_MS - 1_000);
@@ -39,7 +40,12 @@ export function useEnergyStatisticsPeriods(
         const result = await getCachedEnergyStatistics(
           `periods-5minute-today:${statisticId}`,
           CACHE_TTL_MS,
-          () => getEnergyStatisticsPeriods(activeMessageClient, statisticId, unit)
+          () =>
+            getEnergyStatisticsPeriods(
+              activeMessageClient,
+              parseProviderScopedId(statisticId)?.nativeId ?? statisticId,
+              unit
+            )
         );
         setTotals(result);
       } catch (error) {

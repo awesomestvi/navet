@@ -625,6 +625,7 @@ function createProviderSessionStore(options) {
     const session = createRecord();
     writeSession(cookieId, session);
     setSessionCookie(r, cookieId);
+    if (providerId) deviceSessionAuthority.attachProviderCookieId(r, providerId, cookieId);
     return cacheRequestSession(r, { cookieId: cookieId, session: session });
   }
 
@@ -663,6 +664,7 @@ function createProviderSessionStore(options) {
     if (providerId && previousCookieId) {
       deviceSessionAuthority.replaceProviderCookieId(providerId, previousCookieId, cookieId);
     }
+    if (providerId) deviceSessionAuthority.attachProviderCookieId(r, providerId, cookieId);
     let index;
     for (index = 0; index < staleCookieIds.length; index += 1) {
       if (staleCookieIds[index] !== cookieId) {

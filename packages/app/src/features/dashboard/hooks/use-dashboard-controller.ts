@@ -224,8 +224,13 @@ export function useDashboardController(): DashboardController {
         : false,
   });
   const dashboardVisibility = useMemo(
-    () => buildDashboardVisibilityResult(allDevices, hiddenEntityIds, shownSensorEntityIds),
-    [allDevices, hiddenEntityIds, shownSensorEntityIds]
+    () =>
+      buildDashboardVisibilityResult(
+        allDevices,
+        hiddenEntityIds,
+        resolveDashboardShownSensorEntityIds(activeSection, allDevices, shownSensorEntityIds)
+      ),
+    [activeSection, allDevices, hiddenEntityIds, shownSensorEntityIds]
   );
   const devices = dashboardVisibility.visibleDevices;
   const availableDevices = dashboardVisibility.availableDevices;
@@ -697,6 +702,22 @@ function resolveDenseVisibleCardCount({
   }
 
   return orderedCardIds.length > 0 ? orderedCardIds.length : deviceMap.size + customCards.length;
+}
+
+export function resolveDashboardShownSensorEntityIds(
+  activeSection: string,
+  devices: DeviceCollection,
+  shownSensorEntityIds: string[]
+): string[] {
+  if (activeSection !== 'climate') return shownSensorEntityIds;
+  return [
+    ...new Set([
+      ...shownSensorEntityIds,
+      ...devices.sensors
+        .filter((sensor) => getClimateDashboardGroup({ ...sensor, type: 'sensors' }) !== null)
+        .map((sensor) => sensor.id),
+    ]),
+  ];
 }
 
 function useDashboardSectionData({

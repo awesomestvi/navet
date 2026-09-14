@@ -210,69 +210,16 @@ describe('LoginPage', () => {
     );
   });
 
-  it('explains and completes setup approval before showing provider credentials', async () => {
+  it('shows provider credentials immediately without requesting installation approval', async () => {
     fetchDiscoveryMock.mockResolvedValue(null);
     chooseDiscoveryMock.mockReturnValue(null);
-    let setupApproved = false;
-    vi.mocked(fetch).mockImplementation((input, init) => {
-      if (init?.method === 'POST') {
-        setupApproved = true;
-        return Promise.resolve(new Response(JSON.stringify({ approved: true }), { status: 200 }));
-      }
-      const url = new URL(String(input), window.location.origin);
-      return Promise.resolve(
-        new Response(
-          JSON.stringify({
-            providerId: url.searchParams.get('providerId'),
-            state: setupApproved ? 'ready' : 'approval_required',
-            authorization: setupApproved ? 'setup_proof' : 'none',
-          }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } }
-        )
-      );
-    });
-
     renderWithProviders(<LoginPage />);
     fireEvent.click(screen.getByRole('button', { name: 'openHAB' }));
-
-    expect(
-      await screen.findByRole('heading', { name: 'Connect your home securely' })
-    ).toBeVisible();
-    expect(screen.queryByLabelText('openHAB Username')).not.toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText('Setup code'), {
-      target: { value: '1234-5678-9abc-def0' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Approve connection' }));
-
     expect(await screen.findByLabelText('openHAB Username')).toBeVisible();
-  });
-
-  it('capitalizes and groups an installation setup code while it is typed', async () => {
-    fetchDiscoveryMock.mockResolvedValue(null);
-    chooseDiscoveryMock.mockReturnValue(null);
-    vi.mocked(fetch).mockImplementation((input) => {
-      const url = new URL(String(input), window.location.origin);
-      if (url.pathname === '/__navet_devices__/availability') {
-        return Promise.resolve(new Response(JSON.stringify({ available: false }), { status: 200 }));
-      }
-      return Promise.resolve(
-        new Response(
-          JSON.stringify({
-            providerId: url.searchParams.get('providerId'),
-            state: 'approval_required',
-            authorization: 'none',
-          }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } }
-        )
-      );
-    });
-
-    renderWithProviders(<LoginPage />);
-    fireEvent.click(screen.getByRole('button', { name: 'openHAB' }));
-    const input = await screen.findByLabelText('Setup code');
-    fireEvent.change(input, { target: { value: '12ab34cd56ef7890' } });
-
-    expect(input).toHaveValue('12AB-34CD-56EF-7890');
+    expect(screen.queryByLabelText('Setup code')).not.toBeInTheDocument();
+    expect(
+      vi.mocked(fetch).mock.calls.some(([input]) => String(input).includes('/__navet_auth__/setup'))
+    ).toBe(false);
   });
 
   it('offers a provider-neutral additional-device flow before sign-in', async () => {

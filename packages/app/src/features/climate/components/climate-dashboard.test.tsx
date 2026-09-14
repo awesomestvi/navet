@@ -1,3 +1,4 @@
+import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import { renderWithProviders } from '@navet/app/test/render';
 import type { DeviceWithType } from '@navet/app/types/device.types';
 import { fireEvent, screen } from '@testing-library/react';
@@ -102,6 +103,50 @@ describe('ClimateDashboard', () => {
         removeEventListener: vi.fn(),
       }),
     });
+  });
+
+  it('retains the saved weather source without showing a source selector', () => {
+    const weather: Extract<DeviceWithType, { type: 'weather' }> = {
+      id: 'home_assistant:weather.forecast_home',
+      name: 'Forecast Home',
+      type: 'weather',
+      room: 'Outside',
+      size: 'large',
+      temperature: 15.6,
+      temperatureUnit: 'celsius',
+      location: 'Home',
+      condition: 'cloudy',
+      humidity: 70,
+      windSpeed: 3,
+      pressure: 1012,
+      precipitation: 0,
+      precipitationUnit: 'mm',
+      sunrise: '',
+      sunset: '',
+      daylight: '',
+      rainForecast: '',
+      highTemp: 16,
+      lowTemp: 10,
+      forecastMode: 'weekly',
+      forecast: [],
+    };
+    const north = {
+      ...weather,
+      id: 'home_assistant:weather.demo_north',
+      name: 'Demo Weather North',
+      temperature: -24.4,
+    };
+    localStorage.setItem(STORAGE_KEYS.climateWeatherSource, JSON.stringify(weather.id));
+    const { unmount } = renderDashboard([climateDevice(), north, weather]);
+    expect(screen.queryByRole('combobox', { name: 'Weather' })).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Weather: 15.6°')).toBeInTheDocument();
+    unmount();
+    const restored = renderDashboard([climateDevice(), north, weather]);
+    expect(screen.queryByRole('combobox', { name: 'Weather' })).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Weather: 15.6°')).toBeInTheDocument();
+    restored.unmount();
+    renderDashboard([climateDevice(), north]);
+    expect(screen.queryByText('-24.4°')).not.toBeInTheDocument();
   });
 
   it('keeps normal climate calm and collapses missing optional environment data', () => {

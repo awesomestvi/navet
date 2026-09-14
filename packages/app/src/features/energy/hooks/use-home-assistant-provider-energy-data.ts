@@ -1,5 +1,6 @@
 import { useProviderBatterySensorRows, useProviderHealth } from '@navet/app/hooks';
 import { useMemo } from 'react';
+import { createProviderScopedId } from '@navet/app/utils/provider-ids';
 import type { EnergyRange, EnergySeriesPoint } from '../types/energy.types';
 import { useEnergyHaData } from './use-energy-ha-data';
 import { useEnergyLoadHistory } from './use-energy-load-history';
@@ -52,7 +53,7 @@ export function useHomeAssistantProviderEnergyData(
   enabled = true
 ): UseProviderEnergyDataResult {
   const providerHealth = useProviderHealth('home_assistant');
-  const batteryDevices = useProviderBatterySensorRows();
+  const batteryDevices = useProviderBatterySensorRows('home_assistant');
   const {
     energySourceDiagnostics,
     energyStatisticUnits,
@@ -64,13 +65,17 @@ export function useHomeAssistantProviderEnergyData(
     haSourceConfig,
   } = useEnergyHaData(range, enabled);
   const recentLoadTrend = useEnergyLoadHistory(
-    currentLoadStatisticId,
+    currentLoadStatisticId
+      ? createProviderScopedId('home_assistant', currentLoadStatisticId)
+      : undefined,
     overview.totals.currentLoadW,
     enabled,
     range
   );
   const periodTotals = useEnergyStatisticsPeriods(
-    haSourceConfig?.gridImportEnergyEntityId,
+    haSourceConfig?.gridImportEnergyEntityId
+      ? createProviderScopedId('home_assistant', haSourceConfig.gridImportEnergyEntityId)
+      : undefined,
     haSourceConfig?.gridImportEnergyEntityId
       ? energyStatisticUnits[haSourceConfig.gridImportEnergyEntityId]
       : undefined,

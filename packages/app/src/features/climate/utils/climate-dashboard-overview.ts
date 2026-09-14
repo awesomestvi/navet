@@ -204,7 +204,8 @@ function formatTemperatureRange(values: number[]) {
 export function buildClimateDashboardOverview(
   devices: Iterable<DeviceWithType>,
   displayUnit: TemperatureUnit,
-  t: TranslateFn = defaultTranslate
+  t: TranslateFn = defaultTranslate,
+  weatherEntityId?: string | null
 ): ClimateDashboardOverview {
   const temperatureValues: number[] = [];
   const temperatureRooms = new Set<string>();
@@ -228,8 +229,14 @@ export function buildClimateDashboardOverview(
       humidityValues.push(humidity);
       humidityRooms.add(getDeviceRoomLabel(device));
     }
-    outdoorTemperature ??= getOutdoorTemperature(device, displayUnit);
-    outdoorFeelsLike ??= getOutdoorFeelsLike(device, displayUnit);
+    if (
+      device.type === 'weather' &&
+      outdoorTemperature === null &&
+      (weatherEntityId === undefined || weatherEntityId === device.id)
+    ) {
+      outdoorTemperature = getOutdoorTemperature(device, displayUnit);
+      outdoorFeelsLike = getOutdoorFeelsLike(device, displayUnit);
+    }
     const comfortable = getRoomComfort(device);
     if (comfortable !== null) {
       const room = getDeviceRoomLabel(device);

@@ -94,9 +94,9 @@ describe('integrationNotificationFeatureService', () => {
     expect(callServiceMock).toHaveBeenNthCalledWith(3, 'homeassistant', 'restart', {}, undefined);
   });
 
-  it('rejects update installation for non-Home Assistant providers', () => {
-    expect(() =>
+  it('keeps Homey updates unavailable despite supporting notification reads', async () => {
+    await expect(
       integrationNotificationFeatureService.installUpdate('homey:update.router')
-    ).toThrow('Update installation is not supported for the current integration yet');
+    ).rejects.toThrow('Homey app updates are managed in Homey');
   });
 });

@@ -72,6 +72,7 @@ import { Fan, Lightbulb, ShieldCheck, Speaker, Zap } from 'lucide-react';
 import { Children, type CSSProperties, type ReactNode, useEffect, useState } from 'react';
 import type { CameraDevice, DeviceWithType, LockDevice, SensorDevice } from '../types/device.types';
 import { installDemoChoreActions } from './demo-chore-actions';
+import { demoEnergyHistorySources, loadDemoEnergyHistory } from './demo-energy-history';
 import { PHOTO_FRAME_DEMO_IMAGES } from './photo-frame-demo-images';
 
 type DemoSection = Section;
@@ -1255,10 +1256,15 @@ function DemoWidgetCard({ card }: { card: CustomCard }) {
 }
 
 function EnergyShot() {
+  const isEditMode = useEditModeStore((state) => state.isEditMode);
   return (
     <EnergyDashboardPage
       dashboard={demoEnergyScenario.dashboard}
       sourceDiagnostics={demoEnergySourceDiagnostics}
+      isEditMode={isEditMode}
+      currentLoadStatisticId="sensor.whole_home_power"
+      historyStatisticsLoader={loadDemoEnergyHistory}
+      historySources={demoEnergyHistorySources}
     />
   );
 }
@@ -1287,6 +1293,8 @@ function ClimateShot() {
 }
 
 function SecurityShot() {
+  const isEditMode = useEditModeStore((state) => state.isEditMode);
+  const [cardSizes, setCardSizes] = useState<Record<string, CardSize>>({});
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const model = buildSecurityCameraDashboardModel({
@@ -1298,10 +1306,10 @@ function SecurityShot() {
   return (
     <SecurityCameraDashboard
       model={model}
-      isEditMode={false}
+      isEditMode={isEditMode}
       alarms={demoAlarmEntities}
-      cardSizes={{}}
-      updateCardSize={noopCardSizeChange}
+      cardSizes={cardSizes}
+      updateCardSize={(id, size) => setCardSizes((previous) => ({ ...previous, [id]: size }))}
       surface={surface}
     />
   );

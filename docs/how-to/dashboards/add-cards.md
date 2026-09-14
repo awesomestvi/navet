@@ -54,6 +54,10 @@ Depending on the card type, choose:
 
 Choose the add or save action. Navet places the card in the target area.
 
+Cover cards default to **Small**; climate and speaker cards default to **Medium**.
+In edit mode, use the card's size control to choose
+**Small**, **Medium**, or **Large**. Navet remembers the size you choose.
+
 ![A newly added card highlighted on Home.](/docs/how-to/dashboards/add-card-result.webp)
 
 ## If the entity is not listed

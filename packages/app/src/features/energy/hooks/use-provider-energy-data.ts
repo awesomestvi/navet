@@ -71,8 +71,8 @@ const EMPTY_PROVIDER_ENERGY_DATA: UseProviderEnergyDataResult = {
 };
 
 export function useProviderEnergyData(range: EnergyRange): UseProviderEnergyDataResult {
-  const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
-  const isHomeAssistantProvider = currentProviderId === 'home_assistant';
+  const selectedProviderIds = useIntegrationStore(integrationSelectors.selectedProviderIds);
+  const isHomeAssistantProvider = selectedProviderIds.includes('home_assistant');
   const homeAssistantData = useHomeAssistantProviderEnergyData(range, isHomeAssistantProvider);
 
   if (!isHomeAssistantProvider) {

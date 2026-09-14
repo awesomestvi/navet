@@ -1,8 +1,37 @@
 import { describe, expect, it } from 'vitest';
+import { createEmptyDeviceCollection } from '@navet/app/core/navet-device-collections';
+import { buildDashboardVisibilityResult } from '@navet/app/hooks/use-dashboard-devices';
 import {
+  resolveDashboardShownSensorEntityIds,
   resolveShouldIncludeFeatureCollections,
   resolveShouldTrackMediaDevices,
 } from '../use-dashboard-controller';
+
+describe('Climate environmental sensor visibility', () => {
+  it('automatically includes humidity in Climate while preserving Home opt-in and explicit hiding', () => {
+    const devices = createEmptyDeviceCollection();
+    devices.sensors = [
+      {
+        id: 'homey:thermostat#measure_humidity',
+        name: 'Humidity',
+        room: 'Living Room',
+        size: 'small',
+        value: '46',
+        unit: '%',
+        deviceClass: 'humidity',
+        sourceDeviceId: 'thermostat',
+      },
+    ];
+    const shown = resolveDashboardShownSensorEntityIds('climate', devices, []);
+    expect(buildDashboardVisibilityResult(devices, [], shown).visibleDevices.sensors).toEqual(
+      devices.sensors
+    );
+    expect(
+      buildDashboardVisibilityResult(devices, [devices.sensors[0].id], shown).visibleDevices.sensors
+    ).toEqual([]);
+    expect(resolveDashboardShownSensorEntityIds('home', devices, [])).toEqual([]);
+  });
+});
 
 describe('resolveShouldIncludeFeatureCollections', () => {
   it('keeps feature collections enabled outside low-power mode', () => {

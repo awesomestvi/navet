@@ -84,7 +84,7 @@ export const useCardState = (
     }),
     [devices.calendars, devices.locks]
   );
-  const [cardSizes, setCardSizes] = useState<Record<string, CardSize>>(() => {
+  const [sizeOverrides, setSizeOverrides] = useState<Record<string, CardSize>>(() => {
     const stored = storage.get<Record<string, CardSize> | null>(STORAGE_KEYS[storageKey], null);
     if (stored) {
       return normalizeCardSizes(normalizePersistedEntityRecord(stored), {
@@ -93,28 +93,32 @@ export const useCardState = (
       });
     }
 
-    // Default: use sizes from devices
-    return normalizeCardSizes(
-      Object.fromEntries(
-        Object.values(devices)
-          .flat()
-          .map((device) => [device.id, device.size])
-      ),
-      {
-        calendarIds: new Set(devices.calendars.map((device) => device.id)),
-        lockIds: new Set(devices.locks.map((device) => device.id)),
-      }
-    );
+    return {};
   });
+  const cardSizes = useMemo(
+    () =>
+      normalizeCardSizes(
+        {
+          ...Object.fromEntries(
+            Object.values(devices)
+              .flat()
+              .map((device) => [device.id, device.size])
+          ),
+          ...sizeOverrides,
+        },
+        constrainedIds
+      ),
+    [devices, sizeOverrides, constrainedIds]
+  );
 
-  // Persist to localStorage whenever cardSizes changes
+  // Persist user choices; derive defaults from the current devices.
   useEffect(() => {
-    storage.set(STORAGE_KEYS[storageKey], cardSizes);
-    notifyPersistedStateChanged(STORAGE_KEYS[storageKey], cardSizes);
-  }, [cardSizes, storageKey]);
+    storage.set(STORAGE_KEYS[storageKey], sizeOverrides);
+    notifyPersistedStateChanged(STORAGE_KEYS[storageKey], sizeOverrides);
+  }, [sizeOverrides, storageKey]);
 
   useEffect(() => {
-    setCardSizes((prev) => normalizeCardSizes(prev, constrainedIds));
+    setSizeOverrides((prev) => normalizeCardSizes(prev, constrainedIds));
   }, [constrainedIds]);
 
   useEffect(() => {
@@ -129,7 +133,7 @@ export const useCardState = (
         constrainedIds
       );
 
-      setCardSizes((previous) =>
+      setSizeOverrides((previous) =>
         areCardSizeRecordsEqual(previous, normalizedValue) ? previous : normalizedValue
       );
     };
@@ -143,7 +147,7 @@ export const useCardState = (
 
   const updateCardSize = useCallback(
     (id: string, size: CardSize) => {
-      setCardSizes((prev) => ({ ...prev, [id]: normalizeCardSize(id, size, constrainedIds) }));
+      setSizeOverrides((prev) => ({ ...prev, [id]: normalizeCardSize(id, size, constrainedIds) }));
     },
     [constrainedIds]
   );

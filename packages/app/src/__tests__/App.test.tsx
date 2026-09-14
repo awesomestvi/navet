@@ -127,12 +127,15 @@ vi.mock('../features/dashboard/page', () => ({
   DashboardPage: () => {
     const connecting = useStoreWithEqualityFn(homeAssistantStore, (state) => state.connecting);
     const logout = useLogout();
-    const { setActiveProvider } = useAuthSession();
+    const { logout: disconnectProvider, setActiveProvider } = useAuthSession();
     return (
       <main>
         {connecting ? 'Connecting to Home Assistant...' : 'dashboard'}
         <button type="button" onClick={logout}>
           Logout
+        </button>
+        <button type="button" onClick={() => void disconnectProvider('home_assistant')}>
+          Disconnect provider
         </button>
         <button type="button" onClick={() => setActiveProvider('homey')}>
           Use Homey
@@ -950,6 +953,17 @@ describe('App Home Assistant connection recovery', () => {
     expect(localStorage.getItem('hassTokens')).toBe('{"data":"home-assistant-session"}');
     expect(localStorage.getItem('ha_auth_config')).toBeNull();
     expect(localStorage.getItem('ha-dashboard-config')).toBeNull();
+  });
+
+  it('shows login immediately after the final provider disconnects without a page refresh', async () => {
+    vi.useRealTimers();
+    setAuthenticatedSession();
+    await act(async () => {
+      render(<App />);
+    });
+    fireEvent.click(await screen.findByRole('button', { name: 'Disconnect provider' }));
+    await waitFor(() => expect(screen.getByText('login')).toBeInTheDocument());
+    expect(screen.queryByRole('button', { name: 'Disconnect provider' })).not.toBeInTheDocument();
   });
 
   it('keeps stale Home Assistant auth errors hidden after logout', async () => {

@@ -120,7 +120,9 @@ Current runtime feature scope:
 
 The app may keep multiple implemented sessions connected at once. Provider-scoped IDs and
 provider-owned state remain separate; selected provider collections are merged for dashboard use,
-while an active provider resolves operations that require a single feature-service owner.
+and entity-scoped operations resolve to the selected source's owning provider. Feature availability
+considers connected providers. A current session remains a legacy compatibility detail, not a
+user-facing priority or a requirement for exposing another connected provider's capabilities.
 
 ## Testing Expectations
 

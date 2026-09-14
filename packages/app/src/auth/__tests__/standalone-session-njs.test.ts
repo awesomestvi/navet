@@ -164,6 +164,18 @@ function seedAuth(
 }
 
 describe('production njs standalone OAuth sessions', () => {
+  it('keeps a verified anonymous browser cookie and binding stable across session checks', async () => {
+    const { store } = createStore();
+    const browser = await createBrowserSession(store);
+    const check = createRequest({
+      cookie: browser.cookie,
+      headers: { [AUTH_BINDING_HEADER]: browser.metadata.sessionId },
+    });
+    await store.handle(check.request);
+    expect(check.result.status).toBe(200);
+    expect(JSON.parse(check.result.body).sessionId).toBe(browser.metadata.sessionId);
+    expect(cookieHeader(check.request.headersOut['Set-Cookie'])).toBe(browser.cookie);
+  });
   it('binds the authenticated Home Assistant user to the browser session', async () => {
     const { store } = createStore();
     const browser = await createBrowserSession(store);

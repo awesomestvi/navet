@@ -4,8 +4,8 @@ import {
 } from '@navet/app/provider-runtime-registry';
 import type { IntegrationProviderFeature } from '@navet/app/provider-runtime-types';
 import type { IntegrationProviderId } from '@navet/app/types/provider';
+import { integrationStore } from '@navet/app/stores/integration-store';
 import {
-  getCurrentIntegrationProviderIdFromStore,
   getNativeIntegrationEntityId,
   resolveIntegrationProviderId,
 } from './integration-provider-context.service';
@@ -38,7 +38,6 @@ export function resolveCurrentProviderService<Service>(
 ): ResolvedFeatureService<Service> {
   return resolveProviderFeatureService({
     ...options,
-    providerId: options.providerId ?? getCurrentIntegrationProviderIdFromStore(),
   });
 }
 
@@ -64,9 +63,17 @@ export function resolveProviderService<Service>(options: {
 export function resolveProviderFeatureService<Service>(
   options: FeatureServiceResolverOptions<Service>
 ): ResolvedFeatureService<Service> {
-  const providerId = resolveProviderId(options.entityId, options.providerId);
-
-  if (!hasProviderFeature(providerId, options.feature)) {
+  const providerId =
+    options.entityId || options.providerId
+      ? resolveProviderId(options.entityId, options.providerId)
+      : integrationStore
+          .getState()
+          .selectedProviderIds.find(
+            (candidate) =>
+              hasProviderFeature(candidate, options.feature) &&
+              options.getService(getProviderRuntimeRegistration(candidate))
+          );
+  if (!providerId || !hasProviderFeature(providerId, options.feature)) {
     throw new Error(options.unsupportedMessage);
   }
 

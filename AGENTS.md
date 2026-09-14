@@ -9,10 +9,16 @@ Navet is a provider-neutral smart-home dashboard. It runs as a standalone Docker
 Assistant add-on through Ingress, and a Home Assistant custom panel.
 
 - Home Assistant is the reference adapter and supports the full feature set.
-- Homey and openHAB are implemented standalone providers for rooms, realtime entities, lighting,
+- Homey supports rooms, realtime entities, lighting, switches, sensors, locks, covers, thermostats, speaker
+  controls, runnable flows and moods, people, notifications, Insights history, device capabilities,
+  favorites, and app browsing.
+- openHAB is an implemented standalone provider for rooms, realtime entities, lighting,
   switches, and sensors.
 - Hubitat and SmartThings are planned catalog metadata only; they have no runtime adapters.
 - Shared product behavior belongs behind Navet-owned contracts, not Home Assistant payloads.
+- Connected providers are peers. Users choose entities or sources per feature; do not introduce a
+  global primary-provider preference. Route requests to each source's owning provider and expose
+  only capabilities its adapter supports.
 
 Target dependency direction:
 
@@ -82,6 +88,26 @@ second-stage reading.
 - Never use or suggest `--no-verify` for commits or pushes.
 - Preserve unrelated dirty-worktree changes.
 - The root `marketing/` directory is local and fully Git-ignored. Never force-add it.
+
+## Documentation Policy
+
+- Write product documentation for first-time users. Assume no knowledge of Navet's previous
+  releases, removed features, or internal terminology. Explain unfamiliar terms when needed.
+- Describe the current workflow directly: what users need, what they do, and what happens next.
+  Use current UI labels and concrete steps. Avoid historical comparisons such as "no setup code
+  is required"; reserve them for changelogs or migration guides where they help existing users.
+- Keep explanations clear, concise, and focused on the reader's task. Include technical details
+  when they help the intended audience choose, configure, troubleshoot, or contribute.
+- Update the relevant documentation whenever a change affects product behavior, capabilities,
+  architecture, setup, or supported workflows. A code change alone does not require a docs update.
+- Revise the existing explanation as a coherent whole. Remove obsolete instructions and verify
+  affected steps, examples, and links against the current implementation.
+- Document lasting behavior. Do not append patch-specific notes about individual bug fixes,
+  temporary workarounds, or implementation details. Put release-specific changes in the changelog
+  when requested.
+- Keep shared guidance provider-neutral. Explain provider or deployment differences in the
+  appropriate guide when they affect users, and link to it instead of duplicating instructions.
+- Apply this policy to area guides as well as product documentation.
 
 ## Work Efficiently
 

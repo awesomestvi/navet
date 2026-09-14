@@ -14,6 +14,7 @@ import { useEffect, useState } from 'react';
 import { resolveDashboardPerformanceProfile } from '../../dashboard/hooks/use-dashboard-performance-mode';
 import { getCachedEnergyStatistics } from '../services/energy-statistics-cache';
 import { getPowerStatisticsHistory } from '../services/energy-statistics-service';
+import { parseProviderScopedId } from '@navet/app/utils/provider-ids';
 import type { EnergyRange, EnergySeriesPoint } from '../types/energy.types';
 
 const REFRESH_MS = ENERGY_STATISTICS_REFRESH_INTERVAL;
@@ -222,7 +223,11 @@ export function useEnergyLoadHistory(
         const stats = await getCachedEnergyStatistics(
           `history:${resolvedEntityId}`,
           CACHE_TTL_MS,
-          () => getPowerStatisticsHistory(activeMessageClient, resolvedEntityId)
+          () =>
+            getPowerStatisticsHistory(
+              activeMessageClient,
+              parseProviderScopedId(resolvedEntityId)?.nativeId ?? resolvedEntityId
+            )
         );
         if (stats.length === 0) {
           setPoints(buildFallbackPoints(fallbackCurrentLoadW, fallbackSeedKey));

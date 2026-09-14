@@ -724,7 +724,7 @@ function getAllowedSizes(
       return ['extra-small', 'small'];
     case 'climate':
     case 'hvac':
-      return ['small', 'medium'];
+      return ['small', 'medium', 'large'];
     case 'calendars':
       return ['small', 'medium', 'large'];
     case 'weather':

@@ -493,6 +493,43 @@ describe('DashboardCardItem card locking', () => {
     expect(screen.queryByRole('button', { name: /^large\b/i })).not.toBeInTheDocument();
   });
 
+  it.each(['climate', 'hvac', 'media'] as const)(
+    'offers small, medium, and large sizes for %s cards and keeps a large selection',
+    (type) => {
+      const device: DeviceWithType =
+        type === 'media'
+          ? createMediaDevice()
+          : {
+              id: 'homey:living_room_climate',
+              name: 'Living Room Climate',
+              room: 'Living Room',
+              type,
+              size: 'medium',
+              temperature: 21,
+              currentTemperature: 20,
+              mode: 'auto',
+            };
+      const handleSizeChange = vi.fn();
+      renderWithProviders(
+        <DashboardCardItem
+          id={device.id}
+          size="large"
+          isEditMode
+          handleSizeChange={handleSizeChange}
+          device={device}
+        />
+      );
+      expect(renderCardMock).toHaveBeenCalledWith(expect.objectContaining({ size: 'large' }));
+
+      fireEvent.click(screen.getByRole('button', { name: 'Resize card' }));
+      expect(screen.getByRole('button', { name: /^small\b/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /^medium\s*\(/i })).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: /^large\b/i }));
+
+      expect(handleSizeChange).toHaveBeenCalledWith(device.id, 'large');
+    }
+  );
+
   it('lets single-sensor info cards use extra-small through large', () => {
     const { container } = renderWithProviders(
       <DashboardCardItem

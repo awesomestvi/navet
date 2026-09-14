@@ -1,11 +1,10 @@
-import { useIntegrationStore } from '@navet/app/hooks';
-import { useProviderSensorCollection } from '@navet/app/hooks/use-devices';
-import { integrationSelectors } from '@navet/app/stores/selectors';
+import { useDeviceCollectionsByKeys } from '@navet/app/hooks/use-devices';
 import type { SensorDevice } from '@navet/app/types/device.types';
 import { useMemo } from 'react';
 import type { EnergyProviderKpiMetric } from '../types/energy.types';
 
 const ENERGY_DEVICE_CLASSES = new Set(['energy', 'power', 'monetary']);
+const ENERGY_COLLECTION_KEYS = ['sensors'] as const;
 const ENERGY_UNITS = new Set(['w', 'kw', 'mw', 'wh', 'kwh', 'mwh', 'gwh']);
 const PREPAID_LABEL_PATTERN = /\b(prepaid|credit|balance|remaining|top[ -]?up)\b/i;
 const ENERGY_LABEL_PATTERN = /\b(energy|electricity|tariff|meter)\b/i;
@@ -32,8 +31,7 @@ function resolveMetricKind(sensor: {
 }
 
 export function useProviderEnergyKpiMetrics(): EnergyProviderKpiMetric[] {
-  const providerId = useIntegrationStore(integrationSelectors.currentProviderId);
-  const sensors = useProviderSensorCollection(providerId);
+  const { sensors } = useDeviceCollectionsByKeys(ENERGY_COLLECTION_KEYS);
 
   return useMemo(() => buildProviderEnergyKpiMetrics(sensors), [sensors]);
 }

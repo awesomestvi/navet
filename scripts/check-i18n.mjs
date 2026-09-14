@@ -271,6 +271,10 @@ const allowedIdenticalKeys = new Set([
   'security.alarm.action.pending',
   'widgets.assist.title',
   'dashboard.addCard.templates.assist.name',
+  // Homey product terminology and the commonly shared app abbreviation.
+  'providerDetails.sections.automations',
+  'providerDetails.sections.history',
+  'providerDetails.sections.apps',
   // This message contains only interpolated values and punctuation.
   'energy.dashboard.usageShareStatus',
 ]);
@@ -280,6 +284,7 @@ function isAllowedIdentical(language, key, value) {
     universallyAllowedIdenticalValues.has(value) ||
     allowedIdenticalValuesByLanguage[language]?.has(value) ||
     allowedIdenticalKeys.has(key) ||
+    (language === 'sv' && key === 'providerDetails.period' && value === 'Period') ||
     /^(?:https?:\/\/|media-source:\/\/|sensor\.|\{domain\}\.|extra-|tiny$|small$|medium$|large$)/.test(value) ||
     key.startsWith('dashboard.addCard.size.') ||
     (language === 'sv' && value === '{count} live') ||

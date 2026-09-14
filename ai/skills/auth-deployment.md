@@ -45,8 +45,11 @@ Navet currently runs in:
 
 ## Follow-Through
 
-If auth or deployment behavior changes, update:
+Follow the documentation policy in `AGENTS.md`. When a change affects Navet's lasting auth,
+deployment, setup, or supported workflows, update the relevant existing explanations in:
 
 - `README.md`
 - `docs/HOME_ASSISTANT.md`
 - relevant add-on or custom-component docs
+
+Do not add patch-specific notes or update every surface for an isolated bug fix.

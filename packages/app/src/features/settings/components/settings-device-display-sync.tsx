@@ -1,4 +1,5 @@
 import { Button, Input, ModalSurface } from '@navet/app/components/primitives';
+import type { DashboardProfileClientRecord } from '@navet/app/features/dashboard/clients/dashboard-profile-runtime-store';
 import {
   createDeviceDisplayProfileId,
   DEVICE_DISPLAY_PROFILE_LIMIT,
@@ -16,15 +17,18 @@ import { useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
 type DialogMode = 'copy' | 'create' | 'manage' | null;
+type DisplayClient = DashboardProfileClient & Partial<DashboardProfileClientRecord>;
 
 function clientSelectionRow({
   checked,
   client,
+  detail,
   onChange,
   styles,
 }: {
   checked: boolean;
-  client: DashboardProfileClient;
+  client: DisplayClient;
+  detail: string;
   onChange: () => void;
   styles: SettingsSectionStyles;
 }) {
@@ -36,7 +40,10 @@ function clientSelectionRow({
       onClick={onChange}
       className={`flex min-h-12 w-full items-center gap-3 rounded-[16px] border px-3 py-2 text-left transition-colors ${styles.borderColor} ${styles.softBg} ${styles.hoverBg}`}
     >
-      <span className={`min-w-0 flex-1 truncate text-sm ${styles.textColor}`}>{client.name}</span>
+      <span className="min-w-0 flex-1">
+        <span className={`block truncate text-sm ${styles.textColor}`}>{client.name}</span>
+        <span className={`block text-xs ${styles.mutedColor}`}>{detail}</span>
+      </span>
       {checked ? <Check className={`h-4 w-4 shrink-0 ${styles.textColor}`} /> : null}
     </button>
   );
@@ -47,11 +54,11 @@ export function SettingsDeviceDisplaySync({
   currentClient,
   styles,
 }: {
-  clients: DashboardProfileClient[];
+  clients: DisplayClient[];
   currentClient: DashboardProfileClient;
   styles: SettingsSectionStyles;
 }) {
-  const { t } = useI18n();
+  const { formatDateTime, t } = useI18n();
   const { error, loaded, policy, status, updatePolicy } = useDeviceDisplayProfileRuntimeStore(
     useShallow((state) => ({
       error: state.error,
@@ -61,12 +68,12 @@ export function SettingsDeviceDisplaySync({
       updatePolicy: state.updatePolicy,
     }))
   );
-  const allClients = useMemo<DashboardProfileClient[]>(
+  const allClients = useMemo<DisplayClient[]>(
     () => [
       currentClient,
       ...clients
         .filter((client) => client.id !== currentClient.id)
-        .map(({ id, kind, name }) => ({ id, kind, name })),
+        .sort((left, right) => (right.lastSeenAt ?? '').localeCompare(left.lastSeenAt ?? '')),
     ],
     [clients, currentClient]
   );
@@ -83,9 +90,7 @@ export function SettingsDeviceDisplaySync({
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
   const openCopy = () => {
-    setSelectedClientIds(
-      allClients.filter(({ id }) => id !== currentClient.id).map(({ id }) => id)
-    );
+    setSelectedClientIds([]);
     setActionError(false);
     setDialogMode('copy');
   };
@@ -371,6 +376,18 @@ export function SettingsDeviceDisplaySync({
               clientSelectionRow({
                 checked: selectedClientIds.includes(client.id),
                 client,
+                detail: [
+                  client.id === currentClient.id
+                    ? t('settings.system.clients.thisDashboard')
+                    : client.userName
+                      ? t('settings.system.clients.signedInAs', { name: client.userName })
+                      : null,
+                  client.lastSeenAt && Number.isFinite(Date.parse(client.lastSeenAt))
+                    ? formatDateTime(new Date(client.lastSeenAt))
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · '),
                 onChange: () => toggleClient(client.id),
                 styles,
               })

@@ -68,6 +68,19 @@ export function createHomeyProviderPackageRegistration(
 
   return {
     ...contractRegistration,
-    runtimeRegistration: createHomeyRuntimeRegistration(contractRegistration),
+    runtimeRegistration: createHomeyRuntimeRegistration(contractRegistration, () => {
+      const session = options.getSession?.();
+      const user = session?.user as { name?: string; email?: string } | undefined;
+      const homeys = session?.availableHomeys as { id: string; name: string }[] | undefined;
+      return {
+        profile: user?.name ? { name: user.name, email: user.email } : undefined,
+        installations: (homeys ?? []).map((homey) => ({
+          id: `homey:${homey.id}`,
+          name: homey.name,
+          current: homey.id === session?.selectedHomeyId,
+          available: true,
+        })),
+      };
+    }),
   };
 }

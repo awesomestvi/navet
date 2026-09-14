@@ -6,6 +6,7 @@ import { integrationSelectors } from '@navet/app/stores/selectors';
 import { useMemo } from 'react';
 import { useIntegrationStore } from './use-integration-store';
 import { useProviderEntitySnapshots } from './use-provider-entity';
+import type { IntegrationProviderId } from '@navet/app/types/provider';
 
 export type ProviderBatterySensorRow = PlatformBatterySensorRow;
 
@@ -13,8 +14,12 @@ function selectEmptyBatteryRows(): ProviderBatterySensorRow[] {
   return [];
 }
 
-export function useProviderBatterySensorRows(): ProviderBatterySensorRow[] {
-  const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
+export function useProviderBatterySensorRows(
+  providerId?: IntegrationProviderId
+): ProviderBatterySensorRow[] {
+  const currentProviderId = useIntegrationStore(
+    (state) => providerId ?? integrationSelectors.currentProviderId(state)
+  );
   const entities = useProviderEntitySnapshots({
     providerId: currentProviderId,
     enabled: currentProviderId === 'home_assistant',

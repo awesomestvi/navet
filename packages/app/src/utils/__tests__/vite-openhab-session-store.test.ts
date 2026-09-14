@@ -79,6 +79,7 @@ describe('vite openHAB session store', () => {
       'https://openhab.example.net/proxy'
     );
     expect(normalizeOpenHABBaseUrl('http://192.168.1.22:8080')).toBe('http://192.168.1.22:8080');
+    expect(normalizeOpenHABBaseUrl('http://localhost:8080/')).toBe('http://localhost:8080');
     expect(normalizeOpenHABBaseUrl('https://[fd00::1]:8443/base')).toBe(
       'https://[fd00::1]:8443/base'
     );
@@ -88,7 +89,9 @@ describe('vite openHAB session store', () => {
       'https://8.8.8.8',
       'http://169.254.169.254/latest/meta-data',
       'https://metadata.google.internal',
-      'http://localhost:8080',
+      'http://127.0.0.1:8080',
+      'http://[::1]:8080',
+      'http://openhab.localhost:8080',
       'http://user:password@openhab.local',
       'http://openhab.local/base?target=other',
       'http://openhab.local/base#fragment',

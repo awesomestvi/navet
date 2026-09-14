@@ -95,6 +95,7 @@ interface EnergyKpiPreference {
 interface EnergyKpiPreferences {
   version: 1;
   byProvider: Record<string, EnergyKpiPreference>;
+  shared?: EnergyKpiPreference;
 }
 
 const DEFAULT_ENERGY_KPI_PREFERENCES: EnergyKpiPreferences = {
@@ -545,7 +546,7 @@ export function EnergyDetailedHistoryWorkspace({
       : [...automaticProviderMetrics, ...rangeMetrics]
   ).slice(0, 4);
   const currentKpiPreference = normalizeEnergyKpiPreference(
-    kpiPreferences.byProvider[currentProviderId]
+    kpiPreferences.shared ?? kpiPreferences.byProvider[currentProviderId]
   );
   const usageMetrics =
     currentKpiPreference.mode === 'custom'
@@ -554,9 +555,9 @@ export function EnergyDetailedHistoryWorkspace({
   const updateKpiPreference = (nextPreference: EnergyKpiPreference) => {
     setKpiPreferences((current) => ({
       version: 1,
+      shared: nextPreference,
       byProvider: {
         ...(current?.version === 1 ? current.byProvider : {}),
-        [currentProviderId]: nextPreference,
       },
     }));
   };

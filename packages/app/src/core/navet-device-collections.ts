@@ -57,13 +57,17 @@ function readStringArray(value: unknown): string[] | undefined {
 
 function toBaseDevice(entity: NavetEntity, state: EntityStateRecord) {
   const underlyingDeviceId = readDeviceId(state);
+  const defaultSize =
+    entity.type === 'climate' || entity.type === 'hvac' || entity.type === 'media_player'
+      ? 'medium'
+      : 'small';
 
   return {
     id: entity.canonicalId,
     name: entity.name,
     room: entity.room ?? 'Unknown',
     roomId: entity.roomId,
-    size: readString(state.size, 'small') as
+    size: readString(state.size, defaultSize) as
       | 'small'
       | 'medium'
       | 'large'

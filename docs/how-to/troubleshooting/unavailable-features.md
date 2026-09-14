@@ -26,11 +26,11 @@ Within a supported section, an individual control appears only when the entity r
 required capability. For example, a light without color capability does not receive a color
 picker.
 
-## Check the active provider
+## Check the selected source
 
-Multi-provider installations can aggregate selected entities, but one provider remains active for
-operations requiring a single advanced feature service. Open **Settings → System → Providers** and
-review **Active**.
+Open the card or feature's editing controls and check its selected entity. The entity's provider
+must be connected and support the requested capability. Review connections in
+**Settings → System → Providers**.
 
 ![An unavailable alarm card with its controls disabled.](/docs/how-to/troubleshooting/unavailable-section.webp)
 

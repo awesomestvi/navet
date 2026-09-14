@@ -182,16 +182,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (initializationSkipped) {
-      return;
-    }
-
     let cancelled = false;
     let initInFlight = false;
     let retryAttempt = 0;
     let retryPending = false;
     let retryTimer: number | null = null;
-    setReady(false);
+    if (!initializationSkipped) setReady(false);
     setError(null);
     const unsubscribe = integrationSessionRuntime.subscribe((nextSnapshot, nextSession) => {
       if (cancelled) {
@@ -273,7 +269,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       void initialize();
     }
 
-    void initialize();
+    if (!initializationSkipped) void initialize();
     window.addEventListener('online', recoverInitialization);
     document.addEventListener('visibilitychange', recoverInitialization);
 
@@ -414,7 +410,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logout: async (providerId) => {
         await integrationSessionRuntime.logout(providerId);
         setSnapshot(integrationSessionRuntime.getSnapshot());
-        setSession(fromProviderSessionInput(integrationSessionRuntime.getSession()));
+        const nextSession = fromProviderSessionInput(integrationSessionRuntime.getSession());
+        setSession(nextSession);
+        if (!nextSession) {
+          setInitializationSkipped(true);
+          setReady(true);
+        }
         setError(null);
       },
       refresh: async (providerId) => {

@@ -501,6 +501,33 @@ describe('AuthProvider OAuth refresh durability', () => {
     expect(screen.getByTestId('session')).toHaveTextContent('none');
   });
 
+  it('keeps the dashboard authenticated when logout leaves another provider connected', async () => {
+    await renderAuthProvider();
+    const homeySession = createHomeySession();
+    integrationSessionRuntimeMock.logout.mockImplementationOnce(async () => {
+      integrationSessionRuntimeMock.getSnapshot.mockReturnValue(createHomeySnapshot(homeySession));
+      integrationSessionRuntimeMock.getSession.mockReturnValue(homeySession);
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Log out' }));
+    });
+    expect(screen.getByTestId('session')).toHaveTextContent('homey');
+    expect(screen.getByTestId('ready')).toHaveTextContent('ready');
+    expect(screen.getByTestId('error')).toHaveTextContent('none');
+  });
+
+  it('retains authentication when provider disconnection fails', async () => {
+    await renderAuthProvider();
+    integrationSessionRuntimeMock.logout.mockRejectedValueOnce(
+      new Error('session deletion failed')
+    );
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Log out' }));
+    });
+    expect(integrationSessionRuntimeMock.logout).toHaveBeenCalled();
+    expect(screen.getByTestId('session')).toHaveTextContent('home_assistant');
+  });
+
   it('returns a refreshed retained Home Assistant session while Homey stays active', async () => {
     const homeAssistantSession = createStandaloneSession(Date.now() + 61_000);
     const refreshedHomeAssistantSession = createStandaloneSession(Date.now() + 3_600_000);
@@ -563,5 +590,8 @@ describe('AuthProvider OAuth refresh durability', () => {
     });
 
     expect(screen.getByTestId('session')).toHaveTextContent('none');
+    expect(screen.getByTestId('ready')).toHaveTextContent('ready');
+    expect(screen.getByTestId('error')).toHaveTextContent('none');
+    expect(integrationSessionRuntimeMock.init).toHaveBeenCalledTimes(1);
   });
 });

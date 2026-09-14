@@ -5,7 +5,12 @@ import type {
 } from '@navet/app/platform/provider-feature-models';
 import type { ProviderEntityRuntimeService } from '@navet/app/platform/provider-feature-services';
 import { areDataEqual } from '@navet/core/structural-equality';
-import type { HomeyCapabilityState, HomeyDevice, HomeySnapshot } from '@navet/provider-homey';
+import {
+  getHomeyDeviceProfile,
+  type HomeyCapabilityState,
+  type HomeyDevice,
+  type HomeySnapshot,
+} from '@navet/provider-homey';
 import { homeyService } from './homey.service';
 
 const EMPTY_ENTITY_REGISTRY: PlatformEntityRegistryEntry[] = [];
@@ -96,6 +101,8 @@ function toCapabilityEntityState(value: unknown): string {
 }
 
 function toCapabilityDeviceClass(capabilityId: string): string | undefined {
+  if (capabilityId === 'meter_power') return 'energy';
+  if (capabilityId.startsWith('meter_')) return capabilityId.slice('meter_'.length);
   if (capabilityId.startsWith('measure_')) {
     return capabilityId.slice('measure_'.length);
   }
@@ -123,10 +130,34 @@ function toEntitySnapshots(snapshot: HomeySnapshot): PlatformEntitySnapshotMap {
 
   for (const device of Object.values(snapshot.devices)) {
     const room = resolveHomeyRoom(device, snapshot);
+    const profile = getHomeyDeviceProfile(device);
+    const state = profile?.state;
     const nextDeviceSnapshot = {
       entityId: device.id,
-      state: normalizeHomeyState(device),
+      state: typeof state?.value === 'string' ? state.value : normalizeHomeyState(device),
       attributes: {
+        ...state,
+        ...(profile?.type === 'climate'
+          ? {
+              temperature: state?.temperature,
+              current_temperature: state?.currentTemperature,
+              hvac_modes: state?.supportedClimateModes,
+              min_temp: state?.minTemperature,
+              max_temp: state?.maxTemperature,
+              target_temp_step: state?.temperatureStep,
+              unit_of_measurement: state?.temperatureUnit === 'fahrenheit' ? '°F' : '°C',
+              current_humidity: state?.humidity,
+            }
+          : {}),
+        ...(profile?.type === 'media_player'
+          ? {
+              volume_level: typeof state?.volume === 'number' ? state.volume / 100 : undefined,
+              is_volume_muted: state?.isMuted,
+              media_title: state?.title,
+              media_artist: state?.artist,
+              media_album_name: state?.album,
+            }
+          : {}),
         friendly_name: device.name,
         room,
         zone: room,
@@ -137,20 +168,16 @@ function toEntitySnapshots(snapshot: HomeySnapshot): PlatformEntitySnapshotMap {
     const previousDeviceSnapshot = previousEntities?.[device.id];
     const previousDevice = previousSnapshot?.devices[device.id];
     entities[device.id] =
-      previousDeviceSnapshot &&
-      previousDevice &&
-      previousDevice.name === device.name &&
-      previousDevice.zone === device.zone &&
-      previousDevice.available === device.available &&
-      previousDevice.class === device.class &&
-      previousDevice.capabilitiesObj?.onoff?.value === device.capabilitiesObj?.onoff?.value &&
-      previousDevice.capabilitiesObj?.dim?.value === device.capabilitiesObj?.dim?.value &&
-      resolveHomeyRoom(previousDevice, previousSnapshot) === room
+      previousDeviceSnapshot && areDataEqual(previousDeviceSnapshot, nextDeviceSnapshot)
         ? previousDeviceSnapshot
         : nextDeviceSnapshot;
 
     for (const [capabilityId, capability] of Object.entries(device.capabilitiesObj ?? {})) {
-      if (!capabilityId.startsWith('measure_') && !capabilityId.startsWith('alarm_')) {
+      if (
+        !capabilityId.startsWith('measure_') &&
+        !capabilityId.startsWith('meter_') &&
+        !capabilityId.startsWith('alarm_')
+      ) {
         continue;
       }
 
@@ -223,7 +250,11 @@ function toEntityRegistryEntries(snapshot: HomeySnapshot): PlatformEntityRegistr
     );
 
     for (const [capabilityId, capability] of Object.entries(device.capabilitiesObj ?? {})) {
-      if (!capabilityId.startsWith('measure_') && !capabilityId.startsWith('alarm_')) {
+      if (
+        !capabilityId.startsWith('measure_') &&
+        !capabilityId.startsWith('meter_') &&
+        !capabilityId.startsWith('alarm_')
+      ) {
         continue;
       }
 

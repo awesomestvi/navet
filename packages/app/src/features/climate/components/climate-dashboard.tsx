@@ -1,4 +1,6 @@
 import { DashboardGroupingNavigation } from '@navet/app/components/patterns';
+import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
+import { usePersistedState } from '@navet/app/hooks/use-persisted-state';
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import { DeviceGrid } from '@navet/app/features/dashboard/device-grid';
 import {
@@ -74,9 +76,31 @@ export const ClimateDashboard = memo(function ClimateDashboard({
   optimizeOffscreenPaint,
 }: ClimateDashboardProps) {
   const { t } = useI18n();
+  const [weatherSourceId] = usePersistedState<string | null>(
+    STORAGE_KEYS.climateWeatherSource,
+    null
+  );
+  const weatherDevices = useMemo(
+    () => [...deviceMap.values()].filter((device) => device.type === 'weather'),
+    [deviceMap]
+  );
+  const resolvedWeatherSourceId =
+    weatherSourceId !== null
+      ? weatherDevices.some((device) => device.id === weatherSourceId)
+        ? weatherSourceId
+        : null
+      : weatherDevices.length === 1
+        ? weatherDevices[0].id
+        : null;
   const overview = useMemo(
-    () => buildClimateDashboardOverview(deviceMap.values(), temperatureUnit, t),
-    [deviceMap, t, temperatureUnit]
+    () =>
+      buildClimateDashboardOverview(
+        deviceMap.values(),
+        temperatureUnit,
+        t,
+        resolvedWeatherSourceId
+      ),
+    [deviceMap, t, temperatureUnit, resolvedWeatherSourceId]
   );
   const [groupingMode, setGroupingMode] = useState<ClimateGroupingMode>('type');
   const [selectedGroupIds, setSelectedGroupIds] = useState<Record<ClimateGroupingMode, string>>({

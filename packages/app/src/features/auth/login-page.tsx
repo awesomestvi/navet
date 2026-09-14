@@ -7,11 +7,7 @@ import {
   chooseDiscoveredHomeAssistantUrl,
   fetchHomeAssistantDiscovery,
 } from '@navet/app/auth/homeAssistantDiscovery';
-import {
-  approveInstallationSetup,
-  fetchInstallationSetupStatus,
-} from '@navet/app/auth/installation-setup';
-import { formatOneTimeCode } from '@navet/app/auth/one-time-code';
+
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { cn } from '@navet/app/components/ui/utils';
 import { getRuntimeConfig } from '@navet/app/config/runtime-config';
@@ -31,8 +27,6 @@ const DeviceConnectionPanel = lazy(() =>
     default: module.DeviceConnectionPanel,
   }))
 );
-
-const DOCKER_SETUP_COMMAND = 'docker exec navet navet-setup-code';
 
 type LoginIconProps = SVGProps<SVGSVGElement>;
 
@@ -154,10 +148,7 @@ export function LoginPage({ initialError = '' }: { initialError?: string }) {
   const [isDiscovering, setIsDiscovering] = useState(!initialUrl.current);
   const [discoveredUrl, setDiscoveredUrl] = useState<string | null>(null);
   const [providerId, setProviderId] = useState<IntegrationProviderId | null>(null);
-  const [setupState, setSetupState] = useState<
-    'idle' | 'checking' | 'ready' | 'approval_required' | 'unavailable' | 'error'
-  >('idle');
-  const [setupCode, setSetupCode] = useState('');
+
   const [connectingDevice, setConnectingDevice] = useState(false);
   const [deviceConnectionAvailable, setDeviceConnectionAvailable] = useState(false);
   const [openhabUsername, setOpenhabUsername] = useState('');
@@ -193,25 +184,6 @@ export function LoginPage({ initialError = '' }: { initialError?: string }) {
       .catch(() => undefined);
     return () => controller.abort();
   }, []);
-
-  useEffect(() => {
-    if (!providerId) {
-      setSetupState('idle');
-      return;
-    }
-
-    const controller = new AbortController();
-    setSetupState('checking');
-    void fetchInstallationSetupStatus(providerId, controller.signal)
-      .then((status) => setSetupState(status.state))
-      .catch((setupError) => {
-        if (setupError instanceof DOMException && setupError.name === 'AbortError') {
-          return;
-        }
-        setSetupState('error');
-      });
-    return () => controller.abort();
-  }, [providerId]);
 
   useEffect(() => {
     if (initialError) {
@@ -285,37 +257,6 @@ export function LoginPage({ initialError = '' }: { initialError?: string }) {
       return;
     }
 
-    if (setupState === 'approval_required') {
-      if (!setupCode.trim()) {
-        setError('Enter the setup code from your Navet installation.');
-        return;
-      }
-      setIsLoading(true);
-      try {
-        await approveInstallationSetup(setupCode);
-        const status = await fetchInstallationSetupStatus(providerId);
-        setSetupState(status.state);
-        if (status.state !== 'ready') {
-          setError(
-            'That setup code could not approve this connection. Check the code and try again.'
-          );
-        }
-      } catch (setupError) {
-        setSetupState('error');
-        setError(
-          setupError instanceof Error ? setupError.message : 'Navet could not check the setup code.'
-        );
-      } finally {
-        setIsLoading(false);
-      }
-      return;
-    }
-
-    if (setupState !== 'ready') {
-      setError('Navet needs to finish checking this connection before you continue.');
-      return;
-    }
-
     setIsLoading(true);
     try {
       if (!requiresUrl) {
@@ -383,9 +324,7 @@ export function LoginPage({ initialError = '' }: { initialError?: string }) {
   const translatedHeadingText = connectingDevice
     ? 'Connect this device'
     : provider
-      ? setupState === 'approval_required'
-        ? 'Connect your home securely'
-        : t('login.connectProviderTitle', { provider: provider.label })
+      ? t('login.connectProviderTitle', { provider: provider.label })
       : t('login.providerChooser.title');
   const urlFieldLabel = provider
     ? t('login.providerUrlLabel', { provider: provider.label })
@@ -395,15 +334,13 @@ export function LoginPage({ initialError = '' }: { initialError?: string }) {
   const introText = connectingDevice
     ? 'Use a phone or computer where Navet is already signed in. Your provider credentials stay on the Navet server.'
     : provider
-      ? setupState === 'approval_required'
-        ? `Before you sign in, approve the first ${provider.label} connection using the setup code from your Navet installation.`
-        : provider.id === 'openhab'
-          ? 'Enter your openHAB URL, username, and password to connect directly from Navet.'
-          : provider.loginMode === 'url_session'
-            ? t('login.providerIntro.urlSession', { provider: provider.label })
-            : requiresUrl
-              ? t('login.providerIntro.urlOauth', { provider: provider.label })
-              : t('login.providerIntro.cloudOauth', { provider: provider.label })
+      ? provider.id === 'openhab'
+        ? 'Enter your openHAB URL, username, and password to connect directly from Navet.'
+        : provider.loginMode === 'url_session'
+          ? t('login.providerIntro.urlSession', { provider: provider.label })
+          : requiresUrl
+            ? t('login.providerIntro.urlOauth', { provider: provider.label })
+            : t('login.providerIntro.cloudOauth', { provider: provider.label })
       : t('login.providerChooser.description');
 
   return (
@@ -477,7 +414,6 @@ export function LoginPage({ initialError = '' }: { initialError?: string }) {
                               type="button"
                               onClick={() => {
                                 setProviderId(candidateId);
-                                setSetupCode('');
                                 setError('');
                               }}
                               aria-label={candidate.label}
@@ -578,80 +514,7 @@ export function LoginPage({ initialError = '' }: { initialError?: string }) {
                   </div>
                   {hasSelectedProvider && provider ? (
                     <div className="space-y-5 pt-5">
-                      {setupState === 'checking' ? (
-                        <div
-                          className="flex min-h-32 items-center justify-center gap-3"
-                          role="status"
-                        >
-                          <Loader2 className="h-5 w-5 animate-spin text-orange-300" />
-                          <span className={`text-sm ${mutedColor}`}>
-                            {t('login.setup.checkingConnection')}
-                          </span>
-                        </div>
-                      ) : setupState === 'approval_required' ? (
-                        <div className="space-y-4">
-                          <div className="rounded-2xl border border-orange-300/20 bg-orange-400/8 p-4">
-                            <p className={`text-sm font-medium ${textColor}`}>
-                              {t('login.setup.title')}
-                            </p>
-                            <p className={`mt-1 text-sm leading-6 ${mutedColor}`}>
-                              {t('login.setup.description')}
-                            </p>
-                          </div>
-                          <div className="space-y-2">
-                            <label
-                              htmlFor="setup-code"
-                              className={`block text-sm font-medium ${textColor}`}
-                            >
-                              {t('login.setup.codeLabel')}
-                            </label>
-                            <input
-                              id="setup-code"
-                              value={setupCode}
-                              onChange={(event) =>
-                                setSetupCode(formatOneTimeCode(event.target.value, 16))
-                              }
-                              autoCapitalize="characters"
-                              autoComplete="one-time-code"
-                              maxLength={19}
-                              spellCheck={false}
-                              placeholder={t('login.setup.codePlaceholder')}
-                              className={`min-h-12 w-full rounded-xl border px-3 py-2.5 font-mono text-sm tracking-wider outline-none transition-[border-color,box-shadow] focus-visible:border-orange-400/50 focus-visible:ring-2 focus-visible:ring-orange-400/25 ${fieldInputClassName}`}
-                              disabled={isLoading}
-                            />
-                            <p className={`text-xs leading-5 ${mutedColor}`}>
-                              {t('login.setup.dockerInstruction')}{' '}
-                              <code
-                                className={`ml-1 inline-flex whitespace-nowrap rounded-md border px-1.5 py-0.5 font-mono text-[0.7rem] font-medium leading-none ${surface.subtleBg} ${surface.borderStrong} ${textColor}`}
-                              >
-                                {DOCKER_SETUP_COMMAND}
-                              </code>
-                              . {t('login.setup.otherInstruction')}
-                            </p>
-                          </div>
-                        </div>
-                      ) : setupState === 'error' ? (
-                        <div className="space-y-4">
-                          <p className={`text-sm leading-6 ${mutedColor}`}>
-                            {t('login.setup.checkFailed')}
-                          </p>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const selected = providerId;
-                              setProviderId(null);
-                              window.setTimeout(() => setProviderId(selected), 0);
-                            }}
-                            className="min-h-11 w-full rounded-full border border-white/12 bg-white/6 px-4 text-sm font-medium text-white transition-colors hover:bg-white/10"
-                          >
-                            {t('settings.system.clients.historyRetry')}
-                          </button>
-                        </div>
-                      ) : setupState === 'unavailable' ? (
-                        <p className={`text-sm leading-6 ${mutedColor}`}>
-                          {t('login.setup.providerUnavailable')}
-                        </p>
-                      ) : requiresUrl ? (
+                      {requiresUrl ? (
                         <>
                           <div className="space-y-2">
                             <label
@@ -720,62 +583,53 @@ export function LoginPage({ initialError = '' }: { initialError?: string }) {
                         </>
                       ) : null}
 
-                      {setupState === 'ready' || setupState === 'approval_required' ? (
-                        <div className="space-y-2">
-                          <div className="h-px bg-white/8" />
-                          <button
-                            type="submit"
-                            disabled={isLoading}
-                            className="mt-4 inline-flex min-h-12 w-full items-center justify-center rounded-full border border-orange-300/20 bg-[linear-gradient(180deg,#fb923c,#f97316)] px-4 py-3 text-white shadow-[0_18px_42px_-24px_rgba(249,115,22,0.88)] transition-transform duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            {isLoading ? (
-                              <span className="flex items-center justify-center gap-2">
-                                <Loader2 className="h-5 w-5 animate-spin" />
-                                {setupState === 'approval_required'
-                                  ? 'Checking code…'
-                                  : t('login.connecting')}
-                              </span>
-                            ) : setupState === 'approval_required' ? (
-                              'Approve connection'
-                            ) : (
-                              t('login.actions.continue')
-                            )}
-                          </button>
+                      <div className="space-y-2">
+                        <div className="h-px bg-white/8" />
+                        <button
+                          type="submit"
+                          disabled={isLoading}
+                          className="mt-4 inline-flex min-h-12 w-full items-center justify-center rounded-full border border-orange-300/20 bg-[linear-gradient(180deg,#fb923c,#f97316)] px-4 py-3 text-white shadow-[0_18px_42px_-24px_rgba(249,115,22,0.88)] transition-transform duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {isLoading ? (
+                            <span className="flex items-center justify-center gap-2">
+                              <Loader2 className="h-5 w-5 animate-spin" />
+                              {t('login.connecting')}
+                            </span>
+                          ) : (
+                            t('login.actions.continue')
+                          )}
+                        </button>
 
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setProviderId(null);
-                              setSetupCode('');
-                              setError('');
-                            }}
-                            className="min-h-11 w-full rounded-full border border-white/12 bg-white/6 px-4 text-sm font-medium text-white transition-colors hover:bg-white/10"
-                          >
-                            {t('login.actions.back')}
-                          </button>
-                        </div>
-                      ) : null}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setProviderId(null);
+                            setError('');
+                          }}
+                          className="min-h-11 w-full rounded-full border border-white/12 bg-white/6 px-4 text-sm font-medium text-white transition-colors hover:bg-white/10"
+                        >
+                          {t('login.actions.back')}
+                        </button>
+                      </div>
 
-                      {setupState === 'ready' ? (
-                        <p className={`text-center text-xs leading-5 ${mutedColor}`}>
-                          {!requiresUrl
-                            ? t('login.hint.cloudOauth', {
-                                provider: provider.label,
-                                signInProvider: providerSignInLabel ?? provider.label,
-                              })
-                            : provider.id === 'openhab'
-                              ? 'Navet will connect directly to your openHAB server with the URL and credentials you provide.'
-                              : provider.loginMode === 'url_session'
-                                ? t('login.hint.urlSession', { provider: provider.label })
-                                : !usesOAuthRedirect
-                                  ? t('login.connectProviderTitle', { provider: provider.label })
-                                  : isDiscovering
-                                    ? t('login.hint.discoverySearching')
-                                    : discoveredUrl
-                                      ? t('login.hint.discoveryFound')
-                                      : t('login.hint.oauthReturn', { provider: provider.label })}
-                        </p>
-                      ) : null}
+                      <p className={`text-center text-xs leading-5 ${mutedColor}`}>
+                        {!requiresUrl
+                          ? t('login.hint.cloudOauth', {
+                              provider: provider.label,
+                              signInProvider: providerSignInLabel ?? provider.label,
+                            })
+                          : provider.id === 'openhab'
+                            ? 'Navet will connect directly to your openHAB server with the URL and credentials you provide.'
+                            : provider.loginMode === 'url_session'
+                              ? t('login.hint.urlSession', { provider: provider.label })
+                              : !usesOAuthRedirect
+                                ? t('login.connectProviderTitle', { provider: provider.label })
+                                : isDiscovering
+                                  ? t('login.hint.discoverySearching')
+                                  : discoveredUrl
+                                    ? t('login.hint.discoveryFound')
+                                    : t('login.hint.oauthReturn', { provider: provider.label })}
+                      </p>
                     </div>
                   ) : null}
                 </>

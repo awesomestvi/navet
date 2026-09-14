@@ -51,10 +51,11 @@ describe('useProviderEnergyData', () => {
     });
   });
 
-  it('returns the Home Assistant energy snapshot when Home Assistant is active', () => {
+  it('returns the Home Assistant energy snapshot when Home Assistant is selected alongside another provider', () => {
     integrationStore.setState({
       ...integrationStore.getState(),
-      currentProviderId: 'home_assistant',
+      currentProviderId: 'openhab',
+      selectedProviderIds: ['openhab', 'home_assistant'],
     });
 
     const { result } = renderHookWithProviders(() => useProviderEnergyData('now'));
@@ -69,6 +70,7 @@ describe('useProviderEnergyData', () => {
     integrationStore.setState({
       ...integrationStore.getState(),
       currentProviderId: 'homey',
+      selectedProviderIds: ['homey'],
     });
 
     const { result } = renderHookWithProviders(() => useProviderEnergyData('now'));
