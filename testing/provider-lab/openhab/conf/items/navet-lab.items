@@ -3,6 +3,9 @@ Group NavetLivingRoom "Living room" (NavetHome) ["LivingRoom"]
 Group NavetKitchen "Kitchen" (NavetHome) ["Kitchen"]
 Group NavetBedroom "Bedroom" (NavetHome) ["Bedroom"]
 Group NavetHallway "Hallway" (NavetHome) ["Hallway"]
+Group NavetOffice "Office" (NavetHome) ["Office"]
+Group NavetBathroom "Bathroom" (NavetHome) ["Bathroom"]
+Group NavetLaundry "Laundry" (NavetHome) ["LaundryRoom"]
 Group NavetGarden "Garden" (NavetHome) ["Garden"]
 
 Group NavetLivingCeiling "Living room ceiling" (NavetLivingRoom) ["Lightbulb"]
@@ -11,13 +14,13 @@ Dimmer NavetLivingCeiling_Brightness "Living room ceiling brightness" <light> (N
 Color NavetLivingAccent_Color "Living room accent" <light> (NavetLivingRoom) ["Control", "Light"]
 
 Switch NavetKitchenCoffee_Power "Coffee maker" <switch> (NavetKitchen) ["Control"]
-Number:Power NavetKitchenCoffee_PowerUsage "Coffee maker power [%.0f W]" <energy> (NavetKitchen) ["Measurement", "Power"]
-Number:Energy NavetKitchenCoffee_Energy "Coffee maker energy [%.2f kWh]" <energy> (NavetKitchen) ["Measurement", "Energy"]
+Number:Power NavetKitchenCoffee_PowerUsage "Coffee maker power [%.0f W]" <energy> (NavetKitchen) ["Measurement", "Power"] { unit="W" }
+Number:Energy NavetKitchenCoffee_Energy "Coffee maker energy [%.2f kWh]" <energy> (NavetKitchen) ["Measurement", "Energy"] { unit="kWh" }
 
-Number:Temperature NavetLiving_Temperature "Living room temperature [%.1f °C]" <temperature> (NavetLivingRoom) ["Measurement", "Temperature"]
-Number:Dimensionless NavetLiving_Humidity "Living room humidity [%.0f %%]" <humidity> (NavetLivingRoom) ["Measurement", "Humidity"]
-Number:Dimensionless NavetLiving_CO2 "Living room CO₂ [%.0f ppm]" <carbondioxide> (NavetLivingRoom) ["Measurement", "CO2"]
-Number:Illuminance NavetGarden_Illuminance "Garden illuminance [%.0f lx]" <sun> (NavetGarden) ["Measurement", "Light"]
+Number:Temperature NavetLiving_Temperature "Living room temperature [%.1f °C]" <temperature> (NavetLivingRoom) ["Measurement", "Temperature"] { unit="°C" }
+Number:Dimensionless NavetLiving_Humidity "Living room humidity [%.0f %%]" <humidity> (NavetLivingRoom) ["Measurement", "Humidity"] { unit="%" }
+Number:Dimensionless NavetLiving_CO2 "Living room CO₂ [%.0f ppm]" <carbondioxide> (NavetLivingRoom) ["Measurement", "CO2"] { unit="ppm" }
+Number:Illuminance NavetGarden_Illuminance "Garden illuminance [%.0f lx]" <sun> (NavetGarden) ["Measurement", "Light"] { unit="lx" }
 
 Contact NavetHallway_FrontDoor "Front door contact" <door> (NavetHallway) ["OpenState"]
 Switch NavetHallway_FrontDoorLock "Front door lock" <lock> (NavetHallway) ["Lock"]
@@ -30,3 +33,34 @@ Dimmer NavetBedroom_FanSpeed "Bedroom fan speed [%d %%]" <fan> (NavetBedroom) ["
 String NavetMedia_State "Speaker state [%s]" <soundvolume> (NavetLivingRoom) ["Status"]
 Dimmer NavetMedia_Volume "Speaker volume [%d %%]" <soundvolume> (NavetLivingRoom) ["Control"]
 DateTime NavetLastActivity "Last activity [%1$tF %1$tR]" <time> (NavetHallway) ["Status"]
+
+// Everyday device and household measurement coverage.
+Contact NavetBedroom_Window "Bedroom window" <window> (NavetBedroom) ["OpenState"]
+Number:Dimensionless NavetBedroom_WindowBattery "Bedroom window battery [%.0f %%]" <battery> (NavetBedroom) ["Measurement"] { unit="%" }
+Contact NavetOffice_Presence "Office occupancy" <presence> (NavetOffice) ["Status"]
+Contact NavetHallway_Smoke "Hallway smoke alarm" <fire> (NavetHallway) ["Status"]
+Contact NavetHallway_CO "Hallway CO alarm" <gas> (NavetHallway) ["Status"]
+Number:Dimensionless NavetHallway_AlarmBattery "Smoke alarm battery [%.0f %%]" <battery> (NavetHallway) ["Measurement"] { unit="%" }
+Number:Dimensionless NavetOffice_CO2 "Office CO₂ [%.0f ppm]" <carbondioxide> (NavetOffice) ["Measurement", "CO2"] { unit="ppm" }
+Number NavetOffice_PM25 "Office PM2.5 [%.0f μg/m³]" <qualityofservice> (NavetOffice) ["Measurement"]
+Number NavetOffice_TVOC "Office TVOC [%.0f ppb]" <qualityofservice> (NavetOffice) ["Measurement"]
+Number:Temperature NavetBathroom_Temperature "Bathroom temperature [%.1f °C]" <temperature> (NavetBathroom) ["Measurement", "Temperature"] { unit="°C" }
+Number:Dimensionless NavetBathroom_Humidity "Bathroom humidity [%.0f %%]" <humidity> (NavetBathroom) ["Measurement", "Humidity"] { unit="%" }
+Number:Temperature NavetBedroom_RadiatorTarget "Radiator target temperature [%.1f °C]" <temperature> (NavetBedroom) ["Setpoint", "Temperature"] { unit="°C" }
+Number:Temperature NavetBedroom_RadiatorTemperature "Radiator temperature [%.1f °C]" <temperature> (NavetBedroom) ["Measurement", "Temperature"] { unit="°C" }
+Switch NavetLaundry_WasherPower "Washing machine plug" <switch> (NavetLaundry) ["Control"]
+Number:Power NavetLaundry_WasherUsage "Washing machine power [%.0f W]" <energy> (NavetLaundry) ["Measurement", "Power"] { unit="W" }
+Number:Energy NavetLaundry_WasherEnergy "Washing machine energy [%.2f kWh]" <energy> (NavetLaundry) ["Measurement", "Energy"] { unit="kWh" }
+Number:Temperature NavetKitchen_FreezerTemperature "Freezer temperature [%.1f °C]" <temperature> (NavetKitchen) ["Measurement", "Temperature"] { unit="°C" }
+Contact NavetKitchen_FreezerAlarm "Freezer temperature alarm" <temperature> (NavetKitchen) ["Status"]
+Number:Dimensionless NavetGarden_SoilMoisture "Garden soil moisture [%.0f %%]" <humidity> (NavetGarden) ["Measurement"] { unit="%" }
+Switch NavetGarden_Irrigation "Garden irrigation valve" <water> (NavetGarden) ["Control"]
+Switch NavetLaundry_WaterValve "Main water shutoff valve" <water> (NavetLaundry) ["Control"]
+Number:Power NavetLaundry_HousePower "Household power [%.0f W]" <energy> (NavetLaundry) ["Measurement", "Power"] { unit="W" }
+Number:Energy NavetLaundry_HouseEnergy "Household energy [%.2f kWh]" <energy> (NavetLaundry) ["Measurement", "Energy"] { unit="kWh" }
+Number:Volume NavetLaundry_WaterMeter "Water meter [%.3f m³]" <water> (NavetLaundry) ["Measurement"] { unit="m³" }
+Number:Volume NavetLaundry_GasMeter "Gas meter [%.3f m³]" <gas> (NavetLaundry) ["Measurement"] { unit="m³" }
+Number:Speed NavetGarden_Wind "Garden wind speed [%.1f m/s]" <wind> (NavetGarden) ["Measurement"] { unit="m/s" }
+Number:Pressure NavetGarden_Pressure "Garden pressure [%.0f hPa]" <pressure> (NavetGarden) ["Measurement"] { unit="hPa" }
+Number:Length NavetGarden_Rain "Garden rainfall [%.1f mm]" <rain> (NavetGarden) ["Measurement"] { unit="mm" }
+Rollershutter NavetLiving_Curtains "Living room curtains [%d %%]" <rollershutter> (NavetLivingRoom) ["Control"]

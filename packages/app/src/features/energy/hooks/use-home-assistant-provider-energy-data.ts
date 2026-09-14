@@ -1,6 +1,6 @@
 import { useProviderBatterySensorRows, useProviderHealth } from '@navet/app/hooks';
-import { useMemo } from 'react';
 import { createProviderScopedId } from '@navet/app/utils/provider-ids';
+import { useMemo } from 'react';
 import type { EnergyRange, EnergySeriesPoint } from '../types/energy.types';
 import { useEnergyHaData } from './use-energy-ha-data';
 import { useEnergyLoadHistory } from './use-energy-load-history';

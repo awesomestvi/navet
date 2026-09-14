@@ -1,14 +1,14 @@
+import type { ProviderHubSnapshot } from '@navet/core/provider-hub';
 import { createProviderRoomManagementCapabilities } from '@navet/core/provider-room-management';
 import type {
   IntegrationProviderRuntimeRegistration,
   ProviderContractRegistration,
 } from '@navet/core/provider-runtime-types';
-import { getHomeyEntityRuntimeService, callHomeyService } from './homey-bridge';
-import { homeyNativeActionFeatureService } from './homey-native-action-feature.service';
+import { callHomeyService, getHomeyEntityRuntimeService } from './homey-bridge';
 import { homeyHistoryFeatureService, homeyHubFeatureService } from './homey-hub.service';
+import { homeyNativeActionFeatureService } from './homey-native-action-feature.service';
 import { homeyNotificationFeatureService } from './homey-notification-feature.service';
 import { homeySecurityFeatureService } from './homey-security-feature.service';
-import type { ProviderHubSnapshot } from '@navet/core/provider-hub';
 
 export const homeyRoomManagementCapabilities = createProviderRoomManagementCapabilities('homey', {
   discover: true,

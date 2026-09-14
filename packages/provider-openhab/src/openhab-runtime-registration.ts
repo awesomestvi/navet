@@ -4,6 +4,11 @@ import type {
   ProviderContractRegistration,
 } from '@navet/core/provider-runtime-types';
 import { openhabEntityRuntimeService } from './openhab-entity-runtime.service';
+import {
+  openHABClimateFeatureService,
+  openHABNativeActionFeatureService,
+  openHABSecurityFeatureService,
+} from './openhab-feature-services';
 
 export const openHABRoomManagementCapabilities = createProviderRoomManagementCapabilities(
   'openhab',
@@ -27,8 +32,8 @@ export function createOpenHABRuntimeRegistration(
       rooms: true,
       lighting: true,
       sensors: true,
-      climate: false,
-      mediaControls: false,
+      climate: true,
+      mediaControls: true,
       mediaBrowse: false,
       mediaArtwork: false,
       cameraSnapshot: false,
@@ -42,5 +47,8 @@ export function createOpenHABRuntimeRegistration(
     },
     roomManagementCapabilities: openHABRoomManagementCapabilities,
     entityRuntimeService: openhabEntityRuntimeService,
+    climateFeatureService: openHABClimateFeatureService,
+    nativeActionFeatureService: openHABNativeActionFeatureService,
+    securityFeatureService: openHABSecurityFeatureService,
   };
 }

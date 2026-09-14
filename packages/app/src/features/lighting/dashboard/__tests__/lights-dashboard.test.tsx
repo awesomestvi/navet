@@ -10,6 +10,7 @@ const dispatchEntityCommandMock = vi.hoisted(() => vi.fn());
 const toastErrorMock = vi.hoisted(() => vi.fn());
 const toastWarningMock = vi.hoisted(() => vi.fn());
 const providerModels = vi.hoisted(() => ({ value: {} as Record<string, NavetEntity> }));
+const scrollIntoViewMock = vi.fn();
 
 vi.mock('@navet/app/commands', () => ({
   dispatchEntityCommand: dispatchEntityCommandMock,
@@ -96,6 +97,11 @@ function renderDashboard(
 
 describe('LightsDashboard', () => {
   beforeEach(() => {
+    scrollIntoViewMock.mockClear();
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: scrollIntoViewMock,
+    });
     providerModels.value = {};
     setLightsPowerMock.mockReset();
     setLightsPowerMock.mockResolvedValue({ succeeded: 1, failed: 0, skippedUnavailable: 0 });
@@ -166,6 +172,27 @@ describe('LightsDashboard', () => {
         room.getAttribute('data-lights-room-id')
       )
     ).toEqual(['Hallway', 'Kitchen', 'Living room']);
+  });
+
+  it('opens the unavailable light room and focuses its row from the summary pill', () => {
+    renderDashboard(
+      [kitchen, hallway],
+      [lightEntity(kitchen), lightEntity(hallway, { availability: 'unavailable' })]
+    );
+    expect(screen.queryByTestId('lights-room-grid-Hallway')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Open Unavailable' }));
+    expect(screen.getByTestId('lights-room-grid-Hallway')).toBeInTheDocument();
+    expect(document.activeElement).toHaveAttribute('data-light-entity-id', 'light.hallway');
+    expect(scrollIntoViewMock).toHaveBeenCalledWith({ behavior: 'smooth', block: 'center' });
+    expect(setLightsPowerMock).not.toHaveBeenCalled();
+    expect(dispatchEntityCommandMock).not.toHaveBeenCalled();
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Detailed controls and status for Hallway' })
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Open Unavailable' }));
+    expect(document.activeElement).toHaveAttribute('data-light-entity-id', 'light.hallway');
+    expect(scrollIntoViewMock).toHaveBeenCalledTimes(2);
   });
 
   it('blocks duplicate room, whole-home, and scene commands while a batch is pending', async () => {

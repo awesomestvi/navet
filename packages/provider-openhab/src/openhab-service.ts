@@ -61,6 +61,8 @@ function normalizeOpenHABItem(value: unknown): OpenHABItem | null {
     label: typeof item.label === 'string' ? item.label : undefined,
     category: typeof item.category === 'string' ? item.category : null,
     state: typeof item.state === 'string' ? item.state : undefined,
+    unitSymbol: typeof item.unitSymbol === 'string' ? item.unitSymbol : undefined,
+    lastStateUpdate: typeof item.lastStateUpdate === 'number' ? item.lastStateUpdate : undefined,
     tags: Array.isArray(item.tags)
       ? item.tags.filter((tag): tag is string => typeof tag === 'string' && tag.length > 0)
       : [],
@@ -95,6 +97,10 @@ function normalizeOpenHABItem(value: unknown): OpenHABItem | null {
     metadata:
       item.metadata && typeof item.metadata === 'object'
         ? {
+            unit:
+              item.metadata.unit && typeof item.metadata.unit.value === 'string'
+                ? { value: item.metadata.unit.value }
+                : undefined,
             semantics:
               item.metadata.semantics && typeof item.metadata.semantics === 'object'
                 ? {

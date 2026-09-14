@@ -1,4 +1,5 @@
 import type { DeviceWithType } from '@navet/app/types/device.types';
+import { collapseSecurityBatteryDevices } from './security-battery-rows';
 
 const SECURITY_OPENING_KINDS = new Set(['door', 'window', 'garageDoor', 'opening']);
 const SECURITY_CRITICAL_KINDS = new Set(['smoke', 'carbonMonoxide', 'gas', 'safety']);
@@ -90,7 +91,7 @@ function isSecuritySummaryCandidate(device: DeviceWithType): boolean {
   );
 }
 
-function getSecuritySummarySeverity(
+export function getSecuritySummarySeverity(
   device: DeviceWithType
 ): 'critical' | 'warning' | 'unknown' | 'active' | 'normal' {
   if (
@@ -101,21 +102,35 @@ function getSecuritySummarySeverity(
     return device.securitySeverity === 'unknown' ? 'unknown' : 'normal';
   }
 
-  if (device.securitySeverity) {
-    return device.securitySeverity;
-  }
-
-  if (device.type === 'locks') {
-    return device.state === false ? 'warning' : 'normal';
-  }
   if (device.type === 'covers') {
+    if (device.securitySeverity === 'unknown') return 'unknown';
     return getNumber(device.position) !== null && getNumber(device.position) !== 0
       ? 'warning'
+      : 'normal';
+  }
+  if (device.type === 'cameras' || device.securityKind === 'camera') {
+    if (
+      device.securitySeverity === 'unknown' ||
+      (device.type === 'cameras' && (device.state === 'unavailable' || device.state === 'unknown'))
+    ) {
+      return 'unknown';
+    }
+    return device.type === 'cameras' &&
+      ['streaming', 'recording', 'on'].includes(device.state ?? '')
+      ? 'active'
       : 'normal';
   }
   if (device.type === 'sensors') {
     if (device.status === 'unavailable') {
       return 'unknown';
+    }
+    // Cards display the current normalized status; old severity metadata must not
+    // turn a cleared sensor into an alert in a summary.
+    if (device.status === 'clear') {
+      return 'normal';
+    }
+    if (device.securitySeverity) {
+      return device.securitySeverity;
     }
 
     const securityKind = typeof device.securityKind === 'string' ? device.securityKind : undefined;
@@ -168,11 +183,11 @@ function getSecuritySummarySeverity(
 
     return 'normal';
   }
-  if (device.type === 'cameras') {
-    if (device.motionDetected === true) {
-      return 'active';
-    }
-    return 'normal';
+  if (device.securitySeverity) {
+    return device.securitySeverity;
+  }
+  if (device.type === 'locks') {
+    return device.state === false ? 'warning' : 'normal';
   }
 
   return 'normal';
@@ -287,7 +302,10 @@ function collapseCameraVariants(devices: DeviceWithType[]): DeviceWithType[] {
   ];
 }
 
-export function collapseOverlappingSecurityDevices(devices: DeviceWithType[]): DeviceWithType[] {
+export function collapseOverlappingSecurityDevices(
+  sourceDevices: DeviceWithType[]
+): DeviceWithType[] {
+  const devices = collapseSecurityBatteryDevices(sourceDevices);
   const openingDevices = devices.filter(isOpeningSecurityDevice);
   if (openingDevices.length < 2) {
     return devices;

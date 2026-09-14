@@ -1,6 +1,7 @@
 import { integrationStore } from '@navet/app/stores/integration-store';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 const services = vi.hoisted(() => ({
   home_assistant: { getSnapshot: vi.fn(), subscribePersistentNotifications: vi.fn() },
   homey: { getSnapshot: vi.fn(), subscribePersistentNotifications: vi.fn() },
@@ -10,6 +11,7 @@ vi.mock('@navet/app/provider-runtime-registry', () => ({
     notificationFeatureService: services[id],
   }),
 }));
+
 import { useProviderNotificationSnapshot } from './use-provider-notification-snapshot';
 
 describe('shared provider notifications', () => {

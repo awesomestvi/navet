@@ -2523,13 +2523,7 @@ export function MediaDashboard({
             </div>
           </div>
         )
-      ) : (
-        <div className={quietPanelClassName}>
-          <p className={`text-sm ${surface.textSecondary}`}>
-            {t('media.dashboard.browserUnsupportedDetail')}
-          </p>
-        </div>
-      )}
+      ) : null}
     </section>
   );
 

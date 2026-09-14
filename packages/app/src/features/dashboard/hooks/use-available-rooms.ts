@@ -1,4 +1,5 @@
 import { isAllRooms } from '@navet/app/constants/rooms';
+import { normalizeRoomName } from '@navet/app/utils/room-name';
 import { useMemo } from 'react';
 
 type RoomInput = string | { name: string; key?: string; canonicalId?: string; area_id?: string };
@@ -8,46 +9,29 @@ function toRoomName(room: RoomInput): string {
   return typeof room === 'string' ? room : room.name;
 }
 
-function toRoomKey(room: RoomInput): string {
-  if (typeof room === 'string') {
-    return room.trim().toLocaleLowerCase();
-  }
-
-  if (typeof room.key === 'string' && room.key.length > 0) {
-    return room.key;
-  }
-
-  if (typeof room.canonicalId === 'string' && room.canonicalId.length > 0) {
-    return room.canonicalId;
-  }
-
-  return room.name.trim().toLocaleLowerCase();
-}
-
 export function useAvailableRooms(
   baseRooms: RoomInput[],
   discoveredRooms: RoomInput[] = EMPTY_DISCOVERED_ROOMS
 ) {
-  const areaRooms = useMemo(
-    () =>
-      baseRooms
-        .map((room) => ({
-          key: toRoomKey(room),
-          name: toRoomName(room).trim(),
-        }))
-        .filter((room) => room.name && !isAllRooms(room.name)),
-    [baseRooms]
-  );
+  const areaRooms = useMemo(() => {
+    const roomsByKey = new Map<string, { key: string; name: string }>();
+    for (const room of baseRooms) {
+      const name = toRoomName(room).trim();
+      const key = normalizeRoomName(name);
+      if (name && !isAllRooms(name) && !roomsByKey.has(key)) roomsByKey.set(key, { key, name });
+    }
+    return [...roomsByKey.values()];
+  }, [baseRooms]);
 
   const availableRooms = useMemo(() => {
     const roomMap = new Map<string, string>();
 
     for (const room of areaRooms) {
-      roomMap.set(room.key, room.name);
+      if (!roomMap.has(room.key)) roomMap.set(room.key, room.name);
     }
 
     for (const room of discoveredRooms) {
-      const key = toRoomKey(room);
+      const key = normalizeRoomName(toRoomName(room));
       const name = toRoomName(room).trim();
       if (!name || isAllRooms(name) || roomMap.has(key)) {
         continue;

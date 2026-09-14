@@ -242,6 +242,7 @@ export interface SensorDevice extends BaseDevice {
   deviceClass?: string;
   groupMembers?: string[];
   sourceDeviceId?: string;
+  sourceDeviceName?: string;
   status?: 'measurement' | 'active' | 'clear' | 'unavailable';
   lastUpdated?: string;
   alarmState?: NavetAlarmState;

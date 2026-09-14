@@ -6,6 +6,17 @@ import {
 } from './use-kiosk-room-swipe-navigation';
 
 describe('kiosk room swipe navigation', () => {
+  it('matches the active and hidden rooms by name and skips duplicate provider labels', () => {
+    expect(
+      getAdjacentKioskRoom({
+        activeRoom: 'KITCHEN',
+        direction: 'next',
+        hiddenRoomNames: ['BEDROOM'],
+        rooms: ['Kitchen', 'kitchen', 'Bedroom', 'Living Room'],
+      })
+    ).toBe('Living Room');
+  });
+
   it('moves through visible rooms without wrapping', () => {
     const rooms = ['All', 'Kitchen', 'Hidden room', 'Living Room'];
 

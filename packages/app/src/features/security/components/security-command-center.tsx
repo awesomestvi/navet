@@ -677,7 +677,7 @@ function ActivityPanel({
 
   const activityContent = (
     <div className="relative isolate" data-testid="security-activity-content">
-      {historyError || (!isLoading && !historyAvailable) ? (
+      {historyError || (!isLoading && !historyAvailable && visibleEvents.length === 0) ? (
         <div
           className={`flex items-center gap-2 px-3 py-2 text-xs ${surface.textSecondary}`}
           role="status"

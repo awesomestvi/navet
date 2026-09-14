@@ -3,8 +3,8 @@ import {
   hasProviderFeature,
 } from '@navet/app/provider-runtime-registry';
 import type { IntegrationProviderFeature } from '@navet/app/provider-runtime-types';
-import type { IntegrationProviderId } from '@navet/app/types/provider';
 import { integrationStore } from '@navet/app/stores/integration-store';
+import type { IntegrationProviderId } from '@navet/app/types/provider';
 import {
   getNativeIntegrationEntityId,
   resolveIntegrationProviderId,

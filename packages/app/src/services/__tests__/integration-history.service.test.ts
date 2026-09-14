@@ -28,6 +28,47 @@ describe('integrationHistoryService', () => {
     integrationStore.getState().setCurrentProviderId('home_assistant');
   });
 
+  it.each(['batch', 'fallback'])(
+    'skips unsupported entities during strict %s history requests',
+    async (mode) => {
+      const getEntityHistory = vi.fn(async ({ entityId }: { entityId: string }) => ({
+        entityId,
+        points: [],
+      }));
+      const getEntityHistories = vi.fn(async ({ entityIds }: { entityIds: string[] }) =>
+        entityIds.map((entityId) => ({ entityId, points: [] }))
+      );
+      getProviderRuntimeRegistrationMock.mockReturnValue({
+        historyFeatureService: {
+          supportsEntityHistory: (id: string) => id === 'detector#alarm_motion',
+          getEntityHistory,
+          ...(mode === 'batch' ? { getEntityHistories } : {}),
+        },
+      });
+      await expect(
+        getIntegrationEntityHistory({ entityId: 'homey:lock', startTime: '2026-09-12T10:00:00Z' })
+      ).resolves.toBeNull();
+      expect(getEntityHistory).not.toHaveBeenCalled();
+      await expect(
+        getIntegrationEntityHistories(
+          {
+            entityIds: ['homey:lock', 'homey:detector#alarm_motion'],
+            startTime: '2026-09-12T10:00:00Z',
+          },
+          { requireComplete: true }
+        )
+      ).resolves.toEqual([{ entityId: 'homey:detector#alarm_motion', points: [] }]);
+      if (mode === 'batch')
+        expect(getEntityHistories).toHaveBeenCalledWith(
+          expect.objectContaining({ entityIds: ['detector#alarm_motion'] })
+        );
+      else
+        expect(getEntityHistory).toHaveBeenCalledWith(
+          expect.objectContaining({ entityId: 'detector#alarm_motion' })
+        );
+    }
+  );
+
   it('propagates native batch failures when the caller requires complete history', async () => {
     getProviderRuntimeRegistrationMock.mockReturnValue({
       historyFeatureService: {

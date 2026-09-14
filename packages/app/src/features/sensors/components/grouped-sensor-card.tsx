@@ -141,6 +141,7 @@ export const GroupedSensorCard = memo(function GroupedSensorCard({
           {isEmpty ? null : (
             <EntityCardHeader
               title={name}
+              titleOverflow="wrap"
               subtitle={t('widgets.common.widget')}
               layout="eyebrow-first"
               size={size}

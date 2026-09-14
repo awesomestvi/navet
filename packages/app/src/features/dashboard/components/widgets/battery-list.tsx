@@ -1,5 +1,7 @@
 import { CompactMeterListItem } from '@navet/app/components/patterns';
 import { OverlayScrollArea } from '@navet/app/components/primitives';
+import { useI18n } from '@navet/app/hooks';
+import { Battery, BatteryWarning } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { memo, useId, useState } from 'react';
 import { BATTERY_LEVEL_COLORS, BATTERY_LEVEL_THRESHOLDS } from './battery-constants';
@@ -59,12 +61,16 @@ export function BatteryLevelIcon({ level, color, className }: BatteryLevelIconPr
   );
 }
 
+export interface BatteryListDevice {
+  id: string;
+  name: string;
+  level: number | null;
+  status?: 'low' | 'okay' | 'unavailable';
+  entityIds?: string[];
+}
+
 interface BatteryListItemProps {
-  device: {
-    id: string;
-    name: string;
-    level: number;
-  };
+  device: BatteryListDevice;
   isCompact: boolean;
   subtleFill: string;
   textSecondary: string;
@@ -80,22 +86,46 @@ export const BatteryListItem = memo(function BatteryListItem({
   textSecondaryStyle,
   getLevelColor,
 }: BatteryListItemProps) {
-  const color = getLevelColor(device.level);
+  const { t } = useI18n();
+  const color =
+    device.status === 'low'
+      ? getLevelColor(0)
+      : device.level === null
+        ? 'currentColor'
+        : getLevelColor(device.level);
+  const StatusIcon = device.status === 'low' ? BatteryWarning : Battery;
+  const value =
+    device.level !== null
+      ? `${device.level}%`
+      : device.status === 'low'
+        ? t('sensors.battery.low')
+        : device.status === 'okay'
+          ? t('sensors.battery.okay')
+          : t('common.unavailable');
 
   return (
-    <CompactMeterListItem
-      label={device.name}
-      value={`${device.level}%`}
-      level={device.level}
-      color={color}
-      subtleFill={subtleFill}
-      textSecondary={textSecondary}
-      textSecondaryStyle={textSecondaryStyle}
-      isCompact={isCompact}
-      leading={
-        <BatteryLevelIcon level={device.level} color={color} className="h-3.5 w-3.5 shrink-0" />
-      }
-    />
+    <div
+      data-battery-entity-ids={device.entityIds?.join(' ')}
+      tabIndex={device.entityIds ? -1 : undefined}
+    >
+      <CompactMeterListItem
+        label={device.name}
+        value={value}
+        level={device.level}
+        color={color}
+        subtleFill={subtleFill}
+        textSecondary={textSecondary}
+        textSecondaryStyle={textSecondaryStyle}
+        isCompact={isCompact}
+        leading={
+          device.level !== null ? (
+            <BatteryLevelIcon level={device.level} color={color} className="h-3.5 w-3.5 shrink-0" />
+          ) : (
+            <StatusIcon aria-hidden="true" className="h-3.5 w-3.5 shrink-0" style={{ color }} />
+          )
+        }
+      />
+    </div>
   );
 });
 
@@ -161,11 +191,7 @@ function VirtualizedBatteryList({
 }
 
 interface BatteryListProps {
-  devices: Array<{
-    id: string;
-    name: string;
-    level: number;
-  }>;
+  devices: BatteryListDevice[];
   isCompact: boolean;
   subtleFill: string;
   textSecondary: string;

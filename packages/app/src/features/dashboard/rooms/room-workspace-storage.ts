@@ -45,7 +45,7 @@ export function loadOrMigrateRoomWorkspaceV2(
   { persist = true, legacyAllName, idFactory }: LoadOrMigrateRoomWorkspaceV2Options = {}
 ): RoomWorkspaceV2 {
   const persistedWorkspace = readRoomWorkspaceV2();
-  const workspace = persistedWorkspace
+  const loadedWorkspace = persistedWorkspace
     ? reconcileRoomWorkspaceV2(persistedWorkspace, discoveredRooms, {
         idFactory,
       } satisfies ReconcileRoomWorkspaceV2Options)
@@ -57,6 +57,8 @@ export function loadOrMigrateRoomWorkspaceV2(
         legacyAllName,
         idFactory,
       });
+
+  const workspace = reconcileRoomWorkspaceV2(loadedWorkspace, [], { idFactory });
 
   if (persist) {
     writeRoomWorkspaceV2(workspace);

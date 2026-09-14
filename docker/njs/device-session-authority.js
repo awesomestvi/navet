@@ -819,7 +819,7 @@ function invalidateProviderDevices(r) {
   const providerId = String(body.providerId || '');
   const primaryIds = primaryProviderCookieIds(r);
   if (!PROVIDERS[providerId] || !primaryIds[providerId]) {
-    sendJson(r, 403, { error: 'A signed-in primary provider session is required' });
+    sendJson(r, 403, { error: 'Use your primary device to disconnect this provider.' });
     return;
   }
   let names = [];

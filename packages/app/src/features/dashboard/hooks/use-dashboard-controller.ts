@@ -5,6 +5,7 @@ import {
   isAllRooms,
 } from '@navet/app/constants/rooms';
 import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
+import { isSecurityDashboardDevice } from '@navet/app/features/security/utils/security-camera-dashboard-model';
 import type { DeviceCollectionKey } from '@navet/app/hooks';
 import {
   buildDashboardVisibilityResult,
@@ -34,6 +35,7 @@ import type { DeviceCollection, DeviceWithType } from '@navet/app/types/device.t
 import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
 import { logPerformanceDecision } from '@navet/app/utils/performance-diagnostics';
 import { buildAggregatedRooms } from '@navet/app/utils/provider-rooms';
+import { normalizeRoomName, roomNamesMatch } from '@navet/app/utils/room-name';
 import {
   startTransition,
   useCallback,
@@ -107,7 +109,7 @@ const CLIMATE_SECTION_DEVICE_KEYS = [
   'sensors',
   'weather',
 ] as const;
-const LIGHTS_SECTION_DEVICE_KEYS = ['lights'] as const;
+const LIGHTS_SECTION_DEVICE_KEYS = ['lights', 'scenes'] as const;
 const EMPTY_SECTION_DEVICE_KEYS: readonly DeviceCollectionKey[] = [];
 const FEATURE_COLLECTION_ENTITY_ID_PATTERN = /(?:^|:)(?:calendar|weather)\./;
 const CLIMATE_DASHBOARD_GROUPS: DashboardClimateSectionGroup[] = [
@@ -270,8 +272,8 @@ export function useDashboardController(): DashboardController {
     [activeDashboard?.homeRoomNames, rooms]
   );
   const visibleRooms = useMemo(() => {
-    const hiddenRooms = new Set(effectiveHiddenRoomNames);
-    return dashboardRooms.filter((room) => !hiddenRooms.has(room));
+    const hiddenRooms = new Set(effectiveHiddenRoomNames.map(normalizeRoomName));
+    return dashboardRooms.filter((room) => !hiddenRooms.has(normalizeRoomName(room)));
   }, [dashboardRooms, effectiveHiddenRoomNames]);
 
   const { activeRoom, preferredRoom, changeRoom, fallbackRoom } = useRoomNavigation(
@@ -344,7 +346,7 @@ export function useDashboardController(): DashboardController {
       visibleCards.filter(
         (card) =>
           card.room !== HOME_WIDGET_ROOM &&
-          (card.room === activeRoom || isAllRooms(card.room)) &&
+          (roomNamesMatch(card.room, activeRoom) || isAllRooms(card.room)) &&
           !activeHomeCustomCards.includes(card)
       ),
     [activeHomeCustomCards, activeRoom, visibleCards]
@@ -709,12 +711,16 @@ export function resolveDashboardShownSensorEntityIds(
   devices: DeviceCollection,
   shownSensorEntityIds: string[]
 ): string[] {
-  if (activeSection !== 'climate') return shownSensorEntityIds;
+  if (activeSection !== 'climate' && activeSection !== 'security') return shownSensorEntityIds;
   return [
     ...new Set([
       ...shownSensorEntityIds,
       ...devices.sensors
-        .filter((sensor) => getClimateDashboardGroup({ ...sensor, type: 'sensors' }) !== null)
+        .filter((sensor) =>
+          activeSection === 'security'
+            ? isSecurityDashboardDevice(sensor)
+            : getClimateDashboardGroup({ ...sensor, type: 'sensors' }) !== null
+        )
         .map((sensor) => sensor.id),
     ]),
   ];

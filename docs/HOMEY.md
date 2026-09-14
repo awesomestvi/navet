@@ -109,25 +109,47 @@ to add it to an existing dashboard. Sign in with your Athom account.
   mute, and other controls when Homey exposes writable capabilities. Media browsing and speaker
   grouping are not available through this adapter.
 - Manually runnable Flows and Advanced Flows, along with Moods, are available as scene cards.
-- Under **Settings → System → Providers**, open Homey's menu and choose **Browse and manage**
-  to view devices, zones, Flows, Moods, people, notifications, apps, your available Homeys, and
-  Insights. Your Homey account name and email appear in provider details. Device controls
-  follow Homey's writable capabilities. Favorite changes update the signed-in Homey user's
-  favorite devices and Flows; these are separate from Navet's dashboard favorites.
-- You can change your own presence and sleep status. Other household members are read-only.
 - Insights can show the last 24 hours, 7 days, or 31 days. Device sensor history is available when
   Homey exposes a matching Insights log. This does not provide Home Assistant-style energy
   configuration or statistics.
 - Hiding a Homey notification in Navet leaves the notification in Homey. App updates and hub
   restarts remain managed in Homey.
 - Availability depends on your Homey version and the permissions granted to the OAuth client.
-  An unavailable resource category shows an error while devices remain usable.
-- Dedicated camera, calendar, weather, Assist, task, security, and provider room
+- Dedicated camera, calendar, weather, Assist, task, and provider room
   administration services are not registered for Homey.
 - In a standalone installation, Homey can stay connected alongside Home Assistant or openHAB;
   selected providers are combined in shared dashboard collections.
 - You do not need to enter a separate Homey base URL.
 - If you sign out from Navet, the stored Homey session is cleared from the Navet side.
+
+## Scenes and flows
+
+Homey Moods and manually triggerable Flows, including Advanced Flows, appear as scene shortcuts
+in **Lights** and under **Household → Routines → Quick actions**. Select a shortcut or its **Run**
+button to activate its Mood or run its Flow through Homey. Disabled Flows
+are not offered as shortcuts.
+
+## Energy readings
+
+Homey devices with power or electricity meters appear in **Energy** alongside devices from other
+connected providers. Power and energy readings from the same Homey device share a device row.
+Current power uses the live reading; today's electricity consumption uses recorded changes in a
+matching Insights meter log. A lifetime meter total is not treated as today's consumption.
+
+Whole-home, grid, and solar totals use their configured sources. Navet does not add individual
+device readings to a household meter, since those readings can overlap. Homey Insights do not
+provide the dashboard's aggregate statistics or whole-home source configuration.
+
+## Security readings
+
+Homey contact, motion, occupancy, presence, smoke, carbon monoxide, gas, water leak, heat, tamper,
+vibration, sound, and battery alarms appear automatically in **Security**. Battery levels are
+included in system health, with low levels marked for attention. Other Homey alarm capabilities
+appear as problem readings. Sensors you hide stay hidden. Missing readings and unavailable
+devices are shown as unknown rather than clear.
+
+Recent activity includes recorded changes for entities with Homey Insights history. Current activity
+stays visible when an entity has no recorded history.
 
 ## Troubleshooting
 

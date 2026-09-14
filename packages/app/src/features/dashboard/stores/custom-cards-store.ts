@@ -6,6 +6,7 @@ import {
   removeLocalStorageWithMigration,
   writeLocalStorageWithMigration,
 } from '@navet/app/utils/local-storage-migration';
+import { roomNamesMatch } from '@navet/app/utils/room-name';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { normalizeMediaStackWidgetData } from '../components/widgets/media-stack-widget-data';
@@ -194,7 +195,9 @@ export const useCustomCardsStore = create<CustomCardsState>()(
         if (isAllRooms(room)) {
           return cards;
         }
-        return cards.filter((card) => card.room === room || card.room === ALL_ROOMS_ID);
+        return cards.filter(
+          (card) => roomNamesMatch(card.room, room) || card.room === ALL_ROOMS_ID
+        );
       },
     }),
     {

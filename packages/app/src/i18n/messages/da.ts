@@ -810,6 +810,9 @@ export const daMessages = {
     'Tilslut og administrer smarthjemudbydere på denne enhed.',
   'settings.system.providers.connect': 'Forbind',
   'settings.system.providers.disconnect': 'Afbryd forbindelsen',
+  'settings.system.providers.disconnectTitle': 'Afbryd forbindelsen til {provider}?',
+  'settings.system.providers.disconnectDescription':
+    'Dette afbryder forbindelsen til {provider} på alle tilsluttede enheder. Du kan oprette forbindelse igen senere.',
   'settings.system.providers.notConnected': 'Ikke forbundet på denne enhed',
   'settings.system.providers.homeAssistantUrlPlaceholder': 'https://homeassistant.local:8123',
   'settings.system.providers.openhabLater':
@@ -1800,6 +1803,9 @@ export const daMessages = {
   'humidifier.type.humidifier': 'Luftfugter',
   'humidifier.type.dehumidifier': 'Affugter',
   'sensors.single': 'Sensor',
+  'sensors.battery.label': 'Batteri',
+  'sensors.battery.low': 'Lavt batteri',
+  'sensors.battery.okay': 'Batteri i orden',
   'sensors.card.icon': 'Sensor ikon',
   'sensors.group': 'Sensorgruppe',
   'sensors.group.emptyState': 'Ingen sensorer valgt',
@@ -2102,7 +2108,7 @@ export const daMessages = {
   'tasks.hero.latestRun': 'Seneste løb',
   'tasks.hero.noRecentRun': 'Ingen nyligt løb',
   'tasks.hero.noAutomationRun': 'Ingen automatisering er kørt endnu',
-  'tasks.quickActions.title': 'Scripts',
+  'tasks.quickActions.title': 'Hurtige handlinger',
   'tasks.sort.by': 'Sorter efter {column}',
   'tasks.sort.sortedAscending': '{column}, sorteret stigende',
   'tasks.sort.sortedDescending': '{column}, sorteret faldende',

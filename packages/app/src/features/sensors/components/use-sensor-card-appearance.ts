@@ -19,6 +19,9 @@ function normalizeStoredIcon(value: unknown, fallback: string, defaultIcon: Sens
   if (defaultIcon === 'motion' && normalized === 'PersonStanding') {
     return fallback;
   }
+  if (defaultIcon === 'battery' && normalized === 'Activity') {
+    return fallback;
+  }
   return normalized.length > 0 ? normalized : fallback;
 }
 

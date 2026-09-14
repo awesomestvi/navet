@@ -4,6 +4,7 @@ import type {
   PlatformTaskEntityReference,
   PlatformTaskRoomReference,
 } from '@navet/app/platform/provider-feature-models';
+import type { SceneDevice } from '@navet/app/types/device.types';
 import type { AutomationRoutine, QuickActionRoutine, TaskRoutineData } from '../types';
 import { mapAutomationTasks } from './map-automation-tasks';
 import { createTaskRoomMaps, getTaskEntityName, resolveTaskEntityRoom } from './task-runtime';
@@ -14,6 +15,24 @@ interface MapTaskRoutinesOptions {
   devices: PlatformTaskDeviceReference[];
   entityReferences: PlatformTaskEntityReference[];
   locale?: string;
+}
+
+export function mapDeviceSceneRoutines(
+  scenes: SceneDevice[],
+  locale?: string
+): QuickActionRoutine[] {
+  return scenes
+    .filter((scene) => scene.providerId !== 'home_assistant')
+    .map(
+      (scene): QuickActionRoutine => ({
+        id: scene.canonicalId ?? scene.id,
+        type: 'scene',
+        name: scene.name,
+        room: scene.room,
+        state: 'off',
+      })
+    )
+    .sort((left, right) => left.name.localeCompare(right.name, locale, { sensitivity: 'base' }));
 }
 
 export function mapTaskRoutines({

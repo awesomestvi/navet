@@ -45,6 +45,37 @@ afterEach(() => {
 });
 
 describe('useHomeSecurityAlertCount', () => {
+  it('removes cleared hazards from both Home and room alert counts as their status updates', () => {
+    const devices = {
+      ...createEmptyDeviceCollection(),
+      sensors: Array.from({ length: 6 }, (_, index) =>
+        sensor({
+          id: `binary_sensor.leak_${index}`,
+          unit: '',
+          value: 'Detected',
+          status: 'active',
+          securityKind: 'waterLeak',
+          securitySeverity: 'warning',
+        })
+      ),
+    };
+    const { result, rerender } = renderHook(
+      ({ devices }: { devices: DeviceCollection }) =>
+        useHomeSecurityAlertCount({ devices, enabled: true, hiddenEntityIds: [] }),
+      { initialProps: { devices } }
+    );
+    expect(result.current).toBe(6);
+    expect(getRoomSecurityAlertCount(devices, [], 'Hallway')).toBe(6);
+
+    const clearedDevices: DeviceCollection = {
+      ...devices,
+      sensors: devices.sensors.map((device) => ({ ...device, status: 'clear', value: 'Clear' })),
+    };
+    rerender({ devices: clearedDevices });
+    expect(result.current).toBe(0);
+    expect(getRoomSecurityAlertCount(clearedDevices, [], 'Hallway')).toBe(0);
+  });
+
   it('does not recompute security alerts when an unrelated sensor updates', () => {
     const alertCountSpy = vi.spyOn(securityDashboardModel, 'getSecurityDashboardAlertCount');
     const fullModelSpy = vi.spyOn(securityDashboardModel, 'buildSecurityCameraDashboardModel');

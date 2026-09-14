@@ -145,6 +145,9 @@ function sensor(
     value: overrides.value ?? 'Detected',
     unit: overrides.unit ?? '',
     status: overrides.status ?? 'active',
+    deviceClass: overrides.deviceClass,
+    providerId: overrides.providerId,
+    sourceDeviceId: overrides.sourceDeviceId,
     securityKind: overrides.securityKind,
     securitySeverity: overrides.securitySeverity ?? 'active',
   };
@@ -203,6 +206,58 @@ describe('SecurityCameraDashboard', () => {
     });
   });
 
+  it('collects battery entities in the existing Battery Overview and keeps non-battery sensors separate', () => {
+    selectQuickviewEntities([]);
+    renderDashboard({
+      sensors: [
+        sensor({
+          id: 'homey:smoke#measure_battery',
+          name: 'Smoke detector · Battery',
+          providerId: 'homey',
+          sourceDeviceId: 'smoke',
+          securityKind: 'battery',
+          value: '12',
+          unit: '%',
+          status: 'measurement',
+          securitySeverity: 'warning',
+        }),
+        sensor({
+          id: 'homey:smoke#alarm_battery',
+          name: 'Smoke detector · Battery',
+          providerId: 'homey',
+          sourceDeviceId: 'smoke',
+          securityKind: 'battery',
+          value: 'Detected',
+          status: 'active',
+          securitySeverity: 'warning',
+        }),
+        sensor({
+          id: 'binary_sensor.remote_battery',
+          name: 'Remote battery',
+          securityKind: 'battery',
+          value: 'Detected',
+          status: 'active',
+          securitySeverity: 'warning',
+        }),
+        sensor({
+          id: 'binary_sensor.tamper',
+          name: 'Tamper',
+          securityKind: 'tamper',
+          securitySeverity: 'normal',
+        }),
+      ],
+    });
+    fireEvent.click(screen.getByRole('tab', { name: 'System' }));
+    const card = screen.getByTestId('security-battery-overview');
+    expect(within(card).getByText('Battery Overview')).toBeInTheDocument();
+    expect(within(card).getAllByText('Smoke detector · Battery')).toHaveLength(1);
+    expect(within(card).getByText('12%')).toBeInTheDocument();
+    expect(within(card).getByText('Low battery')).toBeInTheDocument();
+    expect(screen.queryByTestId('detail-card:homey:smoke#measure_battery')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('detail-card:homey:smoke#alarm_battery')).not.toBeInTheDocument();
+    expect(screen.getByTestId('detail-card:binary_sensor.tamper')).toBeInTheDocument();
+  });
+
   it('pins a device through its button without hiding it from the device list', () => {
     selectQuickviewEntities([]);
     renderDashboard({ cameras: [camera({ id: 'camera.front', name: 'Front Door' })] }, [], true);
@@ -215,6 +270,36 @@ describe('SecurityCameraDashboard', () => {
         'detail-card:camera.front'
       )
     ).toBeInTheDocument();
+  });
+
+  it('shows current activity without a history warning or Retry when history is unsupported', () => {
+    const device = {
+      ...sensor({
+        id: 'homey:detector#alarm_motion',
+        name: 'Hallway motion',
+        securityKind: 'motion',
+        securitySeverity: 'active',
+      }),
+      type: 'sensors' as const,
+    };
+    activityEventsMock.historyAvailable = false;
+    activityEventsMock.events = [
+      {
+        id: 'current-motion',
+        entityId: device.id,
+        device,
+        kind: 'motion',
+        source: 'current',
+        state: 'on',
+        timestampMs: null,
+      },
+    ];
+    renderDashboard({ sensors: [device] });
+    const panel = within(screen.getByTestId('security-activity-panel'));
+    expect(panel.getByText('Motion detected')).toBeInTheDocument();
+    expect(panel.queryByText('Couldn’t refresh activity.')).not.toBeInTheDocument();
+    expect(panel.queryByRole('button', { name: 'Retry' })).not.toBeInTheDocument();
+    expect(panel.queryByRole('status')).not.toBeInTheDocument();
   });
 
   it('shows failed history refreshes with a retry and last successful update', () => {

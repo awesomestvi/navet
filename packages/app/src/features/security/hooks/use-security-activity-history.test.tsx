@@ -81,6 +81,23 @@ describe('useSecurityActivityHistory', () => {
     expect(result.current.lastUpdatedAt).toBe(updated);
   });
 
+  it('retains current activity and supported history when another entity has no history', async () => {
+    const front = lock(false);
+    const back = { ...lock(true), id: 'lock.back_door', name: 'Back door' };
+    getIntegrationEntityHistoriesMock.mockResolvedValue([{ entityId: front.id, points: [] }]);
+    const { result } = renderHook(() =>
+      useSecurityActivityHistory({
+        entities: [front, back],
+        currentActivity: [front],
+      })
+    );
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.historyError).toBeNull();
+    expect(result.current.historyAvailable).toBe(true);
+    expect(result.current.events).toHaveLength(1);
+    expect(result.current.events[0]).toMatchObject({ entityId: front.id, source: 'current' });
+  });
+
   it('distinguishes unavailable history from a successfully empty feed', async () => {
     getIntegrationEntityHistoriesMock.mockResolvedValue([]);
     const device = lock(true);

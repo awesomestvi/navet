@@ -9,12 +9,12 @@ import {
 import { settingsSelectors } from '@navet/app/stores/selectors';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
+import { parseProviderScopedId } from '@navet/app/utils/provider-ids';
 import { subscribeVisibilityAwareAsyncTask } from '@navet/app/utils/visibility-aware-scheduler';
 import { useEffect, useState } from 'react';
 import { resolveDashboardPerformanceProfile } from '../../dashboard/hooks/use-dashboard-performance-mode';
 import { getCachedEnergyStatistics } from '../services/energy-statistics-cache';
 import { getPowerStatisticsHistory } from '../services/energy-statistics-service';
-import { parseProviderScopedId } from '@navet/app/utils/provider-ids';
 import type { EnergyRange, EnergySeriesPoint } from '../types/energy.types';
 
 const REFRESH_MS = ENERGY_STATISTICS_REFRESH_INTERVAL;

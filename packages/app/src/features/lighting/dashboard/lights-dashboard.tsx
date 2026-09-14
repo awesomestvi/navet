@@ -31,7 +31,7 @@ import {
   Sparkles,
   X,
 } from 'lucide-react';
-import { type CSSProperties, memo, useCallback, useMemo, useRef, useState } from 'react';
+import { type CSSProperties, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { type LightBatchActionResult, setLightsPower } from './light-dashboard-actions';
 import {
@@ -82,6 +82,8 @@ const RoomLightCard = memo(function RoomLightCard({
         isEditMode ? 'pr-10' : ''
       }`}
       data-light-state={light.available ? (light.isOn ? 'on' : 'off') : 'unavailable'}
+      data-light-entity-id={light.id}
+      tabIndex={light.available ? undefined : -1}
     >
       {light.available ? (
         <LightCard
@@ -311,10 +313,31 @@ export const LightsDashboard = memo(function LightsDashboard({
     return next;
   }, [cardOrders, deviceMap, entities, rooms]);
   const [expandedRooms, setExpandedRooms] = useState<Record<string, boolean>>({});
+  const [navigationTargetId, setNavigationTargetId] = useState<string | null>(null);
   const [pendingBatch, setPendingBatch] = useState<'all' | string | null>(null);
   const [runningSceneId, setRunningSceneId] = useState<string | null>(null);
   const actionPendingRef = useRef(false);
   const allLights = useMemo(() => model.rooms.flatMap((room) => room.lights), [model.rooms]);
+  const showUnavailableLight = useCallback(() => {
+    const light = allLights.find((light) => !light.available);
+    if (!light) return;
+    setExpandedRooms((current) => ({ ...current, [light.room]: true }));
+    setNavigationTargetId(light.id);
+  }, [allLights]);
+  useEffect(() => {
+    if (!navigationTargetId) return;
+    const rows = outerRef.current?.querySelectorAll<HTMLElement>('[data-light-entity-id]');
+    const target = Array.from(rows ?? []).find(
+      (row) => row.dataset.lightEntityId === navigationTargetId
+    );
+    if (!target) return;
+    target.focus({ preventScroll: true });
+    target.scrollIntoView({
+      behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      block: 'center',
+    });
+    setNavigationTargetId(null);
+  }, [navigationTargetId, outerRef]);
   const actionPending = pendingBatch !== null || runningSceneId !== null;
   const summaryItems = useMemo<HomeStatusSummaryItem[]>(() => {
     const items: HomeStatusSummaryItem[] = [
@@ -339,11 +362,12 @@ export const LightsDashboard = memo(function LightsDashboard({
         icon: CircleAlert,
         iconColor: '#f59e0b',
         tone: 'warning',
+        onSelect: showUnavailableLight,
       });
     }
 
     return items;
-  }, [model.activeCount, model.totalCount, model.unavailableCount, t]);
+  }, [model.activeCount, model.totalCount, model.unavailableCount, showUnavailableLight, t]);
   const displayRooms = useMemo(
     () =>
       model.rooms

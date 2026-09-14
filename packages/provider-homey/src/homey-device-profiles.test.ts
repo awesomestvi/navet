@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { HomeySnapshot } from './homey-types';
 import { mapHomeySnapshotToNavetEntities } from './homey-mappers';
 import { homeyService } from './homey-service';
+import type { HomeySnapshot } from './homey-types';
 
 const fixture: HomeySnapshot = {
   connected: true,
@@ -145,7 +145,9 @@ describe('Homey specialized device cards', () => {
     ).rejects.toThrow('Offline');
     expect(entity('blind').attributes.position).toBe(35);
     const snapshot = structuredClone(fixture);
-    snapshot.devices.blind.capabilitiesObj!.windowcoverings_set.setable = false;
+    const coverCapabilities = snapshot.devices.blind.capabilitiesObj;
+    if (!coverCapabilities) throw new Error('Cover fixture capabilities are missing');
+    coverCapabilities.windowcoverings_set.setable = false;
     homeyService.replaceSnapshot(snapshot);
     expect(entity('blind').attributes.supportedFeatures).toBe(0);
     await expect(
@@ -156,7 +158,7 @@ describe('Homey specialized device cards', () => {
         { entityId: 'blind' }
       )
     ).rejects.toThrow('cannot be changed');
-    snapshot.devices.blind.capabilitiesObj!.windowcoverings_set.setable = true;
+    coverCapabilities.windowcoverings_set.setable = true;
     snapshot.devices.blind.available = false;
     homeyService.replaceSnapshot(snapshot);
     await expect(
@@ -235,8 +237,9 @@ describe('Homey specialized device cards', () => {
       primaryState: 78,
     });
     expect(entities.find((item) => item.externalId === 'frontDoor#alarm_contact')).toMatchObject({
-      type: 'sensor',
+      type: 'binary_sensor',
       primaryState: false,
+      attributes: { securityKind: 'opening', securitySeverity: 'normal', status: 'inactive' },
     });
   });
 
@@ -272,9 +275,11 @@ describe('Homey specialized device cards', () => {
     async (condition) => {
       const snapshot = structuredClone(fixture);
       const device = snapshot.devices.frontDoor;
-      if (condition === 'read-only') device.capabilitiesObj!.locked.setable = false;
+      const capabilities = device.capabilitiesObj;
+      if (!capabilities) throw new Error('Lock fixture capabilities are missing');
+      if (condition === 'read-only') capabilities.locked.setable = false;
       if (condition === 'unavailable') device.available = false;
-      if (condition === 'missing') delete device.capabilitiesObj!.locked;
+      if (condition === 'missing') delete capabilities.locked;
       homeyService.replaceSnapshot(snapshot);
       await expect(
         homeyService.executeCommand(entity('frontDoor'), {
@@ -291,7 +296,9 @@ describe('Homey specialized device cards', () => {
 
   it('preserves an unknown lock reading without inventing an unlocked value', () => {
     const snapshot = structuredClone(fixture);
-    snapshot.devices.frontDoor.capabilitiesObj!.locked.value = null;
+    const lockCapabilities = snapshot.devices.frontDoor.capabilitiesObj;
+    if (!lockCapabilities) throw new Error('Lock fixture capabilities are missing');
+    lockCapabilities.locked.value = null;
     homeyService.replaceSnapshot(snapshot);
     expect(entity('frontDoor')).toMatchObject({ primaryState: 'unknown' });
     expect(entity('frontDoor').attributes.locked).toBeUndefined();
@@ -299,7 +306,9 @@ describe('Homey specialized device cards', () => {
 
   it('classifies a thermostat before its power switch and maps a speaker without onoff', () => {
     expect(entity('thermostat#measure_humidity')).toMatchObject({
-      type: 'sensor', room: 'Living Room', primaryState: 46,
+      type: 'sensor',
+      room: 'Living Room',
+      primaryState: 46,
       attributes: { unit: '%', deviceClass: 'humidity', sourceDeviceId: 'thermostat' },
     });
     expect(entity('thermostat')).toMatchObject({
@@ -422,7 +431,9 @@ describe('Homey specialized device cards', () => {
 
   it('exposes only advertised thermostat modes and rejects other enum values', async () => {
     const snapshot = structuredClone(fixture);
-    snapshot.devices.thermostat.capabilitiesObj!.thermostat_mode = {
+    const thermostatCapabilities = snapshot.devices.thermostat.capabilitiesObj;
+    if (!thermostatCapabilities) throw new Error('Thermostat fixture capabilities are missing');
+    thermostatCapabilities.thermostat_mode = {
       type: 'enum',
       value: 'heat',
       setable: true,

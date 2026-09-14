@@ -1,15 +1,16 @@
 import { DashboardGroupingNavigation } from '@navet/app/components/patterns';
-import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
-import { usePersistedState } from '@navet/app/hooks/use-persisted-state';
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
+import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import { DeviceGrid } from '@navet/app/features/dashboard/device-grid';
 import {
   SummaryBar,
   SummaryBarStack,
 } from '@navet/app/features/sensors/components/info-badge-strip';
 import { useI18n } from '@navet/app/hooks';
+import { usePersistedState } from '@navet/app/hooks/use-persisted-state';
 import type { DeviceWithType } from '@navet/app/types/device.types';
 import { getDeviceRoomLabel } from '@navet/app/utils/device-location';
+import { groupByRoomName } from '@navet/app/utils/room-name';
 import type { TemperatureUnit } from '@navet/app/utils/temperature';
 import { memo, useMemo, useState } from 'react';
 import type { ClimateDashboardSection } from '../types/climate-dashboard';
@@ -132,22 +133,16 @@ export const ClimateDashboard = memo(function ClimateDashboard({
     });
   }, [attentionByDeviceId, deviceMap, sections, t]);
   const roomGroups = useMemo<ClimateCardGroup[]>(() => {
-    const idsByRoom = new Map<string, string[]>();
-    const seenIds = new Set<string>();
-    for (const section of sections) {
-      for (const entityId of section.orderedIds) {
-        const device = deviceMap.get(entityId);
-        if (!device || seenIds.has(entityId)) continue;
-        seenIds.add(entityId);
-        const room = getDeviceRoomLabel(device);
-        const ids = idsByRoom.get(room) ?? [];
-        ids.push(entityId);
-        idsByRoom.set(room, ids);
+    const devices = [...new Set(sections.flatMap((section) => section.orderedIds))].flatMap(
+      (id) => {
+        const device = deviceMap.get(id);
+        return device ? [device] : [];
       }
-    }
-    return [...idsByRoom.entries()]
-      .sort(([left], [right]) => left.localeCompare(right))
-      .map(([room, orderedIds]) => {
+    );
+    return groupByRoomName(devices, getDeviceRoomLabel)
+      .sort((left, right) => left.room.localeCompare(right.room))
+      .map(({ room, items }) => {
+        const orderedIds = items.map((device) => device.id);
         const sortedIds = sortIdsByAttention(orderedIds, attentionByDeviceId);
         return {
           id: `room-${encodeURIComponent(room)}`,
@@ -160,6 +155,19 @@ export const ClimateDashboard = memo(function ClimateDashboard({
   const groups = groupingMode === 'type' ? typeGroups : roomGroups;
   const requestedGroupId = selectedGroupIds[groupingMode];
   const selectedGroup = groups.find((group) => group.id === requestedGroupId) ?? groups[0] ?? null;
+  const cardDeviceMap = useMemo(() => {
+    if (!['type-temperature', 'type-humidity', 'type-pressure'].includes(selectedGroup?.id ?? '')) {
+      return deviceMap;
+    }
+    return new Map(
+      Array.from(deviceMap, ([id, device]) => [
+        id,
+        device.type === 'sensors' && device.sourceDeviceName
+          ? { ...device, name: device.sourceDeviceName }
+          : device,
+      ])
+    );
+  }, [deviceMap, selectedGroup?.id]);
   const handleGroupingModeChange = (mode: ClimateGroupingMode) => {
     setGroupingMode(mode);
   };
@@ -169,7 +177,7 @@ export const ClimateDashboard = memo(function ClimateDashboard({
   const renderGrid = (orderedIds: string[]) => (
     <DeviceGrid
       orderedCardIds={orderedIds}
-      deviceMap={deviceMap}
+      deviceMap={cardDeviceMap}
       isEditMode={isEditMode}
       cardSizes={cardSizes}
       updateCardSize={updateCardSize}

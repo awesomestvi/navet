@@ -4,6 +4,7 @@ import {
   type RoomWorkspaceRoomId,
   type RoomWorkspaceV2,
 } from '@navet/app/features/dashboard/rooms';
+import { normalizeRoomName } from '@navet/app/utils/room-name';
 import { useCallback, useEffect, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useNavigationStore } from '../stores/navigation-store';
@@ -11,10 +12,6 @@ import { useNavigationStore } from '../stores/navigation-store';
 interface ResolvedRoomSelection {
   room: string;
   roomId: RoomWorkspaceRoomId | null;
-}
-
-function normalizeRoomName(room: string): string {
-  return room.trim().toLocaleLowerCase();
 }
 
 function resolveRoomSelection(

@@ -55,6 +55,9 @@ provider-owned services for media, lights, native actions, cameras, security, cl
 entities, history, energy, calendars, weather, notifications, tasks, conversations, and entity
 runtime access.
 
+History services can declare entity-level availability through `supportsEntityHistory`. Shared
+history routing skips unsupported entities while preserving failures from supported requests.
+
 Keeping these services out of `NavetProviderContract` prevents the base contract from growing into
 a mirror of Home Assistant. Shared feature UI asks the app/runtime seam for an optional service and
 must handle its absence.
@@ -114,8 +117,12 @@ Current runtime feature scope:
 | Capability group | Home Assistant | Homey | openHAB |
 |---|---:|---:|---:|
 | rooms, realtime entities, lighting, switches, sensors | Yes | Yes | Yes |
-| climate, media, cameras, energy, calendar, weather | Yes | No | No |
-| notifications, tasks, history, security, administration | Yes | No | No |
+| climate and media controls | Yes | Yes | Yes |
+| lock and cover controls, security sensors | Yes | Yes | Yes |
+| device power and energy measurements | Yes | Yes | Yes |
+| cameras, energy statistics, calendar, weather forecasts | Yes | No | No |
+| notifications, entity history, hub resources | Yes | Yes | No |
+| automation configuration and alarm-panel controls | Yes | No | No |
 | Assist conversations | Yes | No | No |
 
 The app may keep multiple implemented sessions connected at once. Provider-scoped IDs and
@@ -123,6 +130,12 @@ provider-owned state remain separate; selected provider collections are merged f
 and entity-scoped operations resolve to the selected source's owning provider. Feature availability
 considers connected providers. A current session remains a legacy compatibility detail, not a
 user-facing priority or a requirement for exposing another connected provider's capabilities.
+
+openHAB associations use semantic equipment metadata first, with conventional related item names
+as a fallback. Its normalized measurements retain units, source identity, and security categories.
+The current app compatibility mapper accepts `retainSensorCard` for measurements that must remain
+available alongside their device's control card. openHAB feature services translate Navet controls
+to native item commands; cover percentages are converted between Navet openness and openHAB closure.
 
 ## Testing Expectations
 

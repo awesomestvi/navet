@@ -1,5 +1,14 @@
 import { createProviderScopedId } from '@navet/core/ids';
 import type { NavetEntity, NavetProviderRoom } from '@navet/core/types';
+import {
+  openHABItemName,
+  openHABNumber,
+  openHABSecurityState,
+  openHABSensorClass,
+  openHABSourceId,
+  openHABUnit,
+  relatedOpenHABItem,
+} from './openhab-item-state';
 import type { OpenHABItem, OpenHABSnapshot } from './openhab-types';
 
 const UNKNOWN_ROOM_LABEL = 'Unassigned';
@@ -60,7 +69,8 @@ function createNavetEntity(
       typeof state.value === 'boolean'
         ? state.value
         : null,
-    availability: state.value === 'unknown' ? 'unknown' : 'available',
+    availability:
+      state.value === 'unknown' || state.status === 'unavailable' ? 'unknown' : 'available',
     attributes: state,
     capabilities,
     lastUpdated: typeof state.lastUpdated === 'string' ? state.lastUpdated : undefined,
@@ -92,7 +102,7 @@ function resolveEquipmentItem(
 }
 
 function resolveItemName(item: OpenHABItem, items: Record<string, OpenHABItem>): string {
-  return resolveEquipmentItem(item, items)?.label?.trim() || item.label?.trim() || item.name;
+  return openHABItemName(resolveEquipmentItem(item, items) ?? item);
 }
 
 function isEquipmentLightItem(item: OpenHABItem, items: Record<string, OpenHABItem>): boolean {
@@ -108,7 +118,7 @@ function isLightItem(item: OpenHABItem, items: Record<string, OpenHABItem>): boo
     tags.has('Light') ||
     tags.has('Lighting') ||
     category.includes('light') ||
-    item.type === 'Dimmer' ||
+    (item.type === 'Dimmer' && !['fan', 'soundvolume'].includes(category)) ||
     item.type === 'Color'
   );
 }
@@ -162,20 +172,6 @@ function resolveItemRoom(
   return { name: UNKNOWN_ROOM_LABEL };
 }
 
-function parseNumberishState(state: string | undefined): number | undefined {
-  if (typeof state !== 'string' || state.trim().length === 0) {
-    return undefined;
-  }
-
-  const match = state.match(/-?\d+(?:\.\d+)?/);
-  if (!match) {
-    return undefined;
-  }
-
-  const parsed = Number(match[0]);
-  return Number.isFinite(parsed) ? parsed : undefined;
-}
-
 function normalizeOpenHABStateValue(value: string): string {
   switch (value) {
     case 'ON':
@@ -196,6 +192,7 @@ function normalizeOpenHABStateValue(value: string): string {
 }
 
 function inferOpenHABCapabilities(item: OpenHABItem): NavetEntity['capabilities'] {
+  if (item.stateDescription?.readOnly) return [];
   if (item.type === 'Switch') {
     return isLockItem(item) ? ['lock'] : ['toggle'];
   }
@@ -239,7 +236,9 @@ function createOpenHABState(item: OpenHABItem): Record<string, unknown> {
   const value = item.state ?? 'UNDEF';
   const normalizedValue =
     value === 'UNDEF' || value === 'NULL' ? 'unknown' : normalizeOpenHABStateValue(value);
-  const numericValue = parseNumberishState(item.state);
+  const color = item.type === 'Color' ? item.state?.split(',').map(Number) : undefined;
+  const numericValue =
+    color?.length === 3 && color.every(Number.isFinite) ? color[2] : openHABNumber(item);
   const equipmentItemName = getSemanticsConfig(item)?.isPointOf;
 
   if (item.type === 'Dimmer' || item.type === 'Color') {
@@ -253,6 +252,11 @@ function createOpenHABState(item: OpenHABItem): Record<string, unknown> {
       value: normalizedValue,
       on: isOn,
       brightnessPct: numericValue,
+      percentage: numericValue,
+      supportedColorModes: item.type === 'Color' ? ['hs'] : ['brightness'],
+      ...(color?.length === 3 && color.every(Number.isFinite)
+        ? { hsColor: color.slice(0, 2) }
+        : {}),
       itemType: item.type,
       category: item.category ?? undefined,
       tags: item.tags ?? [],
@@ -278,6 +282,13 @@ function createOpenHABState(item: OpenHABItem): Record<string, unknown> {
     return {
       value: normalizedValue,
       position: numericValue,
+      // openHAB percentages describe closure; Navet percentages describe openness.
+      ...(numericValue !== undefined ? { position: 100 - numericValue } : {}),
+      hasPosition: numericValue !== undefined,
+      positionMode: 'position',
+      supportedFeatures: item.stateDescription?.readOnly ? 0 : 15,
+      deviceClass:
+        item.category?.includes('curtain') || /curtain/i.test(item.name) ? 'curtain' : 'blind',
       itemType: item.type,
       category: item.category ?? undefined,
       tags: item.tags ?? [],
@@ -285,11 +296,43 @@ function createOpenHABState(item: OpenHABItem): Record<string, unknown> {
   }
 
   return {
-    value: normalizedValue === 'unknown' ? normalizedValue : (numericValue ?? normalizedValue),
+    value:
+      normalizedValue === 'unknown'
+        ? normalizedValue
+        : item.type?.startsWith('Number')
+          ? (numericValue ?? normalizedValue)
+          : normalizedValue,
     rawState: value,
     itemType: item.type,
     category: item.category ?? undefined,
     tags: item.tags ?? [],
+  };
+}
+
+function measurementState(
+  item: OpenHABItem,
+  items: Record<string, OpenHABItem>
+): Record<string, unknown> {
+  const source = resolveEquipmentItem(item, items);
+  const control = relatedOpenHABItem(
+    item,
+    items,
+    (point) => point.type === 'Switch' && !(point.tags ?? []).includes('Status')
+  );
+  return {
+    unit: openHABUnit(item),
+    deviceClass: openHABSensorClass(item),
+    sourceDeviceId: openHABSourceId(item),
+    sourceDeviceName: source
+      ? openHABItemName(source)
+      : control
+        ? openHABItemName(control)
+        : openHABItemName(item).replace(
+            /\s+(battery|temperature|humidity|pressure|power|energy)$/i,
+            ''
+          ),
+    retainSensorCard: true,
+    ...openHABSecurityState(item),
   };
 }
 
@@ -303,12 +346,159 @@ export function mapOpenHABSnapshotToNavetEntities(snapshot: OpenHABSnapshot): Na
 
     const room = resolveItemRoom(item, snapshot.items);
     const capabilities = inferOpenHABCapabilities(item);
-    const state = createOpenHABState(item);
+    const state: Record<string, unknown> = {
+      ...createOpenHABState(item),
+      ...(typeof item.lastStateUpdate === 'number' && Number.isFinite(item.lastStateUpdate)
+        ? { lastUpdated: new Date(item.lastStateUpdate).toISOString() }
+        : {}),
+    };
     const name = resolveItemName(item, snapshot.items);
 
     if (isLockItem(item)) {
+      const locked =
+        state.value === 'on' || state.value === 'locked'
+          ? true
+          : state.value === 'off' || state.value === 'unlocked'
+            ? false
+            : undefined;
       entities.push(
-        createNavetEntity(item.name, 'lock', name, room.name, room.roomId, ['lock'], state)
+        createNavetEntity(item.name, 'lock', name, room.name, room.roomId, capabilities, {
+          ...state,
+          value: locked === undefined ? 'unknown' : locked ? 'locked' : 'unlocked',
+          locked,
+        })
+      );
+      continue;
+    }
+
+    if (
+      item.type?.startsWith('Number') &&
+      (item.tags ?? []).includes('Setpoint') &&
+      openHABSensorClass(item) === 'temperature'
+    ) {
+      const current = relatedOpenHABItem(
+        item,
+        snapshot.items,
+        (point) => point.type === 'Number:Temperature' && !(point.tags ?? []).includes('Setpoint')
+      );
+      const target = openHABNumber(item);
+      entities.push(
+        createNavetEntity(
+          item.name,
+          'climate',
+          name.replace(/\s+target temperature$/i, ''),
+          room.name,
+          room.roomId,
+          item.stateDescription?.readOnly ? [] : ['temperature_setpoint'],
+          {
+            ...state,
+            value: target === undefined ? 'unknown' : 'auto',
+            mode: 'auto',
+            temperature: target,
+            currentTemperature: current ? openHABNumber(current) : undefined,
+            hasCurrentTemperature: current ? openHABNumber(current) !== undefined : false,
+            temperatureUnit: openHABUnit(item).includes('F') ? 'fahrenheit' : 'celsius',
+            supportedClimateModes: [],
+            serviceDomain: 'climate',
+            temperatureStep: 0.1,
+          }
+        )
+      );
+      continue;
+    }
+
+    if (item.category?.toLowerCase() === 'fan' && item.type === 'Dimmer') {
+      entities.push(
+        createNavetEntity(
+          item.name,
+          'fan',
+          name,
+          room.name,
+          room.roomId,
+          item.stateDescription?.readOnly ? [] : ['toggle', 'fan_speed'],
+          state
+        )
+      );
+      continue;
+    }
+
+    if (item.type === 'String' && item.category?.toLowerCase() === 'soundvolume') {
+      const volume = relatedOpenHABItem(
+        item,
+        snapshot.items,
+        (point) => point.type === 'Dimmer' && point.category?.toLowerCase() === 'soundvolume'
+      );
+      const writable = item.stateDescription?.readOnly !== true;
+      entities.push(
+        createNavetEntity(
+          item.name,
+          'media_player',
+          name.replace(/\s+state$/i, ''),
+          room.name,
+          room.roomId,
+          ['media_playback'],
+          {
+            ...state,
+            value: state.value === 'unknown' ? 'unknown' : (item.state ?? 'unknown').toLowerCase(),
+            volume: volume ? openHABNumber(volume) : undefined,
+            volumeItemId: volume?.name,
+            entityType: 'Speaker',
+            deviceClass: 'speaker',
+            supportsGrouping: false,
+            supportsPreviousTrack: false,
+            supportsNextTrack: false,
+            mediaCapabilities: {
+              canPlay: writable,
+              canPause: writable,
+              canSetVolume: Boolean(volume && volume.stateDescription?.readOnly !== true),
+              canBrowseMedia: false,
+              canGroup: false,
+              canMuteVolume: false,
+              canNextTrack: false,
+              canPreviousTrack: false,
+              canStop: false,
+              canTurnOn: false,
+              canTurnOff: false,
+            },
+          }
+        )
+      );
+      continue;
+    }
+
+    const security = openHABSecurityState(item);
+    if (item.type === 'Contact' || security.entityType === 'binary_sensor') {
+      entities.push(
+        createNavetEntity(
+          item.name,
+          'binary_sensor',
+          openHABItemName(item),
+          room.name,
+          room.roomId,
+          ['numeric_sensor'],
+          { ...state, ...measurementState(item, snapshot.items) }
+        )
+      );
+      continue;
+    }
+
+    if (item.type === 'Dimmer' && item.category?.toLowerCase() === 'soundvolume') {
+      entities.push(
+        createNavetEntity(
+          item.name,
+          'sensor',
+          openHABItemName(item),
+          room.name,
+          room.roomId,
+          ['numeric_sensor'],
+          {
+            ...state,
+            value: openHABNumber(item) ?? 'unknown',
+            unit: '%',
+            deviceClass: 'volume',
+            retainSensorCard: true,
+          }
+        )
       );
       continue;
     }
@@ -321,6 +511,30 @@ export function mapOpenHABSnapshotToNavetEntities(snapshot: OpenHABSnapshot): Na
     }
 
     if (item.type === 'Switch' || item.type === 'Dimmer' || item.type === 'Color') {
+      const metrics = Object.values(snapshot.items).flatMap((point) => {
+        if (
+          typeof point.name !== 'string' ||
+          openHABSourceId(point) !== openHABSourceId(item) ||
+          !point.type?.startsWith('Number')
+        )
+          return [];
+        const deviceClass = openHABSensorClass(point);
+        const value = openHABNumber(point);
+        if (
+          value === undefined ||
+          !['power', 'energy', 'voltage', 'current'].includes(deviceClass ?? '')
+        )
+          return [];
+        return [
+          {
+            label: openHABItemName(point),
+            value,
+            unit: openHABUnit(point),
+            icon: 'zap',
+            category: 'measurement',
+          },
+        ];
+      });
       entities.push(
         createNavetEntity(
           item.name,
@@ -329,18 +543,27 @@ export function mapOpenHABSnapshotToNavetEntities(snapshot: OpenHABSnapshot): Na
           room.name,
           room.roomId,
           capabilities,
-          state
+          { ...state, metrics }
         )
       );
       continue;
     }
 
     if (
-      item.type === 'Contact' ||
+      item.type === 'String' ||
+      item.type === 'DateTime' ||
       (typeof item.type === 'string' && item.type.startsWith('Number'))
     ) {
       entities.push(
-        createNavetEntity(item.name, 'sensor', name, room.name, room.roomId, capabilities, state)
+        createNavetEntity(
+          item.name,
+          'sensor',
+          openHABItemName(item),
+          room.name,
+          room.roomId,
+          capabilities,
+          { ...state, ...measurementState(item, snapshot.items) }
+        )
       );
     }
   }

@@ -1,10 +1,10 @@
 import { createProviderScopedId, parseProviderScopedId } from '@navet/core/ids';
+import type { ProviderHistoryFeatureService } from '@navet/core/provider-feature-services';
 import type {
   ProviderHubFeatureService,
-  ProviderHubSnapshot,
   ProviderHubSection,
+  ProviderHubSnapshot,
 } from '@navet/core/provider-hub';
-import type { ProviderHistoryFeatureService } from '@navet/core/provider-feature-services';
 import { homeyService } from './homey-service';
 import type { HomeyCapabilityState, HomeyLog, HomeySnapshot } from './homey-types';
 
@@ -22,6 +22,7 @@ const resources = {
 
 /** Optional managers must never prevent rooms and devices from connecting. */
 export async function loadHomeyResources(request: Request): Promise<Partial<HomeySnapshot>> {
+  const resourceErrors: NonNullable<HomeySnapshot['resourceErrors']> = {};
   const result: Partial<HomeySnapshot> = {
     flows: {},
     advancedFlows: {},
@@ -31,7 +32,7 @@ export async function loadHomeyResources(request: Request): Promise<Partial<Home
     notifications: {},
     apps: {},
     logs: {},
-    resourceErrors: {},
+    resourceErrors,
   };
   await Promise.all(
     Object.entries(resources).map(async ([key, path]) => {
@@ -50,7 +51,7 @@ export async function loadHomeyResources(request: Request): Promise<Partial<Home
           : value;
         Object.assign(result, { [key]: collection });
       } catch (error) {
-        result.resourceErrors![key] =
+        resourceErrors[key] =
           error instanceof Error ? error.message : 'Homey resource could not be loaded';
       }
     })
@@ -344,7 +345,7 @@ export const homeyHubFeatureService: ProviderHubFeatureService = {
           capabilitiesObj: {
             ...snapshot.devices[id].capabilitiesObj,
             [controlId]: {
-              ...snapshot.devices[id].capabilitiesObj![controlId],
+              ...snapshot.devices[id].capabilitiesObj?.[controlId],
               value: nativeValue,
             },
           },
@@ -357,6 +358,11 @@ export const homeyHubFeatureService: ProviderHubFeatureService = {
 
 export const homeyHistoryFeatureService: ProviderHistoryFeatureService = {
   getMessageClient: () => null,
+  supportsEntityHistory: (entityId) => {
+    const snapshot = homeyService.getSnapshot();
+    // A failed manager fetch is a real error, not evidence that history is unsupported.
+    return Boolean(snapshot.resourceErrors?.logs || findLog(native(entityId)));
+  },
   async getEntityHistory(request) {
     const start = Date.parse(request.startTime);
     const end = request.endTime ? Date.parse(request.endTime) : Date.now();

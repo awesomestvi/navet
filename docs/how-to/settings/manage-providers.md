@@ -33,21 +33,12 @@ Available choices depend on each adapter's capabilities. Home Assistant currentl
 forecasts, calendar events, and the detailed energy history dashboard. Homey and openHAB supply
 supported devices and sensors; connecting them does not add forecast, calendar, or statistics APIs.
 
-## Browse Homey resources
-
-Open the connected Homey card's menu and choose **Browse and manage**. Choose a category to view
-devices, zones, Flows, Moods, people, notifications, apps, your available Homeys, or Insights. You can run supported Flows
-and Moods, edit writable device capabilities, update Homey favorites, and change your own
-presence. Other household members are read-only. Insights offers the last 24 hours, 7 days,
-or 31 days when Homey supplies history.
-
-These choices depend on Homey's version and the permissions granted during sign-in. An unavailable
-category shows an error without disconnecting your devices. See [Homey](/install/homey/) for details.
-
 ## Disconnect
 
-Choose **Disconnect** on the provider card and confirm. This ends that provider session on the
-current device or server scope. It does not delete devices from the provider.
+On your primary device, open **Settings → System → Providers**, open the provider's menu, and
+choose **Disconnect**. The confirmation names the provider and explains that it disconnects
+across connected devices. Choose **Cancel** to keep the connection, or **Disconnect** to proceed.
+You can connect the provider again later. Disconnecting does not delete devices from the provider.
 
 ## Availability
 

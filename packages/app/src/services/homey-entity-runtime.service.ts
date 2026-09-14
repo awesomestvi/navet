@@ -7,6 +7,8 @@ import type { ProviderEntityRuntimeService } from '@navet/app/platform/provider-
 import { areDataEqual } from '@navet/core/structural-equality';
 import {
   getHomeyDeviceProfile,
+  getHomeySensorName,
+  getHomeySensorState,
   type HomeyCapabilityState,
   type HomeyDevice,
   type HomeySnapshot,
@@ -100,20 +102,6 @@ function toCapabilityEntityState(value: unknown): string {
   return 'unknown';
 }
 
-function toCapabilityDeviceClass(capabilityId: string): string | undefined {
-  if (capabilityId === 'meter_power') return 'energy';
-  if (capabilityId.startsWith('meter_')) return capabilityId.slice('meter_'.length);
-  if (capabilityId.startsWith('measure_')) {
-    return capabilityId.slice('measure_'.length);
-  }
-
-  if (capabilityId.startsWith('alarm_')) {
-    return capabilityId.slice('alarm_'.length);
-  }
-
-  return undefined;
-}
-
 function toEntitySnapshots(snapshot: HomeySnapshot): PlatformEntitySnapshotMap {
   if (
     (snapshot === cachedEntitySnapshotSource ||
@@ -186,9 +174,9 @@ function toEntitySnapshots(snapshot: HomeySnapshot): PlatformEntitySnapshotMap {
         entityId,
         state: toCapabilityEntityState(capability.value),
         attributes: {
-          friendly_name: capability.title?.trim() || `${device.name} ${capabilityId}`.trim(),
+          friendly_name: getHomeySensorName(device, capabilityId, capability),
           unit_of_measurement: capability.units,
-          device_class: toCapabilityDeviceClass(capabilityId),
+          device_class: getHomeySensorState(device, capabilityId, capability).deviceClass,
           room,
           zone: room,
           source_device_id: device.id,
@@ -263,7 +251,7 @@ function toEntityRegistryEntries(snapshot: HomeySnapshot): PlatformEntityRegistr
         entityId,
         deviceId: device.id,
         areaId: device.zone ?? null,
-        name: capability.title?.trim() || `${device.name} ${capabilityId}`.trim(),
+        name: getHomeySensorName(device, capabilityId, capability),
         platform: 'homey',
       } satisfies PlatformEntityRegistryEntry;
       const previousCapabilityEntry = previousEntriesById[entityId];

@@ -1,5 +1,4 @@
 import type { NavetProviderContract, SmartHomeProviderAdapter } from './provider-contract';
-import type { ProviderHubFeatureService } from './provider-hub';
 import type {
   PlatformCameraStream,
   PlatformCameraStreamType,
@@ -23,6 +22,7 @@ import type {
   ProviderTaskFeatureService,
   ProviderWeatherFeatureService,
 } from './provider-feature-services';
+import type { ProviderHubFeatureService } from './provider-hub';
 
 export interface ProviderContractRegistration {
   contract: NavetProviderContract;

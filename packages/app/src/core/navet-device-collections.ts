@@ -410,6 +410,8 @@ export function mapNavetEntitiesToDeviceCollection(entities: NavetEntity[]): Dev
             groupMembers: readStringArray(state.groupMembers),
             sourceDeviceId:
               typeof state.sourceDeviceId === 'string' ? state.sourceDeviceId : undefined,
+            sourceDeviceName:
+              typeof state.sourceDeviceName === 'string' ? state.sourceDeviceName : undefined,
             status:
               typeof state.status === 'string'
                 ? (state.status as DeviceCollection['sensors'][number]['status'])
@@ -448,7 +450,11 @@ export function mapNavetEntitiesToDeviceCollection(entities: NavetEntity[]): Dev
           });
           break;
         }
-        if (deviceId && indexes.deviceIdsWithPrimaryCards.has(deviceId)) {
+        if (
+          deviceId &&
+          indexes.deviceIdsWithPrimaryCards.has(deviceId) &&
+          state.retainSensorCard !== true
+        ) {
           break;
         }
         collection.sensors.push({
@@ -473,6 +479,8 @@ export function mapNavetEntitiesToDeviceCollection(entities: NavetEntity[]): Dev
           groupMembers: readStringArray(state.groupMembers),
           sourceDeviceId:
             typeof state.sourceDeviceId === 'string' ? state.sourceDeviceId : undefined,
+          sourceDeviceName:
+            typeof state.sourceDeviceName === 'string' ? state.sourceDeviceName : undefined,
           status:
             typeof state.status === 'string'
               ? (state.status as DeviceCollection['sensors'][number]['status'])

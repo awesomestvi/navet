@@ -1,7 +1,8 @@
 import { createProviderScopedId } from '@navet/core/ids';
 import type { NavetEntity, NavetProviderRoom } from '@navet/core/types';
-import type { HomeyDevice, HomeySnapshot, HomeyZone } from './homey-types';
 import { getHomeyDeviceProfile } from './homey-device-profiles';
+import { getHomeySensorName, getHomeySensorState } from './homey-sensor-state';
+import type { HomeyDevice, HomeySnapshot, HomeyZone } from './homey-types';
 
 const UNKNOWN_ROOM_LABEL = 'Unassigned';
 
@@ -210,23 +211,16 @@ export function mapHomeySnapshotToNavetEntities(snapshot: HomeySnapshot): NavetE
       }
 
       const nativeId = `${device.id}#${capabilityId}`;
+      const sensorState = getHomeySensorState(device, capabilityId, capability);
       entities.push(
         createNavetEntity(
           nativeId,
-          'sensor',
-          capability.title ?? capabilityId,
+          capabilityId.startsWith('alarm_') ? 'binary_sensor' : 'sensor',
+          getHomeySensorName(device, capabilityId, capability),
           room.name,
           room.roomId,
           ['numeric_sensor'],
-          {
-            value: capability.value,
-            unit: capability.units,
-            sourceDeviceId: device.id,
-            deviceClass:
-              capabilityId === 'meter_power'
-                ? 'energy'
-                : capabilityId.replace(/^(measure_|meter_|alarm_)/, ''),
-          }
+          sensorState
         )
       );
     }

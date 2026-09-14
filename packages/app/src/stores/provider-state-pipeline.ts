@@ -11,6 +11,7 @@ import type { DeviceCollection } from '@navet/app/types/device.types';
 import type { IntegrationProviderId } from '@navet/app/types/provider';
 import { INTEGRATION_PROVIDER_IDS } from '@navet/app/types/provider';
 import { createProviderScopedId } from '@navet/app/utils/provider-ids';
+import { normalizeRoomName } from '@navet/app/utils/room-name';
 import { areDataEqual } from '@navet/app/utils/structural-equality';
 import type { PlatformManageableRoomReference } from '@navet/core/provider-feature-models';
 import { createProviderRoomManagementCapabilities } from '@navet/core/provider-room-management';
@@ -745,8 +746,4 @@ function reuseDeviceCollection(
   }
 
   return changed ? mergedCollection : previousCollection;
-}
-
-function normalizeRoomName(name: string) {
-  return name.trim().toLocaleLowerCase();
 }

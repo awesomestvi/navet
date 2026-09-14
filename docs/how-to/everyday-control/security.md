@@ -25,6 +25,12 @@ order on phones.
 - Use the group buttons below quickview to inspect doors and windows, locks, motion and
   occupancy, cameras, and other available security groups.
 
+Battery readings appear together in **Battery Overview**, with low batteries first. When a device
+reports both its charge percentage and a low-battery status, they share one row. Devices that only
+report battery status show that status instead of a percentage. Grouping by room limits the list
+to batteries in the selected room.
+Battery warnings stay in **Battery Overview** and do not appear in **Needs attention**.
+
 ## Arrange quickview
 
 1. Choose **Customize** while Security is open.

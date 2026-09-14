@@ -176,7 +176,7 @@ export function getHomeyDeviceProfile(device: HomeyDevice): {
 
 function writeHomeyCapability(device: HomeyDevice, id: string, value: boolean | number | string) {
   const cap = device.capabilitiesObj?.[id];
-  if (!cap || cap.setable !== true || device.available === false)
+  if (cap?.setable !== true || device.available === false)
     throw new Error('This Homey capability cannot be changed');
   if (
     typeof value === 'number' &&

@@ -20,7 +20,6 @@ import {
   DropdownMenuTrigger,
 } from '@navet/app/components/ui/dropdown-menu';
 import { useI18n } from '@navet/app/hooks';
-import { getProviderRuntimeRegistration } from '@navet/app/provider-runtime-registry';
 import {
   supportsAdditionalSmartHomeProviders,
   supportsDeviceAuthorization,
@@ -42,7 +41,6 @@ import {
 import { useState } from 'react';
 import type { SettingsSectionController } from '../hooks/use-settings-section-controller';
 import { SettingsAuthorizedDevices } from './settings-authorized-devices';
-import { ProviderHubDialog } from './provider-hub-dialog';
 import { SettingsDeviceSettings } from './settings-device-settings';
 import { SettingsItem, SettingsSectionGroup, SettingsSectionShell } from './settings-section-shell';
 
@@ -176,19 +174,17 @@ function ProviderCardView({
   styles,
   openConnectDialog,
   handleConnectProvider,
-  handleDisconnectProvider,
+  onRequestDisconnect,
   t,
   configUrl,
-  openProviderDetails,
 }: {
   provider: ProviderCard;
   styles: SettingsSectionController['styles'];
   openConnectDialog: (providerId: IntegrationProviderId) => void;
   handleConnectProvider: SettingsSectionController['handleConnectProvider'];
-  handleDisconnectProvider: SettingsSectionController['handleDisconnectProvider'];
+  onRequestDisconnect: (providerId: IntegrationProviderId) => void;
   t: ReturnType<typeof useI18n>['t'];
   configUrl: string | null;
-  openProviderDetails: (providerId: IntegrationProviderId) => void;
 }) {
   const usesUrlConnect = provider.loginMode === 'url_oauth' || provider.loginMode === 'url_session';
   const openUrl = getProviderOpenUrl(provider, configUrl);
@@ -196,10 +192,8 @@ function ProviderCardView({
     provider.baseUrl ??
     (provider.id === 'home_assistant' && provider.isConnected ? configUrl : null);
   const canEditUrl = provider.id === 'home_assistant' && provider.isConnected;
-  const hasDetails =
-    provider.isConnected && !!getProviderRuntimeRegistration(provider.id).hubFeatureService;
-  const hasProviderMenu = Boolean(openUrl || canEditUrl || provider.canDisconnect || hasDetails);
-  const hasNonDestructiveMenuAction = Boolean(openUrl || canEditUrl || hasDetails);
+  const hasProviderMenu = Boolean(openUrl || canEditUrl || provider.canDisconnect);
+  const hasNonDestructiveMenuAction = Boolean(openUrl || canEditUrl);
   const canConnectHomey = provider.id === 'homey' && !provider.isConnected;
   const canConnectWithUrl = usesUrlConnect && !provider.isConnected;
 
@@ -217,11 +211,9 @@ function ProviderCardView({
                   {provider.label}
                 </p>
                 {provider.status === 'connected' ? (
-                  <>
-                    <Badge tone="success" size="small" className="text-[10px]">
-                      {t('settings.system.providers.status.connected')}
-                    </Badge>
-                  </>
+                  <Badge tone="success" size="small" className="text-[10px]">
+                    {t('settings.system.providers.status.connected')}
+                  </Badge>
                 ) : provider.status !== 'disconnected' ? (
                   <ProviderStatusBadge label={getProviderStatusLabel(t, provider.status)} />
                 ) : null}
@@ -251,12 +243,6 @@ function ProviderCardView({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-52">
-                  {hasDetails ? (
-                    <DropdownMenuItem onSelect={() => openProviderDetails(provider.id)}>
-                      <Settings2 className="h-4 w-4" />
-                      {t('providerDetails.menu')}
-                    </DropdownMenuItem>
-                  ) : null}
                   {openUrl ? (
                     <DropdownMenuItem asChild>
                       <a href={openUrl} target="_blank" rel="noopener noreferrer">
@@ -276,7 +262,7 @@ function ProviderCardView({
                       {hasNonDestructiveMenuAction ? <DropdownMenuSeparator /> : null}
                       <DropdownMenuItem
                         variant="destructive"
-                        onSelect={() => void handleDisconnectProvider(provider.id)}
+                        onSelect={() => onRequestDisconnect(provider.id)}
                       >
                         <Unplug className="h-4 w-4" />
                         {t('settings.system.providers.disconnect')}
@@ -341,7 +327,10 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
   const [connectDialogProviderId, setConnectDialogProviderId] =
     useState<IntegrationProviderId | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
-  const [detailsProviderId, setDetailsProviderId] = useState<IntegrationProviderId | null>(null);
+  const [disconnectProviderId, setDisconnectProviderId] = useState<IntegrationProviderId | null>(
+    null
+  );
+  const [isDisconnecting, setIsDisconnecting] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [showProviderManagement, setShowProviderManagement] = useState(() =>
     controller.providerCards.every((provider) => !provider.isConnected)
@@ -365,10 +354,9 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
       (showAdditionalProviders || provider.id === 'home_assistant')
   );
   const connectedProviders = providerCards.filter((provider) => provider.isConnected);
-  const detailsProvider = connectedProviders.find((provider) => provider.id === detailsProviderId);
-  const detailsService = detailsProvider
-    ? getProviderRuntimeRegistration(detailsProvider.id).hubFeatureService
-    : undefined;
+  const disconnectDialogProvider = connectedProviders.find(
+    (provider) => provider.id === disconnectProviderId
+  );
   const managedProviders = providerCards.filter((provider) => !provider.isConnected);
   const connectDialogProvider =
     connectDialogProviderId === null
@@ -431,10 +419,9 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
                     styles={styles}
                     openConnectDialog={openConnectDialog}
                     handleConnectProvider={handleConnectProvider}
-                    handleDisconnectProvider={handleDisconnectProvider}
+                    onRequestDisconnect={setDisconnectProviderId}
                     t={t}
                     configUrl={config?.url ?? null}
-                    openProviderDetails={setDetailsProviderId}
                   />
                 ))}
               </div>
@@ -459,10 +446,9 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
                     styles={styles}
                     openConnectDialog={openConnectDialog}
                     handleConnectProvider={handleConnectProvider}
-                    handleDisconnectProvider={handleDisconnectProvider}
+                    onRequestDisconnect={setDisconnectProviderId}
                     t={t}
                     configUrl={config?.url ?? null}
-                    openProviderDetails={setDetailsProviderId}
                   />
                 ))}
               </div>
@@ -471,14 +457,6 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
         </SettingsItem>
       </SettingsSectionGroup>
 
-      {detailsProvider && detailsService ? (
-        <ProviderHubDialog
-          name={detailsProvider.label}
-          service={detailsService}
-          styles={styles}
-          onClose={() => setDetailsProviderId(null)}
-        />
-      ) : null}
       {connectDialogProvider ? (
         <ModalSurface
           isOpen
@@ -653,6 +631,47 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
           </form>
         </ModalSurface>
       ) : null}
+
+      <AlertDialog
+        open={Boolean(disconnectDialogProvider)}
+        onOpenChange={(open) => {
+          if (!open && !isDisconnecting) setDisconnectProviderId(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('settings.system.providers.disconnectTitle', {
+                provider: disconnectDialogProvider?.label ?? '',
+              })}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('settings.system.providers.disconnectDescription', {
+                provider: disconnectDialogProvider?.label ?? '',
+              })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDisconnecting}>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isDisconnecting || !disconnectDialogProvider}
+              onClick={async (event) => {
+                event.preventDefault();
+                if (isDisconnecting || !disconnectDialogProvider) return;
+                setIsDisconnecting(true);
+                try {
+                  await handleDisconnectProvider(disconnectDialogProvider.id);
+                  setDisconnectProviderId(null);
+                } finally {
+                  setIsDisconnecting(false);
+                }
+              }}
+            >
+              {t('settings.system.providers.disconnect')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <SettingsSectionGroup
         id="system-devices-sync"

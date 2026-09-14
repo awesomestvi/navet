@@ -1,4 +1,5 @@
 import type { Device, DeviceCollection, DeviceWithType } from '@navet/app/types/device.types';
+import { normalizeRoomName } from './room-name';
 
 type LocatableDevice = Device | DeviceWithType;
 export const UNKNOWN_ROOM_LABEL = 'Unassigned';
@@ -20,13 +21,15 @@ export function getDeviceRoomLabel(device: LocatableDevice): string {
 }
 
 export function getAllRooms(devices: DeviceCollection): string[] {
-  const rooms = new Set<string>();
+  const rooms = new Map<string, string>();
 
   Object.values(devices).forEach((deviceArray) => {
     (deviceArray as Device[]).forEach((device: Device) => {
-      rooms.add(getDeviceRoomLabel(device));
+      const room = getDeviceRoomLabel(device);
+      const key = normalizeRoomName(room);
+      if (!rooms.has(key)) rooms.set(key, room);
     });
   });
 
-  return Array.from(rooms).sort();
+  return Array.from(rooms.values()).sort();
 }

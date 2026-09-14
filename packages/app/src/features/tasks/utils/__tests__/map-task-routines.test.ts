@@ -1,8 +1,50 @@
 import { makeTaskEntity } from '@navet/app/features/tasks/test-utils';
 import { describe, expect, it } from 'vitest';
-import { mapTaskRoutines } from '../map-task-routines';
+import { mapDeviceSceneRoutines, mapTaskRoutines } from '../map-task-routines';
 
 describe('mapTaskRoutines', () => {
+  it('includes provider-scoped flows and moods without duplicating Home Assistant scenes', () => {
+    const scenes = [
+      {
+        id: 'homey:flow/movie',
+        name: 'Movie time',
+        providerId: 'homey' as const,
+        room: 'Unassigned',
+        size: 'small' as const,
+      },
+      {
+        id: 'homey:advancedflow/night',
+        name: 'Good night',
+        providerId: 'homey' as const,
+        room: 'Unassigned',
+        size: 'small' as const,
+      },
+      {
+        id: 'homey:mood/relax',
+        name: 'Relax',
+        providerId: 'homey' as const,
+        room: 'Living room',
+        size: 'small' as const,
+      },
+      {
+        id: 'home_assistant:scene.relax',
+        name: 'HA Relax',
+        providerId: 'home_assistant' as const,
+        room: 'Living room',
+        size: 'small' as const,
+      },
+    ];
+    expect(mapDeviceSceneRoutines(scenes).map(({ id }) => id)).toEqual([
+      'homey:advancedflow/night',
+      'homey:flow/movie',
+      'homey:mood/relax',
+    ]);
+    expect(mapDeviceSceneRoutines(scenes)[2]).toMatchObject({
+      name: 'Relax',
+      room: 'Living room',
+      type: 'scene',
+    });
+  });
   it('maps automations, scenes, and scripts into separate routine surfaces', () => {
     const routines = mapTaskRoutines({
       entities: {

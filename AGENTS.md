@@ -12,8 +12,8 @@ Assistant add-on through Ingress, and a Home Assistant custom panel.
 - Homey supports rooms, realtime entities, lighting, switches, sensors, locks, covers, thermostats, speaker
   controls, runnable flows and moods, people, notifications, Insights history, device capabilities,
   favorites, and app browsing.
-- openHAB is an implemented standalone provider for rooms, realtime entities, lighting,
-  switches, and sensors.
+- openHAB supports rooms, realtime entities, lighting, switches, fans, climate setpoints,
+  speaker playback and volume, locks, covers, security sensors, batteries, and utility measurements.
 - Hubitat and SmartThings are planned catalog metadata only; they have no runtime adapters.
 - Shared product behavior belongs behind Navet-owned contracts, not Home Assistant payloads.
 - Connected providers are peers. Users choose entities or sources per feature; do not introduce a

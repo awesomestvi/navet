@@ -163,6 +163,33 @@ describe('mapNavetEntitiesToDeviceCollection', () => {
     expect(devices.sensors).toHaveLength(0);
   });
 
+  it('retains independent measurements alongside their device control when requested', () => {
+    const devices = mapNavetEntitiesToDeviceCollection([
+      createEntity({
+        canonicalId: 'openhab:WasherPower',
+        externalId: 'WasherPower',
+        type: 'switch',
+        name: 'Washing machine',
+        attributes: { on: true, sourceDeviceId: 'Washer' },
+      }),
+      createEntity({
+        canonicalId: 'openhab:WasherUsage',
+        externalId: 'WasherUsage',
+        type: 'sensor',
+        name: 'Washing machine power',
+        attributes: {
+          value: 485,
+          unit: 'W',
+          deviceClass: 'power',
+          sourceDeviceId: 'Washer',
+          retainSensorCard: true,
+        },
+      }),
+    ]);
+    expect(devices.switches).toHaveLength(1);
+    expect(devices.sensors).toMatchObject([{ id: 'openhab:WasherUsage', value: '485', unit: 'W' }]);
+  });
+
   it('suppresses secondary switch cards attached to climate devices', () => {
     const devices = mapNavetEntitiesToDeviceCollection([
       createEntity({

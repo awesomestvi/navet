@@ -3,10 +3,10 @@ import {
   type PlatformBatterySensorRow,
 } from '@navet/app/infrastructure/home-assistant/home-assistant-battery-selectors';
 import { integrationSelectors } from '@navet/app/stores/selectors';
+import type { IntegrationProviderId } from '@navet/app/types/provider';
 import { useMemo } from 'react';
 import { useIntegrationStore } from './use-integration-store';
 import { useProviderEntitySnapshots } from './use-provider-entity';
-import type { IntegrationProviderId } from '@navet/app/types/provider';
 
 export type ProviderBatterySensorRow = PlatformBatterySensorRow;
 

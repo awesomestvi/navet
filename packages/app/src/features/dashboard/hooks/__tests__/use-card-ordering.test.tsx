@@ -11,6 +11,34 @@ describe('useCardOrdering', () => {
     storage.remove(STORAGE_KEYS.cardOrders);
   });
 
+  it('matches mixed-case room labels and preserves saved positions across casing changes', () => {
+    storage.set(STORAGE_KEYS.cardOrders, {
+      'LIVING ROOM': ['openhab:accent', 'homey:ceiling'],
+      'living room': ['homey:ceiling'],
+    });
+    const devices = {
+      ...createEmptyDeviceCollection(),
+      lights: ['homey:ceiling', 'openhab:accent', 'openhab:new_light'].map((id) => ({
+        id,
+        name: id,
+        room: id.startsWith('homey:') ? 'Living Room' : 'living room',
+        size: 'small' as const,
+        state: true,
+        brightness: 68,
+        temp: 3200,
+      })),
+    };
+
+    const { result } = renderHook(() => useCardOrdering(devices, ['Living Room', 'living room']));
+
+    expect(Object.keys(result.current.cardOrders)).toEqual(['Living Room']);
+    expect(result.current.cardOrders['Living Room']).toEqual([
+      'openhab:accent',
+      'homey:ceiling',
+      'openhab:new_light',
+    ]);
+  });
+
   it('does not re-persist identical card order events', () => {
     const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
     const devices = {

@@ -82,6 +82,7 @@ export interface BaseCardProps extends HTMLAttributes<HTMLDivElement> {
   headerAlign?: 'start' | 'center';
   headerTone?: CardTextTone;
   headerVariant?: EntityCardHeaderVariant;
+  headerTitleOverflow?: 'truncate' | 'wrap';
   footer?: ReactNode;
   actionRow?: BaseCardActionRowConfig;
   settingsAction?: BaseCardSettingsActionProps;
@@ -196,6 +197,7 @@ export function BaseCard({
   headerAlign = 'start',
   headerTone,
   headerVariant = 'default',
+  headerTitleOverflow = 'truncate',
   footer,
   actionRow,
   settingsAction,
@@ -246,7 +248,7 @@ export function BaseCard({
           title={title ?? ''}
           subtitle={subtitle ?? ''}
           layout={headerLayout}
-          titleClassName="mt-0.5 line-clamp-2 text-xs font-semibold leading-tight"
+          titleClassName={`mt-0.5 ${headerTitleOverflow === 'wrap' ? 'whitespace-normal wrap-break-word' : 'line-clamp-2'} text-xs font-semibold leading-tight`}
           subtitleClassName="truncate text-xs tracking-normal"
           titleStyle={{ color: readableTextTokens.titleColor }}
           subtitleStyle={{ color: readableTextTokens.subtitleColor }}
@@ -262,6 +264,7 @@ export function BaseCard({
         align={headerAlign}
         tone={resolvedHeaderTone}
         variant={headerVariant}
+        titleOverflow={headerTitleOverflow}
         leading={headerLeading}
         trailing={headerTrailing}
         className={headerClassName}

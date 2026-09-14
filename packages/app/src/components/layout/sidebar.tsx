@@ -30,6 +30,7 @@ import {
 } from '@navet/app/utils/custom-extensions';
 import { resolveEffectsQuality } from '@navet/app/utils/effects-quality';
 import { getPublicAssetUrl } from '@navet/app/utils/public-assets';
+import { roomNamesMatch } from '@navet/app/utils/room-name';
 import {
   Check,
   ChevronDown,
@@ -50,7 +51,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
 import { HeaderAssistAction } from './header-assist-action';
 import type { MobileRoomNavigation } from './mobile-room-dropdown';
-import { getVisibleRoomNavRooms } from './room-nav.utils';
+import { filterHiddenRooms, getVisibleRoomNavRooms } from './room-nav.utils';
 import {
   getOrderedSectionNavigationItems,
   getSectionNavigationItems,
@@ -256,7 +257,15 @@ export const Sidebar = memo(function Sidebar({
   const HomeAssistantSidebarIcon =
     homeAssistantShell.isKioskEnabled === true ? PanelLeftOpen : PanelLeftClose;
   const visibleMobileRooms = useMemo(
-    () => (mobileRoomNavigation ? getVisibleRoomNavRooms(mobileRoomNavigation.rooms) : []),
+    () =>
+      mobileRoomNavigation
+        ? getVisibleRoomNavRooms(
+            filterHiddenRooms(
+              mobileRoomNavigation.rooms,
+              mobileRoomNavigation.hiddenRoomNames ?? []
+            )
+          )
+        : [],
     [mobileRoomNavigation]
   );
   const searchAccessoryBackground = undefined;
@@ -485,7 +494,9 @@ export const Sidebar = memo(function Sidebar({
                 const activeHomeLabel =
                   activeHomeRoomNavigation?.activeRoom &&
                   !isAllRooms(activeHomeRoomNavigation.activeRoom)
-                    ? activeHomeRoomNavigation.activeRoom
+                    ? (visibleMobileRooms.find((room) =>
+                        roomNamesMatch(room, activeHomeRoomNavigation.activeRoom)
+                      ) ?? activeHomeRoomNavigation.activeRoom)
                     : hasMultipleDashboards
                       ? (activeDashboard?.name ?? item.label)
                       : item.label;
@@ -551,7 +562,7 @@ export const Sidebar = memo(function Sidebar({
                               onSelect={() => activeHomeRoomNavigation?.onRoomChange(room)}
                             >
                               <span className="min-w-0 flex-1 truncate">{label}</span>
-                              {activeHomeRoomNavigation?.activeRoom === room ? (
+                              {roomNamesMatch(activeHomeRoomNavigation?.activeRoom ?? '', room) ? (
                                 <Check className="h-4 w-4" style={{ color: activeColorValue }} />
                               ) : null}
                             </DropdownMenuItem>

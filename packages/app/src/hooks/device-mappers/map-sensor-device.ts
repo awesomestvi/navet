@@ -21,7 +21,7 @@ export function inferSensorDisplayIcon(
 
   switch (deviceClass) {
     case 'battery':
-      return 'activity';
+      return 'battery';
     case 'carbon_dioxide':
     case 'carbon_monoxide':
     case 'pm1':

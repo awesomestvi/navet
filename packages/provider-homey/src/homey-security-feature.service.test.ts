@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { homeyService } from './homey-service';
 import { homeySecurityFeatureService } from './homey-security-feature.service';
+import { homeyService } from './homey-service';
 
 vi.mock('./homey-bridge', () => ({
   callHomeyService: (...args: Parameters<typeof homeyService.callService>) =>

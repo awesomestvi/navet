@@ -1,13 +1,55 @@
-import { describe, expect, it } from 'vitest';
-import { createEmptyDeviceCollection } from '@navet/app/core/navet-device-collections';
-import { buildDashboardVisibilityResult } from '@navet/app/hooks/use-dashboard-devices';
 import {
+  createEmptyDeviceCollection,
+  mapNavetEntitiesToDeviceCollection,
+} from '@navet/app/core/navet-device-collections';
+import { getClimateDashboardGroup } from '@navet/app/features/climate/utils/climate-dashboard-group';
+import { buildSecurityCameraDashboardModel } from '@navet/app/features/security/utils/security-camera-dashboard-model';
+import { buildDashboardVisibilityResult } from '@navet/app/hooks/use-dashboard-devices';
+import { mapHomeySnapshotToNavetEntities } from '@navet/provider-homey';
+import { describe, expect, it } from 'vitest';
+import {
+  resolveDashboardSectionDeviceKeys,
   resolveDashboardShownSensorEntityIds,
   resolveShouldIncludeFeatureCollections,
   resolveShouldTrackMediaDevices,
 } from '../use-dashboard-controller';
 
+describe('Lights scene collections', () => {
+  it('loads normalized scenes alongside lights so shortcuts include every connected provider', () => {
+    expect(resolveDashboardSectionDeviceKeys('lights')).toEqual(['lights', 'scenes']);
+  });
+});
+
 describe('Climate environmental sensor visibility', () => {
+  it.each([
+    ['temperature', 'temperature', '24.2', '°C'],
+    ['pm25', 'airQuality', '28', 'μg/m³'],
+    ['volatile_organic_compounds', 'airQuality', '350', 'ppb'],
+  ] as const)(
+    'includes a normalized %s reading in its Climate section',
+    (deviceClass, group, value, unit) => {
+      const devices = createEmptyDeviceCollection();
+      devices.sensors = [
+        {
+          id: `openhab:${deviceClass}`,
+          name: 'Room reading',
+          room: 'Bathroom',
+          size: 'small',
+          value,
+          unit,
+          deviceClass,
+        },
+      ];
+      const shown = resolveDashboardShownSensorEntityIds('climate', devices, []);
+      const visible = buildDashboardVisibilityResult(devices, [], shown).visibleDevices.sensors;
+      expect(visible).toEqual(devices.sensors);
+      expect(getClimateDashboardGroup({ ...visible[0], type: 'sensors' })).toBe(group);
+      expect(
+        buildDashboardVisibilityResult(devices, [visible[0].id], shown).visibleDevices.sensors
+      ).toEqual([]);
+    }
+  );
+
   it('automatically includes humidity in Climate while preserving Home opt-in and explicit hiding', () => {
     const devices = createEmptyDeviceCollection();
     devices.sensors = [
@@ -29,6 +71,48 @@ describe('Climate environmental sensor visibility', () => {
     expect(
       buildDashboardVisibilityResult(devices, [devices.sensors[0].id], shown).visibleDevices.sensors
     ).toEqual([]);
+    expect(resolveDashboardShownSensorEntityIds('home', devices, [])).toEqual([]);
+  });
+});
+
+describe('Security sensor visibility', () => {
+  it('loads Homey contact, motion, CO and battery readings into Security while honoring hidden sensors', () => {
+    const devices = mapNavetEntitiesToDeviceCollection(
+      mapHomeySnapshotToNavetEntities({
+        connected: true,
+        zones: { entrance: { id: 'entrance', name: 'Entrance' } },
+        devices: {
+          detector: {
+            id: 'detector',
+            name: 'Entrance detector',
+            class: 'sensor',
+            zone: 'entrance',
+            capabilitiesObj: {
+              alarm_contact: { value: true },
+              alarm_motion: { value: true },
+              alarm_co: { value: true },
+              measure_battery: { value: 15, units: '%' },
+              measure_temperature: { value: 21, units: '°C' },
+            },
+          },
+        },
+      })
+    );
+    const shown = resolveDashboardShownSensorEntityIds('security', devices, []);
+    const visible = buildDashboardVisibilityResult(devices, [], shown).visibleDevices;
+    expect(visible.sensors).toHaveLength(4);
+    const model = buildSecurityCameraDashboardModel(visible);
+    expect(model.groups.access).toHaveLength(1);
+    expect(model.groups.activity).toHaveLength(1);
+    expect(model.groups.hazards).toHaveLength(1);
+    expect(model.groups.system).toHaveLength(1);
+    expect(model.summary.criticalCount).toBe(1);
+    const hidden = buildDashboardVisibilityResult(
+      devices,
+      ['homey:detector#alarm_contact'],
+      shown
+    ).visibleDevices;
+    expect(buildSecurityCameraDashboardModel(hidden).groups.access).toHaveLength(0);
     expect(resolveDashboardShownSensorEntityIds('home', devices, [])).toEqual([]);
   });
 });

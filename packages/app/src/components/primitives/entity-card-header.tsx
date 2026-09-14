@@ -25,6 +25,7 @@ interface EntityCardHeaderProps {
   align?: 'start' | 'center';
   tone?: CardTextTone;
   titleClassName?: string;
+  titleOverflow?: 'truncate' | 'wrap';
   subtitleClassName?: string;
   className?: string;
   contentClassName?: string;
@@ -47,6 +48,7 @@ export function EntityCardHeader({
   align = 'start',
   tone = 'neutral',
   titleClassName = '',
+  titleOverflow = 'truncate',
   subtitleClassName = '',
   className = '',
   contentClassName = '',
@@ -93,11 +95,13 @@ export function EntityCardHeader({
       : layout === 'eyebrow-first'
         ? 'truncate text-[11px] leading-[14px] tracking-normal'
         : 'truncate text-[11px] leading-[14px]';
+  const titleOverflowClass =
+    titleOverflow === 'wrap' ? 'whitespace-normal wrap-break-word' : 'truncate';
   const titleClassBase = useLargeVariant
-    ? 'truncate text-[14px] font-semibold leading-[18px]'
+    ? `${titleOverflowClass} text-[14px] font-semibold leading-[18px]`
     : useDenseVariant
-      ? 'truncate text-[11px] font-semibold leading-[13px]'
-      : 'truncate text-[12px] font-semibold leading-[18px]';
+      ? `${titleOverflowClass} text-[11px] font-semibold leading-[13px]`
+      : `${titleOverflowClass} text-[12px] font-semibold leading-[18px]`;
   const crossAxisAlignment = align === 'center' || useLargeVariant ? 'items-center' : 'items-start';
   const contentFrameClassName = useLargeVariant
     ? 'flex min-h-10 items-center'
@@ -108,7 +112,7 @@ export function EntityCardHeader({
     ? 'flex min-h-10 min-w-0 flex-col justify-center overflow-hidden'
     : useDenseVariant || isTiny || (isExtraSmall && !useCompactLayout)
       ? ''
-      : 'flex h-8 min-w-0 flex-col justify-center overflow-hidden';
+      : `flex ${titleOverflow === 'wrap' ? 'min-h-8' : 'h-8'} min-w-0 flex-col justify-center overflow-hidden`;
 
   return (
     <div

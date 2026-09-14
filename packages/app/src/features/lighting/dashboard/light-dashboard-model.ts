@@ -1,6 +1,8 @@
+import type { QuickActionRoutine } from '@navet/app/features/tasks/types';
 import type { DeviceWithType } from '@navet/app/types/device.types';
 import type { IntegrationProviderId } from '@navet/app/types/provider';
 import { getDeviceRoomLabel, UNKNOWN_ROOM_LABEL } from '@navet/app/utils/device-location';
+import { normalizeRoomName, roomNamesMatch } from '@navet/app/utils/room-name';
 import type { NavetEntity } from '@navet/core/types';
 
 export interface LightDashboardItem {
@@ -34,6 +36,22 @@ export interface LightDashboardModel {
   activeCount: number;
   activeRoomCount: number;
   unavailableCount: number;
+}
+
+export function buildLightSceneShortcuts(
+  devices: Iterable<DeviceWithType>,
+  locale?: string
+): QuickActionRoutine[] {
+  return Array.from(devices)
+    .filter((device) => device.type === 'scenes')
+    .map((device) => ({
+      id: device.id,
+      type: 'scene' as const,
+      name: device.name,
+      room: getDeviceRoomLabel(device),
+      state: 'off',
+    }))
+    .sort((left, right) => left.name.localeCompare(right.name, locale, { sensitivity: 'base' }));
 }
 
 function clampBrightness(value: unknown): number | undefined {
@@ -139,11 +157,19 @@ export function buildLightDashboardModel({
     entityLookup.set(entity.externalId, entity);
   }
   const itemsByRoom = new Map<string, LightDashboardItem[]>();
+  const displayNamesByRoomKey = new Map<string, string>();
+  for (const room of rooms) {
+    const key = normalizeRoomName(room);
+    if (!displayNamesByRoomKey.has(key)) displayNamesByRoomKey.set(key, room);
+  }
 
   for (const device of deviceMap.values()) {
     if (device.type !== 'lights') continue;
     const entity = findEntity(device, entityLookup);
-    const room = getDeviceRoomLabel(device) || UNKNOWN_ROOM_LABEL;
+    const sourceRoom = getDeviceRoomLabel(device) || UNKNOWN_ROOM_LABEL;
+    const roomKey = normalizeRoomName(sourceRoom);
+    const room = displayNamesByRoomKey.get(roomKey) ?? sourceRoom;
+    displayNamesByRoomKey.set(roomKey, room);
     const attributes = entity?.attributes ?? {};
     const brightness = clampBrightness(attributes.brightnessPct ?? device.brightness);
     const next: LightDashboardItem = {
@@ -173,13 +199,17 @@ export function buildLightDashboardModel({
     itemsByRoom.set(room, roomItems);
   }
 
-  const knownRooms = rooms.filter((room) => itemsByRoom.has(room));
-  const extraRooms = Array.from(itemsByRoom.keys()).filter((room) => !knownRooms.includes(room));
-  const orderedRooms = [...knownRooms, ...extraRooms];
+  const orderedRooms = [...displayNamesByRoomKey.values()].filter((room) => itemsByRoom.has(room));
   const previousRooms = new Map(previous?.rooms.map((room) => [room.room, room]) ?? []);
   const summaries = orderedRooms.map((room) => {
     const items = itemsByRoom.get(room) ?? [];
-    const configuredOrder = cardOrders[room] ?? [];
+    const configuredOrder = [
+      ...new Set(
+        Object.entries(cardOrders)
+          .filter(([name]) => roomNamesMatch(name, room))
+          .flatMap(([, ids]) => ids)
+      ),
+    ];
     const orderIndex = new Map(configuredOrder.map((id, index) => [id, index]));
     items.sort((left, right) => {
       const leftOrder = orderIndex.get(left.id) ?? Number.MAX_SAFE_INTEGER;

@@ -2,6 +2,7 @@ import type { LucideIcon } from 'lucide-react';
 import {
   Activity,
   AlarmSmoke,
+  Battery,
   CircleAlert,
   DoorOpen,
   Droplets,
@@ -25,6 +26,7 @@ export type SensorIconType =
   | 'trend-up'
   | 'trend-down'
   | 'activity'
+  | 'battery'
   | 'wind'
   | 'sun'
   | 'motion'
@@ -62,6 +64,7 @@ export const iconMap: Record<SensorIconType, LucideIcon> = {
   'trend-up': TrendingUp,
   'trend-down': TrendingDown,
   activity: Activity,
+  battery: Battery,
   wind: Wind,
   sun: Sun,
   motion: Radar,

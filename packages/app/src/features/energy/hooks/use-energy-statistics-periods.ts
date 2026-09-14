@@ -3,11 +3,11 @@ import {
   getIntegrationHistoryMessageClient,
   supportsIntegrationEnergyStatistics,
 } from '@navet/app/services/integration-history.service';
+import { parseProviderScopedId } from '@navet/app/utils/provider-ids';
 import { subscribeVisibilityAwareAsyncTask } from '@navet/app/utils/visibility-aware-scheduler';
 import { useEffect, useState } from 'react';
 import { getCachedEnergyStatistics } from '../services/energy-statistics-cache';
 import { getEnergyStatisticsPeriods } from '../services/energy-statistics-service';
-import { parseProviderScopedId } from '@navet/app/utils/provider-ids';
 
 const REFRESH_MS = ENERGY_STATISTICS_REFRESH_INTERVAL;
 const CACHE_TTL_MS = Math.max(30_000, REFRESH_MS - 1_000);

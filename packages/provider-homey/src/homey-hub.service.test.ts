@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { homeyService } from './homey-service';
 import {
   getHomeyHistory,
   homeyHistoryFeatureService,
@@ -10,6 +9,7 @@ import {
 } from './homey-hub.service';
 import { mapHomeySnapshotToNavetEntities } from './homey-mappers';
 import { homeyNotificationFeatureService } from './homey-notification-feature.service';
+import { homeyService } from './homey-service';
 import type { HomeySnapshot } from './homey-types';
 
 const fixture: HomeySnapshot = {
@@ -138,11 +138,11 @@ describe('Homey resources', () => {
   });
 
   it('accepts Insights arrays returned by Homey Self-Hosted Server', async () => {
-    const logs = Object.values(fixture.logs!);
+    const logs = Object.values(fixture.logs ?? {});
     const result = await loadHomeyResources(
       async <T>(path: string): Promise<T> => (path.includes('insights') ? logs : {}) as T
     );
-    expect(Object.values(result.logs!)).toEqual(logs);
+    expect(Object.values(result.logs ?? {})).toEqual(logs);
     expect(result.resourceErrors?.logs).toBeUndefined();
   });
 
@@ -168,7 +168,8 @@ describe('Homey resources', () => {
   it('executes scene-card commands through the Homey resource action', async () => {
     const entity = mapHomeySnapshotToNavetEntities(fixture).find(
       (item) => item.id === 'homey:mood/dinner'
-    )!;
+    );
+    if (!entity) throw new Error('Mood entity is missing');
     await homeyService.executeCommand(entity, { type: 'turn_on', entityId: entity.id });
     expect(request).toHaveBeenCalledWith('/api/manager/moods/mood/dinner/set', { method: 'POST' });
   });
@@ -198,8 +199,10 @@ describe('Homey resources', () => {
 
   it('presents fractional percentages in household units and translates writes back to Homey', async () => {
     const snapshot = structuredClone(fixture);
-    snapshot.devices.lamp.capabilitiesObj!.dim.units = '%';
-    snapshot.devices.lamp.capabilitiesObj!.dim.step = 0.01;
+    const lampCapabilities = snapshot.devices.lamp.capabilitiesObj;
+    if (!lampCapabilities) throw new Error('Lamp fixture capabilities are missing');
+    lampCapabilities.dim.units = '%';
+    lampCapabilities.dim.step = 0.01;
     homeyService.replaceSnapshot(snapshot);
     expect(mapHomeyHubSnapshot(snapshot).sections.devices[0].controls).toContainEqual(
       expect.objectContaining({ id: 'dim', value: 40, min: 0, max: 100, step: 1, unit: '%' })
@@ -246,6 +249,18 @@ describe('Homey resources', () => {
     });
   });
 
+  it('distinguishes missing Insights logs from failed manager access', () => {
+    const supportsHistory = homeyHistoryFeatureService.supportsEntityHistory;
+    if (!supportsHistory) throw new Error('Homey history support check is missing');
+    expect(supportsHistory('lamp#measure_power')).toBe(true);
+    expect(supportsHistory('frontDoor')).toBe(false);
+    const snapshot = structuredClone(fixture);
+    snapshot.logs = {};
+    snapshot.resourceErrors = { logs: 'Access denied' };
+    homeyService.replaceSnapshot(snapshot);
+    expect(supportsHistory('lamp#measure_power')).toBe(true);
+  });
+
   it('normalizes Insights values, skips missing samples and routes entity history', async () => {
     const now = Date.now();
     const time = new Date(now - 1000).toISOString();
@@ -263,8 +278,10 @@ describe('Homey resources', () => {
       '/api/manager/insights/log/homey%3Adevice%3Alamp/homey%3Adevice%3Alamp%3Ameasure_power/entry?resolution=last7Days',
       undefined
     );
+    const getEntityHistory = homeyHistoryFeatureService.getEntityHistory;
+    if (!getEntityHistory) throw new Error('Homey entity history is missing');
     expect(
-      await homeyHistoryFeatureService.getEntityHistory!({
+      await getEntityHistory({
         entityId: 'lamp#measure_power',
         startTime: new Date(now - 10_000).toISOString(),
       })

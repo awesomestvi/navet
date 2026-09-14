@@ -6,6 +6,34 @@ import {
 } from './homey-entity-runtime.service';
 
 describe('homeyEntityRuntimeService', () => {
+  it('uses the device name in sensor snapshots and selectors and follows Homey renames', () => {
+    const device = {
+      id: 'radiator',
+      name: 'Bedroom radiator valve',
+      class: 'thermostat',
+      capabilitiesObj: { measure_temperature: { value: 18.8, title: 'Temperature', units: '°C' } },
+    };
+    homeyService.replaceSnapshot({ connected: true, devices: { radiator: device }, zones: {} });
+    expect(
+      homeyEntityRuntimeService.getEntitySnapshot?.('radiator#measure_temperature')
+    ).toMatchObject({ attributes: { friendly_name: 'Bedroom radiator valve · Temperature' } });
+    expect(
+      homeyEntityRuntimeService
+        .getEntityRegistryEntries?.()
+        .find(({ entityId }) => entityId === 'radiator#measure_temperature')
+    ).toMatchObject({ name: 'Bedroom radiator valve · Temperature' });
+    homeyService.replaceSnapshot({
+      devices: { radiator: { ...device, name: 'Master bedroom radiator' } },
+    });
+    expect(
+      homeyEntityRuntimeService.getEntitySnapshot?.('radiator#measure_temperature')
+    ).toMatchObject({ attributes: { friendly_name: 'Master bedroom radiator · Temperature' } });
+    expect(
+      homeyEntityRuntimeService
+        .getEntityRegistryEntries?.()
+        .find(({ entityId }) => entityId === 'radiator#measure_temperature')
+    ).toMatchObject({ name: 'Master bedroom radiator · Temperature' });
+  });
   beforeEach(() => {
     homeyService.resetSnapshot();
     resetHomeyEntityRuntimeServiceCachesForTests();
@@ -199,7 +227,7 @@ describe('homeyEntityRuntimeService', () => {
     expect(homeyEntityRuntimeService.getEntityRegistryEntry?.('socket#meter_power')).toMatchObject({
       entityId: 'socket#meter_power',
       deviceId: 'socket',
-      name: 'Energy',
+      name: 'Coffee maker · Energy',
     });
     const listener = vi.fn();
     const unsubscribe = homeyEntityRuntimeService.subscribeEntitySnapshot?.(

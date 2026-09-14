@@ -61,6 +61,20 @@ const workspace: RoomWorkspaceV2 = {
 };
 
 describe('resolveDashboardRoomPreferences', () => {
+  it('retains room order and hidden preferences when provider labels change casing', () => {
+    expect(
+      resolveDashboardRoomPreferences({
+        availableRooms: ['Kitchen', 'Living Room'],
+        hiddenRoomNames: ['LIVING ROOM'],
+        roomOrder: ['living room', 'KITCHEN'],
+        workspace: null,
+      })
+    ).toEqual({
+      rooms: ['Living Room', 'Kitchen'],
+      hiddenRoomNames: ['Living Room'],
+    });
+  });
+
   it('keeps the legacy name preferences as the fallback before V2 is initialized', () => {
     expect(
       resolveDashboardRoomPreferences({

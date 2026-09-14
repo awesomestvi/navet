@@ -7,6 +7,7 @@ import {
   buildRoomWorkspaceIndexV2,
   type RoomWorkspaceV2,
 } from '@navet/app/features/dashboard/rooms/room-workspace-v2';
+import { normalizeRoomName } from '@navet/app/utils/room-name';
 import type { NavetProviderRoom } from '@navet/core/types';
 import { useCallback, useMemo } from 'react';
 import { useEntityRoomOverridesStore } from '../stores/entity-room-overrides-store';
@@ -66,13 +67,20 @@ function buildRoomPlacementLookup(
 ): RoomPlacementLookup {
   const roomNamesById: Record<string, string> = {};
   const workspaceRoomIdsBySourceCanonicalId: Record<string, string> = {};
+  const displayNamesByNormalizedName = new Map<string, string>();
 
   Object.values(normalizedRoomsByCanonicalId).forEach((room) => {
-    roomNamesById[room.canonicalId] = room.name;
-    roomNamesById[room.id] = room.name;
-    roomNamesById[room.normalizedName] = room.name;
-    roomNamesById[room.externalId] = room.name;
-    roomNamesById[createProviderScopedId(room.providerId, room.externalId)] = room.name;
+    // Match the display name chosen by useAggregatedRooms for shared provider rooms.
+    // Otherwise differently capitalized source labels produce invisible room card orders.
+    const roomKey = normalizeRoomName(room.name);
+    const displayName = displayNamesByNormalizedName.get(roomKey) ?? room.name;
+    displayNamesByNormalizedName.set(roomKey, displayName);
+    roomNamesById[roomKey] = displayName;
+    roomNamesById[room.canonicalId] = displayName;
+    roomNamesById[room.id] = displayName;
+    roomNamesById[room.normalizedName] = displayName;
+    roomNamesById[room.externalId] = displayName;
+    roomNamesById[createProviderScopedId(room.providerId, room.externalId)] = displayName;
   });
 
   if (workspace) {
@@ -137,12 +145,17 @@ function applyRoomOverridesToDevices<
   let nextDevices: T[] | null = null;
 
   devices.forEach((device, index) => {
-    const requestedRoomId = getRoomOverrideIdForDevice(device, roomIdsByEntityId) ?? device.roomId;
+    const overrideRoomId = getRoomOverrideIdForDevice(device, roomIdsByEntityId);
+    const requestedRoomId = overrideRoomId ?? device.roomId;
     const roomId = requestedRoomId
       ? (roomPlacementLookup.workspaceRoomIdsBySourceCanonicalId[requestedRoomId] ??
         requestedRoomId)
       : undefined;
-    const roomName = roomId ? roomPlacementLookup.roomNamesById[roomId] : undefined;
+    const roomName =
+      (roomId ? roomPlacementLookup.roomNamesById[roomId] : undefined) ??
+      (!overrideRoomId
+        ? roomPlacementLookup.roomNamesById[normalizeRoomName(device.room)]
+        : undefined);
     if (!roomName || (roomName === device.room && roomId === device.roomId)) {
       return;
     }
@@ -164,7 +177,7 @@ function applyRoomOverrides(
 ): DeviceCollection {
   if (
     Object.keys(roomIdsByEntityId).length === 0 &&
-    Object.keys(roomPlacementLookup.workspaceRoomIdsBySourceCanonicalId).length === 0
+    Object.keys(roomPlacementLookup.roomNamesById).length === 0
   ) {
     return collection;
   }

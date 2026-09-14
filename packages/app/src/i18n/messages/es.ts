@@ -813,6 +813,9 @@ export const esMessages = {
     'Conecta y gestiona los proveedores domóticos en este dispositivo.',
   'settings.system.providers.connect': 'Conectar',
   'settings.system.providers.disconnect': 'Desconectar',
+  'settings.system.providers.disconnectTitle': '¿Desconectar {provider}?',
+  'settings.system.providers.disconnectDescription':
+    'Esto desconecta {provider} en todos los dispositivos conectados. Puedes volver a conectarlo más tarde.',
   'settings.system.providers.notConnected': 'No conectado en este dispositivo',
   'settings.system.providers.homeAssistantUrlPlaceholder': 'https://homeassistant.local:8123',
   'settings.system.providers.openhabLater':
@@ -1807,6 +1810,9 @@ export const esMessages = {
   'humidifier.type.humidifier': 'Humidificador',
   'humidifier.type.dehumidifier': 'Deshumidificador',
   'sensors.single': 'Sensor',
+  'sensors.battery.label': 'Batería',
+  'sensors.battery.low': 'Batería baja',
+  'sensors.battery.okay': 'Batería correcta',
   'sensors.card.icon': 'Icono del sensor',
   'sensors.group': 'Grupo de sensores',
   'sensors.group.emptyState': 'No hay sensores seleccionados',
@@ -2110,7 +2116,7 @@ export const esMessages = {
   'tasks.hero.latestRun': 'Última ejecución',
   'tasks.hero.noRecentRun': 'Sin ejecución reciente',
   'tasks.hero.noAutomationRun': 'Ninguna automatización se ha ejecutado aún',
-  'tasks.quickActions.title': 'Guiones',
+  'tasks.quickActions.title': 'Acciones rápidas',
   'tasks.sort.by': 'Ordenar por {column}',
   'tasks.sort.sortedAscending': '{column}, ordenado de forma ascendente',
   'tasks.sort.sortedDescending': '{column}, ordenado de forma descendente',

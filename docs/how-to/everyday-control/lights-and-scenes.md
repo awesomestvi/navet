@@ -12,6 +12,7 @@ to the current state.
 The summary strip shows how many lights are on, average brightness when available, and unavailable
 lights that need attention. Quick scenes and **Expand all**, **Collapse all**, or whole-home power
 actions stay beside that summary.
+Select **Unavailable** to open the affected room and jump to its first unavailable light.
 
 ## Control a room
 

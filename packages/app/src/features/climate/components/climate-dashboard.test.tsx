@@ -9,10 +9,21 @@ import { ClimateDashboard } from './climate-dashboard';
 const scrollIntoViewMock = vi.fn();
 
 vi.mock('@navet/app/features/dashboard/device-grid', () => ({
-  DeviceGrid: ({ orderedCardIds }: { orderedCardIds: string[] }) => (
+  DeviceGrid: ({
+    orderedCardIds,
+    deviceMap,
+  }: {
+    orderedCardIds: string[];
+    deviceMap: Map<string, DeviceWithType>;
+  }) => (
     <div data-testid="device-grid">
       {orderedCardIds.map((id) => (
-        <button key={id} id={`dashboard-entity-${encodeURIComponent(id)}`} type="button">
+        <button
+          key={id}
+          id={`dashboard-entity-${encodeURIComponent(id)}`}
+          type="button"
+          title={deviceMap.get(id)?.name}
+        >
           {id}
         </button>
       ))}
@@ -184,6 +195,30 @@ describe('ClimateDashboard', () => {
     expect(screen.getByRole('heading', { name: 'Mostly comfortable' })).toBeInTheDocument();
     expect(screen.queryByText(/Target 21°/)).not.toBeInTheDocument();
     expect(screen.queryByText(/0\/1/)).not.toBeInTheDocument();
+  });
+
+  it('uses the device name in the Temperature section while preserving the full entity name', () => {
+    const temperature = sensor({
+      id: 'sensor.living_temperature',
+      name: 'Bedroom radiator valve · Temperature',
+      sourceDeviceName: 'Bedroom radiator valve',
+      deviceClass: 'temperature',
+      unit: '°C',
+      value: '18.8',
+    });
+    renderDashboard([climateDevice(), temperature]);
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Temperature' }));
+    expect(screen.getByTitle('Bedroom radiator valve')).toBeInTheDocument();
+    expect(temperature.name).toBe('Bedroom radiator valve · Temperature');
+
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'Group cards by: Type' }), {
+      button: 0,
+      ctrlKey: false,
+    });
+    fireEvent.click(screen.getByRole('menuitemradio', { name: 'Room' }));
+    fireEvent.click(screen.getByRole('tab', { name: /Office/ }));
+    expect(screen.getByTitle('Bedroom radiator valve · Temperature')).toBeInTheDocument();
   });
 
   it('groups cards by type by default and can regroup them by room', () => {

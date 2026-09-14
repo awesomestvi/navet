@@ -815,6 +815,9 @@ export const nlMessages = {
     'Verbind en beheer smarthome-aanbieders op dit apparaat.',
   'settings.system.providers.connect': 'Verbinden',
   'settings.system.providers.disconnect': 'Verbreek de verbinding',
+  'settings.system.providers.disconnectTitle': 'Verbinding met {provider} verbreken?',
+  'settings.system.providers.disconnectDescription':
+    'Dit verbreekt de verbinding met {provider} op alle verbonden apparaten. Je kunt later opnieuw verbinding maken.',
   'settings.system.providers.notConnected': 'Niet verbonden op dit apparaat',
   'settings.system.providers.homeAssistantUrlPlaceholder': 'https://homeassistant.local:8123',
   'settings.system.providers.openhabLater':
@@ -1812,6 +1815,9 @@ export const nlMessages = {
   'humidifier.type.humidifier': 'Luchtbevochtiger',
   'humidifier.type.dehumidifier': 'Luchtontvochtiger',
   'sensors.single': 'Sensor',
+  'sensors.battery.label': 'Batterij',
+  'sensors.battery.low': 'Batterij bijna leeg',
+  'sensors.battery.okay': 'Batterij in orde',
   'sensors.card.icon': 'Sensorpictogram',
   'sensors.group': 'Sensorgroep',
   'sensors.group.emptyState': 'Geen sensoren geselecteerd',
@@ -2117,7 +2123,7 @@ export const nlMessages = {
   'tasks.hero.latestRun': 'Laatste run',
   'tasks.hero.noRecentRun': 'Geen recente run',
   'tasks.hero.noAutomationRun': 'Er heeft nog geen automatisering plaatsgevonden',
-  'tasks.quickActions.title': 'Scripts',
+  'tasks.quickActions.title': 'Snelle acties',
   'tasks.sort.by': 'Sorteer op {column}',
   'tasks.sort.sortedAscending': '{column}, oplopend gesorteerd',
   'tasks.sort.sortedDescending': '{column}, aflopend gesorteerd',

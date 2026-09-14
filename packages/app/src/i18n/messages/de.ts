@@ -818,6 +818,9 @@ export const deMessages = {
     'Smart-Home-Anbieter auf diesem Gerät verbinden und verwalten.',
   'settings.system.providers.connect': 'Verbinden',
   'settings.system.providers.disconnect': 'Trennen',
+  'settings.system.providers.disconnectTitle': '{provider} trennen?',
+  'settings.system.providers.disconnectDescription':
+    'Dadurch wird die Verbindung zu {provider} auf allen verbundenen Geräten getrennt. Du kannst sie später wiederherstellen.',
   'settings.system.providers.notConnected': 'Auf diesem Gerät nicht verbunden',
   'settings.system.providers.homeAssistantUrlPlaceholder': 'https://homeassistant.local:8123',
   'settings.system.providers.openhabLater':
@@ -1815,6 +1818,9 @@ export const deMessages = {
   'humidifier.type.humidifier': 'Luftbefeuchter',
   'humidifier.type.dehumidifier': 'Luftentfeuchter',
   'sensors.single': 'Sensor',
+  'sensors.battery.label': 'Batterie',
+  'sensors.battery.low': 'Batterie schwach',
+  'sensors.battery.okay': 'Batterie in Ordnung',
   'sensors.card.icon': 'Sensorsymbol',
   'sensors.group': 'Sensorgruppe',
   'sensors.group.emptyState': 'Keine Sensoren ausgewählt',
@@ -2123,7 +2129,7 @@ export const deMessages = {
   'tasks.hero.latestRun': 'Letzter Lauf',
   'tasks.hero.noRecentRun': 'Kein aktueller Lauf',
   'tasks.hero.noAutomationRun': 'Noch keine Automation gelaufen',
-  'tasks.quickActions.title': 'Skripte',
+  'tasks.quickActions.title': 'Schnellaktionen',
   'tasks.sort.by': 'Sortieren nach {column}',
   'tasks.sort.sortedAscending': '{column}, aufsteigend sortiert',
   'tasks.sort.sortedDescending': '{column}, absteigend sortiert',

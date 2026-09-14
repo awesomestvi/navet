@@ -773,7 +773,7 @@ export function createViteDeviceSessionAuthority(
         const providerId = String(body.providerId ?? '') as ProviderId;
         const primaryIds = primaryProviderCookieIds(req);
         if (!providerRecords[providerId] || !primaryIds[providerId]) {
-          sendJson(res, 403, { error: 'A signed-in primary provider session is required' });
+          sendJson(res, 403, { error: 'Use your primary device to disconnect this provider.' });
           return;
         }
         let names: string[] = [];

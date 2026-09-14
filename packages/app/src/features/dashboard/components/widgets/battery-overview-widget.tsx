@@ -9,7 +9,7 @@ import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-
 import { useAreaRooms, useI18n, useProviderBatterySensorRows, useTheme } from '@navet/app/hooks';
 import { Battery, Settings2 } from 'lucide-react';
 import { type KeyboardEvent, lazy, memo, Suspense, useEffect, useMemo, useState } from 'react';
-import { BatteryList, getLevelColor } from './battery-list';
+import { BatteryList, type BatteryListDevice, getLevelColor } from './battery-list';
 import { useDashboardWidgetRoomOptions } from './use-widget-room-options';
 
 const BatterySettingsDialog = lazy(async () => {
@@ -30,6 +30,7 @@ interface BatteryOverviewWidgetProps {
   room?: string;
   onRoomChange?: (room: string) => void;
   openSettingsRequestKey?: number;
+  batteryRows?: BatteryListDevice[];
 }
 
 function getSelectedEntityIds(value: unknown): string[] | undefined {
@@ -47,6 +48,7 @@ export const BatteryOverviewWidget = memo(function BatteryOverviewWidget({
   room,
   onRoomChange,
   openSettingsRequestKey = 0,
+  batteryRows,
 }: BatteryOverviewWidgetProps) {
   const { theme, primaryColor } = useTheme();
   const { t } = useI18n();
@@ -62,7 +64,8 @@ export const BatteryOverviewWidget = memo(function BatteryOverviewWidget({
   const textSecondaryClassName = tintSurface.textSecondaryColor ? '' : surface.textSecondary;
   const textMutedClassName = tintSurface.textSecondaryColor ? '' : surface.textMuted;
   const rooms = useAreaRooms();
-  const batteries = useProviderBatterySensorRows();
+  const providerBatteries = useProviderBatterySensorRows();
+  const batteries = batteryRows ?? providerBatteries;
   const selectedEntityIds = getSelectedEntityIds(data?.selectedEntityIds);
   const selectedIdSet = useMemo(() => new Set(selectedEntityIds ?? []), [selectedEntityIds]);
   const filteredBatteries = useMemo(

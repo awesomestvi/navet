@@ -11,8 +11,8 @@ import { useSettingsStore } from '@navet/app/stores/settings-store';
 import type { IntegrationProviderId } from '@navet/app/types/provider';
 import { UNKNOWN_ROOM_LABEL } from '@navet/app/utils/device-location';
 import { createProviderScopedId } from '@navet/app/utils/provider-ids';
-import { useCallback, useMemo, useRef } from 'react';
 import { areStringArraysEqual } from '@navet/app/utils/structural-equality';
+import { useCallback, useMemo, useRef } from 'react';
 import { useIntegrationStore } from './use-integration-store';
 import {
   useHydratingProviderCollection,

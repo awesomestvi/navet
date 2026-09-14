@@ -1,5 +1,6 @@
 import type { PlatformRoom } from '@navet/app/platform/types';
 import { integrationSelectors } from '@navet/app/stores/selectors';
+import { normalizeRoomName } from '@navet/app/utils/room-name';
 import { useMemo } from 'react';
 import { useIntegrationStore } from './use-integration-store';
 
@@ -12,7 +13,8 @@ export function useAggregatedRooms(): PlatformRoom[] {
     const roomsByKey = new Map<string, PlatformRoom>();
 
     for (const room of Object.values(normalizedRoomsByCanonicalId)) {
-      const existing = roomsByKey.get(room.normalizedName);
+      const roomKey = normalizeRoomName(room.name);
+      const existing = roomsByKey.get(roomKey);
       if (existing) {
         if (!existing.providerIds.includes(room.providerId)) {
           existing.providerIds.push(room.providerId);
@@ -25,9 +27,9 @@ export function useAggregatedRooms(): PlatformRoom[] {
         continue;
       }
 
-      roomsByKey.set(room.normalizedName, {
-        id: room.normalizedName,
-        key: room.normalizedName,
+      roomsByKey.set(roomKey, {
+        id: roomKey,
+        key: roomKey,
         name: room.name,
         providerIds: [room.providerId],
         canonicalMemberIds: [...room.memberIds],

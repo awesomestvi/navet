@@ -2,13 +2,13 @@ import { CardDialogSection, SelectableCheckboxRow } from '@navet/app/components/
 import { BaseCardDialogWithState, Button } from '@navet/app/components/primitives';
 import { normalizeCustomCardTint } from '@navet/app/components/shared/theme/custom-card-tint-surface';
 import { getThemeColorValue } from '@navet/app/components/shared/theme/theme-colors';
-import type { ProviderBatterySensorRow } from '@navet/app/hooks';
 import { useI18n, useTheme } from '@navet/app/hooks';
 import { useMemo } from 'react';
+import type { BatteryListDevice } from './battery-list';
 import { getDashboardWidgetSurfaceTokens } from './widget-surface-tokens';
 
 interface BatterySettingsDialogProps {
-  batteries: ProviderBatterySensorRow[];
+  batteries: BatteryListDevice[];
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   selectedEntityIds?: string[];
@@ -109,7 +109,15 @@ export function BatterySettingsDialog({
                     }
                     description={battery.id}
                     trailing={
-                      <div className="text-sm font-semibold tabular-nums">{battery.level}%</div>
+                      <div className="text-sm font-semibold tabular-nums">
+                        {battery.level !== null
+                          ? `${battery.level}%`
+                          : battery.status === 'low'
+                            ? t('sensors.battery.low')
+                            : battery.status === 'okay'
+                              ? t('sensors.battery.okay')
+                              : t('common.unavailable')}
+                      </div>
                     }
                     rowClassName={`w-full min-w-0 max-w-full overflow-hidden ${surface.borderClassName} ${surface.textPrimary}`}
                     labelClassName="truncate"

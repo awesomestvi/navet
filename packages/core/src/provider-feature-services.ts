@@ -189,6 +189,8 @@ export interface ProviderAdminFeatureService extends ProviderRoomAdminFeatureSer
 
 export interface ProviderHistoryFeatureService {
   getMessageClient: () => PlatformMessageClient | null;
+  /** False means this entity has no history; transport failures must still reject requests. */
+  supportsEntityHistory?: (entityId: string) => boolean;
   getEntityHistories?: (
     request: PlatformEntityHistoriesRequest
   ) => Promise<PlatformEntityHistorySeries[]>;

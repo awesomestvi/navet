@@ -809,6 +809,9 @@ export const noMessages = {
     'Koble til og administrer smarthusleverandører på denne enheten.',
   'settings.system.providers.connect': 'Koble til',
   'settings.system.providers.disconnect': 'Koble fra',
+  'settings.system.providers.disconnectTitle': 'Koble fra {provider}?',
+  'settings.system.providers.disconnectDescription':
+    'Dette kobler fra {provider} på alle tilkoblede enheter. Du kan koble til igjen senere.',
   'settings.system.providers.notConnected': 'Ikke tilkoblet denne enheten',
   'settings.system.providers.homeAssistantUrlPlaceholder': 'https://homeassistant.local:8123',
   'settings.system.providers.openhabLater':
@@ -1797,6 +1800,9 @@ export const noMessages = {
   'humidifier.type.humidifier': 'Luftfukter',
   'humidifier.type.dehumidifier': 'Avfukter',
   'sensors.single': 'Sensor',
+  'sensors.battery.label': 'Batteri',
+  'sensors.battery.low': 'Lavt batterinivå',
+  'sensors.battery.okay': 'Batteri i orden',
   'sensors.card.icon': 'Sensorikon',
   'sensors.group': 'Sensorgruppe',
   'sensors.group.emptyState': 'Ingen sensorer valgt',
@@ -2100,7 +2106,7 @@ export const noMessages = {
   'tasks.hero.latestRun': 'Siste løp',
   'tasks.hero.noRecentRun': 'Ingen nylig kjøring',
   'tasks.hero.noAutomationRun': 'Ingen automatisering har kjørt ennå',
-  'tasks.quickActions.title': 'Skript',
+  'tasks.quickActions.title': 'Hurtighandlinger',
   'tasks.sort.by': 'Sorter etter {column}',
   'tasks.sort.sortedAscending': '{column}, sortert stigende',
   'tasks.sort.sortedDescending': '{column}, sortert synkende',

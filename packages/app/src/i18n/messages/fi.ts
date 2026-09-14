@@ -811,6 +811,9 @@ export const fiMessages = {
     'Yhdistä ja hallitse älykotipalveluntarjoajia tällä laitteella.',
   'settings.system.providers.connect': 'Yhdistä',
   'settings.system.providers.disconnect': 'Katkaise yhteys',
+  'settings.system.providers.disconnectTitle': 'Katkaistaanko yhteys palveluun {provider}?',
+  'settings.system.providers.disconnectDescription':
+    'Tämä katkaisee yhteyden palveluun {provider} kaikilla yhdistetyillä laitteilla. Voit muodostaa yhteyden uudelleen myöhemmin.',
   'settings.system.providers.notConnected': 'Ei yhdistetty tähän laitteeseen',
   'settings.system.providers.homeAssistantUrlPlaceholder': 'https://homeassistant.local:8123',
   'settings.system.providers.openhabLater':
@@ -1799,6 +1802,9 @@ export const fiMessages = {
   'humidifier.type.humidifier': 'Kostutin',
   'humidifier.type.dehumidifier': 'Ilmankuivain',
   'sensors.single': 'Anturi',
+  'sensors.battery.label': 'Akku',
+  'sensors.battery.low': 'Akku vähissä',
+  'sensors.battery.okay': 'Akku kunnossa',
   'sensors.card.icon': 'Anturin kuvake',
   'sensors.group': 'Anturiryhmä',
   'sensors.group.emptyState': 'Ei valittuja antureita',
@@ -2104,7 +2110,7 @@ export const fiMessages = {
   'tasks.hero.latestRun': 'Viimeisin lenkki',
   'tasks.hero.noRecentRun': 'Ei viime aikoja',
   'tasks.hero.noAutomationRun': 'Mikään automaatio ei ole vielä toiminut',
-  'tasks.quickActions.title': 'Käsikirjoitukset',
+  'tasks.quickActions.title': 'Pikatoiminnot',
   'tasks.sort.by': 'Lajitteluperuste: {column}',
   'tasks.sort.sortedAscending': '{column}, lajiteltu nousevaan järjestykseen',
   'tasks.sort.sortedDescending': '{column}, lajiteltu laskevaan järjestykseen',

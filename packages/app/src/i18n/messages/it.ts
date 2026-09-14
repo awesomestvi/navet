@@ -822,6 +822,9 @@ export const itMessages = {
     'Connetti e gestisci i provider domotici su questo dispositivo.',
   'settings.system.providers.connect': 'Connetti',
   'settings.system.providers.disconnect': 'Disconnetti',
+  'settings.system.providers.disconnectTitle': 'Disconnettere {provider}?',
+  'settings.system.providers.disconnectDescription':
+    'Questo disconnette {provider} su tutti i dispositivi connessi. Puoi riconnetterlo in seguito.',
   'settings.system.providers.notConnected': 'Non connesso su questo dispositivo',
   'settings.system.providers.homeAssistantUrlPlaceholder': 'https://homeassistant.local:8123',
   'settings.system.providers.openhabLater':
@@ -1576,7 +1579,7 @@ export const itMessages = {
   'tasks.hero.latestRun': 'Ultima esecuzione',
   'tasks.hero.noRecentRun': 'Nessuna esecuzione recente',
   'tasks.hero.noAutomationRun': 'Nessuna automazione è stata ancora eseguita',
-  'tasks.quickActions.title': 'Script',
+  'tasks.quickActions.title': 'Azioni rapide',
   'tasks.sort.by': 'Ordina per {column}',
   'tasks.sort.sortedAscending': '{column}, ordinato in modo crescente',
   'tasks.sort.sortedDescending': '{column}, ordinato in modo decrescente',
@@ -2114,6 +2117,9 @@ export const itMessages = {
   'humidifier.type.humidifier': 'Umidificatore',
   'humidifier.type.dehumidifier': 'Deumidificatore',
   'sensors.single': 'Sensore',
+  'sensors.battery.label': 'Batteria',
+  'sensors.battery.low': 'Batteria scarica',
+  'sensors.battery.okay': 'Batteria a posto',
   'sensors.card.icon': 'Icona sensore',
   'sensors.group': 'Gruppo sensori',
   'sensors.group.emptyState': 'Nessun sensore selezionato',

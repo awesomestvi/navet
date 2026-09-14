@@ -13,6 +13,28 @@ function createDevice(overrides: Partial<DeviceWithType> & Pick<DeviceWithType, 
 }
 
 describe('useDashboardDerivedState', () => {
+  it('matches light rooms and saved card orders without regard to capitalization', () => {
+    const deviceMap = new Map([
+      [
+        'openhab:accent',
+        createDevice({ id: 'openhab:accent', type: 'lights', room: 'living room' }),
+      ],
+    ]);
+    const { result } = renderHook(() =>
+      useDashboardDerivedState({
+        activeRoom: 'LIVING ROOM',
+        availableDeviceMap: deviceMap,
+        deviceMap,
+        cardOrders: { 'Living Room': ['openhab:accent'] },
+        hiddenEntityIds: [],
+        rooms: ['Living Room'],
+      })
+    );
+
+    expect(result.current.lightRooms).toEqual(['Living Room']);
+    expect(result.current.orderedCardIds).toEqual(['openhab:accent']);
+  });
+
   it('keeps absorbed child entities out of home and room addable entity ids', () => {
     const availableDeviceMap = new Map<string, DeviceWithType>([
       [

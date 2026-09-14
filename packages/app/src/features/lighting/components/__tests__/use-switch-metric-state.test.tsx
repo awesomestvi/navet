@@ -59,11 +59,11 @@ describe('useSwitchMetricState', () => {
     expect(result.current.selectedMetrics).toEqual(electricalMetrics);
     expect(localStorage.getItem(openhabKey)).toBeNull();
     act(() => result.current.handleMetricToggle('Energy'));
-    expect(JSON.parse(localStorage.getItem(homeyKey)!)).toEqual({
+    expect(JSON.parse(localStorage.getItem(homeyKey) ?? 'null')).toEqual({
       version: 1,
       hiddenLabels: ['Power'],
     });
-    expect(JSON.parse(localStorage.getItem(openhabKey)!)).toEqual({
+    expect(JSON.parse(localStorage.getItem(openhabKey) ?? 'null')).toEqual({
       version: 1,
       hiddenLabels: ['Energy'],
     });
@@ -78,7 +78,10 @@ describe('useSwitchMetricState', () => {
     );
     act(() => result.current.handleMetricToggle('Power'));
     expect(result.current.selectedMetricLabels).toEqual(['Voltage']);
-    expect(JSON.parse(localStorage.getItem(key)!)).toEqual({ version: 1, hiddenLabels: ['Power'] });
+    expect(JSON.parse(localStorage.getItem(key) ?? 'null')).toEqual({
+      version: 1,
+      hiddenLabels: ['Power'],
+    });
     rerender({ metrics: [] });
     expect(result.current.selectedMetrics).toEqual([]);
     rerender({ metrics: electricalMetrics });

@@ -61,7 +61,9 @@ export function useProviderNotificationSnapshot(): PlatformNotificationSnapshot 
     }
     return () => {
       cancelled = true;
-      cleanups.forEach((cleanup) => cleanup());
+      cleanups.forEach((cleanup) => {
+        cleanup();
+      });
     };
   }, [key, connection]);
   return snapshot;

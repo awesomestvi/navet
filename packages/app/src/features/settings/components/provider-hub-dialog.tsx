@@ -1,5 +1,5 @@
-import { Button, Input, ModalSurface, Select, Switch } from '@navet/app/components/primitives';
 import { CardDialogHeader } from '@navet/app/components/patterns/card-dialog';
+import { Button, Input, ModalSurface, Select, Switch } from '@navet/app/components/primitives';
 import { useI18n, useTheme } from '@navet/app/hooks';
 import type {
   ProviderHubControl,

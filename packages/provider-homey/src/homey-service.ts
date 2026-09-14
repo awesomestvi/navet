@@ -1,12 +1,12 @@
 import { UnsupportedProviderCommandError } from '@navet/core/errors';
 import type { IntegrationServiceTarget } from '@navet/core/integration-service-target';
 import type { NavetCommand, NavetEntity } from '@navet/core/types';
-import type { HomeySnapshot } from './homey-types';
 import {
   getHomeyDeviceProfile,
   translateHomeyCoverPosition,
   translateHomeySpecializedCommand,
 } from './homey-device-profiles';
+import type { HomeySnapshot } from './homey-types';
 
 export interface HomeyCapabilityCommand {
   deviceId: string;

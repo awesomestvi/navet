@@ -1,4 +1,5 @@
 import { ALL_ROOMS_ID, isAllRooms } from '@navet/app/constants/rooms';
+import { roomNamesMatch } from '@navet/app/utils/room-name';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 const STANDALONE_RESUME_GRACE_MS = 1500;
@@ -93,15 +94,15 @@ export function useDashboardRoomNavigation(
     if (
       standaloneMode &&
       !isAllRooms(preferredRoom) &&
-      rooms.includes(preferredRoom) &&
-      activeRoom !== preferredRoom
+      rooms.some((room) => roomNamesMatch(room, preferredRoom)) &&
+      !roomNamesMatch(activeRoom, preferredRoom)
     ) {
       changeRoom(preferredRoom);
       previousRoomsRef.current = rooms;
       return;
     }
 
-    if (isAllRooms(activeRoom) || rooms.includes(activeRoom)) {
+    if (isAllRooms(activeRoom) || rooms.some((room) => roomNamesMatch(room, activeRoom))) {
       previousRoomsRef.current = rooms;
       return;
     }
@@ -114,7 +115,7 @@ export function useDashboardRoomNavigation(
       standaloneMode &&
       (resumeGraceActive || resumeGracePendingRef.current) &&
       !isAllRooms(preferredRoom) &&
-      activeRoom === preferredRoom
+      roomNamesMatch(activeRoom, preferredRoom)
     ) {
       return;
     }
@@ -126,16 +127,24 @@ export function useDashboardRoomNavigation(
     }
 
     const previousRooms = previousRoomsRef.current;
-    const removedRoomIndex = previousRooms.indexOf(activeRoom);
+    const removedRoomIndex = previousRooms.findIndex((room) => roomNamesMatch(room, activeRoom));
     const nextRoom =
       removedRoomIndex >= 0
         ? (previousRooms
             .slice(removedRoomIndex + 1)
-            .find((room) => room !== activeRoom && rooms.includes(room)) ??
+            .find(
+              (room) =>
+                !roomNamesMatch(room, activeRoom) &&
+                rooms.some((name) => roomNamesMatch(name, room))
+            ) ??
           previousRooms
             .slice(0, removedRoomIndex)
             .reverse()
-            .find((room) => room !== activeRoom && rooms.includes(room)) ??
+            .find(
+              (room) =>
+                !roomNamesMatch(room, activeRoom) &&
+                rooms.some((name) => roomNamesMatch(name, room))
+            ) ??
           ALL_ROOMS_ID)
         : ALL_ROOMS_ID;
 

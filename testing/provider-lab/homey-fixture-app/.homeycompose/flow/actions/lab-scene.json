@@ -1,0 +1,28 @@
+{
+  "title": {
+    "en": "Start a lab scene"
+  },
+  "args": [
+    {
+      "name": "scene",
+      "type": "dropdown",
+      "values": [
+        {
+          "id": "evening",
+          "label": {
+            "en": "Evening"
+          }
+        },
+        {
+          "id": "morning",
+          "label": {
+            "en": "Morning"
+          }
+        }
+      ]
+    }
+  ],
+  "titleFormatted": {
+    "en": "Start the [[scene]] lab scene"
+  }
+}

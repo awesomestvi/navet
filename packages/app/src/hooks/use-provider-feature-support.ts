@@ -7,8 +7,8 @@ import type {
 import { integrationStore } from '@navet/app/stores/integration-store';
 import type { IntegrationProviderId } from '@navet/app/types/provider';
 import { parseProviderScopedId } from '@navet/app/utils/provider-ids';
-import { useIntegrationStore } from './use-integration-store';
 import { useMemo } from 'react';
+import { useIntegrationStore } from './use-integration-store';
 
 function resolveCurrentProviderId(
   providerId: IntegrationProviderId | undefined,

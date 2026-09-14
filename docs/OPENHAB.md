@@ -105,13 +105,39 @@ Open Navet and connect using your openHAB URL, username, and password.
   WebSocket API at `/ws`.
 - Local HTTP targets must use a private-network address, single-label hostname, or `.local`
   hostname. Public DNS targets require HTTPS.
-- The current openHAB runtime contributes rooms, realtime entities, lighting, switches, and
-  sensors. Climate, media, cameras, energy, calendar, weather, notifications, tasks, history,
-  security, and provider-administration feature services are not registered for openHAB yet.
+- openHAB contributes rooms, lights, switches, fans, covers, locks, speakers, climate setpoints,
+  and sensors to the shared dashboards. Measurements retain their units and decimal precision.
 - openHAB can stay connected alongside Home Assistant or Homey in standalone Navet; selected
   providers are combined in shared dashboard collections.
 - repeated credential verification is throttled per direct client source. A `429` response includes
   `Retry-After`; wait for that interval before trying again.
+
+## Devices And Measurements
+
+Navet uses openHAB item types, semantic tags, categories, and location groups to identify devices
+and place them in rooms. Semantic equipment groups associate controls with their measurements.
+Related item names such as `RadiatorTarget` and `RadiatorTemperature`, or `Speaker_State` and
+`Speaker_Volume`, also associate controls when equipment metadata is unavailable.
+
+- **Lighting and switches:** Switch, Dimmer, and Color items provide the appropriate controls.
+  Color lights support brightness and hue/saturation. Related power, energy, voltage, and current
+  measurements appear on switch cards and remain available to the dashboards.
+- **Climate:** Temperature items tagged `Setpoint` provide a target-temperature control. A related
+  temperature measurement supplies the current reading. Fan-category Dimmer items provide speed
+  controls. Temperature, humidity, pressure, air quality, and outdoor measurements appear as sensors.
+- **Security:** Contact items and Switch items tagged `Status` supply opening, motion, occupancy,
+  leak, and safety readings. Lock items provide lock/unlock controls, and battery measurements
+  appear in the shared battery overview. Roller shutter items provide movement and position controls.
+- **Media:** Sound-volume-category String items provide playback state and play/pause controls.
+  A related sound-volume-category Dimmer supplies the speaker volume control.
+- **Energy and utilities:** Power and energy readings contribute device measurements. Water and gas
+  meters retain their volume units; cumulative readings are not presented as today's consumption
+  without history. Wind, rainfall, illuminance, and DateTime items remain available as sensors.
+
+Read-only items provide readings without writable controls. An undefined item state is shown as
+unknown rather than a clear safety reading. openHAB does not currently provide Navet with camera,
+calendar, weather-forecast, notification, task, media-browser, alarm-panel, energy-statistics,
+history, or provider-administration services.
 
 ## API Security Requirements
 

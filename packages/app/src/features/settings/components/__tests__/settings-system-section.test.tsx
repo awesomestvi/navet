@@ -263,6 +263,41 @@ describe('SettingsSystemSection', () => {
     ).not.toBeInTheDocument();
   });
 
+  it.each([
+    ['home_assistant', 'Home Assistant'],
+    ['homey', 'Homey'],
+    ['openhab', 'openHAB'],
+  ] as const)('requires confirmation before disconnecting %s', async (providerId, label) => {
+    controller.providerCards = controller.providerCards.map((provider) =>
+      provider.id === providerId
+        ? { ...provider, isConnected: true, canDisconnect: true, status: 'connected' }
+        : provider
+    );
+    renderWithProviders(<SettingsSystemSection controller={controller} />);
+
+    fireEvent.pointerDown(screen.getByRole('button', { name: `More actions: ${label}` }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Disconnect' }));
+
+    expect(screen.getByRole('alertdialog', { name: `Disconnect ${label}?` })).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        `This disconnects ${label} on all connected devices. You can connect it again later.`
+      )
+    ).toBeInTheDocument();
+    expect(controller.handleDisconnectProvider).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(controller.handleDisconnectProvider).not.toHaveBeenCalled();
+
+    fireEvent.pointerDown(screen.getByRole('button', { name: `More actions: ${label}` }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Disconnect' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
+
+    expect(controller.handleDisconnectProvider).toHaveBeenCalledExactlyOnceWith(providerId);
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
+  });
+
   it('starts a fresh Home Assistant connection from its current address', async () => {
     renderWithProviders(<SettingsSystemSection controller={controller} />);
 
@@ -294,7 +329,7 @@ describe('SettingsSystemSection', () => {
     expect(screen.getByText('https://ha.example.com')).toBeInTheDocument();
   });
 
-  it('shows all connected providers without hiding them behind provider management', () => {
+  it('shows all connected providers without hiding them behind provider management', async () => {
     controller.providerCards = [
       {
         id: 'home_assistant',
@@ -368,7 +403,10 @@ describe('SettingsSystemSection', () => {
     expect(screen.queryByRole('menuitem', { name: 'Make primary' })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('menuitem', { name: 'Disconnect' }));
+    expect(controller.handleDisconnectProvider).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
     expect(controller.handleDisconnectProvider).toHaveBeenCalledWith('home_assistant');
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
   });
 
   it('submits a Home Assistant URL and disconnects connected providers', async () => {
@@ -450,7 +488,10 @@ describe('SettingsSystemSection', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions: Homey' }));
     fireEvent.click(screen.getByRole('menuitem', { name: 'Disconnect' }));
+    expect(controller.handleDisconnectProvider).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
     expect(controller.handleDisconnectProvider).toHaveBeenCalledWith('homey');
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
   });
 
   it.each([undefined, 'Unable to reach openHAB'])(
@@ -519,7 +560,9 @@ describe('SettingsSystemSection', () => {
       expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
       expect(screen.getByLabelText('Username')).toBeDisabled();
       expect(screen.getByLabelText('Password')).toBeDisabled();
-      fireEvent.submit(screen.getByRole('button', { name: 'Connecting...' }).closest('form')!);
+      const form = screen.getByRole('button', { name: 'Connecting...' }).closest('form');
+      if (!form) throw new Error('Connection form is missing');
+      fireEvent.submit(form);
       expect(controller.handleConnectProvider).toHaveBeenCalledTimes(1);
 
       await act(async () => {

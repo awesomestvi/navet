@@ -91,7 +91,10 @@ and maps speaker playback, volume, mute, and track
 commands to writable device capabilities. It also exposes flows and moods as scenes, people,
 notifications, Insights history,
 and a normalized hub-resource service for browsing apps and managing favorites and device
-capabilities. openHAB registers rooms, realtime entities, lighting, switches, and sensors.
+capabilities. openHAB maps rooms, realtime entities, lights, switches, fans, security sensors,
+batteries, and utility measurements. It registers climate setpoint, speaker playback and volume,
+lock, and cover controls. openHAB has no history, energy-statistics, alarm-panel, or media-browser
+services.
 Keep those capability differences visible in product and contributor documentation.
 
 ## Read Deeper Only When Needed

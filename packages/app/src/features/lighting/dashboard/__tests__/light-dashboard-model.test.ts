@@ -1,7 +1,48 @@
+import { mapNavetEntitiesToDeviceCollection } from '@navet/app/core/navet-device-collections';
 import type { DeviceWithType } from '@navet/app/types/device.types';
 import type { NavetEntity } from '@navet/core/types';
+import { mapHomeySnapshotToNavetEntities } from '@navet/provider-homey';
 import { describe, expect, it } from 'vitest';
-import { buildLightDashboardModel } from '../light-dashboard-model';
+import { buildLightDashboardModel, buildLightSceneShortcuts } from '../light-dashboard-model';
+
+describe('Lights scene shortcuts', () => {
+  it('includes Homey flows, advanced flows and moods alongside other provider scenes with their owning IDs', () => {
+    const entities = mapHomeySnapshotToNavetEntities({
+      connected: true,
+      devices: {},
+      zones: {},
+      flows: {
+        evening: { id: 'evening', name: 'Evening flow', triggerable: true, enabled: true },
+        disabled: { id: 'disabled', name: 'Disabled flow', triggerable: true, enabled: false },
+      },
+      advancedFlows: { bedtime: { id: 'bedtime', name: 'Bedtime flow', triggerable: true } },
+      moods: { reading: { id: 'reading', name: 'Reading mood' } },
+    });
+    const collection = mapNavetEntitiesToDeviceCollection(entities);
+    const devices: DeviceWithType[] = [
+      ...collection.scenes.map((scene) => ({ ...scene, type: 'scenes' as const })),
+      {
+        id: 'scene.homeassistant',
+        name: 'HA scene',
+        room: 'Home',
+        size: 'small',
+        type: 'scenes',
+        providerId: 'home_assistant',
+      },
+      lightDevice('light.kitchen', 'Kitchen'),
+    ];
+    const scenes = buildLightSceneShortcuts(devices, 'en');
+    expect(scenes.map(({ name }) => name)).toEqual([
+      'Bedtime flow',
+      'Evening flow',
+      'HA scene',
+      'Reading mood',
+    ]);
+    for (const entity of entities) {
+      expect(scenes.find(({ name }) => name === entity.name)?.id).toBe(entity.canonicalId);
+    }
+  });
+});
 
 function lightDevice(id: string, room: string, state = false, brightness = 0): DeviceWithType {
   return {
@@ -39,6 +80,25 @@ function lightEntity(
 }
 
 describe('buildLightDashboardModel', () => {
+  it('combines provider lights by lowercase room name and honors saved mixed-case ordering', () => {
+    const devices = [
+      lightDevice('homey:ceiling', 'Kitchen'),
+      lightDevice('openhab:accent', 'kitchen'),
+    ];
+    const model = buildLightDashboardModel({
+      deviceMap: new Map(devices.map((device) => [device.id, device])),
+      entities: {},
+      rooms: ['Kitchen', 'KITCHEN'],
+      cardOrders: { KITCHEN: ['openhab:accent', 'homey:ceiling'] },
+    });
+    expect(model.rooms).toHaveLength(1);
+    expect(model.rooms[0].room).toBe('Kitchen');
+    expect(model.rooms[0].lights.map((item) => item.id)).toEqual([
+      'openhab:accent',
+      'homey:ceiling',
+    ]);
+  });
+
   it('counts active and unavailable lights and averages only active available dimmable lights', () => {
     const devices = [
       lightDevice('light.island', 'Kitchen'),

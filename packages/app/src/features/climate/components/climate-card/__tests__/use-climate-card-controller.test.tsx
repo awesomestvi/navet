@@ -94,6 +94,51 @@ function createClimateEntity(attributes: Record<string, unknown>, state = 'heat'
 }
 
 describe('useClimateCardController', () => {
+  it('keeps fractional current and target temperatures in Celsius card labels', () => {
+    useSettingsStore.setState({ temperatureUnit: 'celsius' });
+    const { result } = renderHookWithProviders(() =>
+      useClimateCardController({
+        id: 'homey:bedroom-radiator',
+        name: 'Bedroom radiator valve',
+        initialTemp: 19.5,
+        initialCurrentTemp: 18.8,
+        sourceTemperatureUnit: 'celsius',
+        initialMode: 'heat',
+        initialState: true,
+        isEditMode: false,
+        size: 'medium',
+      })
+    );
+    expect(result.current.formatTemperature(result.current.currentTemp)).toBe('18.8°C');
+    expect(result.current.formatTemperature(result.current.targetTemp)).toBe('19.5°C');
+    expect(result.current.formatTemperatureValue(result.current.targetTemp)).toBe('19.5');
+  });
+
+  it('opens controls for a setpoint without inventing a power command', async () => {
+    useSettingsStore.setState({ entityInteractionMode: 'toggle-first' });
+    const { result } = renderHookWithProviders(() =>
+      useClimateCardController({
+        id: 'openhab:RadiatorTarget',
+        name: 'Radiator',
+        initialTemp: 19.5,
+        initialCurrentTemp: 18.8,
+        initialMode: 'auto',
+        supportedClimateModes: [],
+        initialState: true,
+        isEditMode: false,
+        size: 'medium',
+      })
+    );
+    await act(async () =>
+      result.current.cardInteraction.iconButtonProps.onClick({
+        stopPropagation: () => {},
+      } as React.MouseEvent<HTMLButtonElement>)
+    );
+    expect(result.current.isSettingsOpen).toBe(true);
+    expect(serviceMock.callService).not.toHaveBeenCalled();
+    expect(result.current.isOn).toBe(true);
+  });
+
   beforeEach(async () => {
     await resetAppStores();
     vi.clearAllMocks();

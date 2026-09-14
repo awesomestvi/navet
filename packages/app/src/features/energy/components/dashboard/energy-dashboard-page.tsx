@@ -1468,8 +1468,10 @@ function DeviceTable({
   return (
     <BaseCard
       size="medium"
-      fullBleed
-      className={cn('h-full min-w-0 w-full', usePortraitLayout ? 'min-h-[26rem]' : 'min-h-[32rem]')}
+      className={cn(
+        'h-full min-w-0 w-full p-4',
+        usePortraitLayout ? 'min-h-[26rem]' : 'min-h-[32rem]'
+      )}
       surfaceVariant="muted"
       title={t('energy.dashboard.liveEnergy')}
       subtitle={t('energy.dashboard.wattsNow')}
@@ -1477,14 +1479,13 @@ function DeviceTable({
       headerLeading={
         <EntityCardHeaderIcon IconComponent={Zap} isActive size="medium" baseColor={accentColor} />
       }
-      headerClassName="px-4 pt-4"
       headerMarginBottomClassName="mb-3"
     >
       <div
         data-testid="energy-live-layout"
         data-layout={usePortraitLayout ? 'split' : 'stacked'}
         className={cn(
-          'h-full min-h-0 gap-4 px-4 pb-4',
+          'h-full min-h-0 gap-4',
           usePortraitLayout
             ? 'grid grid-cols-[minmax(15rem,0.85fr)_minmax(0,1.15fr)]'
             : 'flex flex-col'

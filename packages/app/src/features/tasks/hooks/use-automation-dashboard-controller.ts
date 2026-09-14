@@ -1,17 +1,19 @@
 import { useIntegrationStore } from '@navet/app/hooks';
-import { providerRuntimeSelectors, settingsSelectors } from '@navet/app/stores/selectors';
+import { settingsSelectors } from '@navet/app/stores/selectors';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { resolveEffectsQuality } from '@navet/app/utils/effects-quality';
+import { groupByRoomName, roomNamesMatch } from '@navet/app/utils/room-name';
 import { useMemo } from 'react';
 import { useTaskRoutines } from './use-task-automation-groups';
 
 export function useAutomationDashboardController() {
   const { automations, quickActions } = useTaskRoutines();
-  const currentProviderRuntime = useIntegrationStore(
-    providerRuntimeSelectors.currentProviderRuntime
+  const connected = useIntegrationStore((state) =>
+    state.selectedProviderIds.some((id) => state.providerRuntime[id].connected)
   );
-  const connected = currentProviderRuntime.connected;
-  const entitiesHydrated = currentProviderRuntime.entitiesHydrated;
+  const entitiesHydrated = useIntegrationStore((state) =>
+    state.selectedProviderIds.some((id) => state.providerRuntime[id].entitiesHydrated)
+  );
   const disableAnimations = useSettingsStore(settingsSelectors.disableAnimations);
   const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
   const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
@@ -48,13 +50,10 @@ export function useAutomationDashboardController() {
   );
   const automationRooms = useMemo(
     () =>
-      Array.from(
-        new Set(
-          automations
-            .map((automation) => automation.room)
-            .filter((room) => room && room !== 'Unassigned')
-        )
-      ).sort((left, right) => left.localeCompare(right)),
+      groupByRoomName(automations, (automation) => automation.room)
+        .map((group) => group.room)
+        .filter((room) => room && !roomNamesMatch(room, 'Unassigned'))
+        .sort((left, right) => left.localeCompare(right)),
     [automations]
   );
   const shouldReduceMotion =
