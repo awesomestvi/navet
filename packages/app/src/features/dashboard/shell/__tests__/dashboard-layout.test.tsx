@@ -1,3 +1,4 @@
+import { EffectiveEffectsQualityProvider } from '@navet/app/components/shared/theme/effective-effects-quality';
 import { useNavigationStore, useSettingsStore } from '@navet/app/stores';
 import { useThemeStore } from '@navet/app/stores/theme-store';
 import { setMediaQueryMatch } from '@navet/app/test/browser-mocks';
@@ -6,6 +7,10 @@ import { resetAppStores } from '@navet/app/test/store-reset';
 import { fireEvent, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DashboardLayout } from '../index';
+
+vi.mock('@navet/app/utils/detect-device-tier', () => ({
+  detectDeviceTier: () => 'high',
+}));
 
 vi.mock('@navet/app/components/layout/header', () => ({
   Header: () => <header data-testid="header">Header</header>,
@@ -233,11 +238,18 @@ describe('DashboardLayout', () => {
   it('uses a light wallpaper readability treatment in light theme', () => {
     useThemeStore.getState().setTheme('light');
     useThemeStore.getState().setWallpaper('/wallpapers/custom-room-shot.jpg');
+    useSettingsStore.setState({
+      effectsQuality: 'high',
+      disableAnimations: false,
+      lowPowerMode: false,
+    });
 
     renderWithProviders(
-      <DashboardLayout>
-        <main>Dashboard content</main>
-      </DashboardLayout>
+      <EffectiveEffectsQualityProvider value="high">
+        <DashboardLayout>
+          <main>Dashboard content</main>
+        </DashboardLayout>
+      </EffectiveEffectsQualityProvider>
     );
 
     expect(screen.getByTestId('dashboard-wallpaper-accent-overlay')).not.toHaveStyle({
@@ -245,6 +257,26 @@ describe('DashboardLayout', () => {
     });
     expect(screen.getByTestId('dashboard-wallpaper-readability-layer')).toHaveStyle({
       backgroundColor: 'rgba(249, 250, 251, 0.68)',
+    });
+  });
+
+  it('preserves light wallpaper readability without an accent overlay in low effects mode', () => {
+    useThemeStore.getState().setTheme('light');
+    useThemeStore.getState().setWallpaper('/wallpapers/custom-room-shot.jpg');
+    useSettingsStore.setState({ effectsQuality: 'low' });
+
+    renderWithProviders(
+      <EffectiveEffectsQualityProvider value="low">
+        <DashboardLayout>
+          <main>Dashboard content</main>
+        </DashboardLayout>
+      </EffectiveEffectsQualityProvider>
+    );
+
+    expect(screen.getByTestId('dashboard-wallpaper-image')).toBeInTheDocument();
+    expect(screen.queryByTestId('dashboard-wallpaper-accent-overlay')).not.toBeInTheDocument();
+    expect(screen.getByTestId('dashboard-wallpaper-readability-layer')).toHaveStyle({
+      backgroundColor: 'rgba(249, 250, 251, 0.86)',
     });
   });
 });

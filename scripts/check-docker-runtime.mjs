@@ -1572,27 +1572,26 @@ async function verifyTwoInstallationCookieJar({
   }
 }
 
-async function startHomeyOAuth(baseUrl, installationKey) {
-  const requestStart = (key) =>
+async function startHomeyOAuth(baseUrl) {
+  const requestStart = (origin) =>
     fetch(`${baseUrl}/__navet_homey__/authorize`, {
       method: 'POST',
       headers: {
-        Origin: baseUrl,
+        ...(origin ? { Origin: origin } : {}),
         'Content-Type': 'application/json',
-        ...(key ? { 'X-Navet-Installation-Key': key } : {}),
       },
       body: JSON.stringify({ returnTo: '/' }),
     });
-  for (const rejectedKey of [null, 'b'.repeat(64)]) {
-    const rejected = await requestStart(rejectedKey);
+  for (const rejectedOrigin of [null, 'https://attacker.example']) {
+    const rejected = await requestStart(rejectedOrigin);
     if (
       rejected.status !== 403 ||
       extractCookie(rejected, 'navet_homey_session')
     ) {
-      throw new Error('Fresh Homey enrollment did not require operator pairing');
+      throw new Error('Homey OAuth start accepted a missing or cross-origin Origin');
     }
   }
-  const response = await requestStart(installationKey);
+  const response = await requestStart(baseUrl);
   const cookie = extractScopedCookie(response, 'navet_homey_session');
   const body = await response.json();
   const state =
@@ -1615,26 +1614,25 @@ async function createOpenHABSession(baseUrl, installationKey) {
       username: 'navet',
       password: 'actual-image-secret',
   });
-  const requestLogin = (key) =>
+  const requestLogin = (origin) =>
     fetch(`${baseUrl}/__navet_openhab__/session`, {
       method: 'PUT',
       headers: {
-        Origin: baseUrl,
+        ...(origin ? { Origin: origin } : {}),
         'Content-Type': 'application/json',
-        ...(key ? { 'X-Navet-Installation-Key': key } : {}),
       },
       body,
     });
-  for (const rejectedKey of [null, 'b'.repeat(64)]) {
-    const rejected = await requestLogin(rejectedKey);
+  for (const rejectedOrigin of [null, 'https://attacker.example']) {
+    const rejected = await requestLogin(rejectedOrigin);
     if (
       rejected.status !== 403 ||
       extractCookie(rejected, 'navet_openhab_session')
     ) {
-      throw new Error('Fresh openHAB enrollment did not require operator pairing');
+      throw new Error('openHAB login accepted a missing or cross-origin Origin');
     }
   }
-  const response = await requestLogin(installationKey);
+  const response = await requestLogin(baseUrl);
   const responseBody = await response.text();
   const cookie = extractScopedCookie(response, 'navet_openhab_session');
   if (response.status !== 200 || !cookie) {
@@ -2511,7 +2509,7 @@ try {
       `Cross-origin Homey mutation was not blocked (${blockedHomeyMutation.status})`
     );
   }
-  await startHomeyOAuth(baseUrl, installationKey);
+  await startHomeyOAuth(baseUrl);
   const openHABCookie = await createOpenHABSession(baseUrl, installationKey);
   const profileCookie = await verifyProfileColdBinding(baseUrl, authenticatedCookie);
   const corruptAuthRecord = await seedAndVerifyUnavailableAuthRecord({
