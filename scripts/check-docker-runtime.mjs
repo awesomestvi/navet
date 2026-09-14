@@ -2557,8 +2557,14 @@ try {
   const setupCodeLogLines = combinedRuntimeLogs
     .split('\n')
     .filter((line) => /Navet setup code: [a-f0-9]{4}(?:-[a-f0-9]{4}){3}/.test(line));
-  if (setupCodeLogLines.length !== 1) {
-    throw new Error('The temporary setup code was not logged exactly once at startup');
+  if (setupCodeLogLines.length !== 0) {
+    throw new Error('Standalone startup unexpectedly logged a temporary setup code');
+  }
+  const initializationLogLines = combinedRuntimeLogs
+    .split('\n')
+    .filter((line) => line === 'Navet installation security initialized.');
+  if (initializationLogLines.length !== 1) {
+    throw new Error('Installation security initialization was not logged exactly once at startup');
   }
 
   const resolverConfig = spawnSync(
