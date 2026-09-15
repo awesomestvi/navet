@@ -1806,6 +1806,43 @@ describe('Vite standalone auth session conformance', () => {
     expect(store.readSession(cookieId)?.auth).toEqual(AUTH_A);
   });
 
+  it('expires a stale Home Assistant cookie after provider disconnect without deleting other sessions', async () => {
+    const { store } = createStore();
+    const handler = createViteAuthRequestHandler(store, vi.fn(), TEST_INSTALLATION_AUTHORITY);
+    const browser = await createBrowser(handler);
+    const otherBrowser = await createBrowser(handler);
+    seedAuth(store, browser, AUTH_A);
+    seedAuth(store, otherBrowser, AUTH_B);
+    const cookieId = browser.cookie.split('=')[1] ?? '';
+    const otherCookieId = otherBrowser.cookie.split('=')[1] ?? '';
+    store.deleteSession(cookieId);
+
+    const staleLogout = createResponse();
+    await handler(
+      createRequest({
+        method: 'DELETE',
+        cookie: browser.cookie,
+        headers: { Origin: 'http://navet.example' },
+      }),
+      staleLogout.response
+    );
+    expect(staleLogout.response.statusCode).toBe(200);
+    expect(staleLogout.getHeader('set-cookie')).toContain('Max-Age=0');
+    expect(store.readSession(otherCookieId)?.auth).toEqual(AUTH_B);
+
+    const crossOrigin = createResponse();
+    await handler(
+      createRequest({
+        method: 'DELETE',
+        cookie: browser.cookie,
+        headers: { Origin: 'https://other.example' },
+      }),
+      crossOrigin.response
+    );
+    expect(crossOrigin.response.statusCode).toBe(403);
+    expect(crossOrigin.getHeader('set-cookie')).toBeUndefined();
+  });
+
   it('keeps unrelated presented records during a successful scoped conditional delete', async () => {
     const persistence = createStore();
     const cookieNames = createInstallationCookieNames('navet_auth_session', '3'.repeat(64));

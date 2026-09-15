@@ -86,6 +86,23 @@ function getCookie(r, name) {
   return '';
 }
 
+function getCookieIds(r, name) {
+  const values = [];
+  const entries = getHeader(r && r.headersIn, 'Cookie').split(';');
+  let index;
+  for (index = 0; index < entries.length; index += 1) {
+    const separator = entries[index].indexOf('=');
+    if (separator <= 0 || entries[index].slice(0, separator).trim() !== name) {
+      continue;
+    }
+    const id = entries[index].slice(separator + 1).trim();
+    if (SECRET_PATTERN.test(id) && values.indexOf(id) === -1) {
+      values.push(id);
+    }
+  }
+  return values;
+}
+
 function deviceClientIdentity(r) {
   const clientId = getHeader(r && r.headersIn, 'X-Navet-Device-Client-Id');
   let name = '';
@@ -818,9 +835,34 @@ function invalidateProviderDevices(r) {
   const body = requestBody(r);
   const providerId = String(body.providerId || '');
   const primaryIds = primaryProviderCookieIds(r);
-  if (!PROVIDERS[providerId] || !primaryIds[providerId]) {
+  const provider = PROVIDERS[providerId];
+  const primaryId = primaryIds[providerId];
+  if (!provider || !primaryId) {
     sendJson(r, 403, { error: 'Use your primary device to disconnect this provider.' });
     return;
+  }
+  const cookieNames = installationCookieScope.createInstallationCookieNames(provider.cookieName, {
+    installationKey: readInstallationKey(),
+  });
+  const presentedIds = getCookieIds(r, cookieNames.currentName)
+    .concat(getCookieIds(r, cookieNames.legacyName));
+  const sessionIds = {};
+  sessionIds[primaryId] = true;
+  let presentedIndex;
+  for (presentedIndex = 0; presentedIndex < presentedIds.length; presentedIndex += 1) {
+    sessionIds[presentedIds[presentedIndex]] = true;
+  }
+  const ids = Object.keys(sessionIds);
+  let sessionIndex;
+  for (sessionIndex = 0; sessionIndex < ids.length; sessionIndex += 1) {
+    try {
+      fs.unlinkSync(provider.directory + '/' + ids[sessionIndex] + '.json');
+    } catch (error) {
+      if (!error || error.code !== 'ENOENT') {
+        sendJson(r, 503, { error: 'Unable to clear the provider session.' });
+        return;
+      }
+    }
   }
   let names = [];
   try { names = fs.readdirSync(SESSIONS_DIRECTORY); } catch (_error) { names = []; }

@@ -1324,6 +1324,10 @@ function createAuthSessionStore(options) {
       sendJson(r, 403, { error: 'Cross-origin session mutation is not allowed' });
       return;
     }
+    if (!conditionalInvalidation && !isSameOriginMutation(r)) {
+      sendJson(r, 403, { error: 'Cross-origin session mutation is not allowed' });
+      return;
+    }
     const context = getBoundRequestSession(r, true);
     const presentedCookieIds = getRequestCookieIds(r);
     if (conditionalInvalidation) {
@@ -1361,11 +1365,10 @@ function createAuthSessionStore(options) {
       return;
     }
     if (!context && presentedCookieIds.length > 0) {
-      sendJson(r, 401, { error: 'Authenticated browser session is required' });
-      return;
-    }
-    if (!isSameOriginMutation(r)) {
-      sendJson(r, 403, { error: 'Cross-origin session mutation is not allowed' });
+      // Provider disconnect may have already removed the credential record.
+      // This only expires an unbound browser cookie; it does not mutate a session.
+      clearSessionCookie(r);
+      sendJson(r, 200, { ok: true });
       return;
     }
 

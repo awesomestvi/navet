@@ -1841,9 +1841,10 @@ export function createViteAuthRequestHandler(
         (parseViteAuthCookies(req, store.cookieNames.currentName).length > 0 ||
           presentedStoredContexts.length > 0)
       ) {
-        sendJson(res, 401, {
-          error: 'Authenticated browser session is required',
-        })
+        // Provider disconnect may have already revoked this credential.
+        // Clearing a stale browser cookie is safe; no session record is mutated.
+        res.setHeader('Set-Cookie', serializeViteAuthCookieDeletion(req, store.cookieNames))
+        sendJson(res, 200, { ok: true })
         return
       }
       const storedContextsToRevoke = (
