@@ -1599,6 +1599,7 @@ function getEnergyBucketUnit(
 ): 'hour' | 'day' | 'month' | 'period' {
   if (!bucket) return 'period';
   const durationMs = bucket.endMs - bucket.startMs;
+  if (durationMs < 60 * 60 * 1000) return 'period';
   if (durationMs <= 2 * 60 * 60 * 1000) return 'hour';
   if (durationMs <= 2 * 24 * 60 * 60 * 1000) return 'day';
   return 'month';

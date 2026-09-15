@@ -81,7 +81,7 @@ Assistant's LAN address.
   and a trusted upstream reachable from the Navet container. They may be different routes to the
   same Home Assistant installation; routine dashboard use and token renewal use the latter through
   Navet's same-origin proxy.
-- openHAB must be reachable from the browser and use the configured credentials.
+- openHAB must be reachable from the Navet container and accept the configured credentials.
 - Homey OAuth requires the configured client and callback route.
 
 ## Reset only the affected connection

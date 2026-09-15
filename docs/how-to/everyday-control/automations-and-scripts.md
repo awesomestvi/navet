@@ -7,7 +7,7 @@ editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/everyday-con
 Open **Household**, then choose **Routines**. This view separates automations and scripts while
 keeping configuration details read-only in Navet.
 
-![The current Routines dashboard with summary counts, automation and script tabs, filters, and run controls.](/docs/how-to/everyday-control/tasks-dashboard.webp)
+![The Routines dashboard with summary counts, automation and quick-action tabs, filters, and run controls.](/docs/how-to/everyday-control/tasks-dashboard.webp)
 
 ## Find a routine
 

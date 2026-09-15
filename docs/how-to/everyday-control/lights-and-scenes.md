@@ -7,7 +7,7 @@ editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/everyday-con
 The Lights section groups supported lights and switches by room while keeping common actions close
 to the current state.
 
-![The current phone Lights dashboard with status, quick scenes, whole-home actions, and expandable room groups.](/docs/how-to/everyday-control/lights-dashboard.webp)
+![The Lights dashboard with whole-home status, scene shortcuts, a power action, and room groups.](/docs/how-to/everyday-control/lights-dashboard.webp)
 
 The summary strip shows how many lights are on, average brightness when available, and unavailable
 lights that need attention. Quick scenes and **Expand all**, **Collapse all**, or whole-home power

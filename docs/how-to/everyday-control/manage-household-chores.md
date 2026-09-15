@@ -7,7 +7,7 @@ editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/everyday-con
 Use the management views when the household plan changes. Daily completion stays in **Today** so
 setup and recovery controls do not compete with work that needs attention.
 
-![The Chore library with one-row filters and ChoreBaseCard rows showing room, schedule, points, assignee, Edit, and more actions.](/docs/how-to/everyday-control/household-chore-library.webp)
+![The Chore library with search, filters, assignments, schedules, and actions for each chore.](/docs/how-to/everyday-control/household-chore-library.webp)
 
 ## Edit, pause, or archive a chore
 

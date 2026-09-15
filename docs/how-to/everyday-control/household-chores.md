@@ -37,11 +37,11 @@ recovery actions without turning profiles into user accounts.
 
 1. Open **Household → Chores**.
 2. Choose **Add chore**.
-3. In **Chore name**, add the title and choose a suggested Lucide icon or paste another Lucide icon
-   name. Navet previews the icon before you continue. Add optional instructions, room, estimated
-   time, points, and a child-friendly title when needed.
-4. Leave **Card color** automatic to use the stable colour assigned from the chore ID, or choose a
-   custom colour. Overdue and completed state colours still take priority.
+3. In **The chore**, add the title, choose a room, and select a suggested Lucide icon or enter
+   another Lucide icon name. Navet previews the icon. Open **More options** to add instructions,
+   estimated time, points, or a child-friendly title when needed.
+4. Leave the colour swatch in the chore preview automatic to use the stable colour assigned from
+   the chore ID, or choose a custom colour. Overdue and completed state colours still take priority.
 5. In **Assignment**, choose who owns the work:
    - **One person** assigns every occurrence to the selected person.
    - **Anyone can do it** creates one shared occurrence.
@@ -53,7 +53,7 @@ recovery actions without turning profiles into user accounts.
 7. In **More options**, configure missed-work behavior or reminders when needed.
 8. Choose **Add chore**.
 
-![The first Add a chore step with title, Lucide icon preview, automatic or custom card colour, and instructions.](/docs/how-to/everyday-control/household-add-chore.webp)
+![The Add a chore dialog showing the name, room, Lucide icon preview, and collapsed More options.](/docs/how-to/everyday-control/household-add-chore.webp)
 
 Navet schedules dates in the chore's local time zone, including daylight-saving changes.
 

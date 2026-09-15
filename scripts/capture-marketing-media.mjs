@@ -51,6 +51,16 @@ const SCREENSHOT_SCENARIOS = [
     viewport: { width: 1536, height: 1024 },
   },
   {
+    name: 'navet-ipad-landscape-energy-day',
+    pathname: '/demo/energy',
+    viewport: { width: 1536, height: 1024 },
+    prepare: async (page) => {
+      await page.getByRole('button', { name: 'Day', exact: true }).last().click();
+      await page.getByRole('button', { name: 'Previous day' }).click();
+      await page.getByText('Energy usage').first().waitFor();
+    },
+  },
+  {
     name: 'navet-community-energy',
     pathname: '/demo/energy',
     viewport: { width: 1366, height: 1024 },
@@ -59,6 +69,11 @@ const SCREENSHOT_SCENARIOS = [
   {
     name: 'navet-ipad-landscape-climate',
     pathname: '/demo/climate',
+    viewport: { width: 1536, height: 1024 },
+  },
+  {
+    name: 'navet-ipad-landscape-lights',
+    pathname: '/demo/lights',
     viewport: { width: 1536, height: 1024 },
   },
   {
@@ -110,6 +125,116 @@ const SCREENSHOT_SCENARIOS = [
     viewport: { width: 1536, height: 1024 },
     prepare: async (page) => {
       await page.getByRole('button', { name: 'Routines', exact: true }).click();
+    },
+  },
+  {
+    name: 'navet-ipad-landscape-authorized-devices',
+    pathname: '/demo/settings',
+    viewport: { width: 1366, height: 1024 },
+    prepare: async (page) => {
+      await page.getByRole('button', { name: 'System', exact: true }).click();
+      await page.getByText('Kitchen wall display').waitFor();
+    },
+  },
+  {
+    name: 'navet-ipad-landscape-device-approval',
+    pathname: '/demo/settings',
+    viewport: { width: 1366, height: 1024 },
+    prepare: async (page) => {
+      await page.getByRole('button', { name: 'System', exact: true }).click();
+      await page.getByLabel('Device connection code').fill('A1B2-C3D4-E5F6');
+      await page.getByRole('button', { name: 'Review code' }).click();
+      await page.getByText('Guest room tablet').waitFor();
+    },
+  },
+  {
+    name: 'navet-ipad-landscape-approved-device',
+    pathname: '/demo/settings',
+    viewport: { width: 1366, height: 1024 },
+    prepare: async (page) => {
+      await page.getByRole('button', { name: 'System', exact: true }).click();
+      await page.getByLabel('Device connection code').fill('A1B2-C3D4-E5F6');
+      await page.getByRole('button', { name: 'Review code' }).click();
+      await page.getByRole('button', { name: 'Approve', exact: true }).click();
+      await page.getByText('Guest room tablet').waitFor();
+    },
+  },
+  {
+    name: 'navet-ipad-landscape-provider-management',
+    pathname: '/demo/settings',
+    viewport: { width: 1366, height: 1024 },
+    prepare: async (page) => {
+      await page.getByRole('button', { name: 'System', exact: true }).click();
+      await page.getByText('Kitchen wall display').waitFor();
+      await page.getByRole('button', { name: /Manage .* other providers/ }).click();
+      await page.getByText('Homey', { exact: true }).first().scrollIntoViewIfNeeded();
+    },
+  },
+  {
+    name: 'navet-ipad-landscape-appearance',
+    pathname: '/demo/settings',
+    viewport: { width: 1366, height: 1024 },
+    prepare: async (page) => {
+      await page.getByText('Theme and accent', { exact: true }).first().waitFor();
+    },
+  },
+  {
+    name: 'navet-iphone-add-card-library',
+    pathname: '/demo/home',
+    viewport: { width: 430, height: 932 },
+    prepare: async (page) => {
+      await page.getByRole('button', { name: 'Customize', exact: true }).click();
+      await page.getByRole('button', { name: 'Add Card', exact: true }).click();
+      await page.getByRole('dialog').getByText('Kitchen island').waitFor();
+    },
+  },
+  {
+    name: 'navet-iphone-add-card-custom',
+    pathname: '/demo/home',
+    viewport: { width: 430, height: 932 },
+    prepare: async (page) => {
+      await page.getByRole('button', { name: 'Customize', exact: true }).click();
+      await page.getByRole('button', { name: 'Add Card', exact: true }).click();
+      await page.getByRole('dialog').getByRole('button', { name: /Custom cards/ }).click();
+      await page.getByRole('dialog').getByText('Quick Note').waitFor();
+    },
+  },
+  {
+    name: 'navet-iphone-add-card-search',
+    pathname: '/demo/home',
+    viewport: { width: 430, height: 932 },
+    prepare: async (page) => {
+      await page.getByRole('button', { name: 'Customize', exact: true }).click();
+      await page.getByRole('button', { name: 'Add Card', exact: true }).click();
+      await page.getByRole('dialog').getByPlaceholder('Search entities').fill('Kitchen');
+      await page.getByRole('dialog').getByText('Kitchen island').waitFor();
+    },
+  },
+  {
+    name: 'navet-ipad-landscape-home-edit',
+    pathname: '/demo/home',
+    viewport: { width: 1366, height: 1024 },
+    prepare: async (page) => {
+      await page.getByRole('button', { name: 'Customize', exact: true }).click();
+      await page.getByRole('button', { name: 'Done', exact: true }).waitFor();
+      await page.evaluate(() => window.scrollTo(0, 100));
+    },
+  },
+  {
+    name: 'navet-ipad-landscape-chore-library',
+    pathname: '/demo/tasks',
+    viewport: { width: 1366, height: 1024 },
+    prepare: async (page) => {
+      await page.getByRole('button', { name: 'Chores', exact: true }).click();
+    },
+  },
+  {
+    name: 'navet-ipad-landscape-add-chore',
+    pathname: '/demo/tasks',
+    viewport: { width: 1366, height: 1024 },
+    prepare: async (page) => {
+      await page.getByRole('button', { name: 'Add chore', exact: true }).click();
+      await page.getByRole('dialog').waitFor();
     },
   },
 ];

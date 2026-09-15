@@ -118,6 +118,7 @@ export function HomeEditCommandBar({
   const isCompactCommandBar = useIsCompactCommandBar();
   const isSectioned = homeLayoutMode === 'sectioned';
   const showHomeLayoutControls = homeLayoutMode !== undefined && onSetLayoutMode !== undefined;
+  const showUndoRedo = showHomeLayoutControls || Boolean(onUndo || onRedo);
   const commandBarSurface =
     theme === 'light'
       ? 'bg-white'
@@ -245,21 +246,23 @@ export function HomeEditCommandBar({
               ) : null}
 
               {showHomeLayoutControls ? (
+                <DashboardSwitcherDropdown align="start">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="small"
+                    aria-label={activeDashboard?.name ?? t('dashboard.multiple.title')}
+                    leading={<LayoutDashboard className="h-4 w-4 shrink-0" />}
+                    className="h-10 w-10 shrink-0 gap-0 rounded-full p-0 md:w-auto md:gap-2 md:px-3"
+                  >
+                    <span className="hidden max-w-40 truncate md:block">
+                      {activeDashboard?.name ?? t('dashboard.multiple.title')}
+                    </span>
+                  </Button>
+                </DashboardSwitcherDropdown>
+              ) : null}
+              {showUndoRedo ? (
                 <>
-                  <DashboardSwitcherDropdown align="start">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="small"
-                      aria-label={activeDashboard?.name ?? t('dashboard.multiple.title')}
-                      leading={<LayoutDashboard className="h-4 w-4 shrink-0" />}
-                      className="h-10 w-10 shrink-0 gap-0 rounded-full p-0 md:w-auto md:gap-2 md:px-3"
-                    >
-                      <span className="hidden max-w-40 truncate md:block">
-                        {activeDashboard?.name ?? t('dashboard.multiple.title')}
-                      </span>
-                    </Button>
-                  </DashboardSwitcherDropdown>
                   <IconButton
                     label={t('common.undo')}
                     icon={<Undo2 className="h-4 w-4" />}
@@ -424,7 +427,7 @@ export function HomeEditCommandBar({
               <div className={`hidden h-6 w-px md:block ${dividerClass}`} />
             ) : null}
 
-            {showHomeLayoutControls ? (
+            {showUndoRedo ? (
               <div className="flex items-center gap-1">
                 <IconButton
                   label={t('common.undo')}
