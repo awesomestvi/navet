@@ -416,7 +416,6 @@ export function AddPersonDialog({
                     <Switch
                       aria-label={t('household.personDialog.paused')}
                       checked={paused}
-                      size="compact"
                       onCheckedChange={setPaused}
                     />
                   </div>
@@ -486,7 +485,6 @@ export function AddPersonDialog({
                       <Switch
                         aria-label={t('household.personDialog.reminders')}
                         checked={remindersEnabled}
-                        size="compact"
                         onCheckedChange={setRemindersEnabled}
                       />
                     </div>
@@ -1744,7 +1742,6 @@ export function AddChoreDialog({
                         <Switch
                           aria-label={t('household.choreDialog.approval')}
                           checked={approvalRequired}
-                          size="compact"
                           disabled={approverIds.length === 0}
                           onCheckedChange={setApprovalRequired}
                         />
@@ -1851,7 +1848,6 @@ export function AddChoreDialog({
                         <Switch
                           aria-label={t('household.choreDialog.claimRequired')}
                           checked={claimRequired}
-                          size="compact"
                           onCheckedChange={setClaimRequired}
                         />
                       </div>
@@ -1967,7 +1963,6 @@ export function AddChoreDialog({
                         <Switch
                           aria-label={t('household.choreDialog.reminders')}
                           checked={remindersEnabled}
-                          size="compact"
                           onCheckedChange={setRemindersEnabled}
                         />
                       </div>

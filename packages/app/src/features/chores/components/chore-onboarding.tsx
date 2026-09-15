@@ -1451,7 +1451,6 @@ export function ChoreOnboardingDialog({
                           <Switch
                             aria-label={t('household.personDialog.reminders')}
                             checked={remindersEnabled}
-                            size="compact"
                             onCheckedChange={setRemindersEnabled}
                           />
                         </div>
