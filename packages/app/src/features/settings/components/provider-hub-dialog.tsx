@@ -416,7 +416,6 @@ function HubControl({
         </span>
       ) : control.type === 'boolean' ? (
         <Switch
-          size="compact"
           aria-label={accessibleLabel}
           checked={control.value === true}
           disabled={disabled}

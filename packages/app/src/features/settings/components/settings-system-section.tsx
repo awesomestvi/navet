@@ -2,6 +2,7 @@ import homeAssistantLogo from '@navet/app/assets/providers/home-assistant.svg';
 import homeyLogo from '@navet/app/assets/providers/homey.svg';
 import openhabLogo from '@navet/app/assets/providers/openhab.svg';
 import { Badge, Button, Input, ModalSurface } from '@navet/app/components/primitives';
+import { getThemeSurfaceTokens, navetTypographyTokens } from '@navet/app/components/system/tokens';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,7 +20,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@navet/app/components/ui/dropdown-menu';
-import { useI18n } from '@navet/app/hooks';
+import { cn } from '@navet/app/components/ui/utils';
+import { useI18n, useTheme } from '@navet/app/hooks';
 import {
   supportsAdditionalSmartHomeProviders,
   supportsDeviceAuthorization,
@@ -321,6 +323,8 @@ function ProviderCardView({
 
 export function SettingsSystemSection({ controller }: SettingsSystemSectionProps) {
   const { t } = useI18n();
+  const { theme } = useTheme();
+  const dialogSurface = getThemeSurfaceTokens(theme);
   const [providerUrls, setProviderUrls] = useState<Record<string, string>>({
     home_assistant: '',
     openhab: '',
@@ -480,7 +484,7 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
           bodyClassName="overflow-hidden rounded-[28px]"
         >
           <form
-            className="space-y-5 bg-[linear-gradient(180deg,rgba(10,16,26,0.96),rgba(6,10,18,0.98))] p-6"
+            className="space-y-5 p-5 sm:p-6"
             aria-busy={isConnecting}
             onSubmit={async (event) => {
               event.preventDefault();
@@ -519,10 +523,16 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
             }}
           >
             <div>
-              <p className="text-base font-semibold text-white">
+              <p className={cn(navetTypographyTokens.sectionHeading, dialogSurface.textPrimary)}>
                 {t('login.connectProviderTitle', { provider: connectDialogProvider.label })}
               </p>
-              <p className="mt-1 text-sm leading-relaxed text-white/65">
+              <p
+                className={cn(
+                  'mt-1 leading-relaxed',
+                  navetTypographyTokens.label,
+                  dialogSurface.textSecondary
+                )}
+              >
                 {connectDialogProvider.id === 'openhab'
                   ? t('settings.system.providers.credentialsHelp')
                   : t('settings.system.providers.urlHelp')}
@@ -531,7 +541,10 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
 
             <div className="space-y-3">
               <div className="space-y-1.5">
-                <label htmlFor="provider-connect-url" className="text-xs font-medium text-white/55">
+                <label
+                  htmlFor="provider-connect-url"
+                  className={cn('text-xs font-medium', dialogSurface.textSecondary)}
+                >
                   {t('settings.system.providers.url')}
                 </label>
                 <Input
@@ -548,8 +561,8 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
                     }))
                   }
                   placeholder={getProviderUrlPlaceholder(connectDialogProvider, t)}
-                  leading={<Home className="h-4 w-4 text-white/45" />}
-                  inputClassName="text-white"
+                  leading={<Home className={cn('h-4 w-4', dialogSurface.textMuted)} />}
+                  inputClassName={dialogSurface.textPrimary}
                 />
               </div>
 
@@ -558,7 +571,7 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
                   <div className="space-y-1.5">
                     <label
                       htmlFor="provider-connect-username"
-                      className="text-xs font-medium text-white/55"
+                      className={cn('text-xs font-medium', dialogSurface.textSecondary)}
                     >
                       {t('settings.system.providers.username')}
                     </label>
@@ -576,13 +589,13 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
                         }))
                       }
                       placeholder={t('settings.system.providers.openhabUsernamePlaceholder')}
-                      inputClassName="text-white"
+                      inputClassName={dialogSurface.textPrimary}
                     />
                   </div>
                   <div className="space-y-1.5">
                     <label
                       htmlFor="provider-connect-password"
-                      className="text-xs font-medium text-white/55"
+                      className={cn('text-xs font-medium', dialogSurface.textSecondary)}
                     >
                       {t('settings.system.providers.password')}
                     </label>
@@ -600,7 +613,7 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
                         }))
                       }
                       placeholder={t('settings.system.providers.openhabPasswordPlaceholder')}
-                      inputClassName="text-white"
+                      inputClassName={dialogSurface.textPrimary}
                     />
                   </div>
                 </>

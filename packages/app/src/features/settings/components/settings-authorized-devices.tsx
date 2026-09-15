@@ -482,9 +482,8 @@ export function SettingsAuthorizedDevices({ styles }: { styles: SettingsSectionS
                             <Badge
                               tone="accent"
                               size="small"
-                              className="shrink-0 gap-1 text-[10px] font-medium"
+                              className="shrink-0 text-[10px] font-medium"
                             >
-                              <Check className="h-3 w-3" aria-hidden="true" />
                               {t('settings.system.authorizedDevices.thisDevice')}
                             </Badge>
                           ) : null}

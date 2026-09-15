@@ -705,13 +705,19 @@ export const KioskControlCenter = memo(function KioskControlCenter({
                 />
               ) : null}
               <div className="min-w-0">
-                <h1 className={cn(navetTypographyTokens.pageHeading, surface.textPrimary)}>
+                <h1 className={cn(navetTypographyTokens.sectionHeading, surface.textPrimary)}>
                   {!isWide && mobilePanel !== 'index'
                     ? panelTitle
                     : t('dashboard.kiosk.controlCenterTitle')}
                 </h1>
                 {isWide ? (
-                  <p className={cn('mt-0.5 truncate text-sm', surface.textSecondary)}>
+                  <p
+                    className={cn(
+                      'mt-0.5 truncate',
+                      navetTypographyTokens.label,
+                      surface.textSecondary
+                    )}
+                  >
                     {t('dashboard.kiosk.controlCenterDescription')}
                   </p>
                 ) : null}

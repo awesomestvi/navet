@@ -57,7 +57,6 @@ export function ThemeAppearancePicker({
               {t('settings.appearance.systemTheme.title')}
             </p>
             <Switch
-              size="compact"
               className="shrink-0"
               checked={followSystemTheme}
               onCheckedChange={onFollowSystemThemeChange}

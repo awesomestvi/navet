@@ -445,6 +445,8 @@ export const noMessages = {
   'household.choreDialog.rotationNever': 'Aldri',
   'household.choreDialog.rotationOffset': 'Startpunkt for rotasjon',
   'household.choreDialog.rotationOffsetError': 'Angi et heltall fra 0 til {max}.',
+  'household.validation.nameRequired': 'Skriv inn et navn for å fortsette.',
+  'household.validation.choosePerson': 'Velg en person for å fortsette.',
   'household.validation.wholeNumberRange': 'Angi et heltall fra {min} til {max}.',
   'household.validation.validTime': 'Angi et gyldig klokkeslett.',
   'household.validation.validDate': 'Angi en gyldig dato.',
@@ -766,10 +768,17 @@ export const noMessages = {
   'settings.localization.temperatureUnit.fahrenheit': 'Fahrenheit',
   'settings.interaction.sectionTitle': 'Interaksjon',
   'settings.interaction.sectionDescription':
-    'Hvordan kort reagerer når du trykker på dem og hvilken handling Navet prioriterer først.',
+    'Velg hvordan kort reagerer på trykk og hvordan nettleserens zoom fungerer.',
   'settings.interaction.cardBehavior.title': 'Kortadferd',
   'settings.interaction.cardBehavior.description':
     'Velg om et korttrykk skal handle umiddelbart eller åpne detaljerte kontroller først.',
+  'settings.interaction.browserZoom.title': 'Zoom i nettleseren',
+  'settings.interaction.browserZoom.allow': 'Tillat zoom',
+  'settings.interaction.browserZoom.limit': 'Begrens zoom',
+  'settings.interaction.browserZoom.description':
+    'Velg om denne enheten begrenser zoom i nettleseren når et tekstfelt får fokus.',
+  'settings.interaction.browserZoom.warning':
+    'Dette kan også blokkere zoom med to fingre. Noen nettlesere kan ignorere innstillingen.',
   'settings.interaction.cameraStreams.title': 'Kamera direktestrømmer',
   'settings.interaction.cameraStreams.description':
     'Forhåndsvisninger av Home Assistant-kameraer bruker native WebRTC eller HLS når det er tilgjengelig, med snapshot-backup når det er nødvendig.',

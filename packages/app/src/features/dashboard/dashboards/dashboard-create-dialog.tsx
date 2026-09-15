@@ -1,9 +1,8 @@
-import { CardDialogTabList } from '@navet/app/components/patterns';
+import { CardDialogHeader, CardDialogTabList } from '@navet/app/components/patterns';
 import {
   BaseCardDialog,
   Button,
   coverSheetHeaderClassName,
-  IconButton,
   Input,
   InteractivePill,
 } from '@navet/app/components/primitives';
@@ -32,7 +31,6 @@ import {
   Lightbulb,
   Plus,
   SquareDashed,
-  X,
 } from 'lucide-react';
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { useRoomWorkspaceStore } from '../rooms/room-workspace-store';
@@ -273,30 +271,14 @@ function DashboardCreateForm({ isOpen, onOpenChange, onCreated }: DashboardCreat
         data-dashboard-create-workspace
       >
         <header className={cn(coverSheetHeaderClassName, 'border-b', surface.border)}>
-          <div className="flex min-w-0 items-start justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <h1 className={cn(navetTypographyTokens.pageHeading, surface.textPrimary)}>
-                {t('dashboard.multiple.create.title')}
-              </h1>
-              <p
-                className={cn('mt-1 max-w-2xl', navetTypographyTokens.body, surface.textSecondary)}
-              >
-                {t('dashboard.multiple.create.description')}
-              </p>
-            </div>
-            <IconButton
-              data-cover-sheet-inline-dismiss
-              variant="ghost"
-              label={t('common.close')}
-              icon={<X className={navetIconSizeTokens.sm} aria-hidden="true" />}
-              onClick={() => onOpenChange(false)}
-              className={cn(
-                'min-h-11 min-w-11 motion-reduce:transition-none',
-                surface.subtleBg,
-                surface.hoverBg
-              )}
-            />
-          </div>
+          <CardDialogHeader
+            title={t('dashboard.multiple.create.title')}
+            description={t('dashboard.multiple.create.description')}
+            theme={theme}
+            editableTitle={false}
+            showRoomSelector={false}
+            className="mb-0"
+          />
         </header>
 
         <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col">

@@ -76,7 +76,7 @@ export const Desktop: Story = {
       workspace.getByRole('heading', { name: 'Choose where it opens' })
     ).toBeInTheDocument();
     await expect(
-      workspace.getByText('Assign it to this device or leave it unassigned for now.')
+      workspace.getByText('Assign it to this display or leave it unassigned for now.')
     ).toBeInTheDocument();
     await expect(workspace.getByRole('button', { name: 'This display' })).toBeInTheDocument();
     await expect(workspace.getByRole('button', { name: 'Back' })).toBeInTheDocument();
@@ -99,10 +99,13 @@ export const PhoneSheet: Story = {
     await expect(
       page.getByRole('button', { name: 'Drag dialog to fullscreen or close' })
     ).toBeInTheDocument();
-    const headerDescription = dialog.querySelector('[data-dashboard-create-workspace] header p');
-    await waitFor(() => expect(headerDescription).toBeVisible());
-    await expect(headerDescription).toHaveTextContent(
-      'Choose what belongs on this Home dashboard, then decide where it should open by default.'
+    await waitFor(() =>
+      expect(
+        workspace.getByText(
+          'Choose what belongs on this Home dashboard, then decide where it should open by default.',
+          { selector: 'span' }
+        )
+      ).toBeVisible()
     );
     await expect(workspace.queryByRole('navigation', { name: 'Create dashboard' })).toBeNull();
     await waitFor(() => expect(workspace.getByText('Step 1 of 3')).toBeVisible());

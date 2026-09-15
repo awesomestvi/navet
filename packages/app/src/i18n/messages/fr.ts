@@ -450,6 +450,8 @@ export const frMessages = {
   'household.choreDialog.rotationOffset': 'Position de départ de la rotation',
   'household.choreDialog.rotationOffsetError':
     'Saisissez un nombre entier compris entre 0 et {max}.',
+  'household.validation.nameRequired': 'Saisissez un nom pour continuer.',
+  'household.validation.choosePerson': 'Choisissez une personne pour continuer.',
   'household.validation.wholeNumberRange':
     'Saisissez un nombre entier compris entre {min} et {max}.',
   'household.validation.validTime': 'Saisissez une heure valide.',
@@ -776,10 +778,17 @@ export const frMessages = {
   'settings.localization.temperatureUnit.fahrenheit': 'Fahrenheit',
   'settings.interaction.sectionTitle': 'Interaction',
   'settings.interaction.sectionDescription':
-    'Définissez comment les cartes réagissent au toucher et quelle action Navet priorise en premier.',
+    'Choisissez la réaction des cartes au toucher et le comportement du zoom du navigateur.',
   'settings.interaction.cardBehavior.title': 'Comportement des cartes',
   'settings.interaction.cardBehavior.description':
     'Choisissez si un toucher doit agir immédiatement ou ouvrir d’abord les contrôles détaillés.',
+  'settings.interaction.browserZoom.title': 'Zoom du navigateur',
+  'settings.interaction.browserZoom.allow': 'Autoriser le zoom',
+  'settings.interaction.browserZoom.limit': 'Limiter le zoom',
+  'settings.interaction.browserZoom.description':
+    'Choisissez si cet appareil limite le zoom du navigateur quand un champ de texte reçoit le focus.',
+  'settings.interaction.browserZoom.warning':
+    'Cela peut aussi bloquer le zoom par pincement. Certains navigateurs peuvent ignorer ce réglage.',
   'settings.interaction.cameraStreams.title': 'Diffusions en direct de la caméra',
   'settings.interaction.cameraStreams.description':
     "Les aperçus de la caméra Home Assistant utilisent WebRTC ou HLS natifs lorsqu'ils sont disponibles, avec un repli d'instantané si nécessaire.",

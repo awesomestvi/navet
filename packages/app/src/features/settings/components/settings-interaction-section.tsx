@@ -1,6 +1,7 @@
 import { InteractionPreviewCard } from '@navet/app/components/patterns/interaction-preview-card';
 import { InteractivePill } from '@navet/app/components/primitives/interactive-pill';
 import { useI18n } from '@navet/app/hooks';
+import { isHomeAssistantPanelMode } from '@navet/app/runtime/app-mode';
 import { Hand } from 'lucide-react';
 import type {
   SettingsInteractionOption,
@@ -14,7 +15,7 @@ interface SettingsInteractionSectionProps {
 
 export function SettingsInteractionSection({ controller }: SettingsInteractionSectionProps) {
   const { t } = useI18n();
-  const { entityInteractionMode, styles, theme, updateSettings } = controller;
+  const { entityInteractionMode, preventBrowserZoom, styles, theme, updateSettings } = controller;
   const interactionOptions: SettingsInteractionOption[] = [
     { value: 'toggle-first', label: t('settings.dashboard.interaction.toggleFirst') },
     { value: 'control-first', label: t('settings.dashboard.interaction.controlFirst') },
@@ -60,6 +61,39 @@ export function SettingsInteractionSection({ controller }: SettingsInteractionSe
           </div>
         </div>
       </SettingsItem>
+
+      {!isHomeAssistantPanelMode() ? (
+        <SettingsItem
+          title={t('settings.interaction.browserZoom.title')}
+          description={t('settings.interaction.browserZoom.description')}
+          styles={styles}
+        >
+          <div className="space-y-2">
+            <fieldset>
+              <legend className="sr-only">{t('settings.interaction.browserZoom.title')}</legend>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { value: false, label: t('settings.interaction.browserZoom.allow') },
+                  { value: true, label: t('settings.interaction.browserZoom.limit') },
+                ].map((option) => (
+                  <InteractivePill
+                    key={String(option.value)}
+                    active={preventBrowserZoom === option.value}
+                    size="small"
+                    aria-pressed={preventBrowserZoom === option.value}
+                    onClick={() => updateSettings({ preventBrowserZoom: option.value })}
+                  >
+                    {option.label}
+                  </InteractivePill>
+                ))}
+              </div>
+            </fieldset>
+            <p className={`text-sm leading-5 ${styles.subtleColor}`}>
+              {t('settings.interaction.browserZoom.warning')}
+            </p>
+          </div>
+        </SettingsItem>
+      ) : null}
     </SettingsSectionShell>
   );
 }

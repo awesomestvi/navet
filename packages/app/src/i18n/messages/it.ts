@@ -452,6 +452,8 @@ export const itMessages = {
   'household.choreDialog.rotationNever': 'Mai',
   'household.choreDialog.rotationOffset': 'Posizione iniziale rotazione',
   'household.choreDialog.rotationOffsetError': 'Inserisci un numero intero da 0 a {max}.',
+  'household.validation.nameRequired': 'Inserisci un nome per continuare.',
+  'household.validation.choosePerson': 'Scegli una persona per continuare.',
   'household.validation.wholeNumberRange': 'Inserisci un numero intero da {min} a {max}.',
   'household.validation.validTime': 'Inserisci un orario valido.',
   'household.validation.validDate': 'Inserisci una data valida.',
@@ -779,10 +781,17 @@ export const itMessages = {
   'settings.localization.temperatureUnit.fahrenheit': 'Fahrenheit',
   'settings.interaction.sectionTitle': 'Interazione',
   'settings.interaction.sectionDescription':
-    'Come rispondono le schede quando le tocchi e quale azione Navet dà per prima.',
+    'Scegli come rispondono le schede al tocco e come si comporta lo zoom del browser.',
   'settings.interaction.cardBehavior.title': 'Comportamento schede',
   'settings.interaction.cardBehavior.description':
     'Scegli se il tocco su una scheda deve agire subito o aprire prima i controlli dettagliati.',
+  'settings.interaction.browserZoom.title': 'Zoom del browser',
+  'settings.interaction.browserZoom.allow': 'Consenti zoom',
+  'settings.interaction.browserZoom.limit': 'Limita zoom',
+  'settings.interaction.browserZoom.description':
+    'Scegli se questo dispositivo limita lo zoom del browser quando un campo di testo riceve il focus.',
+  'settings.interaction.browserZoom.warning':
+    'Può anche bloccare lo zoom con le dita. Alcuni browser potrebbero ignorare questa impostazione.',
   'settings.interaction.cameraStreams.title': 'Streaming live della telecamera',
   'settings.interaction.cameraStreams.description':
     'Le anteprime della videocamera Home Assistant utilizzano WebRTC o HLS nativi quando disponibili, con fallback delle istantanee quando necessario.',

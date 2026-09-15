@@ -57,10 +57,10 @@ function WorkspaceStatus({
         )}
       >
         <div className="min-w-0">
-          <h1 className={cn(navetTypographyTokens.pageHeading, surface.textPrimary)}>
+          <h1 className={cn(navetTypographyTokens.sectionHeading, surface.textPrimary)}>
             {labels.title}
           </h1>
-          <p className={cn('mt-1 max-w-2xl', navetTypographyTokens.body, surface.textSecondary)}>
+          <p className={cn('mt-1 max-w-2xl', navetTypographyTokens.label, surface.textSecondary)}>
             {labels.description}
           </p>
         </div>

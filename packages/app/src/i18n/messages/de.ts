@@ -449,6 +449,8 @@ export const deMessages = {
   'household.choreDialog.rotationNever': 'Nie',
   'household.choreDialog.rotationOffset': 'Startposition der Rotation',
   'household.choreDialog.rotationOffsetError': 'Gib eine ganze Zahl zwischen 0 und {max} ein.',
+  'household.validation.nameRequired': 'Gib einen Namen ein, um fortzufahren.',
+  'household.validation.choosePerson': 'Wähle eine Person aus, um fortzufahren.',
   'household.validation.wholeNumberRange': 'Gib eine ganze Zahl zwischen {min} und {max} ein.',
   'household.validation.validTime': 'Gib eine gültige Uhrzeit ein.',
   'household.validation.validDate': 'Gib ein gültiges Datum ein.',
@@ -775,10 +777,17 @@ export const deMessages = {
   'settings.localization.temperatureUnit.fahrenheit': 'Fahrenheit',
   'settings.interaction.sectionTitle': 'Interaktion',
   'settings.interaction.sectionDescription':
-    'Wie Karten auf Tippen reagieren und welche Aktion Navet zuerst priorisiert.',
+    'Wähle, wie Karten auf Tippen reagieren und wie sich der Browser-Zoom verhält.',
   'settings.interaction.cardBehavior.title': 'Kartenverhalten',
   'settings.interaction.cardBehavior.description':
     'Wähle, ob ein Kartentipp sofort handeln oder zuerst die Detailsteuerung öffnen soll.',
+  'settings.interaction.browserZoom.title': 'Browser-Zoom',
+  'settings.interaction.browserZoom.allow': 'Zoom erlauben',
+  'settings.interaction.browserZoom.limit': 'Zoom einschränken',
+  'settings.interaction.browserZoom.description':
+    'Wähle, ob dieses Gerät den Browser-Zoom beim Fokussieren eines Textfelds einschränkt.',
+  'settings.interaction.browserZoom.warning':
+    'Dies kann auch das Zoomen mit zwei Fingern blockieren. Manche Browser ignorieren diese Einstellung.',
   'settings.interaction.cameraStreams.title': 'Kamera-Livestreams',
   'settings.interaction.cameraStreams.description':
     'Die Kameravorschau von Home Assistant nutzt natives WebRTC oder HLS, sofern verfügbar, mit Snapshot-Fallback bei Bedarf.',

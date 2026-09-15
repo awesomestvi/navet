@@ -448,6 +448,8 @@ export const esMessages = {
   'household.choreDialog.rotationNever': 'Nunca',
   'household.choreDialog.rotationOffset': 'Posición inicial de la rotación',
   'household.choreDialog.rotationOffsetError': 'Introduce un número entero entre 0 y {max}.',
+  'household.validation.nameRequired': 'Escribe un nombre para continuar.',
+  'household.validation.choosePerson': 'Elige una persona para continuar.',
   'household.validation.wholeNumberRange': 'Introduce un número entero entre {min} y {max}.',
   'household.validation.validTime': 'Introduce una hora válida.',
   'household.validation.validDate': 'Introduce una fecha válida.',
@@ -770,10 +772,17 @@ export const esMessages = {
   'settings.localization.temperatureUnit.fahrenheit': 'Fahrenheit',
   'settings.interaction.sectionTitle': 'Interacción',
   'settings.interaction.sectionDescription':
-    'Define cómo responden las tarjetas al toque y qué acción prioriza Navet primero.',
+    'Elige cómo responden las tarjetas al toque y cómo funciona el zoom del navegador.',
   'settings.interaction.cardBehavior.title': 'Comportamiento de la tarjeta',
   'settings.interaction.cardBehavior.description':
     'Elige si tocar una tarjeta debe actuar de inmediato o abrir primero los controles detallados.',
+  'settings.interaction.browserZoom.title': 'Zoom del navegador',
+  'settings.interaction.browserZoom.allow': 'Permitir zoom',
+  'settings.interaction.browserZoom.limit': 'Limitar zoom',
+  'settings.interaction.browserZoom.description':
+    'Elige si este dispositivo limita el zoom del navegador al enfocar un campo de texto.',
+  'settings.interaction.browserZoom.warning':
+    'También puede bloquear el zoom con dos dedos. Algunos navegadores pueden ignorar este ajuste.',
   'settings.interaction.cameraStreams.title': 'Transmisiones en vivo de la cámara',
   'settings.interaction.cameraStreams.description':
     'Las vistas previas de la cámara de Home Assistant utilizan WebRTC o HLS nativo cuando están disponibles, con respaldo de instantáneas cuando es necesario.',

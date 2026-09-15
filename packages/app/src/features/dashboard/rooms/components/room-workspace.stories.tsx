@@ -694,6 +694,12 @@ type Story = StoryObj<typeof meta>;
 export const BrowseDesktop: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    const groundFloor = canvasElement.querySelector('#room-group-ground-floor')?.closest('section');
+    await expect(
+      within(groundFloor as HTMLElement)
+        .getAllByRole('button', { name: /^Open room:/ })
+        .map((button) => button.getAttribute('aria-label'))
+    ).toEqual(['Open room: Dining Room', 'Open room: Kitchen', 'Open room: Living Room']);
     await expect(canvas.queryByText('Current room')).toBeNull();
     await expect(
       canvas.queryByRole('complementary', { name: 'Room context' })
@@ -735,6 +741,25 @@ export const BrowseDesktop: Story = {
   },
 };
 
+export const EmptyDashboardDevices: Story = {
+  args: {
+    initialViewModel: {
+      ...roomWorkspaceBaseViewModel,
+      selectedRoomId: 'garden',
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const emptyHeading = canvas.getByRole('heading', { name: 'No dashboard devices' });
+    const emptyPanel = emptyHeading.parentElement?.parentElement;
+
+    await expect(emptyHeading).toBeVisible();
+    await expect(emptyPanel).not.toBeNull();
+    await expect(getComputedStyle(emptyPanel as HTMLElement).boxShadow).toBe('none');
+    await expect(getComputedStyle(emptyPanel as HTMLElement).filter).toBe('none');
+  },
+};
+
 export const UngroupedRooms: Story = {
   args: {
     initialViewModel: {
@@ -759,6 +784,33 @@ export const UngroupedRooms: Story = {
   },
 };
 
+export const AlphabetizedUngroupedRooms: Story = {
+  args: {
+    initialViewModel: {
+      ...roomWorkspaceBaseViewModel,
+      rooms: roomWorkspaceBaseViewModel.rooms.map((room) => ({ ...room, groupId: null })),
+      groups: [],
+      inventorySummary: '6 rooms',
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const noGroup = canvas.getByRole('button', { name: 'No group' }).closest('section');
+    await expect(
+      within(noGroup as HTMLElement)
+        .getAllByRole('button', { name: /^Open room:/ })
+        .map((button) => button.getAttribute('aria-label'))
+    ).toEqual([
+      'Open room: Dining Room',
+      'Open room: Garden',
+      'Open room: Kitchen',
+      'Open room: Living Room',
+      'Open room: Office and Music Studio',
+      'Open room: Primary Bedroom',
+    ]);
+  },
+};
+
 export const ManageRoomEditor: Story = {
   args: {
     initialViewModel: {
@@ -769,6 +821,12 @@ export const ManageRoomEditor: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    const groundFloor = canvasElement.querySelector('#room-group-ground-floor')?.closest('section');
+    await expect(
+      within(groundFloor as HTMLElement)
+        .getAllByRole('button', { name: /^Open room:/ })
+        .map((button) => button.getAttribute('aria-label'))
+    ).toEqual(['Open room: Living Room', 'Open room: Kitchen', 'Open room: Dining Room']);
     await expect(canvas.getByRole('heading', { name: 'Living Room' })).toBeInTheDocument();
     await expect(
       canvas.queryByRole('complementary', { name: 'Room context' })
@@ -964,17 +1022,17 @@ export const PhoneFullScreen: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const workspace = canvas.getByRole('region', { name: 'Rooms' });
-    const header = canvas.getByRole('heading', { name: 'Rooms' }).closest('header');
+    const title = canvas.getByRole('heading', { name: 'Rooms' });
+    const header = title.closest('header');
     const footer = workspace.querySelector('[data-room-workspace-phone-footer]');
     await expect(workspace).toHaveClass('min-h-0', 'max-h-full');
     await expect(workspace).not.toHaveClass('min-h-[36rem]');
     await expect(header?.className).toContain('safe-area-inset-top');
     await expect(header?.className).toContain('safe-area-inset-left');
     await expect(header?.className).toContain('safe-area-inset-right');
-    await expect(canvas.getByRole('searchbox', { name: 'Search rooms or groups' })).toHaveClass(
-      '!text-sm',
-      '!font-normal'
-    );
+    await expect(getComputedStyle(title).fontSize).toBe('18px');
+    const searchbox = canvas.getByRole('searchbox', { name: 'Search rooms or groups' });
+    await expect(getComputedStyle(searchbox).fontSize).toBe('14px');
     await expect(footer).not.toBeNull();
     await expect(
       within(header as HTMLElement).queryByRole('button', { name: 'Edit rooms' })

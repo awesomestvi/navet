@@ -445,6 +445,8 @@ export const fiMessages = {
   'household.choreDialog.rotationNever': 'Ei koskaan',
   'household.choreDialog.rotationOffset': 'Kierron aloituskohta',
   'household.choreDialog.rotationOffsetError': 'Anna kokonaisluku väliltä 0–{max}.',
+  'household.validation.nameRequired': 'Jatka antamalla nimi.',
+  'household.validation.choosePerson': 'Valitse henkilö jatkaaksesi.',
   'household.validation.wholeNumberRange': 'Anna kokonaisluku väliltä {min}–{max}.',
   'household.validation.validTime': 'Anna kelvollinen aika.',
   'household.validation.validDate': 'Anna kelvollinen päivämäärä.',
@@ -768,10 +770,17 @@ export const fiMessages = {
   'settings.localization.temperatureUnit.fahrenheit': 'Fahrenheit',
   'settings.interaction.sectionTitle': 'Vuorovaikutus',
   'settings.interaction.sectionDescription':
-    'Miten kortit reagoivat napauttamalla niitä ja minkä toiminnon Navet priorisoi ensin.',
+    'Valitse, miten kortit reagoivat napautuksiin ja miten selaimen zoomaus toimii.',
   'settings.interaction.cardBehavior.title': 'Kortin käyttäytyminen',
   'settings.interaction.cardBehavior.description':
     'Valitse, toimiiko kortin napauttaminen välittömästi vai avaako yksityiskohtaiset säätimet ensin.',
+  'settings.interaction.browserZoom.title': 'Selaimen zoomaus',
+  'settings.interaction.browserZoom.allow': 'Salli zoomaus',
+  'settings.interaction.browserZoom.limit': 'Rajoita zoomausta',
+  'settings.interaction.browserZoom.description':
+    'Valitse, rajoittaako tämä laite selaimen zoomausta, kun tekstikenttä saa kohdistuksen.',
+  'settings.interaction.browserZoom.warning':
+    'Tämä voi myös estää zoomauksen sormilla. Jotkin selaimet voivat ohittaa asetuksen.',
   'settings.interaction.cameraStreams.title': 'Kameran suorat lähetykset',
   'settings.interaction.cameraStreams.description':
     'Home Assistantin kameran esikatselut käyttävät natiivia WebRTC:tä tai HLS:ää, kun niitä on saatavilla, ja tarvittaessa tilannekuvan varaa.',

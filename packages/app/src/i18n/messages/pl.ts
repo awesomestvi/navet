@@ -446,6 +446,8 @@ export const plMessages = {
   'household.choreDialog.rotationNever': 'Nigdy',
   'household.choreDialog.rotationOffset': 'Pozycja początkowa rotacji',
   'household.choreDialog.rotationOffsetError': 'Wprowadź liczbę całkowitą od 0 do {max}.',
+  'household.validation.nameRequired': 'Wpisz nazwę, aby kontynuować.',
+  'household.validation.choosePerson': 'Wybierz osobę, aby kontynuować.',
   'household.validation.wholeNumberRange': 'Wprowadź liczbę całkowitą od {min} do {max}.',
   'household.validation.validTime': 'Wprowadź prawidłową godzinę.',
   'household.validation.validDate': 'Wprowadź prawidłową datę.',
@@ -771,10 +773,17 @@ export const plMessages = {
   'settings.localization.temperatureUnit.fahrenheit': 'Stopnie Fahrenheita',
   'settings.interaction.sectionTitle': 'Interakcja',
   'settings.interaction.sectionDescription':
-    'Określ reakcję kart na dotknięcie i działanie, które Navet wykonuje w pierwszej kolejności.',
+    'Wybierz sposób reakcji kart na dotknięcie i działanie powiększenia w przeglądarce.',
   'settings.interaction.cardBehavior.title': 'Zachowanie karty',
   'settings.interaction.cardBehavior.description':
     'Wybierz, czy dotknięcie karty ma działać od razu, czy najpierw otworzyć szczegółowe sterowanie.',
+  'settings.interaction.browserZoom.title': 'Powiększanie w przeglądarce',
+  'settings.interaction.browserZoom.allow': 'Zezwalaj na powiększanie',
+  'settings.interaction.browserZoom.limit': 'Ogranicz powiększanie',
+  'settings.interaction.browserZoom.description':
+    'Wybierz, czy to urządzenie ogranicza powiększanie w przeglądarce po ustawieniu kursora w polu tekstowym.',
+  'settings.interaction.browserZoom.warning':
+    'Może to również zablokować powiększanie gestem. Niektóre przeglądarki mogą zignorować to ustawienie.',
   'settings.interaction.cameraStreams.title': 'Transmisje na żywo z kamery',
   'settings.interaction.cameraStreams.description':
     'Podgląd z kamer Home Assistant używa natywnego WebRTC lub HLS, gdy są dostępne, a w razie potrzeby pokazuje migawkę.',

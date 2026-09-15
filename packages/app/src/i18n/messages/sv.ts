@@ -446,6 +446,8 @@ export const svMessages = {
   'household.choreDialog.rotationNever': 'Aldrig',
   'household.choreDialog.rotationOffset': 'Startläge för rotation',
   'household.choreDialog.rotationOffsetError': 'Ange ett heltal från 0 till {max}.',
+  'household.validation.nameRequired': 'Ange ett namn för att fortsätta.',
+  'household.validation.choosePerson': 'Välj en person för att fortsätta.',
   'household.validation.wholeNumberRange': 'Ange ett heltal från {min} till {max}.',
   'household.validation.validTime': 'Ange en giltig tid.',
   'household.validation.validDate': 'Ange ett giltigt datum.',
@@ -767,10 +769,17 @@ export const svMessages = {
   'settings.localization.temperatureUnit.fahrenheit': 'Fahrenheit',
   'settings.interaction.sectionTitle': 'Interaktion',
   'settings.interaction.sectionDescription':
-    'Hur kort reagerar när du trycker på dem och vilken handling Navet prioriterar först.',
+    'Välj hur kort reagerar på tryck och hur webbläsarens zoom fungerar.',
   'settings.interaction.cardBehavior.title': 'Kortbeteende',
   'settings.interaction.cardBehavior.description':
     'Välj om ett tryck på kortet ska agera direkt eller öppna detaljerade kontroller först.',
+  'settings.interaction.browserZoom.title': 'Webbläsarens zoom',
+  'settings.interaction.browserZoom.allow': 'Tillåt zoom',
+  'settings.interaction.browserZoom.limit': 'Begränsa zoom',
+  'settings.interaction.browserZoom.description':
+    'Välj om den här enheten begränsar webbläsarens zoom när ett textfält får fokus.',
+  'settings.interaction.browserZoom.warning':
+    'Detta kan även blockera zoom med två fingrar. Vissa webbläsare kan ignorera inställningen.',
   'settings.interaction.cameraStreams.title': 'Livekameraströmmar',
   'settings.interaction.cameraStreams.description':
     'Kameraförhandsvisningar från Home Assistant använder inbyggd WebRTC eller HLS när det är tillgängligt, med ögonblicksbild som reserv vid behov.',

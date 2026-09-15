@@ -446,6 +446,8 @@ export const nlMessages = {
   'household.choreDialog.rotationNever': 'Nooit',
   'household.choreDialog.rotationOffset': 'Startpositie van rotatie',
   'household.choreDialog.rotationOffsetError': 'Voer een geheel getal van 0 tot {max} in.',
+  'household.validation.nameRequired': 'Voer een naam in om door te gaan.',
+  'household.validation.choosePerson': 'Kies een persoon om door te gaan.',
   'household.validation.wholeNumberRange': 'Voer een geheel getal van {min} tot {max} in.',
   'household.validation.validTime': 'Voer een geldige tijd in.',
   'household.validation.validDate': 'Voer een geldige datum in.',
@@ -772,10 +774,17 @@ export const nlMessages = {
   'settings.localization.temperatureUnit.fahrenheit': 'Fahrenheit',
   'settings.interaction.sectionTitle': 'Interactie',
   'settings.interaction.sectionDescription':
-    'Hoe kaarten reageren als je erop tikt en welke actie Navet als eerste prioriteit geeft.',
+    'Kies hoe kaarten reageren op tikken en hoe browserzoom werkt.',
   'settings.interaction.cardBehavior.title': 'Kaartgedrag',
   'settings.interaction.cardBehavior.description':
     'Kies of een kaarttap onmiddellijk moet reageren of eerst gedetailleerde bedieningselementen moet openen.',
+  'settings.interaction.browserZoom.title': 'Browserzoom',
+  'settings.interaction.browserZoom.allow': 'Zoom toestaan',
+  'settings.interaction.browserZoom.limit': 'Zoom beperken',
+  'settings.interaction.browserZoom.description':
+    'Kies of dit apparaat browserzoom beperkt wanneer een tekstveld focus krijgt.',
+  'settings.interaction.browserZoom.warning':
+    'Dit kan ook zoomen met twee vingers blokkeren. Sommige browsers negeren deze instelling.',
   'settings.interaction.cameraStreams.title': 'Livestreams met camera',
   'settings.interaction.cameraStreams.description':
     'Home Assistant-cameravoorbeelden maken gebruik van native WebRTC of HLS indien beschikbaar, met terugval van momentopnamen indien nodig.',

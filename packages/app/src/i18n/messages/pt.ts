@@ -446,6 +446,8 @@ export const ptMessages = {
   'household.choreDialog.rotationNever': 'Nunca',
   'household.choreDialog.rotationOffset': 'Posição inicial da rotação',
   'household.choreDialog.rotationOffsetError': 'Introduza um número inteiro entre 0 e {max}.',
+  'household.validation.nameRequired': 'Digite um nome para continuar.',
+  'household.validation.choosePerson': 'Escolha uma pessoa para continuar.',
   'household.validation.wholeNumberRange': 'Introduza um número inteiro entre {min} e {max}.',
   'household.validation.validTime': 'Introduza uma hora válida.',
   'household.validation.validDate': 'Introduza uma data válida.',
@@ -768,10 +770,17 @@ export const ptMessages = {
   'settings.localization.temperatureUnit.fahrenheit': 'Fahrenheit',
   'settings.interaction.sectionTitle': 'Interação',
   'settings.interaction.sectionDescription':
-    'Como os cards respondem quando você toca neles e qual ação o Navet prioriza primeiro.',
+    'Escolha como os cards respondem ao toque e como o zoom do navegador funciona.',
   'settings.interaction.cardBehavior.title': 'Comportamento dos cards',
   'settings.interaction.cardBehavior.description':
     'Escolha se tocar em um card deve executar a ação na hora ou abrir os controles detalhados primeiro.',
+  'settings.interaction.browserZoom.title': 'Zoom do navegador',
+  'settings.interaction.browserZoom.allow': 'Permitir zoom',
+  'settings.interaction.browserZoom.limit': 'Limitar zoom',
+  'settings.interaction.browserZoom.description':
+    'Escolha se este dispositivo limita o zoom do navegador quando um campo de texto recebe foco.',
+  'settings.interaction.browserZoom.warning':
+    'Isso também pode bloquear o zoom com os dedos. Alguns navegadores podem ignorar esta configuração.',
   'settings.interaction.cameraStreams.title': 'Transmissões ao vivo da câmera',
   'settings.interaction.cameraStreams.description':
     'As visualizações da câmera do Home Assistant usam WebRTC ou HLS nativo quando disponível, com substituto de instantâneo quando necessário.',

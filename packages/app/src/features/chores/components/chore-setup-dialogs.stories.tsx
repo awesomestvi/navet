@@ -106,6 +106,26 @@ function ChoreTemplateRefreshStory() {
   );
 }
 
+function ChoreParticipantRemovalStory() {
+  const [participants, setParticipants] = useState(() => Object.values(workspace.participantsById));
+  return (
+    <>
+      <button
+        data-testid="remove-selected-participant"
+        type="button"
+        onClick={() =>
+          setParticipants((current) =>
+            current.filter((participant) => participant.id !== current[0]?.id)
+          )
+        }
+      >
+        Remove selected participant
+      </button>
+      <AddChoreDialog isOpen onOpenChange={fn()} participants={participants} onSave={saveChore} />
+    </>
+  );
+}
+
 function PersonCreationStory() {
   return <AddPersonDialog isOpen onOpenChange={fn()} onSave={async () => true} />;
 }
@@ -141,7 +161,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Add and Edit Chore use the same continuous three-part flow as onboarding, with a compact identity preview and contextual More options disclosures inside each section.',
+          'Add and Edit Chore share a three-step sidebar workspace, a compact identity preview, and a visible More options section below each step’s main fields. Add Chore also offers templates.',
       },
     },
   },
@@ -171,7 +191,57 @@ export const TemplateSelectionSurvivesWorkspaceRefresh: Story = {
   },
 };
 
-export const MobileContinuousEditor: Story = {
+export const NameRequiredBeforeNext: Story = {
+  play: async ({ canvasElement }) => {
+    const dialog = within(canvasElement.ownerDocument.body).getByRole('dialog', {
+      name: 'Add a chore',
+    });
+    const name = within(dialog).getByLabelText('Chore name');
+    const sidebar = within(dialog.querySelector('aside') as HTMLElement);
+    await expect(name).toHaveAttribute('aria-invalid', 'true');
+    await expect(name).toHaveAttribute('aria-describedby', 'chore-name-error');
+    await expect(within(dialog).getByRole('alert')).toHaveTextContent('Enter a name to continue.');
+    await expect(within(dialog).getByRole('button', { name: 'Next' })).toBeDisabled();
+    await expect(sidebar.getByRole('button', { name: /Who does it/ })).toBeDisabled();
+    await expect(sidebar.getByRole('button', { name: /When it repeats/ })).toBeDisabled();
+
+    await userEvent.type(name, '   ');
+    await expect(within(dialog).getByRole('button', { name: 'Next' })).toBeDisabled();
+    await userEvent.clear(name);
+    await userEvent.type(name, 'Water the plants');
+    await expect(name).not.toHaveAttribute('aria-invalid');
+    await expect(within(dialog).queryByRole('alert')).toBeNull();
+    await expect(within(dialog).getByRole('button', { name: 'Next' })).toBeEnabled();
+    await expect(sidebar.getByRole('button', { name: /Who does it/ })).toBeEnabled();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
+    await expect(within(dialog).getByLabelText('Assignment')).toBeInTheDocument();
+  },
+};
+
+export const PersonSelectionNoLongerAvailable: Story = {
+  render: () => <ChoreParticipantRemovalStory />,
+  play: async ({ canvasElement }) => {
+    const dialog = within(canvasElement.ownerDocument.body).getByRole('dialog', {
+      name: 'Add a chore',
+    });
+    await userEvent.type(within(dialog).getByLabelText('Chore name'), 'Take out recycling');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
+    fireEvent.click(
+      canvasElement.querySelector('[data-testid="remove-selected-participant"]') as HTMLElement
+    );
+    const person = within(dialog).getByLabelText('Person');
+    await expect(person).toHaveAttribute('aria-invalid', 'true');
+    await expect(within(dialog).getByRole('alert')).toHaveTextContent(
+      'Choose a person to continue.'
+    );
+    await expect(within(dialog).getByRole('button', { name: 'Next' })).toBeDisabled();
+    await userEvent.selectOptions(person, 'maya');
+    await expect(person).not.toHaveAttribute('aria-invalid');
+    await expect(within(dialog).getByRole('button', { name: 'Next' })).toBeEnabled();
+  },
+};
+
+export const MobileStepperEditor: Story = {
   play: async ({ canvasElement }) => {
     saveChore.mockClear();
     const dialog = within(canvasElement.ownerDocument.body).getByRole('dialog', {
@@ -183,13 +253,11 @@ export const MobileContinuousEditor: Story = {
       'max-sm:!rounded-b-none',
       'max-sm:!bottom-0'
     );
-    await expect(dialog).toHaveClass('max-sm:!overflow-y-auto', 'max-sm:overscroll-contain');
-    await expect(dialog.querySelector('form')).toHaveClass('max-sm:h-auto', 'max-sm:min-h-full');
-    await expect(dialog.querySelector('header')).toHaveClass('py-3', 'sm:py-4');
-    await expect(dialog.querySelector('main')?.parentElement).toHaveClass(
-      'max-sm:flex-none',
-      'max-sm:overflow-visible'
-    );
+    await expect(dialog.querySelector('form')).toHaveClass('h-full', 'min-h-0');
+    await expect(dialog.querySelector('header')).toHaveClass('z-10', 'shrink-0');
+    await expect(
+      within(dialog).getByRole('navigation', { name: 'Add a chore' })
+    ).toBeInTheDocument();
     await expect(
       within(canvasElement.ownerDocument.body).getByRole('button', {
         name: 'Drag dialog to fullscreen or close',
@@ -198,11 +266,10 @@ export const MobileContinuousEditor: Story = {
     await expect(
       within(dialog).getAllByRole('heading', { name: 'The chore' })[0]
     ).toBeInTheDocument();
-    await expect(within(dialog).getByRole('heading', { name: 'Who does it' })).toBeInTheDocument();
-    await expect(
-      within(dialog).getByRole('heading', { name: 'When it repeats' })
-    ).toBeInTheDocument();
+    await expect(within(dialog).queryByRole('heading', { name: 'Who does it' })).toBeNull();
+    await expect(within(dialog).queryByRole('heading', { name: 'When it repeats' })).toBeNull();
     await expect(within(dialog).getByLabelText('Chore name')).toHaveValue('');
+    await expect(within(dialog).getByRole('button', { name: 'Next' })).toBeDisabled();
     await expect(within(dialog).getByLabelText('Room')).toBeInTheDocument();
     await expect(within(dialog).queryByLabelText('Repeat every (days)')).toBeNull();
     await expect(within(dialog).queryByText('Days of the week')).toBeNull();
@@ -210,13 +277,18 @@ export const MobileContinuousEditor: Story = {
     await expect(dialog.querySelector('[aria-live="polite"]')).toHaveTextContent(
       'Water the plants'
     );
+    await expect(within(dialog).getByRole('heading', { name: 'More options' })).toBeInTheDocument();
+    await expect(within(dialog).getByLabelText('Instructions')).toBeVisible();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
+    await expect(within(dialog).getByLabelText('Assignment')).toBeInTheDocument();
+    await expect(within(dialog).queryByLabelText('Chore name')).toBeNull();
     await userEvent.selectOptions(within(dialog).getByLabelText('Assignment'), 'everyone');
     await expect(within(dialog).getByLabelText('Person')).toBeDisabled();
-    await expect(within(dialog).getAllByText('More options')).toHaveLength(3);
-    await expect(within(dialog).getByLabelText('Instructions')).not.toBeVisible();
-    await userEvent.click(within(dialog).getByLabelText('More options: The chore'));
-    await expect(within(dialog).getByLabelText('Instructions')).toBeVisible();
-    await expect(within(dialog).getByLabelText('Require approval')).not.toBeVisible();
+    await expect(within(dialog).getByLabelText('Require approval')).toBeVisible();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
+    await expect(within(dialog).getByLabelText('Repeat')).toBeInTheDocument();
+    await expect(within(dialog).getByRole('button', { name: 'Add chore' })).toBeInTheDocument();
+    await expect(saveChore).not.toHaveBeenCalled();
   },
   globals: {
     viewport: {
@@ -226,7 +298,7 @@ export const MobileContinuousEditor: Story = {
   },
 };
 
-export const DesktopContinuousCreation: Story = {
+export const DesktopStepperCreation: Story = {
   play: async ({ canvasElement }) => {
     saveChore.mockClear();
     const dialog = within(canvasElement.ownerDocument.body).getByRole('dialog', {
@@ -242,10 +314,19 @@ export const DesktopContinuousCreation: Story = {
     await userEvent.clear(iconSearch);
     await userEvent.type(iconSearch, 'NotARealLucideIcon');
     await expect(within(dialog).getByRole('img', { name: 'Telescope' })).toBeInTheDocument();
-    await expect(within(dialog).getByRole('alert')).toHaveTextContent('Icon name not found');
+    await expect(within(dialog).getByText('Icon name not found')).toBeInTheDocument();
     await userEvent.type(within(dialog).getByLabelText('Chore name'), 'Clean the hallway');
+    const sidebar = within(dialog.querySelector('aside') as HTMLElement);
+    await expect(sidebar.getByRole('button', { name: /The chore/ })).toHaveAttribute(
+      'aria-current',
+      'step'
+    );
+    await expect(within(dialog).getByLabelText('Instructions')).toBeInTheDocument();
+    await userEvent.click(sidebar.getByRole('button', { name: /Who does it/ }));
     await expect(within(dialog).getByRole('heading', { name: 'Who does it' })).toBeInTheDocument();
     await userEvent.selectOptions(within(dialog).getByLabelText('Assignment'), 'everyone');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
+    await expect(saveChore).not.toHaveBeenCalled();
     await expect(
       within(dialog).getByRole('heading', { name: 'When it repeats' })
     ).toBeInTheDocument();
@@ -275,12 +356,12 @@ export const DesktopContinuousCreation: Story = {
     });
     await userEvent.type(within(dialog).getByLabelText('End date'), '2026-12-31');
     await userEvent.type(within(dialog).getByLabelText('Dates to skip'), '2026-12-24');
-    await userEvent.click(within(dialog).getByLabelText('More options: The chore'));
-    await userEvent.click(within(dialog).getByLabelText('More options: When it repeats'));
     await expect(within(dialog).queryByText('Days of the week')).toBeNull();
     await expect(dialog.querySelectorAll('input[type="color"]')).toHaveLength(1);
-    await expect(within(dialog).getByLabelText('Instructions')).toBeInTheDocument();
     await expect(within(dialog).getByLabelText('When missed')).toBeInTheDocument();
+    await userEvent.click(sidebar.getByRole('button', { name: /The chore/ }));
+    await expect(within(dialog).getByLabelText('Instructions')).toBeInTheDocument();
+    await userEvent.click(sidebar.getByRole('button', { name: /When it repeats/ }));
     await userEvent.click(within(dialog).getByRole('button', { name: 'Add chore' }));
     await expect(saveChore).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -304,8 +385,8 @@ export const RotationOffsetValidation: Story = {
       name: 'Add a chore',
     });
     await userEvent.type(within(dialog).getByLabelText('Chore name'), 'Rotate recycling');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
     await userEvent.selectOptions(within(dialog).getByLabelText('Assignment'), 'rotation');
-    await userEvent.click(within(dialog).getByLabelText('More options: Who does it'));
 
     const offset = within(dialog).getByLabelText('Rotation starting offset');
     fireEvent.change(offset, { target: { value: '99' } });
@@ -313,12 +394,18 @@ export const RotationOffsetValidation: Story = {
     await expect(within(dialog).getByRole('alert')).toHaveTextContent(
       'Enter a whole number from 0 to 2.'
     );
-    await expect(within(dialog).getByRole('button', { name: 'Add chore' })).toBeDisabled();
+    await expect(within(dialog).getByRole('button', { name: 'Next' })).toBeDisabled();
+    await expect(
+      within(dialog.querySelector('aside') as HTMLElement).getByRole('button', {
+        name: /When it repeats/,
+      })
+    ).toBeDisabled();
     await expect(saveChore).not.toHaveBeenCalled();
 
     fireEvent.change(offset, { target: { value: '1' } });
     await expect(offset).not.toHaveAttribute('aria-invalid');
     await expect(within(dialog).queryByRole('alert')).toBeNull();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
     await userEvent.click(within(dialog).getByRole('button', { name: 'Add chore' }));
     await expect(saveChore).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -339,12 +426,12 @@ export const NumericAndScheduleValidation: Story = {
       name: 'Add a chore',
     });
     await userEvent.type(within(dialog).getByLabelText('Chore name'), 'Validated chore');
-    await userEvent.click(within(dialog).getByLabelText('More options: The chore'));
 
     const estimated = within(dialog).getByLabelText('Estimated minutes');
     fireEvent.change(estimated, { target: { value: '1.5' } });
     await expect(estimated).toHaveAttribute('aria-invalid', 'true');
     await expect(within(dialog).getByText(/Enter a whole number from 0 to 1,?440\./)).toBeVisible();
+    await expect(within(dialog).getByRole('button', { name: 'Next' })).toBeDisabled();
     fireEvent.change(estimated, { target: { value: '5' } });
 
     const points = within(dialog).getByLabelText('Points');
@@ -352,6 +439,8 @@ export const NumericAndScheduleValidation: Story = {
     await expect(points).toHaveAttribute('aria-invalid', 'true');
     fireEvent.change(points, { target: { value: '10' } });
 
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
     await userEvent.selectOptions(within(dialog).getByLabelText('Repeat'), 'custom');
     const interval = within(dialog).getByLabelText('Repeat every (days)');
     fireEvent.change(interval, { target: { value: '' } });
@@ -394,6 +483,8 @@ export const WeekdaySchedule: Story = {
       name: 'Add a chore',
     });
     await userEvent.type(within(dialog).getByLabelText('Chore name'), 'Empty the dishwasher');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
     await userEvent.selectOptions(within(dialog).getByLabelText('Repeat'), 'weekdays');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Add chore' }));
 
@@ -417,6 +508,8 @@ export const WeekendSchedule: Story = {
       name: 'Add a chore',
     });
     await userEvent.type(within(dialog).getByLabelText('Chore name'), 'Water the garden');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
     await userEvent.selectOptions(within(dialog).getByLabelText('Repeat'), 'weekends');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Add chore' }));
 
@@ -440,6 +533,8 @@ export const EveryFourWeeksSchedule: Story = {
       name: 'Add a chore',
     });
     await userEvent.type(within(dialog).getByLabelText('Chore name'), 'Clean the extractor fan');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
     await userEvent.selectOptions(within(dialog).getByLabelText('Repeat'), 'fourweekly');
     fireEvent.change(within(dialog).getByLabelText('Start date'), {
       target: { value: '2026-09-14' },
@@ -467,6 +562,8 @@ export const MonthlyStartDate: Story = {
       name: 'Add a chore',
     });
     await userEvent.type(within(dialog).getByLabelText('Chore name'), 'Clean the extractor fan');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
     await userEvent.selectOptions(within(dialog).getByLabelText('Repeat'), 'monthly');
     fireEvent.change(within(dialog).getByLabelText('Start date'), {
       target: { value: '2026-09-14' },
@@ -497,6 +594,8 @@ export const EditColorOverride: Story = {
     const colorInput = dialog.querySelector('input[type="color"]');
     await expect(colorInput).not.toBeNull();
     fireEvent.change(colorInput as HTMLInputElement, { target: { value: '#2563eb' } });
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
     await userEvent.click(within(dialog).getByRole('button', { name: 'Save changes' }));
     await expect(saveEditedChore).toHaveBeenCalledWith(
       expect.any(Object),
@@ -512,6 +611,8 @@ export const EditWeeklyStartDate: Story = {
     const dialog = within(canvasElement.ownerDocument.body).getByRole('dialog', {
       name: 'Edit chore',
     });
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
     const startDate = within(dialog).getByLabelText('Start date');
     fireEvent.change(startDate, { target: { value: '2026-09-15' } });
     fireEvent.change(startDate, { target: { value: '2026-09-14' } });
@@ -525,6 +626,41 @@ export const EditWeeklyStartDate: Story = {
         }),
       }),
       expect.any(Object)
+    );
+  },
+};
+
+export const EditSidebarStepper: Story = {
+  render: () => <ChoreEditingStory />,
+  play: async ({ canvasElement }) => {
+    saveEditedChore.mockClear();
+    const dialog = within(canvasElement.ownerDocument.body).getByRole('dialog', {
+      name: 'Edit chore',
+    });
+    const sidebar = dialog.querySelector('aside');
+    await expect(sidebar).not.toBeNull();
+    const sidebarNav = within(sidebar as HTMLElement);
+    await expect(sidebarNav.getByRole('button', { name: /The chore/ })).toHaveAttribute(
+      'aria-current',
+      'step'
+    );
+    await expect(within(dialog).getByRole('heading', { name: 'More options' })).toBeInTheDocument();
+    await expect(within(dialog).getByLabelText('Instructions')).toBeInTheDocument();
+    await expect(within(dialog).queryByLabelText('More options: The chore')).toBeNull();
+    const name = within(dialog).getByLabelText('Chore name');
+    await userEvent.clear(name);
+    await userEvent.type(name, 'Unload and tidy dishwasher');
+    await userEvent.click(sidebarNav.getByRole('button', { name: /Who does it/ }));
+    await expect(within(dialog).queryByLabelText('Chore name')).toBeNull();
+    await expect(within(dialog).getByLabelText('Assignment')).toBeInTheDocument();
+    await expect(within(dialog).getByLabelText('Require approval')).toBeInTheDocument();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
+    await expect(within(dialog).getByLabelText('Repeat')).toBeInTheDocument();
+    await expect(saveEditedChore).not.toHaveBeenCalled();
+    await expect(within(dialog).getByLabelText('Due window in minutes')).toBeInTheDocument();
+    await userEvent.click(sidebarNav.getByRole('button', { name: /The chore/ }));
+    await expect(within(dialog).getByLabelText('Chore name')).toHaveValue(
+      'Unload and tidy dishwasher'
     );
   },
 };

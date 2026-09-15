@@ -4,6 +4,7 @@ import {
   CardDialogHeader,
   CardDialogSection,
   CardDialogTabList,
+  NavigationWorkspace,
 } from '@navet/app/components/patterns';
 import {
   BaseCardDialog,
@@ -19,9 +20,13 @@ import {
   Switch,
   Textarea,
 } from '@navet/app/components/primitives';
-import { themeColorValues } from '@navet/app/components/shared/theme/theme-colors';
+import {
+  getThemeColorValue,
+  themeColorValues,
+} from '@navet/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
-import { navetIconSizeTokens, navetTypographyTokens } from '@navet/app/components/system/tokens';
+import { navetIconSizeTokens } from '@navet/app/components/system/tokens';
+import { getUiKitGlassSurfaceFoundationStyle } from '@navet/app/components/system/tokens/ui-kit-surfaces';
 import { cn } from '@navet/app/components/ui/utils';
 import { useI18n, useIntegrationStore, useTheme } from '@navet/app/hooks';
 import { integrationSelectors } from '@navet/app/stores/selectors';
@@ -36,7 +41,15 @@ import type {
   ChoreReminderDestinationType,
   ChoreSchedule,
 } from '@navet/core/chores';
-import { ChevronDown, RotateCcw, SlidersHorizontal, UserRound, X } from 'lucide-react';
+import {
+  CalendarDays,
+  ChevronDown,
+  ClipboardList,
+  RotateCcw,
+  SlidersHorizontal,
+  UserRound,
+  UsersRound,
+} from 'lucide-react';
 import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { resolveChoreColorPalette } from '../chore-color-palette';
 import {
@@ -48,6 +61,7 @@ import { useProviderNotificationTargets } from '../use-provider-notification-tar
 import {
   ChoreCreationFormGroups,
   type ChoreCreationRepeat,
+  type ChoreCreationSection,
   ChoreCreationSectionOptions,
 } from './chore-creation-form-groups';
 import {
@@ -926,7 +940,7 @@ export function AddChoreDialog({
   ) => Promise<boolean>;
 }) {
   const { t } = useI18n();
-  const { theme } = useTheme();
+  const { theme, primaryColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const [title, setTitle] = useState('');
   const [choreIcon, setChoreIcon] = useState('ListChecks');
@@ -961,6 +975,8 @@ export function AddChoreDialog({
   const [remindBeforeMinutes, setRemindBeforeMinutes] = useState<NumericDraft>(30);
   const [overdueEveryMinutes, setOverdueEveryMinutes] = useState<NumericDraft>(60);
   const [saving, setSaving] = useState(false);
+  const [activeSection, setActiveSection] = useState<ChoreCreationSection>('details');
+  const stepScrollRef = useRef<HTMLDivElement | null>(null);
   const initializedSessionRef = useRef<string | null>(null);
   const completers = useMemo(
     () => participants.filter((participant) => participant.capabilities.includes('complete')),
@@ -987,6 +1003,7 @@ export function AddChoreDialog({
     if (isOpen && initializedSessionRef.current === sessionKey) return;
     initializedSessionRef.current = isOpen ? sessionKey : null;
     if (isOpen) {
+      setActiveSection('details');
       setTitle(definition?.title ?? '');
       setChoreIcon(presentation?.icon ?? 'ListChecks');
       setChoreColor(presentation?.color ?? '');
@@ -1132,11 +1149,14 @@ export function AddChoreDialog({
     remindBeforeValid &&
     overdueEveryValid;
 
-  const submit = async (event: FormEvent) => {
-    event.preventDefault();
+  const saveChore = async () => {
     const normalizedTitle = title.trim();
     if (!normalizedTitle || completers.length === 0) return;
-    if (assignmentMode === 'person' && !participantId) return;
+    if (
+      assignmentMode === 'person' &&
+      !completers.some((participant) => participant.id === participantId)
+    )
+      return;
     if (assignmentMode === 'rotation' && parsedRotationOffset === null) return;
     if (!formValuesValid) return;
     const timestamp = new Date().toISOString();
@@ -1311,18 +1331,38 @@ export function AddChoreDialog({
     if (saved) onOpenChange(false);
   };
 
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+  };
+
   const dialogTitle = definition
     ? t('household.choreDialog.editTitle')
     : t('household.choreDialog.title');
   const dialogDescription = definition
     ? t('household.choreDialog.editDescription')
     : t('household.choreDialog.description');
-  const canSave =
-    title.trim().length > 0 &&
-    completers.length > 0 &&
-    (assignmentMode !== 'person' || participantId.length > 0) &&
-    (assignmentMode !== 'rotation' || parsedRotationOffset !== null) &&
-    formValuesValid;
+  const stepValidity: Record<ChoreCreationSection, boolean> = {
+    details: title.trim().length > 0 && estimatedMinutesValid && pointsValid,
+    assignment:
+      completers.length > 0 &&
+      (assignmentMode !== 'person' ||
+        completers.some((participant) => participant.id === participantId)) &&
+      (assignmentMode !== 'rotation' || parsedRotationOffset !== null) &&
+      participantTimesValid &&
+      claimExpiryValid,
+    schedule:
+      scheduleIntervalValid &&
+      dueTimeValid &&
+      startDateValid &&
+      endDateValid &&
+      extraTimesValid &&
+      excludedDatesValid &&
+      dueWindowValid &&
+      missedGraceValid &&
+      remindBeforeValid &&
+      overdueEveryValid,
+  };
+  const canSave = Object.values(stepValidity).every(Boolean);
   const scheduleIntervalValue = Number(scheduleInterval);
   const derivedRepeatValue: ChoreCreationRepeat =
     frequency === 'daily' && scheduleIntervalValue === 1 && hasExactlyDays(weeklyDays, WEEKDAYS)
@@ -1418,6 +1458,36 @@ export function AddChoreDialog({
                       : repeatValue === 'custom'
                         ? t('household.schedule.custom')
                         : t('household.schedule.afterCompletion');
+  const steps = [
+    {
+      id: 'details',
+      label: t('household.setup.choreGroupDetails'),
+      description: `${t('household.choreDialog.name')} · ${t('household.choreDialog.room')}`,
+      icon: ClipboardList,
+    },
+    {
+      id: 'assignment',
+      label: t('household.setup.choreGroupAssignment'),
+      description: `${t('household.choreDialog.assignment')} · ${t('household.choreDialog.person')}`,
+      icon: UsersRound,
+    },
+    {
+      id: 'schedule',
+      label: t('household.setup.choreGroupSchedule'),
+      description: `${t('household.choreDialog.schedule')} · ${t('household.choreDialog.time')}`,
+      icon: CalendarDays,
+    },
+  ] as const;
+  const stepIndex = steps.findIndex((step) => step.id === activeSection);
+  const canVisitStep = (section: ChoreCreationSection) => {
+    const targetIndex = steps.findIndex((step) => step.id === section);
+    return steps.slice(0, targetIndex).every((step) => stepValidity[step.id]);
+  };
+  const selectStep = (section: ChoreCreationSection) => {
+    if (!canVisitStep(section)) return;
+    setActiveSection(section);
+    stepScrollRef.current?.scrollTo({ top: 0 });
+  };
 
   return (
     <BaseCardDialog
@@ -1428,472 +1498,584 @@ export function AddChoreDialog({
       description={dialogDescription}
       theme={theme}
       contentClassName={cn(
-        'md:left-1/2 md:right-auto md:w-[calc(100%-4rem)] md:max-w-[900px] md:-translate-x-1/2',
-        'max-sm:!overflow-y-auto max-sm:overscroll-contain max-sm:touch-pan-y',
-        'backdrop-blur-2xl',
+        'md:left-1/2 md:right-auto md:w-[calc(100%-4rem)] md:max-w-[1200px] md:-translate-x-1/2',
         surface.shellPanel,
         surface.border
       )}
+      contentStyle={getUiKitGlassSurfaceFoundationStyle(theme)}
       shellBodyClassName="h-full min-h-0"
     >
-      <form
-        className="flex h-full min-h-0 flex-col max-sm:h-auto max-sm:min-h-full"
-        onSubmit={submit}
-      >
-        <header
-          className={cn(
-            coverSheetHeaderClassName,
-            'flex items-start justify-between gap-3 border-b sm:gap-4 sm:px-6',
-            surface.border
-          )}
+      <form className="flex h-full min-h-0 flex-col" onSubmit={submit}>
+        <NavigationWorkspace.Frame
+          aria-label={dialogTitle}
+          className="h-full max-h-full rounded-none border-0 bg-none bg-transparent shadow-none"
         >
-          <div className="min-w-0">
-            <h1 className={cn(navetTypographyTokens.pageHeading, surface.textPrimary)}>
-              {dialogTitle}
-            </h1>
-            <p className={cn('mt-1 max-w-2xl', navetTypographyTokens.body, surface.textSecondary)}>
-              {dialogDescription}
-            </p>
-          </div>
-          <IconButton
-            data-cover-sheet-inline-dismiss
-            variant="ghost"
-            label={t('common.close')}
-            icon={<X aria-hidden="true" className={navetIconSizeTokens.sm} />}
-            className={cn('min-h-10 min-w-10 shrink-0', surface.subtleBg, surface.hoverBg)}
-            onClick={() => onOpenChange(false)}
-          />
-        </header>
-
-        <div className="scrollbar-hide min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y max-sm:flex-none max-sm:overflow-visible max-sm:overscroll-auto max-sm:touch-auto">
-          <main className="mx-auto w-full max-w-[50rem] px-4 py-6 sm:px-7 sm:py-8">
-            <div
-              className={cn(
-                'mb-7 flex min-w-0 items-center gap-3 rounded-[24px] border p-3.5 sm:p-4',
-                surface.subtleBg,
-                surface.borderStrong
-              )}
-              aria-live="polite"
+          <NavigationWorkspace.Header
+            className={cn(
+              coverSheetHeaderClassName,
+              'z-10 shrink-0 border-b max-sm:pt-2 max-sm:pr-4',
+              theme === 'glass' ? 'bg-transparent' : 'bg-inherit/95 backdrop-blur-xl',
+              surface.border
+            )}
+          >
+            <CardDialogHeader
+              title={dialogTitle}
+              description={dialogDescription}
+              theme={theme}
+              editableTitle={false}
+              showRoomSelector={false}
+              className="mb-0"
+            />
+            <nav
+              aria-label={dialogTitle}
+              className="scrollbar-hide -mb-1 flex w-full gap-2 overflow-x-auto pt-3 md:hidden"
             >
-              <span
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[18px] border"
-                style={{
-                  backgroundColor: `${previewColor}18`,
-                  borderColor: `${previewColor}45`,
-                  color: previewColor,
-                }}
-              >
-                <PreviewIcon aria-hidden="true" className={navetIconSizeTokens.md} />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className={cn('truncate text-sm font-semibold', surface.textPrimary)}>
-                  {title.trim() || t('household.choreDialog.namePlaceholder')}
-                </p>
-                <p className={cn('mt-0.5 truncate text-xs', surface.textSecondary)}>
-                  {selectedRoom?.label ?? t('household.choreDialog.noRoom')}
-                  <span aria-hidden="true"> · </span>
-                  {repeatLabel}
-                  <span aria-hidden="true"> · </span>
-                  {time}
-                </p>
-              </div>
-              <ColorInputSwatch
-                mode="picker"
-                size="medium"
-                value={previewColor}
-                visual={choreColor ? 'color' : 'rainbow'}
-                selected={Boolean(choreColor)}
-                ariaLabel={t('widgets.customCard.colorPicker')}
-                onChange={setChoreColor}
-              />
-              {choreColor ? (
-                <IconButton
-                  variant="ghost"
-                  label={t('common.reset')}
-                  icon={<RotateCcw aria-hidden="true" className={navetIconSizeTokens.sm} />}
-                  className="min-h-10 min-w-10 shrink-0"
-                  onClick={() => setChoreColor('')}
-                />
-              ) : null}
-            </div>
+              {steps.map((step) => (
+                <InteractivePill
+                  key={step.id}
+                  active={activeSection === step.id}
+                  aria-current={activeSection === step.id ? 'step' : undefined}
+                  disabled={!canVisitStep(step.id)}
+                  icon={step.icon}
+                  intent="navigation"
+                  size="compact"
+                  className="shrink-0 whitespace-nowrap"
+                  onClick={() => selectStep(step.id)}
+                >
+                  {step.label}
+                </InteractivePill>
+              ))}
+            </nav>
+          </NavigationWorkspace.Header>
 
-            <ChoreCreationFormGroups
-              title={title}
-              icon={choreIcon}
-              roomId={roomLabel}
-              rooms={roomChoices}
-              assignmentMode={assignmentMode}
-              participantId={participantId}
-              participants={completers}
-              repeat={repeatValue}
-              dueTime={time}
-              startDate={scheduleStartDate}
-              endDate={scheduleEndDate}
-              interval={scheduleInterval}
-              excludedDates={excludedDates}
-              showTemplates={!definition}
-              onTitleChange={setTitle}
-              onIconChange={setChoreIcon}
-              onRoomChange={setRoomLabel}
-              onAssignmentModeChange={setAssignmentMode}
-              onParticipantChange={setParticipantId}
-              onRepeatChange={selectRepeat}
-              onDueTimeChange={setTime}
-              onStartDateChange={changeScheduleStartDate}
-              onEndDateChange={setScheduleEndDate}
-              onIntervalChange={setScheduleInterval}
-              onExcludedDatesChange={setExcludedDates}
-            >
-              <ChoreCreationSectionOptions section="details">
-                <CardDialogSection
-                  className="mb-0 sm:col-span-2"
-                  label={t('household.choreDialog.instructions')}
-                >
-                  <Textarea
-                    aria-label={t('household.choreDialog.instructions')}
-                    value={description}
-                    onChange={(event) => setDescription(event.target.value)}
-                  />
-                </CardDialogSection>
-                <CardDialogSection
-                  className="mb-0"
-                  label={t('household.choreDialog.estimatedTime')}
-                >
-                  <Input
-                    aria-describedby={estimatedMinutesValid ? undefined : 'chore-estimated-error'}
-                    aria-label={t('household.choreDialog.estimatedTime')}
-                    invalid={!estimatedMinutesValid}
-                    min={0}
-                    max={1440}
-                    required
-                    step={1}
-                    type="number"
-                    value={estimatedMinutes}
-                    onChange={(event) => setEstimatedMinutes(numericDraft(event.target.value))}
-                  />
-                  {!estimatedMinutesValid ? (
-                    <ChoreFieldError id="chore-estimated-error">
-                      {t('household.validation.wholeNumberRange', { min: 0, max: 1440 })}
-                    </ChoreFieldError>
-                  ) : null}
-                </CardDialogSection>
-                <CardDialogSection className="mb-0" label={t('household.choreDialog.points')}>
-                  <Input
-                    aria-describedby={pointsValid ? undefined : 'chore-points-error'}
-                    aria-label={t('household.choreDialog.points')}
-                    invalid={!pointsValid}
-                    min={0}
-                    max={10000}
-                    required
-                    step={1}
-                    type="number"
-                    value={points}
-                    onChange={(event) => setPoints(numericDraft(event.target.value))}
-                  />
-                  {!pointsValid ? (
-                    <ChoreFieldError id="chore-points-error">
-                      {t('household.validation.wholeNumberRange', { min: 0, max: 10_000 })}
-                    </ChoreFieldError>
-                  ) : null}
-                </CardDialogSection>
-                <CardDialogSection className="mb-0" label={t('household.choreDialog.childTitle')}>
-                  <Input
-                    aria-label={t('household.choreDialog.childTitle')}
-                    value={childTitle}
-                    onChange={(event) => setChildTitle(event.target.value)}
-                  />
-                </CardDialogSection>
-              </ChoreCreationSectionOptions>
-              <ChoreCreationSectionOptions section="assignment">
-                <div
-                  className={cn(
-                    'flex min-h-12 items-center justify-between gap-4 rounded-2xl border px-4 sm:col-span-2',
-                    surface.borderStrong,
-                    surface.panelMuted,
-                    surface.textPrimary
-                  )}
-                >
-                  <span className="text-sm font-medium">{t('household.choreDialog.approval')}</span>
-                  <Switch
-                    aria-label={t('household.choreDialog.approval')}
-                    checked={approvalRequired}
-                    size="compact"
-                    disabled={approverIds.length === 0}
-                    onCheckedChange={setApprovalRequired}
-                  />
-                </div>
-                {assignmentMode === 'rotation' ? (
-                  <>
-                    <CardDialogSection
-                      className="mb-0"
-                      label={t('household.choreDialog.rotationReset')}
+          <NavigationWorkspace.Body className="grid-cols-1 md:grid-cols-[16rem_minmax(0,1fr)]">
+            <NavigationWorkspace.Sidebar className="hidden md:block">
+              <NavigationWorkspace.ScrollArea className="p-4">
+                <nav aria-label={dialogTitle} className="grid gap-1">
+                  {steps.map((step) => (
+                    <NavigationWorkspace.Item
+                      key={step.id}
+                      active={activeSection === step.id}
+                      accentColor={getThemeColorValue(primaryColor)}
                     >
-                      <Select
-                        aria-label={t('household.choreDialog.rotationReset')}
-                        value={rotationReset}
-                        onChange={(event) =>
-                          setRotationReset(event.target.value as 'never' | 'weekly' | 'monthly')
-                        }
+                      <NavigationWorkspace.ItemButton
+                        aria-current={activeSection === step.id ? 'step' : undefined}
+                        disabled={!canVisitStep(step.id)}
+                        className="disabled:cursor-not-allowed disabled:opacity-50"
+                        onClick={() => selectStep(step.id)}
                       >
-                        <option value="never">{t('household.choreDialog.rotationNever')}</option>
-                        <option value="weekly">{t('household.schedule.weekly')}</option>
-                        <option value="monthly">{t('household.schedule.monthly')}</option>
-                      </Select>
-                    </CardDialogSection>
-                    <CardDialogSection
-                      className="mb-0"
-                      label={t('household.choreDialog.rotationOffset')}
+                        <NavigationWorkspace.ItemIcon>
+                          <step.icon className="h-4 w-4" />
+                        </NavigationWorkspace.ItemIcon>
+                        <NavigationWorkspace.ItemText
+                          title={step.label}
+                          description={step.description}
+                        />
+                      </NavigationWorkspace.ItemButton>
+                    </NavigationWorkspace.Item>
+                  ))}
+                </nav>
+              </NavigationWorkspace.ScrollArea>
+            </NavigationWorkspace.Sidebar>
+            <NavigationWorkspace.Content className="flex min-h-0 flex-col px-4 py-4 sm:px-5 sm:py-5">
+              <div
+                ref={stepScrollRef}
+                className="scrollbar-hide min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y"
+              >
+                <div className="w-full">
+                  <div
+                    className={cn(
+                      'mb-7 flex min-w-0 items-center gap-3 rounded-[24px] border p-3.5 sm:p-4',
+                      surface.subtleBg,
+                      surface.borderStrong
+                    )}
+                    aria-live="polite"
+                  >
+                    <span
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[18px] border"
+                      style={{
+                        backgroundColor: `${previewColor}18`,
+                        borderColor: `${previewColor}45`,
+                        color: previewColor,
+                      }}
                     >
-                      <Input
-                        aria-describedby="chore-rotation-offset-error"
-                        aria-label={t('household.choreDialog.rotationOffset')}
-                        invalid={parsedRotationOffset === null}
-                        min={0}
-                        max={maximumRotationOffset}
-                        required
-                        step={1}
-                        type="number"
-                        value={rotationOffset}
-                        onChange={(event) => setRotationOffset(event.target.value)}
+                      <PreviewIcon aria-hidden="true" className={navetIconSizeTokens.md} />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className={cn('truncate text-sm font-semibold', surface.textPrimary)}>
+                        {title.trim() || t('household.choreDialog.namePlaceholder')}
+                      </p>
+                      <p className={cn('mt-0.5 truncate text-xs', surface.textSecondary)}>
+                        {selectedRoom?.label ?? t('household.choreDialog.noRoom')}
+                        <span aria-hidden="true"> · </span>
+                        {repeatLabel}
+                        <span aria-hidden="true"> · </span>
+                        {time}
+                      </p>
+                    </div>
+                    <ColorInputSwatch
+                      mode="picker"
+                      size="medium"
+                      value={previewColor}
+                      visual={choreColor ? 'color' : 'rainbow'}
+                      selected={Boolean(choreColor)}
+                      ariaLabel={t('widgets.customCard.colorPicker')}
+                      onChange={setChoreColor}
+                    />
+                    {choreColor ? (
+                      <IconButton
+                        variant="ghost"
+                        label={t('common.reset')}
+                        icon={<RotateCcw aria-hidden="true" className={navetIconSizeTokens.sm} />}
+                        className="min-h-10 min-w-10 shrink-0"
+                        onClick={() => setChoreColor('')}
                       />
-                      {parsedRotationOffset === null ? (
-                        <p
-                          id="chore-rotation-offset-error"
-                          className="mt-2 text-xs text-red-500"
-                          role="alert"
-                        >
-                          {t('household.choreDialog.rotationOffsetError', {
-                            max: maximumRotationOffset,
-                          })}
-                        </p>
-                      ) : null}
-                    </CardDialogSection>
-                  </>
-                ) : null}
-                {assignmentMode === 'rotation' || assignmentMode === 'everyone'
-                  ? completers.map((participant) => (
+                    ) : null}
+                  </div>
+
+                  <ChoreCreationFormGroups
+                    title={title}
+                    icon={choreIcon}
+                    roomId={roomLabel}
+                    rooms={roomChoices}
+                    assignmentMode={assignmentMode}
+                    participantId={participantId}
+                    participants={completers}
+                    repeat={repeatValue}
+                    dueTime={time}
+                    startDate={scheduleStartDate}
+                    endDate={scheduleEndDate}
+                    interval={scheduleInterval}
+                    excludedDates={excludedDates}
+                    showTemplates={!definition}
+                    activeSection={activeSection}
+                    moreOptionsLayout="section"
+                    onTitleChange={setTitle}
+                    onIconChange={setChoreIcon}
+                    onRoomChange={setRoomLabel}
+                    onAssignmentModeChange={setAssignmentMode}
+                    onParticipantChange={setParticipantId}
+                    onRepeatChange={selectRepeat}
+                    onDueTimeChange={setTime}
+                    onStartDateChange={changeScheduleStartDate}
+                    onEndDateChange={setScheduleEndDate}
+                    onIntervalChange={setScheduleInterval}
+                    onExcludedDatesChange={setExcludedDates}
+                  >
+                    <ChoreCreationSectionOptions section="details">
                       <CardDialogSection
-                        key={participant.id}
+                        className="mb-0 sm:col-span-2"
+                        label={t('household.choreDialog.instructions')}
+                      >
+                        <Textarea
+                          aria-label={t('household.choreDialog.instructions')}
+                          value={description}
+                          onChange={(event) => setDescription(event.target.value)}
+                        />
+                      </CardDialogSection>
+                      <CardDialogSection
                         className="mb-0"
-                        label={t('household.choreDialog.personTimes', {
-                          name: participant.displayName,
-                        })}
+                        label={t('household.choreDialog.estimatedTime')}
                       >
                         <Input
                           aria-describedby={
-                            isValidTimeList(participantTimes[participant.id] ?? '')
-                              ? undefined
-                              : `chore-person-times-${participant.id}-error`
+                            estimatedMinutesValid ? undefined : 'chore-estimated-error'
                           }
-                          aria-label={t('household.choreDialog.personTimes', {
-                            name: participant.displayName,
-                          })}
-                          invalid={!isValidTimeList(participantTimes[participant.id] ?? '')}
-                          placeholder="08:00, 20:00"
-                          value={participantTimes[participant.id] ?? ''}
+                          aria-label={t('household.choreDialog.estimatedTime')}
+                          invalid={!estimatedMinutesValid}
+                          min={0}
+                          max={1440}
+                          required
+                          step={1}
+                          type="number"
+                          value={estimatedMinutes}
                           onChange={(event) =>
-                            setParticipantTimes((current) => ({
-                              ...current,
-                              [participant.id]: event.target.value,
-                            }))
+                            setEstimatedMinutes(numericDraft(event.target.value))
                           }
                         />
-                        {!isValidTimeList(participantTimes[participant.id] ?? '') ? (
-                          <ChoreFieldError id={`chore-person-times-${participant.id}-error`}>
-                            {t('household.validation.timeList')}
+                        {!estimatedMinutesValid ? (
+                          <ChoreFieldError id="chore-estimated-error">
+                            {t('household.validation.wholeNumberRange', { min: 0, max: 1440 })}
                           </ChoreFieldError>
                         ) : null}
                       </CardDialogSection>
-                    ))
-                  : null}
-                <div
-                  className={cn(
-                    'flex min-h-12 items-center justify-between gap-4 rounded-2xl border px-4 sm:col-span-2',
-                    surface.borderStrong,
-                    surface.panelMuted,
-                    surface.textPrimary
-                  )}
-                >
-                  <span className="text-sm font-medium">
-                    {t('household.choreDialog.claimRequired')}
-                  </span>
-                  <Switch
-                    aria-label={t('household.choreDialog.claimRequired')}
-                    checked={claimRequired}
-                    size="compact"
-                    onCheckedChange={setClaimRequired}
-                  />
+                      <CardDialogSection className="mb-0" label={t('household.choreDialog.points')}>
+                        <Input
+                          aria-describedby={pointsValid ? undefined : 'chore-points-error'}
+                          aria-label={t('household.choreDialog.points')}
+                          invalid={!pointsValid}
+                          min={0}
+                          max={10000}
+                          required
+                          step={1}
+                          type="number"
+                          value={points}
+                          onChange={(event) => setPoints(numericDraft(event.target.value))}
+                        />
+                        {!pointsValid ? (
+                          <ChoreFieldError id="chore-points-error">
+                            {t('household.validation.wholeNumberRange', { min: 0, max: 10_000 })}
+                          </ChoreFieldError>
+                        ) : null}
+                      </CardDialogSection>
+                      <CardDialogSection
+                        className="mb-0"
+                        label={t('household.choreDialog.childTitle')}
+                      >
+                        <Input
+                          aria-label={t('household.choreDialog.childTitle')}
+                          value={childTitle}
+                          onChange={(event) => setChildTitle(event.target.value)}
+                        />
+                      </CardDialogSection>
+                    </ChoreCreationSectionOptions>
+                    <ChoreCreationSectionOptions section="assignment">
+                      <div
+                        className={cn(
+                          'flex min-h-12 items-center justify-between gap-4 rounded-2xl border px-4 sm:col-span-2',
+                          surface.borderStrong,
+                          surface.panelMuted,
+                          surface.textPrimary
+                        )}
+                      >
+                        <span className="text-sm font-medium">
+                          {t('household.choreDialog.approval')}
+                        </span>
+                        <Switch
+                          aria-label={t('household.choreDialog.approval')}
+                          checked={approvalRequired}
+                          size="compact"
+                          disabled={approverIds.length === 0}
+                          onCheckedChange={setApprovalRequired}
+                        />
+                      </div>
+                      {assignmentMode === 'rotation' ? (
+                        <>
+                          <CardDialogSection
+                            className="mb-0"
+                            label={t('household.choreDialog.rotationReset')}
+                          >
+                            <Select
+                              aria-label={t('household.choreDialog.rotationReset')}
+                              value={rotationReset}
+                              onChange={(event) =>
+                                setRotationReset(
+                                  event.target.value as 'never' | 'weekly' | 'monthly'
+                                )
+                              }
+                            >
+                              <option value="never">
+                                {t('household.choreDialog.rotationNever')}
+                              </option>
+                              <option value="weekly">{t('household.schedule.weekly')}</option>
+                              <option value="monthly">{t('household.schedule.monthly')}</option>
+                            </Select>
+                          </CardDialogSection>
+                          <CardDialogSection
+                            className="mb-0"
+                            label={t('household.choreDialog.rotationOffset')}
+                          >
+                            <Input
+                              aria-describedby="chore-rotation-offset-error"
+                              aria-label={t('household.choreDialog.rotationOffset')}
+                              invalid={parsedRotationOffset === null}
+                              min={0}
+                              max={maximumRotationOffset}
+                              required
+                              step={1}
+                              type="number"
+                              value={rotationOffset}
+                              onChange={(event) => setRotationOffset(event.target.value)}
+                            />
+                            {parsedRotationOffset === null ? (
+                              <p
+                                id="chore-rotation-offset-error"
+                                className="mt-2 text-xs text-red-500"
+                                role="alert"
+                              >
+                                {t('household.choreDialog.rotationOffsetError', {
+                                  max: maximumRotationOffset,
+                                })}
+                              </p>
+                            ) : null}
+                          </CardDialogSection>
+                        </>
+                      ) : null}
+                      {assignmentMode === 'rotation' || assignmentMode === 'everyone'
+                        ? completers.map((participant) => (
+                            <CardDialogSection
+                              key={participant.id}
+                              className="mb-0"
+                              label={t('household.choreDialog.personTimes', {
+                                name: participant.displayName,
+                              })}
+                            >
+                              <Input
+                                aria-describedby={
+                                  isValidTimeList(participantTimes[participant.id] ?? '')
+                                    ? undefined
+                                    : `chore-person-times-${participant.id}-error`
+                                }
+                                aria-label={t('household.choreDialog.personTimes', {
+                                  name: participant.displayName,
+                                })}
+                                invalid={!isValidTimeList(participantTimes[participant.id] ?? '')}
+                                placeholder="08:00, 20:00"
+                                value={participantTimes[participant.id] ?? ''}
+                                onChange={(event) =>
+                                  setParticipantTimes((current) => ({
+                                    ...current,
+                                    [participant.id]: event.target.value,
+                                  }))
+                                }
+                              />
+                              {!isValidTimeList(participantTimes[participant.id] ?? '') ? (
+                                <ChoreFieldError id={`chore-person-times-${participant.id}-error`}>
+                                  {t('household.validation.timeList')}
+                                </ChoreFieldError>
+                              ) : null}
+                            </CardDialogSection>
+                          ))
+                        : null}
+                      <div
+                        className={cn(
+                          'flex min-h-12 items-center justify-between gap-4 rounded-2xl border px-4 sm:col-span-2',
+                          surface.borderStrong,
+                          surface.panelMuted,
+                          surface.textPrimary
+                        )}
+                      >
+                        <span className="text-sm font-medium">
+                          {t('household.choreDialog.claimRequired')}
+                        </span>
+                        <Switch
+                          aria-label={t('household.choreDialog.claimRequired')}
+                          checked={claimRequired}
+                          size="compact"
+                          onCheckedChange={setClaimRequired}
+                        />
+                      </div>
+                      {claimRequired ? (
+                        <CardDialogSection
+                          className="mb-0"
+                          label={t('household.choreDialog.claimExpiry')}
+                        >
+                          <Input
+                            aria-describedby={
+                              claimExpiryValid ? undefined : 'chore-claim-expiry-error'
+                            }
+                            aria-label={t('household.choreDialog.claimExpiry')}
+                            invalid={!claimExpiryValid}
+                            min={1}
+                            max={525600}
+                            required
+                            step={1}
+                            type="number"
+                            value={claimExpiryMinutes}
+                            onChange={(event) =>
+                              setClaimExpiryMinutes(numericDraft(event.target.value))
+                            }
+                          />
+                          {!claimExpiryValid ? (
+                            <ChoreFieldError id="chore-claim-expiry-error">
+                              {t('household.validation.wholeNumberRange', { min: 1, max: 525_600 })}
+                            </ChoreFieldError>
+                          ) : null}
+                        </CardDialogSection>
+                      ) : null}
+                    </ChoreCreationSectionOptions>
+                    <ChoreCreationSectionOptions section="schedule">
+                      <CardDialogSection
+                        className="mb-0"
+                        label={t('household.choreDialog.dueWindow')}
+                      >
+                        <Input
+                          aria-describedby={dueWindowValid ? undefined : 'chore-due-window-error'}
+                          aria-label={t('household.choreDialog.dueWindow')}
+                          invalid={!dueWindowValid}
+                          min={0}
+                          max={525600}
+                          required
+                          step={1}
+                          type="number"
+                          value={dueWindowMinutes}
+                          onChange={(event) =>
+                            setDueWindowMinutes(numericDraft(event.target.value))
+                          }
+                        />
+                        {!dueWindowValid ? (
+                          <ChoreFieldError id="chore-due-window-error">
+                            {t('household.validation.wholeNumberRange', { min: 0, max: 525_600 })}
+                          </ChoreFieldError>
+                        ) : null}
+                      </CardDialogSection>
+                      <CardDialogSection
+                        className="mb-0"
+                        label={t('household.choreDialog.missedGrace')}
+                      >
+                        <Input
+                          aria-describedby={
+                            missedGraceValid ? undefined : 'chore-missed-grace-error'
+                          }
+                          aria-label={t('household.choreDialog.missedGrace')}
+                          invalid={!missedGraceValid}
+                          min={0}
+                          max={525600}
+                          required
+                          step={1}
+                          type="number"
+                          value={missedGraceMinutes}
+                          onChange={(event) =>
+                            setMissedGraceMinutes(numericDraft(event.target.value))
+                          }
+                        />
+                        {!missedGraceValid ? (
+                          <ChoreFieldError id="chore-missed-grace-error">
+                            {t('household.validation.wholeNumberRange', { min: 0, max: 525_600 })}
+                          </ChoreFieldError>
+                        ) : null}
+                      </CardDialogSection>
+                      <CardDialogSection
+                        className="mb-0"
+                        label={t('household.choreDialog.missedAction')}
+                      >
+                        <Select
+                          aria-label={t('household.choreDialog.missedAction')}
+                          value={missedAction}
+                          onChange={(event) =>
+                            setMissedAction(event.target.value as 'none' | 'skip' | 'carry_forward')
+                          }
+                        >
+                          <option value="none">{t('household.choreDialog.missedNone')}</option>
+                          <option value="skip">{t('household.choreDialog.missedSkip')}</option>
+                          <option value="carry_forward">
+                            {t('household.choreDialog.missedCarryForward')}
+                          </option>
+                        </Select>
+                      </CardDialogSection>
+                      <div
+                        className={cn(
+                          'flex min-h-12 items-center justify-between gap-4 rounded-2xl border px-4 sm:col-span-2',
+                          surface.borderStrong,
+                          surface.panelMuted,
+                          surface.textPrimary
+                        )}
+                      >
+                        <span className="text-sm font-medium">
+                          {t('household.choreDialog.reminders')}
+                        </span>
+                        <Switch
+                          aria-label={t('household.choreDialog.reminders')}
+                          checked={remindersEnabled}
+                          size="compact"
+                          onCheckedChange={setRemindersEnabled}
+                        />
+                      </div>
+                      {remindersEnabled ? (
+                        <>
+                          <CardDialogSection
+                            className="mb-0"
+                            label={t('household.choreDialog.remindBefore')}
+                          >
+                            <Input
+                              aria-describedby={
+                                remindBeforeValid ? undefined : 'chore-remind-before-error'
+                              }
+                              aria-label={t('household.choreDialog.remindBefore')}
+                              invalid={!remindBeforeValid}
+                              min={1}
+                              max={525600}
+                              required
+                              step={1}
+                              type="number"
+                              value={remindBeforeMinutes}
+                              onChange={(event) =>
+                                setRemindBeforeMinutes(numericDraft(event.target.value))
+                              }
+                            />
+                            {!remindBeforeValid ? (
+                              <ChoreFieldError id="chore-remind-before-error">
+                                {t('household.validation.wholeNumberRange', {
+                                  min: 1,
+                                  max: 525_600,
+                                })}
+                              </ChoreFieldError>
+                            ) : null}
+                          </CardDialogSection>
+                          <CardDialogSection
+                            className="mb-0"
+                            label={t('household.choreDialog.overdueEvery')}
+                          >
+                            <Input
+                              aria-describedby={
+                                overdueEveryValid ? undefined : 'chore-overdue-every-error'
+                              }
+                              aria-label={t('household.choreDialog.overdueEvery')}
+                              invalid={!overdueEveryValid}
+                              min={1}
+                              max={525600}
+                              required
+                              step={1}
+                              type="number"
+                              value={overdueEveryMinutes}
+                              onChange={(event) =>
+                                setOverdueEveryMinutes(numericDraft(event.target.value))
+                              }
+                            />
+                            {!overdueEveryValid ? (
+                              <ChoreFieldError id="chore-overdue-every-error">
+                                {t('household.validation.wholeNumberRange', {
+                                  min: 1,
+                                  max: 525_600,
+                                })}
+                              </ChoreFieldError>
+                            ) : null}
+                          </CardDialogSection>
+                        </>
+                      ) : null}
+                    </ChoreCreationSectionOptions>
+                  </ChoreCreationFormGroups>
                 </div>
-                {claimRequired ? (
-                  <CardDialogSection
-                    className="mb-0"
-                    label={t('household.choreDialog.claimExpiry')}
-                  >
-                    <Input
-                      aria-describedby={claimExpiryValid ? undefined : 'chore-claim-expiry-error'}
-                      aria-label={t('household.choreDialog.claimExpiry')}
-                      invalid={!claimExpiryValid}
-                      min={1}
-                      max={525600}
-                      required
-                      step={1}
-                      type="number"
-                      value={claimExpiryMinutes}
-                      onChange={(event) => setClaimExpiryMinutes(numericDraft(event.target.value))}
-                    />
-                    {!claimExpiryValid ? (
-                      <ChoreFieldError id="chore-claim-expiry-error">
-                        {t('household.validation.wholeNumberRange', { min: 1, max: 525_600 })}
-                      </ChoreFieldError>
-                    ) : null}
-                  </CardDialogSection>
-                ) : null}
-              </ChoreCreationSectionOptions>
-              <ChoreCreationSectionOptions section="schedule">
-                <CardDialogSection className="mb-0" label={t('household.choreDialog.dueWindow')}>
-                  <Input
-                    aria-describedby={dueWindowValid ? undefined : 'chore-due-window-error'}
-                    aria-label={t('household.choreDialog.dueWindow')}
-                    invalid={!dueWindowValid}
-                    min={0}
-                    max={525600}
-                    required
-                    step={1}
-                    type="number"
-                    value={dueWindowMinutes}
-                    onChange={(event) => setDueWindowMinutes(numericDraft(event.target.value))}
-                  />
-                  {!dueWindowValid ? (
-                    <ChoreFieldError id="chore-due-window-error">
-                      {t('household.validation.wholeNumberRange', { min: 0, max: 525_600 })}
-                    </ChoreFieldError>
-                  ) : null}
-                </CardDialogSection>
-                <CardDialogSection className="mb-0" label={t('household.choreDialog.missedGrace')}>
-                  <Input
-                    aria-describedby={missedGraceValid ? undefined : 'chore-missed-grace-error'}
-                    aria-label={t('household.choreDialog.missedGrace')}
-                    invalid={!missedGraceValid}
-                    min={0}
-                    max={525600}
-                    required
-                    step={1}
-                    type="number"
-                    value={missedGraceMinutes}
-                    onChange={(event) => setMissedGraceMinutes(numericDraft(event.target.value))}
-                  />
-                  {!missedGraceValid ? (
-                    <ChoreFieldError id="chore-missed-grace-error">
-                      {t('household.validation.wholeNumberRange', { min: 0, max: 525_600 })}
-                    </ChoreFieldError>
-                  ) : null}
-                </CardDialogSection>
-                <CardDialogSection className="mb-0" label={t('household.choreDialog.missedAction')}>
-                  <Select
-                    aria-label={t('household.choreDialog.missedAction')}
-                    value={missedAction}
-                    onChange={(event) =>
-                      setMissedAction(event.target.value as 'none' | 'skip' | 'carry_forward')
+              </div>
+
+              <footer className={cn('mt-4 shrink-0 border-t pt-4', surface.border)}>
+                <div className="flex w-full items-center justify-between gap-3">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() =>
+                      stepIndex > 0 ? selectStep(steps[stepIndex - 1].id) : onOpenChange(false)
                     }
                   >
-                    <option value="none">{t('household.choreDialog.missedNone')}</option>
-                    <option value="skip">{t('household.choreDialog.missedSkip')}</option>
-                    <option value="carry_forward">
-                      {t('household.choreDialog.missedCarryForward')}
-                    </option>
-                  </Select>
-                </CardDialogSection>
-                <div
-                  className={cn(
-                    'flex min-h-12 items-center justify-between gap-4 rounded-2xl border px-4 sm:col-span-2',
-                    surface.borderStrong,
-                    surface.panelMuted,
-                    surface.textPrimary
+                    {stepIndex > 0 ? t('dashboard.multiple.create.back') : t('common.cancel')}
+                  </Button>
+                  {stepIndex < steps.length - 1 ? (
+                    <Button
+                      key="next-step"
+                      type="button"
+                      disabled={!stepValidity[activeSection]}
+                      onClick={() => selectStep(steps[stepIndex + 1].id)}
+                    >
+                      {t('dashboard.multiple.create.next')}
+                    </Button>
+                  ) : (
+                    <Button
+                      key="save-chore"
+                      type="button"
+                      loading={saving}
+                      disabled={!canSave}
+                      onClick={() => void saveChore()}
+                    >
+                      {definition
+                        ? t('household.choreDialog.saveChanges')
+                        : t('household.choreDialog.save')}
+                    </Button>
                   )}
-                >
-                  <span className="text-sm font-medium">
-                    {t('household.choreDialog.reminders')}
-                  </span>
-                  <Switch
-                    aria-label={t('household.choreDialog.reminders')}
-                    checked={remindersEnabled}
-                    size="compact"
-                    onCheckedChange={setRemindersEnabled}
-                  />
                 </div>
-                {remindersEnabled ? (
-                  <>
-                    <CardDialogSection
-                      className="mb-0"
-                      label={t('household.choreDialog.remindBefore')}
-                    >
-                      <Input
-                        aria-describedby={
-                          remindBeforeValid ? undefined : 'chore-remind-before-error'
-                        }
-                        aria-label={t('household.choreDialog.remindBefore')}
-                        invalid={!remindBeforeValid}
-                        min={1}
-                        max={525600}
-                        required
-                        step={1}
-                        type="number"
-                        value={remindBeforeMinutes}
-                        onChange={(event) =>
-                          setRemindBeforeMinutes(numericDraft(event.target.value))
-                        }
-                      />
-                      {!remindBeforeValid ? (
-                        <ChoreFieldError id="chore-remind-before-error">
-                          {t('household.validation.wholeNumberRange', { min: 1, max: 525_600 })}
-                        </ChoreFieldError>
-                      ) : null}
-                    </CardDialogSection>
-                    <CardDialogSection
-                      className="mb-0"
-                      label={t('household.choreDialog.overdueEvery')}
-                    >
-                      <Input
-                        aria-describedby={
-                          overdueEveryValid ? undefined : 'chore-overdue-every-error'
-                        }
-                        aria-label={t('household.choreDialog.overdueEvery')}
-                        invalid={!overdueEveryValid}
-                        min={1}
-                        max={525600}
-                        required
-                        step={1}
-                        type="number"
-                        value={overdueEveryMinutes}
-                        onChange={(event) =>
-                          setOverdueEveryMinutes(numericDraft(event.target.value))
-                        }
-                      />
-                      {!overdueEveryValid ? (
-                        <ChoreFieldError id="chore-overdue-every-error">
-                          {t('household.validation.wholeNumberRange', { min: 1, max: 525_600 })}
-                        </ChoreFieldError>
-                      ) : null}
-                    </CardDialogSection>
-                  </>
-                ) : null}
-              </ChoreCreationSectionOptions>
-            </ChoreCreationFormGroups>
-          </main>
-        </div>
-
-        <footer className={cn('border-t px-4 py-3 sm:px-6', surface.border, surface.shellPanel)}>
-          <div className="mx-auto flex w-full max-w-[50rem] items-center justify-between gap-3">
-            <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
-              {t('common.cancel')}
-            </Button>
-            <Button type="submit" loading={saving} disabled={!canSave}>
-              {definition
-                ? t('household.choreDialog.saveChanges')
-                : t('household.choreDialog.save')}
-            </Button>
-          </div>
-        </footer>
+              </footer>
+            </NavigationWorkspace.Content>
+          </NavigationWorkspace.Body>
+        </NavigationWorkspace.Frame>
       </form>
     </BaseCardDialog>
   );

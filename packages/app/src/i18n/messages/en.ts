@@ -292,10 +292,17 @@ export const enMessages = {
   'settings.localization.temperatureUnit.fahrenheit': 'Fahrenheit',
   'settings.interaction.sectionTitle': 'Interaction',
   'settings.interaction.sectionDescription':
-    'How cards respond when you tap them and what action Navet prioritizes first.',
+    'Choose how cards respond to taps and how browser zoom behaves.',
   'settings.interaction.cardBehavior.title': 'Card behavior',
   'settings.interaction.cardBehavior.description':
     'Choose whether a card tap should act immediately or open detailed controls first.',
+  'settings.interaction.browserZoom.title': 'Browser zoom',
+  'settings.interaction.browserZoom.allow': 'Allow zoom',
+  'settings.interaction.browserZoom.limit': 'Limit zoom',
+  'settings.interaction.browserZoom.description':
+    'Choose whether this device limits browser zoom when a text field receives focus.',
+  'settings.interaction.browserZoom.warning':
+    'This may also block pinch zoom. Some browsers may ignore the setting.',
   'settings.interaction.cameraStreams.title': 'Camera live streams',
   'settings.interaction.cameraStreams.description':
     'Home Assistant camera previews use native WebRTC or HLS when available, with snapshot fallback when needed.',
@@ -2071,6 +2078,8 @@ export const enMessages = {
   'household.choreDialog.rotationNever': 'Never',
   'household.choreDialog.rotationOffset': 'Rotation starting offset',
   'household.choreDialog.rotationOffsetError': 'Enter a whole number from 0 to {max}.',
+  'household.validation.nameRequired': 'Enter a name to continue.',
+  'household.validation.choosePerson': 'Choose a person to continue.',
   'household.validation.wholeNumberRange': 'Enter a whole number from {min} to {max}.',
   'household.validation.validTime': 'Enter a valid time.',
   'household.validation.validDate': 'Enter a valid date.',
