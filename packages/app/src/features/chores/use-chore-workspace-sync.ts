@@ -32,8 +32,13 @@ export function useChoreWorkspaceSync(enabled = true) {
         })
         .catch(() => undefined);
     }
+    let lastRefreshDay = new Date().toDateString();
     const refresh = () => {
-      if (document.visibilityState === 'visible') void load();
+      if (document.visibilityState !== 'visible') return;
+      const currentDay = new Date().toDateString();
+      const force = currentDay !== lastRefreshDay;
+      lastRefreshDay = currentDay;
+      void load(force ? { force: true } : undefined);
     };
     const interval = window.setInterval(refresh, VISIBLE_REFRESH_INTERVAL_MS);
     document.addEventListener('visibilitychange', refresh);

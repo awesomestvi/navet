@@ -47,8 +47,9 @@ recovery actions without turning profiles into user accounts.
    - **Anyone can do it** creates one shared occurrence.
    - **Everyone does it** creates one occurrence per person.
    - **Rotate between people** moves through the active participant list in order.
-6. In **Repeat**, choose once, daily, weekly, bi-weekly, tri-weekly, monthly, or after completion,
-   then set the due time and any date limits.
+6. In **Repeat**, choose how often the chore returns, then set **Start date** and **Due time**.
+   For weekly and every 2, 3, or 4 weeks, the start date sets the first due date and weekday.
+   For monthly chores, it sets the day of the month. Add date limits if needed.
 7. In **More options**, configure missed-work behavior or reminders when needed.
 8. Choose **Add chore**.
 

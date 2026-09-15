@@ -64,6 +64,30 @@ function ChoreEditingStory() {
   );
 }
 
+function ChoreEditingWeeklyDateStory() {
+  const definition = workspace.definitionsById.dishwasher;
+  if (!definition) throw new Error('Expected a chore to edit');
+  return (
+    <AddChoreDialog
+      definition={{
+        ...definition,
+        schedule: {
+          frequency: 'weekly',
+          startDate: '2026-09-14',
+          time: '18:00',
+          timeZone: 'Europe/Stockholm',
+          daysOfWeek: [4],
+          intervalWeeks: 2,
+        },
+      }}
+      isOpen
+      onOpenChange={fn()}
+      participants={Object.values(workspace.participantsById)}
+      onSave={saveEditedChore}
+    />
+  );
+}
+
 function ChoreTemplateRefreshStory() {
   const [participants, setParticipants] = useState(() => Object.values(workspace.participantsById));
   return (
@@ -417,6 +441,9 @@ export const EveryFourWeeksSchedule: Story = {
     });
     await userEvent.type(within(dialog).getByLabelText('Chore name'), 'Clean the extractor fan');
     await userEvent.selectOptions(within(dialog).getByLabelText('Repeat'), 'fourweekly');
+    fireEvent.change(within(dialog).getByLabelText('Start date'), {
+      target: { value: '2026-09-14' },
+    });
     await userEvent.click(within(dialog).getByRole('button', { name: 'Add chore' }));
 
     await expect(saveChore).toHaveBeenCalledWith(
@@ -424,6 +451,34 @@ export const EveryFourWeeksSchedule: Story = {
         schedule: expect.objectContaining({
           frequency: 'weekly',
           intervalWeeks: 4,
+          startDate: '2026-09-14',
+          daysOfWeek: [1],
+        }),
+      }),
+      expect.any(Object)
+    );
+  },
+};
+
+export const MonthlyStartDate: Story = {
+  play: async ({ canvasElement }) => {
+    saveChore.mockClear();
+    const dialog = within(canvasElement.ownerDocument.body).getByRole('dialog', {
+      name: 'Add a chore',
+    });
+    await userEvent.type(within(dialog).getByLabelText('Chore name'), 'Clean the extractor fan');
+    await userEvent.selectOptions(within(dialog).getByLabelText('Repeat'), 'monthly');
+    fireEvent.change(within(dialog).getByLabelText('Start date'), {
+      target: { value: '2026-09-14' },
+    });
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Add chore' }));
+
+    await expect(saveChore).toHaveBeenCalledWith(
+      expect.objectContaining({
+        schedule: expect.objectContaining({
+          frequency: 'monthly',
+          startDate: '2026-09-14',
+          dayOfMonth: 14,
         }),
       }),
       expect.any(Object)
@@ -446,6 +501,30 @@ export const EditColorOverride: Story = {
     await expect(saveEditedChore).toHaveBeenCalledWith(
       expect.any(Object),
       expect.objectContaining({ color: '#2563eb' })
+    );
+  },
+};
+
+export const EditWeeklyStartDate: Story = {
+  render: () => <ChoreEditingWeeklyDateStory />,
+  play: async ({ canvasElement }) => {
+    saveEditedChore.mockClear();
+    const dialog = within(canvasElement.ownerDocument.body).getByRole('dialog', {
+      name: 'Edit chore',
+    });
+    const startDate = within(dialog).getByLabelText('Start date');
+    fireEvent.change(startDate, { target: { value: '2026-09-15' } });
+    fireEvent.change(startDate, { target: { value: '2026-09-14' } });
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Save changes' }));
+    await expect(saveEditedChore).toHaveBeenCalledWith(
+      expect.objectContaining({
+        schedule: expect.objectContaining({
+          startDate: '2026-09-14',
+          daysOfWeek: [1],
+          intervalWeeks: 2,
+        }),
+      }),
+      expect.any(Object)
     );
   },
 };

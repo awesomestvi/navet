@@ -74,25 +74,25 @@ const CommandBarMenuButton = forwardRef<
   );
 });
 
-function useIsMobileCommandBar() {
-  const [isMobile, setIsMobile] = useState(false);
+function useIsCompactCommandBar() {
+  const [isCompact, setIsCompact] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
       return;
     }
 
-    const mediaQuery = window.matchMedia('(max-width: 767px)');
-    const syncMobileState = () => setIsMobile(mediaQuery.matches);
-    syncMobileState();
-    mediaQuery.addEventListener('change', syncMobileState);
+    const mediaQuery = window.matchMedia('(max-width: 1699px)');
+    const syncCompactState = () => setIsCompact(mediaQuery.matches);
+    syncCompactState();
+    mediaQuery.addEventListener('change', syncCompactState);
 
     return () => {
-      mediaQuery.removeEventListener('change', syncMobileState);
+      mediaQuery.removeEventListener('change', syncCompactState);
     };
   }, []);
 
-  return isMobile;
+  return isCompact;
 }
 
 export function HomeEditCommandBar({
@@ -115,7 +115,7 @@ export function HomeEditCommandBar({
   const { t } = useI18n();
   const { theme, accentColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
-  const isMobileCommandBar = useIsMobileCommandBar();
+  const isCompactCommandBar = useIsCompactCommandBar();
   const isSectioned = homeLayoutMode === 'sectioned';
   const showHomeLayoutControls = homeLayoutMode !== undefined && onSetLayoutMode !== undefined;
   const commandBarSurface =
@@ -130,7 +130,7 @@ export function HomeEditCommandBar({
   const [pendingPackId, setPendingPackId] = useState<DashboardPackId | null>(null);
   const { activeDashboard } = useDashboardSwitcher();
   const pendingPack = DASHBOARD_PACKS.find((pack) => pack.id === pendingPackId);
-  const hasMobileOverflowActions =
+  const hasOverflowActions =
     Boolean(onToggleEnergyKpis) ||
     Boolean(onManageRooms) ||
     Boolean(onApplyPack) ||
@@ -149,24 +149,27 @@ export function HomeEditCommandBar({
   return (
     <>
       <div
-        className={`pointer-events-none fixed inset-x-0 top-0 z-40 border-b px-3 pb-2 pt-[calc(env(safe-area-inset-top,0px)+0.5rem)] shadow-2xl md:px-4 ${surface.border} ${commandBarSurface}`}
+        className={`pointer-events-none fixed inset-x-0 top-0 z-40 border-b px-3 pb-2 pt-[calc(env(safe-area-inset-top,0px)+0.5rem)] shadow-2xl md:pl-20 md:pr-4 ${surface.border} ${commandBarSurface}`}
         style={{
           boxShadow: `0 18px 60px -44px ${accentColor}`,
         }}
       >
-        {isMobileCommandBar ? (
-          <div className="pointer-events-auto mx-auto flex w-full max-w-[calc(100vw-1.5rem)] items-center justify-between gap-2">
+        {isCompactCommandBar ? (
+          <div className="pointer-events-auto mx-auto flex w-full max-w-[calc(100vw-1.5rem)] items-center justify-between gap-2 md:max-w-none">
             <div className="flex min-w-0 items-center gap-1.5">
-              {hasMobileOverflowActions ? (
+              {hasOverflowActions ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <IconButton
-                      label={t('common.moreActions')}
-                      icon={<MoreHorizontal className="h-4 w-4" />}
+                    <Button
+                      type="button"
                       size="small"
                       variant="ghost"
-                      className="h-10 w-10 rounded-full"
-                    />
+                      aria-label={t('common.moreActions')}
+                      leading={<MoreHorizontal className="h-4 w-4 shrink-0" />}
+                      className="h-10 w-10 shrink-0 gap-0 rounded-full p-0 md:w-auto md:gap-2 md:px-3"
+                    >
+                      <span className="hidden md:block">{t('common.moreActions')}</span>
+                    </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" sideOffset={10} className="w-64">
                     {onToggleEnergyKpis ? (
@@ -244,13 +247,18 @@ export function HomeEditCommandBar({
               {showHomeLayoutControls ? (
                 <>
                   <DashboardSwitcherDropdown align="start">
-                    <IconButton
-                      label={activeDashboard?.name ?? t('dashboard.multiple.title')}
-                      icon={<LayoutDashboard className="h-4 w-4" />}
-                      size="small"
+                    <Button
+                      type="button"
                       variant="ghost"
-                      className="h-10 w-10 rounded-full"
-                    />
+                      size="small"
+                      aria-label={activeDashboard?.name ?? t('dashboard.multiple.title')}
+                      leading={<LayoutDashboard className="h-4 w-4 shrink-0" />}
+                      className="h-10 w-10 shrink-0 gap-0 rounded-full p-0 md:w-auto md:gap-2 md:px-3"
+                    >
+                      <span className="hidden max-w-40 truncate md:block">
+                        {activeDashboard?.name ?? t('dashboard.multiple.title')}
+                      </span>
+                    </Button>
                   </DashboardSwitcherDropdown>
                   <IconButton
                     label={t('common.undo')}
@@ -303,7 +311,10 @@ export function HomeEditCommandBar({
             </div>
           </div>
         ) : (
-          <div className="pointer-events-auto mx-auto flex w-full max-w-[calc(100vw-1.5rem)] items-center justify-center gap-2 overflow-x-auto md:max-w-[calc(100vw-7rem)]">
+          <div
+            className="pointer-events-auto flex w-full items-center gap-2 overflow-x-auto whitespace-nowrap [&>*]:shrink-0"
+            style={{ justifyContent: 'safe center' }}
+          >
             {showHomeLayoutControls ? (
               <DashboardSwitcherDropdown align="start">
                 <CommandBarMenuButton

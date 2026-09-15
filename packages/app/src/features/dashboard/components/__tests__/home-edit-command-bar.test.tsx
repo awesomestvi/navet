@@ -14,7 +14,7 @@ function openMenu(name: string | RegExp) {
 
 describe('HomeEditCommandBar', () => {
   beforeEach(() => {
-    setMediaQueryMatch('(max-width: 767px)', false);
+    setMediaQueryMatch('(max-width: 1699px)', false);
     useSettingsStore.setState({ language: 'en' });
   });
 
@@ -117,6 +117,40 @@ describe('HomeEditCommandBar', () => {
     expect(screen.queryByRole('button', { name: /Add column/i })).not.toBeInTheDocument();
   });
 
+  it('keeps primary actions visible and moves secondary controls into the portrait menu', () => {
+    setMediaQueryMatch('(max-width: 1699px)', true);
+    const onAddCard = vi.fn();
+    const onAddRow = vi.fn();
+    const onManageRooms = vi.fn();
+    const onToggleEditMode = vi.fn();
+
+    renderWithProviders(
+      <HomeEditCommandBar
+        homeLayoutMode="sectioned"
+        onAddCard={onAddCard}
+        onAddRow={onAddRow}
+        onManageRooms={onManageRooms}
+        onSetLayoutMode={vi.fn()}
+        onToggleEditMode={onToggleEditMode}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add Card' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Done' }));
+    expect(onAddCard).toHaveBeenCalledOnce();
+    expect(onToggleEditMode).toHaveBeenCalledOnce();
+    expect(screen.queryByRole('button', { name: 'Manage Rooms' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Add row' })).not.toBeInTheDocument();
+
+    openMenu('More actions');
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Manage Rooms' }));
+    expect(onManageRooms).toHaveBeenCalledOnce();
+
+    openMenu('More actions');
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Add row' }));
+    expect(onAddRow).toHaveBeenCalledOnce();
+  });
+
   it('offers Hide KPIs and Show KPIs on the Customize bar', () => {
     const toggle = vi.fn();
     const { rerender } = renderWithProviders(<HomeEditCommandBar onToggleEnergyKpis={toggle} />);
@@ -127,7 +161,7 @@ describe('HomeEditCommandBar', () => {
   });
 
   it('offers KPI visibility in the phone Customize menu', () => {
-    setMediaQueryMatch('(max-width: 767px)', true);
+    setMediaQueryMatch('(max-width: 1699px)', true);
     const toggle = vi.fn();
     renderWithProviders(<HomeEditCommandBar onToggleEnergyKpis={toggle} energyKpisHidden />);
     openMenu('More actions');
@@ -136,7 +170,7 @@ describe('HomeEditCommandBar', () => {
   });
 
   it('does not offer KPI configuration in the phone Customize bar', () => {
-    setMediaQueryMatch('(max-width: 767px)', true);
+    setMediaQueryMatch('(max-width: 1699px)', true);
     renderWithProviders(<HomeEditCommandBar onAddCard={vi.fn()} onToggleEditMode={vi.fn()} />);
     expect(screen.queryByRole('button', { name: 'KPIs' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'More actions' })).not.toBeInTheDocument();

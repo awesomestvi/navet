@@ -27,6 +27,7 @@ import { useI18n, useIntegrationStore, useTheme } from '@navet/app/hooks';
 import { integrationSelectors } from '@navet/app/stores/selectors';
 import type { PersonDevice } from '@navet/app/types/device.types';
 import { prepareAvatarImageDataUrl, validateImageFile } from '@navet/app/utils/image-upload';
+import { getDayOfWeek, parseDateKey } from '@navet/core/chore-calendar-policy';
 import type { ChorePresentationMetadata } from '@navet/core/chore-experience';
 import type {
   ChoreAssignmentMode,
@@ -1353,8 +1354,10 @@ export function AddChoreDialog({
     }
 
     if (value === 'biweekly' || value === 'triweekly' || value === 'fourweekly') {
-      if (frequency !== 'weekly') {
-        setWeeklyDays([new Date(`${scheduleStartDate || localDateKey()}T12:00:00`).getDay()]);
+      if (frequency !== 'weekly' || weeklyDays.length <= 1) {
+        setWeeklyDays([
+          getDayOfWeek(isValidDate(scheduleStartDate) ? scheduleStartDate : localDateKey()),
+        ]);
       }
       setFrequency('weekly');
       setScheduleInterval(value === 'biweekly' ? 2 : value === 'triweekly' ? 3 : 4);
@@ -1362,11 +1365,32 @@ export function AddChoreDialog({
     }
 
     if (value === 'daily') setWeeklyDays(ALL_WEEK_DAYS);
-    if (value === 'weekly' && frequency !== 'weekly') {
-      setWeeklyDays([new Date(`${scheduleStartDate || localDateKey()}T12:00:00`).getDay()]);
+    if (value === 'weekly' && (frequency !== 'weekly' || weeklyDays.length <= 1)) {
+      setWeeklyDays([
+        getDayOfWeek(isValidDate(scheduleStartDate) ? scheduleStartDate : localDateKey()),
+      ]);
+    }
+    if (value === 'monthly' && frequency !== 'monthly') {
+      setDayOfMonth(
+        parseDateKey(isValidDate(scheduleStartDate) ? scheduleStartDate : localDateKey()).day
+      );
     }
     setFrequency(value);
     setScheduleInterval(1);
+  };
+
+  const changeScheduleStartDate = (value: string) => {
+    setScheduleStartDate(value);
+    if (!isValidDate(value)) return;
+    if (frequency === 'weekly' && weeklyDays.length <= 1) {
+      setWeeklyDays([getDayOfWeek(value)]);
+    }
+    if (
+      frequency === 'monthly' &&
+      !(definition?.schedule.frequency === 'monthly' && definition.schedule.nthWeekday)
+    ) {
+      setDayOfMonth(parseDateKey(value).day);
+    }
   };
   const previewColor =
     choreColor || resolveChoreColorPalette(definition?.id ?? (title.trim() || 'new-chore')).primary;
@@ -1515,7 +1539,7 @@ export function AddChoreDialog({
               onParticipantChange={setParticipantId}
               onRepeatChange={selectRepeat}
               onDueTimeChange={setTime}
-              onStartDateChange={setScheduleStartDate}
+              onStartDateChange={changeScheduleStartDate}
               onEndDateChange={setScheduleEndDate}
               onIntervalChange={setScheduleInterval}
               onExcludedDatesChange={setExcludedDates}
