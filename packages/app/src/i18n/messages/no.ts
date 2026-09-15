@@ -820,6 +820,8 @@ export const noMessages = {
   'settings.system.providers.status.connecting': 'Kobler til',
   'settings.system.providers.status.reconnecting': 'Kobler til på nytt',
   'settings.system.providers.status.signed-in': 'Logget på',
+  'settings.system.providers.homeyOffline':
+    'Homey er frakoblet eller utilgjengelig. Kontroller huben og nettverkstilkoblingen.',
   'settings.system.providers.status.disconnected': 'Koblet fra',
   'settings.system.providers.status.planned': 'Planlagt',
   'settings.system.clients.title': 'Tilkoblede enheter',

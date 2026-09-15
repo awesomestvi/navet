@@ -824,6 +824,8 @@ export const esMessages = {
   'settings.system.providers.status.connecting': 'Conectando',
   'settings.system.providers.status.reconnecting': 'Reconectando',
   'settings.system.providers.status.signed-in': 'Sesión iniciada',
+  'settings.system.providers.homeyOffline':
+    'Homey está sin conexión o no se puede acceder a él. Comprueba el hub y la conexión de red.',
   'settings.system.providers.status.disconnected': 'Desconectado',
   'settings.system.providers.status.planned': 'Planificado',
   'settings.system.clients.title': 'Dispositivos conectados',

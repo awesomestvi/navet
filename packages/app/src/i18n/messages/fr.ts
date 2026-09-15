@@ -829,6 +829,8 @@ export const frMessages = {
   'settings.system.providers.status.connecting': 'Connexion',
   'settings.system.providers.status.reconnecting': 'Reconnexion',
   'settings.system.providers.status.signed-in': 'Connecté au compte',
+  'settings.system.providers.homeyOffline':
+    'Homey est hors ligne ou inaccessible. Vérifiez le hub et la connexion réseau.',
   'settings.system.providers.status.disconnected': 'Déconnecté',
   'settings.system.providers.status.planned': 'Prévu',
   'settings.system.clients.title': 'Appareils connectés',

@@ -833,6 +833,8 @@ export const itMessages = {
   'settings.system.providers.status.connecting': 'Connessione',
   'settings.system.providers.status.reconnecting': 'Riconnessione',
   'settings.system.providers.status.signed-in': 'Accesso effettuato',
+  'settings.system.providers.homeyOffline':
+    'Homey è offline o irraggiungibile. Controlla l’hub e la connessione di rete.',
   'settings.system.providers.status.disconnected': 'Disconnesso',
   'settings.system.providers.status.planned': 'Pianificato',
   'settings.system.clients.title': 'Dispositivi connessi',

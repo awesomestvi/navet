@@ -1423,6 +1423,7 @@ export const zhMessages = {
   'settings.system.providers.status.connecting': '连接中',
   'settings.system.providers.status.reconnecting': '重新连接中',
   'settings.system.providers.status.signed-in': '已登录',
+  'settings.system.providers.homeyOffline': 'Homey 已离线或无法访问。请检查中枢和网络连接。',
   'settings.system.providers.status.disconnected': '未连接',
   'settings.system.providers.status.planned': '已规划',
   'settings.system.clients.title': '已连接的设备',

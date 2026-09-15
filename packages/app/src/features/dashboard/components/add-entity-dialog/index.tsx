@@ -39,7 +39,7 @@ export function AddEntityDialog({
         (left, right) =>
           left.room.localeCompare(right.room, locale) || left.name.localeCompare(right.name, locale)
       )
-      .map(({ device, id, name, room, typeLabel }) => ({
+      .map(({ device, id, name, room, typeLabel, entityTypeLabel }) => ({
         id,
         title: name,
         subtitle: room,
@@ -47,7 +47,7 @@ export function AddEntityDialog({
         meta: typeLabel,
         kind: 'device',
         entityType: device.type,
-        entityTypeLabel: typeLabel,
+        entityTypeLabel,
         idSearchText: id,
         icon: getDeviceTypeIcon(
           device.type,

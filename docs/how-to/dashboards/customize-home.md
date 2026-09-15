@@ -27,7 +27,7 @@ provider; the dashboard workflow itself is provider-neutral.
 2. Choose **Customize** or **Edit dashboard**.
 3. Confirm that the editing command bar appears.
 
-On narrower screens, choose **More actions** for room management, presets, layout
+On screens 1100px wide or narrower, choose **More actions** for room management, presets, layout
 choices, and section controls. **Add Card**, **Undo**, **Redo**, and **Done** remain on the bar.
 
 ## Arrange cards

@@ -821,6 +821,8 @@ export const ptMessages = {
   'settings.system.providers.status.connecting': 'Conectando',
   'settings.system.providers.status.reconnecting': 'Reconectando',
   'settings.system.providers.status.signed-in': 'Sessão iniciada',
+  'settings.system.providers.homeyOffline':
+    'O Homey está offline ou inacessível. Verifique o hub e a ligação de rede.',
   'settings.system.providers.status.disconnected': 'Desconectado',
   'settings.system.providers.status.planned': 'Planejado',
   'settings.system.clients.title': 'Dispositivos ligados',

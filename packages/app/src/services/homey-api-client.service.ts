@@ -17,6 +17,19 @@ let latestSnapshot: HomeySnapshot = {
   zones: {},
 };
 
+class HomeyRequestError extends Error {
+  constructor(
+    message: string,
+    readonly unreachable: boolean
+  ) {
+    super(message);
+  }
+}
+
+function isHomeyUnreachable(error: unknown): boolean {
+  return error instanceof HomeyRequestError ? error.unreachable : error instanceof TypeError;
+}
+
 async function fetchHomeyJson<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${HOMEY_PROXY_BASE}${path}`, {
     cache: 'no-store',
@@ -25,7 +38,12 @@ async function fetchHomeyJson<T>(path: string, init?: RequestInit): Promise<T> {
   });
 
   if (!response.ok) {
-    throw new Error(`Homey request failed with status ${response.status}`);
+    const body = await response.text();
+    const proxyUnavailable = body.includes('Unable to load Homey resource');
+    throw new HomeyRequestError(
+      `Homey request failed with status ${response.status}`,
+      proxyUnavailable || response.status === 503 || response.status === 504
+    );
   }
 
   const body = await response.text();
@@ -42,6 +60,8 @@ async function fetchHomeySnapshot(): Promise<HomeySnapshot> {
   latestSnapshot = {
     ...resources,
     connected: true,
+    error: null,
+    unreachable: false,
     devices,
     zones,
   };
@@ -69,6 +89,8 @@ async function refreshHomeySnapshot() {
       latestSnapshot = {
         ...latestSnapshot,
         connected: false,
+        error: error instanceof Error ? error.message : String(error),
+        unreachable: isHomeyUnreachable(error),
       };
       emitSnapshot(latestSnapshot);
       throw error;
@@ -112,7 +134,7 @@ function startSnapshotPolling() {
 export const homeyApiClient: HomeySnapshotClient = {
   request: fetchHomeyJson,
   async loadSnapshot(): Promise<HomeySnapshot> {
-    return await fetchHomeySnapshot();
+    return await refreshHomeySnapshot();
   },
   async setCapabilityValue(command: HomeyCapabilityCommand): Promise<void> {
     const response = await fetch(

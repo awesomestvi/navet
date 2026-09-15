@@ -349,6 +349,8 @@ export const enMessages = {
   'settings.system.providers.status.connecting': 'Connecting',
   'settings.system.providers.status.reconnecting': 'Reconnecting',
   'settings.system.providers.status.signed-in': 'Signed in',
+  'settings.system.providers.homeyOffline':
+    'Homey is offline or unreachable. Check the hub and network connection.',
   'settings.system.providers.status.disconnected': 'Disconnected',
   'settings.system.providers.status.planned': 'Planned',
   'settings.system.clients.title': 'Connected displays',

@@ -173,6 +173,28 @@ function createController(): SettingsSectionController {
 describe('SettingsSystemSection', () => {
   let controller: SettingsSectionController;
 
+  it('explains when a signed-in Homey hub is offline', () => {
+    const offlineController = createController();
+    offlineController.providerCards = offlineController.providerCards.map((provider) =>
+      provider.id === 'homey'
+        ? {
+            ...provider,
+            status: 'offline',
+            isConnected: true,
+            baseUrl: 'https://homey.example.com',
+            error: null,
+          }
+        : provider
+    );
+
+    renderWithProviders(<SettingsSystemSection controller={offlineController} />);
+
+    expect(screen.getByText('Offline')).toBeInTheDocument();
+    expect(
+      screen.getByText('Homey is offline or unreachable. Check the hub and network connection.')
+    ).toBeInTheDocument();
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();

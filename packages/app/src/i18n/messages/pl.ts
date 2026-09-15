@@ -824,6 +824,8 @@ export const plMessages = {
   'settings.system.providers.status.connecting': 'Łączenie',
   'settings.system.providers.status.reconnecting': 'Ponowne łączenie',
   'settings.system.providers.status.signed-in': 'Zalogowano',
+  'settings.system.providers.homeyOffline':
+    'Homey jest offline lub nieosiągalny. Sprawdź hub i połączenie sieciowe.',
   'settings.system.providers.status.disconnected': 'Rozłączono',
   'settings.system.providers.status.planned': 'Planowana',
   'settings.system.clients.title': 'Połączone urządzenia',

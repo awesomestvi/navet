@@ -35,6 +35,7 @@ type StubHomeAssistantService = {
   areas: Array<{ area_id: string; name: string }>;
   deviceRegistry: Array<{ id: string; area_id?: string | null }>;
   entityRegistry: Array<{ entity_id: string; area_id?: string | null }>;
+  automationCategories: Array<{ id: string; name: string }>;
   setPanelHass: ReturnType<typeof vi.fn>;
 };
 
@@ -58,6 +59,7 @@ const { getAuthAppMock, homeAssistantServiceStub } = vi.hoisted(() => ({
     areas: [] as Array<{ area_id: string; name: string }>,
     deviceRegistry: [] as Array<{ id: string; area_id?: string | null }>,
     entityRegistry: [] as Array<{ entity_id: string; area_id?: string | null }>,
+    automationCategories: [] as Array<{ id: string; name: string }>,
     addListener: vi.fn(function (
       this: StubHomeAssistantService,
       type: keyof StubListenerMap,
@@ -96,6 +98,9 @@ const { getAuthAppMock, homeAssistantServiceStub } = vi.hoisted(() => ({
     }),
     getEntityRegistry: vi.fn(function (this: StubHomeAssistantService) {
       return this.entityRegistry;
+    }),
+    getAutomationCategories: vi.fn(function (this: StubHomeAssistantService) {
+      return this.automationCategories;
     }),
     getConnection: vi.fn(function (this: StubHomeAssistantService) {
       return this.connection;
@@ -173,6 +178,7 @@ describe('App Home Assistant connection recovery', () => {
     homeAssistantServiceStub.areas = [];
     homeAssistantServiceStub.deviceRegistry = [];
     homeAssistantServiceStub.entityRegistry = [];
+    homeAssistantServiceStub.automationCategories = [];
     Object.values(homeAssistantServiceStub.listeners).forEach((listeners) => {
       listeners.clear();
     });
@@ -389,6 +395,37 @@ describe('App Home Assistant connection recovery', () => {
         }),
       },
     });
+  });
+
+  it('keeps Home Assistant connected when Homey is active but its runtime is unavailable', async () => {
+    vi.useRealTimers();
+    setStoredMultiProviderSessions();
+    homeyService.setClient({
+      setCapabilityValue: vi.fn(),
+      loadSnapshot: vi
+        .fn()
+        .mockRejectedValue(
+          Object.assign(new Error('Homey request failed with status 502'), { unreachable: true })
+        ),
+    });
+
+    await act(async () => {
+      render(<App />);
+    });
+
+    await waitFor(() => expect(homeAssistantStore.getState().connected).toBe(true));
+    expect(homeAssistantServiceStub.authenticate).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Use Homey' }));
+
+    await waitFor(() => expect(integrationStore.getState().currentProviderId).toBe('homey'));
+    expect(integrationStore.getState().providerHealth.homey.connected).toBe(false);
+    expect(integrationStore.getState().providerHealth.homey.lastError).toBe(
+      'Homey request failed with status 502'
+    );
+    expect(integrationStore.getState().providerHealth.homey.unreachable).toBe(true);
+    expect(homeAssistantServiceStub.authenticate).toHaveBeenCalledTimes(1);
+    expect(homeAssistantStore.getState()).toMatchObject({ connected: true, connecting: false });
   });
 
   it('keeps startup pending and preserves the browser session when auth bootstrap stalls', async () => {

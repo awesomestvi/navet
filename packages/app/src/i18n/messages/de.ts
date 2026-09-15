@@ -829,6 +829,8 @@ export const deMessages = {
   'settings.system.providers.status.connecting': 'Verbindet',
   'settings.system.providers.status.reconnecting': 'Verbindet erneut',
   'settings.system.providers.status.signed-in': 'Angemeldet',
+  'settings.system.providers.homeyOffline':
+    'Homey ist offline oder nicht erreichbar. Überprüfe den Hub und die Netzwerkverbindung.',
   'settings.system.providers.status.disconnected': 'Getrennt',
   'settings.system.providers.status.planned': 'Geplant',
   'settings.system.clients.title': 'Verbundene Geräte',

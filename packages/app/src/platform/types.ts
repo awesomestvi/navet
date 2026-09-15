@@ -67,6 +67,7 @@ export interface ProviderHealth {
   reconnecting: boolean;
   implementationStatus: 'implemented' | 'planned';
   lastError: string | null;
+  unreachable?: boolean;
 }
 
 export interface ProviderSession {

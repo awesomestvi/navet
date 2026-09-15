@@ -329,7 +329,8 @@ function createProviderHealthFromHomey(
     connecting: false,
     reconnecting: false,
     implementationStatus,
-    lastError: null,
+    lastError: snapshot.error ?? null,
+    unreachable: snapshot.unreachable ?? false,
   };
 }
 

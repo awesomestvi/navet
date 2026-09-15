@@ -826,6 +826,8 @@ export const nlMessages = {
   'settings.system.providers.status.connecting': 'Verbinden',
   'settings.system.providers.status.reconnecting': 'Opnieuw verbinding maken',
   'settings.system.providers.status.signed-in': 'Ingelogd',
+  'settings.system.providers.homeyOffline':
+    'Homey is offline of onbereikbaar. Controleer de hub en de netwerkverbinding.',
   'settings.system.providers.status.disconnected': 'Verbinding verbroken',
   'settings.system.providers.status.planned': 'Gepland',
   'settings.system.clients.title': 'Verbonden apparaten',

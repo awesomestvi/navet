@@ -821,6 +821,8 @@ export const daMessages = {
   'settings.system.providers.status.connecting': 'Forbinder',
   'settings.system.providers.status.reconnecting': 'Genopretter forbindelse',
   'settings.system.providers.status.signed-in': 'Logget ind',
+  'settings.system.providers.homeyOffline':
+    'Homey er offline eller kan ikke nås. Kontrollér hubben og netværksforbindelsen.',
   'settings.system.providers.status.disconnected': 'Afbrudt',
   'settings.system.providers.status.planned': 'Planlagt',
   'settings.system.clients.title': 'Forbundne enheder',

@@ -820,6 +820,8 @@ export const svMessages = {
   'settings.system.providers.status.connecting': 'Ansluter',
   'settings.system.providers.status.reconnecting': 'Återansluter',
   'settings.system.providers.status.signed-in': 'Inloggad',
+  'settings.system.providers.homeyOffline':
+    'Homey är offline eller kan inte nås. Kontrollera hubben och nätverksanslutningen.',
   'settings.system.providers.status.disconnected': 'Frånkopplad',
   'settings.system.providers.status.planned': 'Planerad',
   'settings.system.clients.title': 'Anslutna enheter',

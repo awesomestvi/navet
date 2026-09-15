@@ -14,11 +14,11 @@ function openMenu(name: string | RegExp) {
 
 describe('HomeEditCommandBar', () => {
   beforeEach(() => {
-    setMediaQueryMatch('(max-width: 1699px)', false);
+    setMediaQueryMatch('(max-width: 1100px)', false);
     useSettingsStore.setState({ language: 'en' });
   });
 
-  it('keeps primary edit actions on the fixed command strip', () => {
+  it('keeps direct edit actions on the fixed command strip above 1100px', () => {
     const onAddCard = vi.fn();
     const onAddColumn = vi.fn();
     const onAddRow = vi.fn();
@@ -118,7 +118,7 @@ describe('HomeEditCommandBar', () => {
   });
 
   it('keeps primary actions visible and moves secondary controls into the portrait menu', () => {
-    setMediaQueryMatch('(max-width: 1699px)', true);
+    setMediaQueryMatch('(max-width: 1100px)', true);
     const onAddCard = vi.fn();
     const onAddRow = vi.fn();
     const onManageRooms = vi.fn();
@@ -161,7 +161,7 @@ describe('HomeEditCommandBar', () => {
   });
 
   it('offers KPI visibility in the phone Customize menu', () => {
-    setMediaQueryMatch('(max-width: 1699px)', true);
+    setMediaQueryMatch('(max-width: 1100px)', true);
     const toggle = vi.fn();
     renderWithProviders(<HomeEditCommandBar onToggleEnergyKpis={toggle} energyKpisHidden />);
     openMenu('More actions');
@@ -170,7 +170,7 @@ describe('HomeEditCommandBar', () => {
   });
 
   it('does not offer KPI configuration in the phone Customize bar', () => {
-    setMediaQueryMatch('(max-width: 1699px)', true);
+    setMediaQueryMatch('(max-width: 1100px)', true);
     renderWithProviders(<HomeEditCommandBar onAddCard={vi.fn()} onToggleEditMode={vi.fn()} />);
     expect(screen.queryByRole('button', { name: 'KPIs' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'More actions' })).not.toBeInTheDocument();

@@ -822,6 +822,8 @@ export const fiMessages = {
   'settings.system.providers.status.connecting': 'Yhdistetään',
   'settings.system.providers.status.reconnecting': 'Yhdistetään uudelleen',
   'settings.system.providers.status.signed-in': 'Kirjautunut sisään',
+  'settings.system.providers.homeyOffline':
+    'Homey on offline-tilassa tai sitä ei voi tavoittaa. Tarkista keskitin ja verkkoyhteys.',
   'settings.system.providers.status.disconnected': 'Yhteys katkaistu',
   'settings.system.providers.status.planned': 'Suunniteltu',
   'settings.system.clients.title': 'Yhdistetyt laitteet',

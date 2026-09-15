@@ -53,6 +53,7 @@ type ProviderCardStatus =
   | 'connecting'
   | 'reconnecting'
   | 'signed-in'
+  | 'offline'
   | 'disconnected'
   | 'planned';
 
@@ -87,6 +88,8 @@ function getProviderStatusLabel(t: ReturnType<typeof useI18n>['t'], status: Prov
       return t('settings.system.providers.status.reconnecting');
     case 'signed-in':
       return t('settings.system.providers.status.signed-in');
+    case 'offline':
+      return t('settings.system.clients.status.offline');
     case 'disconnected':
       return t('settings.system.providers.status.disconnected');
     case 'planned':
@@ -224,7 +227,11 @@ function ProviderCardView({
               >
                 {displayUrl ?? t('settings.system.providers.notConnected')}
               </p>
-              {provider.error ? (
+              {provider.status === 'offline' ? (
+                <p className="mt-2 text-sm leading-relaxed text-amber-300">
+                  {t('settings.system.providers.homeyOffline')}
+                </p>
+              ) : provider.error ? (
                 <p className="mt-2 text-sm leading-relaxed text-red-400">{provider.error}</p>
               ) : null}
             </div>

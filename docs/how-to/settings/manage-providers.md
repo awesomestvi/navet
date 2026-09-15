@@ -23,6 +23,12 @@ its provider identity, so controls and data requests reach the correct smart-hom
 Do not paste a long-lived Home Assistant token into a manual token field; Navet does not use that
 as its connection model.
 
+Provider cards show **Connected** when Navet can reach the provider. A Homey account can remain
+signed in while its hub is unavailable. If Homey shows **Offline**, check that the hub is powered
+on and reachable from Navet's network. If this happens during sign-in, choose the Homey again
+after it comes online. If a connected Homey goes offline later, Navet checks again automatically
+and shows **Connected** when the hub responds.
+
 ## Choose sources
 
 Use the card or feature's editing controls to choose from available sources. Weather cards can use

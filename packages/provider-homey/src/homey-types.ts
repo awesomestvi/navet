@@ -38,6 +38,8 @@ export interface HomeyZone {
 
 export interface HomeySnapshot {
   connected: boolean;
+  error?: string | null;
+  unreachable?: boolean;
   devices: Record<string, HomeyDevice>;
   zones: Record<string, HomeyZone>;
   flows?: Record<string, HomeyFlow>;

@@ -250,9 +250,22 @@ class HomeyService {
       throw new Error('Homey snapshot loading is not configured yet');
     }
 
-    const snapshot = await this.client.loadSnapshot();
-    this.replaceSnapshot(snapshot);
-    return snapshot;
+    try {
+      const snapshot = await this.client.loadSnapshot();
+      this.replaceSnapshot({
+        ...snapshot,
+        error: snapshot.error ?? null,
+        unreachable: snapshot.unreachable ?? false,
+      });
+      return snapshot;
+    } catch (error) {
+      this.replaceSnapshot({
+        connected: false,
+        error: error instanceof Error ? error.message : String(error),
+        unreachable: error instanceof Error && 'unreachable' in error && error.unreachable === true,
+      });
+      throw error;
+    }
   }
 
   getSnapshot(): HomeySnapshot {
