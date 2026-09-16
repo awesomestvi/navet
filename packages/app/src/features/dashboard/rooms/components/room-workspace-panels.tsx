@@ -640,7 +640,7 @@ export function RoomWorkspaceHeader({
   showModeAction = true,
 }: WorkspacePanelProps & { trailingAction?: ReactNode; showModeAction?: boolean }) {
   return (
-    <NavigationWorkspaceHeader className="pb-3 pl-[calc(env(safe-area-inset-left,0px)+1rem)] pr-[calc(env(safe-area-inset-right,0px)+1rem)] pt-[calc(env(safe-area-inset-top,0px)+0.75rem)] md:px-5 md:py-4">
+    <NavigationWorkspaceHeader className="safe-area-pt-3 pb-3 pl-[calc(env(safe-area-inset-left,0px)+1rem)] pr-[calc(env(safe-area-inset-right,0px)+1rem)] md:px-5 md:!py-4">
       <div className="flex min-w-0 items-start justify-between gap-3 max-sm:pr-14">
         <div className="min-w-0 flex-1">
           <h1 className={cn(navetTypographyTokens.sectionHeading, surface.textPrimary)}>

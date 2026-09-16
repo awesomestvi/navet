@@ -252,6 +252,7 @@ export function ButtonWidget({
   const cardShell = getCardShellSurfaceTokens(theme);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isPressed, setIsPressed] = useState(false);
+  const pressedFeedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const accentHex = getThemeColorValue(primaryColor);
   const actionAccent = data.tintColor ?? accentHex;
   const IconComponent = getNamedIconComponent(data.icon ?? 'Zap');
@@ -273,13 +274,27 @@ export function ButtonWidget({
     }
   }, [onUpdate, openSettingsRequestKey]);
 
+  useEffect(() => {
+    return () => {
+      if (pressedFeedbackTimeoutRef.current !== null) {
+        clearTimeout(pressedFeedbackTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const handleTap = async () => {
     if (isEditMode || !data.service) return;
     const serviceCall = parseButtonServiceCall(data.service);
     if (!serviceCall) return;
     const entityId = sanitizeButtonEntityId(data.entityId);
+    if (pressedFeedbackTimeoutRef.current !== null) {
+      clearTimeout(pressedFeedbackTimeoutRef.current);
+    }
     setIsPressed(true);
-    setTimeout(() => setIsPressed(false), 400);
+    pressedFeedbackTimeoutRef.current = setTimeout(() => {
+      pressedFeedbackTimeoutRef.current = null;
+      setIsPressed(false);
+    }, 400);
     try {
       await invokeIntegrationNativeAction({
         entityId,

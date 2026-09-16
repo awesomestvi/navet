@@ -1027,7 +1027,7 @@ export const PhoneFullScreen: Story = {
     const footer = workspace.querySelector('[data-room-workspace-phone-footer]');
     await expect(workspace).toHaveClass('min-h-0', 'max-h-full');
     await expect(workspace).not.toHaveClass('min-h-[36rem]');
-    await expect(header?.className).toContain('safe-area-inset-top');
+    await expect(header).toHaveClass('safe-area-pt-3');
     await expect(header?.className).toContain('safe-area-inset-left');
     await expect(header?.className).toContain('safe-area-inset-right');
     await expect(getComputedStyle(title).fontSize).toBe('18px');

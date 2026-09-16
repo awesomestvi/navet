@@ -53,7 +53,7 @@ function WorkspaceStatus({
       <NavigationWorkspace.Header
         className={cn(
           coverSheetHeaderClassName,
-          'flex min-w-0 items-start justify-between gap-3 pb-3 pl-[calc(env(safe-area-inset-left,0px)+1rem)] pr-[calc(env(safe-area-inset-right,0px)+1rem)] pt-[calc(env(safe-area-inset-top,0px)+0.75rem)] sm:gap-4 sm:px-5 sm:py-4'
+          'safe-area-pt-3 flex min-w-0 items-start justify-between gap-3 pb-3 pl-[calc(env(safe-area-inset-left,0px)+1rem)] pr-[calc(env(safe-area-inset-right,0px)+1rem)] sm:gap-4 sm:px-5 sm:!py-4'
         )}
       >
         <div className="min-w-0">
