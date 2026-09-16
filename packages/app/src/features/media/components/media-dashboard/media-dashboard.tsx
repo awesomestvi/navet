@@ -1416,7 +1416,6 @@ interface MediaBrowserVirtualTableProps {
   items: PlatformMediaItem[];
   onSelect: (item: PlatformMediaItem) => void;
   providerId?: IntegrationProviderId;
-  resetKey: string;
   surface: ReturnType<typeof getThemeSurfaceTokens>;
   theme: ReturnType<typeof useTheme>['theme'];
 }
@@ -1426,7 +1425,6 @@ function MediaBrowserVirtualTable({
   items,
   onSelect,
   providerId,
-  resetKey,
   surface,
   theme,
 }: MediaBrowserVirtualTableProps) {
@@ -1454,11 +1452,6 @@ function MediaBrowserVirtualTable({
       );
     });
   }, [items, normalizedSearchQuery, searchMetadata]);
-
-  useEffect(() => {
-    setSearchQuery('');
-    setSearchMetadata(new Map());
-  }, [resetKey]);
 
   useEffect(() => {
     if (!isSearchActive) {
@@ -1497,7 +1490,7 @@ function MediaBrowserVirtualTable({
   useEffect(() => {
     setScrollTop(0);
     listRef.current?.scrollTo?.({ top: 0 });
-  }, [normalizedSearchQuery, resetKey]);
+  }, [normalizedSearchQuery]);
 
   useEffect(() => {
     return () => {
@@ -2440,11 +2433,11 @@ export function MediaDashboard({
         playableItems.length > 0 ? (
           useMediaBrowserTable ? (
             <MediaBrowserVirtualTable
+              key={currentBrowseTitle}
               height={compactBrowserHeight}
               items={playableItems}
               onSelect={selectBrowserItem}
               providerId={selectedDevice.providerId}
-              resetKey={currentBrowseTitle}
               surface={surface}
               theme={theme}
             />

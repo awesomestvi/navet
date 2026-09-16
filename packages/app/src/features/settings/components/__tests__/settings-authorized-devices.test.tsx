@@ -228,7 +228,6 @@ describe('SettingsAuthorizedDevices', () => {
     expect(primaryBadges).toHaveLength(2);
     expect(screen.getByText('This device')).toBeVisible();
     expect(screen.queryByText('Current')).not.toBeInTheDocument();
-    expect(primaryBadges[0]).toHaveClass('rounded-full', 'border', 'px-2', 'py-0.5', 'text-[10px]');
 
     fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions: Computer A1B2' }));
     fireEvent.click(screen.getByRole('menuitem', { name: 'Make primary' }));

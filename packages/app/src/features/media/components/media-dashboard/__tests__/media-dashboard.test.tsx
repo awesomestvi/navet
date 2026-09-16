@@ -875,12 +875,12 @@ describe('MediaDashboard', () => {
         expect(screen.queryByRole('button', { name: 'Show all' })).not.toBeInTheDocument();
         expect(screen.queryByRole('button', { name: 'Show less' })).not.toBeInTheDocument();
 
-        fireEvent.change(screen.getByRole('searchbox', { name: 'Search' }), {
-          target: { value: 'Radio folder 245' },
+        await act(async () => {
+          fireEvent.change(screen.getByRole('searchbox', { name: 'Search' }), {
+            target: { value: 'Radio folder 245' },
+          });
         });
-        expect(
-          await screen.findByText('Radio folder 245', undefined, { timeout: 5_000 })
-        ).toBeInTheDocument();
+        expect(screen.getByText('Radio folder 245')).toBeInTheDocument();
         const browseCount = browseMediaPlayerMock.mock.calls.length;
         const originalTimePreference = useSettingsStore.getState().use24HourTime;
         try {

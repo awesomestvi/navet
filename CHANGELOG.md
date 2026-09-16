@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.17.0 - 2026-09-16
+
+## New features
+
+- Added shared provider management so connected sources work together without a global primary provider.
+- Expanded Homey with locks, covers, thermostats, speakers, flows, moods, people, notifications, Insights history, and app browsing.
+- Expanded openHAB with fans, climate setpoints, speakers, locks, covers, security sensors, batteries, and utility measurements.
+- Added completion-anchored chores that schedule their next occurrence from the latest completion.
+- Added a per-device browser zoom setting to prevent unwanted input zoom.
+
+## Improvements and bug fixes
+
+- Improved multi-provider rooms, source routing, energy readings, battery health, security activity, and dashboard grouping.
+- Kept Undo, Redo, Add Card, and Done visible on narrower edit bars and restored card edit actions.
+- Improved chore setup with guided steps, inline validation, preserved drafts, and clearer repeat schedules.
+- Fixed provider availability feedback and cleared stale sessions after disconnecting.
+
 ## 0.16.3 - 2026-09-13
 
 ## New features
