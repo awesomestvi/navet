@@ -108,8 +108,6 @@ async function fetchActivityPage({
     { requireComplete: true }
   );
 
-  if (histories.length > 0 && histories.length !== entities.length)
-    throw new Error('Incomplete security activity history');
   return {
     events: buildSecurityActivityEvents({
       devices: entities,
@@ -117,7 +115,7 @@ async function fetchActivityPage({
       nowMs: endMs,
       lookbackMs,
     }),
-    hasHistoryData: histories.length === entities.length,
+    hasHistoryData: histories.length > 0,
     startMs,
   };
 }

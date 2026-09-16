@@ -164,6 +164,18 @@ function seedAuth(
 }
 
 describe('production njs standalone OAuth sessions', () => {
+  it('keeps a verified anonymous browser cookie and binding stable across session checks', async () => {
+    const { store } = createStore();
+    const browser = await createBrowserSession(store);
+    const check = createRequest({
+      cookie: browser.cookie,
+      headers: { [AUTH_BINDING_HEADER]: browser.metadata.sessionId },
+    });
+    await store.handle(check.request);
+    expect(check.result.status).toBe(200);
+    expect(JSON.parse(check.result.body).sessionId).toBe(browser.metadata.sessionId);
+    expect(cookieHeader(check.request.headersOut['Set-Cookie'])).toBe(browser.cookie);
+  });
   it('binds the authenticated Home Assistant user to the browser session', async () => {
     const { store } = createStore();
     const browser = await createBrowserSession(store);
@@ -959,6 +971,38 @@ describe('production njs standalone OAuth sessions', () => {
       code: 'credential-session-revision-required',
     });
     expect(store.readSession(browser.cookie.split('=')[1] ?? '')?.auth).toEqual(AUTH_A);
+  });
+
+  it('expires a stale Home Assistant cookie after provider disconnect', async () => {
+    const { sessionsDirectory, store } = createStore();
+    const browser = await createBrowserSession(store);
+    const anotherBrowser = await createBrowserSession(store);
+    seedAuth(store, browser, AUTH_A);
+    seedAuth(store, anotherBrowser, AUTH_B);
+    const cookieId = browser.cookie.split('=')[1] ?? '';
+    const anotherCookieId = anotherBrowser.cookie.split('=')[1] ?? '';
+    fs.unlinkSync(join(sessionsDirectory, `${cookieId}.json`));
+
+    const staleLogout = createRequest({
+      method: 'DELETE',
+      cookie: browser.cookie,
+      headers: { Origin: 'http://navet.example' },
+    });
+    await store.handle(staleLogout.request);
+    expect(staleLogout.result.status).toBe(200);
+    expect(responseSetCookies(staleLogout.request.headersOut['Set-Cookie'])).toEqual(
+      expect.arrayContaining([expect.stringContaining('Max-Age=0')])
+    );
+    expect(store.readSession(anotherCookieId)?.auth).toEqual(AUTH_B);
+
+    const crossOrigin = createRequest({
+      method: 'DELETE',
+      cookie: browser.cookie,
+      headers: { Origin: 'https://other.example' },
+    });
+    await store.handle(crossOrigin.request);
+    expect(crossOrigin.result.status).toBe(403);
+    expect(crossOrigin.request.headersOut['Set-Cookie']).toBeUndefined();
   });
 
   it('accepts a monotonic refresh from an old tab that omits the revision', async () => {

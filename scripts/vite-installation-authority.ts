@@ -72,7 +72,7 @@ export interface ViteInstallationAuthority {
   ): boolean
   getCookieNames(baseName: string): InstallationCookieNames
   getProviderSetupStatus?(
-    req: IncomingMessage,
+    _req: IncomingMessage,
     providerId: string
   ): {
     state: 'ready' | 'approval_required' | 'unavailable'
@@ -120,11 +120,6 @@ function isState(value: unknown): value is InstallationAuthorityState {
   )
 }
 
-function header(req: IncomingMessage, name: string): string {
-  const value = req.headers[name.toLowerCase()]
-  return Array.isArray(value) ? (value[0] ?? '') : (value ?? '')
-}
-
 export function createViteInstallationAuthority(
   options: {
     authSessionsDirectory?: string
@@ -149,15 +144,9 @@ export function createViteInstallationAuthority(
     path.join(cacheDirectory, 'navet-installation-authority.json')
   const setupCodePath =
     options.setupCodePath ?? path.join(cacheDirectory, 'navet-setup-code.json')
-  const authSessionsDirectory =
-    options.authSessionsDirectory ??
-    path.join(cacheDirectory, 'navet-auth-sessions')
   const homeySessionsDirectory =
     options.homeySessionsDirectory ??
     path.join(cacheDirectory, 'navet-provider-sessions', 'homey')
-  const openHABSessionsDirectory =
-    options.openHABSessionsDirectory ??
-    path.join(cacheDirectory, 'navet-provider-sessions', 'openhab')
   const setupAttemptBuckets = new Map<string, { count: number; resetAt: number }>()
 
   const consumeSetupAttempt = (req: IncomingMessage) => {
@@ -237,67 +226,11 @@ export function createViteInstallationAuthority(
   }
   const installationKey = resolveInstallationKey()
 
-  const createSetupCode = () => {
-    const raw = randomBytes(8).toString('hex')
-    const code = raw.match(/.{1,4}/g)?.join('-') ?? raw
-    mkdirSync(path.dirname(setupCodePath), { recursive: true, mode: 0o700 })
-    writeFileSync(
-      setupCodePath,
-      JSON.stringify({ version: 1, code, expiresAt: Date.now() + 10 * 60 * 1000 }),
-      { encoding: 'utf8', mode: 0o600 }
-    )
-    console.warn(`Navet setup code: ${code} (valid for 10 minutes).`)
-  }
-  try {
-    const stored = JSON.parse(readFileSync(setupCodePath, 'utf8')) as { expiresAt?: unknown }
-    if (typeof stored.expiresAt !== 'number' || stored.expiresAt < Date.now()) {
-      createSetupCode()
-    }
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException)?.code === 'ENOENT' || error instanceof SyntaxError) {
-      createSetupCode()
-    } else {
-      throw error
-    }
-  }
 
   const setupCookieName = `navet_setup_grant_${createHash('sha256')
     .update(installationKey)
     .digest('hex')
     .slice(0, 12)}`
-  const readCookie = (req: IncomingMessage, name: string) => {
-    for (const entry of header(req, 'cookie').split(';')) {
-      const separator = entry.indexOf('=')
-      if (separator > 0 && entry.slice(0, separator).trim() === name) {
-        return entry.slice(separator + 1).trim()
-      }
-    }
-    return ''
-  }
-  const hasValidSetupGrant = (req: IncomingMessage) => {
-    const [expiresAt, signature] = readCookie(req, setupCookieName).split('.')
-    if (!expiresAt || !signature || Number(expiresAt) < Date.now()) {
-      return false
-    }
-    const expected = createHmac('sha256', installationKey)
-      .update(`setup-grant:${expiresAt}`)
-      .digest('hex')
-    return (
-      /^[a-f0-9]{64}$/.test(signature) &&
-      timingSafeEqual(Buffer.from(signature), Buffer.from(expected))
-    )
-  }
-
-  const hasValidPairingKey = (req: IncomingMessage) => {
-    const candidate = header(req, INSTALLATION_KEY_HEADER).trim()
-    const candidateBuffer = Buffer.from(candidate.padEnd(64, '\0').slice(0, 64))
-    const expectedBuffer = Buffer.from(installationKey)
-    return (
-      INSTALLATION_KEY_PATTERN.test(candidate) &&
-      timingSafeEqual(candidateBuffer, expectedBuffer)
-    ) || hasValidSetupGrant(req)
-  }
-
   const readState = (): InstallationAuthorityState => {
     try {
       if (statSync(statePath).size > MAX_AUTHORITY_BYTES) {
@@ -382,23 +315,8 @@ export function createViteInstallationAuthority(
     return records
   }
 
-  const unanimousTarget = (
-    directory: string,
-    normalizeTarget: (value: unknown) => string
-  ) => {
-    const targets = new Set<string>()
-    for (const record of readRecords(directory)) {
-      const auth = record.auth as { hassUrl?: unknown }
-      const target = normalizeTarget(auth.hassUrl)
-      if (target) {
-        targets.add(target)
-      }
-    }
-    return targets.size === 1 ? Array.from(targets)[0] : ''
-  }
-
   const authorizeTarget = (
-    req: IncomingMessage,
+    _req: IncomingMessage,
     providerId: 'home_assistant' | 'openhab',
     target: string,
     normalizeTarget: (value: unknown) => string,
@@ -429,54 +347,15 @@ export function createViteInstallationAuthority(
         pairingVerified: false,
       }
     }
-    const state = readState()
-    const stateTarget =
-      providerId === 'home_assistant'
-        ? state.homeAssistantTarget
-        : state.openHABTarget
-    if (stateTarget === normalizedTarget) {
-      return { allowed: true, pairingVerified: false }
-    }
-    const pairingVerified = hasValidPairingKey(req)
-    if (stateTarget) {
-      if (pairingVerified) {
-        return { allowed: true, pairingVerified: true }
-      }
-      if (allowBrowserAlias) {
-        return {
-          allowed: true,
-          pairingVerified: false,
-          upstreamTarget: stateTarget,
-        }
-      }
-      return { allowed: false, pairingVerified: false }
-    }
-    if (!stateTarget) {
-      const evidence = unanimousTarget(
-        providerId === 'home_assistant'
-          ? authSessionsDirectory
-          : openHABSessionsDirectory,
-        normalizeTarget
-      )
-      if (evidence === normalizedTarget) {
-        return { allowed: true, pairingVerified: false }
-      }
-      if (evidence && !pairingVerified && allowBrowserAlias) {
-        return {
-          allowed: true,
-          pairingVerified: false,
-          upstreamTarget: evidence,
-        }
-      }
-    }
-    return { allowed: pairingVerified, pairingVerified }
+    // Provider credentials authorize enrollment; remembered addresses are not routing policy.
+    return { allowed: true, pairingVerified: false }
   }
 
   const commitTarget = (
     providerId: 'home_assistant' | 'openhab',
     target: string,
     normalizeTarget: (value: unknown) => string,
-    pairingVerified: boolean
+    _pairingVerified: boolean
   ) => {
     if (options.trustIngress) {
       return true
@@ -495,15 +374,6 @@ export function createViteInstallationAuthority(
       providerId === 'home_assistant'
         ? 'homeAssistantTarget'
         : 'openHABTarget'
-    const pinnedMigration = Boolean(rawPin) && pin === normalizedTarget
-    if (
-      state[key] &&
-      state[key] !== normalizedTarget &&
-      !pairingVerified &&
-      !pinnedMigration
-    ) {
-      return false
-    }
     if (state[key] !== normalizedTarget) {
       state[key] = normalizedTarget
       writeState(state)
@@ -552,15 +422,8 @@ export function createViteInstallationAuthority(
     authorizeHomeAssistantChange(req, target, normalizeTarget) {
       return authorizeTarget(req, 'home_assistant', target, normalizeTarget, false)
     },
-    authorizeHomeyStart(req) {
-      if (options.trustIngress) {
-        return { allowed: true, pairingVerified: false }
-      }
-      const pairingVerified = hasValidPairingKey(req)
-      return {
-        allowed: pairingVerified || knownHomeyIds().length > 0,
-        pairingVerified,
-      }
+    authorizeHomeyStart(_req) {
+      return { allowed: true, pairingVerified: false }
     },
     authorizeOpenHAB(req, target, normalizeTarget) {
       return authorizeTarget(req, 'openhab', target, normalizeTarget, false)
@@ -573,25 +436,15 @@ export function createViteInstallationAuthority(
         pairingVerified
       )
     },
-    commitHomey(homeyIds, pairingVerified) {
+    commitHomey(homeyIds, _pairingVerified) {
       if (options.trustIngress) {
         return true
       }
       const requested = normalizeHomeyIds(homeyIds)
       const known = knownHomeyIds()
-      if (
-        !pairingVerified &&
-        (requested.length === 0 ||
-          !requested.every((homeyId) => known.includes(homeyId)))
-      ) {
-        return false
-      }
+      if (requested.length === 0) return false
       const state = readState()
-      const nextIds = pairingVerified
-        ? normalizeHomeyIds([...state.homeyIds, ...known, ...requested])
-        : normalizeHomeyIds(
-            state.homeyIds.length > 0 ? state.homeyIds : known
-          )
+      const nextIds = normalizeHomeyIds([...state.homeyIds, ...known, ...requested])
       if (JSON.stringify(nextIds) !== JSON.stringify(state.homeyIds)) {
         state.homeyIds = nextIds
         writeState(state)
@@ -604,37 +457,10 @@ export function createViteInstallationAuthority(
     getCookieNames(baseName) {
       return createInstallationCookieNames(baseName, installationKey)
     },
-    getProviderSetupStatus(req, providerId) {
-      if (options.trustIngress) {
-        return { state: 'ready', authorization: 'trusted_runtime' }
-      }
-      if (hasValidPairingKey(req)) {
-        return { state: 'ready', authorization: 'setup_proof' }
-      }
-
-      const state = readState()
-      let configured = false
-      if (providerId === 'home_assistant') {
-        configured = Boolean(
-          options.hassUrlPin ||
-            state.homeAssistantTarget ||
-            readRecords(authSessionsDirectory).length > 0
-        )
-      } else if (providerId === 'openhab') {
-        configured = Boolean(
-          options.openhabUrlPin ||
-            state.openHABTarget ||
-            readRecords(openHABSessionsDirectory).length > 0
-        )
-      } else if (providerId === 'homey') {
-        configured = knownHomeyIds().length > 0
-      } else {
-        return { state: 'unavailable', authorization: 'none' }
-      }
-      return {
-        state: configured ? 'ready' : 'approval_required',
-        authorization: configured ? 'approved_connection' : 'none',
-      }
+    getProviderSetupStatus(_req, providerId) {
+      return ['home_assistant', 'homey', 'openhab'].includes(providerId)
+        ? { state: 'ready', authorization: 'none' }
+        : { state: 'unavailable', authorization: 'none' }
     },
     exchangeSetupCode(req, code) {
       if (!consumeSetupAttempt(req)) {

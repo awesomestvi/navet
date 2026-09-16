@@ -21,6 +21,26 @@ const consumers: EnergyConsumer[] = [
 ];
 
 describe('energy history workspace', () => {
+  it('combines energy attribution for matching provider room names while keeping the display name', () => {
+    const hour = 60 * 60 * 1000;
+    const model = buildEnergyHistoryWorkspaceModel({
+      wholeHomeEntityId: 'sensor.house_power',
+      consumers: [
+        consumers[0],
+        { ...consumers[0], id: 'accent', room: 'kitchen', powerEntityId: 'sensor.accent_power' },
+      ],
+      window: { startMs: 0, endMs: hour, previousStartMs: -hour, previousEndMs: 0, period: 'hour' },
+      series: {
+        'sensor.house_power': [{ startMs: 0, endMs: hour, mean: 1000 }],
+        'sensor.kitchen_power': [{ startMs: 0, endMs: hour, mean: 250 }],
+        'sensor.accent_power': [{ startMs: 0, endMs: hour, mean: 500 }],
+      },
+    });
+    expect(model.roomBreakdown).toHaveLength(1);
+    expect(model.roomBreakdown[0]).toMatchObject({ name: 'Kitchen', energyKWh: 0.75 });
+    expect(model.roomBreakdown[0].devices).toHaveLength(2);
+  });
+
   it('uses the current calendar year with monthly buckets', () => {
     const window = resolveEnergyHistoryWindow({
       range: 'year',

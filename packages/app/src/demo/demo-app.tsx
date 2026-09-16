@@ -2,7 +2,7 @@ import artworksOriginal from '@assets/reference/media/artworks-original.avif';
 import cameraSampleImageAvif from '@assets/reference/media/camera-sample.avif';
 import cameraSampleImageWebp from '@assets/reference/media/camera-sample.webp';
 import { RUNTIME_SAMPLE_SCREENSHOTS } from '@navet/app/assets/runtime-sample-images';
-import { AuthProvider } from '@navet/app/auth/AuthProvider';
+import { AuthProvider, useOptionalAuthSession } from '@navet/app/auth/AuthProvider';
 import { MediaSection } from '@navet/app/components/layout/media-section';
 import { RoomNav } from '@navet/app/components/layout/room-nav';
 import type { RoomNavigationGroup } from '@navet/app/components/layout/room-nav.utils';
@@ -24,6 +24,10 @@ import { ClimateDashboard } from '@navet/app/features/climate/components/climate
 import { HumidifierCard } from '@navet/app/features/climate/components/humidifier-card';
 import type { ClimateDashboardSection } from '@navet/app/features/climate/types/climate-dashboard';
 import { type CustomCard, DashboardLayout, WidgetCard } from '@navet/app/features/dashboard';
+import { AddEntityDialogPrimitive } from '@navet/app/features/dashboard/components/add-entity-dialog';
+import type { CardTemplate } from '@navet/app/features/dashboard/components/add-entity-dialog/types';
+import type { DashboardLibraryCard } from '@navet/app/features/dashboard/components/dashboard-library-list';
+import { HomeEditCommandBar } from '@navet/app/features/dashboard/components/home-edit-command-bar';
 import { useProgressiveBatching } from '@navet/app/features/dashboard/hooks/use-progressive-batching';
 import { EnergyDashboardPage } from '@navet/app/features/energy/components/dashboard/energy-dashboard-page';
 import { EnergyNowCardView } from '@navet/app/features/energy/components/widgets/energy-now-card-view';
@@ -57,6 +61,7 @@ import { WeatherCard } from '@navet/app/features/weather/components/weather-card
 import { useI18n, useTheme } from '@navet/app/hooks';
 import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
 import { I18nProvider } from '@navet/app/i18n';
+import { integrationSessionRuntime } from '@navet/app/integration-session-runtime';
 import type { Section } from '@navet/app/navigation/sections';
 import {
   getPreviewRuntimeScenario,
@@ -72,6 +77,8 @@ import { Fan, Lightbulb, ShieldCheck, Speaker, Zap } from 'lucide-react';
 import { Children, type CSSProperties, type ReactNode, useEffect, useState } from 'react';
 import type { CameraDevice, DeviceWithType, LockDevice, SensorDevice } from '../types/device.types';
 import { installDemoChoreActions } from './demo-chore-actions';
+import { installDemoDeviceAuthority } from './demo-device-authority';
+import { demoEnergyHistorySources, loadDemoEnergyHistory } from './demo-energy-history';
 import { PHOTO_FRAME_DEMO_IMAGES } from './photo-frame-demo-images';
 
 type DemoSection = Section;
@@ -855,6 +862,54 @@ const demoHomeWidgets: CustomCard[] = [
   },
 ];
 
+const demoHomeLibraryCards: DashboardLibraryCard[] = [
+  {
+    id: 'home_assistant:light.kitchen_island',
+    title: 'Kitchen island',
+    subtitle: 'Kitchen',
+    room: 'Kitchen',
+    meta: 'Light',
+    kind: 'device',
+    entityType: 'light',
+    entityTypeLabel: 'Light',
+    icon: Lightbulb,
+    idSearchText: 'light.kitchen_island',
+  },
+  {
+    id: 'home_assistant:climate.main_floor',
+    title: 'Main floor climate',
+    subtitle: 'Living Room',
+    room: 'Living Room',
+    meta: 'Climate',
+    kind: 'device',
+    entityType: 'climate',
+    entityTypeLabel: 'Climate',
+    idSearchText: 'climate.main_floor',
+  },
+  {
+    id: 'home_assistant:camera.front_door',
+    title: 'Front Door camera',
+    subtitle: 'Entrance',
+    room: 'Entrance',
+    meta: 'Camera',
+    kind: 'device',
+    entityType: 'camera',
+    entityTypeLabel: 'Camera',
+    idSearchText: 'camera.front_door',
+  },
+  {
+    id: 'home_assistant:input_boolean.guest_mode',
+    title: 'Guest mode',
+    subtitle: 'Home',
+    room: 'Home',
+    meta: 'Helper',
+    kind: 'device',
+    entityType: 'helper',
+    entityTypeLabel: 'Helper',
+    idSearchText: 'input_boolean.guest_mode',
+  },
+];
+
 const groupedSensors = [
   {
     id: 'sensor.living_room_temp',
@@ -912,10 +967,14 @@ function useDemoDisplayDefaults() {
     document.documentElement.dataset.effectsQuality = detectedEffectsQuality;
     document.documentElement.dataset.lowPower = reduceEffects ? 'true' : 'false';
     document.documentElement.dataset.noAnimation = reduceEffects ? 'true' : 'false';
+    const restoreDeviceAuthority = installDemoDeviceAuthority();
+    const previousSession = integrationSessionRuntime.getSession();
     installPreviewRuntime(getPreviewRuntimeScenario('demo'));
     setRuntimeReady(true);
 
     return () => {
+      restoreDeviceAuthority();
+      integrationSessionRuntime.replaceSession(previousSession);
       resetPreviewRuntime();
     };
   }, []);
@@ -965,7 +1024,7 @@ function DemoSummaryRow() {
   return <SummaryBar items={demoSummaryItems} onNavigate={setActiveSection} />;
 }
 
-function ProductGrid() {
+function ProductGrid({ addedWidgets }: { addedWidgets: CustomCard[] }) {
   const reduceRenderingWork = useSettingsStore(
     (state) =>
       state.effectsQuality === 'low' ||
@@ -1223,7 +1282,7 @@ function ProductGrid() {
           isEditMode={false}
         />
       </CardSlot>
-      {demoHomeWidgets.map((card) => (
+      {[...demoHomeWidgets, ...addedWidgets].map((card) => (
         <DemoWidgetCard key={card.id} card={card} />
       ))}
     </>
@@ -1255,10 +1314,15 @@ function DemoWidgetCard({ card }: { card: CustomCard }) {
 }
 
 function EnergyShot() {
+  const isEditMode = useEditModeStore((state) => state.isEditMode);
   return (
     <EnergyDashboardPage
       dashboard={demoEnergyScenario.dashboard}
       sourceDiagnostics={demoEnergySourceDiagnostics}
+      isEditMode={isEditMode}
+      currentLoadStatisticId="sensor.whole_home_power"
+      historyStatisticsLoader={loadDemoEnergyHistory}
+      historySources={demoEnergyHistorySources}
     />
   );
 }
@@ -1287,6 +1351,8 @@ function ClimateShot() {
 }
 
 function SecurityShot() {
+  const isEditMode = useEditModeStore((state) => state.isEditMode);
+  const [cardSizes, setCardSizes] = useState<Record<string, CardSize>>({});
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const model = buildSecurityCameraDashboardModel({
@@ -1298,10 +1364,10 @@ function SecurityShot() {
   return (
     <SecurityCameraDashboard
       model={model}
-      isEditMode={false}
+      isEditMode={isEditMode}
       alarms={demoAlarmEntities}
-      cardSizes={{}}
-      updateCardSize={noopCardSizeChange}
+      cardSizes={cardSizes}
+      updateCardSize={(id, size) => setCardSizes((previous) => ({ ...previous, [id]: size }))}
       surface={surface}
     />
   );
@@ -1368,14 +1434,20 @@ function TasksShot() {
   return <HouseholdSection syncEnabled={false} />;
 }
 
-function HomeRoomShot({ activeRoom }: { activeRoom: string }) {
+function HomeRoomShot({
+  activeRoom,
+  addedWidgets,
+}: {
+  activeRoom: string;
+  addedWidgets: CustomCard[];
+}) {
   if (!isAllRooms(activeRoom)) {
     return <RoomShot room={activeRoom} />;
   }
 
   return (
     <div className="space-y-6">
-      <ProductGrid />
+      <ProductGrid addedWidgets={addedWidgets} />
     </div>
   );
 }
@@ -1655,7 +1727,15 @@ function RoomShot({ room }: { room: string }) {
   );
 }
 
-function DemoSectionContent({ section, activeRoom }: { section: DemoSection; activeRoom: string }) {
+function DemoSectionContent({
+  section,
+  activeRoom,
+  addedWidgets,
+}: {
+  section: DemoSection;
+  activeRoom: string;
+  addedWidgets: CustomCard[];
+}) {
   if (section === 'energy') return <EnergyShot />;
   if (section === 'climate') return <ClimateShot />;
   if (section === 'security') return <SecurityShot />;
@@ -1663,7 +1743,7 @@ function DemoSectionContent({ section, activeRoom }: { section: DemoSection; act
   if (section === 'lights') return <LightsShot />;
   if (section === 'media') return <MediaShot />;
   if (section === 'settings') return <SettingsShot />;
-  return <HomeRoomShot activeRoom={activeRoom} />;
+  return <HomeRoomShot activeRoom={activeRoom} addedWidgets={addedWidgets} />;
 }
 
 function getDemoSectionFromPath() {
@@ -1695,46 +1775,138 @@ function sanitizeDemoSection(value: unknown): DemoSection {
 
 function DemoContent() {
   const runtimeReady = useDemoDisplayDefaults();
+  const authSession = useOptionalAuthSession();
   const [activeRoom, setActiveRoom] = useState<string>(ALL_ROOMS_ID);
+  const [addCardOpen, setAddCardOpen] = useState(false);
+  const [addedWidgets, setAddedWidgets] = useState<CustomCard[]>([]);
+  const [removedWidgets, setRemovedWidgets] = useState<CustomCard[]>([]);
   const isEditMode = useEditModeStore((state) => state.isEditMode);
   const toggleEditMode = useEditModeStore((state) => state.toggleEditMode);
   const activeSection = useNavigationStore((state) => state.activeSection);
   const demoSection = getDemoSectionFromPath();
   const section = sanitizeDemoSection(activeSection ?? demoSection ?? 'home');
 
+  useEffect(() => {
+    if (!runtimeReady || !authSession || authSession.sessions.home_assistant) return;
+    authSession.replaceSession({
+      providerId: 'home_assistant',
+      runtime: 'standalone-oauth',
+      authMode: 'oauth',
+      haBaseUrl: 'http://homeassistant.local:8123',
+      hassUrl: 'http://homeassistant.local:8123',
+      expiresAt: Date.now() + 30 * 86_400_000,
+    });
+  }, [runtimeReady, authSession]);
+
+  const addDemoCard = (template: CardTemplate, size: CardSize) => {
+    setAddedWidgets((cards) => [
+      ...cards,
+      {
+        id: `demo-added-${Date.now()}-${cards.length}`,
+        type: template.cardType,
+        size,
+        room: 'Home',
+        data: template.initialData,
+        createdAt: Date.now(),
+      },
+    ]);
+    setRemovedWidgets([]);
+    setAddCardOpen(false);
+  };
+
+  const addDemoEntity = (entityId: string) => {
+    setAddedWidgets((cards) => [
+      ...cards,
+      {
+        id: `demo-added-entity-${Date.now()}-${cards.length}`,
+        type: 'entity',
+        size: 'medium',
+        room: 'Home',
+        data: { entityId },
+        createdAt: Date.now(),
+      },
+    ]);
+    setRemovedWidgets([]);
+    setAddCardOpen(false);
+  };
+
+  const undoAddedCard = () => {
+    const latest = addedWidgets.at(-1);
+    if (!latest) return;
+    setAddedWidgets((cards) => cards.slice(0, -1));
+    setRemovedWidgets((cards) => [...cards, latest]);
+  };
+
+  const redoAddedCard = () => {
+    const latest = removedWidgets.at(-1);
+    if (!latest) return;
+    setRemovedWidgets((cards) => cards.slice(0, -1));
+    setAddedWidgets((cards) => [...cards, latest]);
+  };
+
   if (!runtimeReady) {
     return null;
   }
 
   return (
-    <DashboardLayout
-      mobileEditActions={{ isEditMode, onToggleEditMode: toggleEditMode }}
-      mobileRoomNavigation={
-        section === 'home'
-          ? {
-              activeRoom,
-              onRoomChange: setActiveRoom,
-              rooms: DEMO_ROOMS,
-              groups: DEMO_ROOM_GROUPS,
-            }
-          : undefined
-      }
-    >
-      <div className="flex w-full flex-col gap-2 md:gap-4 min-[1025px]:gap-6">
-        {section === 'home' ? (
-          <RoomNav
-            rooms={DEMO_ROOMS}
+    <>
+      {section === 'home' && isEditMode ? (
+        <HomeEditCommandBar
+          canUndo={addedWidgets.length > 0}
+          canRedo={removedWidgets.length > 0}
+          onAddCard={isAllRooms(activeRoom) ? () => setAddCardOpen(true) : undefined}
+          onUndo={undoAddedCard}
+          onRedo={redoAddedCard}
+          onToggleEditMode={toggleEditMode}
+        />
+      ) : null}
+      <AddEntityDialogPrimitive
+        open={addCardOpen}
+        onClose={() => setAddCardOpen(false)}
+        onAddCard={addDemoCard}
+        onAddLibraryCard={addDemoEntity}
+        currentRoom={ALL_ROOMS_ID}
+        libraryCards={demoHomeLibraryCards.filter(
+          (card) => !addedWidgets.some((widget) => widget.data?.entityId === card.id)
+        )}
+        description="Choose a sample device or add a Navet content card."
+        allowedTemplateIds={['note', 'info']}
+      />
+      <DashboardLayout
+        mobileEditActions={{ isEditMode, onToggleEditMode: toggleEditMode }}
+        mobileRoomNavigation={
+          section === 'home'
+            ? {
+                activeRoom,
+                onRoomChange: setActiveRoom,
+                rooms: DEMO_ROOMS,
+                groups: DEMO_ROOM_GROUPS,
+              }
+            : undefined
+        }
+      >
+        <div
+          className={`flex w-full flex-col gap-2 md:gap-4 min-[1025px]:gap-6 ${section === 'home' && isEditMode ? 'pt-14' : ''}`}
+        >
+          {section === 'home' ? (
+            <RoomNav
+              rooms={DEMO_ROOMS}
+              activeRoom={activeRoom}
+              onRoomChange={setActiveRoom}
+              isEditMode={isEditMode}
+              onToggleEditMode={toggleEditMode}
+              suppressEditActions={isEditMode}
+              showCustomizeButton={false}
+            />
+          ) : null}
+          <DemoSectionContent
+            section={section}
             activeRoom={activeRoom}
-            onRoomChange={setActiveRoom}
-            isEditMode={isEditMode}
-            onToggleEditMode={toggleEditMode}
-            suppressEditActions={isEditMode}
-            showCustomizeButton={false}
+            addedWidgets={addedWidgets}
           />
-        ) : null}
-        <DemoSectionContent section={section} activeRoom={activeRoom} />
-      </div>
-    </DashboardLayout>
+        </div>
+      </DashboardLayout>
+    </>
   );
 }
 

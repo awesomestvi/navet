@@ -78,6 +78,20 @@ type Story = StoryObj<typeof meta>;
 
 export const Playground: Story = {};
 
+export const WrappedTitle: Story = {
+  args: {
+    id: 'homey:hallway-alarm#alarm_smoke',
+    name: 'Hallway smoke and carbon monoxide alarm · Smoke Alarm',
+    room: 'Entrance',
+    value: 'Clear',
+    unit: '',
+    icon: 'alert',
+    subtitle: 'smoke',
+    deviceClass: 'smoke',
+    size: 'small',
+  },
+};
+
 export const Temperature: Story = {
   args: {
     id: 'sensor.living_room_temperature',

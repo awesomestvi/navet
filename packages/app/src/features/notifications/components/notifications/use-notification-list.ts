@@ -1,5 +1,8 @@
 import { type TranslateFn, useI18n } from '@navet/app/i18n';
-import type { PlatformUpdateNotificationCandidate } from '@navet/app/platform/provider-feature-models';
+import type {
+  PlatformPersistentNotification,
+  PlatformUpdateNotificationCandidate,
+} from '@navet/app/platform/provider-feature-models';
 import { useMemo } from 'react';
 import type { PlatformNotification } from './use-notifications';
 import type { ProviderNotificationData } from './use-provider-notification-data';
@@ -48,6 +51,54 @@ interface BuildUpdateNotificationsParams {
   readNotifications: string[];
   t: TranslateFn;
   updateCandidates: PlatformUpdateNotificationCandidate[];
+}
+
+function missingNotificationFingerprint(notification: PlatformPersistentNotification): string {
+  return JSON.stringify([
+    notification.title ?? '',
+    notification.message ?? '',
+    notification.created_at ?? '',
+    notification.status ?? '',
+  ]);
+}
+
+function hashNotificationFingerprint(fingerprint: string): string {
+  let hash = 2166136261;
+  for (let index = 0; index < fingerprint.length; index += 1) {
+    hash = Math.imul(hash ^ fingerprint.charCodeAt(index), 16777619);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+export function buildPersistentNotifications(
+  persistentNotifications: PlatformPersistentNotification[],
+  readNotifications: string[]
+): PlatformNotification[] {
+  const duplicateCounts = new Map<string, number>();
+
+  return persistentNotifications.map((notification) => {
+    const providedId =
+      typeof notification.notification_id === 'string' ? notification.notification_id.trim() : '';
+    const fingerprint = providedId ? '' : missingNotificationFingerprint(notification);
+    const occurrence = (duplicateCounts.get(fingerprint) ?? 0) + 1;
+    if (!providedId) duplicateCounts.set(fingerprint, occurrence);
+    const notificationId =
+      providedId || `missing_${hashNotificationFingerprint(fingerprint)}_${occurrence}`;
+    const id = `persistent_notification:${notificationId}`;
+    const title = notification.title?.trim() || 'Notification';
+    const message = notification.message?.trim() || '';
+    const timestamp = new Date(notification.created_at ?? Date.now());
+    return {
+      id,
+      notificationId,
+      source: 'persistent_notification' as const,
+      type: inferNotificationType(id, { title, message, severity: notification.status }),
+      title,
+      message,
+      timestamp: Number.isNaN(timestamp.getTime()) ? new Date() : timestamp,
+      read: readNotifications.includes(id),
+    };
+  });
 }
 
 export function buildUpdateNotifications({
@@ -137,23 +188,10 @@ export function useNotificationList({
       return [];
     }
 
-    const livePersistentNotifications = persistentNotifications.map((notification) => {
-      const notificationId = notification.notification_id ?? crypto.randomUUID();
-      const id = `persistent_notification:${notificationId}`;
-      const title = notification.title?.trim() || 'Notification';
-      const message = notification.message?.trim() || '';
-      const timestamp = new Date(notification.created_at ?? Date.now());
-      return {
-        id,
-        notificationId,
-        source: 'persistent_notification' as const,
-        type: inferNotificationType(id, { title, message, severity: notification.status }),
-        title,
-        message,
-        timestamp: Number.isNaN(timestamp.getTime()) ? new Date() : timestamp,
-        read: readNotifications.includes(id),
-      };
-    });
+    const livePersistentNotifications = buildPersistentNotifications(
+      persistentNotifications,
+      readNotifications
+    );
 
     const liveRepairNotifications = repairIssues.map((issue) => {
       const issueDomain = issue.issue_domain ?? issue.domain ?? 'homeassistant';

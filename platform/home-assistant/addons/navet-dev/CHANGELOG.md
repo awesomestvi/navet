@@ -2,5 +2,5 @@
 
 ## In Progress
 
-- Current Navet Dev scope since `navet-dev-0.16.2-dev.20260912172646`.
-- Refine dashboard customization and household workflows
+- Current Navet Dev scope since `navet-dev-0.16.3-dev.20260915225200`.
+- No committed changes have landed after `navet-dev-0.16.3-dev.20260915225200` yet.

@@ -10,12 +10,14 @@ import {
 import { getDashboardRoomLabel } from '@navet/app/constants/rooms';
 import { RoomSymbolIcon } from '@navet/app/features/dashboard/rooms/components/room-symbol-icon';
 import { useI18n, useTheme } from '@navet/app/hooks';
+import { roomNamesMatch } from '@navet/app/utils/room-name';
 import { Check, ChevronDown, Layers3 } from 'lucide-react';
 import { memo, useMemo } from 'react';
 import {
   filterHiddenRooms,
   getVisibleRoomNavRooms,
   type RoomNavigationGroup,
+  resolveRoomNavigationGroups,
 } from './room-nav.utils';
 
 export interface MobileRoomNavigation {
@@ -43,21 +45,13 @@ export const MobileRoomDropdown = memo(function MobileRoomDropdown({
     const visibleRooms = getVisibleRoomNavRooms(
       filterHiddenRooms(navigation.rooms, navigation.hiddenRoomNames ?? [])
     );
-    const visibleRoomSet = new Set(visibleRooms);
-    const groups = (navigation.groups ?? [])
-      .map((group) => ({
-        ...group,
-        rooms: group.rooms.filter((room) => visibleRoomSet.has(room)),
-      }))
-      .filter((group) => group.rooms.length > 0);
-    const groupedRooms = new Set(groups.flatMap((group) => group.rooms));
-
-    return {
-      visibleGroups: groups,
-      standaloneRooms: visibleRooms.filter((room) => !groupedRooms.has(room)),
-    };
+    return resolveRoomNavigationGroups(visibleRooms, navigation.groups ?? []);
   }, [navigation.groups, navigation.hiddenRoomNames, navigation.rooms]);
-  const activeLabel = getDashboardRoomLabel(navigation.activeRoom, allLabel);
+  const displayRoom =
+    [...standaloneRooms, ...visibleGroups.flatMap((group) => group.rooms)].find((room) =>
+      roomNamesMatch(room, navigation.activeRoom)
+    ) ?? navigation.activeRoom;
+  const activeLabel = getDashboardRoomLabel(displayRoom, allLabel);
   const triggerWidthClassName = compact ? 'max-w-[42vw]' : 'max-w-[68vw]';
 
   return (
@@ -88,7 +82,7 @@ export const MobileRoomDropdown = memo(function MobileRoomDropdown({
               onSelect={() => navigation.onRoomChange(room)}
             >
               <span className="min-w-0 flex-1 truncate">{label}</span>
-              {navigation.activeRoom === room ? (
+              {roomNamesMatch(navigation.activeRoom, room) ? (
                 <Check className="h-4 w-4" style={{ color: accentColor }} />
               ) : null}
             </DropdownMenuItem>
@@ -115,7 +109,7 @@ export const MobileRoomDropdown = memo(function MobileRoomDropdown({
                 <span className="min-w-0 flex-1 truncate">
                   {getDashboardRoomLabel(room, allLabel)}
                 </span>
-                {navigation.activeRoom === room ? (
+                {roomNamesMatch(navigation.activeRoom, room) ? (
                   <Check className="h-4 w-4" style={{ color: accentColor }} />
                 ) : null}
               </DropdownMenuItem>

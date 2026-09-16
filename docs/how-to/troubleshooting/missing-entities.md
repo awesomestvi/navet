@@ -12,7 +12,7 @@ real connection or visibility problem.
 ## 1. Confirm the provider
 
 Open **Settings → System → Providers** and confirm that the owning provider is connected and
-selected. Make it active if the missing feature requires a single active provider.
+selected. Check that the selected entity belongs to a connected provider that supports the feature.
 
 ## 2. Clear navigation and search filters
 

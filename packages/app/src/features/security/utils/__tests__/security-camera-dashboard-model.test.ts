@@ -11,9 +11,31 @@ import type {
 import { describe, expect, it } from 'vitest';
 import {
   buildSecurityCameraDashboardModel,
+  buildSecurityRoomGroupSummaries,
   getSecurityDashboardAlertCount,
   isStillImageUtilityCamera,
 } from '../security-camera-dashboard-model';
+
+it('combines security devices from matching provider room names in one room group', () => {
+  const groups = buildSecurityRoomGroupSummaries([
+    {
+      ...sensor({ id: 'homey:motion', name: 'Motion', room: 'Kitchen', securityKind: 'motion' }),
+      type: 'sensors',
+    },
+    {
+      ...sensor({
+        id: 'openhab:contact',
+        name: 'Contact',
+        room: 'KITCHEN',
+        securityKind: 'door',
+      }),
+      type: 'sensors',
+    },
+  ]);
+  expect(groups).toHaveLength(1);
+  expect(groups[0].label).toBe('Kitchen');
+  expect(groups[0].entities).toHaveLength(2);
+});
 
 function camera(
   overrides: Partial<CameraDevice> &
@@ -152,6 +174,125 @@ function helper(
 }
 
 describe('security camera dashboard model', () => {
+  it('clears alert counts and attention pills when six sensors have cleared despite old severity metadata', () => {
+    const devices = {
+      cameras: [],
+      locks: [],
+      sensors: Array.from({ length: 6 }, (_, index) =>
+        sensor({
+          id: `binary_sensor.leak_${index}`,
+          name: `Leak ${index}`,
+          securityKind: 'waterLeak',
+          securitySeverity: index % 2 === 0 ? 'critical' : 'warning',
+          status: 'clear',
+          value: 'Clear',
+        })
+      ),
+    };
+    const model = buildSecurityCameraDashboardModel(devices);
+
+    expect(getSecurityDashboardAlertCount(devices)).toBe(0);
+    expect(model.summary.attentionEntityCount).toBe(0);
+    expect(model.summary.attentionEntities).toEqual([]);
+    expect(model.summary.criticalCount).toBe(0);
+    expect(model.summary.warningCount).toBe(0);
+    expect(model.summary.securedCounts.hazardSensorsClear).toBe(6);
+    expect(model.summary.groupSummaries.find(({ id }) => id === 'hazards')?.summaryText).toBe(
+      '6 clear'
+    );
+  });
+
+  it('uses the same current cover and camera states for alert totals and dashboard groups', () => {
+    const devices = {
+      cameras: [camera({ id: 'camera.entry', name: 'Entry', securitySeverity: 'warning' })],
+      covers: [
+        cover({ id: 'cover.entry', name: 'Entry', position: 0, securitySeverity: 'warning' }),
+      ],
+      locks: [],
+      sensors: [],
+    };
+    const model = buildSecurityCameraDashboardModel(devices);
+    expect(getSecurityDashboardAlertCount(devices)).toBe(0);
+    expect(model.summary.attentionEntityCount).toBe(0);
+    expect(model.summary.attentionEntities).toEqual([]);
+  });
+
+  it('keeps active hazards and unavailable sensors visible even without severity metadata', () => {
+    const devices = {
+      cameras: [],
+      locks: [],
+      sensors: [
+        {
+          ...sensor({ id: 'smoke', name: 'Smoke', securityKind: 'smoke' }),
+          securitySeverity: undefined,
+        },
+        sensor({
+          id: 'leak',
+          name: 'Leak',
+          securityKind: 'waterLeak',
+          securitySeverity: 'normal',
+          status: 'unavailable',
+          value: 'Unavailable',
+        }),
+      ],
+    };
+    const model = buildSecurityCameraDashboardModel(devices);
+    expect(getSecurityDashboardAlertCount(devices)).toBe(2);
+    expect(model.summary.attentionEntityCount).toBe(2);
+    expect(model.summary.criticalCount).toBe(1);
+    expect(model.summary.unknownCount).toBe(1);
+    expect(model.summary.attentionEntities.map(({ id }) => id)).toEqual(['smoke', 'leak']);
+  });
+
+  it('keeps low and unavailable batteries out of attention while retaining their System readings', () => {
+    const batteries = [
+      sensor({
+        id: 'sensor.low_battery',
+        name: 'Low battery',
+        securityKind: 'battery',
+        securitySeverity: 'warning',
+        value: '12',
+        unit: '%',
+        status: 'measurement',
+      }),
+      sensor({
+        id: 'sensor.missing_battery',
+        name: 'Missing battery',
+        securityKind: 'battery',
+        securitySeverity: 'unknown',
+        value: 'Unavailable',
+        status: 'unavailable',
+      }),
+    ];
+    const devices = { cameras: [], locks: [], sensors: batteries };
+    const batteryOnly = buildSecurityCameraDashboardModel(devices);
+    expect(batteryOnly.summary.attentionEntities).toHaveLength(0);
+    expect(batteryOnly.summary.attentionItems).toHaveLength(0);
+    expect(batteryOnly.summary.attentionEntityCount).toBe(0);
+    expect(batteryOnly.summary.warningCount).toBe(0);
+    expect(batteryOnly.summary.unknownItems).toHaveLength(0);
+    expect(batteryOnly.groups.system).toHaveLength(2);
+    expect(getSecurityDashboardAlertCount(devices)).toBe(0);
+
+    const mixed = buildSecurityCameraDashboardModel({
+      ...devices,
+      sensors: [
+        ...batteries,
+        sensor({
+          id: 'binary_sensor.tamper',
+          name: 'Tamper',
+          securityKind: 'tamper',
+          securitySeverity: 'warning',
+        }),
+      ],
+    });
+    expect(mixed.summary.attentionEntities.map(({ id }) => id)).toEqual(['binary_sensor.tamper']);
+    expect(mixed.summary.attentionEntityCount).toBe(1);
+    expect(mixed.summary.attentionItems.map(({ id }) => id)).toEqual([
+      'security.aggregate.attention.system',
+    ]);
+  });
+
   it('keeps the dedicated alert count aligned with the full dashboard model', () => {
     const devices = {
       cameras: [

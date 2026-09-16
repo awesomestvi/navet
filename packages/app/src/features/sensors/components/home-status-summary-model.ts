@@ -11,6 +11,7 @@ import type { OperationalPriority, OperationalTone } from '@navet/app/types/oper
 import { getCustomExtensionIcon } from '@navet/app/utils/custom-extension-icons';
 import type { CustomSummaryPill } from '@navet/app/utils/custom-extensions';
 import { getDeviceRoomLabel } from '@navet/app/utils/device-location';
+import { roomNamesMatch } from '@navet/app/utils/room-name';
 import {
   convertTemperatureUnitValue,
   formatDisplayTemperature,
@@ -538,8 +539,8 @@ export function buildRoomStatusSummaryItems(
   options: StatusSummaryOptions = {},
   t: TranslateFn = defaultTranslate
 ): HomeStatusSummaryItem[] {
-  const roomDevices = Array.from(deviceMap.values()).filter(
-    (device) => getDeviceRoomLabel(device) === room
+  const roomDevices = Array.from(deviceMap.values()).filter((device) =>
+    roomNamesMatch(getDeviceRoomLabel(device), room)
   );
   return buildStatusSummaryItems(
     new Map(roomDevices.map((device) => [device.id, device] as const)),

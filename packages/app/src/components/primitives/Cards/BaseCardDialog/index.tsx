@@ -147,6 +147,7 @@ interface BaseCardDialogRootProps {
 const mobileCoverSheetClassName = [
   'max-sm:!top-[var(--mobile-cover-sheet-top)] max-sm:!right-0 max-sm:!bottom-0 max-sm:!left-0',
   'max-sm:!mx-0 max-sm:!h-[80dvh] max-sm:!max-h-[100dvh] max-sm:!w-auto max-sm:!max-w-none',
+  'max-sm:[--navet-safe-area-top-offset:0px]',
   'max-sm:!flex max-sm:!flex-col',
   'max-sm:![translate:0_var(--mobile-cover-sheet-drag-y)] max-sm:!rounded-t-[30px] max-sm:!rounded-b-none',
   'max-sm:!transition-[height,top,translate] max-sm:!duration-200 max-sm:!ease-out',

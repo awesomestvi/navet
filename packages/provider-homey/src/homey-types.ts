@@ -4,6 +4,10 @@ export interface HomeyCapabilityState {
   title?: string;
   min?: number;
   max?: number;
+  step?: number;
+  type?: 'boolean' | 'number' | 'enum' | 'string';
+  setable?: boolean;
+  values?: { id: string; title: string }[];
 }
 
 export interface HomeyCloudHomey {
@@ -34,6 +38,60 @@ export interface HomeyZone {
 
 export interface HomeySnapshot {
   connected: boolean;
+  error?: string | null;
+  unreachable?: boolean;
   devices: Record<string, HomeyDevice>;
   zones: Record<string, HomeyZone>;
+  flows?: Record<string, HomeyFlow>;
+  advancedFlows?: Record<string, HomeyFlow>;
+  moods?: Record<string, HomeyMood>;
+  users?: Record<string, HomeyUser>;
+  me?: HomeyUser;
+  notifications?: Record<string, HomeyNotification>;
+  apps?: Record<string, HomeyApp>;
+  logs?: Record<string, HomeyLog>;
+  resourceErrors?: Record<string, string>;
+}
+
+export interface HomeyFlow {
+  id: string;
+  name: string;
+  enabled?: boolean;
+  triggerable?: boolean;
+  trigger?: { id: string };
+}
+export interface HomeyMood {
+  id: string;
+  name: string;
+  zone?: string;
+}
+export interface HomeyUser {
+  id: string;
+  name?: string;
+  email?: string;
+  present?: boolean | null;
+  asleep?: boolean | null;
+  properties?: { favoriteDevices?: string[]; favoriteFlows?: string[]; [key: string]: unknown };
+}
+export interface HomeyNotification {
+  id: string;
+  excerpt: string;
+  ownerName?: string;
+  dateCreated?: string;
+}
+export interface HomeyApp {
+  id: string;
+  name: string;
+  version?: string;
+  state?: string;
+}
+export interface HomeyLog {
+  id: string;
+  ownerUri?: string;
+  uri?: string;
+  ownerId?: string;
+  ownerName?: string;
+  title?: string;
+  units?: string;
+  lastValue?: number | boolean | null;
 }

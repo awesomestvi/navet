@@ -22,6 +22,7 @@ import type {
   ProviderTaskFeatureService,
   ProviderWeatherFeatureService,
 } from './provider-feature-services';
+import type { ProviderHubFeatureService } from './provider-hub';
 
 export interface ProviderContractRegistration {
   contract: NavetProviderContract;
@@ -82,6 +83,7 @@ export interface IntegrationProviderRuntimeRegistration {
   energyFeatureService?: ProviderEnergyFeatureService;
   entityRuntimeService?: ProviderEntityRuntimeService;
   historyFeatureService?: ProviderHistoryFeatureService;
+  hubFeatureService?: ProviderHubFeatureService;
   lightFeatureService?: ProviderLightFeatureService;
   mediaFeatureService?: ProviderMediaFeatureService;
   nativeActionFeatureService?: ProviderNativeActionFeatureService;

@@ -24,10 +24,13 @@ export interface OpenHABItem {
   label?: string;
   category?: string | null;
   state?: string;
+  unitSymbol?: string;
+  lastStateUpdate?: number;
   tags?: string[];
   groupNames?: string[];
   stateDescription?: OpenHABItemStateDescription;
   metadata?: {
+    unit?: { value?: string };
     semantics?: OpenHABSemanticsMetadata;
   };
   editable?: boolean;

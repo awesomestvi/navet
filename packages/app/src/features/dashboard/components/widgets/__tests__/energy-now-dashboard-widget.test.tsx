@@ -1,6 +1,7 @@
 import { ENERGY_WIDGET_ROOM } from '@navet/app/constants/rooms';
 import { integrationStore } from '@navet/app/stores/integration-store';
 import { renderWithProviders } from '@navet/app/test/render';
+import { resetAppStores } from '@navet/app/test/store-reset';
 import { fireEvent, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { EnergyNowDashboardWidget } from '../energy-now-dashboard-widget';
@@ -27,8 +28,10 @@ vi.mock('@navet/app/features/energy/hooks/use-provider-energy-now', () => ({
 }));
 
 describe('EnergyNowDashboardWidget', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    await resetAppStores();
     integrationStore.getState().setCurrentProviderId('home_assistant');
+    integrationStore.getState().setSelectedProviders(['home_assistant']);
     energyDashboardMock.useEnergyLoadHistory.mockReturnValue([]);
     energyDashboardMock.useProviderEnergyNow.mockReturnValue({
       currentLoadW: 420,
@@ -134,8 +137,9 @@ describe('EnergyNowDashboardWidget', () => {
     expect(screen.queryByText('Current Load')).not.toBeInTheDocument();
   });
 
-  it('shows a provider capability fallback when the active provider does not support energy', () => {
+  it('shows a provider capability fallback when only openHAB is selected', () => {
     integrationStore.getState().setCurrentProviderId('openhab');
+    integrationStore.getState().setSelectedProviders(['openhab']);
     energyDashboardMock.useProviderEnergyNow.mockReturnValue({
       currentLoadW: 0,
       solarTodayKWh: 0,
@@ -154,13 +158,24 @@ describe('EnergyNowDashboardWidget', () => {
     expect(screen.getByText('openHAB does not support this feature yet.')).toBeInTheDocument();
   });
 
-  it('shows a provider capability fallback when the active provider does not support energy', () => {
+  it('shows a provider capability fallback when only Homey is selected', () => {
     integrationStore.getState().setCurrentProviderId('homey');
+    integrationStore.getState().setSelectedProviders(['homey']);
 
     renderWithProviders(<EnergyNowDashboardWidget />);
 
     expect(screen.getByText('Energy Now')).toBeInTheDocument();
     expect(screen.getByText('Homey does not support this feature yet.')).toBeInTheDocument();
     expect(screen.queryByText('Current Load')).not.toBeInTheDocument();
+  });
+
+  it('uses energy from a selected supporting provider when the current provider lacks energy', () => {
+    integrationStore.getState().setCurrentProviderId('homey');
+    integrationStore.getState().setSelectedProviders(['homey', 'home_assistant']);
+
+    renderWithProviders(<EnergyNowDashboardWidget />);
+
+    expect(screen.getByText('Energy today')).toBeInTheDocument();
+    expect(screen.queryByText('Homey does not support this feature yet.')).not.toBeInTheDocument();
   });
 });

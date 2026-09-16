@@ -627,6 +627,9 @@ export function rotateViteProviderRequestSession<
   }
   const rotated = store.rotateSession(previousCookieId, session)
   setViteProviderSessionCookie(req, res, names, rotated.cookieId)
+  if (store.deviceSessionAuthority && store.providerId) {
+    store.deviceSessionAuthority.attachProviderCookieId(req, store.providerId, rotated.cookieId)
+  }
   if (store.deviceSessionAuthority && store.providerId && previousCookieId) {
     store.deviceSessionAuthority.replaceProviderCookieId(
       store.providerId,
@@ -662,6 +665,9 @@ export function createViteProviderRequestSession<T extends { updatedAt: number }
 
   const created = store.createSession()
   setViteProviderSessionCookie(req, res, cookieNames, created.cookieId)
+  if (store.deviceSessionAuthority && store.providerId) {
+    store.deviceSessionAuthority.attachProviderCookieId(req, store.providerId, created.cookieId)
+  }
   return created
 }
 

@@ -3,6 +3,7 @@ import {
   filterHiddenRooms,
   getVisibleRoomNavRooms,
 } from '@navet/app/components/layout/room-nav.utils';
+import { roomNamesMatch } from '@navet/app/utils/room-name';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { useRef } from 'react';
 
@@ -55,7 +56,7 @@ export function getAdjacentKioskRoom({
   rooms: string[];
 }) {
   const visibleRooms = getVisibleRoomNavRooms(filterHiddenRooms(rooms, hiddenRoomNames));
-  const activeIndex = visibleRooms.indexOf(activeRoom);
+  const activeIndex = visibleRooms.findIndex((room) => roomNamesMatch(room, activeRoom));
   if (activeIndex < 0) {
     return null;
   }

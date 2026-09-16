@@ -62,6 +62,7 @@ export interface UserSettings {
   dashboardProfileMode: DashboardProfileMode;
   dashboardSpaceMode: DashboardSpaceMode;
   disableAnimations: boolean;
+  preventBrowserZoom: boolean;
   lowPowerMode: boolean;
   effectsQuality: EffectsQuality;
   effectsQualityUserOverride: boolean;
@@ -121,6 +122,7 @@ export const defaultSettings: UserSettings = {
   dashboardProfileMode: 'standard',
   dashboardSpaceMode: 'default',
   disableAnimations: false,
+  preventBrowserZoom: false,
   lowPowerMode: false,
   effectsQuality: 'high',
   effectsQualityUserOverride: false,
@@ -510,6 +512,7 @@ export const useSettingsStore = create<SettingsState>()(
         return set(() => ({
           ...defaultSettings,
           ...supportedSettings,
+          preventBrowserZoom: supportedSettings.preventBrowserZoom === true,
           headerTitleMode: isHeaderTitleMode(supportedSettings.headerTitleMode)
             ? supportedSettings.headerTitleMode
             : defaultSettings.headerTitleMode,
@@ -581,6 +584,7 @@ export const useSettingsStore = create<SettingsState>()(
         return {
           ...current,
           ...next,
+          preventBrowserZoom: next.preventBrowserZoom === true,
           effectsQuality:
             effectsQualityUserOverride && isEffectsQuality(next.effectsQuality)
               ? next.effectsQuality

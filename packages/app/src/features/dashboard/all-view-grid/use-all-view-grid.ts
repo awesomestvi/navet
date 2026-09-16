@@ -4,6 +4,7 @@ import { useI18n, useIntegrationStore, useSearch } from '@navet/app/hooks';
 import { integrationSelectors } from '@navet/app/stores/selectors';
 import type { DeviceWithType } from '@navet/app/types/device.types';
 import { UNKNOWN_ROOM_LABEL } from '@navet/app/utils/device-location';
+import { normalizeRoomName, roomNamesMatch } from '@navet/app/utils/room-name';
 import { useCallback, useDeferredValue, useMemo } from 'react';
 import type { CustomCard } from '../stores/custom-cards-store';
 import { buildPreparedDashboardDevices } from '../utils/prepared-dashboard-devices';
@@ -65,7 +66,7 @@ export function useAllViewGrid({
       }
 
       const device = preparedDevice.device;
-      const room = preparedDevice.room;
+      const room = normalizeRoomName(preparedDevice.room);
       if (!grouped[room]) {
         grouped[room] = [];
       }
@@ -83,10 +84,10 @@ export function useAllViewGrid({
         continue;
       }
 
-      if (!grouped[card.room]) {
-        grouped[card.room] = [];
+      if (!grouped[normalizeRoomName(card.room)]) {
+        grouped[normalizeRoomName(card.room)] = [];
       }
-      grouped[card.room].push(card);
+      grouped[normalizeRoomName(card.room)].push(card);
     }
 
     return grouped;
@@ -103,20 +104,21 @@ export function useAllViewGrid({
 
   const orderedRoomEntries = useMemo(() => {
     // Build room set using loop to avoid multiple array iterations
-    const roomSet: Record<string, boolean> = {};
+    const roomSet = new Map<string, string>();
     for (const room of rooms) {
-      roomSet[room] = true;
+      if (!roomSet.has(normalizeRoomName(room))) roomSet.set(normalizeRoomName(room), room);
     }
     for (const card of customCards) {
       if (card.room && card.room !== HOME_WIDGET_ROOM) {
-        roomSet[card.room] = true;
+        if (!roomSet.has(normalizeRoomName(card.room)))
+          roomSet.set(normalizeRoomName(card.room), card.room);
       }
     }
-    const orderedRooms = Object.keys(roomSet);
+    const orderedRooms = Array.from(roomSet.values());
 
     return orderedRooms.map((room) => {
-      const roomDevices = devicesByRoom[room] || [];
-      const roomCustomCards = customCardsByRoom[room] || [];
+      const roomDevices = devicesByRoom[normalizeRoomName(room)] || [];
+      const roomCustomCards = customCardsByRoom[normalizeRoomName(room)] || [];
 
       // Build valid ID set using loop for better performance
       const validIds: Record<string, boolean> = {};
@@ -133,7 +135,13 @@ export function useAllViewGrid({
         }
       }
 
-      const orderedIds = (cardOrders[room] || []).filter((id) => validIds[id]);
+      const orderedIds = Array.from(
+        new Set(
+          Object.entries(cardOrders)
+            .filter(([name]) => roomNamesMatch(name, room))
+            .flatMap(([, ids]) => ids)
+        )
+      ).filter((id) => validIds[id]);
 
       return {
         room,

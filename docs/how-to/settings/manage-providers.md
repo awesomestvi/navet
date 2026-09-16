@@ -1,12 +1,12 @@
 ---
 title: Connect and manage providers
-description: Add an implemented provider, make one active, or disconnect a browser-specific session.
+description: Connect smart-home providers and choose the sources used by your dashboard.
 editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/settings/manage-providers.md
 ---
 
-Standalone Navet can retain sessions for multiple implemented providers and combine selected
-provider collections. One active provider still supplies operations that require a single advanced
-feature service.
+Standalone Navet connects to multiple smart-home providers and combines their supported devices
+and features. Choose sources in the relevant card or feature settings. Each selected entity keeps
+its provider identity, so controls and data requests reach the correct smart-home platform.
 
 ![System settings showing connected and available providers.](/docs/how-to/settings/provider-management.webp)
 
@@ -23,21 +23,33 @@ feature service.
 Do not paste a long-lived Home Assistant token into a manual token field; Navet does not use that
 as its connection model.
 
-## Choose the active provider
+Provider cards show **Connected** when Navet can reach the provider. A Homey account can remain
+signed in while its hub is unavailable. If Homey shows **Offline**, check that the hub is powered
+on and reachable from Navet's network. If this happens during sign-in, choose the Homey again
+after it comes online. If a connected Homey goes offline later, Navet checks again automatically
+and shows **Connected** when the hub responds.
 
-When more than one provider is connected, choose **Make active** for the provider that should
-supply single-provider operations. Selected provider entities can still appear together in shared
-collections.
+## Choose sources
+
+Use the card or feature's editing controls to choose from available sources. Weather cards can use
+any weather entity exposed by a connected provider. Calendars combine selected sources, and the
+Energy metric picker includes energy-related sensors from connected providers.
+
+Available choices depend on each adapter's capabilities. Home Assistant currently supplies weather
+forecasts, calendar events, and the detailed energy history dashboard. Homey and openHAB supply
+supported devices and sensors; connecting them does not add forecast, calendar, or statistics APIs.
 
 ## Disconnect
 
-Choose **Disconnect** on the provider card and confirm. This ends that provider session on the
-current device or server scope. It does not delete devices from the provider.
+On your primary device, open **Settings → System → Providers**, open the provider's menu, and
+choose **Disconnect**. The confirmation names the provider and explains that it disconnects
+across connected devices. Choose **Cancel** to keep the connection, or **Disconnect** to proceed.
+You can connect the provider again later. Disconnecting does not delete devices from the provider.
 
 ## Availability
 
-Home Assistant supplies Navet's broadest advanced feature set. Homey and openHAB currently focus on
-rooms, live entities, lighting, switches, and sensors. Hubitat and SmartThings are planned, not
-implemented runtimes.
+Home Assistant supplies Navet's broadest advanced feature set. Homey also supplies runnable Flows
+and Moods, people, notifications, and Insights history. openHAB supplies rooms, live entities,
+lighting, switches, and sensors. Hubitat and SmartThings are planned, not implemented runtimes.
 
 See [A feature is unavailable](/guide/troubleshooting/unavailable-features/).

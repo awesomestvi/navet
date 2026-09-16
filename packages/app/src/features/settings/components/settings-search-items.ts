@@ -111,6 +111,12 @@ const SETTINGS: SearchSettingDefinition[] = [
     descriptionKey: 'settings.interaction.cardBehavior.description',
   },
   {
+    id: 'interaction-browser-zoom',
+    sectionId: 'interaction',
+    labelKey: 'settings.interaction.browserZoom.title',
+    descriptionKey: 'settings.interaction.browserZoom.description',
+  },
+  {
     id: 'dashboard-multiple-dashboards',
     sectionId: 'dashboard',
     labelKey: 'dashboard.multiple.manager.title',

@@ -7,7 +7,7 @@ editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/dashboards/a
 The Add Card library combines provider-backed entities with Navet-owned widgets. It excludes cards
 already present in the target area where duplicates would not be useful.
 
-![The Add Card phone cover sheet with All cards, Custom card, search, filters, and available entities.](/docs/how-to/dashboards/add-card-library.webp)
+![The phone Add Card sheet showing All cards, Custom cards, search, filters, and sample devices.](/docs/how-to/dashboards/add-card-library.webp)
 
 Watch the [Add Card demonstration on YouTube](https://youtu.be/8xis2yjmul8?t=32), or follow the
 [full dashboard tutorial](/guide/dashboards/customize-home/#watch-the-dashboard-tutorial).
@@ -29,10 +29,13 @@ want to Home through this library.
   UPS status, and energy summaries.
 - Search by the visible device or room name.
 - Use an explicit native identifier when you need to find one exact provider entity.
+- In **Custom cards**, search by card name, sort the results, or filter by supported card size.
 
-![The Add Card phone cover sheet filtered to a matching Kitchen entity.](/docs/how-to/dashboards/add-card-search.webp)
+![The phone Add Card sheet filtered to the Kitchen island light.](/docs/how-to/dashboards/add-card-search.webp)
 
-On phones, Add Card opens as a full-height cover sheet with its own close action. On larger
+![The Custom cards tab showing Navet note and information card templates.](/docs/how-to/dashboards/add-card-custom.webp)
+
+On phones, Add Card opens as a tall sheet with its own close action. On larger
 screens, the same library keeps the navigation and results visible side by side.
 
 Generic entity cards are available when Navet recognizes an entity but has no richer dedicated
@@ -53,6 +56,10 @@ Depending on the card type, choose:
 - Widget-specific content, source, or action.
 
 Choose the add or save action. Navet places the card in the target area.
+
+Cover cards default to **Small**; climate and speaker cards default to **Medium**.
+In edit mode, use the card's size control to choose
+**Small**, **Medium**, or **Large**. Navet remembers the size you choose.
 
 ![A newly added card highlighted on Home.](/docs/how-to/dashboards/add-card-result.webp)
 

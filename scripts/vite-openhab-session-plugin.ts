@@ -28,6 +28,7 @@ import {
 } from './vite-provider-session-store.ts';
 
 export const OPENHAB_SESSION_MAX_BYTES = 8 * 1024;
+class OpenHABConnectionValidationError extends Error {}
 export function openhabSessionStorePlugin(
   installationAuthority: ViteInstallationAuthority,
   deviceSessionAuthority?: ViteDeviceSessionAuthority
@@ -125,18 +126,24 @@ export function openhabSessionStorePlugin(
         signal: controller.signal,
       });
 
+      if (response.status === 401 || response.status === 403) {
+        throw new OpenHABConnectionValidationError(
+          'openHAB rejected these credentials. Check your openHAB username and password and that Allow Basic Authentication is enabled in openHAB Settings -> API Security.'
+        );
+      }
       if (!response.ok) {
-        throw new Error(openHABValidationError);
+        throw new OpenHABConnectionValidationError(`openHAB verification failed (HTTP ${response.status}).`);
       }
       const payload: unknown = await response.json();
       if (!Array.isArray(payload)) {
-        throw new Error(openHABValidationError);
+        throw new OpenHABConnectionValidationError('openHAB returned an unexpected response. Enter the server base URL without /rest or /basicui.');
       }
     } catch (error) {
+      if (error instanceof OpenHABConnectionValidationError) throw error;
       if (error instanceof DOMException && error.name === 'AbortError') {
-        throw new Error(openHABValidationError);
+        throw new OpenHABConnectionValidationError('openHAB did not respond in time. Check that it is running and reachable from Navet.');
       }
-      throw new Error(openHABValidationError);
+      throw new OpenHABConnectionValidationError('Navet could not reach openHAB. Check the server URL and that openHAB is running.');
     } finally {
       clearTimeout(timeoutId);
     }
@@ -253,7 +260,7 @@ export function openhabSessionStorePlugin(
           loginRateLimiter.reset(req);
           return;
         }
-        sendJson(res, 400, { error: openHABValidationError });
+        sendJson(res, 400, { error: error instanceof OpenHABConnectionValidationError ? error.message : openHABValidationError });
       }
       return;
     }

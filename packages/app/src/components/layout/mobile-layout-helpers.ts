@@ -1,4 +1,5 @@
 import { isAllRooms } from '@navet/app/constants/rooms';
+import { normalizeRoomName, roomNamesMatch } from '@navet/app/utils/room-name';
 import type { PlatformManageableRoomReference } from '@navet/core/provider-feature-models';
 import type { MobileHeaderEditActions } from './mobile-header-actions';
 
@@ -36,12 +37,19 @@ export function getManageableRoomOrder(
     .filter((room) => room.canOrder)
     .map((room) => room.name)
     .filter((name) => name.length > 0 && !isAllRooms(name));
-  const orderedKnownRooms = rooms.filter((room) => manageableRoomNames.includes(room));
+  const orderedKnownRooms = rooms.filter((room) =>
+    manageableRoomNames.some((name) => roomNamesMatch(name, room))
+  );
   const unorderedAreaRooms = manageableRoomNames.filter(
-    (room) => !orderedKnownRooms.includes(room)
+    (room) => !orderedKnownRooms.some((name) => roomNamesMatch(name, room))
   );
   const navetOnlyRooms = rooms.filter(
-    (room) => !isAllRooms(room) && !manageableRoomNames.includes(room)
+    (room) => !isAllRooms(room) && !manageableRoomNames.some((name) => roomNamesMatch(name, room))
   );
-  return [...new Set([...orderedKnownRooms, ...unorderedAreaRooms, ...navetOnlyRooms])];
+  const namesByKey = new Map<string, string>();
+  for (const room of [...orderedKnownRooms, ...unorderedAreaRooms, ...navetOnlyRooms]) {
+    const key = normalizeRoomName(room);
+    if (!namesByKey.has(key)) namesByKey.set(key, room);
+  }
+  return [...namesByKey.values()];
 }

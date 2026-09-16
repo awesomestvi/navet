@@ -7,6 +7,7 @@ import {
   PERSISTED_STATE_EVENT,
 } from '@navet/app/utils/persisted-state-events';
 import { ensureCanonicalEntityId } from '@navet/app/utils/provider-entity-id';
+import { normalizeRoomName, roomNamesMatch } from '@navet/app/utils/room-name';
 import { storage } from '@navet/app/utils/storage';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { CustomCard } from './use-custom-cards';
@@ -68,22 +69,25 @@ export const useCardOrdering = (
 
   const buildOrders = useCallback(() => {
     const orders: Record<string, string[]> = {};
-    const orderedRooms = Array.from(
-      new Set([
-        ...rooms,
-        ...safeCustomCards.map((card) => card.room).filter((room) => room !== HOME_WIDGET_ROOM),
-      ])
-    );
+    const roomNamesByKey = new Map<string, string>();
+    for (const room of [
+      ...rooms,
+      ...safeCustomCards.map((card) => card.room).filter((room) => room !== HOME_WIDGET_ROOM),
+    ]) {
+      const key = normalizeRoomName(room);
+      if (!roomNamesByKey.has(key)) roomNamesByKey.set(key, room);
+    }
+    const orderedRooms = Array.from(roomNamesByKey.values());
 
     orderedRooms.forEach((room) => {
       const roomCards: string[] = [];
       stableDeviceIdRoomPairs.forEach(({ id, room: deviceRoom }) => {
-        if (deviceRoom === room) {
+        if (roomNamesMatch(deviceRoom, room)) {
           roomCards.push(id);
         }
       });
       safeCustomCards.forEach((card) => {
-        if (card.room === room || isAllRooms(card.room)) {
+        if (roomNamesMatch(card.room, room) || isAllRooms(card.room)) {
           roomCards.push(card.id);
         }
       });
@@ -124,11 +128,18 @@ export const useCardOrdering = (
     setCardOrders((prev) => {
       const next = buildOrders();
       const mergedOrders: Record<string, string[]> = {};
-      const allRooms = new Set([...Object.keys(prev), ...Object.keys(next)]);
+      const allRooms = new Map<string, string>();
+      for (const room of [...Object.keys(next), ...Object.keys(prev)]) {
+        const roomKey = normalizeRoomName(room);
+        if (!allRooms.has(roomKey)) allRooms.set(roomKey, room);
+      }
 
       allRooms.forEach((room) => {
-        const order = prev[room];
-        if (!Array.isArray(order)) {
+        const savedOrders = Object.entries(prev).filter(([name]) => roomNamesMatch(name, room));
+        const order = Array.from(
+          new Set(savedOrders.flatMap(([, ids]) => (Array.isArray(ids) ? ids : [])))
+        );
+        if (savedOrders.length === 0) {
           mergedOrders[room] = next[room] ?? [];
           return;
         }

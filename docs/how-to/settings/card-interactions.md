@@ -28,3 +28,12 @@ an unsafe one-tap path.
 
 This is an account preference when profile synchronization is available. It is separate from the
 device-setting groups used for kiosk mode, visual quality, and layout.
+
+## Limit browser zoom on this device
+
+In **Settings → Interaction → Browser zoom**, choose **Allow zoom** to keep the browser's normal
+zoom controls. If a text field causes unwanted zoom when you focus it, choose **Limit zoom** for
+this device. The browser may limit automatic zoom, but some browsers ignore the setting.
+
+Limiting browser zoom can also prevent pinch zoom, making small text harder to read. Turn the
+setting back to **Allow zoom** to restore the browser's normal zoom behavior.

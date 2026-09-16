@@ -272,6 +272,60 @@ function getCurrentFixtureState(fixture, device) {
   );
 }
 
+function homeyRawWrite(cliPath, apiPath, body) {
+  return runHomey(cliPath, [
+    'api', 'raw', '-X', 'PUT', '--path', apiPath, '--body', JSON.stringify(body),
+  ], { capture: true });
+}
+
+function installHomeyResources(cliPath, fixturesByNativeId) {
+  const flows = homeyApi(cliPath, 'flow', 'get-flows');
+  const labFlows = [];
+  for (const scene of ['evening', 'morning']) {
+    const name = `Navet Lab: ${scene === 'evening' ? 'Evening' : 'Morning'}`;
+    let flow = Object.values(flows).find((item) => item.name === name);
+    if (!flow) {
+      flow = homeyApi(cliPath, 'flow', 'create-flow', [
+        '--body', JSON.stringify({
+          name, enabled: true,
+          trigger: { id: 'homey:manager:flow:programmatic_trigger', args: {} },
+          conditions: [],
+          actions: [{ id: 'homey:app:com.navet.provider-lab:lab-scene', args: { scene } }],
+        }),
+      ]);
+      console.log(`Added Homey flow: ${name}`);
+    }
+    labFlows.push(flow);
+  }
+
+  const moods = homeyApi(cliPath, 'moods', 'get-moods');
+  const light = fixturesByNativeId.get('living-room-ceiling');
+  for (const [name, dim] of [['Navet Lab: Relax', 0.25], ['Navet Lab: Bright', 0.9]]) {
+    if (!Object.values(moods).some((item) => item.name === name)) {
+      homeyApi(cliPath, 'moods', 'create-mood', [
+        '--body', JSON.stringify({ name, devices: { [light.id]: { state: { onoff: true, dim } } } }),
+      ]);
+      console.log(`Added Homey mood: ${name}`);
+    }
+  }
+
+  const me = homeyApi(cliPath, 'users', 'get-user-me');
+  for (const [key, ids] of [
+    ['favoriteDevices', ['living-room-ceiling', 'living-room-color-lamp'].map((id) => fixturesByNativeId.get(id).id)],
+    ['favoriteFlows', labFlows.map((flow) => flow.id)],
+  ]) {
+    const current = Array.isArray(me.properties?.[key]) ? me.properties[key] : [];
+    const values = [...new Set([...current, ...ids])];
+    if (values.length !== current.length) {
+      homeyRawWrite(cliPath, `/api/manager/users/user/me/properties/${key}`, { value: values });
+      console.log(`Added Homey lab ${key}; existing favorites preserved.`);
+    }
+  }
+  const users = homeyApi(cliPath, 'users', 'get-users');
+  console.log(`Account-backed coverage: ${Object.keys(users).length} Homey user(s), current profile and selected Homey.`);
+  console.log('Test Present/Asleep on your own profile; invite a second test account for multi-person presence.');
+}
+
 async function installHomey(options) {
   const cliPath = await ensureHomeyCli();
   runHomey(cliPath, ['app', 'validate']);
@@ -284,6 +338,18 @@ async function installHomey(options) {
   if (!driverId) throw new Error('The installed Homey fixture driver was not found.');
 
   const zones = homeyApi(cliPath, 'zones', 'get-zones');
+  // Create missing demo zones so a fresh Homey has room browsing coverage.
+  for (const name of ['Living Room', 'Kitchen', 'Bedroom', 'Hallway', 'Office', 'Bathroom', 'Laundry', 'Garden']) {
+    if (!Object.values(zones).some((zone) => normalizeLabel(zone.name) === normalizeLabel(name))) {
+      const root = Object.values(zones).find((zone) => zone.parent === null);
+      if (!root) throw new Error('Homey has no root zone for the lab rooms.');
+      const zone = homeyApi(cliPath, 'zones', 'create-zone', [
+        '--body', JSON.stringify({ name, parent: root.id, icon: 'home' }),
+      ]);
+      zones[zone.id] = zone;
+      console.log(`Added Homey zone: ${name}`);
+    }
+  }
   const existingDevices = homeyApi(cliPath, 'devices', 'get-devices');
   const fixturesByNativeId = new Map(
     Object.values(existingDevices)
@@ -387,6 +453,7 @@ async function installHomey(options) {
     );
   }
   console.log(`Verified ${homeyFixtures.length} Homey fixture devices.`);
+  installHomeyResources(cliPath, fixturesByNativeId);
 }
 
 try {

@@ -3,6 +3,21 @@ import { describe, expect, it } from 'vitest';
 import { useAvailableRooms } from '../use-available-rooms';
 
 describe('useAvailableRooms', () => {
+  it('combines equal room names even when provider room IDs and casing differ', () => {
+    const { result } = renderHook(() =>
+      useAvailableRooms(
+        [
+          { canonicalId: 'homey:kitchen', name: 'Kitchen' },
+          { canonicalId: 'openhab:NavetKitchen', name: 'KITCHEN' },
+        ],
+        [{ canonicalId: 'home_assistant:kitchen', name: ' kitchen ' }]
+      )
+    );
+
+    expect(result.current.availableRooms).toEqual(['Kitchen']);
+    expect(result.current.areaRooms).toEqual(['Kitchen']);
+  });
+
   it('includes Home Assistant area rooms with no currently mapped devices', () => {
     const { result } = renderHook(() =>
       useAvailableRooms(

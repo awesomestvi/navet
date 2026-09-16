@@ -27,6 +27,9 @@ provider; the dashboard workflow itself is provider-neutral.
 2. Choose **Customize** or **Edit dashboard**.
 3. Confirm that the editing command bar appears.
 
+On screens 1100px wide or narrower, choose **More actions** for room management, presets, layout
+choices, and section controls. **Add Card**, **Undo**, **Redo**, and **Done** remain on the bar.
+
 ## Arrange cards
 
 While editing, you can:
@@ -46,7 +49,7 @@ phones.
 
 ![The current phone card-size sheet with footprint choices and the selected size identified.](/docs/how-to/dashboards/card-size-selector.webp)
 
-![Home edit mode showing the full layout, row, column, undo, redo, Add card, and Done command bar.](/docs/how-to/dashboards/customize-home-edit-mode.webp)
+![Home in edit mode with Undo, Redo, Add Card, and Done in the command bar.](/docs/how-to/dashboards/customize-home-edit-mode.webp)
 
 ## Use undo and redo
 

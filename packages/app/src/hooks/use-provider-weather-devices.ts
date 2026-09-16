@@ -11,7 +11,8 @@ import { useSettingsStore } from '@navet/app/stores/settings-store';
 import type { IntegrationProviderId } from '@navet/app/types/provider';
 import { UNKNOWN_ROOM_LABEL } from '@navet/app/utils/device-location';
 import { createProviderScopedId } from '@navet/app/utils/provider-ids';
-import { useCallback, useMemo } from 'react';
+import { areStringArraysEqual } from '@navet/app/utils/structural-equality';
+import { useCallback, useMemo, useRef } from 'react';
 import { useIntegrationStore } from './use-integration-store';
 import {
   useHydratingProviderCollection,
@@ -95,30 +96,38 @@ export function useProviderWeatherDevices(
   const weatherForecastMode = useSettingsStore(settingsSelectors.weatherForecastMode);
   const use24HourTime = useSettingsStore(settingsSelectors.use24HourTime);
 
-  const primaryWeatherEntityId = useMemo(() => {
-    if (!supportsWeather || !entities) {
-      return null;
-    }
-
-    return Object.keys(entities).find((entityId) => entityId.startsWith('weather.')) ?? null;
+  const nextWeatherEntityIds = useMemo(() => {
+    if (!supportsWeather || !entities) return [];
+    return Object.keys(entities)
+      .filter((entityId) => entityId.startsWith('weather.'))
+      .sort();
   }, [entities, supportsWeather]);
+  const weatherEntityIdsRef = useRef<string[]>([]);
+  if (!areStringArraysEqual(weatherEntityIdsRef.current, nextWeatherEntityIds)) {
+    weatherEntityIdsRef.current = nextWeatherEntityIds;
+  }
+  const weatherEntityIds = weatherEntityIdsRef.current;
 
   const entityRegistryMap = useMemo(
     () => new Map(entityRegistry.map((entry) => [entry.entityId, entry])),
     [entityRegistry]
   );
   const loadForecasts = useCallback(async (): Promise<WeatherForecastState> => {
-    if (!primaryWeatherEntityId) return EMPTY_WEATHER_FORECASTS;
-    const scopedEntityId = createProviderScopedId(resolvedProviderId, primaryWeatherEntityId);
-    const [daily, hourly] = await Promise.all([
-      integrationWeatherFeatureService.getForecast(scopedEntityId, 'daily'),
-      integrationWeatherFeatureService.getForecast(scopedEntityId, 'hourly'),
-    ]);
-    return { [primaryWeatherEntityId]: { daily, hourly } };
-  }, [resolvedProviderId, primaryWeatherEntityId]);
+    const entries = await Promise.all(
+      weatherEntityIds.map(async (entityId) => {
+        const scopedEntityId = createProviderScopedId(resolvedProviderId, entityId);
+        const [daily, hourly] = await Promise.all([
+          integrationWeatherFeatureService.getForecast(scopedEntityId, 'daily').catch(() => []),
+          integrationWeatherFeatureService.getForecast(scopedEntityId, 'hourly').catch(() => []),
+        ]);
+        return [entityId, { daily, hourly }] as const;
+      })
+    );
+    return Object.fromEntries(entries);
+  }, [resolvedProviderId, weatherEntityIds]);
   const deferredWeatherForecasts = useProviderCollectionData({
     providerId: resolvedProviderId,
-    enabled: supportsWeather && primaryWeatherEntityId !== null,
+    enabled: supportsWeather && weatherEntityIds.length > 0,
     interval: WEATHER_FORECAST_REFRESH_INTERVAL,
     empty: EMPTY_WEATHER_FORECASTS,
     load: loadForecasts,
@@ -126,44 +135,33 @@ export function useProviderWeatherDevices(
   });
 
   const resolvedDevices = useMemo(() => {
-    if (!entities || !primaryWeatherEntityId) {
-      return EMPTY_WEATHER_DEVICES;
-    }
-
-    const weatherEntity = entities[primaryWeatherEntityId];
-    if (!weatherEntity) {
-      return EMPTY_WEATHER_DEVICES;
-    }
-
-    const scopedEntityId = createProviderScopedId(resolvedProviderId, primaryWeatherEntityId);
-    return [
-      mapWeatherDevice(
+    if (!entities || weatherEntityIds.length === 0) return EMPTY_WEATHER_DEVICES;
+    return weatherEntityIds.map((entityId) => {
+      const weatherEntity = entities[entityId];
+      const scopedEntityId = createProviderScopedId(resolvedProviderId, entityId);
+      return mapWeatherDevice(
         scopedEntityId,
         weatherEntity,
-        resolveEntityName(
-          primaryWeatherEntityId,
-          weatherEntity,
-          entityRegistryMap.get(primaryWeatherEntityId)?.name
-        ),
+        resolveEntityName(entityId, weatherEntity, entityRegistryMap.get(entityId)?.name),
         resolveEntityRoom(scopedEntityId, weatherEntity, undefined),
         {
           sunEntity: entities[SUN_ENTITY_ID],
           config: null,
           weatherForecastMode,
-          storedForecasts: deferredWeatherForecasts[primaryWeatherEntityId],
+          storedForecasts: deferredWeatherForecasts[entityId],
           locale,
           t,
           use24HourTime,
         }
-      ),
-    ];
+      );
+    });
   }, [
     resolvedProviderId,
     deferredWeatherForecasts,
     entities,
     entityRegistryMap,
     locale,
-    primaryWeatherEntityId,
+    weatherEntityIds,
     t,
     use24HourTime,
     weatherForecastMode,

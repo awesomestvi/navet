@@ -1,11 +1,8 @@
 import type { PlatformRoom } from '@navet/app/platform/types';
 import type { DeviceCollection } from '@navet/app/types/device.types';
+import { normalizeRoomName } from '@navet/app/utils/room-name';
 import type { NavetEntity } from '@navet/core/types';
 import { getDeviceRoomLabel } from './device-location';
-
-function normalizeRoomName(name: string): string {
-  return name.trim().toLocaleLowerCase();
-}
 
 export function buildAggregatedRooms(devices: DeviceCollection): PlatformRoom[] {
   const roomMap = new Map<string, PlatformRoom>();

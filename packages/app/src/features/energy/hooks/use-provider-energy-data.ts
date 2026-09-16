@@ -9,6 +9,7 @@ import type {
   EnergySourceDiagnostic,
 } from '../types/energy.types';
 import { useHomeAssistantProviderEnergyData } from './use-home-assistant-provider-energy-data';
+import { useMeasuredDeviceEnergy } from './use-measured-device-energy';
 
 interface EnergyPeriodTotals {
   today: number;
@@ -71,13 +72,28 @@ const EMPTY_PROVIDER_ENERGY_DATA: UseProviderEnergyDataResult = {
 };
 
 export function useProviderEnergyData(range: EnergyRange): UseProviderEnergyDataResult {
-  const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
-  const isHomeAssistantProvider = currentProviderId === 'home_assistant';
+  const selectedProviderIds = useIntegrationStore(integrationSelectors.selectedProviderIds);
+  const isHomeAssistantProvider = selectedProviderIds.includes('home_assistant');
   const homeAssistantData = useHomeAssistantProviderEnergyData(range, isHomeAssistantProvider);
-
-  if (!isHomeAssistantProvider) {
-    return EMPTY_PROVIDER_ENERGY_DATA;
-  }
-
-  return homeAssistantData;
+  const measured = useMeasuredDeviceEnergy();
+  const base = isHomeAssistantProvider ? homeAssistantData : EMPTY_PROVIDER_ENERGY_DATA;
+  if (!measured.consumers.length) return base;
+  const consumers = [...base.overview.topConsumers, ...measured.consumers];
+  // Imported meters can include both household totals and individual loads.
+  // Keep whole-home totals tied to their configured source rather than summing overlapping meters.
+  const loadW = base.overview.totals.currentLoadW;
+  return {
+    ...base,
+    isConnected: base.isConnected || measured.isConnected,
+    isConfigured: true,
+    hasEnergyStatisticsLoaded: true,
+    overview: {
+      ...base.overview,
+      totals: { ...base.overview.totals, currentLoadW: loadW },
+      topConsumers: consumers.map((device) => ({
+        ...device,
+        shareOfLoad: loadW > 0 ? device.powerW / loadW : 0,
+      })),
+    },
+  };
 }

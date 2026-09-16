@@ -18,9 +18,9 @@ describe('temperature utilities', () => {
     expect(formatTemperature(21, 'celsius')).toBe('21°C');
   });
 
-  it('converts Celsius values to rounded Fahrenheit display values', () => {
+  it('converts Celsius values to Fahrenheit without dropping fractional degrees', () => {
     expect(formatTemperature(0, 'fahrenheit')).toBe('32°F');
-    expect(formatTemperature(21, 'fahrenheit')).toBe('70°F');
+    expect(formatTemperature(21, 'fahrenheit')).toBe('69.8°F');
   });
 
   it('converts Fahrenheit input back to Celsius for Home Assistant service calls', () => {
@@ -29,9 +29,12 @@ describe('temperature utilities', () => {
   });
 
   it('formats fractional values consistently', () => {
-    expect(formatTemperatureValue(21.4, 'celsius')).toBe('21');
-    expect(formatTemperatureValue(21.5, 'celsius')).toBe('22');
-    expect(formatTemperatureValue(20.5, 'fahrenheit')).toBe('69');
+    expect(formatTemperatureValue(21.4, 'celsius')).toBe('21.4');
+    expect(formatTemperatureValue(21.5, 'celsius')).toBe('21.5');
+    expect(formatTemperatureValue(20.5, 'fahrenheit')).toBe('68.9');
+    expect(formatTemperature(18.8, 'celsius')).toBe('18.8°C');
+    expect(formatTemperatureFromSourceUnit(19.5, 'celsius', 'celsius')).toBe('19.5°C');
+    expect(formatTemperatureValueFromSourceUnit(19.5, 'celsius', 'celsius')).toBe('19.5');
   });
 
   it('returns display unit symbols', () => {
@@ -56,15 +59,15 @@ describe('temperature utilities', () => {
   });
 
   it('converts Fahrenheit source values to Celsius display values', () => {
-    expect(formatTemperatureFromSourceUnit(72, 'fahrenheit', 'celsius')).toBe('22°C');
+    expect(formatTemperatureFromSourceUnit(72, 'fahrenheit', 'celsius')).toBe('22.2°C');
   });
 
   it('converts Celsius source values to Fahrenheit display values', () => {
-    expect(formatTemperatureFromSourceUnit(22, 'celsius', 'fahrenheit')).toBe('72°F');
+    expect(formatTemperatureFromSourceUnit(22, 'celsius', 'fahrenheit')).toBe('71.6°F');
   });
 
   it('keeps unknown source values on the existing Celsius-assuming path', () => {
-    expect(formatTemperatureFromSourceUnit(21, undefined, 'fahrenheit')).toBe('70°F');
+    expect(formatTemperatureFromSourceUnit(21, undefined, 'fahrenheit')).toBe('69.8°F');
   });
 
   it('converts display temperatures back to the Home Assistant source unit', () => {

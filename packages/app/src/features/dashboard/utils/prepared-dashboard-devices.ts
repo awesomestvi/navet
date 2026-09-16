@@ -9,6 +9,7 @@ export interface PreparedDashboardDevice {
   id: string;
   name: string;
   room: string;
+  entityTypeLabel: string;
   typeLabel: string;
   searchText: string;
 }
@@ -34,6 +35,7 @@ export function buildPreparedDashboardDevices(
       id: device.id,
       name,
       room,
+      entityTypeLabel: typeLabel,
       typeLabel: providerTypeLabel,
       searchText: `${name} ${room} ${providerTypeLabel} ${device.id}`.toLowerCase(),
     });

@@ -118,6 +118,25 @@ describe('RoomNav', () => {
     expect(screen.queryByRole('menu')).not.toBeInTheDocument();
   });
 
+  it('shows one active room with its display casing when group and hidden labels differ in case', async () => {
+    mockRoomLayout({ containerWidth: 800 });
+    renderWithProviders(
+      <RoomNav
+        rooms={['Kitchen', 'kitchen', 'Bedroom']}
+        roomGroups={[{ id: 'downstairs', name: 'Downstairs', rooms: ['KITCHEN'] }]}
+        hiddenRoomNames={['BEDROOM']}
+        activeRoom="kitchen"
+        onRoomChange={() => undefined}
+        isEditMode={false}
+        onToggleEditMode={() => undefined}
+      />
+    );
+
+    await waitFor(() => expect(screen.getAllByRole('button', { name: 'Kitchen' })).toHaveLength(1));
+    expect(screen.getByRole('button', { name: 'Kitchen' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.queryByRole('button', { name: 'Bedroom' })).not.toBeInTheDocument();
+  });
+
   it('keeps all rooms inline when there is enough width', async () => {
     mockRoomLayout({
       containerWidth: 600,
@@ -235,32 +254,37 @@ describe('RoomNav', () => {
     expect(screen.getByText('+2 rooms')).toBeInTheDocument();
   });
 
-  it('keeps the active room visible when it would otherwise overflow', async () => {
-    mockRoomLayout({
-      containerWidth: 320,
-      roomWidths: {
-        Home: 72,
-        'Living Room': 104,
-        Kitchen: 88,
-        Bedroom: 92,
-      },
-    });
+  it.each(['Bedroom', 'BEDROOM'])(
+    'keeps the active room %s visible when it would otherwise overflow',
+    async (activeRoom) => {
+      mockRoomLayout({
+        containerWidth: 320,
+        roomWidths: {
+          Home: 72,
+          'Living Room': 104,
+          Kitchen: 88,
+          Bedroom: 92,
+        },
+      });
 
-    renderWithProviders(
-      <RoomNav
-        rooms={['Living Room', 'Kitchen', 'Bedroom']}
-        activeRoom="Bedroom"
-        onRoomChange={() => undefined}
-        isEditMode={false}
-        onToggleEditMode={() => undefined}
-      />
-    );
+      renderWithProviders(
+        <RoomNav
+          rooms={['Living Room', 'Kitchen', 'Bedroom']}
+          activeRoom={activeRoom}
+          onRoomChange={() => undefined}
+          isEditMode={false}
+          onToggleEditMode={() => undefined}
+        />
+      );
 
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Rooms' })).toBeInTheDocument());
-    expect(screen.getByRole('button', { name: 'Bedroom' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Kitchen' })).not.toBeInTheDocument();
-    expect(screen.getByText('+2 rooms')).toBeInTheDocument();
-  });
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Rooms' })).toBeInTheDocument()
+      );
+      expect(screen.getByRole('button', { name: 'Bedroom' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Kitchen' })).not.toBeInTheDocument();
+      expect(screen.getByText('+2 rooms')).toBeInTheDocument();
+    }
+  );
 
   it('does not render a duplicate interactive tree just to measure room labels', async () => {
     mockRoomLayout({

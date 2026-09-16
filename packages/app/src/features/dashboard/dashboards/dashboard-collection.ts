@@ -1,6 +1,7 @@
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import { HOME_WIDGET_ROOM, isAllRooms } from '@navet/app/constants/rooms';
 import { ensureCanonicalEntityId } from '@navet/app/utils/provider-entity-id';
+import { normalizeRoomName } from '@navet/app/utils/room-name';
 import type { CustomCard } from '../stores/custom-cards-store';
 import type {
   HomeDashboardLayoutState,
@@ -114,10 +115,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
-}
-
-function normalizeRoomName(value: string) {
-  return value.trim().toLocaleLowerCase();
 }
 
 function sanitizeDashboardRoomNames(value: unknown): string[] | null {

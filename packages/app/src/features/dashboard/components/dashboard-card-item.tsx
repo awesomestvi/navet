@@ -283,7 +283,13 @@ export const DashboardCardItem = memo(function DashboardCardItem({
         )
       ) : null}
       {isLocked && !isEditMode ? <LockedCardBadge label={t('dashboard.edit.lockedCard')} /> : null}
-      {lockedCardContent}
+      {isEditMode ? (
+        <div inert className="pointer-events-none h-full w-full">
+          {renderedCard}
+        </div>
+      ) : (
+        lockedCardContent
+      )}
     </>
   );
 
@@ -724,7 +730,7 @@ function getAllowedSizes(
       return ['extra-small', 'small'];
     case 'climate':
     case 'hvac':
-      return ['small', 'medium'];
+      return ['small', 'medium', 'large'];
     case 'calendars':
       return ['small', 'medium', 'large'];
     case 'weather':

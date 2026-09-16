@@ -2,6 +2,7 @@ import homeAssistantLogo from '@navet/app/assets/providers/home-assistant.svg';
 import homeyLogo from '@navet/app/assets/providers/homey.svg';
 import openhabLogo from '@navet/app/assets/providers/openhab.svg';
 import { Badge, Button, Input, ModalSurface } from '@navet/app/components/primitives';
+import { getThemeSurfaceTokens, navetTypographyTokens } from '@navet/app/components/system/tokens';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,8 +20,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@navet/app/components/ui/dropdown-menu';
-import { useI18n } from '@navet/app/hooks';
-import { supportsAdditionalSmartHomeProviders } from '@navet/app/runtime/app-mode';
+import { cn } from '@navet/app/components/ui/utils';
+import { useI18n, useTheme } from '@navet/app/hooks';
+import {
+  supportsAdditionalSmartHomeProviders,
+  supportsDeviceAuthorization,
+} from '@navet/app/runtime/app-mode';
 import type { IntegrationProviderId } from '@navet/app/types/provider';
 import {
   ChevronDown,
@@ -28,7 +33,6 @@ import {
   ExternalLink,
   Home,
   Link2,
-  LocateFixed,
   LogOut,
   MoreHorizontal,
   RotateCcw,
@@ -51,6 +55,7 @@ type ProviderCardStatus =
   | 'connecting'
   | 'reconnecting'
   | 'signed-in'
+  | 'offline'
   | 'disconnected'
   | 'planned';
 
@@ -85,6 +90,8 @@ function getProviderStatusLabel(t: ReturnType<typeof useI18n>['t'], status: Prov
       return t('settings.system.providers.status.reconnecting');
     case 'signed-in':
       return t('settings.system.providers.status.signed-in');
+    case 'offline':
+      return t('settings.system.clients.status.offline');
     case 'disconnected':
       return t('settings.system.providers.status.disconnected');
     case 'planned':
@@ -171,20 +178,16 @@ function ProviderCardView({
   provider,
   styles,
   openConnectDialog,
-  showActiveControls,
-  setActiveProvider,
   handleConnectProvider,
-  handleDisconnectProvider,
+  onRequestDisconnect,
   t,
   configUrl,
 }: {
   provider: ProviderCard;
   styles: SettingsSectionController['styles'];
   openConnectDialog: (providerId: IntegrationProviderId) => void;
-  showActiveControls: boolean;
-  setActiveProvider: SettingsSectionController['setActiveProvider'];
   handleConnectProvider: SettingsSectionController['handleConnectProvider'];
-  handleDisconnectProvider: SettingsSectionController['handleDisconnectProvider'];
+  onRequestDisconnect: (providerId: IntegrationProviderId) => void;
   t: ReturnType<typeof useI18n>['t'];
   configUrl: string | null;
 }) {
@@ -193,15 +196,16 @@ function ProviderCardView({
   const displayUrl =
     provider.baseUrl ??
     (provider.id === 'home_assistant' && provider.isConnected ? configUrl : null);
-  const canMakeActive = showActiveControls && provider.isConnected && !provider.isActive;
   const canEditUrl = provider.id === 'home_assistant' && provider.isConnected;
-  const hasProviderMenu = Boolean(openUrl || canMakeActive || canEditUrl || provider.canDisconnect);
-  const hasNonDestructiveMenuAction = Boolean(openUrl || canMakeActive || canEditUrl);
+  const hasProviderMenu = Boolean(openUrl || canEditUrl || provider.canDisconnect);
+  const hasNonDestructiveMenuAction = Boolean(openUrl || canEditUrl);
   const canConnectHomey = provider.id === 'homey' && !provider.isConnected;
   const canConnectWithUrl = usesUrlConnect && !provider.isConnected;
 
   return (
-    <div className={`rounded-[22px] border p-4 ${styles.insetBorderColor} ${styles.insetBg}`}>
+    <div
+      className={`min-w-0 rounded-[22px] border p-4 ${styles.insetBorderColor} ${styles.insetBg}`}
+    >
       <div className="min-w-0">
         <div className="min-w-0">
           <div className="flex items-start gap-3">
@@ -212,16 +216,9 @@ function ProviderCardView({
                   {provider.label}
                 </p>
                 {provider.status === 'connected' ? (
-                  <>
-                    <Badge tone="success" size="small" className="text-[10px]">
-                      {t('settings.system.providers.status.connected')}
-                    </Badge>
-                    {showActiveControls && provider.isActive ? (
-                      <Badge tone="accent" size="small" className="text-[10px]">
-                        {t('settings.system.providers.active')}
-                      </Badge>
-                    ) : null}
-                  </>
+                  <Badge tone="success" size="small" className="text-[10px]">
+                    {t('settings.system.providers.status.connected')}
+                  </Badge>
                 ) : provider.status !== 'disconnected' ? (
                   <ProviderStatusBadge label={getProviderStatusLabel(t, provider.status)} />
                 ) : null}
@@ -232,7 +229,11 @@ function ProviderCardView({
               >
                 {displayUrl ?? t('settings.system.providers.notConnected')}
               </p>
-              {provider.error ? (
+              {provider.status === 'offline' ? (
+                <p className="mt-2 text-sm leading-relaxed text-amber-300">
+                  {t('settings.system.providers.homeyOffline')}
+                </p>
+              ) : provider.error ? (
                 <p className="mt-2 text-sm leading-relaxed text-red-400">{provider.error}</p>
               ) : null}
             </div>
@@ -259,12 +260,6 @@ function ProviderCardView({
                       </a>
                     </DropdownMenuItem>
                   ) : null}
-                  {canMakeActive ? (
-                    <DropdownMenuItem onSelect={() => setActiveProvider(provider.id)}>
-                      <LocateFixed className="h-4 w-4" />
-                      {t('settings.system.providers.makeActive')}
-                    </DropdownMenuItem>
-                  ) : null}
                   {canEditUrl ? (
                     <DropdownMenuItem onSelect={() => openConnectDialog(provider.id)}>
                       <Link2 className="h-4 w-4" />
@@ -276,7 +271,7 @@ function ProviderCardView({
                       {hasNonDestructiveMenuAction ? <DropdownMenuSeparator /> : null}
                       <DropdownMenuItem
                         variant="destructive"
-                        onSelect={() => void handleDisconnectProvider(provider.id)}
+                        onSelect={() => onRequestDisconnect(provider.id)}
                       >
                         <Unplug className="h-4 w-4" />
                         {t('settings.system.providers.disconnect')}
@@ -328,6 +323,8 @@ function ProviderCardView({
 
 export function SettingsSystemSection({ controller }: SettingsSystemSectionProps) {
   const { t } = useI18n();
+  const { theme } = useTheme();
+  const dialogSurface = getThemeSurfaceTokens(theme);
   const [providerUrls, setProviderUrls] = useState<Record<string, string>>({
     home_assistant: '',
     openhab: '',
@@ -340,6 +337,12 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
   });
   const [connectDialogProviderId, setConnectDialogProviderId] =
     useState<IntegrationProviderId | null>(null);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [disconnectProviderId, setDisconnectProviderId] = useState<IntegrationProviderId | null>(
+    null
+  );
+  const [isDisconnecting, setIsDisconnecting] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
   const [showProviderManagement, setShowProviderManagement] = useState(() =>
     controller.providerCards.every((provider) => !provider.isConnected)
   );
@@ -351,7 +354,6 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
     handleLogout,
     handleResetLocalSettings,
     providerCards: allProviderCards,
-    setActiveProvider,
     showLogoutConfirm,
     setShowLogoutConfirm,
     styles,
@@ -363,14 +365,19 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
       (showAdditionalProviders || provider.id === 'home_assistant')
   );
   const connectedProviders = providerCards.filter((provider) => provider.isConnected);
-  const showActiveControls = connectedProviders.length > 1;
+  const disconnectDialogProvider = connectedProviders.find(
+    (provider) => provider.id === disconnectProviderId
+  );
   const managedProviders = providerCards.filter((provider) => !provider.isConnected);
   const connectDialogProvider =
     connectDialogProviderId === null
       ? null
       : (providerCards.find((provider) => provider.id === connectDialogProviderId) ?? null);
-  const closeConnectDialog = () => setConnectDialogProviderId(null);
+  const closeConnectDialog = () => {
+    if (!isConnecting) setConnectDialogProviderId(null);
+  };
   const openConnectDialog = (providerId: IntegrationProviderId) => {
+    setConnectionError(null);
     const provider = providerCards.find((candidate) => candidate.id === providerId);
     if (provider) {
       setProviderUrls((current) => ({
@@ -399,13 +406,15 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
         title={t('settings.system.group.smartHome')}
         styles={styles}
       >
-        <SettingsItem
-          title={t('settings.system.authorizedDevices.title')}
-          description={t('settings.system.authorizedDevices.description')}
-          styles={styles}
-        >
-          <SettingsAuthorizedDevices styles={styles} />
-        </SettingsItem>
+        {supportsDeviceAuthorization() && (
+          <SettingsItem
+            title={t('settings.system.authorizedDevices.title')}
+            description={t('settings.system.authorizedDevices.description')}
+            styles={styles}
+          >
+            <SettingsAuthorizedDevices styles={styles} />
+          </SettingsItem>
+        )}
         <SettingsItem
           title={t('settings.system.providers.title')}
           description={t('settings.system.providers.description')}
@@ -420,10 +429,8 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
                     provider={provider}
                     styles={styles}
                     openConnectDialog={openConnectDialog}
-                    showActiveControls={showActiveControls}
-                    setActiveProvider={setActiveProvider}
                     handleConnectProvider={handleConnectProvider}
-                    handleDisconnectProvider={handleDisconnectProvider}
+                    onRequestDisconnect={setDisconnectProviderId}
                     t={t}
                     configUrl={config?.url ?? null}
                   />
@@ -449,10 +456,8 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
                     provider={provider}
                     styles={styles}
                     openConnectDialog={openConnectDialog}
-                    showActiveControls={showActiveControls}
-                    setActiveProvider={setActiveProvider}
                     handleConnectProvider={handleConnectProvider}
-                    handleDisconnectProvider={handleDisconnectProvider}
+                    onRequestDisconnect={setDisconnectProviderId}
                     t={t}
                     configUrl={config?.url ?? null}
                   />
@@ -479,27 +484,55 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
           bodyClassName="overflow-hidden rounded-[28px]"
         >
           <form
-            className="space-y-5 bg-[linear-gradient(180deg,rgba(10,16,26,0.96),rgba(6,10,18,0.98))] p-6"
-            onSubmit={(event) => {
+            className="space-y-5 p-5 sm:p-6"
+            aria-busy={isConnecting}
+            onSubmit={async (event) => {
               event.preventDefault();
-              void handleConnectProvider(
-                connectDialogProvider.id,
-                (providerUrls[connectDialogProvider.id] ?? '').trim(),
-                connectDialogProvider.id === 'openhab'
-                  ? (providerUsernames[connectDialogProvider.id] ?? '').trim()
-                  : undefined,
-                connectDialogProvider.id === 'openhab'
-                  ? (providerPasswords[connectDialogProvider.id] ?? '')
-                  : undefined
-              );
-              closeConnectDialog();
+              if (isConnecting) return;
+              setIsConnecting(true);
+              setConnectionError(null);
+              try {
+                const error = await handleConnectProvider(
+                  connectDialogProvider.id,
+                  (providerUrls[connectDialogProvider.id] ?? '').trim(),
+                  connectDialogProvider.id === 'openhab'
+                    ? (providerUsernames[connectDialogProvider.id] ?? '').trim()
+                    : undefined,
+                  connectDialogProvider.id === 'openhab'
+                    ? (providerPasswords[connectDialogProvider.id] ?? '')
+                    : undefined
+                );
+                if (error) {
+                  setConnectionError(error);
+                } else {
+                  setProviderPasswords((current) => ({
+                    ...current,
+                    [connectDialogProvider.id]: '',
+                  }));
+                  setConnectDialogProviderId(null);
+                }
+              } catch (error) {
+                setConnectionError(
+                  error instanceof Error
+                    ? error.message
+                    : t('settings.feedback.providerConnectFailed')
+                );
+              } finally {
+                setIsConnecting(false);
+              }
             }}
           >
             <div>
-              <p className="text-base font-semibold text-white">
+              <p className={cn(navetTypographyTokens.sectionHeading, dialogSurface.textPrimary)}>
                 {t('login.connectProviderTitle', { provider: connectDialogProvider.label })}
               </p>
-              <p className="mt-1 text-sm leading-relaxed text-white/65">
+              <p
+                className={cn(
+                  'mt-1 leading-relaxed',
+                  navetTypographyTokens.label,
+                  dialogSurface.textSecondary
+                )}
+              >
                 {connectDialogProvider.id === 'openhab'
                   ? t('settings.system.providers.credentialsHelp')
                   : t('settings.system.providers.urlHelp')}
@@ -508,12 +541,16 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
 
             <div className="space-y-3">
               <div className="space-y-1.5">
-                <label htmlFor="provider-connect-url" className="text-xs font-medium text-white/55">
+                <label
+                  htmlFor="provider-connect-url"
+                  className={cn('text-xs font-medium', dialogSurface.textSecondary)}
+                >
                   {t('settings.system.providers.url')}
                 </label>
                 <Input
                   id="provider-connect-url"
                   name="provider-url"
+                  disabled={isConnecting}
                   type="url"
                   autoComplete="off"
                   value={providerUrls[connectDialogProvider.id] ?? ''}
@@ -524,8 +561,8 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
                     }))
                   }
                   placeholder={getProviderUrlPlaceholder(connectDialogProvider, t)}
-                  leading={<Home className="h-4 w-4 text-white/45" />}
-                  inputClassName="text-white"
+                  leading={<Home className={cn('h-4 w-4', dialogSurface.textMuted)} />}
+                  inputClassName={dialogSurface.textPrimary}
                 />
               </div>
 
@@ -534,13 +571,14 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
                   <div className="space-y-1.5">
                     <label
                       htmlFor="provider-connect-username"
-                      className="text-xs font-medium text-white/55"
+                      className={cn('text-xs font-medium', dialogSurface.textSecondary)}
                     >
                       {t('settings.system.providers.username')}
                     </label>
                     <Input
                       id="provider-connect-username"
                       name="provider-username"
+                      disabled={isConnecting}
                       autoComplete="username"
                       spellCheck={false}
                       value={providerUsernames[connectDialogProvider.id] ?? ''}
@@ -551,19 +589,20 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
                         }))
                       }
                       placeholder={t('settings.system.providers.openhabUsernamePlaceholder')}
-                      inputClassName="text-white"
+                      inputClassName={dialogSurface.textPrimary}
                     />
                   </div>
                   <div className="space-y-1.5">
                     <label
                       htmlFor="provider-connect-password"
-                      className="text-xs font-medium text-white/55"
+                      className={cn('text-xs font-medium', dialogSurface.textSecondary)}
                     >
                       {t('settings.system.providers.password')}
                     </label>
                     <Input
                       id="provider-connect-password"
                       name="provider-password"
+                      disabled={isConnecting}
                       type="password"
                       autoComplete="current-password"
                       value={providerPasswords[connectDialogProvider.id] ?? ''}
@@ -574,12 +613,18 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
                         }))
                       }
                       placeholder={t('settings.system.providers.openhabPasswordPlaceholder')}
-                      inputClassName="text-white"
+                      inputClassName={dialogSurface.textPrimary}
                     />
                   </div>
                 </>
               ) : null}
             </div>
+
+            {connectionError ? (
+              <p role="alert" className="text-sm text-red-400">
+                {connectionError}
+              </p>
+            ) : null}
 
             <div className="flex items-center justify-end gap-2">
               <Button
@@ -588,22 +633,65 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
                 size="small"
                 className="rounded-full"
                 onClick={closeConnectDialog}
+                disabled={isConnecting}
               >
                 {t('common.cancel')}
               </Button>
               <Button
                 type="submit"
+                loading={isConnecting}
                 variant="secondary"
                 size="small"
                 leading={<Link2 className="h-4 w-4" />}
                 className="rounded-full"
               >
-                {t('settings.system.providers.connect')}
+                {isConnecting ? t('login.connecting') : t('settings.system.providers.connect')}
               </Button>
             </div>
           </form>
         </ModalSurface>
       ) : null}
+
+      <AlertDialog
+        open={Boolean(disconnectDialogProvider)}
+        onOpenChange={(open) => {
+          if (!open && !isDisconnecting) setDisconnectProviderId(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('settings.system.providers.disconnectTitle', {
+                provider: disconnectDialogProvider?.label ?? '',
+              })}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('settings.system.providers.disconnectDescription', {
+                provider: disconnectDialogProvider?.label ?? '',
+              })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDisconnecting}>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isDisconnecting || !disconnectDialogProvider}
+              onClick={async (event) => {
+                event.preventDefault();
+                if (isDisconnecting || !disconnectDialogProvider) return;
+                setIsDisconnecting(true);
+                try {
+                  await handleDisconnectProvider(disconnectDialogProvider.id);
+                  setDisconnectProviderId(null);
+                } finally {
+                  setIsDisconnecting(false);
+                }
+              }}
+            >
+              {t('settings.system.providers.disconnect')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <SettingsSectionGroup
         id="system-devices-sync"

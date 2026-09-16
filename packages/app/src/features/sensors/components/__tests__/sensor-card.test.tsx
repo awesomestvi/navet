@@ -15,6 +15,11 @@ describe('InfoCard', () => {
   beforeEach(() => {
     localStorage.clear();
     useSensorStatisticsHistoryMock.mockClear();
+    useSensorStatisticsHistoryMock.mockReturnValue({
+      points: [],
+      hasHistory: false,
+      canFetch: false,
+    });
   });
 
   it('shows a sparkline by default when the entity supports history', () => {

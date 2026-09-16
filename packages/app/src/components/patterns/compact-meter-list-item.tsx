@@ -3,7 +3,7 @@ import type { CSSProperties, ReactNode } from 'react';
 export interface CompactMeterListItemProps {
   label: string;
   value: string;
-  level: number;
+  level: number | null;
   color: string;
   subtleFill: string;
   textSecondary: string;
@@ -25,7 +25,7 @@ export function CompactMeterListItem({
   layout = 'compact',
   textSecondaryStyle,
 }: CompactMeterListItemProps) {
-  const clampedLevel = Math.max(0, Math.min(100, level));
+  const clampedLevel = level === null ? null : Math.max(0, Math.min(100, level));
   const isFluid = layout === 'fluid';
 
   return (
@@ -45,7 +45,7 @@ export function CompactMeterListItem({
           {label}
         </span>
       </div>
-      {!isCompact ? (
+      {!isCompact && clampedLevel !== null ? (
         <div
           className={
             isFluid

@@ -22,3 +22,9 @@ export function supportsAdditionalSmartHomeProviders(): boolean {
   const kind = getRuntimeContext().kind;
   return kind === 'standalone' || kind === 'dev';
 }
+
+export function supportsDeviceAuthorization(): boolean {
+  // Embedded Home Assistant surfaces use the host's authentication, not Navet sessions.
+  const kind = getRuntimeContext().kind;
+  return kind === 'standalone' || kind === 'dev';
+}

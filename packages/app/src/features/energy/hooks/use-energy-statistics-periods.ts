@@ -3,6 +3,7 @@ import {
   getIntegrationHistoryMessageClient,
   supportsIntegrationEnergyStatistics,
 } from '@navet/app/services/integration-history.service';
+import { parseProviderScopedId } from '@navet/app/utils/provider-ids';
 import { subscribeVisibilityAwareAsyncTask } from '@navet/app/utils/visibility-aware-scheduler';
 import { useEffect, useState } from 'react';
 import { getCachedEnergyStatistics } from '../services/energy-statistics-cache';
@@ -39,7 +40,12 @@ export function useEnergyStatisticsPeriods(
         const result = await getCachedEnergyStatistics(
           `periods-5minute-today:${statisticId}`,
           CACHE_TTL_MS,
-          () => getEnergyStatisticsPeriods(activeMessageClient, statisticId, unit)
+          () =>
+            getEnergyStatisticsPeriods(
+              activeMessageClient,
+              parseProviderScopedId(statisticId)?.nativeId ?? statisticId,
+              unit
+            )
         );
         setTotals(result);
       } catch (error) {

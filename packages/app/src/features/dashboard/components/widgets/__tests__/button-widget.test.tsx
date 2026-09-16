@@ -2,7 +2,7 @@ import { useThemeStore } from '@navet/app/stores/theme-store';
 import { buttonEntityFixtures } from '@navet/app/test/fixtures/home-assistant/entities/button';
 import { sceneEntityFixtures } from '@navet/app/test/fixtures/home-assistant/entities/scene';
 import { renderWithProviders } from '@navet/app/test/render';
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ButtonWidget } from '../button-widget';
 
@@ -44,6 +44,58 @@ describe('ButtonWidget', () => {
         serviceData: {},
       });
     });
+  });
+
+  it('cancels pressed feedback when the card unmounts before it expires', () => {
+    const view = renderWithProviders(
+      <ButtonWidget
+        size="medium"
+        data={{
+          label: 'Movie Mode',
+          service: 'scene.turn_on',
+          entityId: sceneEntityFixtures.normal.entity_id,
+        }}
+      />
+    );
+    vi.useFakeTimers();
+    try {
+      fireEvent.click(screen.getByRole('button', { name: 'Movie Mode' }));
+      expect(invokeIntegrationNativeActionMock).toHaveBeenCalledOnce();
+
+      view.unmount();
+
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('keeps pressed feedback until 400 ms after the latest tap', () => {
+    renderWithProviders(
+      <ButtonWidget
+        size="medium"
+        data={{
+          label: 'Movie Mode',
+          service: 'scene.turn_on',
+          entityId: sceneEntityFixtures.normal.entity_id,
+        }}
+      />
+    );
+    vi.useFakeTimers();
+    try {
+      const action = screen.getByRole('button', { name: 'Movie Mode' });
+      fireEvent.click(action);
+      act(() => vi.advanceTimersByTime(200));
+      fireEvent.click(action);
+      act(() => vi.advanceTimersByTime(200));
+
+      expect(action).toHaveStyle({ transform: 'scale(0.93)' });
+
+      act(() => vi.advanceTimersByTime(200));
+      expect(action).toHaveStyle({ transform: 'scale(1)' });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('passes through additional Home Assistant service data for button-style actions', async () => {

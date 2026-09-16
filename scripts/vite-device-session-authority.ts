@@ -11,6 +11,7 @@ import {
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import path from 'node:path';
 import type { ViteInstallationAuthority } from './vite-installation-authority.ts';
+import { getViteProviderCookieIds } from './vite-provider-session-store.ts';
 
 const REQUEST_TTL_MS = 5 * 60 * 1000;
 const SESSION_TTL_MS = 90 * 24 * 60 * 60 * 1000;
@@ -62,6 +63,7 @@ export interface ViteDeviceSessionAuthority {
   hasDependentDevices(providerId: ProviderId, cookieId: string): boolean;
   isDelegatedRequest(req: IncomingMessage, providerId: ProviderId): boolean;
   replaceProviderCookieId(providerId: ProviderId, previousId: string, nextId: string): void;
+  attachProviderCookieId(req: IncomingMessage, providerId: ProviderId, cookieId: string): void;
   revokeCurrentDevice(req: IncomingMessage, res?: ServerResponse): boolean;
   handle(req: IncomingMessage, res: ServerResponse): Promise<void>;
 }
@@ -165,17 +167,20 @@ export function createViteDeviceSessionAuthority(
   const cacheDirectory = options.cacheDirectory ?? path.resolve(process.cwd(), '.cache');
   const requestsDirectory = path.join(cacheDirectory, 'navet-device-requests');
   const sessionsDirectory = path.join(cacheDirectory, 'navet-device-sessions');
-  const providerRecords: Record<ProviderId, { cookieName: string; directory: string }> = {
+  const providerRecords: Record<
+    ProviderId,
+    { cookieNames: ReturnType<ViteInstallationAuthority['getCookieNames']>; directory: string }
+  > = {
     home_assistant: {
-      cookieName: installationAuthority.getCookieNames('navet_auth_session').currentName,
+      cookieNames: installationAuthority.getCookieNames('navet_auth_session'),
       directory: path.join(cacheDirectory, 'navet-auth-sessions'),
     },
     homey: {
-      cookieName: installationAuthority.getCookieNames('navet_homey_session').currentName,
+      cookieNames: installationAuthority.getCookieNames('navet_homey_session'),
       directory: path.join(cacheDirectory, 'navet-provider-sessions', 'homey'),
     },
     openhab: {
-      cookieName: installationAuthority.getCookieNames('navet_openhab_session').currentName,
+      cookieNames: installationAuthority.getCookieNames('navet_openhab_session'),
       directory: path.join(cacheDirectory, 'navet-provider-sessions', 'openhab'),
     },
   };
@@ -233,7 +238,7 @@ export function createViteDeviceSessionAuthority(
     const result: ProviderCookieIds = {};
     for (const providerId of Object.keys(providerRecords) as ProviderId[]) {
       const provider = providerRecords[providerId];
-      const id = cookieValue(req, provider.cookieName);
+      const id = cookieValue(req, provider.cookieNames.currentName);
       const record = SECRET_PATTERN.test(id)
         ? readJson<{ auth?: unknown; updatedAt?: number }>(path.join(provider.directory, `${id}.json`))
         : null;
@@ -273,7 +278,7 @@ export function createViteDeviceSessionAuthority(
   const hasOtherActivePrimaryProviderSession = (req: IncomingMessage) =>
     (Object.keys(providerRecords) as ProviderId[]).some((providerId) => {
       const provider = providerRecords[providerId];
-      const currentCookieId = cookieValue(req, provider.cookieName);
+      const currentCookieId = cookieValue(req, provider.cookieNames.currentName);
       let names: string[] = [];
       try {
         names = readdirSync(provider.directory);
@@ -400,6 +405,13 @@ export function createViteDeviceSessionAuthority(
     hasPresentedDeviceCookie(req) {
       return SECRET_PATTERN.test(cookieValue(req, deviceCookieName));
     },
+    attachProviderCookieId(req, providerId, cookieId) {
+      const context = getDeviceSession(req);
+      if (!context || !SECRET_PATTERN.test(cookieId)) return;
+      context.record.providerCookieIds[providerId] = cookieId;
+      context.record.updatedAt = Date.now();
+      writeJson(sessionPath(context.id), context.record);
+    },
     hasDependentDevices(providerId, cookieId) {
       let names: string[] = [];
       try { names = readdirSync(sessionsDirectory); } catch { return false; }
@@ -414,8 +426,8 @@ export function createViteDeviceSessionAuthority(
         );
       });
     },
-    isDelegatedRequest(req, _providerId) {
-      return authority.hasPresentedDeviceCookie(req);
+    isDelegatedRequest(req, providerId) {
+      return Boolean(authority.getProviderCookieId(req, providerId));
     },
     replaceProviderCookieId(providerId, previousId, nextId) {
       let names: string[] = [];
@@ -764,8 +776,22 @@ export function createViteDeviceSessionAuthority(
         const body = await readBody(req);
         const providerId = String(body.providerId ?? '') as ProviderId;
         const primaryIds = primaryProviderCookieIds(req);
-        if (!providerRecords[providerId] || !primaryIds[providerId]) {
-          sendJson(res, 403, { error: 'A signed-in primary provider session is required' });
+        const provider = providerRecords[providerId];
+        const primaryId = primaryIds[providerId];
+        if (!provider || !primaryId) {
+          sendJson(res, 403, { error: 'Use your primary device to disconnect this provider.' });
+          return;
+        }
+        const presentedIds = [
+          ...getViteProviderCookieIds(req, provider.cookieNames),
+          ...getViteProviderCookieIds(req, provider.cookieNames.legacyName),
+        ];
+        try {
+          for (const cookieId of new Set([primaryId, ...presentedIds])) {
+            rmSync(path.join(provider.directory, `${cookieId}.json`), { force: true });
+          }
+        } catch {
+          sendJson(res, 503, { error: 'Unable to clear the provider session.' });
           return;
         }
         let names: string[] = [];
@@ -779,6 +805,9 @@ export function createViteDeviceSessionAuthority(
             if (Object.keys(record.providerCookieIds).length === 0) record.revokedAt = Date.now();
             writeJson(sessionPath(record.id), record);
           }
+        }
+        if (authority.hasPresentedDeviceCookie(req) && !getDeviceSession(req)) {
+          authority.revokeCurrentDevice(req, res);
         }
         sendJson(res, 200, { invalidated: true });
         return;

@@ -83,15 +83,15 @@ export const PhoneCoverSheet: Story = {
     );
     await expect(header.className).not.toContain('safe-area-inset-top');
     await expect(header).not.toHaveClass('flex');
+    await expect(getComputedStyle(headerContent.getByText('Add Card')).fontSize).toBe('18px');
     await expect(headerContent.getByRole('button', { name: 'All cards' })).toHaveClass('text-xs');
     await expect(headerContent.getByText('All cards')).toHaveClass('font-normal');
     await expect(headerContent.getByRole('button', { name: 'Custom cards' })).toHaveClass(
       'text-xs'
     );
     await expect(headerContent.getByText('Custom cards')).toHaveClass('font-normal');
-    await expect(page.getByPlaceholderText('Search entities')).toHaveClass(
-      '!text-sm',
-      '!font-normal'
+    await expect(getComputedStyle(page.getByPlaceholderText('Search entities')).fontSize).toBe(
+      '14px'
     );
     await userEvent.click(page.getByRole('button', { name: 'Filter' }));
     await expect(page.getByRole('menuitemradio', { name: 'All cards' })).toBeInTheDocument();

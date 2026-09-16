@@ -1,9 +1,8 @@
-import { CardDialogTabList } from '@navet/app/components/patterns';
+import { CardDialogHeader, CardDialogTabList } from '@navet/app/components/patterns';
 import {
   BaseCardDialog,
   Button,
   coverSheetHeaderClassName,
-  IconButton,
   Input,
   InteractivePill,
 } from '@navet/app/components/primitives';
@@ -22,6 +21,7 @@ import { dashboardToPath, notifyNavigationPathChanged } from '@navet/app/navigat
 import { useEditModeStore, useNavigationStore } from '@navet/app/stores';
 import type { DeviceWithType } from '@navet/app/types/device.types';
 import { getDeviceRoomLabel } from '@navet/app/utils/device-location';
+import { roomNamesMatch } from '@navet/app/utils/room-name';
 import {
   ArrowLeft,
   ArrowRight,
@@ -31,7 +31,6 @@ import {
   Lightbulb,
   Plus,
   SquareDashed,
-  X,
 } from 'lucide-react';
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { useRoomWorkspaceStore } from '../rooms/room-workspace-store';
@@ -110,7 +109,7 @@ function DashboardCreateForm({ isOpen, onOpenChange, onCreated }: DashboardCreat
                 name: section.group.displayName,
                 rooms: section.rooms
                   .map((room) => room.displayName)
-                  .filter((room) => roomNames.includes(room)),
+                  .filter((room) => roomNames.some((name) => roomNamesMatch(name, room))),
               },
             ]
           : []
@@ -118,7 +117,10 @@ function DashboardCreateForm({ isOpen, onOpenChange, onCreated }: DashboardCreat
     [roomNames, roomWorkspace]
   );
   const selectedRoomDevices = useMemo(
-    () => allDevices.filter((device) => selectedRooms.includes(getDeviceRoomLabel(device) ?? '')),
+    () =>
+      allDevices.filter((device) =>
+        selectedRooms.some((room) => roomNamesMatch(room, getDeviceRoomLabel(device)))
+      ),
     [allDevices, selectedRooms]
   );
   const hasName = name.trim().length > 0;
@@ -269,30 +271,14 @@ function DashboardCreateForm({ isOpen, onOpenChange, onCreated }: DashboardCreat
         data-dashboard-create-workspace
       >
         <header className={cn(coverSheetHeaderClassName, 'border-b', surface.border)}>
-          <div className="flex min-w-0 items-start justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <h1 className={cn(navetTypographyTokens.pageHeading, surface.textPrimary)}>
-                {t('dashboard.multiple.create.title')}
-              </h1>
-              <p
-                className={cn('mt-1 max-w-2xl', navetTypographyTokens.body, surface.textSecondary)}
-              >
-                {t('dashboard.multiple.create.description')}
-              </p>
-            </div>
-            <IconButton
-              data-cover-sheet-inline-dismiss
-              variant="ghost"
-              label={t('common.close')}
-              icon={<X className={navetIconSizeTokens.sm} aria-hidden="true" />}
-              onClick={() => onOpenChange(false)}
-              className={cn(
-                'min-h-11 min-w-11 motion-reduce:transition-none',
-                surface.subtleBg,
-                surface.hoverBg
-              )}
-            />
-          </div>
+          <CardDialogHeader
+            title={t('dashboard.multiple.create.title')}
+            description={t('dashboard.multiple.create.description')}
+            theme={theme}
+            editableTitle={false}
+            showRoomSelector={false}
+            className="mb-0"
+          />
         </header>
 
         <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col">
@@ -387,12 +373,16 @@ function DashboardCreateForm({ isOpen, onOpenChange, onCreated }: DashboardCreat
                                   key={`group-${group.id}`}
                                   active={
                                     group.rooms.length > 0 &&
-                                    group.rooms.every((room) => selectedRooms.includes(room))
+                                    group.rooms.every((room) =>
+                                      selectedRooms.some((name) => roomNamesMatch(name, room))
+                                    )
                                   }
                                   accentColor={accentColor}
                                   aria-pressed={
                                     group.rooms.length > 0 &&
-                                    group.rooms.every((room) => selectedRooms.includes(room))
+                                    group.rooms.every((room) =>
+                                      selectedRooms.some((name) => roomNamesMatch(name, room))
+                                    )
                                   }
                                   size="compact"
                                   onClick={() => toggleRoomGroup(group.rooms)}
@@ -403,9 +393,11 @@ function DashboardCreateForm({ isOpen, onOpenChange, onCreated }: DashboardCreat
                               {roomNames.map((room) => (
                                 <InteractivePill
                                   key={room}
-                                  active={selectedRooms.includes(room)}
+                                  active={selectedRooms.some((name) => roomNamesMatch(name, room))}
                                   accentColor={accentColor}
-                                  aria-pressed={selectedRooms.includes(room)}
+                                  aria-pressed={selectedRooms.some((name) =>
+                                    roomNamesMatch(name, room)
+                                  )}
                                   size="compact"
                                   onClick={() => toggleRoom(room)}
                                 >

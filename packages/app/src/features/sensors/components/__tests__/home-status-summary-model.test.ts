@@ -16,6 +16,30 @@ function device(overrides: Partial<DeviceWithType> & Pick<DeviceWithType, 'id' |
 }
 
 describe('home status summary model', () => {
+  it('shows No Alerts for cleared sensors with old warning metadata in Home and room pills', () => {
+    const deviceMap = new Map(
+      Array.from({ length: 6 }, (_, index) => {
+        const sensor = device({
+          id: `binary_sensor.leak_${index}`,
+          type: 'sensors',
+          securityKind: 'waterLeak',
+          securitySeverity: 'warning',
+          status: 'clear',
+          value: 'Clear',
+          unit: '',
+        });
+        return [sensor.id, sensor] as const;
+      })
+    );
+    expect(buildHomeStatusSummaryItems(deviceMap).find(({ id }) => id === 'security')?.value).toBe(
+      'No Alerts'
+    );
+    expect(
+      buildRoomStatusSummaryItems(deviceMap, 'Living Room').find(({ id }) => id === 'security')
+        ?.value
+    ).toBe('No Alerts');
+  });
+
   it('summarizes sections in sidebar order', () => {
     const items = buildHomeStatusSummaryItems(
       new Map(

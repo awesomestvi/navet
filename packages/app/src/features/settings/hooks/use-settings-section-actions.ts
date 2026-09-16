@@ -152,9 +152,10 @@ export function useSettingsSectionActions({
 
       toast.success(t('settings.feedback.providerConnected'));
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : t('settings.feedback.providerConnectFailed')
-      );
+      const message =
+        error instanceof Error ? error.message : t('settings.feedback.providerConnectFailed');
+      toast.error(message);
+      return message;
     }
   };
 

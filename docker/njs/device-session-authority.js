@@ -86,6 +86,23 @@ function getCookie(r, name) {
   return '';
 }
 
+function getCookieIds(r, name) {
+  const values = [];
+  const entries = getHeader(r && r.headersIn, 'Cookie').split(';');
+  let index;
+  for (index = 0; index < entries.length; index += 1) {
+    const separator = entries[index].indexOf('=');
+    if (separator <= 0 || entries[index].slice(0, separator).trim() !== name) {
+      continue;
+    }
+    const id = entries[index].slice(separator + 1).trim();
+    if (SECRET_PATTERN.test(id) && values.indexOf(id) === -1) {
+      values.push(id);
+    }
+  }
+  return values;
+}
+
 function deviceClientIdentity(r) {
   const clientId = getHeader(r && r.headersIn, 'X-Navet-Device-Client-Id');
   let name = '';
@@ -427,8 +444,16 @@ function hasPresentedDeviceCookie(r) {
   return SECRET_PATTERN.test(getCookie(r, scopedCookieName(DEVICE_COOKIE_BASE_NAME)));
 }
 
+function attachProviderCookieId(r, providerId, cookieId) {
+  const context = getDeviceSession(r);
+  if (!context || !PROVIDERS[providerId] || !SECRET_PATTERN.test(cookieId)) return;
+  context.record.providerCookieIds[providerId] = cookieId;
+  context.record.updatedAt = Date.now();
+  writeJson(SESSIONS_DIRECTORY + '/' + context.id + '.json', context.record);
+}
+
 function isDelegatedRequest(r, providerId) {
-  return hasPresentedDeviceCookie(r);
+  return Boolean(getProviderCookieId(r, providerId));
 }
 
 function replaceProviderCookieId(providerId, previousId, nextId) {
@@ -810,9 +835,34 @@ function invalidateProviderDevices(r) {
   const body = requestBody(r);
   const providerId = String(body.providerId || '');
   const primaryIds = primaryProviderCookieIds(r);
-  if (!PROVIDERS[providerId] || !primaryIds[providerId]) {
-    sendJson(r, 403, { error: 'A signed-in primary provider session is required' });
+  const provider = PROVIDERS[providerId];
+  const primaryId = primaryIds[providerId];
+  if (!provider || !primaryId) {
+    sendJson(r, 403, { error: 'Use your primary device to disconnect this provider.' });
     return;
+  }
+  const cookieNames = installationCookieScope.createInstallationCookieNames(provider.cookieName, {
+    installationKey: readInstallationKey(),
+  });
+  const presentedIds = getCookieIds(r, cookieNames.currentName)
+    .concat(getCookieIds(r, cookieNames.legacyName));
+  const sessionIds = {};
+  sessionIds[primaryId] = true;
+  let presentedIndex;
+  for (presentedIndex = 0; presentedIndex < presentedIds.length; presentedIndex += 1) {
+    sessionIds[presentedIds[presentedIndex]] = true;
+  }
+  const ids = Object.keys(sessionIds);
+  let sessionIndex;
+  for (sessionIndex = 0; sessionIndex < ids.length; sessionIndex += 1) {
+    try {
+      fs.unlinkSync(provider.directory + '/' + ids[sessionIndex] + '.json');
+    } catch (error) {
+      if (!error || error.code !== 'ENOENT') {
+        sendJson(r, 503, { error: 'Unable to clear the provider session.' });
+        return;
+      }
+    }
   }
   let names = [];
   try { names = fs.readdirSync(SESSIONS_DIRECTORY); } catch (_error) { names = []; }
@@ -828,6 +878,9 @@ function invalidateProviderDevices(r) {
       }
       writeJson(sessionPath(record.id), record);
     }
+  }
+  if (hasPresentedDeviceCookie(r) && !getDeviceSession(r)) {
+    revokeCurrentDevice(r);
   }
   sendJson(r, 200, { invalidated: true });
 }
@@ -896,6 +949,7 @@ async function handle(r) {
 }
 
 export default {
+  attachProviderCookieId: attachProviderCookieId,
   getProviderCookieId: getProviderCookieId,
   hasPresentedDeviceCookie: hasPresentedDeviceCookie,
   hasDependentDevices: hasDependentDevices,

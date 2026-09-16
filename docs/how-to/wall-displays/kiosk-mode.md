@@ -23,7 +23,7 @@ The preset enables:
 - The Home summary bar.
 
 The preset applies to the current device. To reuse the same display behavior elsewhere, use
-**Settings → System → Connected devices → Device settings** to copy it once or link a group of
+**Settings → System → Device settings** to copy it once or link a group of
 screens.
 
 ## Use Navet in kiosk mode

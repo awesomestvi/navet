@@ -37,22 +37,25 @@ recovery actions without turning profiles into user accounts.
 
 1. Open **Household → Chores**.
 2. Choose **Add chore**.
-3. In **Chore name**, add the title and choose a suggested Lucide icon or paste another Lucide icon
-   name. Navet previews the icon before you continue. Add optional instructions, room, estimated
-   time, points, and a child-friendly title when needed.
-4. Leave **Card color** automatic to use the stable colour assigned from the chore ID, or choose a
-   custom colour. Overdue and completed state colours still take priority.
-5. In **Assignment**, choose who owns the work:
+3. In **The chore**, choose a template or add a title, choose a room, and select a suggested
+   Lucide icon or enter another icon name. Navet previews the icon. The **More options** section
+   below the main fields holds instructions, estimated time, points, and a child-friendly title.
+   Enter a chore name before continuing; Navet shows a message beside any field that needs fixing.
+4. Leave the colour swatch in the chore preview automatic to use the stable colour assigned from
+   the chore ID, or choose a custom colour. Overdue and completed state colours still take priority.
+5. Choose **Next** or **Who does it** in the sidebar, then choose who owns the work:
    - **One person** assigns every occurrence to the selected person.
    - **Anyone can do it** creates one shared occurrence.
    - **Everyone does it** creates one occurrence per person.
    - **Rotate between people** moves through the active participant list in order.
-6. In **Repeat**, choose once, daily, weekly, bi-weekly, tri-weekly, monthly, or after completion,
-   then set the due time and any date limits.
-7. In **More options**, configure missed-work behavior or reminders when needed.
+6. Choose **Next** or **When it repeats** in the sidebar, then choose how often the chore
+   returns and set **Start date** and **Due time**.
+   For weekly and every 2, 3, or 4 weeks, the start date sets the first due date and weekday.
+   For monthly chores, it sets the day of the month. Add date limits if needed.
+7. Use the **More options** section below the schedule for missed-work behavior or reminders
+   when needed. You can move between steps without losing your draft. On a small screen, the
+   steps appear across the top instead of in a sidebar.
 8. Choose **Add chore**.
-
-![The first Add a chore step with title, Lucide icon preview, automatic or custom card colour, and instructions.](/docs/how-to/everyday-control/household-add-chore.webp)
 
 Navet schedules dates in the chore's local time zone, including daylight-saving changes.
 

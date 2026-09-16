@@ -85,7 +85,7 @@ export function SettingsAuthorizedDevices({ styles }: { styles: SettingsSectionS
 
   const formatDeviceActivity = (device: AuthorizedDevice) => {
     const providers = device.providers.map(formatProvider).join(', ');
-    if (device.id === currentDeviceId) return `${providers} · ${t('sidebar.current')}`;
+    if (device.id === currentDeviceId) return providers;
 
     const relativeActivity = getRelativeActivity(device.lastActivityAt);
     if (relativeActivity.value === 0) {
@@ -452,6 +452,15 @@ export function SettingsAuthorizedDevices({ styles }: { styles: SettingsSectionS
                     <span
                       aria-hidden="true"
                       className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-[9px] border ${styles.borderColor} ${styles.softBg} ${styles.mutedColor}`}
+                      style={
+                        device.id === currentDeviceId
+                          ? {
+                              color: styles.accentColor,
+                              borderColor: `${styles.accentColor}40`,
+                              backgroundColor: `${styles.accentColor}1f`,
+                            }
+                          : undefined
+                      }
                     >
                       <Smartphone className="h-4 w-4" />
                     </span>
@@ -465,14 +474,26 @@ export function SettingsAuthorizedDevices({ styles }: { styles: SettingsSectionS
                           size="small"
                         />
                       ) : (
-                        <div className="flex flex-wrap items-center gap-1.5">
+                        <div className="flex min-w-0 flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-1.5">
                           <p className={`truncate text-sm font-medium ${styles.textColor}`}>
                             {device.name}
                           </p>
-                          {device.role === 'primary' ? (
-                            <Badge tone="neutral" size="small" className="text-[10px]">
-                              {t('settings.system.authorizedDevices.primary')}
-                            </Badge>
+                          {device.id === currentDeviceId || device.role === 'primary' ? (
+                            <div className="flex flex-wrap items-center gap-2 text-[11px] leading-4">
+                              {device.id === currentDeviceId ? (
+                                <span
+                                  className="shrink-0 font-medium"
+                                  style={{ color: styles.accentColor }}
+                                >
+                                  {t('settings.system.authorizedDevices.thisDevice')}
+                                </span>
+                              ) : null}
+                              {device.role === 'primary' ? (
+                                <span className={styles.subtleColor}>
+                                  {t('settings.system.authorizedDevices.primary')}
+                                </span>
+                              ) : null}
+                            </div>
                           ) : null}
                         </div>
                       )}
@@ -480,8 +501,7 @@ export function SettingsAuthorizedDevices({ styles }: { styles: SettingsSectionS
                         {formatDeviceActivity(device)}
                       </p>
                     </div>
-                    {access === 'primary' &&
-                    (device.id !== currentDeviceId || needsPrimarySelection) ? (
+                    {access === 'primary' ? (
                       editingId === device.id ? (
                         <Button
                           type="button"
@@ -515,17 +535,17 @@ export function SettingsAuthorizedDevices({ styles }: { styles: SettingsSectionS
                                 {t('settings.system.authorizedDevices.makePrimary')}
                               </DropdownMenuItem>
                             ) : null}
+                            <DropdownMenuItem
+                              onSelect={() => {
+                                setEditingId(device.id);
+                                setEditingName(device.name);
+                              }}
+                            >
+                              <Pencil className="h-4 w-4" />
+                              {t('settings.system.authorizedDevices.rename')}
+                            </DropdownMenuItem>
                             {device.id !== currentDeviceId ? (
                               <>
-                                <DropdownMenuItem
-                                  onSelect={() => {
-                                    setEditingId(device.id);
-                                    setEditingName(device.name);
-                                  }}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                  {t('settings.system.authorizedDevices.rename')}
-                                </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                   variant="destructive"

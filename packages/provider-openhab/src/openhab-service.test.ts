@@ -142,6 +142,25 @@ describe('openhab service', () => {
     );
   });
 
+  it('preserves units, semantic equipment, and timestamps from the REST snapshot', async () => {
+    const point = {
+      name: 'PowerReading',
+      type: 'Number:Power',
+      state: 'UNDEF',
+      unitSymbol: 'W',
+      lastStateUpdate: 1789426800000,
+      metadata: {
+        unit: { value: 'W' },
+        semantics: { config: { isPointOf: 'Socket', hasLocation: 'Kitchen' } },
+      },
+    };
+    globalThis.fetch = vi
+      .fn()
+      .mockResolvedValue(new Response(JSON.stringify([point]), { status: 200 })) as typeof fetch;
+    const snapshot = await createOpenHABSnapshotClient(proxiedSession).loadSnapshot?.();
+    expect(snapshot?.items.PowerReading).toMatchObject(point);
+  });
+
   it('surfaces openHAB auth failures distinctly', async () => {
     globalThis.fetch = vi
       .fn()

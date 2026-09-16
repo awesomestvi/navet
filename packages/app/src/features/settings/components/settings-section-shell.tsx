@@ -71,24 +71,22 @@ export function SettingsSectionShell({
           <span
             aria-hidden="true"
             className={cn(
-              'flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] border',
+              'flex h-12 w-12 shrink-0 items-center justify-center rounded-[18px] border',
               styles.borderColor,
               styles.iconBg,
               styles.mutedColor
             )}
           >
-            <Icon className={navetIconSizeTokens.sm} />
+            <Icon className={navetIconSizeTokens.lg} />
           </span>
           <div className="min-w-0 flex-1">
             <h2
               id={`${id}-settings-title`}
-              className={cn(navetTypographyTokens.sectionHeading, styles.textColor)}
+              className={cn(navetTypographyTokens.sectionHeading, 'leading-6', styles.textColor)}
             >
               {title}
             </h2>
-            <p
-              className={cn('mt-0.5 max-w-2xl text-sm leading-5 md:leading-6', styles.subtleColor)}
-            >
+            <p className={cn('max-w-2xl text-sm leading-5 md:leading-6', styles.subtleColor)}>
               {description}
             </p>
           </div>

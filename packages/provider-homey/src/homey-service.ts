@@ -1,6 +1,11 @@
 import { UnsupportedProviderCommandError } from '@navet/core/errors';
 import type { IntegrationServiceTarget } from '@navet/core/integration-service-target';
 import type { NavetCommand, NavetEntity } from '@navet/core/types';
+import {
+  getHomeyDeviceProfile,
+  translateHomeyCoverPosition,
+  translateHomeySpecializedCommand,
+} from './homey-device-profiles';
 import type { HomeySnapshot } from './homey-types';
 
 export interface HomeyCapabilityCommand {
@@ -14,6 +19,7 @@ export interface HomeyActionClient {
 }
 
 export interface HomeySnapshotClient extends HomeyActionClient {
+  request?<T>(path: string, init?: RequestInit): Promise<T>;
   loadSnapshot?(): Promise<HomeySnapshot>;
   subscribeSnapshot?(listener: HomeySnapshotListener): () => void;
 }
@@ -244,9 +250,22 @@ class HomeyService {
       throw new Error('Homey snapshot loading is not configured yet');
     }
 
-    const snapshot = await this.client.loadSnapshot();
-    this.replaceSnapshot(snapshot);
-    return snapshot;
+    try {
+      const snapshot = await this.client.loadSnapshot();
+      this.replaceSnapshot({
+        ...snapshot,
+        error: snapshot.error ?? null,
+        unreachable: snapshot.unreachable ?? false,
+      });
+      return snapshot;
+    } catch (error) {
+      this.replaceSnapshot({
+        connected: false,
+        error: error instanceof Error ? error.message : String(error),
+        unreachable: error instanceof Error && 'unreachable' in error && error.unreachable === true,
+      });
+      throw error;
+    }
   }
 
   getSnapshot(): HomeySnapshot {
@@ -255,11 +274,18 @@ class HomeyService {
 
   replaceSnapshot(snapshot: Partial<HomeySnapshot>) {
     this.snapshot = {
+      ...this.snapshot,
+      ...snapshot,
       connected: snapshot.connected ?? this.snapshot.connected,
       devices: snapshot.devices ?? this.snapshot.devices,
       zones: snapshot.zones ?? this.snapshot.zones,
     };
     this.emitSnapshot();
+  }
+
+  async request<T>(path: string, init?: RequestInit): Promise<T> {
+    if (!this.client?.request) throw new Error('Homey resource access is not configured');
+    return this.client.request<T>(path, init);
   }
 
   resetSnapshot() {
@@ -291,13 +317,101 @@ class HomeyService {
       throw new Error('Homey integration is not configured yet');
     }
 
+    if (domain === 'scene' && service === 'turn_on') {
+      for (const id of getTargetDeviceIds(target)) await this.runResource(id);
+      return;
+    }
+
+    if (domain === 'cover' || domain === 'lock') {
+      const ids = getTargetDeviceIds(target);
+      if (ids.length === 0) throw new Error('Homey actions require a target device id');
+      const action =
+        domain === 'lock'
+          ? service === 'lock' || service === 'unlock'
+            ? service
+            : null
+          : service === 'open_cover'
+            ? 'open'
+            : service === 'close_cover'
+              ? 'close'
+              : service === 'stop_cover'
+                ? 'stop'
+                : null;
+      const commands = ids.flatMap((id) => {
+        const device = this.snapshot.devices[id];
+        if (!device || getHomeyDeviceProfile(device)?.type !== domain)
+          throw new Error(`Homey actions require a ${domain} device`);
+        if (domain === 'cover' && service === 'set_cover_position') {
+          if (typeof serviceData.position !== 'number')
+            throw new Error('Invalid Homey cover position');
+          return translateHomeyCoverPosition(device, serviceData.position);
+        }
+        if (!action) throw new Error(`Homey does not support ${domain}.${service}`);
+        return translateHomeySpecializedCommand(device, { type: action, entityId: id });
+      });
+      await this.executeCapabilityCommands(commands);
+      return;
+    }
+
+    if (domain === 'climate' && service === 'set_temperature') {
+      if (serviceData.target_temp_low !== undefined || serviceData.target_temp_high !== undefined)
+        throw new Error('Homey thermostats support a single target temperature');
+      const ids = getTargetDeviceIds(target);
+      if (ids.length === 0) throw new Error('Homey temperature actions require a thermostat id');
+      for (const id of ids) {
+        const device = this.snapshot.devices[id];
+        if (!device || typeof serviceData.temperature !== 'number')
+          throw new Error('Homey temperature actions require a thermostat and numeric temperature');
+        await this.executeCapabilityCommands(
+          translateHomeySpecializedCommand(device, {
+            type: 'set_temperature',
+            entityId: id,
+            temperature: serviceData.temperature,
+          })
+        );
+      }
+      return;
+    }
+
     await this.executeCapabilityCommands(
       translateHomeyServiceAction(domain, service, serviceData, target)
     );
   }
 
   async executeCommand(entity: NavetEntity, command: NavetCommand): Promise<void> {
+    if (entity.type === 'scene' && (command.type === 'turn_on' || command.type === 'start')) {
+      await this.runResource(entity.externalId);
+      return;
+    }
+    const device = this.snapshot.devices[entity.externalId];
+    if (device && getHomeyDeviceProfile(device)) {
+      await this.executeCapabilityCommands(translateHomeySpecializedCommand(device, command));
+      return;
+    }
     await this.executeCapabilityCommands(translateHomeyCommand(entity, command));
+  }
+
+  async runResource(id: string): Promise<void> {
+    const [kind, ...parts] = id.split('/');
+    const resourceId = parts.join('/');
+    if (kind === 'mood' && this.snapshot.moods?.[resourceId]) {
+      await this.request(`/api/manager/moods/mood/${encodeURIComponent(resourceId)}/set`, {
+        method: 'POST',
+      });
+      return;
+    }
+    if (kind === 'flow' || kind === 'advancedflow') {
+      const flow = (kind === 'flow' ? this.snapshot.flows : this.snapshot.advancedFlows)?.[
+        resourceId
+      ];
+      if (!flow || flow.enabled === false || flow.triggerable !== true)
+        throw new Error('This flow cannot be started manually');
+      await this.request(`/api/manager/flow/${kind}/${encodeURIComponent(resourceId)}/trigger`, {
+        method: 'POST',
+      });
+      return;
+    }
+    throw new Error('This resource cannot be started');
   }
 
   private async executeCapabilityCommands(commands: HomeyCapabilityCommand[]): Promise<void> {

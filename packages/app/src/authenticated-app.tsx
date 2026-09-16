@@ -94,6 +94,7 @@ function AppContent() {
   const clearAppError = useErrorStore(appErrorSelectors.clearError);
   const { connected, connecting, reconnecting } = useCurrentIntegrationConnectionState();
   const providerHealth = useProviderHealth(provider.id);
+  const homeAssistantHealth = useProviderHealth('home_assistant');
   const setCurrentProviderId = useCurrentIntegrationStore(
     integrationSelectors.setCurrentProviderId
   );
@@ -424,7 +425,7 @@ function AppContent() {
       return;
     }
 
-    if (connected || connecting) {
+    if (homeAssistantHealth.connected || homeAssistantHealth.connecting) {
       return;
     }
 
@@ -436,7 +437,13 @@ function AppContent() {
     void bootstrapIntegrationSession(homeAssistantSession).catch(() => {
       failedConnectionAttemptKeys.current.home_assistant = attemptKey;
     });
-  }, [sessions.home_assistant, connected, connecting, appError, runtime]);
+  }, [
+    sessions.home_assistant,
+    homeAssistantHealth.connected,
+    homeAssistantHealth.connecting,
+    appError,
+    runtime,
+  ]);
 
   useEffect(() => {
     document.documentElement.dataset.navetRuntime = runtime;

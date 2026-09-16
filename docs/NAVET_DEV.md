@@ -122,7 +122,8 @@ volumes:
 
 Remove any environment variables for providers you are not testing. For Home Assistant, change
 `NAVET_HASS_URL` to an upstream reachable from the Navet container, or omit it and use first-run
-discovery and pairing. Each browser may then enter a LAN, VPN, Tailscale, or external address for
+discovery and sign-in. Without an explicit upstream, Navet uses the address entered in the login form
+for both authorization and token exchange. With an explicit upstream, browser addresses must reach
 that same Home Assistant installation. After authorization, Home Assistant API traffic, token
 renewal, and provider-managed HTTP camera resources use Navet's same-origin proxy. For Homey,
 register the exact callback URL described in the [Homey guide](/install/homey/). openHAB needs no
@@ -134,8 +135,7 @@ Start Navet Dev:
 docker compose up -d
 ```
 
-For a fresh unpinned installation, run `docker compose logs navet-dev`, open Navet, and enter the
-temporary setup code when prompted before connecting the first provider. Then open
+Open
 `http://localhost:8081` when Docker runs on this computer, or replace `localhost` with the Docker
 host's LAN, VPN, or public name from another device. Port `8081` lets this Dev container run
 alongside a stable Navet container using port `8080`. Navet stores provider sessions and dashboard

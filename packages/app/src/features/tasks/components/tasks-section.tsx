@@ -11,6 +11,7 @@ import {
   SummaryBarStack,
 } from '@navet/app/features/sensors/components/info-badge-strip';
 import { useI18n, useTheme } from '@navet/app/hooks';
+import { roomNamesMatch } from '@navet/app/utils/room-name';
 import { AlertTriangle, Bot, ClipboardList, Power, PowerOff, Sparkles } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useAutomationDashboardController } from '../hooks/use-automation-dashboard-controller';
@@ -62,7 +63,9 @@ export function TasksSection() {
   const { theme, accentColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const controller = useAutomationDashboardController();
-  const [routineView, setRoutineView] = useState<RoutineView>('automations');
+  const [chosenRoutineView, setRoutineView] = useState<RoutineView | null>(null);
+  const routineView =
+    chosenRoutineView ?? (controller.automations.length > 0 ? 'automations' : 'scripts');
   const [automationFilter, setAutomationFilter] = useState<AutomationVisibilityFilter>('all');
   const [automationRoomFilter, setAutomationRoomFilter] = useState<string>('all');
   const [automationSort, setAutomationSort] = useState<TableSortState<AutomationSortKey> | null>(
@@ -84,7 +87,9 @@ export function TasksSection() {
     const filteredByRoom =
       automationRoomFilter === 'all'
         ? filteredByState
-        : filteredByState.filter((automation) => automation.room === automationRoomFilter);
+        : filteredByState.filter((automation) =>
+            roomNamesMatch(automation.room, automationRoomFilter)
+          );
 
     return sortAutomationTasks(filteredByRoom, automationSort, locale);
   }, [

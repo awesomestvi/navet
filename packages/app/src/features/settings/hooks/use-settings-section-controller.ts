@@ -1,8 +1,10 @@
 import { useAuthBaseUrl, useOptionalAuthSession } from '@navet/app/auth/AuthProvider';
 import { invalidateAuthorizedProvider } from '@navet/app/auth/device-authorization';
+import type { AuthSession } from '@navet/app/auth/types';
 import { PRIMARY_COLOR_OPTIONS, THEME_OPTIONS } from '@navet/app/constants/theme-options';
 import { useDashboardEntitiesStore } from '@navet/app/features/dashboard';
 import { useI18n, useIntegrationStore, useProviderHealth, useTheme } from '@navet/app/hooks';
+import type { ProviderHealth } from '@navet/app/platform/types';
 import { getProviderFeatureMatrix } from '@navet/app/provider-runtime-registry';
 import { type EntityInteractionMode, type UserSettings, useSettingsStore } from '@navet/app/stores';
 import { useNavigationStore } from '@navet/app/stores/navigation-store';
@@ -20,6 +22,7 @@ type ProviderCardStatus =
   | 'connecting'
   | 'reconnecting'
   | 'signed-in'
+  | 'offline'
   | 'disconnected'
   | 'planned';
 
@@ -27,6 +30,26 @@ export function resolveProviderDisplayBaseUrl(
   session: { haBaseUrl?: string; hassUrl?: string } | null | undefined
 ) {
   return session?.haBaseUrl ?? session?.hassUrl ?? null;
+}
+
+export function resolveProviderCardStatus(
+  providerId: IntegrationProviderId,
+  health: ProviderHealth | undefined,
+  session: AuthSession | undefined
+): ProviderCardStatus {
+  if (health?.implementationStatus === 'planned') return 'planned';
+  if (health?.reconnecting) return 'reconnecting';
+  if (health?.connecting) return 'connecting';
+  if (health?.connected) return 'connected';
+  if (!session) return 'disconnected';
+  if (
+    providerId === 'homey' &&
+    (health?.unreachable ||
+      (session.providerId === 'homey' && session.selectedHomeyId && session.needsHomeySelection))
+  ) {
+    return 'offline';
+  }
+  return 'signed-in';
 }
 
 export function useSettingsSectionController() {
@@ -59,6 +82,7 @@ export function useSettingsSectionController() {
     reconnecting: boolean;
     implementationStatus: 'implemented' | 'planned';
     lastError: string | null;
+    unreachable?: boolean;
   }>;
   const {
     disableAnimations,
@@ -67,6 +91,7 @@ export function useSettingsSectionController() {
     headerCustomText,
     headerTitleMode,
     lowPowerMode,
+    preventBrowserZoom,
     language,
     keepDeviceAwake,
     temperatureUnit,
@@ -89,6 +114,7 @@ export function useSettingsSectionController() {
       effectsQuality: state.effectsQuality,
       effectsQualityUserOverride: state.effectsQualityUserOverride,
       lowPowerMode: state.lowPowerMode,
+      preventBrowserZoom: state.preventBrowserZoom,
       headerCustomText: state.headerCustomText,
       headerTitleMode: state.headerTitleMode,
       language: state.language,
@@ -169,18 +195,7 @@ export function useSettingsSectionController() {
       Object.values(INTEGRATION_PROVIDERS).map((provider) => {
         const health = providerHealth.find((entry) => entry.providerId === provider.id);
         const session = sessions[provider.id];
-        const status: ProviderCardStatus =
-          health?.implementationStatus === 'planned'
-            ? 'planned'
-            : health?.reconnecting
-              ? 'reconnecting'
-              : health?.connecting
-                ? 'connecting'
-                : health?.connected
-                  ? 'connected'
-                  : session
-                    ? 'signed-in'
-                    : 'disconnected';
+        const status = resolveProviderCardStatus(provider.id, health, session);
 
         return {
           id: provider.id,
@@ -192,7 +207,7 @@ export function useSettingsSectionController() {
           canConnect: provider.loginMode !== 'unavailable',
           canDisconnect: Boolean(session),
           baseUrl: resolveProviderDisplayBaseUrl(session),
-          error: health?.lastError ?? null,
+          error: session && status !== 'offline' ? (health?.lastError ?? null) : null,
           implementationStatus: health?.implementationStatus ?? 'planned',
           featureMatrix: getProviderFeatureMatrix(provider.id),
         };
@@ -244,6 +259,7 @@ export function useSettingsSectionController() {
     language,
     languageOptions,
     lowPowerMode,
+    preventBrowserZoom,
     manualTheme,
     primaryColor,
     providerCards,

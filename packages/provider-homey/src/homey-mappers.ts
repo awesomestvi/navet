@@ -1,5 +1,7 @@
 import { createProviderScopedId } from '@navet/core/ids';
 import type { NavetEntity, NavetProviderRoom } from '@navet/core/types';
+import { getHomeyDeviceProfile } from './homey-device-profiles';
+import { getHomeySensorName, getHomeySensorState } from './homey-sensor-state';
 import type { HomeyDevice, HomeySnapshot, HomeyZone } from './homey-types';
 
 const UNKNOWN_ROOM_LABEL = 'Unassigned';
@@ -62,6 +64,48 @@ function createHomeyState(device: HomeyDevice): Record<string, unknown> {
   };
 }
 
+const switchMeasurements = [
+  {
+    id: 'measure_power',
+    label: 'Power',
+    unit: 'W',
+    icon: 'zap',
+    scales: { kW: 1000, MW: 1_000_000 },
+  },
+  {
+    id: 'measure_voltage',
+    label: 'Voltage',
+    unit: 'V',
+    icon: 'gauge',
+    scales: { mV: 0.001, kV: 1000 },
+  },
+  {
+    id: 'measure_current',
+    label: 'Current',
+    unit: 'A',
+    icon: 'activity',
+    scales: { mA: 0.001, kA: 1000 },
+  },
+  {
+    id: 'meter_power',
+    label: 'Energy',
+    unit: 'kWh',
+    icon: 'activity',
+    scales: { Wh: 0.001, MWh: 1000 },
+  },
+] as const;
+
+function getHomeySwitchMetrics(device: HomeyDevice) {
+  return switchMeasurements.flatMap(({ id, label, unit, icon, scales }) => {
+    const capability = getCapabilityState(device, id);
+    if (typeof capability?.value !== 'number' || !Number.isFinite(capability.value)) return [];
+    const scale = (scales as Record<string, number>)[capability.units ?? ''] ?? 1;
+    return [
+      { label, value: capability.value * scale, unit, icon, category: 'measurement' as const },
+    ];
+  });
+}
+
 function inferHomeyCapabilities(device: HomeyDevice): NavetEntity['capabilities'] {
   const capabilities: NavetEntity['capabilities'] = [];
   const capabilityIds = new Set(device.capabilities ?? Object.keys(device.capabilitiesObj ?? {}));
@@ -75,8 +119,21 @@ function inferHomeyCapabilities(device: HomeyDevice): NavetEntity['capabilities'
   if (capabilityIds.has('light_temperature')) {
     capabilities.push('color_temperature');
   }
+  if (capabilityIds.has('locked') && device.capabilitiesObj?.locked?.setable === true) {
+    capabilities.push('lock');
+  }
+  if (
+    capabilityIds.has('windowcoverings_set') &&
+    device.capabilitiesObj?.windowcoverings_set?.setable === true
+  ) {
+    capabilities.push('position');
+  }
 
-  if (Array.from(capabilityIds).some((capabilityId) => capabilityId.startsWith('measure_'))) {
+  if (
+    Array.from(capabilityIds).some(
+      (capabilityId) => capabilityId.startsWith('measure_') || capabilityId.startsWith('meter_')
+    )
+  ) {
     capabilities.push('numeric_sensor');
   }
 
@@ -91,7 +148,27 @@ export function mapHomeySnapshotToNavetEntities(snapshot: HomeySnapshot): NavetE
     const capabilities = inferHomeyCapabilities(device);
     const baseState = createHomeyState(device);
 
-    if (device.class === 'light') {
+    const profile = getHomeyDeviceProfile(device);
+    if (profile) {
+      entities.push(
+        createNavetEntity(
+          device.id,
+          profile.type,
+          device.name,
+          room.name,
+          room.roomId,
+          [
+            ...capabilities,
+            ...(profile.type === 'climate'
+              ? (['temperature_setpoint'] as const)
+              : profile.type === 'media_player'
+                ? (['media_playback'] as const)
+                : []),
+          ],
+          { ...baseState, ...profile.state }
+        )
+      );
+    } else if (device.class === 'light') {
       entities.push(
         createNavetEntity(
           device.id,
@@ -103,10 +180,7 @@ export function mapHomeySnapshotToNavetEntities(snapshot: HomeySnapshot): NavetE
           baseState
         )
       );
-      continue;
-    }
-
-    if (device.class === 'fan') {
+    } else if (device.class === 'fan') {
       entities.push(
         createNavetEntity(
           device.id,
@@ -118,48 +192,97 @@ export function mapHomeySnapshotToNavetEntities(snapshot: HomeySnapshot): NavetE
           baseState
         )
       );
-      continue;
-    }
-
-    if (capabilities.includes('toggle')) {
+    } else if (capabilities.includes('toggle')) {
       entities.push(
-        createNavetEntity(
-          device.id,
-          'switch',
-          device.name,
-          room.name,
-          room.roomId,
-          capabilities,
-          baseState
-        )
+        createNavetEntity(device.id, 'switch', device.name, room.name, room.roomId, capabilities, {
+          ...baseState,
+          metrics: getHomeySwitchMetrics(device),
+        })
       );
     }
 
     for (const [capabilityId, capability] of Object.entries(device.capabilitiesObj ?? {})) {
-      if (!capabilityId.startsWith('measure_') && !capabilityId.startsWith('alarm_')) {
+      if (
+        !capabilityId.startsWith('measure_') &&
+        !capabilityId.startsWith('meter_') &&
+        !capabilityId.startsWith('alarm_')
+      ) {
         continue;
       }
 
       const nativeId = `${device.id}#${capabilityId}`;
+      const sensorState = getHomeySensorState(device, capabilityId, capability);
       entities.push(
         createNavetEntity(
           nativeId,
-          'sensor',
-          capability.title ?? capabilityId,
+          capabilityId.startsWith('alarm_') ? 'binary_sensor' : 'sensor',
+          getHomeySensorName(device, capabilityId, capability),
           room.name,
           room.roomId,
           ['numeric_sensor'],
-          {
-            value: capability.value,
-            unit: capability.units,
-            sourceDeviceId: device.id,
-            deviceClass: capabilityId.replace(/^(measure_|alarm_)/, ''),
-          }
+          sensorState
         )
       );
     }
   }
 
+  for (const [kind, flows] of [
+    ['flow', snapshot.flows],
+    ['advancedflow', snapshot.advancedFlows],
+  ] as const) {
+    for (const flow of Object.values(flows ?? {})) {
+      if (flow.triggerable !== true || flow.enabled === false) continue;
+      entities.push(
+        createNavetEntity(
+          `${kind}/${flow.id}`,
+          'scene',
+          flow.name,
+          UNKNOWN_ROOM_LABEL,
+          undefined,
+          [],
+          { value: null, available: true }
+        )
+      );
+    }
+  }
+  for (const mood of Object.values(snapshot.moods ?? {})) {
+    entities.push(
+      createNavetEntity(
+        `mood/${mood.id}`,
+        'scene',
+        mood.name,
+        snapshot.zones[mood.zone ?? '']?.name || UNKNOWN_ROOM_LABEL,
+        mood.zone ? createProviderScopedId('homey', mood.zone) : undefined,
+        [],
+        { value: null, available: true }
+      )
+    );
+  }
+  for (const user of Object.values({
+    ...(snapshot.users ?? {}),
+    ...(snapshot.me ? { [snapshot.me.id]: snapshot.me } : {}),
+  })) {
+    entities.push(
+      createNavetEntity(
+        `person/${user.id}`,
+        'person',
+        user.name || user.id,
+        UNKNOWN_ROOM_LABEL,
+        undefined,
+        ['presence'],
+        {
+          value:
+            user.present === null || user.present === undefined
+              ? 'unknown'
+              : user.present
+                ? 'home'
+                : 'away',
+          asleep: user.asleep,
+          location: user.present ? 'Home' : 'Away',
+        }
+      )
+    );
+  }
   return entities;
 }
 

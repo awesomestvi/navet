@@ -1,5 +1,6 @@
 import { AuthProvider, useAuthSession } from '@navet/app/auth/AuthProvider';
 import { EffectiveEffectsQualityProvider } from '@navet/app/components/shared/theme/effective-effects-quality';
+import { BrowserZoomPreference } from '@navet/app/components/system/browser-zoom-preference';
 import { useMediaQuery } from '@navet/app/hooks/use-media-query';
 import { useSettingsStore } from '@navet/app/stores';
 import { settingsSelectors } from '@navet/app/stores/selectors';
@@ -154,6 +155,7 @@ function AppGate() {
 export default function App() {
   return (
     <VisualQualityRoot>
+      <BrowserZoomPreference />
       <I18nProvider>
         <AuthProvider>
           <AppGate />

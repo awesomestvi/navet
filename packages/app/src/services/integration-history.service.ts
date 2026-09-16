@@ -55,6 +55,7 @@ export async function getIntegrationEntityHistory(
   }
 
   const nativeEntityId = readNativeEntityId(request.entityId);
+  if (service.supportsEntityHistory?.(nativeEntityId) === false) return null;
   const result = await service.getEntityHistory({ ...request, entityId: nativeEntityId });
   return { ...result, entityId: request.entityId };
 }
@@ -80,7 +81,10 @@ async function getProviderEntityHistories({
   for (const canonicalEntityId of canonicalEntityIds) {
     nativeToCanonical.set(readNativeEntityId(canonicalEntityId), canonicalEntityId);
   }
-  const nativeEntityIds = [...nativeToCanonical.keys()];
+  const nativeEntityIds = [...nativeToCanonical.keys()].filter(
+    (entityId) => service.supportsEntityHistory?.(entityId) !== false
+  );
+  if (nativeEntityIds.length === 0) return [];
 
   if (service.getEntityHistories) {
     const providerSeries = await service.getEntityHistories({

@@ -1,3 +1,4 @@
+import { normalizeRoomName } from '@navet/app/utils/room-name';
 import {
   getRoomWorkspaceRoomsInDisplayOrderV2,
   parseRoomWorkspaceV2,
@@ -7,10 +8,6 @@ import {
 export interface DashboardRoomPreferences {
   hiddenRoomNames: string[];
   rooms: string[];
-}
-
-function normalizeRoomName(name: string): string {
-  return name.trim().toLocaleLowerCase();
 }
 
 /**
@@ -31,13 +28,27 @@ export function resolveDashboardRoomPreferences({
 }): DashboardRoomPreferences {
   const parsedWorkspace = parseRoomWorkspaceV2(workspace);
   if (!parsedWorkspace) {
-    const availableRoomNames = new Set(availableRooms);
-    const preserved = roomOrder.filter((room) => availableRoomNames.has(room));
-    const preservedRoomNames = new Set(preserved);
+    const availableRoomNames = new Map(
+      availableRooms.map((room) => [normalizeRoomName(room), room])
+    );
+    const preserved = Array.from(
+      new Set(
+        roomOrder.flatMap((room) => {
+          const displayName = availableRoomNames.get(normalizeRoomName(room));
+          return displayName ? [displayName] : [];
+        })
+      )
+    );
+    const preservedRoomNames = new Set(preserved.map(normalizeRoomName));
 
     return {
-      rooms: [...preserved, ...availableRooms.filter((room) => !preservedRoomNames.has(room))],
-      hiddenRoomNames: [...hiddenRoomNames],
+      rooms: [
+        ...preserved,
+        ...availableRooms.filter((room) => !preservedRoomNames.has(normalizeRoomName(room))),
+      ],
+      hiddenRoomNames: hiddenRoomNames.map(
+        (room) => availableRoomNames.get(normalizeRoomName(room)) ?? room
+      ),
     };
   }
 

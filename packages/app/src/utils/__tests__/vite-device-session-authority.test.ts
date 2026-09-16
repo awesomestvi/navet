@@ -1,10 +1,15 @@
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { Readable } from 'node:stream';
 import { createViteDeviceSessionAuthority } from '@scripts/vite-device-session-authority.ts';
+import { createViteHomeySessionStore } from '@scripts/vite-homey-session-store.ts';
 import { createViteInstallationAuthority } from '@scripts/vite-installation-authority.ts';
+import {
+  createViteProviderRequestSession,
+  getViteProviderRequestSession,
+} from '@scripts/vite-provider-session-store.ts';
 import { describe, expect, it, vi } from 'vitest';
 
 function makeRequest(
@@ -50,6 +55,60 @@ function makeResponse() {
 }
 
 describe('Vite device session authority', () => {
+  it('binds a new Homey OAuth session to an already signed-in device', async () => {
+    const cacheDirectory = mkdtempSync(path.join(tmpdir(), 'navet-add-homey-'));
+    const installation = createViteInstallationAuthority({
+      cacheDirectory,
+      installationKey: 'a'.repeat(64),
+    });
+    const authority = createViteDeviceSessionAuthority(installation, { cacheDirectory });
+    const authDirectory = path.join(cacheDirectory, 'navet-auth-sessions');
+    mkdirSync(authDirectory, { recursive: true });
+    writeFileSync(
+      path.join(authDirectory, `${'b'.repeat(64)}.json`),
+      JSON.stringify({ auth: { accessToken: 'test' }, updatedAt: Date.now() })
+    );
+    const registered = makeResponse();
+    const haCookie = `${installation.getCookieNames('navet_auth_session').currentName}=${'b'.repeat(64)}`;
+    await authority.handle(
+      makeRequest('GET', '/sessions', undefined, haCookie),
+      registered.response
+    );
+    const deviceCookie = String(registered.headers.get('set-cookie')).split(';')[0];
+    const cookieNames = installation.getCookieNames('navet_homey_session');
+    const store = createViteHomeySessionStore({
+      cookieNames,
+      deviceSessionAuthority: authority,
+      sessionsDirectory: path.join(cacheDirectory, 'navet-provider-sessions', 'homey'),
+      legacySessionPath: path.join(cacheDirectory, 'unused-homey.json'),
+    });
+    const started = makeResponse();
+    const pending = createViteProviderRequestSession(
+      makeRequest('POST', '/authorize', {}, deviceCookie),
+      started.response,
+      cookieNames,
+      store
+    );
+    store.writeSession(pending.cookieId, {
+      ...pending.session,
+      pending: { state: 'c'.repeat(64), expiresAt: Date.now() + 60_000, returnTo: '/settings' },
+    });
+    const callback = makeRequest(
+      'GET',
+      '/callback',
+      undefined,
+      `${deviceCookie}; ${cookieNames.currentName}=${pending.cookieId}`
+    );
+    expect(
+      getViteProviderRequestSession(callback, cookieNames, store)?.session.pending?.state
+    ).toBe('c'.repeat(64));
+    expect(authority.getProviderCookieId(callback, 'home_assistant')).toBe('b'.repeat(64));
+    expect(authority.getProviderCookieId(callback, 'homey')).toBe(pending.cookieId);
+
+    authority.revokeCurrentDevice(callback);
+    authority.attachProviderCookieId(callback, 'homey', 'd'.repeat(64));
+    expect(getViteProviderRequestSession(callback, cookieNames, store)).toBeNull();
+  });
   it('offers device connection only when another active primary provider session exists', async () => {
     vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const cacheDirectory = mkdtempSync(path.join(tmpdir(), 'navet-device-availability-'));
@@ -301,6 +360,65 @@ describe('Vite device session authority', () => {
     expect(created.json()).toMatchObject({ code: expect.stringMatching(/^[a-f0-9-]{14}$/) });
   });
 
+  it('does not rebind a disconnected provider after Home Assistant signs in again', async () => {
+    const cacheDirectory = mkdtempSync(path.join(tmpdir(), 'navet-provider-disconnect-'));
+    const installation = createViteInstallationAuthority({
+      cacheDirectory,
+      installationKey: 'a'.repeat(64),
+    });
+    const authority = createViteDeviceSessionAuthority(installation, { cacheDirectory });
+    const haId = 'a'.repeat(64);
+    const openhabId = 'b'.repeat(64);
+    const haPath = path.join(cacheDirectory, 'navet-auth-sessions', `${haId}.json`);
+    const openhabPath = path.join(
+      cacheDirectory,
+      'navet-provider-sessions',
+      'openhab',
+      `${openhabId}.json`
+    );
+    mkdirSync(path.dirname(haPath), { recursive: true });
+    mkdirSync(path.dirname(openhabPath), { recursive: true });
+    writeFileSync(haPath, JSON.stringify({ auth: { accessToken: 'test' }, updatedAt: Date.now() }));
+    writeFileSync(
+      openhabPath,
+      JSON.stringify({ auth: { hassUrl: 'https://openhab.local' }, updatedAt: Date.now() })
+    );
+    const directCookies = [
+      `${installation.getCookieNames('navet_auth_session').currentName}=${haId}`,
+      `${installation.getCookieNames('navet_openhab_session').currentName}=${openhabId}`,
+    ].join('; ');
+    const registered = makeResponse();
+    await authority.handle(
+      makeRequest('GET', '/sessions', undefined, directCookies),
+      registered.response
+    );
+    const deviceCookie = String(registered.headers.get('set-cookie')).split(';')[0];
+
+    const disconnected = makeResponse();
+    await authority.handle(
+      makeRequest(
+        'DELETE',
+        '/providers',
+        { providerId: 'openhab' },
+        `${directCookies}; ${deviceCookie}`
+      ),
+      disconnected.response
+    );
+    expect(disconnected.response.statusCode).toBe(200);
+    expect(existsSync(openhabPath)).toBe(false);
+    expect(existsSync(haPath)).toBe(true);
+
+    const signedInAgain = makeResponse();
+    await authority.handle(
+      makeRequest('GET', '/sessions', undefined, directCookies),
+      signedInAgain.response
+    );
+    const newDeviceCookie = String(signedInAgain.headers.get('set-cookie')).split(';')[0];
+    const newDeviceRequest = makeRequest('GET', '/', undefined, newDeviceCookie);
+    expect(authority.getProviderCookieId(newDeviceRequest, 'home_assistant')).toBe(haId);
+    expect(authority.getProviderCookieId(newDeviceRequest, 'openhab')).toBe('');
+  });
+
   it('issues an independent revocable session and rejects replayed redemption', async () => {
     vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const cacheDirectory = mkdtempSync(path.join(tmpdir(), 'navet-devices-'));
@@ -403,6 +521,19 @@ describe('Vite device session authority', () => {
       ]),
     });
 
+    const unauthorizedRemoval = makeResponse();
+    await authority.handle(
+      makeRequest('DELETE', '/providers', { providerId: 'openhab' }, deviceCookie),
+      unauthorizedRemoval.response
+    );
+    expect(unauthorizedRemoval.response.statusCode).toBe(403);
+    expect(unauthorizedRemoval.json()).toEqual({
+      error: 'Use your primary device to disconnect this provider.',
+    });
+    expect(
+      authority.getProviderCookieId(makeRequest('GET', '/', undefined, deviceCookie), 'openhab')
+    ).toBe(providerCookieId);
+
     const promoted = makeResponse();
     await authority.handle(
       makeRequest(
@@ -462,7 +593,7 @@ describe('Vite device session authority', () => {
       `${primaryCookie}; ${primaryDeviceCookie}`
     );
     expect(authority.hasPresentedDeviceCookie(removedDeviceRequest)).toBe(true);
-    expect(authority.isDelegatedRequest(removedDeviceRequest, 'openhab')).toBe(true);
+    expect(authority.isDelegatedRequest(removedDeviceRequest, 'openhab')).toBe(false);
     expect(authority.getProviderCookieId(removedDeviceRequest, 'openhab')).toBe('');
 
     const replay = makeResponse();
@@ -481,6 +612,8 @@ describe('Vite device session authority', () => {
       invalidated.response
     );
     expect(invalidated.json()).toEqual({ invalidated: true });
+    expect(invalidated.headers.get('set-cookie')).toContain('Max-Age=0');
+    expect(existsSync(path.join(providerDirectory, `${providerCookieId}.json`))).toBe(false);
     expect(authority.hasDependentDevices('openhab', providerCookieId)).toBe(false);
     expect(
       authority.getProviderCookieId(makeRequest('GET', '/', undefined, deviceCookie), 'openhab')

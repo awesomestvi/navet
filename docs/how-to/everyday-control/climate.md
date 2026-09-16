@@ -16,6 +16,9 @@ heating or cooling, humidity, air quality, and unavailable-device counts when th
 Room control groups come next. Environmental sensor-only cards follow under **Humidity**, **Air
 Quality**, or **Pressure** instead of being mixed into the control grid.
 
+Available temperature, humidity, air quality, and pressure sensors appear automatically in Climate,
+including humidity readings exposed by thermostats. Sensors you hide stay hidden.
+
 ## Adjust a thermostat
 
 1. Open **Climate**.

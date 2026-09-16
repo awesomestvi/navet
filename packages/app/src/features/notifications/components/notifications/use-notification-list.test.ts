@@ -1,8 +1,82 @@
-import { describe, expect, it } from 'vitest';
-import { buildUpdateNotifications } from './use-notification-list';
+import { renderHookWithProviders } from '@navet/app/test/render';
+import { describe, expect, it, vi } from 'vitest';
+import {
+  buildPersistentNotifications,
+  buildUpdateNotifications,
+  useNotificationList,
+} from './use-notification-list';
 
 const t = (key: string, params?: Record<string, unknown>) =>
   params ? `${key}:${JSON.stringify(params)}` : key;
+
+describe('buildPersistentNotifications', () => {
+  it('keeps notifications without provider IDs stable when randomUUID is unavailable', () => {
+    vi.stubGlobal('crypto', { randomUUID: undefined });
+    try {
+      const missingId = {
+        title: 'Backup complete',
+        message: 'Your backup is ready.',
+        created_at: '2026-09-15T10:00:00.000Z',
+      };
+      const providerId = { notification_id: 'homey:notice', title: 'Door open' };
+      const first = buildPersistentNotifications([missingId, providerId], []);
+      const reordered = buildPersistentNotifications([providerId, missingId], [first[0].id]);
+
+      expect(first[0].id).toMatch(/^persistent_notification:missing_[a-z0-9]+_1$/);
+      expect(reordered[1].id).toBe(first[0].id);
+      expect(reordered[1].read).toBe(true);
+      expect(first[1].notificationId).toBe('homey:notice');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('gives identical notifications without IDs distinct local identities', () => {
+    const notification = { title: 'Backup complete', message: 'Your backup is ready.' };
+    const notifications = buildPersistentNotifications([notification, notification], []);
+
+    expect(notifications[0].id).not.toBe(notifications[1].id);
+  });
+
+  it('treats a malformed provider ID as missing', () => {
+    const notification = {
+      notification_id: 123 as unknown as string,
+      title: 'Backup complete',
+    };
+
+    expect(buildPersistentNotifications([notification], [])[0].id).toMatch(
+      /^persistent_notification:missing_/
+    );
+  });
+});
+
+describe('useNotificationList', () => {
+  it('renders a provider notification without an ID in an insecure browser context', () => {
+    vi.stubGlobal('crypto', { randomUUID: undefined });
+    try {
+      const { result } = renderHookWithProviders(() =>
+        useNotificationList({
+          entitiesHydrated: true,
+          persistentNotifications: [{ title: 'Backup complete', message: 'Your backup is ready.' }],
+          repairIssues: [],
+          updateCandidates: [],
+          readNotifications: [],
+          hiddenNotifications: [],
+          pendingUpdateInstalls: [],
+        })
+      );
+
+      expect(result.current).toEqual([
+        expect.objectContaining({
+          id: expect.stringMatching(/^persistent_notification:missing_/),
+          title: 'Backup complete',
+        }),
+      ]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+});
 
 describe('buildUpdateNotifications', () => {
   it('maps provider update candidates into provider-owned notifications', () => {

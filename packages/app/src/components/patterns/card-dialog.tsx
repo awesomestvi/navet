@@ -218,7 +218,7 @@ export const CardDialogHeader = memo(function CardDialogHeader({
           <Dialog.Title asChild>
             <div
               className={cn(
-                'text-lg font-semibold',
+                navetTypographyTokens.sectionHeading,
                 'min-w-0',
                 titleClassName,
                 isEditingTitle ? 'flex-1' : 'truncate'
@@ -291,7 +291,7 @@ export const CardDialogHeader = memo(function CardDialogHeader({
             <div
               className={cn(
                 '-mt-0.5 flex min-w-0 flex-wrap items-center gap-1.5',
-                'text-sm font-medium',
+                navetTypographyTokens.label,
                 descriptionClassName
               )}
               style={descriptionStyle}

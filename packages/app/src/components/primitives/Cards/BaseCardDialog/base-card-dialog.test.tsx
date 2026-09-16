@@ -58,6 +58,7 @@ describe('BaseCardDialog', () => {
       'max-sm:!bottom-0',
       'max-sm:!left-0',
       'max-sm:!h-[80dvh]',
+      'max-sm:[--navet-safe-area-top-offset:0px]',
       'max-sm:!rounded-t-[30px]',
       'max-sm:!rounded-b-none'
     );

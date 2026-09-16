@@ -559,14 +559,22 @@ export function useClimateCardController({
         : 'text-gray-300';
   const secondaryTextColor = surface.textSecondary;
 
-  const cardInteraction = useEntityCardInteractionController({
+  const canTogglePower =
+    supportedClimateModes === undefined || supportedClimateModes.includes('off');
+  const interaction = useEntityCardInteractionController({
     ariaLabel: `${name} ${t('climate.subtitle').toLowerCase()}`,
-    ariaPressed: isOn,
+    ariaPressed: canTogglePower ? isOn : undefined,
     isEditMode,
-    onToggle: togglePower,
+    onToggle: canTogglePower ? togglePower : undefined,
     onOpenControls: () => setIsSettingsOpen(true),
     onOpenSettings: () => setIsSettingsOpen(true),
   });
+  const cardInteraction = canTogglePower
+    ? interaction
+    : {
+        ...interaction,
+        iconButtonProps: interaction.settingsButtonProps,
+      };
   useEditModeSettingsRequest(id, () => setIsSettingsOpen(true), isEditMode);
 
   const lightOverlay =

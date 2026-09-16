@@ -9,7 +9,7 @@ runProviderPackageRegistrationTests({
       getSession: () => null,
     }),
   expectedStatus: 'implemented',
-  supportedFeatures: ['rooms', 'lighting', 'sensors'],
+  supportedFeatures: ['rooms', 'lighting', 'sensors', 'climate', 'mediaControls'],
   unsupportedFeatures: ['mediaBrowse', 'calendar', 'weather', 'notifications', 'conversation'],
   expectedRoomManagementCapabilities: {
     discover: true,

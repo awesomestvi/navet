@@ -7,16 +7,20 @@ editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/everyday-con
 Use the management views when the household plan changes. Daily completion stays in **Today** so
 setup and recovery controls do not compete with work that needs attention.
 
-![The Chore library with one-row filters and ChoreBaseCard rows showing room, schedule, points, assignee, Edit, and more actions.](/docs/how-to/everyday-control/household-chore-library.webp)
+![The Chore library with search, filters, assignments, schedules, and actions for each chore.](/docs/how-to/everyday-control/household-chore-library.webp)
 
 ## Edit, pause, or archive a chore
 
 1. Open **Household → Chores**.
 2. Search by name or filter by room, person, schedule, or status.
 3. Choose **Edit** on the chore card.
-4. Update its title, Lucide icon, card colour, instructions, room, time, points, assignment,
-   schedule, missed-work behavior, approval, or reminders.
-5. Choose **Save changes**.
+4. Use the sidebar steps **The chore**, **Who does it**, and **When it repeats** to update the
+   work, assignment, and schedule. On a small screen, the steps appear across the top. Choose
+   **Next** and **Back**, or select a step directly; your edits stay in place as you move between
+   them. The **More options** section below each step's main fields holds instructions, points,
+   approval, missed-work behavior, or reminders. The card colour can be changed in the chore
+   preview.
+5. On **When it repeats**, choose **Save changes**.
 
 The card colour is automatic unless someone overrides it. Automatic colours are stable from the
 chore ID and are not based on the selected dashboard accent. Overdue red and completed green remain

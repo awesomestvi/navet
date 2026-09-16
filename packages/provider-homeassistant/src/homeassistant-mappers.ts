@@ -1222,7 +1222,7 @@ function createHomeAssistantState(
       deviceClass,
       supportedFeatures: readNumberish(entity.attributes?.supported_features),
       hasPosition: position != null || tiltPosition != null,
-      size: 'medium',
+      size: 'small',
     };
   }
 

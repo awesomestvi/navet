@@ -1,5 +1,6 @@
-import { BaseCardDialog } from '@navet/app/components/primitives';
-import { getThemeSurfaceTokens, navetTypographyTokens } from '@navet/app/components/system/tokens';
+import { CardDialogHeader } from '@navet/app/components/patterns';
+import { BaseCardDialog, coverSheetHeaderClassName } from '@navet/app/components/primitives';
+import { getThemeSurfaceTokens } from '@navet/app/components/system/tokens';
 import { cn } from '@navet/app/components/ui/utils';
 import { useTheme } from '@navet/app/hooks';
 import type { FormEvent, ReactNode } from 'react';
@@ -54,13 +55,15 @@ export function RoomOperationDialogFrame({
         onSubmit={handleSubmit}
         className="flex min-h-0 flex-1 flex-col sm:max-h-[min(85dvh,46rem)]"
       >
-        <header className={cn('border-b px-5 py-5 max-sm:px-4 max-sm:py-4', surface.border)}>
-          <h2 className={cn(navetTypographyTokens.featureHeading, surface.textPrimary)}>{title}</h2>
-          {description ? (
-            <p className={cn('mt-1.5', navetTypographyTokens.body, surface.textSecondary)}>
-              {description}
-            </p>
-          ) : null}
+        <header className={cn(coverSheetHeaderClassName, 'border-b', surface.border)}>
+          <CardDialogHeader
+            title={title}
+            description={description}
+            theme={theme}
+            editableTitle={false}
+            showRoomSelector={false}
+            className="mb-0"
+          />
         </header>
 
         <div className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain px-5 py-5 [-webkit-overflow-scrolling:touch] max-sm:px-4 max-sm:py-4">

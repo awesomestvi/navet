@@ -118,11 +118,11 @@ describe('ClimateSettingsDialog', () => {
     expect(screen.queryByRole('button', { name: '18°' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '21°' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '24°' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '64°' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '70°' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '75°' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '64.4°' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '69.8°' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '75.2°' })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: '70°' }));
+    fireEvent.click(screen.getByRole('button', { name: '69.8°' }));
 
     expect(props.onTargetTempCommit).toHaveBeenCalledWith(expect.closeTo(69.8));
   });

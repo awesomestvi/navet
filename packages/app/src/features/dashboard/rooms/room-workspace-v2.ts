@@ -1,5 +1,6 @@
 import type { IntegrationProviderId } from '@navet/app/types/provider';
 import { isIntegrationProviderId } from '@navet/app/types/provider';
+import { normalizeRoomName } from '@navet/app/utils/room-name';
 import { parseProviderScopedId } from '@navet/core/ids';
 
 export const ROOM_WORKSPACE_VERSION = 2 as const;
@@ -830,14 +831,73 @@ export function migrateLegacyRoomWorkspaceV2({
   return normalizeWorkspaceOrders(workspace);
 }
 
+function mergeMatchingRoomNames(workspace: RoomWorkspaceV2): RoomWorkspaceV2 {
+  const protectedRoomIds = new Set(
+    workspace.reviewIssues
+      .filter((issue) => issue.code === 'legacy_all_collision')
+      .flatMap((issue) => (issue.placeholderRoomId ? [issue.placeholderRoomId] : []))
+  );
+  const rooms: RoomWorkspaceRoomV2[] = [];
+  const roomByName = new Map<string, number>();
+  const mergedRoomIds = new Map<RoomWorkspaceRoomId, RoomWorkspaceRoomId>();
+
+  for (const room of workspace.rooms) {
+    const key = normalizeRoomName(room.displayName);
+    const index = protectedRoomIds.has(room.id) ? undefined : roomByName.get(key);
+    if (index === undefined) {
+      rooms.push(room);
+      if (!protectedRoomIds.has(room.id)) roomByName.set(key, rooms.length - 1);
+      continue;
+    }
+    const target = rooms[index];
+    mergedRoomIds.set(room.id, target.id);
+    rooms[index] = {
+      ...target,
+      sourceRefs: [...target.sourceRefs, ...room.sourceRefs],
+      metadata: {
+        ...room.metadata,
+        ...target.metadata,
+        order: Math.min(target.metadata.order, room.metadata.order),
+        visibility:
+          target.metadata.visibility === 'hidden' || room.metadata.visibility === 'hidden'
+            ? 'hidden'
+            : 'visible',
+      },
+    };
+  }
+
+  const reviewIssues = workspace.reviewIssues.flatMap((issue) => {
+    const candidateRoomIds = Array.from(
+      new Set(issue.candidateRoomIds.map((id) => mergedRoomIds.get(id) ?? id))
+    );
+    const placeholderRoomId = issue.placeholderRoomId
+      ? (mergedRoomIds.get(issue.placeholderRoomId) ?? issue.placeholderRoomId)
+      : undefined;
+    if (
+      issue.code === 'ambiguous_legacy_name' &&
+      candidateRoomIds.length === 1 &&
+      candidateRoomIds[0] === placeholderRoomId
+    )
+      return [];
+    if (
+      issue.code === 'unmatched_legacy_name' &&
+      rooms.some((room) => room.id === placeholderRoomId && room.sourceRefs.length > 0)
+    )
+      return [];
+    return [{ ...issue, candidateRoomIds, ...(placeholderRoomId ? { placeholderRoomId } : {}) }];
+  });
+  return normalizeWorkspaceOrders({ ...workspace, rooms, reviewIssues });
+}
+
 export function reconcileRoomWorkspaceV2(
   value: unknown,
   discoveredRooms: readonly RoomWorkspaceDiscoveredRoom[],
   { idFactory = defaultIdFactory }: ReconcileRoomWorkspaceV2Options = {}
 ): RoomWorkspaceV2 {
-  const current = parseRoomWorkspaceV2(value) ?? createEmptyRoomWorkspaceV2();
+  const previous = parseRoomWorkspaceV2(value) ?? createEmptyRoomWorkspaceV2();
+  const current = mergeMatchingRoomNames(previous);
   const usedIds = new Set<string>([
-    ...current.rooms.map((room) => room.id),
+    ...previous.rooms.map((room) => room.id),
     ...current.groups.map((group) => group.id),
   ]);
   const roomBySourceCanonicalId = new Map<string, RoomWorkspaceRoomV2>();
@@ -854,12 +914,14 @@ export function reconcileRoomWorkspaceV2(
       const index = rooms.findIndex((room) => room.id === existingRoom.id);
       if (index >= 0) {
         rooms[index] = {
-          ...existingRoom,
+          ...rooms[index],
           displayName:
-            existingRoom.origin === 'provider' && existingRoom.metadata.nameMode !== 'custom'
+            existingRoom.origin === 'provider' &&
+            existingRoom.metadata.nameMode !== 'custom' &&
+            existingRoom.sourceRefs[0]?.canonicalId === discoveredRoom.sourceRef.canonicalId
               ? discoveredRoom.displayName
-              : existingRoom.displayName,
-          sourceRefs: existingRoom.sourceRefs.map((sourceRef) =>
+              : rooms[index].displayName,
+          sourceRefs: rooms[index].sourceRefs.map((sourceRef) =>
             sourceRef.canonicalId === discoveredRoom.sourceRef.canonicalId
               ? discoveredRoom.sourceRef
               : sourceRef
@@ -883,7 +945,7 @@ export function reconcileRoomWorkspaceV2(
     roomBySourceCanonicalId.set(discoveredRoom.sourceRef.canonicalId, room);
   }
 
-  return normalizeWorkspaceOrders({ ...current, rooms });
+  return mergeMatchingRoomNames({ ...current, rooms });
 }
 
 export function buildRoomWorkspaceIndexV2(value: unknown): RoomWorkspaceIndexV2 {

@@ -6,6 +6,7 @@ import {
 } from '@navet/app/hooks/use-dashboard-devices';
 import type { BaseDevice, DeviceCollection, SecurityKind } from '@navet/app/types/device.types';
 import { getDeviceRoomLabel } from '@navet/app/utils/device-location';
+import { roomNamesMatch } from '@navet/app/utils/room-name';
 import { useEffect, useMemo, useRef } from 'react';
 
 type HomeSecurityAlertDevices = Pick<
@@ -99,11 +100,21 @@ export function getRoomSecurityAlertCount(
 ) {
   const selectedDevices = selectHomeSecurityAlertDevices(devices, hiddenEntityIds);
   return getSecurityDashboardAlertCount({
-    cameras: selectedDevices.cameras.filter((device) => getDeviceRoomLabel(device) === room),
-    covers: selectedDevices.covers.filter((device) => getDeviceRoomLabel(device) === room),
-    helpers: selectedDevices.helpers.filter((device) => getDeviceRoomLabel(device) === room),
-    locks: selectedDevices.locks.filter((device) => getDeviceRoomLabel(device) === room),
-    sensors: selectedDevices.sensors.filter((device) => getDeviceRoomLabel(device) === room),
+    cameras: selectedDevices.cameras.filter((device) =>
+      roomNamesMatch(getDeviceRoomLabel(device), room)
+    ),
+    covers: selectedDevices.covers.filter((device) =>
+      roomNamesMatch(getDeviceRoomLabel(device), room)
+    ),
+    helpers: selectedDevices.helpers.filter((device) =>
+      roomNamesMatch(getDeviceRoomLabel(device), room)
+    ),
+    locks: selectedDevices.locks.filter((device) =>
+      roomNamesMatch(getDeviceRoomLabel(device), room)
+    ),
+    sensors: selectedDevices.sensors.filter((device) =>
+      roomNamesMatch(getDeviceRoomLabel(device), room)
+    ),
   });
 }
 

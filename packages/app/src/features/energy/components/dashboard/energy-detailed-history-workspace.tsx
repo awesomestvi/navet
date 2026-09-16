@@ -95,6 +95,7 @@ interface EnergyKpiPreference {
 interface EnergyKpiPreferences {
   version: 1;
   byProvider: Record<string, EnergyKpiPreference>;
+  shared?: EnergyKpiPreference;
 }
 
 const DEFAULT_ENERGY_KPI_PREFERENCES: EnergyKpiPreferences = {
@@ -545,7 +546,7 @@ export function EnergyDetailedHistoryWorkspace({
       : [...automaticProviderMetrics, ...rangeMetrics]
   ).slice(0, 4);
   const currentKpiPreference = normalizeEnergyKpiPreference(
-    kpiPreferences.byProvider[currentProviderId]
+    kpiPreferences.shared ?? kpiPreferences.byProvider[currentProviderId]
   );
   const usageMetrics =
     currentKpiPreference.mode === 'custom'
@@ -554,9 +555,9 @@ export function EnergyDetailedHistoryWorkspace({
   const updateKpiPreference = (nextPreference: EnergyKpiPreference) => {
     setKpiPreferences((current) => ({
       version: 1,
+      shared: nextPreference,
       byProvider: {
         ...(current?.version === 1 ? current.byProvider : {}),
-        [currentProviderId]: nextPreference,
       },
     }));
   };
@@ -1598,6 +1599,7 @@ function getEnergyBucketUnit(
 ): 'hour' | 'day' | 'month' | 'period' {
   if (!bucket) return 'period';
   const durationMs = bucket.endMs - bucket.startMs;
+  if (durationMs < 60 * 60 * 1000) return 'period';
   if (durationMs <= 2 * 60 * 60 * 1000) return 'hour';
   if (durationMs <= 2 * 24 * 60 * 60 * 1000) return 'day';
   return 'month';

@@ -2,6 +2,7 @@ import type {
   PlatformStatisticsHistoryPoint,
   PlatformStatisticsHistorySeries,
 } from '@navet/app/platform/provider-feature-models';
+import { groupByRoomName, normalizeRoomName } from '@navet/app/utils/room-name';
 import type {
   EnergyConsumer,
   EnergyHistoryBucket,
@@ -404,13 +405,19 @@ export function buildEnergyHistoryWorkspaceModel({
     .filter((item) => item.energyKWh > 0)
     .sort((left, right) => right.energyKWh - left.energyKWh);
   const trackedEnergyKWh = deviceBreakdown.reduce((total, item) => total + item.energyKWh, 0);
-  const roomMap = new Map<string, EnergyHistoryContribution[]>();
-  for (const device of deviceBreakdown) {
-    const room = device.room?.trim() || 'Unassigned';
-    roomMap.set(room, [...(roomMap.get(room) ?? []), device]);
+  const displayNamesByRoomKey = new Map<string, string>();
+  for (const consumer of consumers) {
+    const room = consumer.room?.trim() || 'Unassigned';
+    const key = normalizeRoomName(room);
+    if (!displayNamesByRoomKey.has(key)) displayNamesByRoomKey.set(key, room);
   }
-  const roomBreakdown: EnergyHistoryRoomBreakdown[] = [...roomMap.entries()]
-    .map(([name, devices]) => {
+  const roomBreakdown: EnergyHistoryRoomBreakdown[] = groupByRoomName(
+    deviceBreakdown,
+    (device) =>
+      displayNamesByRoomKey.get(normalizeRoomName(device.room?.trim() || 'Unassigned')) ??
+      'Unassigned'
+  )
+    .map(({ room: name, items: devices }) => {
       const roomEnergy = devices.reduce((total, device) => total + device.energyKWh, 0);
       return {
         id: name.toLowerCase().replace(/\s+/g, '-'),

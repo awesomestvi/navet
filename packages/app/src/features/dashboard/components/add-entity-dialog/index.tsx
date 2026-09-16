@@ -2,6 +2,7 @@ import { getDeviceTypeIcon } from '@navet/app/constants/device-type-icons';
 import { isAllRooms } from '@navet/app/constants/rooms';
 import { useI18n, useIntegrationStore } from '@navet/app/hooks';
 import { integrationSelectors } from '@navet/app/stores/selectors';
+import { roomNamesMatch } from '@navet/app/utils/room-name';
 import { useMemo } from 'react';
 import { buildPreparedDashboardDevices } from '../../utils/prepared-dashboard-devices';
 import type { DashboardLibraryCard } from '../dashboard-library-list';
@@ -32,13 +33,13 @@ export function AddEntityDialog({
         (device) =>
           (!visibleIds || visibleIds.has(device.id)) &&
           !addedIds.has(device.id) &&
-          (isAllRooms(currentRoom) || device.room === currentRoom)
+          (isAllRooms(currentRoom) || roomNamesMatch(device.room, currentRoom))
       )
       .sort(
         (left, right) =>
           left.room.localeCompare(right.room, locale) || left.name.localeCompare(right.name, locale)
       )
-      .map(({ device, id, name, room, typeLabel }) => ({
+      .map(({ device, id, name, room, typeLabel, entityTypeLabel }) => ({
         id,
         title: name,
         subtitle: room,
@@ -46,7 +47,7 @@ export function AddEntityDialog({
         meta: typeLabel,
         kind: 'device',
         entityType: device.type,
-        entityTypeLabel: typeLabel,
+        entityTypeLabel,
         idSearchText: id,
         icon: getDeviceTypeIcon(
           device.type,

@@ -40,6 +40,26 @@ describe('BatteryOverviewWidget', () => {
     expect(screen.queryByText('Widget')).not.toBeInTheDocument();
   });
 
+  it('uses supplied provider-neutral batteries in the list and selection dialog', async () => {
+    renderWithProviders(
+      <BatteryOverviewWidget
+        isEditMode
+        onUpdate={vi.fn()}
+        batteryRows={[
+          { id: 'homey:window', name: 'Window battery', level: 15 },
+          { id: 'openhab:remote', name: 'Remote battery', level: null, status: 'low' },
+        ]}
+      />
+    );
+    expect(screen.getByText('15%')).toBeInTheDocument();
+    expect(screen.getByText('Low battery')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /settings/i }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText('Window battery')).toBeInTheDocument();
+    expect(within(dialog).getByText('Remote battery')).toBeInTheDocument();
+    expect(within(dialog).getByText('Low battery')).toBeInTheDocument();
+  });
+
   it('opens settings from the no-batteries empty state action', async () => {
     renderWithProviders(<BatteryOverviewWidget onUpdate={vi.fn()} />);
 

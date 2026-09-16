@@ -14,6 +14,7 @@ import { useChoreWorkspaceSync } from '@navet/app/features/chores/use-chore-work
 import { getClimateDashboardGroup } from '@navet/app/features/climate/utils/climate-dashboard-group';
 import { useRoomWorkspaceStore } from '@navet/app/features/dashboard/rooms/room-workspace-store';
 import { getRoomWorkspaceSectionsV2 } from '@navet/app/features/dashboard/rooms/room-workspace-v2';
+import { buildLightSceneShortcuts } from '@navet/app/features/lighting/dashboard/light-dashboard-model';
 import { buildRoomStatusSummaryItems } from '@navet/app/features/sensors/components/home-status-summary-model';
 import {
   SummaryBar,
@@ -24,6 +25,7 @@ import { useI18n, useIntegrationStore, usePersistedState } from '@navet/app/hook
 import { useNavigationStore, useSettingsStore } from '@navet/app/stores';
 import { integrationSelectors, settingsSelectors } from '@navet/app/stores/selectors';
 import { getDeviceRoomLabel } from '@navet/app/utils/device-location';
+import { normalizeRoomName, roomNamesMatch } from '@navet/app/utils/room-name';
 import { getChoreTiming } from '@navet/core/chores';
 import { Lightbulb, Thermometer } from 'lucide-react';
 import {
@@ -103,7 +105,7 @@ export function shouldSubscribeTaskRoutines(
 }
 
 function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const manageableRoomsByProviderId = useIntegrationStore(
     integrationSelectors.manageableRoomsByProviderId
   );
@@ -161,7 +163,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
   }, [activeSection, isEditMode]);
   useChoreWorkspaceSync(choresEnabled && activeSection === 'home' && !isAllRooms(activeRoom));
   const activeRoomWorkspace = useMemo(
-    () => roomWorkspace?.rooms.find((room) => room.displayName === activeRoom),
+    () => roomWorkspace?.rooms.find((room) => roomNamesMatch(room.displayName, activeRoom)),
     [activeRoom, roomWorkspace]
   );
   const roomChoreNow = useMemo(() => new Date(), [activeRoom, choreWorkspace]);
@@ -201,15 +203,18 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
   );
   const dashboardVisibleEntityIds = useMemo(() => Array.from(deviceMap.keys()), [deviceMap]);
   const roomNavigationGroups = useMemo<RoomNavigationGroup[]>(() => {
-    const availableRoomNames = new Set(dashboardRooms);
+    const availableRoomNames = new Map(
+      dashboardRooms.map((room) => [normalizeRoomName(room), room])
+    );
 
     return getRoomWorkspaceSectionsV2(roomWorkspace).flatMap((section) => {
       if (!section.group) {
         return [];
       }
-      const groupedRoomNames = section.rooms
-        .map((room) => room.displayName)
-        .filter((roomName) => availableRoomNames.has(roomName));
+      const groupedRoomNames = section.rooms.flatMap((room) => {
+        const name = availableRoomNames.get(normalizeRoomName(room.displayName));
+        return name ? [name] : [];
+      });
 
       return groupedRoomNames.length > 0
         ? [
@@ -245,8 +250,8 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
     routines.automations.filter(isActiveRoutine).length +
     routines.quickActions.filter(isActiveRoutine).length;
   const lightScenes = useMemo(
-    () => routines.quickActions.filter((routine) => routine.type === 'scene'),
-    [routines.quickActions]
+    () => buildLightSceneShortcuts(deviceMap.values(), locale),
+    [deviceMap, locale]
   );
   const roomClimateEntityIds = useMemo(() => {
     if (isAllRooms(activeRoom)) {
@@ -257,7 +262,8 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
       Array.from(deviceMap.values())
         .filter(
           (device) =>
-            getDeviceRoomLabel(device) === activeRoom && getClimateDashboardGroup(device) !== null
+            roomNamesMatch(getDeviceRoomLabel(device), activeRoom) &&
+            getClimateDashboardGroup(device) !== null
         )
         .map((device) => device.id)
     );
@@ -269,10 +275,10 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
 
     const routineCount =
       routines.automations.filter(
-        (routine) => routine.room === activeRoom && isActiveRoutine(routine)
+        (routine) => roomNamesMatch(routine.room, activeRoom) && isActiveRoutine(routine)
       ).length +
       routines.quickActions.filter(
-        (routine) => routine.room === activeRoom && isActiveRoutine(routine)
+        (routine) => roomNamesMatch(routine.room, activeRoom) && isActiveRoutine(routine)
       ).length;
 
     return buildRoomStatusSummaryItems(

@@ -1,3 +1,4 @@
+import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import { renderWithProviders } from '@navet/app/test/render';
 import type { DeviceWithType } from '@navet/app/types/device.types';
 import { fireEvent, screen } from '@testing-library/react';
@@ -8,10 +9,21 @@ import { ClimateDashboard } from './climate-dashboard';
 const scrollIntoViewMock = vi.fn();
 
 vi.mock('@navet/app/features/dashboard/device-grid', () => ({
-  DeviceGrid: ({ orderedCardIds }: { orderedCardIds: string[] }) => (
+  DeviceGrid: ({
+    orderedCardIds,
+    deviceMap,
+  }: {
+    orderedCardIds: string[];
+    deviceMap: Map<string, DeviceWithType>;
+  }) => (
     <div data-testid="device-grid">
       {orderedCardIds.map((id) => (
-        <button key={id} id={`dashboard-entity-${encodeURIComponent(id)}`} type="button">
+        <button
+          key={id}
+          id={`dashboard-entity-${encodeURIComponent(id)}`}
+          type="button"
+          title={deviceMap.get(id)?.name}
+        >
           {id}
         </button>
       ))}
@@ -104,6 +116,50 @@ describe('ClimateDashboard', () => {
     });
   });
 
+  it('retains the saved weather source without showing a source selector', () => {
+    const weather: Extract<DeviceWithType, { type: 'weather' }> = {
+      id: 'home_assistant:weather.forecast_home',
+      name: 'Forecast Home',
+      type: 'weather',
+      room: 'Outside',
+      size: 'large',
+      temperature: 15.6,
+      temperatureUnit: 'celsius',
+      location: 'Home',
+      condition: 'cloudy',
+      humidity: 70,
+      windSpeed: 3,
+      pressure: 1012,
+      precipitation: 0,
+      precipitationUnit: 'mm',
+      sunrise: '',
+      sunset: '',
+      daylight: '',
+      rainForecast: '',
+      highTemp: 16,
+      lowTemp: 10,
+      forecastMode: 'weekly',
+      forecast: [],
+    };
+    const north = {
+      ...weather,
+      id: 'home_assistant:weather.demo_north',
+      name: 'Demo Weather North',
+      temperature: -24.4,
+    };
+    localStorage.setItem(STORAGE_KEYS.climateWeatherSource, JSON.stringify(weather.id));
+    const { unmount } = renderDashboard([climateDevice(), north, weather]);
+    expect(screen.queryByRole('combobox', { name: 'Weather' })).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Weather: 15.6°')).toBeInTheDocument();
+    unmount();
+    const restored = renderDashboard([climateDevice(), north, weather]);
+    expect(screen.queryByRole('combobox', { name: 'Weather' })).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Weather: 15.6°')).toBeInTheDocument();
+    restored.unmount();
+    renderDashboard([climateDevice(), north]);
+    expect(screen.queryByText('-24.4°')).not.toBeInTheDocument();
+  });
+
   it('keeps normal climate calm and collapses missing optional environment data', () => {
     renderDashboard([climateDevice()]);
 
@@ -139,6 +195,30 @@ describe('ClimateDashboard', () => {
     expect(screen.getByRole('heading', { name: 'Mostly comfortable' })).toBeInTheDocument();
     expect(screen.queryByText(/Target 21°/)).not.toBeInTheDocument();
     expect(screen.queryByText(/0\/1/)).not.toBeInTheDocument();
+  });
+
+  it('uses the device name in the Temperature section while preserving the full entity name', () => {
+    const temperature = sensor({
+      id: 'sensor.living_temperature',
+      name: 'Bedroom radiator valve · Temperature',
+      sourceDeviceName: 'Bedroom radiator valve',
+      deviceClass: 'temperature',
+      unit: '°C',
+      value: '18.8',
+    });
+    renderDashboard([climateDevice(), temperature]);
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Temperature' }));
+    expect(screen.getByTitle('Bedroom radiator valve')).toBeInTheDocument();
+    expect(temperature.name).toBe('Bedroom radiator valve · Temperature');
+
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'Group cards by: Type' }), {
+      button: 0,
+      ctrlKey: false,
+    });
+    fireEvent.click(screen.getByRole('menuitemradio', { name: 'Room' }));
+    fireEvent.click(screen.getByRole('tab', { name: /Office/ }));
+    expect(screen.getByTitle('Bedroom radiator valve · Temperature')).toBeInTheDocument();
   });
 
   it('groups cards by type by default and can regroup them by room', () => {

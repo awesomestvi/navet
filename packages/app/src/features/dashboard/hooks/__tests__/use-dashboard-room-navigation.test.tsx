@@ -62,6 +62,18 @@ function renderRoomNavigation(props: Partial<HookProps> = {}) {
 }
 
 describe('useDashboardRoomNavigation', () => {
+  it('keeps the selected room when its provider label differs only in capitalization', () => {
+    const { changeRoom, fallbackRoom } = renderRoomNavigation({
+      activeRoom: 'living room',
+      preferredRoom: 'LIVING ROOM',
+      rooms: ['Living Room'],
+      standaloneMode: true,
+    });
+
+    expect(changeRoom).not.toHaveBeenCalled();
+    expect(fallbackRoom).not.toHaveBeenCalled();
+  });
+
   beforeEach(() => {
     vi.useFakeTimers();
   });

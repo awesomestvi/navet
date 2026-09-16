@@ -1102,7 +1102,7 @@ describe('MediaDashboard', () => {
     );
   });
 
-  it('shows unsupported browser UI when neither the entity nor provider supports browsing', () => {
+  it('leaves the browser area blank when neither the entity nor provider supports browsing', () => {
     renderWithProviders(
       <MediaDashboard
         devices={[
@@ -1115,8 +1115,8 @@ describe('MediaDashboard', () => {
     );
 
     expect(
-      screen.getByText('This player or provider did not expose a media browser.')
-    ).toBeInTheDocument();
+      screen.queryByText('This player or provider did not expose a media browser.')
+    ).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Load media browser' })).not.toBeInTheDocument();
   });
 

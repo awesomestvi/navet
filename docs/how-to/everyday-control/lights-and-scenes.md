@@ -7,11 +7,12 @@ editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/everyday-con
 The Lights section groups supported lights and switches by room while keeping common actions close
 to the current state.
 
-![The current phone Lights dashboard with status, quick scenes, whole-home actions, and expandable room groups.](/docs/how-to/everyday-control/lights-dashboard.webp)
+![The Lights dashboard with whole-home status, scene shortcuts, a power action, and room groups.](/docs/how-to/everyday-control/lights-dashboard.webp)
 
 The summary strip shows how many lights are on, average brightness when available, and unavailable
 lights that need attention. Quick scenes and **Expand all**, **Collapse all**, or whole-home power
 actions stay beside that summary.
+Select **Unavailable** to open the affected room and jump to its first unavailable light.
 
 ## Control a room
 
@@ -34,6 +35,15 @@ Open the light card to use available controls:
 - Saved brightness or temperature presets.
 
 The card only shows controls supported by the entity.
+
+## Switch card measurements
+
+Switch cards automatically show available measurements, such as power, voltage, current, and
+energy. Card size determines how many readings fit. Readings remain visible when a switch is off,
+and new measurements appear as the provider supplies them.
+
+Open the switch card's settings and choose **Metrics** to remove or restore readings. Navet
+remembers removed measurements for that card, including when a reading temporarily disappears.
 
 ## Run a scene
 

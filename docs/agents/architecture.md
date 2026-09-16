@@ -27,7 +27,9 @@ Home Assistant is the first implemented provider, not the application architectu
 
 The app runtime is multi-provider: it can retain multiple implemented provider sessions, maintain
 provider-scoped state for each, and merge selected provider collections for shared dashboard use.
-An active provider is still used for operations that require one provider-specific feature service.
+Product features use selected entities and their owning providers, with availability drawn from
+connected providers. Do not introduce a global primary-provider setting. A current session remains
+an internal compatibility detail in legacy code; new feature routing must use explicit sources.
 
 ## Current Reality
 
@@ -83,8 +85,17 @@ architecture regression.
 
 Implemented does not mean feature-identical. Home Assistant registers Navet's climate, media,
 camera, energy, calendar, weather, notification, task, history, security, and administration
-services. Homey and openHAB currently register rooms, realtime entities, lighting, switches, and
-sensors. Keep that distinction visible in product and contributor documentation.
+services. Homey maps lock/unlock commands to its writable `locked` capability, registers
+cover controls for native position and movement capabilities, registers thermostat controls,
+and maps speaker playback, volume, mute, and track
+commands to writable device capabilities. It also exposes flows and moods as scenes, people,
+notifications, Insights history,
+and a normalized hub-resource service for browsing apps and managing favorites and device
+capabilities. openHAB maps rooms, realtime entities, lights, switches, fans, security sensors,
+batteries, and utility measurements. It registers climate setpoint, speaker playback and volume,
+lock, and cover controls. openHAB has no history, energy-statistics, alarm-panel, or media-browser
+services.
+Keep those capability differences visible in product and contributor documentation.
 
 ## Read Deeper Only When Needed
 

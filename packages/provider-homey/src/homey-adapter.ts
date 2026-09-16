@@ -54,11 +54,7 @@ export function createHomeyProviderContract(): NavetProviderContract {
 
       const homeySession = session as HomeyProviderSessionInput;
       if (homeySession.homeySnapshot) {
-        replaceHomeySnapshot({
-          connected: homeySession.homeySnapshot.connected,
-          devices: homeySession.homeySnapshot.devices,
-          zones: homeySession.homeySnapshot.zones,
-        });
+        replaceHomeySnapshot(homeySession.homeySnapshot);
         return;
       }
 

@@ -10,6 +10,7 @@ import type { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/t
 import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import { readNavetCameraState } from '@navet/app/core/navet-device-state';
 import { DashboardCardItem, DashboardEditActions } from '@navet/app/features/dashboard';
+import { BatteryOverviewWidget } from '@navet/app/features/dashboard/components/widgets/battery-overview-widget';
 import { packDashboardGridItems } from '@navet/app/features/dashboard/device-grid/device-grid-layout';
 import { useFitDashboardGrid } from '@navet/app/features/dashboard/hooks/use-fit-dashboard-grid';
 import { useProgressiveBatching } from '@navet/app/features/dashboard/hooks/use-progressive-batching';
@@ -49,6 +50,7 @@ import {
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { resolveDashboardPerformanceProfile } from '../../dashboard/hooks/use-dashboard-performance-mode';
+import { buildSecurityBatteryRows, isSecurityBatteryDevice } from '../utils/security-battery-rows';
 import type {
   CameraDashboardModel,
   SecurityGroupSummary,
@@ -318,24 +320,44 @@ function DetailsGrid({
   const visibleDevices = shouldBatch ? devices.slice(0, batchedVisibleCount) : devices;
   const optimizeOffscreenPaint = performanceProfile.optimizeOffscreenPaint;
   const columnCount = embeddedColumnCount ?? renderedGridCols;
+  const batteryRows = useMemo(
+    () => (location === 'devices' ? buildSecurityBatteryRows(devices) : []),
+    [devices, location]
+  );
   const resolvedCards = useMemo(
-    () =>
-      visibleDevices.map((device) => {
-        const defaultSize = device.type === 'cameras' ? 'large' : device.size;
-        const size = cardSizes[device.id] ?? defaultSize;
+    () => [
+      ...visibleDevices
+        .filter((device) => location !== 'devices' || !isSecurityBatteryDevice(device))
+        .map((device) => {
+          const defaultSize = device.type === 'cameras' ? 'large' : device.size;
+          const size = cardSizes[device.id] ?? defaultSize;
 
-        return {
-          device,
-          size,
-          gridSize: getResponsiveCardSize(size, breakpointCols),
-        };
-      }),
-    [breakpointCols, cardSizes, visibleDevices]
+          return {
+            id: device.id,
+            device,
+            batteryRows: null,
+            size,
+            gridSize: getResponsiveCardSize(size, breakpointCols),
+          };
+        }),
+      ...(batteryRows.length > 0
+        ? [
+            {
+              id: 'security.battery-overview',
+              device: null,
+              batteryRows,
+              size: 'large' as CardSize,
+              gridSize: getResponsiveCardSize('large', breakpointCols),
+            },
+          ]
+        : []),
+    ],
+    [batteryRows, breakpointCols, cardSizes, location, visibleDevices]
   );
   const gridPlacements = useMemo(
     () =>
       packDashboardGridItems(
-        resolvedCards.map(({ device, gridSize: size }) => ({ id: device.id, size })),
+        resolvedCards.map(({ id, gridSize: size }) => ({ id, size })),
         columnCount,
         { placementPreference: 'leftmost' }
       ),
@@ -366,8 +388,22 @@ function DetailsGrid({
             className="grid w-full grid-flow-row-dense gap-3 lg:gap-4"
             style={resolvedGridStyle as CSSProperties}
           >
-            {resolvedCards.map(({ device, size, gridSize }) => {
-              const placement = gridPlacements.get(device.id);
+            {resolvedCards.map(({ id, device, batteryRows, size, gridSize }) => {
+              const placement = gridPlacements.get(id);
+
+              if (batteryRows) {
+                return (
+                  <div
+                    key={id}
+                    data-testid="security-battery-overview"
+                    className={`${getCardSpanClass(gridSize)} [&>*]:h-full`}
+                    style={{ gridColumnStart: placement?.column, gridRowStart: placement?.row }}
+                  >
+                    <BatteryOverviewWidget size={size} batteryRows={batteryRows} />
+                  </div>
+                );
+              }
+              if (!device) return null;
 
               return (
                 <SecurityQuickviewCard
@@ -758,10 +794,12 @@ export function SecurityCameraDashboard({
 
     const frame = requestAnimationFrame(() => {
       const detailCards = detailsRef.current?.querySelectorAll<HTMLElement>(
-        '[data-security-entity-id]'
+        '[data-security-entity-id], [data-battery-entity-ids]'
       );
       const target = Array.from(detailCards ?? []).find(
-        (card) => card.dataset.securityEntityId === pendingNavigationEntityId
+        (card) =>
+          card.dataset.securityEntityId === pendingNavigationEntityId ||
+          card.dataset.batteryEntityIds?.split(' ').includes(pendingNavigationEntityId)
       );
 
       if (target) {

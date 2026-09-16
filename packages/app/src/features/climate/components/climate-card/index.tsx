@@ -17,8 +17,8 @@ import { ClimateGauge } from './climate-gauge';
 import { ClimateCardLargeLayout, ClimateCardMediumLayout, ClimateCardSmallLayout } from './layouts';
 import { useClimateCardController } from './use-climate-card-controller';
 
-function resolveClimateCardSize(size: ClimateCardProps['size']): 'small' | 'medium' {
-  return size === 'small' ? 'small' : 'medium';
+function resolveClimateCardSize(size: ClimateCardProps['size']): 'small' | 'medium' | 'large' {
+  return size === 'small' || size === 'large' ? size : 'medium';
 }
 
 export const ClimateCard = memo(function ClimateCard({

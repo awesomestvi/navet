@@ -22,7 +22,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Interaction settings tab — control interaction mode (toggle-first vs control-first) with live preview.',
+          'Interaction settings tab — choose card behavior with a live preview and opt in to limiting browser zoom on this device.',
       },
     },
   },

@@ -4,6 +4,7 @@ import {
   filterHiddenRooms,
   getVisibleRoomNavRooms,
   type RoomNavigationGroup,
+  resolveRoomNavigationGroups,
 } from '@navet/app/components/layout/room-nav.utils';
 import { RoomOrderDialog } from '@navet/app/components/layout/room-order-dialog';
 import { getSectionNavigationItems } from '@navet/app/components/layout/section-navigation';
@@ -31,6 +32,7 @@ import {
   isSidebarActionVisible,
   openCustomExtensionUrl,
 } from '@navet/app/utils/custom-extensions';
+import { roomNamesMatch } from '@navet/app/utils/room-name';
 import {
   ArrowLeft,
   Check,
@@ -94,20 +96,11 @@ function resolveRooms(navigation?: MobileRoomNavigation): RoomCollection {
   const visibleRooms = getVisibleRoomNavRooms(
     filterHiddenRooms(navigation.rooms, navigation.hiddenRoomNames ?? [])
   );
-  const visibleRoomSet = new Set(visibleRooms);
-  const groups = (navigation.groups ?? [])
-    .map((group) => ({
-      ...group,
-      rooms: group.rooms.filter((room) => visibleRoomSet.has(room)),
-    }))
-    .filter((group) => group.rooms.length > 0);
-  const groupedRooms = new Set(groups.flatMap((group) => group.rooms));
-
-  return {
-    groups,
-    standaloneRooms: visibleRooms.filter((room) => !groupedRooms.has(room)),
+  const { visibleGroups, standaloneRooms } = resolveRoomNavigationGroups(
     visibleRooms,
-  };
+    navigation.groups ?? []
+  );
+  return { groups: visibleGroups, standaloneRooms, visibleRooms };
 }
 
 function KioskWorkspaceItem({ active = false, icon: Icon, label, onSelect }: KioskNavigationItem) {
@@ -335,7 +328,7 @@ function KioskNavigatePanel({
                 {group.rooms.map((room) => (
                   <KioskRoomButton
                     key={room}
-                    active={roomNavigation.activeRoom === room}
+                    active={roomNamesMatch(roomNavigation.activeRoom, room)}
                     label={getDashboardRoomLabel(room, t('dashboard.roomNav.all'))}
                     onSelect={() => navigate(() => roomNavigation.onRoomChange(room))}
                   />
@@ -348,7 +341,7 @@ function KioskNavigatePanel({
               {rooms.standaloneRooms.map((room) => (
                 <KioskRoomButton
                   key={room}
-                  active={roomNavigation.activeRoom === room}
+                  active={roomNamesMatch(roomNavigation.activeRoom, room)}
                   label={getDashboardRoomLabel(room, t('dashboard.roomNav.all'))}
                   onSelect={() => navigate(() => roomNavigation.onRoomChange(room))}
                 />
@@ -712,13 +705,19 @@ export const KioskControlCenter = memo(function KioskControlCenter({
                 />
               ) : null}
               <div className="min-w-0">
-                <h1 className={cn(navetTypographyTokens.pageHeading, surface.textPrimary)}>
+                <h1 className={cn(navetTypographyTokens.sectionHeading, surface.textPrimary)}>
                   {!isWide && mobilePanel !== 'index'
                     ? panelTitle
                     : t('dashboard.kiosk.controlCenterTitle')}
                 </h1>
                 {isWide ? (
-                  <p className={cn('mt-0.5 truncate text-sm', surface.textSecondary)}>
+                  <p
+                    className={cn(
+                      'mt-0.5 truncate',
+                      navetTypographyTokens.label,
+                      surface.textSecondary
+                    )}
+                  >
                     {t('dashboard.kiosk.controlCenterDescription')}
                   </p>
                 ) : null}

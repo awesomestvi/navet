@@ -45,7 +45,7 @@ import {
 } from '@navet/app/components/ui/dropdown-menu';
 import { cn } from '@navet/app/components/ui/utils';
 import { getDeviceTypeIcon } from '@navet/app/constants/device-type-icons';
-import { useTheme } from '@navet/app/hooks';
+import { useI18n, useTheme } from '@navet/app/hooks';
 import {
   AlertTriangle,
   ArrowDown,
@@ -640,16 +640,16 @@ export function RoomWorkspaceHeader({
   showModeAction = true,
 }: WorkspacePanelProps & { trailingAction?: ReactNode; showModeAction?: boolean }) {
   return (
-    <NavigationWorkspaceHeader className="pb-3 pl-[calc(env(safe-area-inset-left,0px)+0.75rem)] pr-[calc(env(safe-area-inset-right,0px)+0.75rem)] pt-[calc(env(safe-area-inset-top,0px)+0.75rem)] md:px-5 md:py-4">
+    <NavigationWorkspaceHeader className="safe-area-pt-3 pb-3 pl-[calc(env(safe-area-inset-left,0px)+1rem)] pr-[calc(env(safe-area-inset-right,0px)+1rem)] md:px-5 md:!py-4">
       <div className="flex min-w-0 items-start justify-between gap-3 max-sm:pr-14">
         <div className="min-w-0 flex-1">
-          <h1 className={cn(navetTypographyTokens.pageHeading, surface.textPrimary)}>
+          <h1 className={cn(navetTypographyTokens.sectionHeading, surface.textPrimary)}>
             {labels.title}
           </h1>
           <p
             className={cn(
               'mt-1 max-w-2xl max-sm:sr-only',
-              navetTypographyTokens.body,
+              navetTypographyTokens.label,
               surface.textSecondary
             )}
           >
@@ -766,10 +766,22 @@ export function RoomOutline({
   surface,
   accentColor,
 }: WorkspacePanelProps) {
+  const { locale } = useI18n();
   const [isUngroupedCollapsed, setIsUngroupedCollapsed] = useState(false);
   const ungroupedSectionId = useId();
   const searchActive = viewModel.query.trim().length > 0;
   const dragDisabled = viewModel.mode !== 'manage' || searchActive || !actions.onDropRoom;
+  const roomNameCollator = useMemo(
+    () => new Intl.Collator(locale, { numeric: true, sensitivity: 'base' }),
+    [locale]
+  );
+  const orderRoomsForSidebar = (rooms: RoomWorkspaceRoomViewModel[]) =>
+    viewModel.mode === 'manage'
+      ? rooms
+      : [...rooms].sort(
+          (left, right) =>
+            roomNameCollator.compare(left.name, right.name) || left.id.localeCompare(right.id)
+        );
   const roomsById = useMemo(
     () => new Map(viewModel.rooms.map((room) => [room.id, room])),
     [viewModel.rooms]
@@ -778,7 +790,9 @@ export function RoomOutline({
     () => new Set(viewModel.groups.flatMap((group) => group.roomIds)),
     [viewModel.groups]
   );
-  const ungroupedRooms = viewModel.rooms.filter((room) => !groupedRoomIds.has(room.id));
+  const ungroupedRooms = orderRoomsForSidebar(
+    viewModel.rooms.filter((room) => !groupedRoomIds.has(room.id))
+  );
   const isUngroupedSectionCollapsed = isUngroupedCollapsed && !searchActive;
   const hasRooms = viewModel.rooms.length > 0;
   const sensors = useSensors(
@@ -908,9 +922,11 @@ export function RoomOutline({
             >
               <div className="space-y-3">
                 {viewModel.groups.map((group, groupIndex) => {
-                  const groupRooms = group.roomIds
-                    .map((roomId) => roomsById.get(roomId))
-                    .filter((room): room is RoomWorkspaceRoomViewModel => room !== undefined);
+                  const groupRooms = orderRoomsForSidebar(
+                    group.roomIds
+                      .map((roomId) => roomsById.get(roomId))
+                      .filter((room): room is RoomWorkspaceRoomViewModel => room !== undefined)
+                  );
                   if (
                     groupRooms.length === 0 &&
                     (viewModel.mode !== 'manage' || Boolean(viewModel.query))
@@ -1348,7 +1364,7 @@ export function RoomBrowsePanel({
                   ? labels.noDashboardDevicesDescription
                   : labels.noHiddenDevicesDescription
               }
-              surface={surface}
+              surface={{ ...surface, cardShadow: '' }}
               accentColor={accentColor}
             />
           )}

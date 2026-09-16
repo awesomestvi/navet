@@ -31,6 +31,31 @@ function createSnapshot(locationLabel: string): OpenHABSnapshot {
 }
 
 describe('openhab-mappers room identity', () => {
+  it.each([
+    ['Switch', 'ON', 'locked', true],
+    ['Switch', 'OFF', 'unlocked', false],
+    ['String', 'LOCKED', 'locked', true],
+    ['String', 'UNLOCKED', 'unlocked', false],
+    ['Switch', 'UNDEF', 'unknown', undefined],
+    ['Switch', 'NULL', 'unknown', undefined],
+  ] as const)(
+    'normalizes %s lock state %s for provider-confirmed card updates',
+    (type, state, value, locked) => {
+      const [entity] = mapOpenHABSnapshotToNavetEntities({
+        connected: true,
+        items: {
+          FrontDoorLock: { name: 'FrontDoorLock', type, state, category: 'lock', tags: ['Lock'] },
+        },
+      });
+      expect(entity).toMatchObject({
+        type: 'lock',
+        primaryState: value,
+        availability: value === 'unknown' ? 'unknown' : 'available',
+        attributes: { value, locked },
+      });
+    }
+  );
+
   it('uses the semantic location item ID instead of its mutable label', () => {
     const snapshot = createSnapshot('Cooking space');
     const entities = mapOpenHABSnapshotToNavetEntities(snapshot);

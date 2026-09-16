@@ -9,6 +9,7 @@ import {
 import { settingsSelectors } from '@navet/app/stores/selectors';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
+import { parseProviderScopedId } from '@navet/app/utils/provider-ids';
 import { subscribeVisibilityAwareAsyncTask } from '@navet/app/utils/visibility-aware-scheduler';
 import { useEffect, useState } from 'react';
 import { resolveDashboardPerformanceProfile } from '../../dashboard/hooks/use-dashboard-performance-mode';
@@ -222,7 +223,11 @@ export function useEnergyLoadHistory(
         const stats = await getCachedEnergyStatistics(
           `history:${resolvedEntityId}`,
           CACHE_TTL_MS,
-          () => getPowerStatisticsHistory(activeMessageClient, resolvedEntityId)
+          () =>
+            getPowerStatisticsHistory(
+              activeMessageClient,
+              parseProviderScopedId(resolvedEntityId)?.nativeId ?? resolvedEntityId
+            )
         );
         if (stats.length === 0) {
           setPoints(buildFallbackPoints(fallbackCurrentLoadW, fallbackSeedKey));

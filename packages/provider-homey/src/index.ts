@@ -1,8 +1,11 @@
 export * from './homey-adapter';
 export * from './homey-bridge';
+export { getHomeyDeviceProfile } from './homey-device-profiles';
+export * from './homey-hub.service';
 export * from './homey-mappers';
 export * from './homey-provider-registration';
 export * from './homey-provider-state';
 export * from './homey-runtime-registration';
+export { getHomeySensorName, getHomeySensorState } from './homey-sensor-state';
 export * from './homey-service';
 export * from './homey-types';

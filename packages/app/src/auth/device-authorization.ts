@@ -204,5 +204,16 @@ export async function invalidateAuthorizedProvider(providerId: string): Promise<
     body: JSON.stringify({ providerId }),
   });
   if (response.status === 404 || response.status === 405) return;
-  if (!response.ok) throw new Error('Navet could not revoke this provider from other devices.');
+  if (!response.ok) {
+    let message = 'Navet could not revoke this provider from other devices.';
+    try {
+      const body = (await response.json()) as { error?: unknown } | null;
+      if (typeof body?.error === 'string' && body.error.trim()) {
+        message = body.error;
+      }
+    } catch {
+      // Keep the fallback when the proxy returns a non-JSON error.
+    }
+    throw new Error(message);
+  }
 }

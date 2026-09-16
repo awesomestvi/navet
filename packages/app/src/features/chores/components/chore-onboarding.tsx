@@ -1,4 +1,8 @@
-import { CardDialogSection, NavigationWorkspace } from '@navet/app/components/patterns';
+import {
+  CardDialogHeader,
+  CardDialogSection,
+  NavigationWorkspace,
+} from '@navet/app/components/patterns';
 import {
   BaseCardDialog,
   Button,
@@ -65,7 +69,6 @@ import {
   UserPlus,
   UserRound,
   UsersRound,
-  X,
 } from 'lucide-react';
 import { Fragment, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { useProviderNotificationTargets } from '../use-provider-notification-targets';
@@ -1104,27 +1107,14 @@ export function ChoreOnboardingDialog({
           aria-label={t('household.setup.dialogTitle')}
           className="h-full min-h-0 rounded-none border-0 bg-transparent shadow-none"
         >
-          <NavigationWorkspace.Header
-            className={cn(
-              coverSheetHeaderClassName,
-              'flex items-start justify-between gap-3 sm:gap-4'
-            )}
-          >
-            <div className="min-w-0">
-              <h1 className={cn(navetTypographyTokens.pageHeading, surface.textPrimary)}>
-                {t('household.setup.dialogTitle')}
-              </h1>
-              <p className={cn('mt-1', navetTypographyTokens.body, surface.textSecondary)}>
-                {t('household.setup.dialogDescription')}
-              </p>
-            </div>
-            <IconButton
-              data-cover-sheet-inline-dismiss
-              variant="ghost"
-              label={t('common.close')}
-              icon={<X aria-hidden="true" className={navetIconSizeTokens.sm} />}
-              className={cn('min-h-10 min-w-10 shrink-0', surface.subtleBg, surface.hoverBg)}
-              onClick={() => onOpenChange(false)}
+          <NavigationWorkspace.Header className={coverSheetHeaderClassName}>
+            <CardDialogHeader
+              title={t('household.setup.dialogTitle')}
+              description={t('household.setup.dialogDescription')}
+              theme={theme}
+              editableTitle={false}
+              showRoomSelector={false}
+              className="mb-0"
             />
           </NavigationWorkspace.Header>
           <NavigationWorkspace.Body className="grid-rows-[minmax(0,1fr)] md:grid-cols-[16rem_minmax(0,1fr)] md:grid-rows-1">
@@ -1461,7 +1451,6 @@ export function ChoreOnboardingDialog({
                           <Switch
                             aria-label={t('household.personDialog.reminders')}
                             checked={remindersEnabled}
-                            size="compact"
                             onCheckedChange={setRemindersEnabled}
                           />
                         </div>
