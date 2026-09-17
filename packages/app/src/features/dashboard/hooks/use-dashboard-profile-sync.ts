@@ -64,7 +64,7 @@ import { projectSettingsPreferenceLayer } from '@navet/app/utils/settings-profil
 import { createElement, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useShallow } from 'zustand/react/shallow';
-import { createDashboardSyncBrowserLifecycle } from './dashboard-sync-browser-lifecycle';
+import { createDashboardSyncRuntime } from '../sync/dashboard-sync-runtime';
 
 const PROFILE_SAVE_DEBOUNCE_MS = 2_000;
 const PROFILE_REMOTE_POLL_INTERVAL_MS = 60_000;
@@ -204,7 +204,7 @@ export function useDashboardProfileSync() {
       return;
     }
 
-    const browserLifecycle = createDashboardSyncBrowserLifecycle();
+    const syncRuntime = createDashboardSyncRuntime();
     let loaded = false;
     let applyingRemote = false;
     let saving = false;
@@ -237,39 +237,39 @@ export function useDashboardProfileSync() {
 
     function clearSaveTimeout() {
       if (saveTimeout !== null) {
-        browserLifecycle.clear(saveTimeout);
+        syncRuntime.clear(saveTimeout);
         saveTimeout = null;
       }
     }
 
     function clearPollTimeout() {
       if (pollTimeout !== null) {
-        browserLifecycle.clear(pollTimeout);
+        syncRuntime.clear(pollTimeout);
         pollTimeout = null;
       }
     }
 
     function clearConflictReminderTimeout() {
       if (conflictReminderTimeout !== null) {
-        browserLifecycle.clear(conflictReminderTimeout);
+        syncRuntime.clear(conflictReminderTimeout);
         conflictReminderTimeout = null;
       }
     }
 
     function scheduleConflictReminder() {
       clearConflictReminderTimeout();
-      if (browserLifecycle.disposed || !pendingConflict) {
+      if (syncRuntime.disposed || !pendingConflict) {
         return;
       }
 
-      conflictReminderTimeout = browserLifecycle.schedule(() => {
+      conflictReminderTimeout = syncRuntime.schedule(() => {
         conflictReminderTimeout = null;
         const currentConflict = pendingConflict;
         if (
-          browserLifecycle.disposed ||
+          syncRuntime.disposed ||
           !currentConflict ||
           conflictToastId !== null ||
-          !browserLifecycle.visible
+          !syncRuntime.visible
         ) {
           return;
         }
@@ -406,7 +406,7 @@ export function useDashboardProfileSync() {
       const response = touch
         ? (await touchCurrentClientWithRecovery()).registry
         : await loadDashboardProfileClients(client);
-      if (!browserLifecycle.disposed) {
+      if (!syncRuntime.disposed) {
         setRegisteredClients(response);
       }
     }
@@ -569,10 +569,10 @@ export function useDashboardProfileSync() {
     function shouldPoll() {
       return (
         loaded &&
-        browserLifecycle.online &&
-        browserLifecycle.visible &&
+        syncRuntime.online &&
+        syncRuntime.visible &&
         !saving &&
-        !browserLifecycle.disposed &&
+        !syncRuntime.disposed &&
         !permanentAccessFailure
       );
     }
@@ -583,7 +583,7 @@ export function useDashboardProfileSync() {
         return;
       }
 
-      pollTimeout = browserLifecycle.schedule(() => {
+      pollTimeout = syncRuntime.schedule(() => {
         pollTimeout = null;
         void refreshRemote();
       }, delay);
@@ -592,7 +592,7 @@ export function useDashboardProfileSync() {
     function drainRefreshAfterAuthentication() {
       if (
         !refreshAfterAuthentication ||
-        browserLifecycle.disposed ||
+        syncRuntime.disposed ||
         !loaded ||
         saving ||
         loadingRemote
@@ -610,7 +610,7 @@ export function useDashboardProfileSync() {
       profile: DashboardConfigPayload,
       options: { keepalive?: boolean } = {}
     ) {
-      if (browserLifecycle.disposed || writesBlocked || !remoteResult || pendingConflict) {
+      if (syncRuntime.disposed || writesBlocked || !remoteResult || pendingConflict) {
         return false;
       }
       if (saving) {
@@ -655,7 +655,7 @@ export function useDashboardProfileSync() {
           }
         }
         saving = false;
-        if (browserLifecycle.disposed) {
+        if (syncRuntime.disposed) {
           return false;
         }
 
@@ -874,78 +874,76 @@ export function useDashboardProfileSync() {
     }
 
     async function refreshRemote(options: { forceFull?: boolean } = {}) {
-      if (browserLifecycle.disposed || loadingRemote || (!options.forceFull && !shouldPoll())) {
-        return;
-      }
-      if (saving) {
-        schedulePoll();
+      if (syncRuntime.disposed || (!options.forceFull && !shouldPoll())) {
         return;
       }
 
-      loadingRemote = true;
-      try {
-        const requestOptions: DashboardProfileLoadOptions = options.forceFull
-          ? {}
-          : {
-              etag: remoteResult?.etag ?? undefined,
-              lastModified: remoteResult?.etag
-                ? undefined
-                : (remoteResult?.lastModified ?? undefined),
-            };
-        const result = await loadDashboardProfile(requestOptions);
-        if (browserLifecycle.disposed) {
+      return syncRuntime.runLatest('profile-refresh', async () => {
+        if (saving) {
+          schedulePoll();
           return;
         }
 
-        if (!result.available) {
-          if (result.failureCode === DASHBOARD_PROFILE_ERROR_CODES.workspaceTenantMismatch) {
-            writesBlocked = true;
-            permanentAccessFailure = true;
-            clearPollTimeout();
-            runtime.markError(
-              tRef.current('dashboard.profileSync.tenantMismatch'),
-              DASHBOARD_PROFILE_ERROR_CODES.workspaceTenantMismatch
-            );
+        loadingRemote = true;
+        try {
+          const requestOptions: DashboardProfileLoadOptions = options.forceFull
+            ? {}
+            : {
+                etag: remoteResult?.etag ?? undefined,
+                lastModified: remoteResult?.etag
+                  ? undefined
+                  : (remoteResult?.lastModified ?? undefined),
+              };
+          const result = await loadDashboardProfile(requestOptions);
+          if (syncRuntime.disposed) {
             return;
           }
-          runtime.markError(
-            tRef.current(
-              result.unauthorized
-                ? 'dashboard.profileSync.unauthorized'
-                : 'dashboard.profileSync.unavailable'
-            )
-          );
-          schedulePoll(getNextPollDelay(++failureCount));
-          return;
-        }
 
-        await handleRemoteResult(result);
-        if (clientRegistrationPending) {
-          await refreshRegisteredClients(true);
-        }
-      } catch (error) {
-        console.warn('[DashboardProfile] Unable to reconcile the shared dashboard:', error);
-        runtime.markError(tRef.current('dashboard.profileSync.unavailable'));
-        schedulePoll(getNextPollDelay(++failureCount));
-      } finally {
-        loadingRemote = false;
-        if (pendingLocalChanges && !pendingConflict) {
-          syncCurrentLocalState();
-        }
-        if (!drainRefreshAfterAuthentication()) {
-          // Preserve an error backoff already scheduled above. Replacing it with
-          // the normal poll interval makes an unavailable profile service wake
-          // every client aggressively during an outage.
-          if (pollTimeout === null) {
+          if (!result.available) {
+            if (result.failureCode === DASHBOARD_PROFILE_ERROR_CODES.workspaceTenantMismatch) {
+              writesBlocked = true;
+              permanentAccessFailure = true;
+              clearPollTimeout();
+              runtime.markError(
+                tRef.current('dashboard.profileSync.tenantMismatch'),
+                DASHBOARD_PROFILE_ERROR_CODES.workspaceTenantMismatch
+              );
+              return;
+            }
+            runtime.markError(
+              tRef.current(
+                result.unauthorized
+                  ? 'dashboard.profileSync.unauthorized'
+                  : 'dashboard.profileSync.unavailable'
+              )
+            );
+            schedulePoll(getNextPollDelay(++failureCount));
+            return;
+          }
+
+          await handleRemoteResult(result);
+          if (clientRegistrationPending) {
+            await refreshRegisteredClients(true);
+          }
+        } catch (error) {
+          console.warn('[DashboardProfile] Unable to reconcile the shared dashboard:', error);
+          runtime.markError(tRef.current('dashboard.profileSync.unavailable'));
+          schedulePoll(getNextPollDelay(++failureCount));
+        } finally {
+          loadingRemote = false;
+          if (pendingLocalChanges && !pendingConflict) {
+            syncCurrentLocalState();
+          }
+          if (!drainRefreshAfterAuthentication() && pollTimeout === null) {
             schedulePoll();
           }
         }
-      }
+      });
     }
 
     function syncCurrentLocalState() {
       if (
-        browserLifecycle.disposed ||
+        syncRuntime.disposed ||
         !loaded ||
         !onboardingCompletedRef.current ||
         applyingRemote ||
@@ -973,7 +971,7 @@ export function useDashboardProfileSync() {
 
       pendingLocalChanges = true;
       clearSaveTimeout();
-      saveTimeout = browserLifecycle.schedule(() => {
+      saveTimeout = syncRuntime.schedule(() => {
         saveTimeout = null;
         void saveProfile(getProfileForSync());
       }, PROFILE_SAVE_DEBOUNCE_MS);
@@ -1033,7 +1031,7 @@ export function useDashboardProfileSync() {
       runtime.markOffline();
     };
     const handleVisibilityChange = () => {
-      if (!browserLifecycle.visible) {
+      if (!syncRuntime.visible) {
         clearPollTimeout();
         if (pendingLocalChanges) {
           void saveProfile(getProfileForSync(), { keepalive: true });
@@ -1062,7 +1060,7 @@ export function useDashboardProfileSync() {
       void refreshRegisteredClients(true);
     };
     const handleRefreshRequest = () => {
-      if (browserLifecycle.disposed || loadingRemote || saving) {
+      if (syncRuntime.disposed || loadingRemote || saving) {
         return;
       }
       clearPollTimeout();
@@ -1070,7 +1068,7 @@ export function useDashboardProfileSync() {
       void refreshRemote({ forceFull: true });
     };
     const handleRebindRequest = async () => {
-      if (browserLifecycle.disposed || saving || rebindingWorkspace) {
+      if (syncRuntime.disposed || saving || rebindingWorkspace) {
         return;
       }
 
@@ -1079,7 +1077,7 @@ export function useDashboardProfileSync() {
       const profile = getProfileForSync();
       try {
         const result = await rebindDashboardProfileWorkspace(profile, client);
-        if (browserLifecycle.disposed) {
+        if (syncRuntime.disposed) {
           return;
         }
         if (!result.saved) {
@@ -1095,7 +1093,7 @@ export function useDashboardProfileSync() {
         pendingLocalChanges = false;
         failureCount = 0;
         const refreshed = await loadDashboardProfile();
-        if (!refreshed.available || browserLifecycle.disposed) {
+        if (!refreshed.available || syncRuntime.disposed) {
           runtime.markError(tRef.current('dashboard.profileSync.unavailable'));
           return;
         }
@@ -1129,7 +1127,7 @@ export function useDashboardProfileSync() {
 
     window.addEventListener(PERSISTED_STATE_EVENT, handlePersistedState as EventListener);
     window.addEventListener('storage', handleStorage);
-    browserLifecycle.listen({
+    syncRuntime.listen({
       online: handleOnline,
       offline: handleOffline,
       pagehide: handlePageHide,
@@ -1145,7 +1143,7 @@ export function useDashboardProfileSync() {
 
     async function initialize() {
       try {
-        if (!browserLifecycle.online) {
+        if (!syncRuntime.online) {
           runtime.markOffline();
           loaded = true;
           setProfileLoadCompleted(true);
@@ -1156,7 +1154,7 @@ export function useDashboardProfileSync() {
           loadDashboardProfile(),
           touchCurrentClientWithRecovery(),
         ]);
-        if (browserLifecycle.disposed) {
+        if (syncRuntime.disposed) {
           return;
         }
 
@@ -1189,7 +1187,7 @@ export function useDashboardProfileSync() {
         console.warn('[DashboardProfile] Unable to initialize shared dashboard sync:', error);
         runtime.markError(tRef.current('dashboard.profileSync.unavailable'));
       } finally {
-        if (!browserLifecycle.disposed) {
+        if (!syncRuntime.disposed) {
           loaded = true;
           setProfileLoadCompleted(true);
           syncCurrentLocalState();
@@ -1203,7 +1201,7 @@ export function useDashboardProfileSync() {
     void initialize();
 
     return () => {
-      browserLifecycle.dispose();
+      syncRuntime.dispose();
       syncCurrentLocalStateRef.current = () => undefined;
       clearSaveTimeout();
       clearPollTimeout();

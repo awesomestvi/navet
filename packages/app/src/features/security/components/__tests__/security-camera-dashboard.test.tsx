@@ -263,7 +263,7 @@ describe('SecurityCameraDashboard', () => {
     renderDashboard({ cameras: [camera({ id: 'camera.front', name: 'Front Door' })] }, [], true);
     fireEvent.click(screen.getByRole('button', { name: 'Pin Front Door to quickview' }));
     expect(
-      within(screen.getByTestId('security-quickview-grid')).getByTestId('detail-card:camera.front')
+      within(screen.getByTestId('security-quickview-grid')).getByTestId('camera-card:camera.front')
     ).toBeInTheDocument();
     expect(
       within(screen.getByTestId('security-command-main-details')).getByTestId(
@@ -503,6 +503,33 @@ describe('SecurityCameraDashboard', () => {
     expect(cells[1]).not.toHaveClass('row-span-2');
     expect(overview.queryByTestId('security-quickview-carousel')).not.toBeInTheDocument();
     expect(overview.queryByTestId('security-card-grid')).not.toBeInTheDocument();
+  });
+
+  it('keeps the portrait camera mosaic intact in edit mode', async () => {
+    selectQuickviewEntities(['camera.front', 'camera.garden', 'camera.side']);
+    activityEventsMock.breakpointCols = 4;
+    renderDashboard(
+      {
+        cameras: [
+          camera({ id: 'camera.front', name: 'Front Door' }),
+          camera({ id: 'camera.garden', name: 'Garden' }),
+          camera({ id: 'camera.side', name: 'Side Gate' }),
+        ],
+      },
+      [],
+      true
+    );
+
+    const overview = within(screen.getByTestId('security-quickview-grid'));
+    expect(overview.getByTestId('security-camera-mosaic')).toBeInTheDocument();
+    expect(overview.queryByTestId('security-card-grid')).not.toBeInTheDocument();
+
+    fireEvent.click(overview.getByRole('button', { name: 'Remove Front Door from quickview' }));
+
+    await waitFor(() => {
+      expect(overview.queryByTestId('camera-card:camera.front')).not.toBeInTheDocument();
+    });
+    expect(overview.getByTestId('security-camera-mosaic')).toBeInTheDocument();
   });
 
   it('uses four equal mosaic cells for four pinned portrait cameras', () => {

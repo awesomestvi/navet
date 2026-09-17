@@ -27,6 +27,21 @@ vi.mock('./services/homey.service', () => ({
 }));
 
 vi.mock('@navet/app/provider-contract-registry', () => ({
+  getRegisteredProviderContract: (providerId: 'home_assistant' | 'homey' | 'openhab') => ({
+    providerId,
+    getState: () => ({
+      providerId,
+      connected: false,
+      connecting: false,
+      reconnecting: false,
+      entitiesHydrated: false,
+      registriesHydrated: false,
+      error: null,
+      entities: [],
+      rooms: [],
+    }),
+    subscribeState: () => () => {},
+  }),
   getRegisteredSmartHomeProviderAdapter: (providerId: 'home_assistant' | 'homey') => ({
     async connect() {},
     async disconnect() {},

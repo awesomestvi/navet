@@ -41,11 +41,17 @@ type NavetProviderContract = {
 ## What The Small Contract Carries
 
 - normalized entities
-- room and room-descriptor data
-- provider availability and hydration status
+- normalized rooms, including whether each room is provider-managed or derived and whether its
+  source supports ordering or deletion
+- provider-neutral runtime status: connected, connecting, reconnecting, entity hydration,
+  registry hydration, errors, and optional unreachable state
 - entity lookup
 - generic command execution
 - live updates through subscriptions
+
+The app derives provider health, dashboard runtime status, room descriptors, and manageable-room
+references from this normalized state plus the provider runtime registration. It does not subscribe
+to Home Assistant, Homey, or openHAB snapshots separately.
 
 ## What Runtime Registration Adds
 

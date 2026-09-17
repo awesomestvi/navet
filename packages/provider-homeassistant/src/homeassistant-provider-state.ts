@@ -9,13 +9,13 @@ export type HomeAssistantProviderStateInput = HomeAssistantNavetMappingInput;
 
 export function buildHomeAssistantProviderState(
   input: HomeAssistantProviderStateInput,
-  options: { connected: boolean }
+  options: Omit<NavetProviderState, 'entities' | 'rooms' | 'providerId'>
 ): NavetProviderState {
   const entities = mapHomeAssistantEntitiesToNavetEntities(input);
 
   return {
     providerId: 'home_assistant',
-    connected: options.connected,
+    ...options,
     entities,
     rooms: buildHomeAssistantProviderRooms(input, entities),
   };

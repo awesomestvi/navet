@@ -312,6 +312,9 @@ export function buildHomeyProviderRooms(snapshot: HomeySnapshot): NavetProviderR
         name: zone.name,
         normalizedName: normalizeRoomName(zone.name),
         memberIds: memberIdsByRoomId.get(canonicalId) ?? [],
+        sourceType: 'provider_managed' as const,
+        supportsOrdering: true,
+        supportsDeletion: false,
       };
     })
     .sort((left, right) => left.name.localeCompare(right.name));

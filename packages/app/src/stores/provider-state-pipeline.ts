@@ -13,17 +13,16 @@ import { INTEGRATION_PROVIDER_IDS } from '@navet/app/types/provider';
 import { createProviderScopedId } from '@navet/app/utils/provider-ids';
 import { normalizeRoomName } from '@navet/app/utils/room-name';
 import { areDataEqual } from '@navet/app/utils/structural-equality';
-import type { PlatformManageableRoomReference } from '@navet/core/provider-feature-models';
-import { createProviderRoomManagementCapabilities } from '@navet/core/provider-room-management';
+import type {
+  PlatformManageableRoomReference,
+  ProviderRoomManagementCapabilities,
+} from '@navet/core/provider-feature-models';
 import type {
   NavetEntity,
   NavetEntityEvent,
   NavetProviderRoom,
   NavetProviderState,
 } from '@navet/core/types';
-import { homeAssistantRoomManagementCapabilities } from '@navet/provider-homeassistant';
-import { homeyRoomManagementCapabilities } from '@navet/provider-homey';
-import { openHABRoomManagementCapabilities } from '@navet/provider-openhab';
 import {
   createDashboardEntityView,
   type DashboardEntityView,
@@ -42,16 +41,6 @@ export type ProviderScopedState = {
   sourceProviderState: NavetProviderState | null;
   sourceRooms: NavetProviderRoom[];
 };
-
-export interface ProviderStatePipelineHomeAssistantArea {
-  area_id: string;
-  name: string;
-}
-
-export interface ProviderStatePipelineHomeyZone {
-  id: string;
-  name: string;
-}
 
 const DEVICE_COLLECTION_KEYS = [
   'lights',
@@ -443,12 +432,8 @@ export function collectProviderEntityEvents(
 }
 
 export function buildRoomDescriptors({
-  homeAssistantAreas,
-  homeyZones,
   normalizedRoomsByCanonicalId,
 }: {
-  homeAssistantAreas: ProviderStatePipelineHomeAssistantArea[];
-  homeyZones: Record<string, ProviderStatePipelineHomeyZone>;
   normalizedRoomsByCanonicalId: Record<string, NavetProviderRoom>;
 }): IntegrationRoomDescriptor[] {
   const descriptorMap = new Map<string, IntegrationRoomDescriptor>();
@@ -499,26 +484,6 @@ export function buildRoomDescriptors({
     });
   };
 
-  for (const area of homeAssistantAreas) {
-    upsertRoomDescriptor(area.name, {
-      providerId: 'home_assistant',
-      nativeId: area.area_id,
-      sourceType: 'provider_managed',
-      supportsOrdering: true,
-      supportsDeletion: true,
-    });
-  }
-
-  for (const zone of Object.values(homeyZones)) {
-    upsertRoomDescriptor(zone.name, {
-      providerId: 'homey',
-      nativeId: zone.id,
-      sourceType: 'provider_managed',
-      supportsOrdering: true,
-      supportsDeletion: false,
-    });
-  }
-
   for (const room of Object.values(normalizedRoomsByCanonicalId)) {
     upsertRoomDescriptor(
       room.name,
@@ -526,9 +491,9 @@ export function buildRoomDescriptors({
         providerId: room.providerId,
         nativeId: room.externalId,
         canonicalId: room.canonicalId,
-        sourceType: 'derived',
-        supportsOrdering: false,
-        supportsDeletion: false,
+        sourceType: room.sourceType,
+        supportsOrdering: room.supportsOrdering,
+        supportsDeletion: room.supportsDeletion,
       },
       room.memberIds
     );
@@ -538,24 +503,13 @@ export function buildRoomDescriptors({
 }
 
 export function buildManageableRoomsByProviderId(
-  roomDescriptors: IntegrationRoomDescriptor[]
+  roomDescriptors: IntegrationRoomDescriptor[],
+  resolveCapabilities: (providerId: IntegrationProviderId) => ProviderRoomManagementCapabilities
 ): Record<IntegrationProviderId, PlatformManageableRoomReference[]> {
-  const capabilitiesByProviderId = {
-    home_assistant: homeAssistantRoomManagementCapabilities,
-    homey: homeyRoomManagementCapabilities,
-    openhab: openHABRoomManagementCapabilities,
-    hubitat: createProviderRoomManagementCapabilities('hubitat'),
-    smartthings: createProviderRoomManagementCapabilities('smartthings'),
-  };
-
   return Object.fromEntries(
     INTEGRATION_PROVIDER_IDS.map((providerId) => [
       providerId,
-      buildManageableRoomReferences(
-        roomDescriptors,
-        providerId,
-        capabilitiesByProviderId[providerId]
-      ),
+      buildManageableRoomReferences(roomDescriptors, providerId, resolveCapabilities(providerId)),
     ])
   ) as Record<IntegrationProviderId, PlatformManageableRoomReference[]>;
 }

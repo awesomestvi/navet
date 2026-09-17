@@ -128,11 +128,15 @@ export function createHomeAssistantAppProviderPackageRegistration({
           const state = homeAssistantStore.getState();
           return {
             connected: state.connected,
+            connecting: state.connecting,
+            reconnecting: state.reconnecting,
+            error: state.error,
             config: state.config,
             entities: state.entities,
             areas: state.areas as HomeAssistantAreaRegistryEntry[],
             deviceRegistry: state.deviceRegistry as HomeAssistantDeviceRegistryEntry[],
             entityRegistry: state.entityRegistry as HomeAssistantEntityRegistryEntry[],
+            registriesHydrated: state.registriesHydrated,
             automationCategories:
               state.automationCategories as HomeAssistantCategoryRegistryEntry[],
             connect: async (session) => {

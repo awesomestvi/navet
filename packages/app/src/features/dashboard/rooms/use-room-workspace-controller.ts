@@ -2,16 +2,12 @@ import { ALL_ROOMS_ID } from '@navet/app/constants/rooms';
 import { useDashboardEntitiesStore } from '@navet/app/features/dashboard/stores/dashboard-entities-store';
 import { useI18n, useIntegrationStore } from '@navet/app/hooks';
 import { getProviderRoomManagementCapabilities } from '@navet/app/provider-runtime-registry';
-import { executeIntegrationRoomMutationPlan } from '@navet/app/services/integration-admin.service';
 import { useEntityRoomOverridesStore } from '@navet/app/stores/entity-room-overrides-store';
 import { integrationSelectors } from '@navet/app/stores/selectors';
 import type { IntegrationProviderId } from '@navet/app/types/provider';
-import type {
-  PlatformManageableRoomReference,
-  PlatformRoomMutationStep,
-} from '@navet/core/provider-feature-models';
+import type { PlatformManageableRoomReference } from '@navet/core/provider-feature-models';
 import type { NavetEntity, NavetProviderRoom } from '@navet/core/types';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import type {
   RoomWorkspaceActions,
   RoomWorkspaceChangeViewModel,
@@ -22,6 +18,16 @@ import type {
   RoomWorkspaceStage,
   RoomWorkspaceViewModel,
 } from './components';
+import {
+  createRoomWorkspaceEditorSession,
+  type RoomWorkspacePendingOperation,
+  type RoomWorkspaceSaveOutcome,
+  roomWorkspaceEditorSessionReducer,
+} from './room-workspace-editor-session';
+import {
+  executeRoomWorkspaceMutationTransaction,
+  type PendingProviderRoomDeletion,
+} from './room-workspace-mutation-transaction';
 import { useRoomWorkspaceStore } from './room-workspace-store';
 import {
   assignRoomWorkspaceGroupV2,
@@ -37,8 +43,6 @@ import {
   type RoomWorkspaceImageReferenceV2,
   type RoomWorkspaceIndexV2,
   type RoomWorkspaceRoomId,
-  type RoomWorkspaceRoomV2,
-  type RoomWorkspaceSourceRefV2,
   type RoomWorkspaceV2,
   removeRoomWorkspaceMetadataV2,
   renameRoomWorkspaceGroupV2,
@@ -64,27 +68,10 @@ export interface RoomWorkspaceControllerInput {
   onHiddenRoomsChange?: (rooms: string[]) => void;
 }
 
-export type RoomWorkspacePendingOperation =
-  | { kind: 'create-room'; groupId?: RoomWorkspaceGroupId }
-  | { kind: 'create-group' }
-  | { kind: 'rename-group'; groupId: RoomWorkspaceGroupId }
-  | { kind: 'appearance-group'; groupId: RoomWorkspaceGroupId }
-  | { kind: 'merge-room'; sourceRoomId: RoomWorkspaceRoomId }
-  | {
-      kind: 'move-device';
-      deviceId: string;
-      sourceRoomId: RoomWorkspaceRoomId;
-    }
-  | { kind: 'split-room'; sourceRoomId: RoomWorkspaceRoomId }
-  | { kind: 'appearance'; roomId: RoomWorkspaceRoomId }
-  | { kind: 'delete-room'; roomId: RoomWorkspaceRoomId }
-  | { kind: 'delete-group'; groupId: RoomWorkspaceGroupId };
-
-interface PendingProviderRoomDeletion {
-  room: RoomWorkspaceRoomV2;
-  sourceRef: RoomWorkspaceSourceRefV2;
-  memberIds: string[];
-}
+export type {
+  RoomWorkspacePendingOperation,
+  RoomWorkspaceSaveOutcome,
+} from './room-workspace-editor-session';
 
 const EMPTY_PROVIDER_ROOMS: Record<string, NavetProviderRoom> = {};
 const EMPTY_PROVIDER_ENTITIES: Record<string, NavetEntity> = {};
@@ -112,11 +99,6 @@ function setContainsEntityId(entity: NavetEntity, entityIds: ReadonlySet<string>
     entityIds.has(entity.id) ||
     entityIds.has(entity.externalId)
   );
-}
-
-export interface RoomWorkspaceSaveOutcome {
-  kind: 'idle' | 'saved' | 'partial' | 'error';
-  failureCount?: number;
 }
 
 export interface RoomWorkspaceController {
@@ -410,16 +392,6 @@ function countWorkspaceChanges({
   );
 }
 
-function appendProviderStep(
-  stepsByProvider: Map<IntegrationProviderId, PlatformRoomMutationStep[]>,
-  providerId: IntegrationProviderId,
-  step: PlatformRoomMutationStep
-) {
-  const steps = stepsByProvider.get(providerId) ?? [];
-  steps.push(step);
-  stepsByProvider.set(providerId, steps);
-}
-
 export function useRoomWorkspaceController({
   isOpen,
   manageableRooms,
@@ -456,32 +428,79 @@ export function useRoomWorkspaceController({
     () => new Map(manageableRooms.map((room) => [room.id, room] as const)),
     [manageableRooms]
   );
-  const [committedWorkspace, setCommittedWorkspace] = useState<RoomWorkspaceV2 | null>(
-    persistedWorkspace
+  const [editorSession, dispatchEditorSession] = useReducer(
+    roomWorkspaceEditorSessionReducer,
+    persistedWorkspace,
+    createRoomWorkspaceEditorSession
   );
-  const [draftWorkspace, setDraftWorkspace] = useState<RoomWorkspaceV2 | null>(persistedWorkspace);
+  const {
+    committedWorkspace,
+    draftWorkspace,
+    isSaving,
+    pendingOperation,
+    pendingPlacements,
+    pendingProviderDeletions,
+    roomNameDrafts,
+    saveOutcome,
+    selectedRoomId,
+    stage,
+  } = editorSession;
   const [mode, setMode] = useState<RoomWorkspaceMode>('browse');
-  const [stage, setStage] = useState<RoomWorkspaceStage>('structure');
   const [query, setQuery] = useState('');
   const [deviceQuery, setDeviceQuery] = useState('');
-  const [selectedRoomId, setSelectedRoomId] = useState<RoomWorkspaceRoomId | null>(null);
   const [collapsedGroupIds, setCollapsedGroupIds] = useState<Set<RoomWorkspaceGroupId>>(
     () => new Set()
   );
-  const [pendingPlacements, setPendingPlacements] = useState<
-    Record<string, RoomWorkspaceRoomId | null>
-  >({});
-  const [roomNameDrafts, setRoomNameDrafts] = useState<
-    Partial<Record<RoomWorkspaceRoomId, string>>
-  >({});
-  const [pendingProviderDeletions, setPendingProviderDeletions] = useState<
-    PendingProviderRoomDeletion[]
-  >([]);
-  const [pendingOperation, setPendingOperation] = useState<RoomWorkspacePendingOperation | null>(
-    null
+  const setDraftWorkspace = useCallback(
+    (
+      update: RoomWorkspaceV2 | null | ((current: RoomWorkspaceV2 | null) => RoomWorkspaceV2 | null)
+    ) => dispatchEditorSession({ type: 'set-draft', update }),
+    []
   );
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveOutcome, setSaveOutcome] = useState<RoomWorkspaceSaveOutcome>({ kind: 'idle' });
+  const setStage = useCallback(
+    (nextStage: RoomWorkspaceStage) =>
+      dispatchEditorSession({ type: 'set-stage', stage: nextStage }),
+    []
+  );
+  const setSelectedRoomId = useCallback(
+    (roomId: RoomWorkspaceRoomId | null) =>
+      dispatchEditorSession({ type: 'set-selected-room', roomId }),
+    []
+  );
+  const setPendingPlacements = useCallback(
+    (
+      update:
+        | Record<string, RoomWorkspaceRoomId | null>
+        | ((
+            current: Record<string, RoomWorkspaceRoomId | null>
+          ) => Record<string, RoomWorkspaceRoomId | null>)
+    ) => dispatchEditorSession({ type: 'set-pending-placements', update }),
+    []
+  );
+  const setRoomNameDrafts = useCallback(
+    (
+      update:
+        | Partial<Record<RoomWorkspaceRoomId, string>>
+        | ((
+            current: Partial<Record<RoomWorkspaceRoomId, string>>
+          ) => Partial<Record<RoomWorkspaceRoomId, string>>)
+    ) => dispatchEditorSession({ type: 'set-room-name-drafts', update }),
+    []
+  );
+  const setPendingProviderDeletions = useCallback(
+    (
+      update:
+        | PendingProviderRoomDeletion[]
+        | ((current: PendingProviderRoomDeletion[]) => PendingProviderRoomDeletion[])
+    ) => dispatchEditorSession({ type: 'set-provider-deletions', update }),
+    []
+  );
+  const setPendingOperation = useCallback(
+    (operation: RoomWorkspacePendingOperation | null) =>
+      dispatchEditorSession({ type: 'set-operation', operation }),
+    []
+  );
+  const markSessionDirty = useCallback(() => dispatchEditorSession({ type: 'mark-dirty' }), []);
   const initializedForOpenSessionRef = useRef(false);
 
   useEffect(() => {
@@ -503,16 +522,12 @@ export function useRoomWorkspaceController({
       orderedRooms[0] ??
       null;
 
-    setCommittedWorkspace(workspace);
-    setDraftWorkspace(workspace);
-    setSelectedRoomId(firstRoom?.id ?? null);
-    setPendingPlacements({});
-    setRoomNameDrafts({});
-    setPendingProviderDeletions([]);
-    setPendingOperation(null);
-    setSaveOutcome({ kind: 'idle' });
+    dispatchEditorSession({
+      type: 'opened',
+      workspace,
+      selectedRoomId: firstRoom?.id ?? null,
+    });
     setMode('browse');
-    setStage('structure');
     setQuery('');
     setDeviceQuery('');
   }, [discoveredRooms, initializeWorkspace, isOpen]);
@@ -897,7 +912,7 @@ export function useRoomWorkspaceController({
       }
 
       setPendingOperation(null);
-      setSaveOutcome({ kind: 'idle' });
+      markSessionDirty();
     },
     [draftIndex, draftWorkspace, pendingOperation]
   );
@@ -942,7 +957,7 @@ export function useRoomWorkspaceController({
       setDraftWorkspace(nextWorkspace);
       setSelectedRoomId(targetRoomId);
       setPendingOperation(null);
-      setSaveOutcome({ kind: 'idle' });
+      markSessionDirty();
     },
     [draftIndex, draftWorkspace, entities, pendingOperation, roomIdsByEntityId]
   );
@@ -970,7 +985,7 @@ export function useRoomWorkspaceController({
         return next;
       });
       setPendingOperation(null);
-      setSaveOutcome({ kind: 'idle' });
+      markSessionDirty();
     },
     [committedRoomIdByEntityId, draftIndex, draftWorkspace, pendingOperation]
   );
@@ -997,7 +1012,7 @@ export function useRoomWorkspaceController({
         return;
       }
       setPendingOperation(null);
-      setSaveOutcome({ kind: 'idle' });
+      markSessionDirty();
     },
     [draftWorkspace, pendingOperation]
   );
@@ -1011,7 +1026,7 @@ export function useRoomWorkspaceController({
       if (pendingOperation.kind === 'delete-group') {
         setDraftWorkspace(deleteRoomWorkspaceGroupV2(draftWorkspace, pendingOperation.groupId));
         setPendingOperation(null);
-        setSaveOutcome({ kind: 'idle' });
+        markSessionDirty();
         return;
       }
       if (pendingOperation.kind !== 'delete-room') {
@@ -1079,7 +1094,7 @@ export function useRoomWorkspaceController({
       setSelectedRoomId(null);
       setStage('structure');
       setPendingOperation(null);
-      setSaveOutcome({ kind: 'idle' });
+      markSessionDirty();
     },
     [
       draftIndex,
@@ -1098,189 +1113,42 @@ export function useRoomWorkspaceController({
     if (!draftWorkspace || isSaving || hasValidationErrors) {
       return;
     }
-    const normalizedRoomNames = draftWorkspace.rooms.map((room) =>
-      normalizeSearchValue(room.displayName)
+
+    dispatchEditorSession({ type: 'save-started' });
+    const result = await executeRoomWorkspaceMutationTransaction(
+      {
+        committedWorkspace,
+        draftWorkspace,
+        entitiesByCanonicalId,
+        pendingPlacements,
+        pendingProviderDeletions,
+        roomIdsByEntityId,
+      },
+      {
+        clearRoomOverride,
+        replaceWorkspace,
+        setRoomOverride,
+      }
     );
-    if (
-      normalizedRoomNames.some((name) => !name) ||
-      new Set(normalizedRoomNames).size !== normalizedRoomNames.length
-    ) {
-      setSaveOutcome({ kind: 'error', failureCount: 1 });
-      setStage('impact-review');
-      return;
-    }
 
-    setIsSaving(true);
-    setSaveOutcome({ kind: 'idle' });
-    const stepsByProvider = new Map<IntegrationProviderId, PlatformRoomMutationStep[]>();
-    const localPlacementEntries: Array<[string, RoomWorkspaceRoomId | null]> = [];
-    const failedLocalEntityIds: string[] = [];
-    const stepEntityId = new Map<string, string>();
-    const stepDeletionRoomId = new Map<string, RoomWorkspaceRoomId>();
-    const successfulEntityIds = new Set<string>();
-    const successfulDeletionRoomIds = new Set<RoomWorkspaceRoomId>();
-    const index = buildRoomWorkspaceIndexV2(draftWorkspace);
-    const committedIndex = committedWorkspace
-      ? buildRoomWorkspaceIndexV2(committedWorkspace)
-      : null;
-    let stepIndex = 0;
-
-    for (const room of draftWorkspace.rooms) {
-      const committedRoom = committedIndex?.roomById.get(room.id);
-      if (
-        !committedRoom ||
-        committedRoom.displayName === room.displayName ||
-        room.sourceRefs.length !== 1
-      ) {
-        continue;
-      }
-
-      const sourceRef = room.sourceRefs[0];
-      if (!getProviderRoomManagementCapabilities(sourceRef.providerId).rename) {
-        continue;
-      }
-
-      appendProviderStep(stepsByProvider, sourceRef.providerId, {
-        stepId: `rename-${stepIndex}`,
-        operation: 'rename',
-        roomId: sourceRef.canonicalId,
-        name: room.displayName,
+    if (result.kind !== 'saved') {
+      dispatchEditorSession({
+        type: 'save-failed',
+        outcome: { kind: result.kind, failureCount: result.failureCount },
+        pendingPlacements: result.pendingPlacements,
+        pendingProviderDeletions: result.pendingProviderDeletions,
       });
-      stepIndex += 1;
-    }
-
-    for (const [entityId, targetRoomId] of Object.entries(pendingPlacements)) {
-      const entity = entitiesByCanonicalId[entityId];
-      if (!entity) {
-        failedLocalEntityIds.push(entityId);
-        continue;
-      }
-      const capabilities = getProviderRoomManagementCapabilities(entity.providerId);
-      const targetRoom = targetRoomId ? index.roomById.get(targetRoomId) : null;
-      const providerTarget = targetRoom?.sourceRefs.find(
-        (sourceRef) => sourceRef.providerId === entity.providerId
-      );
-      const stepId = `placement-${stepIndex}`;
-      stepIndex += 1;
-
-      if (targetRoomId && providerTarget && capabilities.assign) {
-        appendProviderStep(stepsByProvider, entity.providerId, {
-          stepId,
-          operation: 'assign',
-          entityId,
-          roomId: providerTarget.canonicalId,
-        });
-        stepEntityId.set(stepId, entityId);
-      } else if (!targetRoomId && getEntityOverrideId(entity, roomIdsByEntityId)) {
-        localPlacementEntries.push([entityId, null]);
-      } else if (!targetRoomId && capabilities.unassign) {
-        appendProviderStep(stepsByProvider, entity.providerId, {
-          stepId,
-          operation: 'unassign',
-          entityId,
-        });
-        stepEntityId.set(stepId, entityId);
-      } else if (targetRoomId) {
-        localPlacementEntries.push([entityId, targetRoomId]);
-      } else {
-        failedLocalEntityIds.push(entityId);
-      }
-    }
-
-    for (const deletion of pendingProviderDeletions) {
-      const dependencies = (stepsByProvider.get(deletion.sourceRef.providerId) ?? [])
-        .filter((step) => 'entityId' in step && deletion.memberIds.includes(step.entityId))
-        .map((step) => step.stepId);
-      const stepId = `delete-${stepIndex}`;
-      appendProviderStep(stepsByProvider, deletion.sourceRef.providerId, {
-        stepId,
-        operation: 'delete',
-        roomId: deletion.sourceRef.canonicalId,
-        dependsOn: dependencies,
-      });
-      stepDeletionRoomId.set(stepId, deletion.room.id);
-      stepIndex += 1;
-    }
-
-    let providerFailureCount = 0;
-    let providerSuccessCount = 0;
-    try {
-      for (const [providerId, steps] of stepsByProvider) {
-        const result = await executeIntegrationRoomMutationPlan({ providerId, steps });
-        providerFailureCount += result.failures.length;
-        providerSuccessCount += result.successes.length;
-        for (const success of result.successes) {
-          const entityId = stepEntityId.get(success.stepId);
-          if (entityId) {
-            successfulEntityIds.add(entityId);
-          }
-          const deletedRoomId = stepDeletionRoomId.get(success.stepId);
-          if (deletedRoomId) {
-            successfulDeletionRoomIds.add(deletedRoomId);
-          }
-        }
-      }
-    } catch {
-      setSaveOutcome({ kind: 'error', failureCount: 1 });
-      setStage('impact-review');
-      setIsSaving(false);
       return;
     }
 
-    const failureCount = providerFailureCount + failedLocalEntityIds.length;
-    if (failureCount > 0) {
-      setPendingPlacements((current) =>
-        Object.fromEntries(
-          Object.entries(current).filter(([entityId]) => !successfulEntityIds.has(entityId))
-        )
-      );
-      setPendingProviderDeletions((current) =>
-        current.filter((deletion) => !successfulDeletionRoomIds.has(deletion.room.id))
-      );
-      setSaveOutcome({
-        kind: providerSuccessCount > 0 ? 'partial' : 'error',
-        failureCount,
-      });
-      setStage('impact-review');
-      setIsSaving(false);
-      return;
-    }
-
-    for (const [entityId, roomId] of localPlacementEntries) {
-      if (roomId) {
-        setRoomOverride(entityId, roomId);
-      } else {
-        clearRoomOverride(entityId);
-      }
-    }
-    for (const entityId of successfulEntityIds) {
-      if (!localPlacementEntries.some(([localEntityId]) => localEntityId === entityId)) {
-        clearRoomOverride(entityId);
-      }
-    }
-
-    const savedWorkspace = replaceWorkspace(draftWorkspace);
-    if (!savedWorkspace) {
-      setSaveOutcome({ kind: 'error', failureCount: 1 });
-      setIsSaving(false);
-      return;
-    }
-
-    const nextRooms = getRoomWorkspaceRoomsInDisplayOrderV2(savedWorkspace);
+    const nextRooms = getRoomWorkspaceRoomsInDisplayOrderV2(result.workspace);
     onRoomOrderChange?.(nextRooms.map((room) => room.displayName));
     onHiddenRoomsChange?.(
       nextRooms
         .filter((room) => room.metadata.visibility === 'hidden')
         .map((room) => room.displayName)
     );
-    setCommittedWorkspace(savedWorkspace);
-    setDraftWorkspace(savedWorkspace);
-    setPendingPlacements({});
-    setRoomNameDrafts({});
-    setPendingProviderDeletions([]);
-    setSaveOutcome({ kind: 'saved' });
-    setStage('room-details');
-    setIsSaving(false);
+    dispatchEditorSession({ type: 'save-succeeded', workspace: result.workspace });
   }, [
     clearRoomOverride,
     committedWorkspace,
@@ -1305,14 +1173,7 @@ export function useRoomWorkspaceController({
       committedRooms.find((room) => room.id === selectedRoomId)?.id ??
       committedRooms[0]?.id ??
       null;
-    setDraftWorkspace(committedWorkspace);
-    setSelectedRoomId(nextSelectedRoomId);
-    setPendingPlacements({});
-    setRoomNameDrafts({});
-    setPendingProviderDeletions([]);
-    setPendingOperation(null);
-    setSaveOutcome({ kind: 'idle' });
-    setStage(nextSelectedRoomId ? 'room-details' : 'structure');
+    dispatchEditorSession({ type: 'discarded', selectedRoomId: nextSelectedRoomId });
   }, [committedWorkspace, selectedRoomId]);
 
   const actions = useMemo<RoomWorkspaceActions>(
@@ -1357,7 +1218,7 @@ export function useRoomWorkspaceController({
           nextIds.splice(nextIndex, 0, movedId);
           return reorderRoomWorkspaceGroupsV2(current, nextIds);
         });
-        setSaveOutcome({ kind: 'idle' });
+        markSessionDirty();
       },
       onRenameGroup: (groupId) =>
         setPendingOperation({
@@ -1378,7 +1239,7 @@ export function useRoomWorkspaceController({
         const roomIdV2 = roomId as RoomWorkspaceRoomId;
         if (!name.trim()) {
           setRoomNameDrafts((current) => ({ ...current, [roomIdV2]: name }));
-          setSaveOutcome({ kind: 'idle' });
+          markSessionDirty();
           return;
         }
         setRoomNameDrafts((current) => {
@@ -1389,7 +1250,7 @@ export function useRoomWorkspaceController({
         setDraftWorkspace((current) =>
           current ? renameRoomWorkspaceRoomV2(current, roomIdV2, name) : current
         );
-        setSaveOutcome({ kind: 'idle' });
+        markSessionDirty();
       },
       onRoomGroupChange: (roomId, groupId) => {
         setDraftWorkspace((current) =>
@@ -1401,7 +1262,7 @@ export function useRoomWorkspaceController({
               )
             : current
         );
-        setSaveOutcome({ kind: 'idle' });
+        markSessionDirty();
       },
       onRoomVisibilityChange: (roomId, visible) => {
         setDraftWorkspace((current) =>
@@ -1413,7 +1274,7 @@ export function useRoomWorkspaceController({
               )
             : current
         );
-        setSaveOutcome({ kind: 'idle' });
+        markSessionDirty();
       },
       onRoomFavoriteChange: (roomId, favorite) => {
         setDraftWorkspace((current) => {
@@ -1425,7 +1286,7 @@ export function useRoomWorkspaceController({
             : null;
           return setRoomWorkspaceFavoriteRankV2(current, roomId as RoomWorkspaceRoomId, nextRank);
         });
-        setSaveOutcome({ kind: 'idle' });
+        markSessionDirty();
       },
       onChooseRoomAppearance: (roomId) =>
         setPendingOperation({
@@ -1473,7 +1334,7 @@ export function useRoomWorkspaceController({
           );
           return reorderRoomWorkspaceRoomsV2(groupedWorkspace, nextIds);
         });
-        setSaveOutcome({ kind: 'idle' });
+        markSessionDirty();
       },
       onToggleGroup: (groupId, collapsed) => {
         setCollapsedGroupIds((current) => {
@@ -1517,7 +1378,7 @@ export function useRoomWorkspaceController({
           }
           return next;
         });
-        setSaveOutcome({ kind: 'idle' });
+        markSessionDirty();
       },
       onDiscard: handleDiscard,
       onSave: () => {

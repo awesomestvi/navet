@@ -33,3 +33,38 @@ it('updates browser state before notifying each session and disposes only its ow
   second.dispose();
   expect(vi.getTimerCount()).toBe(0);
 });
+
+it('replaces named timers and drains only the latest queued command', async () => {
+  vi.useFakeTimers();
+  const runtime = createDashboardSyncBrowserLifecycle();
+  const replaced = vi.fn();
+  const latest = vi.fn();
+  runtime.scheduleNamed('poll', replaced, 50);
+  runtime.scheduleNamed('poll', latest, 50);
+  vi.advanceTimersByTime(50);
+  expect(replaced).not.toHaveBeenCalled();
+  expect(latest).toHaveBeenCalledOnce();
+  expect(runtime.isRunning('refresh')).toBe(false);
+
+  let releaseFirst: (() => void) | undefined;
+  const firstGate = new Promise<void>((resolve) => {
+    releaseFirst = resolve;
+  });
+  const commands: string[] = [];
+  const running = runtime.runLatest('refresh', async () => {
+    await firstGate;
+    commands.push('first');
+  });
+  void runtime.runLatest('refresh', async () => {
+    commands.push('replaced');
+  });
+  void runtime.runLatest('refresh', async () => {
+    commands.push('latest');
+  });
+  expect(runtime.isRunning('refresh')).toBe(true);
+  releaseFirst?.();
+  await running;
+  expect(commands).toEqual(['first', 'latest']);
+  expect(runtime.isRunning('refresh')).toBe(false);
+  runtime.dispose();
+});

@@ -38,6 +38,9 @@ function createRoom(
     name,
     normalizedName: name.toLocaleLowerCase(),
     memberIds,
+    sourceType: 'provider_managed',
+    supportsOrdering: true,
+    supportsDeletion: providerId === 'home_assistant',
   };
 }
 

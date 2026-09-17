@@ -590,6 +590,9 @@ export function buildOpenHABProviderRooms(snapshot: OpenHABSnapshot): NavetProvi
       name: entity.room,
       normalizedName: normalizeRoomName(entity.room),
       memberIds: [entity.canonicalId],
+      sourceType: 'derived',
+      supportsOrdering: false,
+      supportsDeletion: false,
     });
   }
 

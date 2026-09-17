@@ -1,7 +1,8 @@
 import { isAllRooms } from '@navet/app/constants/rooms';
 import { useI18n } from '@navet/app/hooks';
 import { lazy, Suspense, useMemo } from 'react';
-import type { DashboardController } from '../hooks/use-dashboard-controller';
+import type { DashboardOverlayModel } from '../hooks/use-dashboard-controller.types';
+import { getRoomScopedDashboardEntityIds } from '../hooks/use-dashboard-derived-state';
 import { buildManualEntityCardCatalog } from '../utils/manual-entity-card-catalog';
 import { AddEntityDialogPrimitive } from './add-entity-dialog';
 import type { DashboardLibraryCard } from './dashboard-library-list';
@@ -15,7 +16,7 @@ const AddEntityDialog = lazy(async () => {
 });
 
 interface DashboardOverlaysProps {
-  controller: DashboardController;
+  controller: DashboardOverlayModel;
 }
 
 export function DashboardOverlays({ controller }: DashboardOverlaysProps) {
@@ -81,6 +82,21 @@ export function DashboardOverlays({ controller }: DashboardOverlaysProps) {
     t,
   ]);
 
+  const scopedAddableEntityIds = useMemo(
+    () =>
+      activeSection === 'home' && !isAllRooms(activeRoom)
+        ? getRoomScopedDashboardEntityIds(addableEntityIds, availableDeviceMap, activeRoom)
+        : addableEntityIds,
+    [activeRoom, activeSection, addableEntityIds, availableDeviceMap]
+  );
+  const scopedHiddenEntityIds = useMemo(
+    () =>
+      activeSection === 'home' && !isAllRooms(activeRoom)
+        ? getRoomScopedDashboardEntityIds(hiddenEntityIds, availableDeviceMap, activeRoom)
+        : hiddenEntityIds,
+    [activeRoom, activeSection, availableDeviceMap, hiddenEntityIds]
+  );
+
   const handleAddNormalCard = (cardId: string) => {
     const isHomeCanvasTarget = activeSection === 'home' && isAllRooms(activeRoom) && isEditMode;
     if (availableDeviceMap.has(cardId)) {
@@ -122,10 +138,10 @@ export function DashboardOverlays({ controller }: DashboardOverlaysProps) {
             currentRoom={activeRoom}
             deviceMap={availableDeviceMap}
             addedEntityIds={[]}
-            visibleEntityIds={addableEntityIds}
+            visibleEntityIds={scopedAddableEntityIds}
             title={t('dashboard.addEntity.title')}
             description={
-              hiddenEntityIds.length > 0
+              scopedHiddenEntityIds.length > 0
                 ? t('dashboard.addEntity.descriptionWithHidden')
                 : t('dashboard.addEntity.descriptionDefault')
             }

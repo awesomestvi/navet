@@ -1,4 +1,7 @@
-import type { DashboardController } from '@navet/app/features/dashboard/hooks/use-dashboard-controller.types';
+import type {
+  DashboardComposition,
+  DashboardController,
+} from '@navet/app/features/dashboard/hooks/use-dashboard-controller.types';
 import { useErrorStore } from '@navet/app/stores';
 import { renderWithProviders } from '@navet/app/test/render';
 import { resetAppStores } from '@navet/app/test/store-reset';
@@ -73,10 +76,7 @@ describe('DashboardPage loading recovery', () => {
     getControllerMock.mockReturnValue(controller);
     const { rerender } = renderWithProviders(<DashboardPage />);
 
-    getControllerMock.mockReturnValue({
-      ...controller,
-      homeLayoutHydrated: true,
-    });
+    getControllerMock.mockReturnValue(createController({ homeLayoutHydrated: true }));
     rerender(<DashboardPage />);
 
     expect(screen.getByText('dashboard ready')).toBeInTheDocument();
@@ -99,10 +99,7 @@ describe('DashboardPage loading recovery', () => {
 
     expect(useErrorStore.getState().error?.message).toBe('Still loading devices');
 
-    getControllerMock.mockReturnValue({
-      ...controller,
-      homeLayoutHydrated: true,
-    });
+    getControllerMock.mockReturnValue(createController({ homeLayoutHydrated: true }));
     rerender(<DashboardPage />);
 
     expect(screen.getByText('dashboard ready')).toBeInTheDocument();
@@ -148,6 +145,19 @@ describe('DashboardPage loading recovery', () => {
     expect(window.location.pathname).toBe('/settings');
   });
 
+  it('keeps the dashboard visible beneath the Add Entity backdrop', () => {
+    getControllerMock.mockReturnValue(
+      createController({ homeLayoutHydrated: true, showAddEntityDialog: true })
+    );
+
+    renderWithProviders(<DashboardPage />);
+
+    const dashboard = screen.getByText('dashboard ready').parentElement;
+    expect(dashboard).toHaveAttribute('aria-hidden', 'true');
+    expect(dashboard).not.toHaveStyle({ visibility: 'hidden' });
+    expect(dashboard).not.toHaveStyle({ contentVisibility: 'hidden' });
+  });
+
   it('does not let a stale dashboard link override an active non-home section', () => {
     window.history.replaceState({}, '', '/dashboard/missing');
     getControllerMock.mockReturnValue(
@@ -161,8 +171,8 @@ describe('DashboardPage loading recovery', () => {
   });
 });
 
-function createController(overrides: Partial<DashboardController> = {}): DashboardController {
-  return {
+function createController(overrides: Partial<DashboardController> = {}): DashboardComposition {
+  const controller = {
     activeRoom: 'All',
     activeSection: 'home',
     addableEntityIds: [],
@@ -256,4 +266,9 @@ function createController(overrides: Partial<DashboardController> = {}): Dashboa
     showImportedDashboardReveal: false,
     ...overrides,
   } as DashboardController;
+  return {
+    page: controller,
+    overlays: controller,
+    section: controller,
+  };
 }

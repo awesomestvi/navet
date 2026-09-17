@@ -286,6 +286,16 @@ export const EditQuickview: Story = {
   },
 };
 
+export const EditCameraMosaic: Story = {
+  args: {
+    cameras: [liveCamera, idleCamera, gardenCamera],
+    locks: [],
+    sensors: [],
+    alarms: [],
+    isEditMode: true,
+  },
+};
+
 export const SnapshotOnlyCurrentHaData: Story = {
   args: {
     cameras: [utilityCamera],

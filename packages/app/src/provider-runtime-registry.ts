@@ -108,6 +108,10 @@ export function getProviderCapabilities(
 export function getProviderRoomManagementCapabilities(
   providerId: IntegrationProviderId
 ): ProviderRoomManagementCapabilities {
+  if (!isImplementedIntegrationProviderId(providerId)) {
+    return createProviderRoomManagementCapabilities(providerId);
+  }
+
   const registration = getProviderRuntimeRegistration(providerId);
   return (
     registration.roomManagementCapabilities ??

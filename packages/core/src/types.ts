@@ -72,11 +72,23 @@ export interface NavetProviderRoom {
   normalizedName: string;
   alias?: string;
   memberIds: string[];
+  sourceType: 'provider_managed' | 'derived';
+  supportsOrdering: boolean;
+  supportsDeletion: boolean;
 }
 
-export interface NavetProviderState {
+export interface NavetProviderRuntimeState {
   providerId: IntegrationProviderId;
   connected: boolean;
+  connecting: boolean;
+  reconnecting: boolean;
+  entitiesHydrated: boolean;
+  registriesHydrated: boolean;
+  error: string | null;
+  unreachable?: boolean;
+}
+
+export interface NavetProviderState extends NavetProviderRuntimeState {
   entities: NavetEntity[];
   rooms: NavetProviderRoom[];
 }

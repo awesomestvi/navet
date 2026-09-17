@@ -8,6 +8,12 @@ export function buildHomeyProviderState(snapshot: HomeyProviderStateInput): Nave
   return {
     providerId: 'homey',
     connected: snapshot.connected,
+    connecting: false,
+    reconnecting: false,
+    entitiesHydrated: Object.keys(snapshot.devices).length > 0,
+    registriesHydrated: true,
+    error: snapshot.error ?? null,
+    unreachable: snapshot.unreachable ?? false,
     entities: mapHomeySnapshotToNavetEntities(snapshot),
     rooms: buildHomeyProviderRooms(snapshot),
   };

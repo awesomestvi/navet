@@ -18,6 +18,9 @@ describe('useAggregatedRooms', () => {
           name: 'Kitchen',
           normalizedName: 'kitchen',
           memberIds: ['home_assistant:light.kitchen'],
+          sourceType: 'provider_managed',
+          supportsOrdering: true,
+          supportsDeletion: true,
         },
         'homey:kitchen': {
           id: 'homey:kitchen',
@@ -27,6 +30,9 @@ describe('useAggregatedRooms', () => {
           name: 'Kitchen',
           normalizedName: 'kitchen',
           memberIds: ['homey:switch.coffee'],
+          sourceType: 'provider_managed',
+          supportsOrdering: true,
+          supportsDeletion: false,
         },
         'openhab:living room': {
           id: 'openhab:living room',
@@ -36,6 +42,9 @@ describe('useAggregatedRooms', () => {
           name: 'Living Room',
           normalizedName: 'living room',
           memberIds: ['openhab:LivingRoomLamp'],
+          sourceType: 'derived',
+          supportsOrdering: false,
+          supportsDeletion: false,
         },
       },
     });

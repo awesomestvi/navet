@@ -157,6 +157,9 @@ function createPreviewRoom(name: string, memberEntityIds: string[]): NavetProvid
     memberIds: memberEntityIds.map((entityId) =>
       createProviderScopedId(PREVIEW_PROVIDER_ID, entityId)
     ),
+    sourceType: 'provider_managed',
+    supportsOrdering: true,
+    supportsDeletion: true,
   };
 }
 
@@ -1172,6 +1175,11 @@ function getPreviewProviderState(): NavetProviderState {
   return {
     providerId: PREVIEW_PROVIDER_ID,
     connected: true,
+    connecting: false,
+    reconnecting: false,
+    entitiesHydrated: true,
+    registriesHydrated: true,
+    error: null,
     entities: scenario.entities,
     rooms: scenario.rooms,
   };

@@ -1,7 +1,7 @@
 import { integrationSessionRuntime } from '@navet/app/integration-session-runtime';
 import type { ProviderHealth } from '@navet/app/platform/types';
 import { getRegisteredProviderContract } from '@navet/app/provider-contract-registry';
-import { homeyService } from '@navet/app/services/homey.service';
+import { getProviderRuntimeRegistration } from '@navet/app/provider-runtime-registry';
 import type {
   IntegrationProviderRoomModel,
   IntegrationProviderRuntimeState,
@@ -10,16 +10,21 @@ import type {
 import type { DeviceCollection } from '@navet/app/types/device.types';
 import type { IntegrationUser } from '@navet/app/types/integration-user';
 import type { IntegrationProviderId } from '@navet/app/types/provider';
-import { INTEGRATION_PROVIDER_IDS, INTEGRATION_PROVIDERS } from '@navet/app/types/provider';
+import {
+  IMPLEMENTED_INTEGRATION_PROVIDER_IDS,
+  INTEGRATION_PROVIDER_IDS,
+  INTEGRATION_PROVIDERS,
+  isImplementedIntegrationProviderId,
+} from '@navet/app/types/provider';
 import type { NavetProviderSession } from '@navet/core/provider-contract';
 import type { PlatformManageableRoomReference } from '@navet/core/provider-feature-models';
+import { createProviderRoomManagementCapabilities } from '@navet/core/provider-room-management';
 import type {
   NavetEntity,
   NavetEntityEvent,
   NavetProviderRoom,
   NavetProviderState,
 } from '@navet/core/types';
-import { getOpenHABSnapshot, subscribeOpenHABSnapshot } from '@navet/provider-openhab';
 import type { DashboardEntityView } from '@navet/ui/dashboard-entity-view';
 import { createStore } from 'zustand/vanilla';
 import { type HomeAssistantStore, homeAssistantStore } from './home-assistant-store';
@@ -34,12 +39,7 @@ import {
   reuseValue,
 } from './provider-state-pipeline';
 
-export interface HomeyRuntimeSlice {
-  connected: boolean;
-}
-
 interface IntegrationRuntimeState {
-  homey: HomeyRuntimeSlice;
   availableProviderIds: IntegrationProviderId[];
   selectedProviderIds: IntegrationProviderId[];
   providerHealth: Record<IntegrationProviderId, ProviderHealth>;
@@ -102,22 +102,6 @@ interface IntegrationRuntimeState {
 
 export type IntegrationStore = IntegrationRuntimeState;
 
-function getSafeHomeySnapshot() {
-  if (typeof homeyService.getSnapshot === 'function') {
-    return homeyService.getSnapshot();
-  }
-
-  return {
-    connected: false,
-    devices: {},
-    zones: {},
-  };
-}
-
-function getSafeOpenHABSnapshot() {
-  return getOpenHABSnapshot();
-}
-
 function getProviderSessionsSnapshot(): Partial<
   Record<IntegrationProviderId, NavetProviderSession>
 > {
@@ -171,14 +155,9 @@ function buildCurrentProviderScopedState(
 }
 
 function buildCurrentRoomDescriptors(
-  homeAssistantState: HomeAssistantStore,
   normalizedRoomsByCanonicalId: Record<string, NavetProviderRoom>
 ) {
-  return buildRoomDescriptors({
-    homeAssistantAreas: homeAssistantState.areas,
-    homeyZones: getSafeHomeySnapshot().zones,
-    normalizedRoomsByCanonicalId,
-  });
+  return buildRoomDescriptors({ normalizedRoomsByCanonicalId });
 }
 
 function createProviderRuntimeState(
@@ -191,179 +170,77 @@ function createProviderRuntimeState(
   };
 }
 
-function buildProviderRuntime(
-  homeAssistantState: HomeAssistantStore
-): Record<IntegrationProviderId, IntegrationProviderRuntimeState> {
-  const homeySnapshot = getSafeHomeySnapshot();
-  const openhabSnapshot = getSafeOpenHABSnapshot();
+function buildProviderRuntimeState(
+  providerId: IntegrationProviderId,
+  providerState: NavetProviderState | null
+): IntegrationProviderRuntimeState {
+  return createProviderRuntimeState(providerId, {
+    connected: providerState?.connected ?? false,
+    connecting: providerState?.connecting ?? false,
+    reconnecting: providerState?.reconnecting ?? false,
+    entitiesHydrated: providerState?.entitiesHydrated ?? false,
+    registriesHydrated: providerState?.registriesHydrated ?? false,
+  });
+}
 
+function buildProviderRuntime(
+  providerStateByProviderId: Record<IntegrationProviderId, ProviderScopedState>
+): Record<IntegrationProviderId, IntegrationProviderRuntimeState> {
+  return Object.fromEntries(
+    INTEGRATION_PROVIDER_IDS.map((providerId) => [
+      providerId,
+      buildProviderRuntimeState(
+        providerId,
+        providerStateByProviderId[providerId].sourceProviderState
+      ),
+    ])
+  ) as Record<IntegrationProviderId, IntegrationProviderRuntimeState>;
+}
+
+function buildProviderHealth(
+  providerId: IntegrationProviderId,
+  providerState: NavetProviderState | null
+): ProviderHealth {
   return {
-    home_assistant: createProviderRuntimeState('home_assistant', {
-      connected: homeAssistantState.connected,
-      connecting: homeAssistantState.connecting,
-      reconnecting: homeAssistantState.reconnecting,
-      entitiesHydrated: homeAssistantState.entities != null,
-      registriesHydrated: homeAssistantState.registriesHydrated,
-    }),
-    homey: createProviderRuntimeState('homey', {
-      connected: homeySnapshot.connected,
-      connecting: false,
-      reconnecting: false,
-      entitiesHydrated: Object.keys(homeySnapshot.devices).length > 0,
-      registriesHydrated: true,
-    }),
-    openhab: createProviderRuntimeState('openhab', {
-      connected: openhabSnapshot.connected,
-      connecting: false,
-      reconnecting: openhabSnapshot.reconnecting ?? false,
-      entitiesHydrated: Object.keys(openhabSnapshot.items).length > 0,
-      registriesHydrated: Object.keys(openhabSnapshot.items).length > 0,
-    }),
-    hubitat: createProviderRuntimeState('hubitat', {
-      connected: false,
-      connecting: false,
-      reconnecting: false,
-      entitiesHydrated: false,
-      registriesHydrated: false,
-    }),
-    smartthings: createProviderRuntimeState('smartthings', {
-      connected: false,
-      connecting: false,
-      reconnecting: false,
-      entitiesHydrated: false,
-      registriesHydrated: false,
-    }),
+    providerId,
+    connected: providerState?.connected ?? false,
+    connecting: providerState?.connecting ?? false,
+    reconnecting: providerState?.reconnecting ?? false,
+    implementationStatus: INTEGRATION_PROVIDERS[providerId].implementationStatus,
+    lastError: providerState?.error ?? null,
+    ...(providerState?.unreachable !== undefined ? { unreachable: providerState.unreachable } : {}),
   };
 }
 
-function buildProviderRuntimeState(
-  providerId: IntegrationProviderId,
-  homeAssistantState: HomeAssistantStore
-): IntegrationProviderRuntimeState {
-  switch (providerId) {
-    case 'home_assistant':
-      return createProviderRuntimeState('home_assistant', {
-        connected: homeAssistantState.connected,
-        connecting: homeAssistantState.connecting,
-        reconnecting: homeAssistantState.reconnecting,
-        entitiesHydrated: homeAssistantState.entities != null,
-        registriesHydrated: homeAssistantState.registriesHydrated,
-      });
-    case 'homey': {
-      const homeySnapshot = getSafeHomeySnapshot();
-      return createProviderRuntimeState('homey', {
-        connected: homeySnapshot.connected,
-        connecting: false,
-        reconnecting: false,
-        entitiesHydrated: Object.keys(homeySnapshot.devices).length > 0,
-        registriesHydrated: true,
-      });
-    }
-    case 'openhab': {
-      const openhabSnapshot = getSafeOpenHABSnapshot();
-      return createProviderRuntimeState('openhab', {
-        connected: openhabSnapshot.connected,
-        connecting: false,
-        reconnecting: openhabSnapshot.reconnecting ?? false,
-        entitiesHydrated: Object.keys(openhabSnapshot.items).length > 0,
-        registriesHydrated: Object.keys(openhabSnapshot.items).length > 0,
-      });
-    }
-    case 'hubitat':
-      return createProviderRuntimeState('hubitat', {
-        connected: false,
-        connecting: false,
-        reconnecting: false,
-        entitiesHydrated: false,
-        registriesHydrated: false,
-      });
-    case 'smartthings':
-      return createProviderRuntimeState('smartthings', {
-        connected: false,
-        connecting: false,
-        reconnecting: false,
-        entitiesHydrated: false,
-        registriesHydrated: false,
-      });
-  }
-}
-
-function getInitialProviderHealth(): Record<IntegrationProviderId, ProviderHealth> {
+function buildProviderHealthRecord(
+  providerStateByProviderId: Record<IntegrationProviderId, ProviderScopedState>
+): Record<IntegrationProviderId, ProviderHealth> {
   return Object.fromEntries(
-    Object.values(INTEGRATION_PROVIDERS).map((provider) => [
-      provider.id,
-      {
-        providerId: provider.id,
-        connected: false,
-        connecting: false,
-        reconnecting: false,
-        implementationStatus: getImplementationStatus(provider.id),
-        lastError: null,
-      },
+    INTEGRATION_PROVIDER_IDS.map((providerId) => [
+      providerId,
+      buildProviderHealth(providerId, providerStateByProviderId[providerId].sourceProviderState),
     ])
   ) as Record<IntegrationProviderId, ProviderHealth>;
 }
 
-function createProviderHealthFromHomeAssistant(
-  state: HomeAssistantStore,
-  implementationStatus: ProviderHealth['implementationStatus']
-): ProviderHealth {
-  return {
-    providerId: 'home_assistant',
-    connected: state.connected,
-    connecting: state.connecting,
-    reconnecting: state.reconnecting,
-    implementationStatus,
-    lastError: state.error,
-  };
-}
+function resolveProviderRoomManagementCapabilities(providerId: IntegrationProviderId) {
+  if (!isImplementedIntegrationProviderId(providerId)) {
+    return createProviderRoomManagementCapabilities(providerId);
+  }
 
-function createProviderHealthFromHomey(
-  implementationStatus: ProviderHealth['implementationStatus']
-): ProviderHealth {
-  const snapshot = getSafeHomeySnapshot();
-
-  return {
-    providerId: 'homey',
-    connected: snapshot.connected,
-    connecting: false,
-    reconnecting: false,
-    implementationStatus,
-    lastError: snapshot.error ?? null,
-    unreachable: snapshot.unreachable ?? false,
-  };
-}
-
-function createProviderHealthFromOpenHAB(
-  implementationStatus: ProviderHealth['implementationStatus']
-): ProviderHealth {
-  const snapshot = getSafeOpenHABSnapshot();
-
-  return {
-    providerId: 'openhab',
-    connected: snapshot.connected,
-    connecting: false,
-    reconnecting: snapshot.reconnecting ?? false,
-    implementationStatus,
-    lastError: snapshot.error ?? null,
-  };
-}
-
-function getImplementationStatus(
-  providerId: IntegrationProviderId
-): ProviderHealth['implementationStatus'] {
-  const implementedProviderIds = new Set<IntegrationProviderId>([
-    'home_assistant',
-    'homey',
-    'openhab',
-  ]);
-  return implementedProviderIds.has(providerId) ? 'implemented' : 'planned';
+  const registration = getProviderRuntimeRegistration(providerId);
+  return (
+    registration?.roomManagementCapabilities ??
+    createProviderRoomManagementCapabilities(providerId, {
+      discover: registration?.featureMatrix?.rooms ?? false,
+    })
+  );
 }
 
 export const integrationStore = createStore<IntegrationStore>()((set) => {
   const providerScopedStateByProviderId = {} as Record<IntegrationProviderId, ProviderScopedState>;
 
-  const buildInitialProviderScopedState = (_homeAssistantState: HomeAssistantStore) => {
+  const buildInitialProviderScopedState = () => {
     const providerStateByProviderId = Object.fromEntries(
       INTEGRATION_PROVIDER_IDS.map((providerId) => [
         providerId,
@@ -417,7 +294,6 @@ export const integrationStore = createStore<IntegrationStore>()((set) => {
     current: IntegrationStore,
     providerId: IntegrationProviderId,
     nextProviderScopedState: ProviderScopedState,
-    homeAssistantState: HomeAssistantStore,
     nextProviderRuntime: IntegrationProviderRuntimeState,
     nextProviderHealth: ProviderHealth,
     extraState: Partial<IntegrationStore> = {},
@@ -511,7 +387,7 @@ export const integrationStore = createStore<IntegrationStore>()((set) => {
     const roomDescriptors = shouldRebuildRoomDescriptors
       ? reuseValue(
           current.roomDescriptors,
-          buildCurrentRoomDescriptors(homeAssistantState, normalizedRoomsByCanonicalId)
+          buildCurrentRoomDescriptors(normalizedRoomsByCanonicalId)
         )
       : current.roomDescriptors;
     const manageableRoomsByProviderId =
@@ -519,7 +395,10 @@ export const integrationStore = createStore<IntegrationStore>()((set) => {
         ? current.manageableRoomsByProviderId
         : reuseValue(
             current.manageableRoomsByProviderId,
-            buildManageableRoomsByProviderId(roomDescriptors)
+            buildManageableRoomsByProviderId(
+              roomDescriptors,
+              resolveProviderRoomManagementCapabilities
+            )
           );
     const mergedProviderRuntime = reuseValue(
       current.providerRuntime[providerId],
@@ -589,80 +468,9 @@ export const integrationStore = createStore<IntegrationStore>()((set) => {
     };
   };
 
-  const syncHomeAssistantState = (state: HomeAssistantStore) => {
-    const shouldRebuildRoomDescriptors = state.areas !== previousHomeAssistantAreas;
-    previousHomeAssistantAreas = state.areas;
-    set((current) => {
-      const nextHomeAssistantState = buildCurrentProviderScopedState(
-        'home_assistant',
-        providerScopedStateByProviderId.home_assistant
-      );
-      return syncProviderState(
-        current,
-        'home_assistant',
-        nextHomeAssistantState,
-        state,
-        buildProviderRuntimeState('home_assistant', state),
-        createProviderHealthFromHomeAssistant(state, getImplementationStatus('home_assistant')),
-        {
-          currentUser: current.currentUser ?? state.user,
-        },
-        { shouldRebuildRoomDescriptors }
-      );
-    });
-  };
-
-  const syncHomeyState = () => {
-    const snapshot = getSafeHomeySnapshot();
-    const homeAssistantState = homeAssistantStore.getState();
-    const shouldRebuildRoomDescriptors = snapshot.zones !== previousHomeyZones;
-    previousHomeyZones = snapshot.zones;
-    set((current) => {
-      const nextHomeyState = buildCurrentProviderScopedState(
-        'homey',
-        providerScopedStateByProviderId.homey
-      );
-      return syncProviderState(
-        current,
-        'homey',
-        nextHomeyState,
-        homeAssistantState,
-        buildProviderRuntimeState('homey', homeAssistantState),
-        createProviderHealthFromHomey(getImplementationStatus('homey')),
-        {
-          homey: {
-            connected: snapshot.connected,
-          },
-        },
-        { shouldRebuildRoomDescriptors }
-      );
-    });
-  };
-
-  const syncOpenHABState = () => {
-    const homeAssistantState = homeAssistantStore.getState();
-
-    set((current) => {
-      const nextOpenHABState = buildCurrentProviderScopedState(
-        'openhab',
-        providerScopedStateByProviderId.openhab
-      );
-      return syncProviderState(
-        current,
-        'openhab',
-        nextOpenHABState,
-        homeAssistantState,
-        buildProviderRuntimeState('openhab', homeAssistantState),
-        createProviderHealthFromOpenHAB(getImplementationStatus('openhab'))
-      );
-    });
-  };
-
   const currentHomeAssistantState = homeAssistantStore.getState();
-  let previousHomeAssistantAreas = currentHomeAssistantState.areas;
-  let previousHomeyZones = getSafeHomeySnapshot().zones;
-  const initialCanonicalState = buildInitialProviderScopedState(currentHomeAssistantState);
-  const initialProviderRuntime = buildProviderRuntime(currentHomeAssistantState);
+  const initialCanonicalState = buildInitialProviderScopedState();
+  const initialProviderRuntime = buildProviderRuntime(providerScopedStateByProviderId);
   const initialProviderEntitiesByCanonicalId = flattenProviderRecords(
     initialCanonicalState.providerEntitiesByProviderId
   );
@@ -675,34 +483,43 @@ export const integrationStore = createStore<IntegrationStore>()((set) => {
   const initialRoomsByCanonicalId = flattenProviderRecords(
     initialCanonicalState.providerRoomsByProviderId
   );
-  const initialRoomDescriptors = buildCurrentRoomDescriptors(
-    currentHomeAssistantState,
-    initialNormalizedRoomsByCanonicalId
+  const initialRoomDescriptors = buildCurrentRoomDescriptors(initialNormalizedRoomsByCanonicalId);
+  const initialManageableRoomsByProviderId = buildManageableRoomsByProviderId(
+    initialRoomDescriptors,
+    resolveProviderRoomManagementCapabilities
   );
-  const initialManageableRoomsByProviderId =
-    buildManageableRoomsByProviderId(initialRoomDescriptors);
   const initialProviderSessions = getProviderSessionsSnapshot();
-  const initialProviderHealth = {
-    ...getInitialProviderHealth(),
-    home_assistant: createProviderHealthFromHomeAssistant(
-      currentHomeAssistantState,
-      getImplementationStatus('home_assistant')
-    ),
-    homey: createProviderHealthFromHomey(getImplementationStatus('homey')),
-    openhab: createProviderHealthFromOpenHAB(getImplementationStatus('openhab')),
+  const initialProviderHealth = buildProviderHealthRecord(providerScopedStateByProviderId);
+
+  const syncRegisteredProviderState = (providerId: IntegrationProviderId) => {
+    const nextProviderScopedState = buildCurrentProviderScopedState(
+      providerId,
+      providerScopedStateByProviderId[providerId]
+    );
+    const providerState = nextProviderScopedState.sourceProviderState;
+
+    set((current) =>
+      syncProviderState(
+        current,
+        providerId,
+        nextProviderScopedState,
+        buildProviderRuntimeState(providerId, providerState),
+        buildProviderHealth(providerId, providerState),
+        providerId === 'home_assistant'
+          ? { currentUser: current.currentUser ?? homeAssistantStore.getState().user }
+          : undefined
+      )
+    );
   };
 
-  homeAssistantStore.subscribe(syncHomeAssistantState);
-  if (typeof homeyService.subscribe === 'function') {
-    homeyService.subscribe(syncHomeyState);
+  for (const providerId of IMPLEMENTED_INTEGRATION_PROVIDER_IDS) {
+    getRegisteredProviderContract(providerId).subscribeState?.(() =>
+      syncRegisteredProviderState(providerId)
+    );
   }
-  subscribeOpenHABSnapshot(syncOpenHABState);
 
   return {
     currentUser: currentHomeAssistantState.user,
-    homey: {
-      connected: getSafeHomeySnapshot().connected,
-    },
     availableProviderIds: Object.keys(INTEGRATION_PROVIDERS) as IntegrationProviderId[],
     providers: Object.keys(INTEGRATION_PROVIDERS) as IntegrationProviderId[],
     currentProviderId: resolveInitialCurrentProviderId(initialProviderSessions),
@@ -738,35 +555,19 @@ export const integrationStore = createStore<IntegrationStore>()((set) => {
         },
       })),
     applyPreviewProviderState: (providerId, options) => {
-      const previewHomeAssistantState = options.homeAssistantState as HomeAssistantStore;
       const nextProviderScopedState = buildCurrentProviderScopedState(
         providerId,
         providerScopedStateByProviderId[providerId]
       );
-      const providerRuntime = createProviderRuntimeState(providerId, {
-        connected: options.homeAssistantState.connected,
-        connecting: options.homeAssistantState.connecting,
-        reconnecting: options.homeAssistantState.reconnecting,
-        entitiesHydrated: options.homeAssistantState.entities != null,
-        registriesHydrated: options.homeAssistantState.registriesHydrated,
-      });
-      const providerHealth: ProviderHealth = {
-        providerId,
-        connected: options.homeAssistantState.connected,
-        connecting: options.homeAssistantState.connecting,
-        reconnecting: options.homeAssistantState.reconnecting,
-        implementationStatus: 'implemented',
-        lastError: options.homeAssistantState.error,
-      };
+      const providerState = nextProviderScopedState.sourceProviderState;
 
       set((current) =>
         syncProviderState(
           current,
           providerId,
           nextProviderScopedState,
-          previewHomeAssistantState,
-          providerRuntime,
-          providerHealth,
+          buildProviderRuntimeState(providerId, providerState),
+          buildProviderHealth(providerId, providerState),
           {
             currentProviderId: options.currentProviderId ?? current.currentProviderId,
             selectedProviderIds: options.selectedProviderIds ?? current.selectedProviderIds,
