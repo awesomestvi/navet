@@ -32,6 +32,19 @@ vi.mock('@navet/app/auth/device-authorization', () => ({
   revokeAuthorizedDevice: authorizationMocks.revoke,
 }));
 
+function expectResponsiveStatusLabels(label: string, logicalCount: number) {
+  const labels = screen.getAllByText(label);
+  expect(labels.filter((element) => element.classList.contains('sm:hidden'))).toHaveLength(
+    logicalCount
+  );
+  expect(
+    labels.filter(
+      (element) =>
+        element.classList.contains('hidden') && element.classList.contains('sm:inline-flex')
+    )
+  ).toHaveLength(logicalCount);
+}
+
 describe('SettingsAuthorizedDevices', () => {
   const styles = getSettingsSectionStyles('glass', 'yellow');
   const primaryOverview = (devices: Array<Record<string, unknown>> = []) => ({
@@ -179,7 +192,7 @@ describe('SettingsAuthorizedDevices', () => {
     expect(screen.getByText('Original sign-in')).toBeVisible();
     expect(screen.getByText('Kitchen tablet')).toBeVisible();
     expect(screen.getByText('Hallway display')).toBeVisible();
-    expect(screen.getByText('This device')).toBeVisible();
+    expectResponsiveStatusLabels('This device', 1);
     expect(screen.getByText('Home Assistant · Active now')).toBeVisible();
     expect(screen.queryByText('Current')).not.toBeInTheDocument();
     expect(screen.queryByText('Connect another device')).not.toBeInTheDocument();
@@ -224,9 +237,8 @@ describe('SettingsAuthorizedDevices', () => {
       )
     ).toBeVisible();
     expect(screen.queryByText('Original sign-in')).not.toBeInTheDocument();
-    const primaryBadges = screen.getAllByText('Primary');
-    expect(primaryBadges).toHaveLength(2);
-    expect(screen.getByText('This device')).toBeVisible();
+    expectResponsiveStatusLabels('Primary', 2);
+    expectResponsiveStatusLabels('This device', 1);
     expect(screen.queryByText('Current')).not.toBeInTheDocument();
 
     fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions: Computer A1B2' }));
@@ -234,7 +246,7 @@ describe('SettingsAuthorizedDevices', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Make primary' }));
 
     await waitFor(() => expect(authorizationMocks.promote).toHaveBeenCalledWith('computer-device'));
-    expect(screen.getAllByText('Primary')).toHaveLength(1);
+    expectResponsiveStatusLabels('Primary', 1);
     expect(screen.queryByText('Choose the primary device')).not.toBeInTheDocument();
   });
 
@@ -313,7 +325,7 @@ describe('SettingsAuthorizedDevices', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Make primary' }));
 
     await waitFor(() => expect(authorizationMocks.promote).toHaveBeenCalledWith('device-1'));
-    expect(screen.getAllByText('Primary')).toHaveLength(1);
+    expectResponsiveStatusLabels('Primary', 1);
     expect(screen.getByText('Managed by the primary device')).toBeVisible();
     expect(authorizationMocks.toastSuccess).toHaveBeenCalledWith(
       'Kitchen tablet is now a primary device.',
