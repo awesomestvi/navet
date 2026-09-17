@@ -211,10 +211,8 @@ not part of tagged release promotion in phase 1.
 
 1. Decide the release bump and update `package.json`.
 2. Run `pnpm release:version-sync`.
-3. Fetch Linear issues in the `Ready for Release` workflow state with `pnpm release:linear` and
-   treat them as the primary release-note source.
-4. Draft one short bullet per user-visible topic from those Linear issues. If no matching issues
-   exist, fall back to commit history since the previous release tag.
+3. Audit every merged pull request, commit, and changed product file since the previous stable tag.
+4. Draft one short bullet per verified user-visible topic from that complete range.
 5. Update `platform/home-assistant/addons/navet/CHANGELOG.md` for the release version.
 6. Run `pnpm release:check`.
    Do not run `pnpm build:ha-panel` as part of local release prep. The automated release/HACS workflow
@@ -244,7 +242,7 @@ Optional immutable Navet Dev publish:
 ## What Stays Manual
 
 - choosing the SemVer bump
-- checking Linear `Ready for Release` scope and deciding whether the commit-history fallback is needed
+- auditing the complete post-tag Git and pull-request range for release-note scope
 - drafting release notes
 - keeping the HA panel source buildable when the automated export/release workflows rebuild it
 - monitoring the automatic `navet-home-assistant` sync from `main` and tagged releases, and

@@ -1,7 +1,7 @@
 {
   "name": "navet",
   "private": true,
-  "version": "0.17.0",
+  "version": "0.17.1",
   "description": "A provider-neutral, local-first smart-home dashboard.",
   "license": "AGPL-3.0-only",
   "homepage": "https://github.com/awesomestvi/navet#readme",
@@ -42,7 +42,6 @@
     "brand:generate": "node scripts/generate-brand-reference-visuals.mjs && node scripts/brand-assets.mjs generate && node apps/website/scripts/generate-social-card.mjs",
     "docker:build": "docker build -t navet:local .",
     "docker:smoke": "node scripts/docker-smoke.mjs",
-    "release:linear": "node scripts/fetch-linear-release-issues.mjs",
     "release:check": "node scripts/check-release-surfaces.mjs",
     "release:notes": "node scripts/extract-release-notes.mjs",
     "release:version-sync": "node scripts/sync-release-versions.mjs",

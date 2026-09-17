@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.17.1 - 2026-09-17
+
+## Improvements and bug fixes
+
+- Hidden room entities can now be restored with Add Entity without showing entities from other rooms.
+- Improved dashboard syncing during connectivity changes and preserved successful room edits after partial provider failures.
+- Improved media metadata, portrait camera editing, and authorized-device badges across screen sizes.
+
 ## 0.17.0 - 2026-09-16
 
 ## New features

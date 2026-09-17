@@ -58,7 +58,6 @@ pnpm build:demo
 pnpm storybook:build
 pnpm website:build
 pnpm release:check
-pnpm release:linear
 pnpm release:notes
 pnpm release:version-sync
 pnpm release:dev-publish

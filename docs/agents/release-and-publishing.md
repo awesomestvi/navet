@@ -6,7 +6,7 @@ Use this file for maintainer and agent release work.
 
 - do not run release `pnpm` commands yourself during assisted release work
 - list the required commands for the user and wait for the reported results
-- use `pnpm release:linear` or the Linear app as the preferred release-note source
+- audit the complete Git and pull-request history since the previous stable tag for release notes
 - keep release-managed files aligned for versioned releases
 - keep root `repository.yaml` in the monorepo
 - treat `platform/home-assistant/custom_components/navet/` as the HACS integration source of truth
@@ -26,9 +26,8 @@ Use this file for maintainer and agent release work.
 1. Decide whether the change is `patch`, `minor`, or `prerelease`.
 2. Bump `package.json`.
 3. Run `pnpm release:version-sync`.
-4. Fetch Linear issues in the `Ready for Release` workflow state.
-5. Draft the `CHANGELOG.md` section from those issues. If there are no matching issues, fall back
-   to commit history.
+4. Audit every merged pull request, commit, and changed product file since the previous stable tag.
+5. Draft the `CHANGELOG.md` section from the verified user-visible outcomes in that complete range.
 6. Update `platform/home-assistant/addons/navet/CHANGELOG.md`.
 7. Update [../VERSIONING.md](../VERSIONING.md) if release meaning changed.
 8. Run `pnpm release:check`.
@@ -81,12 +80,12 @@ Important note:
 
 ## Release Notes
 
-Preferred source:
+Source:
 
-1. Fetch Linear issues in the `Ready for Release` workflow state.
-2. Treat them as the release scope.
-3. Group them into user-facing outcomes.
-4. Do not include Linear issue IDs in `CHANGELOG.md`.
+1. Enumerate every merged pull request and commit since the previous stable tag.
+2. Inspect each pull request's constituent commits and changed product files.
+3. Treat the complete range as the release scope and group verified behavior into user-facing outcomes.
+4. Exclude internal-only changes from `CHANGELOG.md` without omitting their user-visible effects.
 
 Writing style:
 
@@ -115,25 +114,6 @@ Example:
 - Navet now adjusts visual effects to match each device, with manual controls in Settings.
 - Fixed docs navigation on mobile.
 ```
-
-Helper command:
-
-```bash
-pnpm release:linear
-```
-
-Optional filters:
-
-```bash
-pnpm release:linear -- --team NAV
-pnpm release:linear -- --label "public beta"
-pnpm release:linear -- --project "0.2 release"
-```
-
-Fallback source:
-
-- if there are no issues in `Ready for Release`, build concise notes from commits since the previous
-  release tag
 
 ## Automated Workflow Expectations
 
