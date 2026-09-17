@@ -69,6 +69,7 @@ import { useCardZones } from './use-card-zones';
 import { useDashboardCardActions } from './use-dashboard-card-actions';
 import type {
   DashboardClimateSectionGroup,
+  DashboardComposition,
   DashboardController,
   DashboardSectionData,
 } from './use-dashboard-controller.types';
@@ -145,7 +146,7 @@ const CLIMATE_DASHBOARD_GROUPS: DashboardClimateSectionGroup[] = [
   },
 ];
 
-export function useDashboardController(): DashboardController {
+export function useDashboardController(): DashboardComposition {
   const { activeSection, setActiveSection } = useNavigation();
   useAdaptiveEffectsQuality(activeSection);
   const { t } = useI18n();
@@ -597,7 +598,7 @@ export function useDashboardController(): DashboardController {
     addHomeLayoutSection,
   });
 
-  return {
+  const state: DashboardController = {
     activeRoom,
     activeSection,
     addableEntityIds,
@@ -666,6 +667,12 @@ export function useDashboardController(): DashboardController {
     updateCardZone,
     ...onboarding,
     ...dialogs,
+  };
+
+  return {
+    page: state,
+    overlays: state,
+    section: state,
   };
 }
 
@@ -981,4 +988,7 @@ export function resolveDashboardSectionDeviceKeys(
 
   return DEVICE_COLLECTION_KEYS;
 }
-export type { DashboardController } from './use-dashboard-controller.types';
+export type {
+  DashboardComposition,
+  DashboardController,
+} from './use-dashboard-controller.types';

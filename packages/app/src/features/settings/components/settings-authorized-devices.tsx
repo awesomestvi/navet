@@ -474,22 +474,42 @@ export function SettingsAuthorizedDevices({ styles }: { styles: SettingsSectionS
                           size="small"
                         />
                       ) : (
-                        <div className="flex min-w-0 flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-1.5">
-                          <p className={`truncate text-sm font-medium ${styles.textColor}`}>
-                            {device.name}
-                          </p>
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <p className={`truncate text-sm font-medium ${styles.textColor}`}>
+                              {device.name}
+                            </p>
+                            {device.id === currentDeviceId ? (
+                              <Badge
+                                tone="accent"
+                                size="small"
+                                className="hidden shrink-0 text-[10px] font-medium sm:inline-flex"
+                              >
+                                {t('settings.system.authorizedDevices.thisDevice')}
+                              </Badge>
+                            ) : null}
+                            {device.role === 'primary' ? (
+                              <Badge
+                                tone="neutral"
+                                size="small"
+                                className="hidden text-[10px] sm:inline-flex"
+                              >
+                                {t('settings.system.authorizedDevices.primary')}
+                              </Badge>
+                            ) : null}
+                          </div>
                           {device.id === currentDeviceId || device.role === 'primary' ? (
-                            <div className="flex flex-wrap items-center gap-2 text-[11px] leading-4">
+                            <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] leading-4 sm:hidden">
                               {device.id === currentDeviceId ? (
                                 <span
-                                  className="shrink-0 font-medium"
+                                  className="shrink-0 font-medium sm:hidden"
                                   style={{ color: styles.accentColor }}
                                 >
                                   {t('settings.system.authorizedDevices.thisDevice')}
                                 </span>
                               ) : null}
                               {device.role === 'primary' ? (
-                                <span className={styles.subtleColor}>
+                                <span className={`sm:hidden ${styles.subtleColor}`}>
                                   {t('settings.system.authorizedDevices.primary')}
                                 </span>
                               ) : null}

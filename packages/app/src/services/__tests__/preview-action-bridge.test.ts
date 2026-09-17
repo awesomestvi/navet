@@ -4,6 +4,21 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { invokeIntegrationNativeAction } from '../integration-native-action.service';
 
 vi.mock('@navet/app/provider-contract-registry', () => ({
+  getRegisteredProviderContract: (providerId: 'home_assistant' | 'homey' | 'openhab') => ({
+    providerId,
+    getState: () => ({
+      providerId,
+      connected: false,
+      connecting: false,
+      reconnecting: false,
+      entitiesHydrated: false,
+      registriesHydrated: false,
+      error: null,
+      entities: [],
+      rooms: [],
+    }),
+    subscribeState: () => () => {},
+  }),
   getRegisteredSmartHomeProviderAdapter: vi.fn(() => {
     throw new Error('preview runtime should not use the live provider adapter');
   }),

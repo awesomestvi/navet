@@ -12,6 +12,11 @@ describe('createSnapshotBackedProviderAdapter', () => {
     let state: NavetProviderState = {
       providerId: 'home_assistant' as const,
       connected: true,
+      connecting: false,
+      reconnecting: false,
+      entitiesHydrated: true,
+      registriesHydrated: true,
+      error: null,
       entities: [
         {
           id: 'home_assistant:light.kitchen',

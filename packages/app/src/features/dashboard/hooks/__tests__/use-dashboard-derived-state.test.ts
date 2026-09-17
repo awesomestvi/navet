@@ -1,7 +1,10 @@
 import type { DeviceWithType } from '@navet/app/types/device.types';
 import { renderHook } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { useDashboardDerivedState } from '../use-dashboard-derived-state';
+import {
+  getRoomScopedDashboardEntityIds,
+  useDashboardDerivedState,
+} from '../use-dashboard-derived-state';
 
 function createDevice(overrides: Partial<DeviceWithType> & Pick<DeviceWithType, 'id' | 'type'>) {
   return {
@@ -13,6 +16,27 @@ function createDevice(overrides: Partial<DeviceWithType> & Pick<DeviceWithType, 
 }
 
 describe('useDashboardDerivedState', () => {
+  it('limits addable dashboard entities to the active room', () => {
+    const kitchenLight = createDevice({
+      id: 'light.kitchen',
+      type: 'lights',
+      room: 'Kitchen',
+    });
+    const hallwayLight = createDevice({
+      id: 'light.hallway',
+      type: 'lights',
+      room: 'Hallway',
+    });
+    const deviceMap = new Map([
+      [kitchenLight.id, kitchenLight],
+      [hallwayLight.id, hallwayLight],
+    ]);
+
+    expect(
+      getRoomScopedDashboardEntityIds([kitchenLight.id, hallwayLight.id], deviceMap, 'kitchen')
+    ).toEqual([kitchenLight.id]);
+  });
+
   it('matches light rooms and saved card orders without regard to capitalization', () => {
     const deviceMap = new Map([
       [

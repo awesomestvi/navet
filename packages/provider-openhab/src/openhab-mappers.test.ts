@@ -79,6 +79,9 @@ describe('openhab-mappers room identity', () => {
         externalId: 'Kitchen',
         name: 'Cooking space',
         memberIds: ['openhab:KitchenLight'],
+        sourceType: 'derived',
+        supportsOrdering: false,
+        supportsDeletion: false,
       }),
     ]);
   });

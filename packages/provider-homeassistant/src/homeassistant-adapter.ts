@@ -11,14 +11,13 @@ import { createSnapshotBackedProviderAdapter } from '@navet/core/snapshot-backed
 import type { NavetCommand, NavetEntity, NavetProviderState } from '@navet/core/types';
 import { createHomeAssistantProviderStateMapper } from './homeassistant-mappers';
 import {
-  addHomeAssistantListener,
   callHomeAssistantService,
   getHomeAssistantStoreState,
   type HomeAssistantPanelHass,
   isHomeAssistantConnected,
   resolveHomeAssistantArtwork,
   resolveHomeAssistantProxyUrl,
-  subscribeHomeAssistantStoreEntities,
+  subscribeHomeAssistantStore,
 } from './homeassistant-service-bridge';
 
 const ALARM_COMMAND_SERVICES: Record<
@@ -72,7 +71,14 @@ function getHomeAssistantState(): NavetProviderState {
     deviceRegistry: state.deviceRegistry,
     entityRegistry: state.entityRegistry,
   };
-  return mapHomeAssistantProviderState(mappingInput, { connected: state.connected });
+  return mapHomeAssistantProviderState(mappingInput, {
+    connected: state.connected,
+    connecting: state.connecting,
+    reconnecting: state.reconnecting,
+    entitiesHydrated: state.entities !== null,
+    registriesHydrated: state.registriesHydrated,
+    error: state.error,
+  });
 }
 
 async function resolveHomeAssistantResource(
@@ -401,19 +407,7 @@ export function createHomeAssistantProviderContract(): NavetProviderContract {
       void getHomeAssistantStoreState().disconnect();
     },
     getState: getHomeAssistantState,
-    subscribeState: (listener) => {
-      const unsubscribers = [
-        subscribeHomeAssistantStoreEntities(listener),
-        addHomeAssistantListener('registries', listener),
-        addHomeAssistantListener('connection', listener),
-      ];
-
-      return () => {
-        for (const unsubscribe of unsubscribers) {
-          unsubscribe();
-        }
-      };
-    },
+    subscribeState: subscribeHomeAssistantStore,
     resolveResource: resolveHomeAssistantResource,
     normalizeResourceUrl: (resourceUrl) => resolveHomeAssistantProxyUrl(resourceUrl) ?? resourceUrl,
   };

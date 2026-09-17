@@ -106,6 +106,13 @@ Homey account.
 
 Every active tab keeps the last server revision and profile generation that it observed as its
 in-memory merge base. A generation change invalidates that ancestry.
+
+Browser lifecycle timing and command sequencing are shared by the non-React dashboard sync
+runtime. Profile and preference modules retain their separate reconciliation policies, while the
+runtime owns named timers, visibility and connectivity events, disposal, and latest-only refresh
+lanes. A queued newer refresh replaces an obsolete queued refresh instead of overlapping remote
+I/O.
+
 Merge bases are not persisted to shared browser storage: another tab must never advance a tab's
 ancestry behind its back. A reload or duplicated tab therefore starts without a merge base. It
 uses the explicit conflict flow only when its configured local profile cannot be proven clean;

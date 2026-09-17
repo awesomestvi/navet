@@ -1,13 +1,10 @@
 import type { IntegrationProviderId } from '@navet/app/types/provider';
+import type { NavetProviderRuntimeState } from '@navet/core/types';
 
-export interface IntegrationProviderRuntimeState {
-  providerId: IntegrationProviderId;
-  connected: boolean;
-  connecting: boolean;
-  reconnecting: boolean;
-  entitiesHydrated: boolean;
-  registriesHydrated: boolean;
-}
+export type IntegrationProviderRuntimeState = Omit<
+  NavetProviderRuntimeState,
+  'error' | 'unreachable'
+>;
 
 export interface IntegrationProviderRoomModel {
   id: string;

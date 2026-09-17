@@ -7,6 +7,16 @@ import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import { EMPTY_NAVET_MEDIA_CAPABILITIES } from '@navet/app/core/navet-device-state';
 import { useFitDashboardGrid } from '@navet/app/features/dashboard/hooks/use-fit-dashboard-grid';
 import {
+  getResolvedMediaBrowserAlbum,
+  getResolvedMediaBrowserArtist,
+  getSpotifyTrackId,
+  isAlbumMediaItem,
+  isArtistMediaItem,
+  mediaCatalog,
+  type SpotifyTrackMetadata,
+} from '@navet/app/features/media/catalog/media-catalog';
+import { useMediaCatalogItem } from '@navet/app/features/media/catalog/use-media-catalog-item';
+import {
   useProviderMediaEntityRegistry,
   useProviderMediaPlayerEntities,
 } from '@navet/app/features/media/hooks/use-provider-media-playback-data';
@@ -28,8 +38,6 @@ import { integrationMediaFeatureService } from '@navet/app/services/integration-
 import { normalizeResourceUrl } from '@navet/app/services/integration-resource.service';
 import type { MediaDevice } from '@navet/app/types/device.types';
 import type { IntegrationProviderId } from '@navet/app/types/provider';
-import { resolveAddonLocalEndpointUrl } from '@navet/app/utils/home-assistant-connection-target';
-import { LruCache } from '@navet/app/utils/lru-cache';
 import { getProviderNativeId } from '@navet/app/utils/provider-ids';
 import { sanitizeImageUrl } from '@navet/app/utils/url-security';
 import type { LucideIcon } from 'lucide-react';
@@ -108,16 +116,7 @@ interface MediaDashboardDeviceIndex {
 
 const SPOTIFY_ICON_PATH =
   'M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z';
-const COMMONS_FILE_REDIRECT_URL = 'https://commons.wikimedia.org/wiki/Special:Redirect/file';
-const MUSICBRAINZ_ARTIST_API_URL = 'https://musicbrainz.org/ws/2/artist';
-const MUSICBRAINZ_RELEASE_API_URL = 'https://musicbrainz.org/ws/2/release';
-const COVER_ART_ARCHIVE_RELEASE_URL = 'https://coverartarchive.org/release';
-const COVER_ART_ARCHIVE_RELEASE_GROUP_URL = 'https://coverartarchive.org/release-group';
-const MUSICBRAINZ_BROWSER_LOOKUP_LIMIT = 6;
-const SPOTIFY_METADATA_ENDPOINT = '/__navet_spotify_metadata__';
-const SPOTIFY_OEMBED_URL = 'https://open.spotify.com/oembed';
 const SPOTIFY_IMAGE_ID_PATTERN = /(?:^|\/)image\/(ab[a-zA-Z0-9]{20,})(?:[/?#].*)?$/;
-const SPOTIFY_TRACK_ID_PATTERN = /^[a-zA-Z0-9]{22}$/;
 const MEDIA_BROWSER_TABLE_ITEM_THRESHOLD = 30;
 const DIRECTORY_COUNT_FETCH_CONCURRENCY = 3;
 const MEDIA_BROWSER_TABLE_HEADER_HEIGHT = 50;
@@ -125,88 +124,8 @@ const MEDIA_BROWSER_TABLE_ROW_HEIGHT = 64;
 const MEDIA_BROWSER_TABLE_OVERSCAN = 6;
 const COMPACT_MOBILE_BROWSER_HEIGHT = 170;
 const REMEMBERED_POSITION_WRITE_INTERVAL_SECONDS = 15;
-const MEDIA_BROWSER_METADATA_CACHE_MAX_ENTRIES = 128;
-const EMPTY_OPEN_MEDIA_ARTWORK_RESULT: OpenMediaArtworkResult = { artworkUrls: [] };
-const EMPTY_SPOTIFY_TRACK_METADATA: SpotifyTrackMetadata = { artworkUrls: [] };
 const EMPTY_MEDIA_DEFAULT_BROWSE_VIEWS: Record<string, MediaDefaultBrowseView> = {};
 const EMPTY_REMEMBERED_MEDIA_SESSION: RememberedMediaSession | null = null;
-const openMediaArtworkCache = new LruCache<string, OpenMediaArtworkResult>(
-  MEDIA_BROWSER_METADATA_CACHE_MAX_ENTRIES
-);
-const spotifyTrackMetadataCache = new LruCache<string, SpotifyTrackMetadata>(
-  MEDIA_BROWSER_METADATA_CACHE_MAX_ENTRIES
-);
-
-interface OpenMediaArtworkResult {
-  artworkUrls: string[];
-  artistName?: string;
-  albumTitle?: string;
-}
-
-interface SpotifyTrackMetadata {
-  title?: string;
-  artistName?: string;
-  albumTitle?: string;
-  artworkUrls: string[];
-}
-
-interface MusicBrainzBrowseRelease {
-  id?: string;
-  score?: number | string;
-  status?: string;
-  title?: string;
-  'artist-credit'?: Array<{
-    name?: string;
-    artist?: {
-      name?: string;
-    };
-  }>;
-  'release-group'?: {
-    id?: string;
-    title?: string;
-    'primary-type'?: string;
-  };
-}
-
-interface MusicBrainzBrowseReleaseResponse {
-  releases?: MusicBrainzBrowseRelease[];
-}
-
-interface MusicBrainzBrowseArtist {
-  id?: string;
-  name?: string;
-  score?: number | string;
-}
-
-interface MusicBrainzBrowseArtistSearchResponse {
-  artists?: MusicBrainzBrowseArtist[];
-}
-
-interface MusicBrainzBrowseArtistLookupResponse {
-  relations?: Array<{
-    type?: string;
-    url?: {
-      resource?: string;
-    };
-  }>;
-}
-
-interface WikidataEntityDataResponse {
-  entities?: Record<
-    string,
-    {
-      claims?: {
-        P18?: Array<{
-          mainsnak?: {
-            datavalue?: {
-              value?: string;
-            };
-          };
-        }>;
-      };
-    }
-  >;
-}
 
 function isAudioDevice(device: MediaDashboardDevice) {
   const className = device.deviceClass?.toLowerCase() ?? '';
@@ -575,18 +494,6 @@ function getMediaLibraryDirectoryIcon(item: PlatformMediaItem): LucideIcon {
   return Folder;
 }
 
-function isArtistMediaItem(item: PlatformMediaItem) {
-  const mediaClass = item.mediaClass?.toLowerCase() ?? '';
-  const mediaContentType = item.mediaContentType?.toLowerCase() ?? '';
-  const mediaContentId = item.mediaContentId?.toLowerCase() ?? '';
-  return (
-    mediaClass === 'artist' ||
-    mediaContentType === 'artist' ||
-    mediaContentId.includes(':artist:') ||
-    mediaContentId.includes('/artist/')
-  );
-}
-
 function getMediaItemInitials(item: PlatformMediaItem) {
   const title = item.title || item.mediaContentId || '';
   return title
@@ -658,450 +565,6 @@ function resolveMediaBrowserThumbnailUrl(
     resolveMusicAssistantThumbnailSourceUrl(item.thumbnail) ??
     normalizeResourceUrl(item.thumbnail ?? '', providerId)
   );
-}
-
-function isTrackMediaItem(item: PlatformMediaItem) {
-  const mediaClass = item.mediaClass?.toLowerCase() ?? '';
-  const mediaContentType = item.mediaContentType?.toLowerCase() ?? '';
-  const mediaContentId = item.mediaContentId?.toLowerCase() ?? '';
-  return (
-    mediaClass === 'track' ||
-    mediaClass === 'music' ||
-    mediaContentType === 'track' ||
-    mediaContentType === 'music' ||
-    mediaContentId.includes(':track:') ||
-    mediaContentId.includes('/track/')
-  );
-}
-
-function extractSpotifyTrackIdFromValue(value: string | undefined) {
-  const trimmed = value?.trim();
-  if (!trimmed) {
-    return null;
-  }
-
-  const spotifyUriMatch = trimmed.match(/spotify(?::|\/)track(?::|\/)([a-zA-Z0-9]{22})/);
-  if (spotifyUriMatch) {
-    return spotifyUriMatch[1];
-  }
-
-  try {
-    const url = new URL(trimmed);
-    const trackId = url.pathname.split('/').find((part) => SPOTIFY_TRACK_ID_PATTERN.test(part));
-    if (url.hostname.endsWith('spotify.com') && trackId) {
-      return trackId;
-    }
-  } catch {
-    // Media content ids are often provider URIs, not URLs.
-  }
-
-  return SPOTIFY_TRACK_ID_PATTERN.test(trimmed) ? trimmed : null;
-}
-
-function getSpotifyTrackId(item: PlatformMediaItem) {
-  if (!isTrackMediaItem(item)) {
-    return null;
-  }
-
-  return (
-    extractSpotifyTrackIdFromValue(item.mediaContentId) ??
-    extractSpotifyTrackIdFromValue(item.thumbnail ?? undefined)
-  );
-}
-
-function buildSpotifyTrackUrl(trackId: string) {
-  return `https://open.spotify.com/track/${trackId}`;
-}
-
-function isAlbumMediaItem(item: PlatformMediaItem) {
-  const mediaClass = item.mediaClass?.toLowerCase() ?? '';
-  const mediaContentType = item.mediaContentType?.toLowerCase() ?? '';
-  const mediaContentId = item.mediaContentId?.toLowerCase() ?? '';
-  return (
-    mediaClass === 'album' ||
-    mediaContentType === 'album' ||
-    mediaContentId.includes(':album:') ||
-    mediaContentId.includes('/album/')
-  );
-}
-
-function getMediaItemArtist(item: PlatformMediaItem) {
-  return item.artist?.trim() || undefined;
-}
-
-function getMediaItemAlbum(item: PlatformMediaItem) {
-  return item.album?.trim() || undefined;
-}
-
-function getMediaBrowserItemSubtitle(item: PlatformMediaItem, openArtwork: OpenMediaArtworkResult) {
-  return getMediaItemArtist(item) ?? openArtwork.artistName ?? undefined;
-}
-
-function getResolvedMediaBrowserArtist(
-  item: PlatformMediaItem,
-  openArtwork: OpenMediaArtworkResult,
-  spotifyMetadata: SpotifyTrackMetadata
-) {
-  return spotifyMetadata.artistName ?? getMediaBrowserItemSubtitle(item, openArtwork);
-}
-
-function getMediaBrowserItemAlbum(item: PlatformMediaItem, openArtwork: OpenMediaArtworkResult) {
-  return getMediaItemAlbum(item) ?? openArtwork.albumTitle ?? '';
-}
-
-function escapeMusicBrainzBrowseQueryValue(value: string) {
-  return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-}
-
-function getOpenArtworkLookup(
-  item: PlatformMediaItem
-): { kind: 'album' | 'artist'; title: string } | null {
-  const title = (item.title || item.mediaContentId || '').trim();
-  if (!title) {
-    return null;
-  }
-
-  if (isArtistMediaItem(item)) {
-    return { kind: 'artist', title };
-  }
-
-  if (isAlbumMediaItem(item)) {
-    return { kind: 'album', title };
-  }
-
-  return null;
-}
-
-function buildMusicBrainzBrowseSearchUrl(lookup: { kind: 'album'; title: string }) {
-  const url = new URL(MUSICBRAINZ_RELEASE_API_URL);
-  const escapedTitle = escapeMusicBrainzBrowseQueryValue(lookup.title);
-  const query = `release:"${escapedTitle}" AND status:official`;
-  url.searchParams.set('query', query);
-  url.searchParams.set('fmt', 'json');
-  url.searchParams.set('limit', String(MUSICBRAINZ_BROWSER_LOOKUP_LIMIT));
-  return url.toString();
-}
-
-function buildMusicBrainzArtistSearchUrl(artistName: string) {
-  const url = new URL(MUSICBRAINZ_ARTIST_API_URL);
-  url.searchParams.set('query', `artist:"${escapeMusicBrainzBrowseQueryValue(artistName)}"`);
-  url.searchParams.set('fmt', 'json');
-  url.searchParams.set('limit', String(MUSICBRAINZ_BROWSER_LOOKUP_LIMIT));
-  return url.toString();
-}
-
-function buildMusicBrainzArtistLookupUrl(artistId: string) {
-  const url = new URL(`${MUSICBRAINZ_ARTIST_API_URL}/${artistId}`);
-  url.searchParams.set('inc', 'url-rels');
-  url.searchParams.set('fmt', 'json');
-  return url.toString();
-}
-
-function scoreBrowseReleaseCandidate(release: MusicBrainzBrowseRelease) {
-  const score =
-    typeof release.score === 'string' ? Number.parseInt(release.score, 10) : (release.score ?? 0);
-  const releaseGroupType = release['release-group']?.['primary-type']?.toLowerCase() ?? '';
-  return score + (release.status === 'Official' ? 20 : 0) + (releaseGroupType === 'album' ? 12 : 0);
-}
-
-function buildCoverArtArchiveCandidates(releases: MusicBrainzBrowseRelease[]) {
-  const candidateUrls: string[] = [];
-  const sortedReleases = [...releases]
-    .filter((release) => release.id || release['release-group']?.id)
-    .sort((left, right) => scoreBrowseReleaseCandidate(right) - scoreBrowseReleaseCandidate(left));
-
-  for (const release of sortedReleases) {
-    if (release['release-group']?.id) {
-      candidateUrls.push(
-        `${COVER_ART_ARCHIVE_RELEASE_GROUP_URL}/${release['release-group'].id}/front-500`
-      );
-    }
-    if (release.id) {
-      candidateUrls.push(`${COVER_ART_ARCHIVE_RELEASE_URL}/${release.id}/front-500`);
-    }
-  }
-
-  return [...new Set(candidateUrls)]
-    .map((candidateUrl) => sanitizeImageUrl(candidateUrl))
-    .filter((url): url is string => Boolean(url));
-}
-
-async function resolveReleaseArtwork(lookup: { kind: 'album'; title: string }) {
-  const response = await fetch(buildMusicBrainzBrowseSearchUrl(lookup), {
-    headers: { Accept: 'application/json' },
-    cache: 'force-cache',
-  });
-  if (!response.ok) {
-    return EMPTY_OPEN_MEDIA_ARTWORK_RESULT;
-  }
-
-  const payload = (await response.json()) as MusicBrainzBrowseReleaseResponse;
-  const sortedReleases = [...(payload.releases ?? [])].sort(
-    (left, right) => scoreBrowseReleaseCandidate(right) - scoreBrowseReleaseCandidate(left)
-  );
-
-  return {
-    artworkUrls: buildCoverArtArchiveCandidates(sortedReleases),
-    albumTitle: sortedReleases[0]?.title,
-  };
-}
-
-function extractWikidataEntityId(resourceUrl: string | undefined) {
-  if (!resourceUrl) {
-    return null;
-  }
-
-  try {
-    const url = new URL(resourceUrl);
-    if (!url.hostname.endsWith('wikidata.org')) {
-      return null;
-    }
-
-    const entityId = url.pathname.split('/').find((part) => /^Q\d+$/i.test(part));
-    return entityId ?? null;
-  } catch {
-    return null;
-  }
-}
-
-function buildCommonsImageUrl(fileName: string) {
-  const url = `${COMMONS_FILE_REDIRECT_URL}/${encodeURIComponent(fileName)}?width=500`;
-  return sanitizeImageUrl(url);
-}
-
-async function resolveWikidataImageUrl(entityId: string) {
-  const response = await fetch(
-    `https://www.wikidata.org/wiki/Special:EntityData/${entityId}.json`,
-    {
-      headers: { Accept: 'application/json' },
-      cache: 'force-cache',
-    }
-  );
-  if (!response.ok) {
-    return null;
-  }
-
-  const payload = (await response.json()) as WikidataEntityDataResponse;
-  const fileName =
-    payload.entities?.[entityId]?.claims?.P18?.[0]?.mainsnak?.datavalue?.value ?? null;
-  return typeof fileName === 'string' ? buildCommonsImageUrl(fileName) : null;
-}
-
-async function resolveArtistPhotoCandidates(artistName: string) {
-  const searchResponse = await fetch(buildMusicBrainzArtistSearchUrl(artistName), {
-    headers: { Accept: 'application/json' },
-    cache: 'force-cache',
-  });
-  if (!searchResponse.ok) {
-    return [];
-  }
-
-  const searchPayload = (await searchResponse.json()) as MusicBrainzBrowseArtistSearchResponse;
-  const rankedArtists = [...(searchPayload.artists ?? [])]
-    .filter((artist) => artist.id)
-    .sort((left, right) => {
-      const leftScore =
-        typeof left.score === 'string' ? Number.parseInt(left.score, 10) : (left.score ?? 0);
-      const rightScore =
-        typeof right.score === 'string' ? Number.parseInt(right.score, 10) : (right.score ?? 0);
-      return rightScore - leftScore;
-    });
-
-  for (const artist of rankedArtists) {
-    if (!artist.id) continue;
-
-    const lookupResponse = await fetch(buildMusicBrainzArtistLookupUrl(artist.id), {
-      headers: { Accept: 'application/json' },
-      cache: 'force-cache',
-    });
-    if (!lookupResponse.ok) {
-      continue;
-    }
-
-    const lookupPayload = (await lookupResponse.json()) as MusicBrainzBrowseArtistLookupResponse;
-    const wikidataEntityId = lookupPayload.relations
-      ?.filter((relation) => relation.type === 'wikidata')
-      .map((relation) => extractWikidataEntityId(relation.url?.resource))
-      .find((entityId): entityId is string => Boolean(entityId));
-    if (!wikidataEntityId) {
-      continue;
-    }
-
-    const imageUrl = await resolveWikidataImageUrl(wikidataEntityId);
-    if (imageUrl) {
-      return [imageUrl];
-    }
-  }
-
-  return [];
-}
-
-function useOpenMediaBrowserArtwork(item: PlatformMediaItem) {
-  const lookup = useMemo(() => getOpenArtworkLookup(item), [item]);
-  const [artworkResult, setArtworkResult] = useState<OpenMediaArtworkResult>(
-    EMPTY_OPEN_MEDIA_ARTWORK_RESULT
-  );
-
-  useEffect(() => {
-    let cancelled = false;
-
-    if (!lookup) {
-      setArtworkResult(EMPTY_OPEN_MEDIA_ARTWORK_RESULT);
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    const cacheKey = `${lookup.kind}:${lookup.title.toLowerCase()}`;
-    const cachedArtworkResult = openMediaArtworkCache.get(cacheKey);
-    if (cachedArtworkResult) {
-      setArtworkResult(cachedArtworkResult);
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    const artworkPromise: Promise<OpenMediaArtworkResult> =
-      lookup.kind === 'artist'
-        ? resolveArtistPhotoCandidates(lookup.title).then((artworkUrls) => ({ artworkUrls }))
-        : resolveReleaseArtwork({ kind: lookup.kind, title: lookup.title });
-
-    void artworkPromise
-      .then((nextArtworkResult) => {
-        openMediaArtworkCache.set(cacheKey, nextArtworkResult);
-        if (!cancelled) {
-          setArtworkResult(nextArtworkResult);
-        }
-      })
-      .catch(() => {
-        openMediaArtworkCache.set(cacheKey, EMPTY_OPEN_MEDIA_ARTWORK_RESULT);
-        if (!cancelled) {
-          setArtworkResult(EMPTY_OPEN_MEDIA_ARTWORK_RESULT);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [lookup]);
-
-  return artworkResult;
-}
-
-function buildSpotifyOEmbedUrl(trackId: string) {
-  const url = new URL(SPOTIFY_OEMBED_URL);
-  url.searchParams.set('url', buildSpotifyTrackUrl(trackId));
-  return url.toString();
-}
-
-function buildSpotifyMetadataEndpointUrl(trackId: string) {
-  return resolveAddonLocalEndpointUrl(`${SPOTIFY_METADATA_ENDPOINT}/track/${trackId}`);
-}
-
-async function fetchSpotifyMetadataEndpoint(trackId: string) {
-  const response = await fetch(buildSpotifyMetadataEndpointUrl(trackId), {
-    headers: { Accept: 'application/json' },
-    cache: 'force-cache',
-  });
-  if (!response.ok) {
-    return EMPTY_SPOTIFY_TRACK_METADATA;
-  }
-
-  const payload = (await response.json()) as Partial<SpotifyTrackMetadata>;
-  return {
-    title: typeof payload.title === 'string' ? payload.title : undefined,
-    artistName: typeof payload.artistName === 'string' ? payload.artistName : undefined,
-    albumTitle: typeof payload.albumTitle === 'string' ? payload.albumTitle : undefined,
-    artworkUrls: Array.isArray(payload.artworkUrls)
-      ? payload.artworkUrls.filter((url): url is string => typeof url === 'string')
-      : [],
-  };
-}
-
-async function fetchSpotifyOEmbedMetadata(trackId: string) {
-  const response = await fetch(buildSpotifyOEmbedUrl(trackId), {
-    headers: { Accept: 'application/json' },
-    cache: 'force-cache',
-  });
-  if (!response.ok) {
-    return EMPTY_SPOTIFY_TRACK_METADATA;
-  }
-
-  const payload = (await response.json()) as {
-    title?: unknown;
-    thumbnail_url?: unknown;
-  };
-  const artworkUrl =
-    typeof payload.thumbnail_url === 'string' ? sanitizeImageUrl(payload.thumbnail_url) : null;
-
-  return {
-    title: typeof payload.title === 'string' ? payload.title : undefined,
-    artworkUrls: artworkUrl ? [artworkUrl] : [],
-  };
-}
-
-async function resolveSpotifyTrackMetadata(trackId: string) {
-  const endpointMetadata = await fetchSpotifyMetadataEndpoint(trackId).catch(
-    () => EMPTY_SPOTIFY_TRACK_METADATA
-  );
-  if (
-    endpointMetadata.title ||
-    endpointMetadata.artistName ||
-    endpointMetadata.albumTitle ||
-    endpointMetadata.artworkUrls.length > 0
-  ) {
-    return endpointMetadata;
-  }
-
-  return await fetchSpotifyOEmbedMetadata(trackId).catch(() => EMPTY_SPOTIFY_TRACK_METADATA);
-}
-
-async function getCachedSpotifyTrackMetadata(trackId: string) {
-  const cachedMetadata = spotifyTrackMetadataCache.get(trackId);
-  if (cachedMetadata) {
-    return cachedMetadata;
-  }
-
-  const metadata = await resolveSpotifyTrackMetadata(trackId).catch(
-    () => EMPTY_SPOTIFY_TRACK_METADATA
-  );
-  spotifyTrackMetadataCache.set(trackId, metadata);
-  return metadata;
-}
-
-function useSpotifyTrackMetadata(item: PlatformMediaItem) {
-  const trackId = useMemo(() => getSpotifyTrackId(item), [item]);
-  const [metadata, setMetadata] = useState<SpotifyTrackMetadata>(EMPTY_SPOTIFY_TRACK_METADATA);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    if (!trackId) {
-      setMetadata(EMPTY_SPOTIFY_TRACK_METADATA);
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    void getCachedSpotifyTrackMetadata(trackId)
-      .then((nextMetadata) => {
-        if (!cancelled) {
-          setMetadata(nextMetadata);
-        }
-      })
-      .catch(() => {
-        spotifyTrackMetadataCache.set(trackId, EMPTY_SPOTIFY_TRACK_METADATA);
-        if (!cancelled) {
-          setMetadata(EMPTY_SPOTIFY_TRACK_METADATA);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [trackId]);
-
-  return metadata;
 }
 
 interface MediaBrowserDirectoryTileProps {
@@ -1222,12 +685,12 @@ function MediaBrowserTile({
   const ItemIcon = isArtist ? UserRound : isDirectory ? Folder : ListMusic;
   const itemInitials = getMediaItemInitials(item);
   const providerThumbnailUrl = resolveMediaBrowserThumbnailUrl(item, providerId);
-  const openArtwork = useOpenMediaBrowserArtwork(item);
-  const spotifyMetadata = useSpotifyTrackMetadata(item);
+  const catalogItem = useMediaCatalogItem(item);
+  const { openArtwork, spotifyMetadata } = catalogItem;
   const itemTitle = spotifyMetadata.title ?? item.title ?? item.mediaContentId;
   const resolvedItemSubtitle =
-    getResolvedMediaBrowserArtist(item, openArtwork, spotifyMetadata) ??
-    getMediaBrowserItemAlbum(item, openArtwork) ??
+    getResolvedMediaBrowserArtist(item, catalogItem) ??
+    getResolvedMediaBrowserAlbum(item, catalogItem) ??
     spotifyMetadata.albumTitle;
   const itemSubtitle = resolvedItemSubtitle;
   const [failedArtworkUrls, setFailedArtworkUrls] = useState<Set<string>>(() => new Set());
@@ -1332,10 +795,10 @@ function MediaBrowserTableRow({
   theme,
 }: MediaBrowserTableRowProps) {
   const providerThumbnailUrl = resolveMediaBrowserThumbnailUrl(item, providerId);
-  const openArtwork = useOpenMediaBrowserArtwork(item);
-  const spotifyMetadata = useSpotifyTrackMetadata(item);
+  const catalogItem = useMediaCatalogItem(item);
+  const { openArtwork, spotifyMetadata } = catalogItem;
   const itemTitle = spotifyMetadata.title ?? item.title ?? item.mediaContentId;
-  const itemSubtitle = getResolvedMediaBrowserArtist(item, openArtwork, spotifyMetadata);
+  const itemSubtitle = getResolvedMediaBrowserArtist(item, catalogItem);
   const FallbackIcon = isMediaDirectoryItem(item) ? getMediaLibraryDirectoryIcon(item) : ListMusic;
   const [failedArtworkUrls, setFailedArtworkUrls] = useState<Set<string>>(() => new Set());
   const artworkUrl =
@@ -1473,7 +936,7 @@ function MediaBrowserVirtualTable({
     setIsResolvingSearchMetadata(true);
     void Promise.all(
       trackIds.map(
-        async (trackId) => [trackId, await getCachedSpotifyTrackMetadata(trackId)] as const
+        async (trackId) => [trackId, await mediaCatalog.resolveSpotifyTrack(trackId)] as const
       )
     ).then((entries) => {
       if (!cancelled) {

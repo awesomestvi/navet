@@ -1,7 +1,8 @@
 import { isAllRooms } from '@navet/app/constants/rooms';
 import { useI18n } from '@navet/app/hooks';
 import { lazy, Suspense, useMemo } from 'react';
-import type { DashboardController } from '../hooks/use-dashboard-controller';
+import type { DashboardOverlayModel } from '../hooks/use-dashboard-controller.types';
+import { getRoomScopedDashboardEntityIds } from '../hooks/use-dashboard-derived-state';
 import { buildManualEntityCardCatalog } from '../utils/manual-entity-card-catalog';
 import { AddEntityDialogPrimitive } from './add-entity-dialog';
 import type { DashboardLibraryCard } from './dashboard-library-list';
@@ -15,7 +16,7 @@ const AddEntityDialog = lazy(async () => {
 });
 
 interface DashboardOverlaysProps {
-  controller: DashboardController;
+  controller: DashboardOverlayModel;
 }
 
 export function DashboardOverlays({ controller }: DashboardOverlaysProps) {
@@ -46,6 +47,7 @@ export function DashboardOverlays({ controller }: DashboardOverlaysProps) {
     onCloseAddCardDialog,
     onCloseAddEntityDialog,
     orderedCardIds,
+    sectionData,
     showAddCardDialog,
     showAddEntityDialog,
   } = controller;
@@ -80,6 +82,27 @@ export function DashboardOverlays({ controller }: DashboardOverlaysProps) {
     showAddCardDialog,
     t,
   ]);
+
+  const scopedAddableEntityIds = useMemo(
+    () =>
+      activeSection === 'home' && !isAllRooms(activeRoom)
+        ? getRoomScopedDashboardEntityIds(addableEntityIds, availableDeviceMap, activeRoom)
+        : addableEntityIds,
+    [activeRoom, activeSection, addableEntityIds, availableDeviceMap]
+  );
+  const scopedHiddenEntityIds = useMemo(
+    () =>
+      activeSection === 'home' && !isAllRooms(activeRoom)
+        ? getRoomScopedDashboardEntityIds(hiddenEntityIds, availableDeviceMap, activeRoom)
+        : hiddenEntityIds,
+    [activeRoom, activeSection, availableDeviceMap, hiddenEntityIds]
+  );
+  const addEntityDeviceMap =
+    activeSection === 'lights' ? sectionData.allLightDeviceMap : availableDeviceMap;
+  const addEntityIds =
+    activeSection === 'lights' ? sectionData.hiddenLightEntityIds : scopedAddableEntityIds;
+  const addEntityHiddenIds =
+    activeSection === 'lights' ? sectionData.hiddenLightEntityIds : scopedHiddenEntityIds;
 
   const handleAddNormalCard = (cardId: string) => {
     const isHomeCanvasTarget = activeSection === 'home' && isAllRooms(activeRoom) && isEditMode;
@@ -120,12 +143,12 @@ export function DashboardOverlays({ controller }: DashboardOverlaysProps) {
             onClose={onCloseAddEntityDialog}
             onAddEntity={handleAddEntity}
             currentRoom={activeRoom}
-            deviceMap={availableDeviceMap}
+            deviceMap={addEntityDeviceMap}
             addedEntityIds={[]}
-            visibleEntityIds={addableEntityIds}
+            visibleEntityIds={addEntityIds}
             title={t('dashboard.addEntity.title')}
             description={
-              hiddenEntityIds.length > 0
+              addEntityHiddenIds.length > 0
                 ? t('dashboard.addEntity.descriptionWithHidden')
                 : t('dashboard.addEntity.descriptionDefault')
             }

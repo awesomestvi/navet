@@ -1,5 +1,6 @@
 import { DashboardEmptyState, DashboardGroupingNavigation } from '@navet/app/components/patterns';
 import { BaseCard } from '@navet/app/components/primitives';
+import { CardEditActionButton } from '@navet/app/components/shared/card-edit-action-button';
 import {
   type CardSize,
   getCardGridAutoRowsStyle,
@@ -24,6 +25,7 @@ import { useProviderCameraTopology } from '@navet/app/hooks';
 import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
 import { usePersistedState } from '@navet/app/hooks/use-persisted-state';
 import { useProviderEntityModel } from '@navet/app/hooks/use-provider-device';
+import { useTheme } from '@navet/app/hooks/use-theme';
 import { useI18n } from '@navet/app/i18n';
 import { integrationCameraFeatureService } from '@navet/app/services/integration-camera-feature.service';
 import { normalizeResourceUrl } from '@navet/app/services/integration-resource.service';
@@ -46,6 +48,7 @@ import {
   ShieldCheck,
   TriangleAlert,
   Video,
+  X,
 } from 'lucide-react';
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
@@ -513,12 +516,16 @@ function CameraQuickviewMosaic({
   updateCardSize,
   isEditMode,
   columnCount,
+  onRemoveFromQuickview,
 }: {
-  cameras: CameraDevice[];
+  cameras: Array<CameraDevice & { type: 'cameras' }>;
   updateCardSize: (id: string, size: CardSize) => void;
   isEditMode: boolean;
   columnCount: number;
+  onRemoveFromQuickview?: (entityId: string) => void;
 }) {
+  const { t } = useI18n();
+  const { theme } = useTheme();
   const visibleCameras = cameras.slice(0, 4);
   const gridClassName =
     visibleCameras.length === 1
@@ -528,46 +535,62 @@ function CameraQuickviewMosaic({
         : 'grid-cols-2 grid-rows-2';
 
   return (
-    <div
-      data-testid="security-camera-mosaic-layout"
-      className="grid w-full grid-flow-row-dense gap-3 lg:gap-4"
-      style={{
-        ...getCardGridAutoRowsStyle(columnCount),
-        gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
-      }}
-    >
-      <div className={`${getCardSpanClass('large')} [&>*]:h-full`}>
-        <BaseCard size="large" fullBleed data-testid="security-camera-mosaic">
-          <div className={`grid h-full w-full gap-px bg-black/70 ${gridClassName}`}>
-            {visibleCameras.map((camera, index) => (
-              <div
-                key={camera.id}
-                className={`min-h-0 min-w-0 overflow-hidden ${getCameraMosaicCellClassName(
-                  index,
-                  visibleCameras.length
-                )}`}
-                data-security-entity-id={camera.id}
-                data-testid="security-camera-mosaic-cell"
-              >
-                <CameraCard
-                  id={camera.id}
-                  name={camera.name}
-                  room={camera.room}
-                  entityPicture={camera.entityPicture}
-                  entityPictureSources={camera.entityPictureSources}
-                  supportedFeatures={camera.supportedFeatures}
-                  isStreamCapable={camera.isStreamCapable}
-                  size="small"
-                  onSizeChange={updateCardSize}
+    <DashboardEditActions isEditMode={isEditMode} onRemoveFromLayout={onRemoveFromQuickview}>
+      <div
+        data-testid="security-camera-mosaic-layout"
+        className="grid w-full grid-flow-row-dense gap-3 lg:gap-4"
+        style={{
+          ...getCardGridAutoRowsStyle(columnCount),
+          gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
+        }}
+      >
+        <div className={`${getCardSpanClass('large')} [&>*]:h-full`}>
+          <BaseCard size="large" fullBleed data-testid="security-camera-mosaic">
+            <div className={`grid h-full w-full gap-px bg-black/70 ${gridClassName}`}>
+              {visibleCameras.map((camera, index) => (
+                <SecurityQuickviewCard
+                  key={camera.id}
+                  device={camera}
+                  location="quickview"
                   isEditMode={isEditMode}
-                  presentation="mosaic-tile"
-                />
-              </div>
-            ))}
-          </div>
-        </BaseCard>
+                  className={`min-h-0 min-w-0 overflow-hidden ${getCameraMosaicCellClassName(
+                    index,
+                    visibleCameras.length
+                  )}`}
+                  data-security-entity-id={camera.id}
+                  data-testid="security-camera-mosaic-cell"
+                >
+                  <CameraCard
+                    id={camera.id}
+                    name={camera.name}
+                    room={camera.room}
+                    entityPicture={camera.entityPicture}
+                    entityPictureSources={camera.entityPictureSources}
+                    supportedFeatures={camera.supportedFeatures}
+                    isStreamCapable={camera.isStreamCapable}
+                    size="small"
+                    onSizeChange={updateCardSize}
+                    isEditMode={isEditMode}
+                    presentation="mosaic-tile"
+                  />
+                  {isEditMode && onRemoveFromQuickview ? (
+                    <CardEditActionButton
+                      cardSize="small"
+                      Icon={X}
+                      theme={theme}
+                      variant="warning"
+                      data-dashboard-edit-action="remove-layout"
+                      data-card-id={camera.id}
+                      aria-label={t('security.quickview.unpin', { name: camera.name })}
+                    />
+                  ) : null}
+                </SecurityQuickviewCard>
+              ))}
+            </div>
+          </BaseCard>
+        </div>
       </div>
-    </div>
+    </DashboardEditActions>
   );
 }
 
@@ -1001,6 +1024,14 @@ export function SecurityCameraDashboard({
                           description={t('security.quickview.dropHint')}
                           surface={surface}
                         />
+                      ) : layout === 'portrait-mosaic' && canUsePortraitMosaic ? (
+                        <CameraQuickviewMosaic
+                          cameras={portraitMosaicCameras}
+                          updateCardSize={updateCardSize}
+                          isEditMode={isEditMode}
+                          columnCount={columnCount}
+                          onRemoveFromQuickview={unpinQuickviewEntity}
+                        />
                       ) : isEditMode ? (
                         <DetailsGrid
                           devices={quickviewEntities}
@@ -1018,13 +1049,6 @@ export function SecurityCameraDashboard({
                           cardSizes={cardSizes}
                           updateCardSize={updateCardSize}
                           isEditMode={isEditMode}
-                        />
-                      ) : layout === 'portrait-mosaic' && canUsePortraitMosaic ? (
-                        <CameraQuickviewMosaic
-                          cameras={portraitMosaicCameras}
-                          updateCardSize={updateCardSize}
-                          isEditMode={isEditMode}
-                          columnCount={columnCount}
                         />
                       ) : (
                         <DetailsGrid

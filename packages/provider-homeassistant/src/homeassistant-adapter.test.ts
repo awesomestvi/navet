@@ -161,6 +161,9 @@ describe('homeassistant-adapter', () => {
       })),
       getStoreState: vi.fn(() => ({
         connected: true,
+        connecting: false,
+        reconnecting: false,
+        error: null,
         entities: {
           'light.kitchen': lightEntityFactory(),
           'alarm_control_panel.home': alarmEntityFactory(),
@@ -172,6 +175,7 @@ describe('homeassistant-adapter', () => {
         areas: [],
         deviceRegistry: [],
         entityRegistry: [],
+        registriesHydrated: true,
         syncPanelHass: syncPanelHassMock,
         connect: connectMock,
         disconnect: disconnectMock,

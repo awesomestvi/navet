@@ -38,6 +38,9 @@ function createRoom(
     name,
     normalizedName: name.toLocaleLowerCase(),
     memberIds,
+    sourceType: 'provider_managed',
+    supportsOrdering: true,
+    supportsDeletion: providerId === 'home_assistant',
   };
 }
 
@@ -702,11 +705,11 @@ describe('useRoomWorkspaceController', () => {
     });
 
     await waitFor(() => {
+      expect(result.current.saveOutcome.kind).toBe('saved');
       expect(
         useEntityRoomOverridesStore.getState().roomIdsByEntityId[lamp.canonicalId]
       ).toBeUndefined();
     });
-    expect(result.current.saveOutcome.kind).toBe('saved');
     expect(result.current.draftWorkspace?.rooms.some((room) => room.id === localRoomId)).toBe(
       false
     );
@@ -883,7 +886,7 @@ describe('useRoomWorkspaceController', () => {
     ).toBe(false);
   });
 
-  it('keeps Navet changes pending after a partially successful provider save', async () => {
+  it('keeps failed changes pending and clears stale overrides for successful assignments', async () => {
     const kitchen = createRoom('home_assistant', 'kitchen', 'Kitchen', [
       'home_assistant:light.ceiling',
     ]);
@@ -901,9 +904,10 @@ describe('useRoomWorkspaceController', () => {
       },
       providerEntitiesByCanonicalId: { [light.canonicalId]: light },
     });
+    useEntityRoomOverridesStore.getState().setRoomOverride(light.canonicalId, kitchen.canonicalId);
     executeRoomMutationPlanMock.mockImplementation(async (plan) => {
-      const successfulStep = plan.steps[0];
-      const failedStep = plan.steps[1];
+      const failedStep = plan.steps[0];
+      const successfulStep = plan.steps[1];
       if (!successfulStep || !failedStep) {
         throw new Error('Expected rename and placement steps');
       }
@@ -958,6 +962,9 @@ describe('useRoomWorkspaceController', () => {
 
     await waitFor(() => expect(result.current.saveOutcome.kind).toBe('partial'));
     expect(result.current.viewModel.hasUnsavedChanges).toBe(true);
+    expect(
+      useEntityRoomOverridesStore.getState().roomIdsByEntityId[light.canonicalId]
+    ).toBeUndefined();
     expect(
       useRoomWorkspaceStore.getState().workspace?.rooms.find((room) => room.id === kitchenRoomId)
         ?.displayName

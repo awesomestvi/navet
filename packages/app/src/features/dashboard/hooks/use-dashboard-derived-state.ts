@@ -3,6 +3,18 @@ import { getDeviceRoom } from '@navet/app/utils/device-location';
 import { normalizeRoomName, roomNamesMatch } from '@navet/app/utils/room-name';
 import { useMemo } from 'react';
 
+export function getRoomScopedDashboardEntityIds(
+  entityIds: string[],
+  availableDeviceMap: Map<string, DeviceWithType>,
+  room: string
+): string[] {
+  return entityIds.filter((entityId) => {
+    const device = availableDeviceMap.get(entityId);
+    const deviceRoom = device ? getDeviceRoom(device) : null;
+    return deviceRoom ? roomNamesMatch(deviceRoom, room) : false;
+  });
+}
+
 interface UseDashboardDerivedStateParams {
   activeRoom: string;
   absorbedEntityIds?: string[];

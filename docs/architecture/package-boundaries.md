@@ -100,6 +100,10 @@ and the transport together. See [RSS transport ownership](rss-transport.md).
    service when the interaction needs a richer contract.
 6. The matching provider package translates that work into provider-native requests.
 
+Dashboard composition, provider query, synchronization, room-editor, and media-catalog ownership
+inside the app assembly layer are documented in
+[Dashboard Runtime Boundaries](dashboard-runtime.md).
+
 ## Provider Status
 
 | Provider | Status | Notes |

@@ -1,0 +1,73 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+
+language: "en-US"
+reviews:
+  profile: "chill"
+  request_changes_workflow: false
+  high_level_summary: true
+  review_status: true
+  auto_review:
+    enabled: true
+    drafts: false
+  path_instructions:
+    - path: "**/*"
+      instructions: |
+        Prioritize correctness, regressions, security, data loss, accessibility,
+        and user-visible behavior. Avoid low-value style comments that Biome or
+        existing repository checks already cover. Preserve unrelated changes and
+        flag changes that silently broaden the scope of the pull request.
+
+        Treat AGENTS.md and the routed area guides it references as the source of
+        truth for repository architecture, test policy, documentation, and
+        validation. Verify lasting behavior against the implementation rather
+        than trusting plans or stale Markdown.
+
+    - path: "packages/core/**"
+      instructions: |
+        Enforce provider-neutral public contracts. This package must not import
+        React, provider SDKs, API clients, or provider-specific code. Pay special
+        attention to canonical and provider-scoped identity, capabilities,
+        command results, and persisted-data compatibility.
+
+    - path: "packages/ui/**"
+      instructions: |
+        Shared UI must consume normalized Navet state and provider-neutral
+        commands. Flag raw Home Assistant entities or service payloads,
+        provider-specific branches, inaccessible interactions, and responsive
+        behavior that hides essential controls.
+
+    - path: "packages/provider-*/**"
+      instructions: |
+        Keep provider auth, transport, mapping, realtime updates, and command
+        translation inside the owning provider package. Confirm that exposed
+        behavior is backed by that provider's capabilities and does not create a
+        global primary-provider assumption.
+
+    - path: "packages/app/src/**"
+      instructions: |
+        Review shared product behavior for provider neutrality and preserve
+        compatibility with the current app-owned models. Prefer an existing
+        shared primitive or contract over a competing local interface. Check
+        mobile information hierarchy, keyboard access, and runtime guards for
+        browser APIs.
+
+    - path: "**/*.{test,spec}.{ts,tsx,js,jsx}"
+      instructions: |
+        Do not accept a test change merely because it matches a new
+        implementation. Require the touched behavior to be classified as Keep,
+        Rewrite, or Delete, and favor visible behavior assertions over
+        presentation-only details. Watch for async, virtualization, and stale
+        state races that focused tests may miss.
+
+    - path: "docs/**"
+      instructions: |
+        Documentation is for first-time users. Require current UI labels and
+        direct, verified steps; keep obsolete-workflow comparisons in changelogs
+        or migration guides. Shared guidance should remain provider-neutral and
+        link to provider-specific instructions instead of duplicating them.
+
+    - path: "platform/home-assistant/**"
+      instructions: |
+        Preserve Home Assistant add-on, Ingress, custom-panel, and release-surface
+        compatibility. Treat official Home Assistant documentation as the public
+        contract and implementation details only as edge-case evidence.

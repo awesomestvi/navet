@@ -318,6 +318,14 @@ describe('homeassistant-mappers', () => {
 
   it('reuses provider state and rooms when only entity state changes preserve room placement', () => {
     const mapProviderState = createHomeAssistantProviderStateMapper();
+    const runtime = {
+      connected: true,
+      connecting: false,
+      reconnecting: false,
+      entitiesHydrated: true,
+      registriesHydrated: true,
+      error: null,
+    };
     const areas = [{ area_id: 'area-kitchen', name: 'Kitchen' }];
     const entityRegistry = [{ entity_id: 'sensor.temperature', area_id: 'area-kitchen' }];
     const input = {
@@ -330,7 +338,7 @@ describe('homeassistant-mappers', () => {
       deviceRegistry: [],
       entityRegistry,
     };
-    const first = mapProviderState(input, { connected: true });
+    const first = mapProviderState(input, runtime);
     const nextInput = {
       ...input,
       entities: {
@@ -339,12 +347,12 @@ describe('homeassistant-mappers', () => {
         }),
       },
     };
-    const second = mapProviderState(nextInput, { connected: true });
+    const second = mapProviderState(nextInput, runtime);
 
     expect(second).not.toBe(first);
     expect(second.entities[0]).not.toBe(first.entities[0]);
     expect(second.rooms).toBe(first.rooms);
-    expect(mapProviderState(nextInput, { connected: true })).toBe(second);
+    expect(mapProviderState(nextInput, runtime)).toBe(second);
   });
 
   it('keeps unassigned entities out of the provider room collection', () => {
@@ -398,6 +406,9 @@ describe('homeassistant-mappers', () => {
         externalId: 'area-kitchen',
         name: 'Cooking space',
         memberIds: ['home_assistant:light.kitchen'],
+        sourceType: 'provider_managed',
+        supportsOrdering: true,
+        supportsDeletion: true,
       }),
     ]);
   });

@@ -45,11 +45,15 @@ export interface HomeAssistantCategoryRegistryEntry {
 
 export interface HomeAssistantStoreState {
   connected: boolean;
+  connecting: boolean;
+  reconnecting: boolean;
+  error: string | null;
   config: HassConfig | null;
   entities: HassEntities | null;
   areas: HomeAssistantAreaRegistryEntry[];
   deviceRegistry: HomeAssistantDeviceRegistryEntry[];
   entityRegistry: HomeAssistantEntityRegistryEntry[];
+  registriesHydrated: boolean;
   automationCategories?: HomeAssistantCategoryRegistryEntry[];
   connect(session: unknown): Promise<void>;
   disconnect(): Promise<void>;

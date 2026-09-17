@@ -212,11 +212,17 @@ describe('homey-mappers room identity', () => {
         canonicalId: 'homey:zone_kitchen',
         name: 'Cooking space',
         memberIds: ['homey:kitchen_light'],
+        sourceType: 'provider_managed',
+        supportsOrdering: true,
+        supportsDeletion: false,
       }),
       expect.objectContaining({
         canonicalId: 'homey:zone_empty',
         name: 'Empty room',
         memberIds: [],
+        sourceType: 'provider_managed',
+        supportsOrdering: true,
+        supportsDeletion: false,
       }),
     ]);
   });

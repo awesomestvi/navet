@@ -118,6 +118,33 @@ describe('DashboardSectionRouter home controls', () => {
     const controller = createController();
     controller.isEditMode = true;
     controller.activeRoom = 'Kitchen';
+    controller.addableEntityIds = ['sensor.kitchen_temperature', 'sensor.hallway_temperature'];
+    controller.availableDeviceMap = new Map([
+      [
+        'sensor.kitchen_temperature',
+        {
+          id: 'sensor.kitchen_temperature',
+          name: 'Kitchen temperature',
+          room: 'Kitchen',
+          size: 'small',
+          value: '21',
+          unit: '°C',
+          type: 'sensors',
+        } satisfies DeviceWithType,
+      ],
+      [
+        'sensor.hallway_temperature',
+        {
+          id: 'sensor.hallway_temperature',
+          name: 'Hallway temperature',
+          room: 'Hallway',
+          size: 'small',
+          value: '20',
+          unit: '°C',
+          type: 'sensors',
+        } satisfies DeviceWithType,
+      ],
+    ]);
 
     renderWithProviders(<DashboardSectionRouter controller={controller} />);
 
@@ -126,8 +153,8 @@ describe('DashboardSectionRouter home controls', () => {
       mobileEditActions?: Record<string, unknown>;
     };
 
-    expect(roomNavProps.onAddEntity).toBe(controller.onOpenAddCardDialog);
-    expect(roomNavProps.addEntityLabel).toBe('Add Card');
+    expect(roomNavProps.onAddEntity).toBe(controller.onOpenAddEntityDialog);
+    expect(roomNavProps.addEntityLabel).toBe('Add Entity');
     expect(roomNavProps.suppressEditActions).toBe(true);
     expect(layoutProps.mobileEditActions).toBeUndefined();
   });
