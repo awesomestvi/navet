@@ -145,6 +145,7 @@ export type DashboardOverlayModel = Pick<
   | 'onCompleteOnboardingClose'
   | 'onboardingCompleted'
   | 'orderedCardIds'
+  | 'sectionData'
   | 'showAddCardDialog'
   | 'showAddEntityDialog'
 >;

@@ -267,9 +267,9 @@ export function getResolvedMediaBrowserArtist(
   projection: MediaCatalogItemProjection
 ) {
   return (
-    projection.spotifyMetadata.artistName ??
-    item.artist?.trim() ??
-    projection.openArtwork.artistName ??
+    projection.spotifyMetadata.artistName ||
+    item.artist?.trim() ||
+    projection.openArtwork.artistName ||
     undefined
   );
 }
@@ -278,7 +278,12 @@ export function getResolvedMediaBrowserAlbum(
   item: PlatformMediaItem,
   projection: MediaCatalogItemProjection
 ) {
-  return item.album?.trim() || projection.openArtwork.albumTitle || '';
+  return (
+    item.album?.trim() ||
+    projection.spotifyMetadata.albumTitle ||
+    projection.openArtwork.albumTitle ||
+    undefined
+  );
 }
 
 export class MediaCatalog {
@@ -449,7 +454,9 @@ export class MediaCatalog {
       artistName: typeof payload.artistName === 'string' ? payload.artistName : undefined,
       albumTitle: typeof payload.albumTitle === 'string' ? payload.albumTitle : undefined,
       artworkUrls: Array.isArray(payload.artworkUrls)
-        ? payload.artworkUrls.filter((url): url is string => typeof url === 'string')
+        ? payload.artworkUrls
+            .map((url) => (typeof url === 'string' ? sanitizeImageUrl(url) : null))
+            .filter((url): url is string => Boolean(url))
         : [],
     };
   }

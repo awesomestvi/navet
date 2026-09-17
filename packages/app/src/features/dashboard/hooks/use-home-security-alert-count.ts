@@ -32,37 +32,23 @@ function isSupplementalSecurityAlertDevice(device: Pick<BaseDevice, 'securityKin
   return Boolean(device.securityKind && !NON_ALERT_SECURITY_KINDS.has(device.securityKind));
 }
 
-function areDeviceArraysEqual<T>(left: T[], right: T[]) {
-  return left.length === right.length && left.every((device, index) => device === right[index]);
+interface HomeSecurityAlertSnapshot {
+  devices: HomeSecurityAlertDevices;
+  revision: string;
+}
+
+function getSecurityAlertDevicesRevision(devices: HomeSecurityAlertDevices): string {
+  return JSON.stringify(devices);
 }
 
 function stabilizeSecurityAlertDevices(
-  previous: HomeSecurityAlertDevices,
-  next: HomeSecurityAlertDevices
-): HomeSecurityAlertDevices {
-  const cameras = areDeviceArraysEqual(previous.cameras, next.cameras)
-    ? previous.cameras
-    : next.cameras;
-  const covers = areDeviceArraysEqual(previous.covers, next.covers) ? previous.covers : next.covers;
-  const helpers = areDeviceArraysEqual(previous.helpers, next.helpers)
-    ? previous.helpers
-    : next.helpers;
-  const locks = areDeviceArraysEqual(previous.locks, next.locks) ? previous.locks : next.locks;
-  const sensors = areDeviceArraysEqual(previous.sensors, next.sensors)
-    ? previous.sensors
-    : next.sensors;
-
-  if (
-    cameras === previous.cameras &&
-    covers === previous.covers &&
-    helpers === previous.helpers &&
-    locks === previous.locks &&
-    sensors === previous.sensors
-  ) {
-    return previous;
-  }
-
-  return { cameras, covers, helpers, locks, sensors };
+  previous: HomeSecurityAlertSnapshot,
+  nextDevices: HomeSecurityAlertDevices,
+  nextRevision: string
+): HomeSecurityAlertSnapshot {
+  return previous.revision === nextRevision
+    ? previous
+    : { devices: nextDevices, revision: nextRevision };
 }
 
 export function selectHomeSecurityAlertDevices(
@@ -127,23 +113,32 @@ export function useHomeSecurityAlertCount({
   enabled: boolean;
   hiddenEntityIds: string[];
 }) {
-  const previousDevicesRef = useRef<HomeSecurityAlertDevices>(EMPTY_SECURITY_ALERT_DEVICES);
+  const previousSnapshotRef = useRef<HomeSecurityAlertSnapshot>({
+    devices: EMPTY_SECURITY_ALERT_DEVICES,
+    revision: getSecurityAlertDevicesRevision(EMPTY_SECURITY_ALERT_DEVICES),
+  });
   const selectedDevices = useMemo(() => {
     return enabled
       ? selectHomeSecurityAlertDevices(devices, hiddenEntityIds)
       : EMPTY_SECURITY_ALERT_DEVICES;
   }, [devices, enabled, hiddenEntityIds]);
-  const securityAlertDevices = useMemo(
-    () => stabilizeSecurityAlertDevices(previousDevicesRef.current, selectedDevices),
-    [selectedDevices]
+  const selectedDevicesRevision = getSecurityAlertDevicesRevision(selectedDevices);
+  const securityAlertSnapshot = useMemo(
+    () =>
+      stabilizeSecurityAlertDevices(
+        previousSnapshotRef.current,
+        selectedDevices,
+        selectedDevicesRevision
+      ),
+    [selectedDevices, selectedDevicesRevision]
   );
 
   useEffect(() => {
-    previousDevicesRef.current = securityAlertDevices;
-  }, [securityAlertDevices]);
+    previousSnapshotRef.current = securityAlertSnapshot;
+  }, [securityAlertSnapshot]);
 
   return useMemo(
-    () => (enabled ? getSecurityDashboardAlertCount(securityAlertDevices) : 0),
-    [enabled, securityAlertDevices]
+    () => (enabled ? getSecurityDashboardAlertCount(securityAlertSnapshot.devices) : 0),
+    [enabled, securityAlertSnapshot]
   );
 }

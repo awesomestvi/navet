@@ -223,6 +223,9 @@ export async function executeRoomWorkspaceMutationTransaction(
 
   const failureCount = providerFailureCount + plan.failedLocalEntityIds.length;
   if (failureCount > 0) {
+    for (const entityId of successfulEntityIds) {
+      effects.clearRoomOverride(entityId);
+    }
     return {
       kind: providerSuccessCount > 0 ? 'partial' : 'error',
       failureCount,

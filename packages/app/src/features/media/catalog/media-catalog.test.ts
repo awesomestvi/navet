@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { MediaCatalog } from './media-catalog';
+import {
+  getResolvedMediaBrowserAlbum,
+  getResolvedMediaBrowserArtist,
+  MediaCatalog,
+} from './media-catalog';
 
 function deferred<Value>() {
   let resolve: (value: Value) => void = () => {};
@@ -64,5 +68,54 @@ describe('MediaCatalog', () => {
     firstResponse.resolve(jsonResponse({ title: 'First', artworkUrls: [] }));
     await expect(second).resolves.toMatchObject({ title: 'Second' });
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('rejects unsafe artwork URLs returned by the Spotify metadata endpoint', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        jsonResponse({
+          title: 'Track',
+          artworkUrls: ['javascript:alert(1)', 'https://example.com/cover.jpg', 42],
+        })
+      )
+    );
+    const catalog = new MediaCatalog();
+
+    await expect(catalog.resolveSpotifyTrack('1234567890123456789012')).resolves.toMatchObject({
+      artworkUrls: ['https://example.com/cover.jpg'],
+    });
+  });
+});
+
+describe('media browser metadata fallbacks', () => {
+  const item = {
+    title: 'Track',
+    mediaContentId: 'track',
+    mediaContentType: 'music',
+    canPlay: true,
+    canExpand: false,
+    artist: '   ',
+    album: '   ',
+  };
+  const projection = {
+    spotifyMetadata: {
+      artistName: '',
+      albumTitle: 'Spotify album',
+      artworkUrls: [],
+    },
+    openArtwork: {
+      artistName: 'Open Artwork artist',
+      albumTitle: 'Open Artwork album',
+      artworkUrls: [],
+    },
+  };
+
+  it('skips empty artist metadata and falls back to Open Artwork', () => {
+    expect(getResolvedMediaBrowserArtist(item, projection)).toBe('Open Artwork artist');
+  });
+
+  it('uses Spotify album metadata when the provider album is empty', () => {
+    expect(getResolvedMediaBrowserAlbum(item, projection)).toBe('Spotify album');
   });
 });

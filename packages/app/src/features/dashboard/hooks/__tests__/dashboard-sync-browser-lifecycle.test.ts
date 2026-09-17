@@ -68,3 +68,27 @@ it('replaces named timers and drains only the latest queued command', async () =
   expect(runtime.isRunning('refresh')).toBe(false);
   runtime.dispose();
 });
+
+it('drains the latest queued command before surfacing an earlier failure', async () => {
+  const runtime = createDashboardSyncBrowserLifecycle();
+  let rejectFirst: ((error: Error) => void) | undefined;
+  const firstGate = new Promise<void>((_resolve, reject) => {
+    rejectFirst = reject;
+  });
+  const commands: string[] = [];
+  const failure = new Error('refresh failed');
+  const running = runtime.runLatest('refresh', async () => {
+    commands.push('first');
+    await firstGate;
+  });
+  void runtime.runLatest('refresh', async () => {
+    commands.push('latest');
+  });
+
+  rejectFirst?.(failure);
+
+  await expect(running).rejects.toBe(failure);
+  expect(commands).toEqual(['first', 'latest']);
+  expect(runtime.isRunning('refresh')).toBe(false);
+  runtime.dispose();
+});

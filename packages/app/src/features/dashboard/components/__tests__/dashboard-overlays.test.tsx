@@ -111,6 +111,58 @@ describe('DashboardOverlays', () => {
     });
   });
 
+  it('offers only hidden light entities from the Lights dashboard', async () => {
+    addEntityDialogSpy.mockClear();
+    const light = {
+      id: 'light.kitchen',
+      name: 'Kitchen light',
+      room: 'Kitchen',
+      size: 'small',
+      type: 'lights',
+      state: false,
+      brightness: 0,
+      temp: 2700,
+    } satisfies DeviceWithType;
+    const sensor = {
+      id: 'sensor.kitchen_temperature',
+      name: 'Kitchen temperature',
+      room: 'Kitchen',
+      size: 'small',
+      value: '21',
+      unit: '°C',
+      type: 'sensors',
+    } satisfies DeviceWithType;
+    const allLightDeviceMap = new Map<string, DeviceWithType>([[light.id, light]]);
+
+    renderOverlays({
+      activeSection: 'lights',
+      showAddEntityDialog: true,
+      addableEntityIds: [light.id, sensor.id],
+      hiddenEntityIds: [light.id, sensor.id],
+      availableDeviceMap: new Map<string, DeviceWithType>([
+        [light.id, light],
+        [sensor.id, sensor],
+      ]),
+      sectionData: {
+        isOverviewSection: false,
+        energyCustomCards: [],
+        energyOrderedCardIds: [],
+        hiddenLightEntityIds: [light.id],
+        allLightDeviceMap,
+        climateDeviceMap: new Map(),
+        allClimateDeviceMap: new Map(),
+        hiddenClimateEntityIds: [],
+        climateSections: [],
+      },
+    });
+
+    await waitFor(() => expect(addEntityDialogSpy).toHaveBeenCalled());
+    expect(addEntityDialogSpy.mock.calls.at(-1)?.[0]).toMatchObject({
+      deviceMap: allLightDeviceMap,
+      visibleEntityIds: [light.id],
+    });
+  });
+
   it('includes sensor entities in the add-card library', () => {
     addCardDialogSpy.mockClear();
 

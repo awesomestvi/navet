@@ -88,11 +88,19 @@ export function createDashboardSyncRuntime() {
 
       const drain = async () => {
         let next: AsyncCommand | null = command;
+        let firstFailure: unknown;
+        let failed = false;
         while (next && !disposed) {
           lane.pending = null;
-          await next();
+          try {
+            await next();
+          } catch (error) {
+            if (!failed) firstFailure = error;
+            failed = true;
+          }
           next = lane.pending;
         }
+        if (failed) throw firstFailure;
       };
       lane.active = drain().finally(() => {
         lane.active = null;

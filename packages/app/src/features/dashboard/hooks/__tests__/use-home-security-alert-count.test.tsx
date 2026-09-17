@@ -123,6 +123,31 @@ describe('useHomeSecurityAlertCount', () => {
     expect(fullModelSpy).not.toHaveBeenCalled();
   });
 
+  it('refreshes a stale Home alert when a selected device changes without a new object', () => {
+    const warningLock = lock();
+    const devices: DeviceCollection = {
+      ...createEmptyDeviceCollection(),
+      locks: [warningLock],
+    };
+    const { result, rerender } = renderHook(
+      ({ currentDevices }: { currentDevices: DeviceCollection }) =>
+        useHomeSecurityAlertCount({
+          devices: currentDevices,
+          enabled: true,
+          hiddenEntityIds: EMPTY_HIDDEN_ENTITY_IDS,
+        }),
+      { initialProps: { currentDevices: devices } }
+    );
+
+    expect(result.current).toBe(1);
+
+    warningLock.state = true;
+    warningLock.securitySeverity = 'normal';
+    rerender({ currentDevices: { ...devices } });
+
+    expect(result.current).toBe(0);
+  });
+
   it('keeps an absorbed child hidden when its parent card is hidden', () => {
     const parentLock = lock({
       securitySeverity: 'normal',

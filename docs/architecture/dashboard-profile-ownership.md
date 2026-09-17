@@ -112,6 +112,7 @@ runtime. Profile and preference modules retain their separate reconciliation pol
 runtime owns named timers, visibility and connectivity events, disposal, and latest-only refresh
 lanes. A queued newer refresh replaces an obsolete queued refresh instead of overlapping remote
 I/O.
+
 Merge bases are not persisted to shared browser storage: another tab must never advance a tab's
 ancestry behind its back. A reload or duplicated tab therefore starts without a merge base. It
 uses the explicit conflict flow only when its configured local profile cannot be proven clean;

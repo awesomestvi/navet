@@ -47,6 +47,7 @@ export function DashboardOverlays({ controller }: DashboardOverlaysProps) {
     onCloseAddCardDialog,
     onCloseAddEntityDialog,
     orderedCardIds,
+    sectionData,
     showAddCardDialog,
     showAddEntityDialog,
   } = controller;
@@ -96,6 +97,12 @@ export function DashboardOverlays({ controller }: DashboardOverlaysProps) {
         : hiddenEntityIds,
     [activeRoom, activeSection, availableDeviceMap, hiddenEntityIds]
   );
+  const addEntityDeviceMap =
+    activeSection === 'lights' ? sectionData.allLightDeviceMap : availableDeviceMap;
+  const addEntityIds =
+    activeSection === 'lights' ? sectionData.hiddenLightEntityIds : scopedAddableEntityIds;
+  const addEntityHiddenIds =
+    activeSection === 'lights' ? sectionData.hiddenLightEntityIds : scopedHiddenEntityIds;
 
   const handleAddNormalCard = (cardId: string) => {
     const isHomeCanvasTarget = activeSection === 'home' && isAllRooms(activeRoom) && isEditMode;
@@ -136,12 +143,12 @@ export function DashboardOverlays({ controller }: DashboardOverlaysProps) {
             onClose={onCloseAddEntityDialog}
             onAddEntity={handleAddEntity}
             currentRoom={activeRoom}
-            deviceMap={availableDeviceMap}
+            deviceMap={addEntityDeviceMap}
             addedEntityIds={[]}
-            visibleEntityIds={scopedAddableEntityIds}
+            visibleEntityIds={addEntityIds}
             title={t('dashboard.addEntity.title')}
             description={
-              scopedHiddenEntityIds.length > 0
+              addEntityHiddenIds.length > 0
                 ? t('dashboard.addEntity.descriptionWithHidden')
                 : t('dashboard.addEntity.descriptionDefault')
             }
