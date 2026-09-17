@@ -1596,7 +1596,9 @@ describe('MediaDashboard', () => {
 
     const { container } = renderWithProviders(<MediaDashboard devices={[createMediaDevice()]} />);
 
-    await waitFor(() => expect(screen.getByText('Manchester Orchestra')).toBeInTheDocument());
+    expect(
+      await screen.findByText('Manchester Orchestra', {}, { timeout: 5_000 })
+    ).toBeInTheDocument();
     expect(screen.queryByText('Deer')).not.toBeInTheDocument();
     expect(container.querySelector('img')).toHaveAttribute(
       'src',
