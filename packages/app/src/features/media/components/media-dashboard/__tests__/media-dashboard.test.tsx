@@ -3,6 +3,7 @@ import {
   MEDIA_PLAYER_FEATURES,
 } from '@navet/app/constants/media-player-features';
 import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
+import { mediaCatalog } from '@navet/app/features/media/catalog/media-catalog';
 import type { PlatformEntityRegistryEntry } from '@navet/app/platform/provider-feature-models';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { useThemeStore } from '@navet/app/stores/theme-store';
@@ -1545,6 +1546,21 @@ describe('MediaDashboard', () => {
   });
 
   it('prefers Spotify artist metadata over incorrect provider labels in recently played rows', async () => {
+    const spotifyTrackId = '1234567890123456789012';
+    const spotifyMetadata = {
+      title: 'Bed Head',
+      artistName: 'Manchester Orchestra',
+      albumTitle: 'The Million Masks Of God',
+      artworkUrls: ['https://i.scdn.co/image/ab67616d00001e02bedheadart'],
+    };
+    vi.spyOn(mediaCatalog, 'resolveItem').mockImplementation(async (item) => ({
+      openArtwork: { artworkUrls: [] },
+      spotifyMetadata:
+        item.mediaContentId === `spotify:track:${spotifyTrackId}`
+          ? spotifyMetadata
+          : { artworkUrls: [] },
+    }));
+    vi.spyOn(mediaCatalog, 'resolveSpotifyTrack').mockResolvedValue(spotifyMetadata);
     localStorage.setItem(
       STORAGE_KEYS.mediaDefaultViews,
       JSON.stringify({
@@ -1563,7 +1579,7 @@ describe('MediaDashboard', () => {
       children: [
         {
           title: 'Bed Head',
-          mediaContentId: 'spotify:track:1234567890123456789012',
+          mediaContentId: `spotify:track:${spotifyTrackId}`,
           mediaContentType: 'track',
           mediaClass: 'track',
           thumbnail: '/image/ab67616d00001e02bedheadart',
@@ -1579,26 +1595,10 @@ describe('MediaDashboard', () => {
         })),
       ],
     });
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue(
-        new Response(
-          JSON.stringify({
-            title: 'Bed Head',
-            artistName: 'Manchester Orchestra',
-            albumTitle: 'The Million Masks Of God',
-            artworkUrls: ['https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e02bedheadart'],
-          }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } }
-        )
-      )
-    );
 
     const { container } = renderWithProviders(<MediaDashboard devices={[createMediaDevice()]} />);
 
-    expect(
-      await screen.findByText('Manchester Orchestra', {}, { timeout: 5_000 })
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Manchester Orchestra')).toBeInTheDocument();
     expect(screen.queryByText('Deer')).not.toBeInTheDocument();
     expect(container.querySelector('img')).toHaveAttribute(
       'src',
