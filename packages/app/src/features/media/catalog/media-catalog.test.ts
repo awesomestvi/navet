@@ -118,4 +118,16 @@ describe('media browser metadata fallbacks', () => {
   it('uses Spotify album metadata when the provider album is empty', () => {
     expect(getResolvedMediaBrowserAlbum(item, projection)).toBe('Spotify album');
   });
+
+  it('skips whitespace-only Spotify album metadata and falls back to Open Artwork', () => {
+    expect(
+      getResolvedMediaBrowserAlbum(item, {
+        ...projection,
+        spotifyMetadata: {
+          ...projection.spotifyMetadata,
+          albumTitle: '   ',
+        },
+      })
+    ).toBe('Open Artwork album');
+  });
 });

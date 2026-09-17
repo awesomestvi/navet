@@ -280,7 +280,7 @@ export function getResolvedMediaBrowserAlbum(
 ) {
   return (
     item.album?.trim() ||
-    projection.spotifyMetadata.albumTitle ||
+    projection.spotifyMetadata.albumTitle?.trim() ||
     projection.openArtwork.albumTitle ||
     undefined
   );
