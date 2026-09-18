@@ -44,7 +44,15 @@ identified by the branch or commit SHA.
    ```
 
    Use a different `NAVET_PREVIEW_PROJECT_NAME` and `NAVET_PREVIEW_PORT` for every simultaneously
-   active branch. Build and start the isolated container with `pnpm preview:private`.
+   active branch. Build and start the isolated container with the verified launcher:
+
+   ```bash
+   pnpm preview:private
+   ```
+
+   The launcher refuses to build when the working tree has uncommitted files or when
+   `NAVET_PREVIEW_GIT_SHA` differs from the checked-out `HEAD`. Do not invoke Compose directly;
+   that would bypass the source-provenance check.
 3. Verify the image digest and displayed commit metadata before testing.
 4. Connect through the private access layer from the phone or tablet.
 5. Record product feedback on the PR without including entity names, addresses, tokens, private
