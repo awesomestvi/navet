@@ -193,11 +193,12 @@ configured after these files reach `main`:
    deterministic CI and the explicit human gates remain authoritative.
 5. Optionally set `NAVET_PRODUCT_APPROVER` when the approving account differs from the repository
    owner.
-6. Protect `main`: require a pull request, dismiss stale approvals, require CODEOWNERS where
-   applicable, and require **CI / Product review gate** plus **Human Approval Gates / Current head
-   approvals**. Require the currently configured Cloudflare Pages preview check. Add demo,
-   Storybook, and documentation preview checks to branch protection only after those projects are
-   connected to GitHub and have reported successfully on a pull request.
+6. Protect `main`: require a pull request and resolved review conversations. For a solo-maintainer
+   repository, set required approving reviews to zero and disable required CODEOWNER review; the
+   author cannot submit a GitHub approval on their own PR. Use the SHA-bound product, foundation,
+   and security commands as the human approval record instead. Require **CI / Product review
+   gate** plus **Human Approval Gates / Current head approvals** and the configured Cloudflare
+   Pages preview checks.
 7. Configure the `production` environment with the maintainer as a required reviewer and prevent
    administrators from bypassing it. Keep `edge` autonomous and `beta` approval-gated until its
    artifact history is proven reliable.
