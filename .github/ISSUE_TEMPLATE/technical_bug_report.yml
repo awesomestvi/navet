@@ -125,9 +125,16 @@ body:
   - type: textarea
     id: logs
     attributes:
-      label: Logs or screenshots
-      description: Paste browser console output, add-on logs, or screenshots if relevant. Redact sensitive values.
+      label: Logs
+      description: Paste browser console output or application logs if relevant. Redact sensitive values.
       render: text
+    validations:
+      required: false
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: Drag and drop screenshots if they help explain the problem. Redact private URLs, addresses, names, and other sensitive household details.
     validations:
       required: false
   - type: textarea
