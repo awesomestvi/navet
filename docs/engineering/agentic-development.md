@@ -11,8 +11,7 @@ issue or product feedback
   -> pull request
   -> deterministic CI and Cloudflare previews
   -> independent code review
-  -> maintainer product review for UI changes
-  -> merge
+  -> maintainer review and merge
   -> optional Navet Dev publish
   -> release preparation
   -> production environment approval
@@ -108,8 +107,6 @@ or made required while `main` is red.
 - `status: agent-queued`: a maintainer accepted the request and the private runner has not claimed
   it yet.
 - `status: agent-working`: a delivery agent owns the current iteration.
-- `status: product-review`: CI and preview evidence are ready for maintainer review.
-- `review: product-approved`: current PR head was reviewed for UX; a new commit removes it.
 - `review: foundation-approved`: foundational product or architecture changes were approved.
 - `review: security-approved`: security-sensitive changes received maintainer review.
 
@@ -145,19 +142,19 @@ ephemeral previews, prepare Navet Dev artifacts, and draft release communication
 
 Maintainer approval is required for:
 
-- product and UX acceptance of UI changes
 - foundational product, design, dashboard, and architecture rules
 - explicitly security-sensitive or breaking architecture changes
 - production releases
 - release announcements and other publication beyond routine issue and PR collaboration
 - access to a private Home Assistant installation or its credentials
 
-UI approval uses the exact `/approve-product <full-current-head-sha>` command shown in the PR review
-summary. Foundation and security approvals use the corresponding SHA-bound commands shown there.
-The workflow rejects an approval when that reviewed commit is no longer the PR head, then records
-accepted approval as a commit status on that SHA. Labels are only a mobile-visible indicator. A new
-commit has no matching status, so feedback-driven agent iterations must be reviewed again even if
-label cleanup is delayed.
+For ordinary product and UI work, the maintainer reviews the previews and records acceptance by
+merging the PR after CI passes and review conversations are resolved. Foundation and security
+approvals use the corresponding SHA-bound commands shown in the PR review summary. The workflow
+rejects an approval when that reviewed commit is no longer the PR head, then records accepted
+approval as a commit status on that SHA. Labels are only a mobile-visible indicator. A new commit
+has no matching status, so feedback-driven agent iterations must be reviewed again even if label
+cleanup is delayed.
 
 ## Cost And Context
 
@@ -191,14 +188,14 @@ configured after these files reach `main`:
    public repository). Let it review non-draft PRs automatically; do not add a second general
    reviewer until measured misses justify the duplicate cost. Reviewer comments are advisory;
    deterministic CI and the explicit human gates remain authoritative.
-5. Optionally set `NAVET_PRODUCT_APPROVER` when the approving account differs from the repository
-   owner.
+5. Optionally set `NAVET_HUMAN_APPROVER` when the foundation or security approver differs from the
+   repository owner. `NAVET_PRODUCT_APPROVER` remains a compatibility fallback for existing setups.
 6. Protect `main`: require a pull request and resolved review conversations. For a solo-maintainer
    repository, set required approving reviews to zero and disable required CODEOWNER review; the
-   author cannot submit a GitHub approval on their own PR. Use the SHA-bound product, foundation,
-   and security commands as the human approval record instead. Require **CI / Product review
-   gate** plus **Human Approval Gates / Current head approvals** and the configured Cloudflare
-   Pages preview checks.
+   maintainer's merge records acceptance for ordinary product and UI work. Use the SHA-bound
+   foundation and security commands only when those exceptional gates apply. Require **CI / Product
+   review gate** plus **Human Approval Gates / Current head approvals** and the configured
+   Cloudflare Pages preview checks.
 7. Configure the `production` environment with the maintainer as a required reviewer and prevent
    administrators from bypassing it. Keep `edge` autonomous and `beta` approval-gated until its
    artifact history is proven reliable.
@@ -207,5 +204,5 @@ configured after these files reach `main`:
    tunnel credentials.
 
 The normal mobile flow is then: create **Product or UX feedback**, watch the linked PR, open the
-interactive demo or Storybook preview, leave ordinary PR feedback, and comment `/approve-product`
-with the full commit SHA copied from the PR review summary when the current head is acceptable.
+interactive demo or Storybook preview, leave ordinary PR feedback, wait for required checks and
+resolved conversations, then merge when the current head is acceptable.

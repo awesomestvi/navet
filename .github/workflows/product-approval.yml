@@ -26,10 +26,10 @@ jobs:
       - name: Record approval for reviewed commit
         uses: actions/github-script@v7
         env:
-          PRODUCT_APPROVER: ${{ vars.NAVET_PRODUCT_APPROVER }}
+          HUMAN_APPROVER: ${{ vars.NAVET_HUMAN_APPROVER || vars.NAVET_PRODUCT_APPROVER }}
         with:
           script: |
-            const permitted = new Set([context.repo.owner, process.env.PRODUCT_APPROVER].filter(Boolean));
+            const permitted = new Set([context.repo.owner, process.env.HUMAN_APPROVER].filter(Boolean));
             if (!permitted.has(context.payload.comment.user.login)) {
               core.setFailed('Only the configured Navet approver can satisfy human gates.');
               return;
@@ -37,7 +37,6 @@ jobs:
 
             const [command, reviewedSha, ...extraArguments] = context.payload.comment.body.trim().split(/\s+/);
             const labels = {
-              '/approve-product': 'review: product-approved',
               '/approve-foundation': 'review: foundation-approved',
               '/approve-security': 'review: security-approved',
             };
@@ -95,10 +94,8 @@ jobs:
         with:
           script: |
             for (const name of [
-              'review: product-approved',
               'review: foundation-approved',
               'review: security-approved',
-              'status: product-review',
             ]) {
               try {
                 await github.rest.issues.removeLabel({

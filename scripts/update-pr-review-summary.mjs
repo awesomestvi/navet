@@ -80,9 +80,8 @@ const gates = requiredApprovalGates(impact, labels);
 const approvals = approvalsFromStatuses(statuses);
 const alias = branchAlias(pull.head.ref);
 const succeeded = run.conclusion === 'success';
-const title = succeeded && gates.product ? 'Ready for Product Review' : succeeded ? 'Ready for Merge Review' : 'Validation Failed';
+const title = succeeded ? 'Ready for Merge Review' : 'Validation Failed';
 const gateRows = [
-  ['Product / UX', gates.product, approvals.product, `/approve-product ${pull.head.sha}`],
   ['Foundation', gates.foundation, approvals.foundation, `/approve-foundation ${pull.head.sha}`],
   ['Security', gates.security, approvals.security, `/approve-security ${pull.head.sha}`],
 ]
@@ -147,26 +146,4 @@ if (desiredImpactLabels.length > 0) {
     method: 'POST',
     body: JSON.stringify({ labels: desiredImpactLabels }),
   });
-}
-
-const productReviewLabel = 'status: product-review';
-const hasProductReviewLabel = labels.includes(productReviewLabel);
-if (succeeded && gates.product && !hasProductReviewLabel) {
-  try {
-    await request(`/repos/${owner}/${repo}/issues/${pullNumber}/labels`, {
-      method: 'POST',
-      body: JSON.stringify({ labels: [productReviewLabel] }),
-    });
-  } catch (error) {
-    process.stderr.write(`Could not add product-review status: ${error.message}\n`);
-  }
-} else if ((!succeeded || !gates.product) && hasProductReviewLabel) {
-  try {
-    await request(
-      `/repos/${owner}/${repo}/issues/${pullNumber}/labels/${encodeURIComponent(productReviewLabel)}`,
-      { method: 'DELETE' }
-    );
-  } catch (error) {
-    if (error.status !== 404) throw error;
-  }
 }

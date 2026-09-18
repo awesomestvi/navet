@@ -55,7 +55,6 @@ export function classifyFiles(files) {
 export function requiredApprovalGates(impact, labels = []) {
   const labelSet = new Set(labels);
   return {
-    product: impact.ui || labelSet.has('gate: product'),
     foundation: impact.foundation || labelSet.has('gate: foundation'),
     security: impact.security || labelSet.has('gate: security'),
   };
