@@ -191,6 +191,10 @@ export default defineConfig({
           collapsed: true,
           items: [
             { label: "Developer overview", link: "/developers/" },
+            {
+              label: "Agentic development",
+              link: "/developers/agentic-development/",
+            },
             { label: "Contributing", link: "/developers/contributing/" },
             { label: "Code of Conduct", link: "/developers/code-of-conduct/" },
           ],

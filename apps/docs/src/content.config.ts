@@ -27,6 +27,7 @@ const routeIds = new Map([
   ["docs/branding/GOVERNANCE.md", "brand/governance"],
   ["docs/branding/TRADEMARK_POLICY.md", "brand/trademark"],
   ["docs/developers.md", "developers/index"],
+  ["docs/developers/agentic-development.md", "developers/agentic-development"],
   ["CONTRIBUTING.md", "developers/contributing"],
   ["CODE_OF_CONDUCT.md", "developers/code-of-conduct"],
   ["SECURITY.md", "security"],

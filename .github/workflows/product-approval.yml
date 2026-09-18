@@ -75,12 +75,19 @@ jobs:
               target_url: context.payload.comment.html_url,
             });
 
-            await github.rest.issues.addLabels({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              labels: [label],
-            });
+            try {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: [label],
+              });
+            } catch (error) {
+              if (error.status !== 403) throw error;
+              core.warning(
+                'GitHub did not allow approval-label synchronization. The SHA-bound approval status was recorded successfully.',
+              );
+            }
 
   invalidate:
     name: Invalidate approvals after a new commit

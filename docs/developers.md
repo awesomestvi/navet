@@ -12,6 +12,10 @@ provider, core, and UI packages under `packages/`.
 Use the [contributing guide](/developers/contributing/) for prerequisites, local development, and
 validation expectations.
 
+Maintainers can also send selected issues through Navet's
+[agentic development workflow](/developers/agentic-development/). Manual contributions remain a
+first-class path and do not require using the agent queue.
+
 ## Architecture direction
 
 - `@navet/core` owns provider-neutral contracts, IDs, and runtime semantics.
