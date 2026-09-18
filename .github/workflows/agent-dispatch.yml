@@ -5,6 +5,10 @@ on:
     types:
       - labeled
 
+concurrency:
+  group: agent-intake-${{ github.repository }}-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
 permissions:
   contents: read
   issues: write
@@ -26,21 +30,53 @@ jobs:
             const issueNumber = context.payload.issue.number;
             const actor = context.actor;
             const trustedAutomation = actor === 'github-actions[bot]';
-
-            if (!trustedAutomation) {
-              const { data } = await github.rest.repos.getCollaboratorPermissionLevel({
-                owner,
-                repo,
-                username: actor,
-              });
-              const allowed = new Set(['admin', 'maintain', 'write']);
-              if (!allowed.has(data.permission)) {
+            const removeLabelIfPresent = async (name) => {
+              try {
                 await github.rest.issues.removeLabel({
                   owner,
                   repo,
                   issue_number: issueNumber,
-                  name: process.env.AGENT_MODE,
+                  name,
                 });
+              } catch (error) {
+                if (error.status !== 404) throw error;
+              }
+            };
+
+            const { data: currentIssue } = await github.rest.issues.get({
+              owner,
+              repo,
+              issue_number: issueNumber,
+            });
+            const currentLabels = new Set(
+              currentIssue.labels
+                .map((label) => typeof label === 'string' ? label : label.name)
+                .filter(Boolean)
+            );
+            if (!currentLabels.has(process.env.AGENT_MODE)) {
+              core.notice(`Ignoring stale ${process.env.AGENT_MODE} event for issue #${issueNumber}.`);
+              return;
+            }
+
+            if (!trustedAutomation) {
+              let permission;
+              try {
+                const { data } = await github.rest.repos.getCollaboratorPermissionLevel({
+                  owner,
+                  repo,
+                  username: actor,
+                });
+                permission = data.permission;
+              } catch (error) {
+                if (error.status !== 403) throw error;
+                core.warning(`Could not verify @${actor}'s repository permission.`);
+                await removeLabelIfPresent(process.env.AGENT_MODE);
+                core.setFailed('Agent request removed because authorization could not be verified.');
+                return;
+              }
+              const allowed = new Set(['admin', 'maintain', 'write']);
+              if (!allowed.has(permission)) {
+                await removeLabelIfPresent(process.env.AGENT_MODE);
                 core.setFailed(`@${actor} is not allowed to queue agent work.`);
                 return;
               }
@@ -63,14 +99,5 @@ jobs:
               'status: needs-context',
               'status: agent-working',
             ]) {
-              try {
-                await github.rest.issues.removeLabel({
-                  owner,
-                  repo,
-                  issue_number: issueNumber,
-                  name,
-                });
-              } catch (error) {
-                if (error.status !== 404) throw error;
-              }
+              await removeLabelIfPresent(name);
             }

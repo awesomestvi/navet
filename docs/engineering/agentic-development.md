@@ -174,27 +174,34 @@ configured after these files reach `main`:
 
 1. Run **Sync Repository Labels** once. It creates or updates managed labels without deleting
    community labels.
-2. Configure one local Codex scheduled task for this repository to poll `status: agent-queued`,
-   claim no more than one issue per run, and follow the private queue contract above. The task uses
-   the maintainer's existing local Git and GitHub authentication; it must not receive Actions
-   secrets, environment approval, package deletion, administration, production credentials, or
-   private Home Assistant access. Keep only one active queue runner so two agents cannot claim the
-   same issue.
-3. Install one independent, read-only PR reviewer (CodeRabbit is the initial candidate for this
+2. Before activating a local Codex queue runner, give its isolated execution environment a
+   dedicated, repository-scoped GitHub App installation token or fine-grained token. Limit it to
+   this repository with Contents read/write, Issues read/write, Pull requests read/write, Actions
+   read, and Metadata read. Configure both `gh` and Git pushes to use only that credential; do not
+   let either fall back to the maintainer's general GitHub login. Verify the repository selection
+   and permission list in GitHub, then confirm the isolated environment can read the repository and
+   issue queue, create a disposable branch and pull request, update its test issue, and delete only
+   those test artifacts. Confirm it cannot change repository settings, environments, Actions
+   secrets, or workflows. The runner must also have no production credentials, private Home
+   Assistant access, environment approval, administration, or package-deletion permission.
+3. Configure one local Codex scheduled task to poll `status: agent-queued`, claim no more than one
+   issue per run, and follow the private queue contract above. Keep it paused until the credential
+   checks pass, and keep only one active queue runner so two agents cannot claim the same issue.
+4. Install one independent, read-only PR reviewer (CodeRabbit is the initial candidate for this
    public repository). Let it review non-draft PRs automatically; do not add a second general
    reviewer until measured misses justify the duplicate cost. Reviewer comments are advisory;
    deterministic CI and the explicit human gates remain authoritative.
-4. Optionally set `NAVET_PRODUCT_APPROVER` when the approving account differs from the repository
+5. Optionally set `NAVET_PRODUCT_APPROVER` when the approving account differs from the repository
    owner.
-5. Protect `main`: require a pull request, dismiss stale approvals, require CODEOWNERS where
+6. Protect `main`: require a pull request, dismiss stale approvals, require CODEOWNERS where
    applicable, and require **CI / Product review gate** plus **Human Approval Gates / Current head
    approvals**. Require the currently configured Cloudflare Pages preview check. Add demo,
    Storybook, and documentation preview checks to branch protection only after those projects are
    connected to GitHub and have reported successfully on a pull request.
-6. Configure the `production` environment with the maintainer as a required reviewer and prevent
+7. Configure the `production` environment with the maintainer as a required reviewer and prevent
    administrators from bypassing it. Keep `edge` autonomous and `beta` approval-gated until its
    artifact history is proven reliable.
-7. Keep Cloudflare preview deployments public only for repository/demo data. Preview projects must
+8. Keep Cloudflare preview deployments public only for repository/demo data. Preview projects must
    not receive Home Assistant URLs, tokens, provider OAuth secrets, production cookies, or private
    tunnel credentials.
 
