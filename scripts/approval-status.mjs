@@ -5,14 +5,18 @@ export const APPROVAL_STATUS_CONTEXTS = Object.freeze({
 });
 
 export function approvalsFromStatuses(statuses = []) {
-  const successfulContexts = new Set(
-    statuses.filter(({ state }) => state === 'success').map(({ context }) => context)
-  );
+  const knownContexts = new Set(Object.values(APPROVAL_STATUS_CONTEXTS));
+  const latestStates = new Map();
+  for (const { context, state } of statuses) {
+    if (knownContexts.has(context) && !latestStates.has(context)) {
+      latestStates.set(context, state);
+    }
+  }
 
   return Object.fromEntries(
     Object.entries(APPROVAL_STATUS_CONTEXTS).map(([gate, context]) => [
       gate,
-      successfulContexts.has(context),
+      latestStates.get(context) === 'success',
     ])
   );
 }

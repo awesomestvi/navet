@@ -35,6 +35,17 @@ describe('change impact classification', () => {
     expect(requiredApprovalGates(impact).foundation).toBe(true);
   });
 
+  it.each(['AGENTS.md', '.github/AGENTS.md', 'packages/app/AGENTS.md'])(
+    'requires foundation approval for agent authority changes in %s',
+    (file) => {
+      const impact = classifyFiles([file]);
+
+      expect(impact.docs).toBe(true);
+      expect(impact.foundation).toBe(true);
+      expect(requiredApprovalGates(impact).foundation).toBe(true);
+    }
+  );
+
   it('allows a label to add a gate that path classification cannot infer', () => {
     const impact = classifyFiles(['packages/app/src/utils/format-temperature.ts']);
 

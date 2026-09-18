@@ -7,7 +7,7 @@ const GROUPS = {
     /\.stories\.[jt]sx?$/,
   ],
   provider: [/^packages\/provider-/, /^packages\/core\//, /provider-(contract|runtime|neutral)/],
-  docs: [/^(docs|ai)\//, /^(README|CONTRIBUTING|AGENTS)\.md$/],
+  docs: [/^(docs|ai)\//, /^(README|CONTRIBUTING)\.md$/, /(^|\/)AGENTS\.md$/],
   website: [/^apps\/website\//, /^packages\/app\/src\/marketing\//, /^assets\/reference\/marketing\//],
   release: [
     /^\.github\/workflows\/(release|dev-tag)/,
@@ -23,7 +23,7 @@ const GROUPS = {
   ],
   foundation: [
     /^docs\/product\//,
-    /^AGENTS\.md$/,
+    /(^|\/)AGENTS\.md$/,
     /^docs\/architecture\/(package-boundaries|provider-contract|provider-neutral-ui|dashboard-profile-ownership)\.md$/,
     /^docs\/design-system\/UI-GUIDELINES\.md$/,
     /^docs\/branding\/BRAND_FOUNDATIONS\.md$/,

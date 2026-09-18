@@ -38,11 +38,11 @@ async function getAll(path) {
 const [owner, repo] = repository.split('/');
 const pull = await get(`/repos/${owner}/${repo}/pulls/${pullNumber}`);
 const files = await getAll(`/repos/${owner}/${repo}/pulls/${pullNumber}/files`);
-const combinedStatus = await get(`/repos/${owner}/${repo}/commits/${pull.head.sha}/status`);
+const statuses = await getAll(`/repos/${owner}/${repo}/commits/${pull.head.sha}/statuses`);
 const labels = pull.labels.map(({ name }) => name);
 const impact = classifyFiles(files.map(({ filename }) => filename));
 const required = requiredApprovalGates(impact, labels);
-const approvals = approvalsFromStatuses(combinedStatus.statuses);
+const approvals = approvalsFromStatuses(statuses);
 const missing = Object.keys(required).filter((gate) => required[gate] && !approvals[gate]);
 
 const rows = Object.keys(required).map(

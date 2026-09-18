@@ -1,5 +1,7 @@
 # Maintainer-owned policy and publication boundaries
 /AGENTS.md @awesomestvi
+/.github/AGENTS.md @awesomestvi
+/.github/CODEOWNERS @awesomestvi
 /docs/product/ @awesomestvi
 /docs/architecture/ @awesomestvi
 /docs/branding/ @awesomestvi

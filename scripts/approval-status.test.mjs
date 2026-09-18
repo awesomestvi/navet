@@ -23,4 +23,13 @@ describe('approval status contract', () => {
       security: false,
     });
   });
+
+  it('uses the newest status when a context has multiple entries', () => {
+    expect(
+      approvalsFromStatuses([
+        { context: 'navet/product-approval', state: 'pending' },
+        { context: 'navet/product-approval', state: 'success' },
+      ]).product
+    ).toBe(false);
+  });
 });

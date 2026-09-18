@@ -4,7 +4,6 @@ title: "[Feedback]: "
 labels:
   - "type: ux"
   - "status: needs-triage"
-  - "agent:implement"
 body:
   - type: markdown
     attributes:

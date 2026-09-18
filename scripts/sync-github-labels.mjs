@@ -40,13 +40,18 @@ async function getAll(path) {
 }
 
 const existing = await getAll(`/repos/${owner}/${repo}/labels`);
-const existingNames = new Set(existing.map(({ name }) => name));
+const existingNames = new Map(existing.map(({ name }) => [name.toLowerCase(), name]));
 
 for (const label of labels) {
-  if (existingNames.has(label.name)) {
-    await request(`/repos/${owner}/${repo}/labels/${encodeURIComponent(label.name)}`, {
+  const existingName = existingNames.get(label.name.toLowerCase());
+  if (existingName) {
+    await request(`/repos/${owner}/${repo}/labels/${encodeURIComponent(existingName)}`, {
       method: 'PATCH',
-      body: JSON.stringify(label),
+      body: JSON.stringify({
+        new_name: label.name,
+        color: label.color,
+        description: label.description,
+      }),
     });
     process.stdout.write(`Updated ${label.name}\n`);
   } else {

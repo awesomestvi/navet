@@ -11,7 +11,8 @@ Navet's automated test surface is split into four tiers:
 - `Tier 2: Blocking app contracts`
   Blocking app-layer contracts around stores, services, and adapter wiring.
 - `Tier 3: Broad regression`
-  Wide feature, UI, hook, and component coverage that remains useful but is not a release gate.
+  Wide feature, UI, hook, and component coverage that blocks pull requests but is not rerun as a
+  tagged-release publishing gate.
 - `Tier 4: Rewrite/Delete candidates`
   Existing suites that should be rewritten against stronger fixtures or removed.
 
@@ -75,10 +76,11 @@ Implemented providers today:
 - `@navet/provider-openhab`
 
 Their expected matrices differ. Home Assistant covers the broad advanced feature-service set.
-Homey also covers climate, speaker, lock, cover, scene, presence, notification, Insights, favorite,
-and hub-resource behavior. openHAB also covers fans, climate setpoints, speaker controls, locks,
-covers, security sensors, batteries, and utility measurements. Tests must assert each provider's
-declared runtime registration rather than treating `implemented` as feature parity.
+Homey also covers climate, speaker, lock, cover, Flows and Moods through the shared scene contract,
+presence, notification, Insights, favorite, and hub-resource behavior. openHAB also covers fans,
+climate setpoints, speaker controls, locks, covers, security sensors, batteries, and utility
+measurements. Tests must assert each provider's declared runtime registration rather than treating
+`implemented` as feature parity.
 
 These suites are Tier 1 by default.
 

@@ -9,6 +9,7 @@ import {
 } from './change-impact.mjs';
 
 const MARKER = '<!-- navet-pr-review-summary -->';
+const SUMMARY_AUTHOR = 'github-actions[bot]';
 const event = JSON.parse(await readFile(process.env.GITHUB_EVENT_PATH, 'utf8'));
 const run = event.workflow_run;
 const token = process.env.GITHUB_TOKEN;
@@ -38,7 +39,11 @@ async function request(path, init = {}) {
     headers: { ...headers, ...init.headers },
   });
   if (!response.ok) {
-    throw new Error(`${init.method ?? 'GET'} ${path} failed with ${response.status}: ${await response.text()}`);
+    const error = new Error(
+      `${init.method ?? 'GET'} ${path} failed with ${response.status}: ${await response.text()}`
+    );
+    error.status = response.status;
+    throw error;
   }
   return response.status === 204 ? null : response.json();
 }
@@ -68,11 +73,11 @@ if (pull.head.sha !== run.head_sha) {
 }
 const changedFiles = await getAll(`/repos/${owner}/${repo}/pulls/${pullNumber}/files`);
 const comments = await getAll(`/repos/${owner}/${repo}/issues/${pullNumber}/comments`);
-const combinedStatus = await request(`/repos/${owner}/${repo}/commits/${pull.head.sha}/status`);
+const statuses = await getAll(`/repos/${owner}/${repo}/commits/${pull.head.sha}/statuses`);
 const labels = pull.labels.map(({ name }) => name);
 const impact = classifyFiles(changedFiles.map(({ filename }) => filename));
 const gates = requiredApprovalGates(impact, labels);
-const approvals = approvalsFromStatuses(combinedStatus.statuses);
+const approvals = approvalsFromStatuses(statuses);
 const alias = branchAlias(pull.head.ref);
 const succeeded = run.conclusion === 'success';
 const title = succeeded && gates.product ? 'Ready for Product Review' : succeeded ? 'Ready for Merge Review' : 'Validation Failed';
@@ -113,7 +118,9 @@ const body = [
   'Normal PR feedback is enough for another agent iteration. Any new commit invalidates prior human approval.',
 ].join('\n');
 
-const previous = comments.find((comment) => comment.body?.includes(MARKER));
+const previous = comments.find(
+  (comment) => comment.user?.login === SUMMARY_AUTHOR && comment.body?.includes(MARKER)
+);
 if (previous) {
   await request(`/repos/${owner}/${repo}/issues/comments/${previous.id}`, {
     method: 'PATCH',
@@ -142,13 +149,24 @@ if (desiredImpactLabels.length > 0) {
   });
 }
 
-if (succeeded && gates.product && !labels.includes('status: product-review')) {
+const productReviewLabel = 'status: product-review';
+const hasProductReviewLabel = labels.includes(productReviewLabel);
+if (succeeded && gates.product && !hasProductReviewLabel) {
   try {
     await request(`/repos/${owner}/${repo}/issues/${pullNumber}/labels`, {
       method: 'POST',
-      body: JSON.stringify({ labels: ['status: product-review'] }),
+      body: JSON.stringify({ labels: [productReviewLabel] }),
     });
   } catch (error) {
     process.stderr.write(`Could not add product-review status: ${error.message}\n`);
+  }
+} else if ((!succeeded || !gates.product) && hasProductReviewLabel) {
+  try {
+    await request(
+      `/repos/${owner}/${repo}/issues/${pullNumber}/labels/${encodeURIComponent(productReviewLabel)}`,
+      { method: 'DELETE' }
+    );
+  } catch (error) {
+    if (error.status !== 404) throw error;
   }
 }
