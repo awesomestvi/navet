@@ -147,8 +147,9 @@ configured after these files reach `main`:
    owner.
 5. Protect `main`: require a pull request, dismiss stale approvals, require CODEOWNERS where
    applicable, and require **CI / Product review gate** plus **Human Approval Gates / Current head
-   approvals**. Also require the four existing Cloudflare Pages deployment checks so a broken or
-   missing preview cannot merge.
+   approvals**. Require the currently configured Cloudflare Pages preview check. Add demo,
+   Storybook, and documentation preview checks to branch protection only after those projects are
+   connected to GitHub and have reported successfully on a pull request.
 6. Configure the `production` environment with the maintainer as a required reviewer and prevent
    administrators from bypassing it. Keep `edge` autonomous and `beta` approval-gated until its
    artifact history is proven reliable.

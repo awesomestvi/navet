@@ -80,7 +80,7 @@ const body = [
   `| --- | --- |`,
   `| Deterministic CI | ${succeeded ? '✓ passed' : `✗ ${run.conclusion ?? 'unknown'}`} |`,
   `| Responsive screenshots | [Open CI run and artifacts](${run.html_url}) |`,
-  `| Cloudflare previews | Confirm the four deployment checks on this PR are green |`,
+  `| Cloudflare previews | Confirm every configured deployment check on this PR is green |`,
   '',
   '### Preview',
   '',
@@ -89,7 +89,7 @@ const body = [
   `- [Documentation](https://${alias}.navet-docs.pages.dev/)`,
   `- [Website](https://${alias}.navet.pages.dev/)`,
   '',
-  'Cloudflare branch aliases may take a few minutes to appear. The deployment checks are the source of truth.',
+  'Cloudflare branch aliases may take a few minutes to appear. A link is reviewable only when its project is configured for branch previews; reported deployment checks are the source of truth.',
   '',
   ...(gateRows.length > 0
     ? ['### Human approval', '', '| Gate | Current PR head |', '| --- | --- |', ...gateRows, '']
