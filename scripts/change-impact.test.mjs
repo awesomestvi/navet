@@ -2,14 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { classifyFiles, impactLabels, requiredApprovalGates } from './change-impact.mjs';
 
 describe('change impact classification', () => {
-  it('requires product approval for rendered UI changes', () => {
+  it('classifies rendered UI changes without requiring a separate approval comment', () => {
     const impact = classifyFiles([
       'packages/app/src/features/media/components/media-dashboard/media-dashboard.tsx',
     ]);
 
     expect(impact.ui).toBe(true);
     expect(requiredApprovalGates(impact)).toEqual({
-      product: true,
       foundation: false,
       security: false,
     });
@@ -20,11 +19,14 @@ describe('change impact classification', () => {
     'packages/app/src/main.tsx',
     'packages/app/src/App.tsx',
     'packages/app/src/authenticated-app.tsx',
-  ])('requires product approval for the rendered app entrypoint %s', (file) => {
+  ])('classifies the rendered app entrypoint %s without a separate approval gate', (file) => {
     const impact = classifyFiles([file]);
 
     expect(impact.ui).toBe(true);
-    expect(requiredApprovalGates(impact).product).toBe(true);
+    expect(requiredApprovalGates(impact)).toEqual({
+      foundation: false,
+      security: false,
+    });
   });
 
   it('requires explicit approval for product constitution changes', () => {

@@ -1,5 +1,4 @@
 export const APPROVAL_STATUS_CONTEXTS = Object.freeze({
-  product: 'navet/product-approval',
   foundation: 'navet/foundation-approval',
   security: 'navet/security-approval',
 });

@@ -1,6 +1,6 @@
-name: Bug report
-description: Report something that is broken in Navet.
-title: "[Bug]: "
+name: Report a problem
+description: Tell us what went wrong. No technical knowledge or detailed diagnostics needed.
+title: "[Problem]: "
 labels:
   - "status: needs-triage"
   - "type: bug"
@@ -8,132 +8,36 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for reporting a bug. Please include enough detail for maintainers to reproduce the issue without access to your Home Assistant instance.
+        Thanks for helping us improve Navet. Describe the problem in your own words; maintainers can ask for technical details later if they need them.
 
         Do not include Home Assistant tokens, private URLs, addresses, or screenshots that expose sensitive home details.
-  - type: checkboxes
-    id: checks
-    attributes:
-      label: Before submitting
-      options:
-        - label: I searched existing issues and did not find a duplicate.
-          required: true
-        - label: I removed tokens, private URLs, and other sensitive information.
-          required: true
-  - type: dropdown
-    id: install-method
-    attributes:
-      label: Install method
-      description: How are you running Navet?
-      options:
-        - Home Assistant add-on
-        - Docker
-        - PWA / hosted web app
-        - Local development
-        - Public Cloudflare demo
-        - Other
-    validations:
-      required: true
-  - type: input
-    id: navet-version
-    attributes:
-      label: Navet version
-      description: Use the release version, image tag, commit SHA, or "main" if that is what you are running.
-      placeholder: "0.1.0-beta.1, dev, sha-..., or commit SHA"
-    validations:
-      required: true
-  - type: input
-    id: home-assistant-version
-    attributes:
-      label: Home Assistant version
-      placeholder: "2026.5.0"
-    validations:
-      required: false
-  - type: dropdown
-    id: browser
-    attributes:
-      label: Browser
-      options:
-        - Chrome
-        - Safari
-        - Firefox
-        - Edge
-        - Fully Kiosk Browser
-        - Home Assistant app WebView
-        - Other
-    validations:
-      required: true
-  - type: input
-    id: device
-    attributes:
-      label: Device / OS
-      placeholder: "iPadOS 18, Android tablet, Raspberry Pi Chromium, macOS, Windows"
-    validations:
-      required: true
-  - type: dropdown
-    id: area
-    attributes:
-      label: Affected area
-      options:
-        - Dashboard
-        - Login / onboarding
-        - Home Assistant connection
-        - Cards / widgets
-        - Search
-        - Settings
-        - Themes / wallpapers
-        - PWA install / updates
-        - Home Assistant add-on
-        - Docker
-        - Demo
-        - Other
-    validations:
-      required: true
   - type: textarea
     id: description
     attributes:
       label: What happened?
-      description: Describe the bug and its impact.
-      placeholder: "The dashboard shows ... instead of ..."
+      description: Tell us what you were trying to do, what happened, and what you expected instead.
+      placeholder: "I tried to ... but ... I expected ..."
     validations:
       required: true
-  - type: textarea
-    id: steps
-    attributes:
-      label: Steps to reproduce
-      description: List the exact steps needed to trigger the problem.
-      placeholder: |
-        1. Open ...
-        2. Select ...
-        3. See ...
-    validations:
-      required: true
-  - type: textarea
-    id: expected
-    attributes:
-      label: Expected behavior
-      placeholder: "I expected ..."
-    validations:
-      required: true
-  - type: textarea
-    id: actual
-    attributes:
-      label: Actual behavior
-      placeholder: "Instead ..."
-    validations:
-      required: true
-  - type: textarea
-    id: logs
-    attributes:
-      label: Logs or screenshots
-      description: Paste browser console output, add-on logs, or screenshots if relevant. Redact sensitive values.
-      render: text
-    validations:
-      required: false
-  - type: textarea
+  - type: input
     id: context
     attributes:
-      label: Additional context
-      description: Add anything else that might help reproduce or diagnose the issue.
+      label: Where did you notice it?
+      description: A screen, device, browser, or installation type is enough. Leave this blank if you are unsure.
+      placeholder: "Dashboard on an iPad, Home Assistant App"
     validations:
       required: false
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Optional screenshot or extra context
+      description: Add a redacted screenshot, example, or any other detail that might help.
+    validations:
+      required: false
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy
+      options:
+        - label: I removed credentials, private URLs, addresses, and sensitive household details.
+          required: true

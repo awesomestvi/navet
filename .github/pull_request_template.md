@@ -26,8 +26,8 @@ document only to satisfy this section.
 ## Human review
 
 - UI changes: review the demo and Storybook previews on relevant phone, tablet, and desktop sizes.
-- Product approval: after reviewing the current PR head, the maintainer copies the exact
-  `/approve-product <full-current-head-sha>` command from the PR review summary.
+- For ordinary product and UI changes, the maintainer's merge records acceptance after CI passes
+  and review conversations are resolved.
 - Foundational or security approval: use the SHA-bound `/approve-foundation` or `/approve-security`
   command from the review summary when required.
-- A new commit invalidates prior human approval.
+- A new commit invalidates prior foundation or security approval.
