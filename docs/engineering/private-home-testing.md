@@ -34,24 +34,34 @@ identified by the branch or commit SHA.
 
 1. Check out the exact PR head on the preview host or pull an immutable `sha-*`/dev image created
    for that commit. Set `NAVET_PREVIEW_GIT_SHA` to the reviewed commit.
-2. Create an ignored `.env.private-preview` with only the provider configuration needed for this
-   test. Build and start the isolated container with `pnpm preview:private`.
+2. Create an ignored `.env.private-preview` with a unique project name and host port for this
+   branch, the exact commit SHA, and only the provider configuration needed for this test:
+
+   ```dotenv
+   NAVET_PREVIEW_PROJECT_NAME=navet-preview-pr-175
+   NAVET_PREVIEW_PORT=8175
+   NAVET_PREVIEW_GIT_SHA=4729ac2e19572d48ebb9996ab5cc38dc680f850e
+   ```
+
+   Use a different `NAVET_PREVIEW_PROJECT_NAME` and `NAVET_PREVIEW_PORT` for every simultaneously
+   active branch. Build and start the isolated container with `pnpm preview:private`.
 3. Verify the image digest and displayed commit metadata before testing.
 4. Connect through the private access layer from the phone or tablet.
 5. Record product feedback on the PR without including entity names, addresses, tokens, private
    URLs, camera images, or household screenshots unless deliberately redacted.
 6. Stop the container, remove its disposable data, and revoke the test session.
 
-`compose.private-preview.yml` binds to `127.0.0.1:8083` by default, uses a dedicated image name and
-data volume, and never embeds `.env.private-preview` in the image. To expose it only on a Tailscale
-interface, set `NAVET_PREVIEW_BIND_ADDRESS` to that host's Tailscale IP before starting it. Do not
-set the bind address to `0.0.0.0`; an authenticated proxy or private mesh should be the only remote
-entry point.
+`compose.private-preview.yml` binds to `127.0.0.1` by default and requires each branch to declare a
+unique project name, host port, and commit SHA. The project name isolates the Compose-scoped data
+volume; the SHA identifies the image under review. The environment file is passed at runtime and
+is never embedded in the image. To expose the preview only on a Tailscale interface, set
+`NAVET_PREVIEW_BIND_ADDRESS` to that host's Tailscale IP before starting it. Do not set the bind
+address to `0.0.0.0`; an authenticated proxy or private mesh should be the only remote entry point.
 
 Stop the preview without touching stable Navet data:
 
 ```bash
-docker compose -f compose.private-preview.yml down --volumes
+docker compose --env-file .env.private-preview -f compose.private-preview.yml down --volumes
 ```
 
 ## Agent Boundary
