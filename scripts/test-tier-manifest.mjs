@@ -17,6 +17,7 @@ export const TEST_TIERS = {
       'scripts/run-private-preview.test.mjs',
       'scripts/vite-preload-graph.test.mjs',
       'scripts/package-import-policy.test.mjs',
+      'scripts/product-approval-workflow.test.mjs',
       'packages/provider-homeassistant/src/homeassistant-contract.test.ts',
       'packages/provider-homeassistant/src/homeassistant-energy-helpers.test.ts',
       'packages/provider-homeassistant/src/homeassistant-chore-projection-feature.service.test.ts',

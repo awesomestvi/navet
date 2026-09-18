@@ -108,6 +108,13 @@ jobs:
                   name,
                 });
               } catch (error) {
-                if (error.status !== 404) throw error;
+                if (error.status === 404) continue;
+                if (error.status === 403) {
+                  core.warning(
+                    'GitHub did not allow approval-label cleanup. SHA-bound statuses remain authoritative.',
+                  );
+                  break;
+                }
+                throw error;
               }
             }
