@@ -1,0 +1,63 @@
+name: Draft Release Communication
+
+on:
+  release:
+    types:
+      - published
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release or candidate tag to draft from
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  draft-request:
+    name: Open one grounded communication draft request
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create communication issue
+        uses: actions/github-script@v7
+        env:
+          REQUESTED_TAG: ${{ inputs.tag }}
+        with:
+          script: |
+            const tag = context.payload.release?.tag_name ?? process.env.REQUESTED_TAG;
+            if (!tag) {
+              core.setFailed('A release tag is required.');
+              return;
+            }
+            const title = `Draft community communication for ${tag}`;
+            const existing = await github.paginate(github.rest.issues.listForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'all',
+              labels: 'communication',
+              per_page: 100,
+            });
+            if (existing.some((issue) => issue.title === title)) {
+              core.info('A communication draft issue already exists for this tag.');
+              return;
+            }
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              labels: ['communication', 'agent:research'],
+              body: [
+                `Prepare channel-appropriate drafts for Navet ${tag}.`,
+                '',
+                'Ground every claim in the complete release diff, final changelog, verified artifacts, and approved screenshots. Do not infer features from issue titles or plans.',
+                '',
+                'Draft only the channels Navet currently uses: GitHub release follow-up if needed, Reddit, Discord, YouTube description or update, and website release notes. Mark channels with no meaningful update as not needed.',
+                '',
+                'Include source links and the screenshot used for each visual claim. Keep credentials, private URLs, household data, and unreleased work out of the drafts.',
+                '',
+                'Do not publish anything. A maintainer must approve each final message and publication target.',
+              ].join('\n'),
+            });

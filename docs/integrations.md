@@ -27,10 +27,10 @@ still depend on the entity types a provider exposes and maps successfully.
 | Capability | Home Assistant | Homey | openHAB |
 |---|---:|---:|---:|
 | Rooms, realtime state, lighting, switches, and sensors | Yes | Yes | Yes |
-| Lock state and lock/unlock controls | Yes | Writable lock capabilities | No |
-| Cover position and movement controls | Yes | Writable position, open/close, and supported stop commands | No |
-| Climate dashboard services | Yes | Target temperature and operating modes | No |
-| Media playback and volume controls | Yes | Writable speaker capabilities | No |
+| Lock state and lock/unlock controls | Yes | Writable lock capabilities | Supported lock items |
+| Cover position and movement controls | Yes | Writable position, open/close, and supported stop commands | Position and movement for supported cover items |
+| Climate dashboard services | Yes | Target temperature and operating modes | Target setpoint |
+| Media playback and volume controls | Yes | Writable speaker capabilities | Playback and volume for supported items |
 | Media browse, search, artwork, and grouping | Yes | No | No |
 | Camera snapshots and live streams | Yes | No | No |
 | Energy configuration and statistics | Yes | No | No |
@@ -73,9 +73,10 @@ Assist, task, alarm-panel, and room-administration services are not registered f
 
 ### openHAB
 
-Navet currently maps openHAB rooms and realtime items for lights, switches, and sensors. Climate,
-media, cameras, energy, calendars, weather, notifications, Assist, and provider administration are not yet
-registered as openHAB feature services in Navet.
+Navet maps openHAB rooms and realtime items for lights, switches, fans, climate setpoints, speaker
+playback and volume, locks, covers, security sensors, batteries, and utility measurements. It does
+not register history, energy-statistics, alarm-panel, media-browser, camera, calendar, weather,
+notification, Assist, task, or provider-administration services.
 
 ### Planned providers
 

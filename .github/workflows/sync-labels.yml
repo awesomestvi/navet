@@ -1,0 +1,36 @@
+name: Sync Repository Labels
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/labels.json
+      - scripts/sync-github-labels.mjs
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: sync-repository-labels
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    name: Sync labels without deleting unmanaged labels
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Create or update managed labels
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/sync-github-labels.mjs

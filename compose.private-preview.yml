@@ -1,0 +1,23 @@
+name: "${NAVET_PREVIEW_PROJECT_NAME:?Set a unique NAVET_PREVIEW_PROJECT_NAME for this branch}"
+
+services:
+  navet-private-preview:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NAVET_ENABLE_DEMO: "false"
+        NAVET_GIT_SHA: "${NAVET_PREVIEW_GIT_SHA:?Set NAVET_PREVIEW_GIT_SHA to the reviewed commit}"
+        NAVET_RELEASE_CHANNEL: "private-preview"
+    image: "navet:private-preview-${NAVET_PREVIEW_GIT_SHA}"
+    ports:
+      - "${NAVET_PREVIEW_BIND_ADDRESS:-127.0.0.1}:${NAVET_PREVIEW_PORT:?Set a unique NAVET_PREVIEW_PORT for this branch}:80"
+    env_file:
+      - path: .env.private-preview
+        required: false
+    volumes:
+      - navet-private-preview-data:/data
+    restart: unless-stopped
+
+volumes:
+  navet-private-preview-data:

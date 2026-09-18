@@ -1,0 +1,18 @@
+# Maintainer-owned policy and publication boundaries
+/AGENTS.md @awesomestvi
+/.github/AGENTS.md @awesomestvi
+/.github/CODEOWNERS @awesomestvi
+/docs/product/ @awesomestvi
+/docs/architecture/ @awesomestvi
+/docs/branding/ @awesomestvi
+/docs/design-system/ @awesomestvi
+/.github/workflows/ @awesomestvi
+/scripts/*release* @awesomestvi
+/scripts/*hacs* @awesomestvi
+/Dockerfile @awesomestvi
+/docker/ @awesomestvi
+/platform/home-assistant/ @awesomestvi
+/packages/core/ @awesomestvi
+/packages/provider-homeassistant/ @awesomestvi
+/packages/provider-homey/ @awesomestvi
+/packages/provider-openhab/ @awesomestvi

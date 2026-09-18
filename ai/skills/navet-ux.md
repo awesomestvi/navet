@@ -115,7 +115,7 @@ Review the result against the named reference, not only against the request:
 If a visual review surface is available, inspect it and correct visible hierarchy, overflow,
 alignment, and theme mismatches before calling the work complete.
 
-For small UI-only tweaks, do not run tests by default. Tell the user the most relevant focused
-validation, usually `pnpm test:storybook`, `pnpm check:stories`, or `pnpm test <path>`. For broader
-UI work, follow `docs/agents/commands.md` and use the smallest routeable validation that covers the
-change.
+For small UI-only tweaks, run the closest focused validation, usually a targeted Storybook test,
+`pnpm check:stories`, or `pnpm test <path>`, and inspect the rendered state. For broader or
+responsive UI work, follow `docs/agents/commands.md`, use the smallest routeable validation that
+covers the change, and run `pnpm test:visual-review` when shared layout or overflow can change.

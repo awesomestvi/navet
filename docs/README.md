@@ -61,6 +61,13 @@ Git history and the linked issue retain that context without presenting it as a 
 
 ## Contributor Docs
 
+- [product/vision.md](product/vision.md)
+  Durable product purpose, audience, and non-goals.
+- [product/design-principles.md](product/design-principles.md)
+  Product-level design decisions that outrank temporary UI conventions.
+- [product/dashboard-principles.md](product/dashboard-principles.md)
+  Dashboard hierarchy, density, responsiveness, and control principles.
+
 - [../CONTRIBUTING.md](../CONTRIBUTING.md)
   Onboarding, local setup, and validation flow.
 - [agents/commands.md](agents/commands.md)
@@ -93,6 +100,11 @@ Git history and the linked issue retain that context without presenting it as a 
   Current tier inventory by subsystem.
 
 ## Maintainer Docs
+
+- [engineering/agentic-development.md](engineering/agentic-development.md)
+  Issue-to-preview workflow, agent roles, permissions, approval gates, and stewardship.
+- [engineering/private-home-testing.md](engineering/private-home-testing.md)
+  Secure branch testing against a private Home Assistant installation.
 
 - [release-workflow.md](release-workflow.md)
   Release lanes, artifact surfaces, and version alignment.

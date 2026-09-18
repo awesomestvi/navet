@@ -1,0 +1,48 @@
+name: Documentation Steward
+
+on:
+  schedule:
+    - cron: '20 8 1 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  open-review:
+    name: Open monthly drift review when none is active
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create stewardship issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = 'Review product, architecture, and documentation drift';
+            const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'stewardship',
+              per_page: 100,
+            });
+            if (openIssues.some((issue) => issue.title === title)) {
+              core.info('An active stewardship review already exists.');
+              return;
+            }
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              labels: ['stewardship', 'agent:research', 'type: docs'],
+              body: [
+                'Review changes since the previous stewardship issue or, if none exists, the last 30 days.',
+                '',
+                'Compare merged PRs, releases, new components, provider capability changes, deprecated patterns, README, AGENTS.md, docs/**/*.md, and the current implementation.',
+                '',
+                'Report verified contradictions, duplication, stale instructions, and missing durable guidance. Open narrow documentation PRs where current behavior is clear.',
+                '',
+                'Do not silently change product vision, design principles, dashboard principles, foundational architecture, provider status, or release authority. Flag those changes for explicit maintainer review.',
+              ].join('\n'),
+            });

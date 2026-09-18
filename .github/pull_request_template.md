@@ -1,16 +1,33 @@
-## Summary
+## Outcome
 
-- describe the change
-- note any relevant UI or behavior impact
+Describe the user or maintainer outcome. Link the issue and its acceptance criteria.
 
-## Review checklist
+Closes #
 
-- [ ] Shared UI was added to `packages/app/src/components/primitives/` or `packages/app/src/components/patterns/` when appropriate
-- [ ] If this adds shared UI, I can explain why it is not a primitive, pattern, or token when applicable
-- [ ] `packages/app/src/components/shared/` was only used for app-specific shared UI or compatibility shims
-- [ ] Storybook stories were added or updated for shared UI changes
-- [ ] `pnpm check:stories` passes
-- [ ] `pnpm check:ui-kit` passes
-- [ ] Documentation was updated if Storybook taxonomy, component ownership, or UI system guidance changed
-- [ ] I tested responsive behavior where the UI changed
-- [ ] I tested relevant theme states where the UI changed
+## Evidence
+
+- Deterministic checks run:
+- Regression test or reproduction evidence for bugs:
+- Rendered states and viewports for UI changes:
+
+## Impact
+
+- Product / UX:
+- Providers and deployment modes:
+- Persistence, security, or architecture:
+- Performance and low-power hardware:
+
+## Documentation decision
+
+State which surfaces are affected and why: README, user docs, architecture, provider docs,
+Storybook, website, agent instructions, product principles, release docs, or none. Do not edit a
+document only to satisfy this section.
+
+## Human review
+
+- UI changes: review the demo and Storybook previews on relevant phone, tablet, and desktop sizes.
+- Product approval: after reviewing the current PR head, the maintainer copies the exact
+  `/approve-product <full-current-head-sha>` command from the PR review summary.
+- Foundational or security approval: use the SHA-bound `/approve-foundation` or `/approve-security`
+  command from the review summary when required.
+- A new commit invalidates prior human approval.

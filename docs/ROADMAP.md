@@ -36,8 +36,10 @@ Navet currently ships:
 
 Provider capabilities are not equal: Home Assistant currently supplies the advanced climate,
 media, camera, energy, calendar, weather, notification, task, Assist conversation, history,
-security, and administration
-services. Homey and openHAB currently supply rooms, lighting, switches, sensors, and realtime state.
+security, and administration services. Homey also supplies climate, speaker, security, Flows,
+Moods, presence, notification, Insights, favorite, and hub-resource capabilities. openHAB also
+supplies fans, climate setpoints, speaker controls, locks, covers, security sensors, batteries, and
+utility measurements.
 
 ## Likely Next
 

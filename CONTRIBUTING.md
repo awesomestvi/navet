@@ -74,7 +74,8 @@ pnpm release:check
 
 Important repo policy:
 
-- `pnpm typecheck` and `pnpm check` are user-run gates rather than default agent-run commands
+- contributors and agents run the checks needed to prove their own changes
+- begin with focused checks and use `pnpm validate -- --dry-run` when the correct scope is unclear
 - release and packaging commands are maintainer workflows unless the task explicitly calls for them
 - use [`docs/agents/commands.md`](docs/agents/commands.md) as the source of truth for command restrictions
 

@@ -54,6 +54,7 @@
     "wallpapers:optimize": "node scripts/wallpapers.mjs optimize",
     "wallpapers:check": "node scripts/wallpapers.mjs check",
     "preview": "pnpm build && pnpm preview:config && pnpm --filter @navet/standalone preview",
+    "preview:private": "node scripts/run-private-preview.mjs",
     "preview:config": "node scripts/write-preview-config.mjs",
     "provider-lab:install": "node scripts/install-provider-lab.mjs all",
     "provider-lab:openhab": "node scripts/install-provider-lab.mjs openhab",
@@ -89,6 +90,7 @@
     "test:ha-integration": "python3 -m unittest discover -s platform/home-assistant/tests -p 'test_*.py'",
     "test:coverage": "vitest --config vitest.unit.config.ts --project unit --coverage",
     "test:storybook": "vitest --project \"storybook:$PWD/apps/storybook/.storybook\"",
+    "test:visual-review": "pnpm build:demo && node scripts/run-pr-visual-review.mjs",
     "typecheck": "tsc --noEmit",
     "prepare": "husky"
   },

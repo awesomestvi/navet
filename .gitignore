@@ -21,6 +21,7 @@ storybook-static/
 # Test output
 coverage/
 .nyc_output/
+test-results/
 
 # Caches
 .cache/
@@ -39,6 +40,7 @@ __pycache__/
 .env.development.local
 .env.test.local
 .env.production.local
+.env.private-preview
 *.pem
 
 # Public, self-signed TLS fixtures used only by the RSS transport test server.

@@ -4,8 +4,8 @@ Use this file for maintainer and agent release work.
 
 ## Hard Rules
 
-- do not run release `pnpm` commands yourself during assisted release work
-- list the required commands for the user and wait for the reported results
+- release-preparation agents may run non-publishing validation such as `pnpm release:check`
+- tag creation, pushes, production publication, and public communication require explicit authority
 - audit the complete Git and pull-request history since the previous stable tag for release notes
 - keep release-managed files aligned for versioned releases
 - keep root `repository.yaml` in the monorepo
@@ -119,10 +119,13 @@ Example:
 
 - Tier 1 release-critical validation is the release gate
 - Tier 2 remains blocking for main CI
-- Tier 3 remains visible but non-release-blocking
+- Tier 3 is a blocking pull-request gate
 - tagged releases build the custom-panel artifact in workflow
 - tagged releases sync the exported HACS payload into `awesomestvi/navet-home-assistant/main`
 - tagged releases also create or refresh the matching Git tag in `awesomestvi/navet-home-assistant`
+- missing HACS credentials fail the release instead of silently producing a partial release
+- a release is complete only after exact app/add-on images, HACS release, panel archive, GitHub
+  release, and public website/demo/docs/Storybook availability are verified
 - local `pnpm sync:hacs` is still useful for previewing export output before release work
 
 ## Publishing Rules

@@ -15,7 +15,9 @@ Home Assistant currently supplies the broad advanced feature-service set, includ
 media, camera, energy, calendar, weather, notifications, tasks, history, security, and provider
 administration.
 
-Homey and openHAB currently supply rooms, live entity state, lighting, switches, and sensors.
+Homey also supplies supported climate, speaker, lock, cover, scene, presence, notification,
+Insights, favorite, and hub-resource behavior. openHAB also supplies supported fans, climate
+setpoints, speaker controls, locks, covers, security sensors, batteries, and utility measurements.
 Hubitat and SmartThings remain planned.
 
 See the current [integration capability matrix](/integrations/).
