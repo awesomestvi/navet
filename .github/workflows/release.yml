@@ -483,10 +483,10 @@ jobs:
 
       - name: Smoke test public Navet surfaces
         run: |
-          curl --fail --location --retry 3 --retry-all-errors --silent --show-error https://navet.app/ >/dev/null
-          curl --fail --location --retry 3 --retry-all-errors --silent --show-error https://demo.navet.app/demo/home >/dev/null
-          curl --fail --location --retry 3 --retry-all-errors --silent --show-error https://docs.navet.app/ >/dev/null
-          curl --fail --location --retry 3 --retry-all-errors --silent --show-error https://storybook.navet.app/ >/dev/null
+          curl --fail --location --retry 3 --retry-all-errors --connect-timeout 10 --max-time 60 --silent --show-error https://navet.app/ >/dev/null
+          curl --fail --location --retry 3 --retry-all-errors --connect-timeout 10 --max-time 60 --silent --show-error https://demo.navet.app/demo/home >/dev/null
+          curl --fail --location --retry 3 --retry-all-errors --connect-timeout 10 --max-time 60 --silent --show-error https://docs.navet.app/ >/dev/null
+          curl --fail --location --retry 3 --retry-all-errors --connect-timeout 10 --max-time 60 --silent --show-error https://storybook.navet.app/ >/dev/null
 
       - name: Record complete release verification
         run: |

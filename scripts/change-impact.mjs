@@ -2,6 +2,7 @@ const GROUPS = {
   ui: [
     /^packages\/ui\//,
     /^packages\/app\/src\/(components|features|ui-kit|demo|styles)\//,
+    /^packages\/app\/src\/(main|App|authenticated-app)\.tsx$/,
     /^apps\/(demo|storybook)\//,
     /\.stories\.[jt]sx?$/,
   ],
@@ -28,6 +29,14 @@ const GROUPS = {
     /^docs\/branding\/BRAND_FOUNDATIONS\.md$/,
   ],
 };
+
+export const MANAGED_IMPACT_LABELS = [
+  'impact: ui',
+  'impact: provider',
+  'impact: docs',
+  'impact: release',
+  'impact: website',
+];
 
 export function classifyFiles(files) {
   const normalizedFiles = Array.from(

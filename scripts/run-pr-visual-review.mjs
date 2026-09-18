@@ -119,29 +119,22 @@ async function stabilize(page, path) {
 }
 
 async function inspectPage(page, scenario) {
-  const result = await page.evaluate(() => {
-    const root = document.documentElement;
-    const unnamedButtons = Array.from(document.querySelectorAll('button'))
-      .filter((button) => {
-        const style = window.getComputedStyle(button);
-        const bounds = button.getBoundingClientRect();
-        if (style.display === 'none' || style.visibility === 'hidden' || bounds.width === 0) return false;
-        return ![
-          button.getAttribute('aria-label'),
-          button.getAttribute('title'),
-          button.textContent,
-        ].some((value) => value?.trim());
-      })
-      .map((button) => button.outerHTML.slice(0, 180));
+  const [result, unnamedButtons] = await Promise.all([
+    page.evaluate(() => {
+      const root = document.documentElement;
 
-    return {
-      horizontalOverflow: root.scrollWidth - root.clientWidth,
-      visibleButtons: Array.from(document.querySelectorAll('button')).filter(
-        (button) => button.getBoundingClientRect().width > 0
-      ).length,
-      unnamedButtons,
-    };
-  });
+      return {
+        horizontalOverflow: root.scrollWidth - root.clientWidth,
+        visibleButtons: Array.from(document.querySelectorAll('button')).filter(
+          (button) => button.getBoundingClientRect().width > 0
+        ).length,
+      };
+    }),
+    page
+      .getByRole('button', { name: '', exact: true })
+      .filter({ visible: true })
+      .evaluateAll((buttons) => buttons.map((button) => button.outerHTML.slice(0, 180))),
+  ]);
 
   if (result.horizontalOverflow > 1) {
     throw new Error(`${scenario.name} has ${result.horizontalOverflow}px of horizontal overflow.`);
@@ -149,9 +142,9 @@ async function inspectPage(page, scenario) {
   if (result.visibleButtons === 0) {
     throw new Error(`${scenario.name} rendered no visible controls.`);
   }
-  if (result.unnamedButtons.length > 0) {
+  if (unnamedButtons.length > 0) {
     throw new Error(
-      `${scenario.name} rendered visible buttons without accessible names:\n${result.unnamedButtons.join('\n')}`
+      `${scenario.name} rendered visible buttons without accessible names:\n${unnamedButtons.join('\n')}`
     );
   }
 }
@@ -187,18 +180,30 @@ try {
       if (message.type() === 'error') runtimeErrors.push(message.text());
     });
 
-    await stabilize(page, scenario.path);
-    if (scenario.prepare) await scenario.prepare(page);
-    await inspectPage(page, scenario);
-    if (runtimeErrors.length > 0) {
-      throw new Error(`${scenario.name} emitted runtime errors:\n${runtimeErrors.join('\n')}`);
+    let failure;
+    try {
+      await stabilize(page, scenario.path);
+      if (scenario.prepare) await scenario.prepare(page);
+      await inspectPage(page, scenario);
+      if (runtimeErrors.length > 0) {
+        throw new Error(`${scenario.name} emitted runtime errors:\n${runtimeErrors.join('\n')}`);
+      }
+    } catch (error) {
+      failure = error;
+    } finally {
+      try {
+        await page.screenshot({
+          path: resolve(OUTPUT_DIR, `${scenario.name}.png`),
+          animations: 'disabled',
+          fullPage: true,
+        });
+      } catch (error) {
+        if (!failure) failure = error;
+        else process.stderr.write(`Could not capture ${scenario.name}: ${error.message}\n`);
+      }
+      await context.close();
     }
-    await page.screenshot({
-      path: resolve(OUTPUT_DIR, `${scenario.name}.png`),
-      animations: 'disabled',
-      fullPage: true,
-    });
-    await context.close();
+    if (failure) throw failure;
     process.stdout.write(`Reviewed ${scenario.name} (${scenario.viewport.width}x${scenario.viewport.height}).\n`);
   }
 } finally {

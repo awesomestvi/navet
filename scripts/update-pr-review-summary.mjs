@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 import { readFile } from 'node:fs/promises';
-import { classifyFiles, impactLabels, requiredApprovalGates } from './change-impact.mjs';
+import {
+  classifyFiles,
+  impactLabels,
+  MANAGED_IMPACT_LABELS,
+  requiredApprovalGates,
+} from './change-impact.mjs';
 
 const MARKER = '<!-- navet-pr-review-summary -->';
 const event = JSON.parse(await readFile(process.env.GITHUB_EVENT_PATH, 'utf8'));
@@ -56,6 +61,10 @@ function branchAlias(branch) {
 }
 
 const pull = await request(`/repos/${owner}/${repo}/pulls/${pullNumber}`);
+if (pull.head.sha !== run.head_sha) {
+  process.stdout.write('Ignoring a workflow run for an older PR head.\n');
+  process.exit(0);
+}
 const changedFiles = await getAll(`/repos/${owner}/${repo}/pulls/${pullNumber}/files`);
 const comments = await getAll(`/repos/${owner}/${repo}/issues/${pullNumber}/comments`);
 const labels = pull.labels.map(({ name }) => name);
@@ -115,6 +124,14 @@ if (previous) {
 }
 
 const desiredImpactLabels = impactLabels(impact);
+const desiredImpactLabelSet = new Set(desiredImpactLabels);
+for (const label of labels.filter(
+  (name) => MANAGED_IMPACT_LABELS.includes(name) && !desiredImpactLabelSet.has(name)
+)) {
+  await request(`/repos/${owner}/${repo}/issues/${pullNumber}/labels/${encodeURIComponent(label)}`, {
+    method: 'DELETE',
+  });
+}
 if (desiredImpactLabels.length > 0) {
   await request(`/repos/${owner}/${repo}/issues/${pullNumber}/labels`, {
     method: 'POST',

@@ -16,6 +16,17 @@ describe('change impact classification', () => {
     expect(impactLabels(impact)).toContain('impact: ui');
   });
 
+  it.each([
+    'packages/app/src/main.tsx',
+    'packages/app/src/App.tsx',
+    'packages/app/src/authenticated-app.tsx',
+  ])('requires product approval for the rendered app entrypoint %s', (file) => {
+    const impact = classifyFiles([file]);
+
+    expect(impact.ui).toBe(true);
+    expect(requiredApprovalGates(impact).product).toBe(true);
+  });
+
   it('requires explicit approval for product constitution changes', () => {
     const impact = classifyFiles(['docs/product/vision.md']);
 

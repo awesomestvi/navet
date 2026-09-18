@@ -51,7 +51,7 @@ entry point.
 Stop the preview without touching stable Navet data:
 
 ```bash
-docker compose -f compose.private-preview.yml down
+docker compose -f compose.private-preview.yml down --volumes
 ```
 
 ## Agent Boundary

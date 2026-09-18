@@ -29,7 +29,17 @@ async function request(path, init = {}) {
   return response.status === 204 ? null : response.json();
 }
 
-const existing = await request(`/repos/${owner}/${repo}/labels?per_page=100`);
+async function getAll(path) {
+  const values = [];
+  for (let page = 1; ; page += 1) {
+    const separator = path.includes('?') ? '&' : '?';
+    const batch = await request(`${path}${separator}per_page=100&page=${page}`);
+    values.push(...batch);
+    if (batch.length < 100) return values;
+  }
+}
+
+const existing = await getAll(`/repos/${owner}/${repo}/labels`);
 const existingNames = new Set(existing.map(({ name }) => name));
 
 for (const label of labels) {
