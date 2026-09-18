@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { readFile } from 'node:fs/promises';
+import { approvalsFromStatuses } from './approval-status.mjs';
 import {
   classifyFiles,
   impactLabels,
@@ -67,16 +68,18 @@ if (pull.head.sha !== run.head_sha) {
 }
 const changedFiles = await getAll(`/repos/${owner}/${repo}/pulls/${pullNumber}/files`);
 const comments = await getAll(`/repos/${owner}/${repo}/issues/${pullNumber}/comments`);
+const combinedStatus = await request(`/repos/${owner}/${repo}/commits/${pull.head.sha}/status`);
 const labels = pull.labels.map(({ name }) => name);
 const impact = classifyFiles(changedFiles.map(({ filename }) => filename));
 const gates = requiredApprovalGates(impact, labels);
+const approvals = approvalsFromStatuses(combinedStatus.statuses);
 const alias = branchAlias(pull.head.ref);
 const succeeded = run.conclusion === 'success';
 const title = succeeded && gates.product ? 'Ready for Product Review' : succeeded ? 'Ready for Merge Review' : 'Validation Failed';
 const gateRows = [
-  ['Product / UX', gates.product, labels.includes('review: product-approved'), `/approve-product ${pull.head.sha}`],
-  ['Foundation', gates.foundation, labels.includes('review: foundation-approved'), `/approve-foundation ${pull.head.sha}`],
-  ['Security', gates.security, labels.includes('review: security-approved'), `/approve-security ${pull.head.sha}`],
+  ['Product / UX', gates.product, approvals.product, `/approve-product ${pull.head.sha}`],
+  ['Foundation', gates.foundation, approvals.foundation, `/approve-foundation ${pull.head.sha}`],
+  ['Security', gates.security, approvals.security, `/approve-security ${pull.head.sha}`],
 ]
   .filter(([, required]) => required)
   .map(([name, , approved, command]) => `| ${name} | ${approved ? '✓ approved' : `pending — comment \`${command}\``} |`);

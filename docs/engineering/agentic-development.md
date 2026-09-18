@@ -55,6 +55,15 @@ criteria. It must ask for missing reproduction information instead of speculatin
 - Forbidden: silently patch the implementation, approve product taste, or treat implementation
   agent explanations as proof.
 
+Before pushing a substantial PR or a review-driven fix, run deterministic validation first, fetch
+the current `origin/main`, then run `coderabbit review --agent --base origin/main` from the branch.
+This reviews the complete proposed PR diff rather than only the latest commit. Verify each finding,
+fix valid issues, and repeat the full-diff review until no actionable finding remains. The CLI is
+cloud-assisted rather than offline: it sends the diff to CodeRabbit and therefore requires the same
+authorization and trust decision as the GitHub integration. Keep it an explicit review step rather
+than a Git hook so network, authentication, quota, or reviewer availability cannot bypass or block
+the deterministic checks. The GitHub review remains an independent advisory check after push.
+
 ### Steward
 
 - Trigger: monthly scheduled issue or maintainer dispatch.

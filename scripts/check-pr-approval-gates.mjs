@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { appendFile } from 'node:fs/promises';
+import { approvalsFromStatuses } from './approval-status.mjs';
 import { classifyFiles, requiredApprovalGates } from './change-impact.mjs';
 
 const token = process.env.GITHUB_TOKEN;
@@ -41,16 +42,7 @@ const combinedStatus = await get(`/repos/${owner}/${repo}/commits/${pull.head.sh
 const labels = pull.labels.map(({ name }) => name);
 const impact = classifyFiles(files.map(({ filename }) => filename));
 const required = requiredApprovalGates(impact, labels);
-const successfulStatuses = new Set(
-  combinedStatus.statuses
-    .filter(({ state }) => state === 'success')
-    .map(({ context }) => context)
-);
-const approvals = {
-  product: successfulStatuses.has('navet/product-approval'),
-  foundation: successfulStatuses.has('navet/foundation-approval'),
-  security: successfulStatuses.has('navet/security-approval'),
-};
+const approvals = approvalsFromStatuses(combinedStatus.statuses);
 const missing = Object.keys(required).filter((gate) => required[gate] && !approvals[gate]);
 
 const rows = Object.keys(required).map(
