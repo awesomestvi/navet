@@ -1,5 +1,5 @@
-name: Feature request
-description: Suggest a user-facing improvement for Navet.
+name: Detailed feature proposal
+description: Propose a feature when you can describe the problem, solution, and product area.
 title: "[Feature]: "
 labels:
   - "status: needs-triage"
@@ -8,7 +8,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Use this form for product improvements, new user workflows, and new capabilities.
+        This detailed form is intended for developers and contributors proposing a defined capability. To share an idea in your own words, choose **Share an idea or UX feedback** instead.
 
         For setup questions or troubleshooting your own Home Assistant configuration, use Discussions instead of opening an issue.
   - type: checkboxes
@@ -34,8 +34,9 @@ body:
         - Settings
         - Themes / wallpapers
         - PWA install / updates
-        - Home Assistant add-on
-        - Docker
+        - HACS custom panel
+        - Home Assistant App
+        - Standalone Docker
         - Documentation
         - Other
     validations:

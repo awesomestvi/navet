@@ -1,6 +1,6 @@
-name: Product or UX feedback
-description: Describe what feels wrong or should work better in normal product language.
-title: "[Feedback]: "
+name: Share an idea or UX feedback
+description: Tell us what could be better. No technical knowledge or proposed solution needed.
+title: "[Idea]: "
 labels:
   - "type: ux"
   - "status: needs-triage"
