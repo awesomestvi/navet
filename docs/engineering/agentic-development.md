@@ -129,6 +129,10 @@ Public GitHub activity should read like useful collaboration with a person:
 - post a research conclusion only when it helps the reporter or maintainer decide what happens next
 - for implementation, let the linked PR carry the acceptance criteria, evidence, and review thread
 - never post internal prompts, repository-reading instructions, claim notices, or raw agent logs
+- speak directly to the reporter in plain language, acknowledge useful context or frustration when
+  appropriate, and lead with the user-visible finding rather than the implementation mechanism
+- keep technical internals and test counts in the PR unless they help the reporter understand the
+  result; end an issue reply with one clear next step or question
 
 When blocked, the runner replaces `status: agent-working` with `status: needs-context`. Research
 work returns to `status: needs-triage` after its useful conclusion is recorded. Implementation work
