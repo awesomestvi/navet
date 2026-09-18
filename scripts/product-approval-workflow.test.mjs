@@ -27,4 +27,11 @@ describe('human approval workflow', () => {
     expect(approvalScript).toContain('/approve-security');
     expect(workflow.jobs.approve.steps[0].env.HUMAN_APPROVER).toContain('NAVET_HUMAN_APPROVER');
   });
+
+  it('does not fail a recorded approval when cosmetic label synchronization is unavailable', () => {
+    expect(approvalScript).toContain('github.rest.repos.createCommitStatus');
+    expect(approvalScript).toContain('github.rest.issues.addLabels');
+    expect(approvalScript).toContain('if (error.status !== 403) throw error');
+    expect(approvalScript).toContain('The SHA-bound approval status was recorded successfully');
+  });
 });
