@@ -64,7 +64,10 @@ review is advisory; deterministic checks and human decisions remain authoritativ
 
 The maintainer reviews the current previews and resolved conversations before merging ordinary
 product and UI work. Foundation or security-sensitive changes additionally require the SHA-bound
-approval command shown in the pull-request summary. A new commit invalidates the approval recorded
+`/approve-foundation` or `/approve-security` command shown in the pull-request summary. Only the
+repository owner or the approver configured through `NAVET_HUMAN_APPROVER`, with
+`NAVET_PRODUCT_APPROVER` as the compatibility fallback, may issue these commands. The workflow
+rejects other users before recording an approval. A new commit invalidates the approval recorded
 for the previous head.
 
 Production releases and public release communication remain human-approved.
