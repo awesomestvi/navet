@@ -1,8 +1,9 @@
 [
-  { "name": "agent:implement", "color": "1d76db", "description": "Triage and implement this issue with the configured coding agent" },
+  { "name": "agent:implement", "color": "1d76db", "description": "Queue private triage, implementation, validation, and a pull request" },
   { "name": "agent:research", "color": "5319e7", "description": "Investigate and report without assuming implementation" },
   { "name": "status: needs-triage", "color": "d4c5f9", "description": "Needs product or maintainer triage" },
   { "name": "status: needs-context", "color": "fbca04", "description": "Blocked on specific information or reproduction evidence" },
+  { "name": "status: agent-queued", "color": "c2e0c6", "description": "Accepted for private agent pickup" },
   { "name": "status: agent-working", "color": "0052cc", "description": "A delivery agent owns the current iteration" },
   { "name": "status: product-review", "color": "0e8a16", "description": "CI passed and preview evidence is ready for product review" },
   { "name": "type: bug", "color": "d73a4a", "description": "User-visible behavior is broken" },
