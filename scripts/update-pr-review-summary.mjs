@@ -74,9 +74,9 @@ const alias = branchAlias(pull.head.ref);
 const succeeded = run.conclusion === 'success';
 const title = succeeded && gates.product ? 'Ready for Product Review' : succeeded ? 'Ready for Merge Review' : 'Validation Failed';
 const gateRows = [
-  ['Product / UX', gates.product, labels.includes('review: product-approved'), '/approve-product'],
-  ['Foundation', gates.foundation, labels.includes('review: foundation-approved'), '/approve-foundation'],
-  ['Security', gates.security, labels.includes('review: security-approved'), '/approve-security'],
+  ['Product / UX', gates.product, labels.includes('review: product-approved'), `/approve-product ${pull.head.sha}`],
+  ['Foundation', gates.foundation, labels.includes('review: foundation-approved'), `/approve-foundation ${pull.head.sha}`],
+  ['Security', gates.security, labels.includes('review: security-approved'), `/approve-security ${pull.head.sha}`],
 ]
   .filter(([, required]) => required)
   .map(([name, , approved, command]) => `| ${name} | ${approved ? '✓ approved' : `pending — comment \`${command}\``} |`);

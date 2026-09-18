@@ -116,10 +116,12 @@ Maintainer approval is required for:
 - public communication
 - access to a private Home Assistant installation or its credentials
 
-UI approval uses the `/approve-product` PR comment. Foundation and security approvals use
-`/approve-foundation` and `/approve-security`. The workflow records approval as a commit status on
-the exact PR head; labels are only a mobile-visible indicator. A new commit has no matching status,
-so feedback-driven agent iterations must be reviewed again even if label cleanup is delayed.
+UI approval uses the exact `/approve-product <full-current-head-sha>` command shown in the PR review
+summary. Foundation and security approvals use the corresponding SHA-bound commands shown there.
+The workflow rejects an approval when that reviewed commit is no longer the PR head, then records
+accepted approval as a commit status on that SHA. Labels are only a mobile-visible indicator. A new
+commit has no matching status, so feedback-driven agent iterations must be reviewed again even if
+label cleanup is delayed.
 
 ## Cost And Context
 
@@ -159,4 +161,4 @@ configured after these files reach `main`:
 
 The normal mobile flow is then: create **Product or UX feedback**, watch the linked PR, open the
 interactive demo or Storybook preview, leave ordinary PR feedback, and comment `/approve-product`
-when the current head is acceptable.
+with the full commit SHA copied from the PR review summary when the current head is acceptable.
