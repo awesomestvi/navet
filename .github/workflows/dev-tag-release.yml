@@ -294,3 +294,29 @@ jobs:
           body: ${{ steps.notes.outputs.body }}
           prerelease: true
           generate_release_notes: false
+
+  verify-dev-release:
+    name: Verify Navet Dev Artifacts
+    runs-on: ubuntu-latest
+    needs:
+      - release-context
+      - publish-standalone
+      - publish-addon
+      - github-release
+    environment: edge
+
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Verify immutable images and prerelease
+        env:
+          DEV_VERSION: ${{ needs.release-context.outputs.dev_version }}
+          TAG_NAME: ${{ needs.release-context.outputs.tag_name }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          docker buildx imagetools inspect "ghcr.io/${GITHUB_REPOSITORY_OWNER}/navet:${DEV_VERSION}"
+          docker buildx imagetools inspect "ghcr.io/${GITHUB_REPOSITORY_OWNER}/amd64-navet-addon:${DEV_VERSION}"
+          docker buildx imagetools inspect "ghcr.io/${GITHUB_REPOSITORY_OWNER}/aarch64-navet-addon:${DEV_VERSION}"
+          gh release view "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --json isPrerelease \
+            --jq '.isPrerelease' | grep -Fx true

@@ -7,23 +7,26 @@ Use this file as the command policy for active repo work.
 - prefer the smallest validation surface that answers the task
 - use targeted tests before broader suites
 - treat release and packaging commands as maintainer workflows unless the task explicitly calls for them
+- agents run the checks needed to prove their own work; do not hand routine validation back to the user
 
-## Do Not Run By Default
+## Broad Commands
+
+Do not run broad commands merely because they exist. Run them when the affected scope or a required
+gate calls for them:
 
 - `pnpm build`
 - `pnpm typecheck`
 - `pnpm check`
-- `pnpm release:*`
-- `pnpm sync:hacs`
-- `pnpm build:ha-panel`
+- `pnpm test:tier3`
+- `pnpm test:visual-review`
 
 Notes:
 
-- ask the user to run `pnpm typecheck` or `pnpm check` and report back
-- for small UI-only tweaks, do not run tests by default; tell the user which targeted validation
-  command to run and report back
-- for release work, list the required commands for the user instead of running them yourself
-- do not ask the user to run `pnpm build:ha-panel` as part of standard release prep
+- start with targeted checks, then run the applicable broad gate before declaring the change ready
+- for UI changes, render the affected state and run the narrowest Storybook or visual-review check
+- `pnpm release:*`, `pnpm sync:hacs`, and publication commands remain maintainer workflows unless
+  the task explicitly authorizes release execution
+- `pnpm build:ha-panel` is built by release automation and is not a standard local release-prep step
 
 ## Common Commands
 
@@ -54,6 +57,7 @@ pnpm test:tier2
 pnpm test:tier3
 pnpm test:coverage
 pnpm test:storybook
+pnpm test:visual-review
 pnpm build:demo
 pnpm storybook:build
 pnpm website:build
@@ -88,10 +92,10 @@ Routeable validation:
 
 UI tweak policy:
 
-- for small visual polish, spacing, layout, copy, or styling-only tweaks, do not run the validation
-  commands above by default
-- instead, prompt the user to run the most relevant targeted command, usually `pnpm test:storybook`,
-  `pnpm check:stories`, or a focused `pnpm test <path>`
+- for small visual polish, spacing, layout, copy, or styling-only tweaks, run the closest focused
+  story or test and inspect the rendered state
+- use `pnpm test:visual-review` when the change can affect responsive layout, overflow, or shared
+  dashboard composition
 
 ## Commit Rules
 

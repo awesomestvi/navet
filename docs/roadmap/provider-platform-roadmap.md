@@ -26,9 +26,11 @@ Current implementation note:
 Hubitat and SmartThings have planned catalog metadata, but no runtime adapters or authentication
 flows.
 
-The existing implemented providers are not feature-identical. Home Assistant owns the current
-advanced feature-service set. Homey and openHAB currently contribute rooms, realtime entities,
-lighting, switches, and sensors.
+The existing implemented providers are not feature-identical. Home Assistant owns the broadest
+advanced feature-service set. Homey also contributes climate, speaker, lock, cover, scene,
+presence, notification, Insights, favorite, and hub-resource behavior. openHAB also contributes
+fans, climate setpoints, speaker controls, locks, covers, security sensors, batteries, and utility
+measurements.
 
 ## Near-Term Work
 

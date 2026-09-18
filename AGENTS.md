@@ -3,6 +3,20 @@
 This file is the complete baseline for repository work. Do not preload every linked document.
 Read one additional area guide only when the task-routing table says it applies.
 
+## Authority And Product Constitution
+
+When instructions disagree, use this order:
+
+1. `docs/product/vision.md` and `docs/product/design-principles.md` for durable product intent.
+2. `docs/product/dashboard-principles.md` for dashboard behavior and UX decisions.
+3. `docs/architecture/` for current technical contracts and ownership.
+4. This file and scoped `AGENTS.md` files for agent behavior.
+5. Area guides, conventions, and temporary implementation plans.
+
+Do not silently reinterpret or edit the first three levels to make an implementation easier. A
+change to product principles or a foundational architecture contract needs explicit maintainer
+approval. Current code is evidence of behavior, not automatic authority over those principles.
+
 ## Product And Architecture
 
 Navet is a provider-neutral smart-home dashboard. It runs as a standalone Docker app, a Home
@@ -62,6 +76,7 @@ not expand that into the whole table.
 | Tests, fixtures, test deletion, or tier changes | `ai/skills/testing-architecture.md` |
 | Marketing, community content, videos, tutorials | `ai/skills/marketing-workspace.md` |
 | Release, CI, or uncertainty about validation commands | `docs/agents/commands.md` |
+| Agent workflow, approval gates, previews, or stewardship | `docs/engineering/agentic-development.md` |
 
 If no row matches, this file is sufficient. `ai/agents.md` is a navigation index, not mandatory
 second-stage reading.

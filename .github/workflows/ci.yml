@@ -11,6 +11,9 @@ on:
       - ready_for_review
   workflow_call:
 
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
@@ -123,7 +126,6 @@ jobs:
 
   tier-3-broad-regression:
     runs-on: ubuntu-latest
-    continue-on-error: true
 
     steps:
       - name: Checkout
@@ -144,3 +146,74 @@ jobs:
 
       - name: Run Tier 3 broad regression tests
         run: pnpm test:tier3
+
+  responsive-review:
+    name: Responsive visual review
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Capture responsive demo review and run smoke assertions
+        run: pnpm test:visual-review
+
+      - name: Upload responsive review screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: responsive-review-${{ github.event.pull_request.number || github.run_id }}
+          path: .cache/pr-review/*.png
+          if-no-files-found: warn
+          retention-days: 14
+
+  product-review-gate:
+    name: Product review gate
+    if: always()
+    runs-on: ubuntu-latest
+    needs:
+      - quality
+      - tier-1-release-critical
+      - tier-2-blocking-app-contracts
+      - standalone-docker-smoke
+      - tier-3-broad-regression
+      - responsive-review
+
+    steps:
+      - name: Require every deterministic gate
+        env:
+          QUALITY: ${{ needs.quality.result }}
+          TIER_1: ${{ needs.tier-1-release-critical.result }}
+          TIER_2: ${{ needs.tier-2-blocking-app-contracts.result }}
+          DOCKER: ${{ needs.standalone-docker-smoke.result }}
+          TIER_3: ${{ needs.tier-3-broad-regression.result }}
+          VISUAL: ${{ needs.responsive-review.result }}
+        run: |
+          failures=0
+          for result in "$QUALITY" "$TIER_1" "$TIER_2" "$DOCKER" "$TIER_3" "$VISUAL"; do
+            if [[ "$result" != "success" ]]; then
+              failures=$((failures + 1))
+            fi
+          done
+          if [[ "$failures" -gt 0 ]]; then
+            echo "${failures} required CI lane(s) did not succeed."
+            exit 1
+          fi
+          echo "All deterministic gates passed."

@@ -264,6 +264,8 @@ export function PhotoFrameWidget({
                 type="button"
                 key={`photo-dot-${index}`}
                 onClick={() => setCurrentIndex(index)}
+                aria-label={`${t('widgets.photoFrame.title')} ${index + 1} / ${photoCount}`}
+                aria-current={index === safeIndex ? 'true' : undefined}
                 className="pointer-events-auto h-2 w-2 rounded-full transition-[color,background-color,border-color,box-shadow,opacity,transform,filter]"
                 style={{
                   backgroundColor:

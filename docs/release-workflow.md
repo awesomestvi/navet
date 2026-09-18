@@ -99,10 +99,14 @@ Merge safety gates:
 - Tier 1 release-critical validation
 - Tier 2 blocking app contracts
 - standalone app smoke boot
-
-Visible but non-blocking:
-
 - Tier 3 broad regression coverage
+- Storybook standards and production build
+- responsive demo smoke checks and phone/tablet/desktop screenshot artifacts
+- one aggregate product-review gate
+
+The full Storybook browser interaction suite is not a required gate yet because its current
+baseline contains stale interaction assertions. Promote it only after the suite is green on
+`main`; do not hide known failures behind a successful required check.
 
 ### Dev tag publish
 
@@ -189,6 +193,9 @@ Behavior:
 - publishes the same `CHANGELOG.md` entries on the docs changelog during the next docs build
 - marks prerelease tags as GitHub prereleases
 - never moves `latest` on prerelease tags
+- fails when HACS synchronization cannot run instead of reporting a partial success
+- verifies exact standalone and add-on images, the panel archive, both GitHub releases, and the
+  availability of the website, demo, docs, and Storybook before the workflow is complete
 
 ### Public site deploys
 
@@ -252,3 +259,8 @@ Optional immutable Navet Dev publish:
 - choosing when to publish an immutable branch build and when to promote `main` to the shared Navet
   Dev channels
 - rollback execution if a bad release escapes
+- approving channel-specific communication drafts and publishing them publicly
+
+After a release is published, `/.github/workflows/release-communication.yml` opens one grounded
+draft request for the configured research agent. It never publishes to Reddit, Discord, YouTube,
+or the website.

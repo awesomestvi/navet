@@ -74,10 +74,11 @@ Implemented providers today:
 - `@navet/provider-homey`
 - `@navet/provider-openhab`
 
-Their expected matrices differ: Home Assistant covers the advanced feature-service set, while
-Homey and openHAB currently cover rooms, realtime entities, lighting, switches, and sensors. Tests
-must assert each provider's declared runtime registration rather than treating `implemented` as
-feature parity.
+Their expected matrices differ. Home Assistant covers the broad advanced feature-service set.
+Homey also covers climate, speaker, lock, cover, scene, presence, notification, Insights, favorite,
+and hub-resource behavior. openHAB also covers fans, climate setpoints, speaker controls, locks,
+covers, security sensors, batteries, and utility measurements. Tests must assert each provider's
+declared runtime registration rather than treating `implemented` as feature parity.
 
 These suites are Tier 1 by default.
 

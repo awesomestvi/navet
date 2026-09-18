@@ -1,0 +1,44 @@
+name: Product or UX feedback
+description: Describe what feels wrong or should work better in normal product language.
+title: "[Feedback]: "
+labels:
+  - "type: ux"
+  - "status: needs-triage"
+  - "agent:implement"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the outcome you want. You do not need to translate it into engineering tasks.
+
+        Do not include tokens, private URLs, addresses, camera images, or unredacted household details.
+  - type: textarea
+    id: feedback
+    attributes:
+      label: What should be better?
+      description: Say what you noticed, why it matters, and what should feel different.
+      placeholder: "Grouped media players take too much visual space in landscape. Make them more compact without making the hierarchy harder to understand."
+    validations:
+      required: true
+  - type: input
+    id: context
+    attributes:
+      label: Where did you notice it?
+      description: A screen, card, device, orientation, provider, or link is enough.
+      placeholder: "Media dashboard, iPad landscape, Home Assistant"
+    validations:
+      required: false
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Optional screenshot or extra context
+      description: Add a redacted screenshot, example, or constraint if it helps.
+    validations:
+      required: false
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy
+      options:
+        - label: I removed credentials, private URLs, addresses, and sensitive household details.
+          required: true

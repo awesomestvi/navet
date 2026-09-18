@@ -9,6 +9,7 @@ export const TEST_TIERS = {
     files: [
       'assets/public/boot-i18n.test.ts',
       'scripts/create-dev-release.test.mjs',
+      'scripts/change-impact.test.mjs',
       'scripts/dev-tag-release-workflow.test.mjs',
       'scripts/ha-integration-packaging.test.mjs',
       'scripts/vite-preload-graph.test.mjs',

@@ -116,8 +116,10 @@ inside the app assembly layer are documented in
 
 Feature-service support is narrower than implementation status. Home Assistant registers the
 advanced climate, media, camera, energy, calendar, weather, notification, task, conversation,
-history, security, and administration services. Homey and openHAB currently register rooms, realtime entities,
-lighting, switches, and sensors.
+history, security, and administration services. Homey additionally registers climate, speaker,
+security, scene, presence, notification, history, and hub-resource capabilities. openHAB
+additionally registers fan, climate-setpoint, speaker, lock, cover, security-sensor, battery, and
+utility-measurement behavior.
 
 ## Working Rule
 

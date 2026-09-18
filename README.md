@@ -67,8 +67,8 @@ themes, wallpapers, adaptive visual effects, and localization.
 | Provider | Current support | Ways to run Navet |
 |---|---|---|
 | **Home Assistant** | Navet's broadest integration, including advanced climate, media, camera, energy, weather, calendar, notification, task, history, security, and administration services | Custom panel via HACS, Home Assistant add-on, or standalone |
-| **Homey** | Rooms, realtime entities, lights, switches, and sensors | Standalone; optional additional provider when OAuth is configured |
-| **openHAB** | Rooms, realtime entities, lights, switches, and sensors | Standalone; optional additional provider from Settings |
+| **Homey** | Rooms, realtime entities, lights, switches, sensors, locks, covers, climate, speaker controls, Flows, Moods, people, notifications, Insights history, favorites, and app/device browsing | Standalone; optional additional provider when OAuth is configured |
+| **openHAB** | Rooms, realtime entities, lights, switches, fans, climate setpoints, speaker controls, locks, covers, security sensors, batteries, and utility measurements | Standalone; optional additional provider from Settings |
 
 Standalone Navet can retain connections to multiple supported providers and combine selected
 providers in shared dashboard collections. Capabilities are not identical: Home Assistant is the
