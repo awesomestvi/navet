@@ -3,6 +3,29 @@
 This document defines Navet's issue-to-release operating model. GitHub is the control plane;
 deterministic checks remain authoritative over agent claims.
 
+## Quick Read
+
+1. Create or receive a GitHub issue, then apply `agent:research` for investigation only or
+   `agent:implement` for implementation and a pull request.
+2. GitHub quietly adds `status: agent-queued`. The private Codex runner checks the queue every 15
+   minutes, handles the oldest qualifying issue, and changes it to `status: agent-working`.
+3. The runner uses the maintainer's signed-in Codex desktop session, not GitHub Copilot or an
+   OpenAI API key. The computer and Codex app must remain running for local queued work to start.
+4. Codex creates an isolated worktree task from the default branch. Research tasks inspect and
+   report without editing code. Implementation tasks reproduce the issue, make the smallest
+   durable change, validate it, review the full diff, and open a linked pull request without
+   merging it.
+5. Public issue replies address the reporter in warm, plain language. Implementation details,
+   test counts, and acceptance evidence stay in the pull request unless they help the reporter.
+6. CI, Cloudflare previews, and independent review determine readiness. The maintainer reviews the
+   result, gives feedback, satisfies any exceptional foundation or security approval, and merges.
+   Production releases and public release communication always remain human-approved.
+
+For manual development, do not apply an agent label. Create a branch, edit, validate, and open a
+pull request normally; Codex worktrees remain separate from the maintainer's checkout. Initial
+issue dispatch is automated, but follow-up work from pull-request feedback must currently be sent
+to the associated Codex task or deliberately queued for another iteration.
+
 ## Workflow
 
 ```text
