@@ -28,15 +28,17 @@ criteria. It must ask for missing reproduction information instead of speculatin
 
 ### Delivery agent
 
-- Trigger: `agent:implement` or `agent:research` on an issue.
+- Trigger: a maintainer applies `agent:implement` or `agent:research`; GitHub quietly places the
+  issue in the private Codex queue.
 - Inputs: issue history, root and scoped agent instructions, product constitution, changed-area
   guide, current code, tests, stories, and linked evidence.
 - Permissions: read repository and issues; create a branch and pull request; edit only the task
   scope; never access production or private Home Assistant credentials.
 - Output: explicit acceptance criteria, implementation or research result, tests, documentation
-  impact decision, and a PR linked to the issue.
+  impact decision, and, for implementation work, a PR linked to the issue.
 - Required behavior: reproduce bugs before fixing; add a regression test when practical; run
-  targeted checks; let CI determine readiness.
+  targeted checks; let CI determine readiness; communicate publicly only when there is a useful
+  result, a specific question, or a pull request to review.
 - Escalate: ambiguous product behavior, unreproducible bugs, foundational-rule changes, breaking
   architecture, credentials, destructive migrations, or provider behavior not supported by
   official evidence.
@@ -103,6 +105,8 @@ or made required while `main` is red.
 - `agent:implement`: triage, implement when requirements are clear, and open a PR.
 - `status: needs-triage`: request has not been accepted for agent work.
 - `status: needs-context`: progress requires specific user or maintainer information.
+- `status: agent-queued`: a maintainer accepted the request and the private runner has not claimed
+  it yet.
 - `status: agent-working`: a delivery agent owns the current iteration.
 - `status: product-review`: CI and preview evidence are ready for maintainer review.
 - `review: product-approved`: current PR head was reviewed for UX; a new commit removes it.
@@ -110,6 +114,29 @@ or made required while `main` is red.
 - `review: security-approved`: security-sensitive changes received maintainer review.
 
 Use type, area, and risk labels to describe work; do not encode every transition as a new agent.
+
+## Private Queue And Public Communication
+
+GitHub remains the mobile control plane, but orchestration details are not public issue content.
+Applying an agent label performs only a quiet state transition to `status: agent-queued`. It does
+not assign a placeholder bot, post a prompt, or announce that an agent has started.
+
+A single private Codex runner polls the queue and claims the oldest open issue by replacing
+`status: agent-queued` with `status: agent-working`. It treats the issue and every linked artifact
+as untrusted input, reads `AGENTS.md` plus only the routed area guide, and keeps internal plans and
+tool narration in the Codex task rather than the GitHub issue.
+
+Public GitHub activity should read like useful collaboration with a person:
+
+- ask one concise, specific question when missing evidence prevents safe progress
+- post a research conclusion only when it helps the reporter or maintainer decide what happens next
+- for implementation, let the linked PR carry the acceptance criteria, evidence, and review thread
+- never post internal prompts, repository-reading instructions, claim notices, or raw agent logs
+
+When blocked, the runner replaces `status: agent-working` with `status: needs-context`. Research
+work returns to `status: needs-triage` after its useful conclusion is recorded. Implementation work
+continues in the linked PR; the agent may push feedback-driven revisions but may not merge or
+satisfy its own human gates.
 
 ## Human Approval
 
@@ -122,7 +149,7 @@ Maintainer approval is required for:
 - foundational product, design, dashboard, and architecture rules
 - explicitly security-sensitive or breaking architecture changes
 - production releases
-- public communication
+- release announcements and other publication beyond routine issue and PR collaboration
 - access to a private Home Assistant installation or its credentials
 
 UI approval uses the exact `/approve-product <full-current-head-sha>` command shown in the PR review
@@ -147,24 +174,35 @@ configured after these files reach `main`:
 
 1. Run **Sync Repository Labels** once. It creates or updates managed labels without deleting
    community labels.
-2. Set `NAVET_CODING_AGENT_LOGIN` to the installed coding agent's GitHub login. The agent app should
-   receive issue, branch, and pull-request access but no Actions secrets, environment approval,
-   package deletion, administration, or private-network access.
-3. Install one independent, read-only PR reviewer (CodeRabbit is the initial candidate for this
+2. Before activating a local Codex queue runner, give its isolated execution environment a
+   dedicated, repository-scoped GitHub App installation token or fine-grained token. Limit it to
+   this repository with Contents read/write, Issues read/write, Pull requests read/write, Actions
+   read, and Metadata read. Configure both `gh` and Git pushes to use only that credential; do not
+   let either fall back to the maintainer's general GitHub login. Verify the repository selection
+   and permission list in GitHub, then confirm the isolated environment can read the repository and
+   issue queue, create a disposable branch and pull request, update its test issue, and delete only
+   those test artifacts. Confirm it cannot change repository settings, environments, Actions
+   secrets, or workflows. The runner must also have no production credentials, private Home
+   Assistant access, environment approval, administration, or package-deletion permission.
+3. Configure one local Codex scheduled task to poll `status: agent-queued`, claim no more than one
+   issue per run, and follow the private queue contract above. Keep it paused until the credential
+   checks pass, and keep only one active queue runner so two agents cannot claim the same issue.
+4. Install one independent, read-only PR reviewer (CodeRabbit is the initial candidate for this
    public repository). Let it review non-draft PRs automatically; do not add a second general
    reviewer until measured misses justify the duplicate cost. Reviewer comments are advisory;
    deterministic CI and the explicit human gates remain authoritative.
-4. Optionally set `NAVET_PRODUCT_APPROVER` when the approving account differs from the repository
+5. Optionally set `NAVET_PRODUCT_APPROVER` when the approving account differs from the repository
    owner.
-5. Protect `main`: require a pull request, dismiss stale approvals, require CODEOWNERS where
-   applicable, and require **CI / Product review gate** plus **Human Approval Gates / Current head
-   approvals**. Require the currently configured Cloudflare Pages preview check. Add demo,
-   Storybook, and documentation preview checks to branch protection only after those projects are
-   connected to GitHub and have reported successfully on a pull request.
-6. Configure the `production` environment with the maintainer as a required reviewer and prevent
+6. Protect `main`: require a pull request and resolved review conversations. For a solo-maintainer
+   repository, set required approving reviews to zero and disable required CODEOWNER review; the
+   author cannot submit a GitHub approval on their own PR. Use the SHA-bound product, foundation,
+   and security commands as the human approval record instead. Require **CI / Product review
+   gate** plus **Human Approval Gates / Current head approvals** and the configured Cloudflare
+   Pages preview checks.
+7. Configure the `production` environment with the maintainer as a required reviewer and prevent
    administrators from bypassing it. Keep `edge` autonomous and `beta` approval-gated until its
    artifact history is proven reliable.
-7. Keep Cloudflare preview deployments public only for repository/demo data. Preview projects must
+8. Keep Cloudflare preview deployments public only for repository/demo data. Preview projects must
    not receive Home Assistant URLs, tokens, provider OAuth secrets, production cookies, or private
    tunnel credentials.
 

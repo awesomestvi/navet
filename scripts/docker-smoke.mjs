@@ -25,13 +25,19 @@ function run(command, args, options = {}) {
 
 async function waitForHttpReady(url) {
   for (let attempt = 0; attempt < 20; attempt += 1) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
     try {
-      const response = await fetch(url);
+      const response = await fetch(url, { signal: controller.signal });
       const body = await response.text();
       if (response.ok && /<html/i.test(body)) {
         return;
       }
-    } catch {}
+    } catch {
+      // The container may still be starting. Retry until the shared deadline below.
+    } finally {
+      clearTimeout(timeout);
+    }
 
     await delay(1000);
   }

@@ -8,6 +8,7 @@ export const TEST_TIERS = {
     description: 'Release-critical provider, runtime, auth, resource, and security coverage',
     files: [
       'assets/public/boot-i18n.test.ts',
+      'scripts/agent-dispatch-workflow.test.mjs',
       'scripts/approval-status.test.mjs',
       'scripts/create-dev-release.test.mjs',
       'scripts/change-impact.test.mjs',
@@ -16,6 +17,7 @@ export const TEST_TIERS = {
       'scripts/run-private-preview.test.mjs',
       'scripts/vite-preload-graph.test.mjs',
       'scripts/package-import-policy.test.mjs',
+      'scripts/product-approval-workflow.test.mjs',
       'packages/provider-homeassistant/src/homeassistant-contract.test.ts',
       'packages/provider-homeassistant/src/homeassistant-energy-helpers.test.ts',
       'packages/provider-homeassistant/src/homeassistant-chore-projection-feature.service.test.ts',
