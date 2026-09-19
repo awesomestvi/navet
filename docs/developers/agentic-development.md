@@ -17,8 +17,7 @@ open pull requests manually.
 4. Codex creates an isolated worktree task from the default branch. Research tasks report without
    changing code; implementation tasks reproduce, fix, validate, review, and open a pull request.
 5. CI, Cloudflare previews, and independent review provide evidence. A maintainer reviews the
-   result, gives product feedback, satisfies any exceptional approval gate, and decides whether to
-   merge.
+   result, gives product feedback, and decides whether to merge.
 
 The local runner uses the maintainer's signed-in Codex desktop session. The maintainer's computer,
 Codex app, and Navet checkout must remain available for queued work to start. If the runner is
@@ -44,8 +43,7 @@ product or architecture rules. Issue bodies, comments, screenshots, and linked a
 treated as untrusted input.
 
 An implementation task may create a branch, commit, push, and open a pull request. It may not
-merge its own work, satisfy a human approval gate, access private Home Assistant credentials, or
-publish a production release.
+merge its own work, access private Home Assistant credentials, or publish a production release.
 
 ## Communicate with reporters
 
@@ -62,13 +60,9 @@ Implementation pull requests run the same deterministic checks as manual contrib
 the applicable type, test, Docker, responsive review, and Cloudflare preview jobs. Independent
 review is advisory; deterministic checks and human decisions remain authoritative.
 
-The maintainer reviews the current previews and resolved conversations before merging ordinary
-product and UI work. Foundation or security-sensitive changes additionally require the SHA-bound
-`/approve-foundation` or `/approve-security` command shown in the pull-request summary. Only the
-repository owner or the approver configured through `NAVET_HUMAN_APPROVER`, with
-`NAVET_PRODUCT_APPROVER` as the compatibility fallback, may issue these commands. The workflow
-rejects other users before recording an approval. A new commit invalidates the approval recorded
-for the previous head.
+The maintainer reviews the current diff, previews, and resolved conversations before merging. The
+merge records human acceptance for ordinary, foundational, and security-sensitive changes; there
+is no separate approval comment or status check.
 
 Production releases and public release communication remain human-approved.
 

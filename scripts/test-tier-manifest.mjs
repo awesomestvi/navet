@@ -9,7 +9,6 @@ export const TEST_TIERS = {
     files: [
       'assets/public/boot-i18n.test.ts',
       'scripts/agent-dispatch-workflow.test.mjs',
-      'scripts/approval-status.test.mjs',
       'scripts/create-dev-release.test.mjs',
       'scripts/change-impact.test.mjs',
       'scripts/dev-tag-release-workflow.test.mjs',
@@ -17,7 +16,6 @@ export const TEST_TIERS = {
       'scripts/run-private-preview.test.mjs',
       'scripts/vite-preload-graph.test.mjs',
       'scripts/package-import-policy.test.mjs',
-      'scripts/product-approval-workflow.test.mjs',
       'scripts/release-tag-publish-workflow.test.mjs',
       'scripts/release-fragments.test.mjs',
       'scripts/prepare-addon-release-metadata.test.mjs',

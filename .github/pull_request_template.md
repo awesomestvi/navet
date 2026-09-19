@@ -26,8 +26,5 @@ document only to satisfy this section.
 ## Human review
 
 - UI changes: review the demo and Storybook previews on relevant phone, tablet, and desktop sizes.
-- For ordinary product and UI changes, the maintainer's merge records acceptance after CI passes
-  and review conversations are resolved.
-- Foundational or security approval: use the SHA-bound `/approve-foundation` or `/approve-security`
-  command from the review summary when required.
-- A new commit invalidates prior foundation or security approval.
+- The maintainer's merge records acceptance after CI passes and review conversations are resolved.
+- Production publication remains protected by the `production` environment approval.
