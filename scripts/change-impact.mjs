@@ -11,10 +11,11 @@ const GROUPS = {
   website: [/^apps\/website\//, /^packages\/app\/src\/marketing\//, /^assets\/reference\/marketing\//],
   release: [
     /^\.github\/workflows\/(release|dev-tag)/,
+    /^\.changes\//,
     /(^|\/)Dockerfile$/,
     /^docker\//,
     /^platform\/home-assistant\//,
-    /^scripts\/(check-release|sync-release|extract-release|export-hacs|sync-hacs|create-dev-release|set-dev-addon)/,
+    /^scripts\/(check-release|sync-release|extract-release|generate-release|release-fragments|prepare-addon-release|export-hacs|sync-hacs|create-dev-release|set-dev-addon)/,
   ],
   security: [
     /(^|\/)(auth|security)(\/|\.|-)/,

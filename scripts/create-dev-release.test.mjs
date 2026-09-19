@@ -146,6 +146,15 @@ function runPublisher(fixture) {
   });
 }
 
+function runTagOnlyPublisher(fixture) {
+  return spawnSync('node', ['scripts/create-dev-release.mjs', '--tag-only', '--push'], {
+    cwd: fixture.repository,
+    encoding: 'utf8',
+    env: fixture.environment,
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+}
+
 function readPublishedVersion(fixture) {
   const config = readFileSync(
     join(fixture.repository, 'platform/home-assistant/addons/navet-dev/config.yaml'),
@@ -237,20 +246,70 @@ describe('create-dev-release', () => {
     );
   });
 
-  it('publishes main and the matching tag together', () => {
+  it('rejects a metadata release commit on protected main', () => {
     const fixture = createReleaseFixture();
     const mainBefore = readRemoteRef(fixture, 'refs/heads/main');
 
     commitProductChange(fixture);
     const result = runPublisher(fixture);
-    const release = expectMetadataRelease(fixture, result, 'main');
 
-    expect(release.branchHead).not.toBe(mainBefore);
-    expect(readRemoteRef(fixture, `refs/tags/${release.tag}^{}`)).toBe(release.branchHead);
+    expect(result.status).not.toBe(0);
+    expect(`${result.stdout}\n${result.stderr}`).toContain(
+      'Protected main cannot receive a release commit'
+    );
+    expect(readRemoteRef(fixture, 'refs/heads/main')).toBe(mainBefore);
+  });
+
+  it('publishes a main-backed tag without advancing protected main', () => {
+    const fixture = createReleaseFixture();
+
+    commitProductChange(fixture);
+    runGit(fixture.repository, fixture.environment, ['push', 'origin', 'main']);
+    const mainBefore = readRemoteRef(fixture, 'refs/heads/main');
+    const configBefore = readFileSync(
+      join(fixture.repository, 'platform/home-assistant/addons/navet-dev/config.yaml'),
+      'utf8'
+    );
+
+    const result = runTagOnlyPublisher(fixture);
+
+    expect(result.status, result.stderr || result.stdout).toBe(0);
+    const tag = runGit(fixture.remote, fixture.environment, ['tag', '--list', 'navet-dev-*']);
+    expect(tag).toMatch(/^navet-dev-0\.11\.1-dev\.\d{14}$/);
+    expect(readRemoteRef(fixture, `refs/tags/${tag}^{}`)).toBe(mainBefore);
+    expect(readRemoteRef(fixture, 'refs/heads/main')).toBe(mainBefore);
+    expect(runGit(fixture.repository, fixture.environment, ['rev-parse', 'HEAD'])).toBe(mainBefore);
+    expect(
+      readFileSync(
+        join(fixture.repository, 'platform/home-assistant/addons/navet-dev/config.yaml'),
+        'utf8'
+      )
+    ).toBe(configBefore);
+    expect(result.stdout).toContain(
+      'Tagged the existing main commit without creating or pushing a release commit.'
+    );
+    expect(result.stdout).toContain('without advancing main');
+  });
+
+  it('continues the latest stable tag line without a version-bump commit', () => {
+    const fixture = createReleaseFixture();
+
+    commitProductChange(fixture);
+    runGit(fixture.repository, fixture.environment, ['tag', '-a', 'v0.12.0', '-m', 'Navet v0.12.0']);
+    runGit(fixture.repository, fixture.environment, ['push', 'origin', 'main']);
+    runGit(fixture.repository, fixture.environment, ['push', 'origin', 'refs/tags/v0.12.0']);
+
+    const result = runTagOnlyPublisher(fixture);
+
+    expect(result.status, result.stderr || result.stdout).toBe(0);
+    expect(runGit(fixture.remote, fixture.environment, ['tag', '--list', 'navet-dev-*'])).toMatch(
+      /^navet-dev-0\.12\.0-dev\.\d{14}$/
+    );
   });
 
   it('includes pre-staged product work and release metadata in one commit', () => {
     const fixture = createReleaseFixture();
+    runGit(fixture.repository, fixture.environment, ['switch', '-c', 'feature/staged-release']);
     const headBefore = runGit(fixture.repository, fixture.environment, ['rev-parse', 'HEAD']);
     const stagedProductFile = 'scripts/product-change.mjs';
     writeFileSync(
@@ -264,7 +323,7 @@ describe('create-dev-release', () => {
     expectMetadataRelease(
       fixture,
       result,
-      'main',
+      'feature/staged-release',
       [stagedProductFile],
       'Current staged work includes Dev release tooling.'
     );

@@ -37,6 +37,7 @@ function parseArgs(argv) {
   const options = {
     push: false,
     remote: 'origin',
+    tagOnly: false,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -48,6 +49,11 @@ function parseArgs(argv) {
 
     if (arg === '--push') {
       options.push = true;
+      continue;
+    }
+
+    if (arg === '--tag-only') {
+      options.tagOnly = true;
       continue;
     }
 
@@ -88,6 +94,14 @@ function ensureOnlyStagedChanges() {
   }
 }
 
+function ensureCleanWorktree() {
+  ensureOnlyStagedChanges();
+
+  if (!gitSucceeds(['diff', '--cached', '--quiet'])) {
+    throw new Error('Tag-only Navet Dev publish requires a clean index and worktree.');
+  }
+}
+
 function refreshRemoteReleaseContext(remote) {
   execFileSync('git', ['fetch', '--tags', remote], {
     cwd: repoRoot,
@@ -109,6 +123,18 @@ function ensureBranchContainsRemoteMain(remote) {
   }
 }
 
+function ensureHeadIsOnRemoteMain(remote) {
+  const remoteMain = `refs/remotes/${remote}/main`;
+
+  if (!gitSucceeds(['rev-parse', '--verify', remoteMain])) {
+    throw new Error(`Unable to resolve ${remote}/main after fetching release context.`);
+  }
+
+  if (!gitSucceeds(['merge-base', '--is-ancestor', 'HEAD', remoteMain])) {
+    throw new Error('Tag-only Navet Dev publish requires HEAD to be contained in remote main.');
+  }
+}
+
 function listTags() {
   return runGit(['for-each-ref', '--sort=-creatordate', '--format=%(refname:short)', 'refs/tags'])
     .split('\n')
@@ -118,6 +144,30 @@ function listTags() {
 
 function isStableReleaseTag(tag) {
   return /^v\d+\.\d+\.\d+$/.test(tag);
+}
+
+function compareStableVersions(left, right) {
+  const leftParts = left.split('.').map(Number);
+  const rightParts = right.split('.').map(Number);
+  for (let index = 0; index < 3; index += 1) {
+    if (leftParts[index] !== rightParts[index]) return leftParts[index] - rightParts[index];
+  }
+  return 0;
+}
+
+function resolveDevVersionBase(packageVersion) {
+  const packageBaseVersion = packageVersion.split('-')[0];
+  const latestStableVersion = listTags()
+    .filter(
+      (tag) => isStableReleaseTag(tag) && gitSucceeds(['merge-base', '--is-ancestor', tag, 'HEAD'])
+    )
+    .map((tag) => tag.slice(1))
+    .sort(compareStableVersions)
+    .at(-1);
+
+  return latestStableVersion && compareStableVersions(latestStableVersion, packageBaseVersion) > 0
+    ? latestStableVersion
+    : packageBaseVersion;
 }
 
 function resolveChangelogBaseTag() {
@@ -379,26 +429,47 @@ function pushRelease(remote, tagName, sourceBranch) {
   );
 }
 
-function buildPublicationSummary({ devVersion, sourceBranch, tagName, remote, pushed }) {
+function pushTag(remote, tagName) {
+  execFileSync(
+    'git',
+    ['push', remote, `refs/tags/${tagName}:refs/tags/${tagName}`],
+    {
+      cwd: repoRoot,
+      stdio: 'inherit',
+    }
+  );
+}
+
+function buildPublicationSummary({ devVersion, sourceBranch, tagName, remote, pushed, tagOnly }) {
   const exactStandaloneImage = `ghcr.io/awesomestvi/navet:${devVersion}`;
   const lines = [
     `Prepared Navet Dev release ${devVersion}.`,
     `Source branch: ${sourceBranch}`,
-    'Created one release commit containing the staged index and generated dev metadata.',
+    tagOnly
+      ? 'Tagged the existing main commit without creating or pushing a release commit.'
+      : 'Created one release commit containing the staged index and generated dev metadata.',
     `Created tag: ${tagName}`,
   ];
 
   if (pushed) {
-    lines.push(`Atomically pushed ${sourceBranch} and ${tagName} to ${remote}.`);
+    lines.push(
+      tagOnly
+        ? `Pushed ${tagName} to ${remote} without advancing ${sourceBranch}.`
+        : `Atomically pushed ${sourceBranch} and ${tagName} to ${remote}.`
+    );
   } else {
     lines.push(
-      `Next: git push --atomic ${remote} HEAD:refs/heads/${sourceBranch} refs/tags/${tagName}:refs/tags/${tagName}`
+      tagOnly
+        ? `Next: git push ${remote} refs/tags/${tagName}:refs/tags/${tagName}`
+        : `Next: git push --atomic ${remote} HEAD:refs/heads/${sourceBranch} refs/tags/${tagName}:refs/tags/${tagName}`
     );
   }
 
   if (sourceBranch === 'main') {
     lines.push(
-      'This main-branch publish advances the dev and edge image aliases and Home Assistant add-on discovery.'
+      tagOnly
+        ? 'This main-backed publish advances the dev and edge image aliases without changing protected main or Home Assistant Add-on Store metadata.'
+        : 'This main-branch publish advances the dev and edge image aliases and Home Assistant add-on discovery.'
     );
   } else {
     lines.push(
@@ -415,23 +486,47 @@ try {
   const options = parseArgs(process.argv.slice(2));
   const sourceBranch = getCurrentBranch();
 
-  ensureOnlyStagedChanges();
+  if (options.tagOnly && sourceBranch !== 'main') {
+    throw new Error('Tag-only Navet Dev publish is reserved for the protected main branch.');
+  }
 
-  if (options.push) {
-    refreshRemoteReleaseContext(options.remote);
-    ensureBranchContainsRemoteMain(options.remote);
+  if (!options.tagOnly && sourceBranch === 'main') {
+    throw new Error(
+      'Protected main cannot receive a release commit. Use --tag-only or publish from another named branch.'
+    );
+  }
+
+  if (options.tagOnly) {
+    ensureCleanWorktree();
+  } else {
     ensureOnlyStagedChanges();
   }
 
-  const packageVersion = getPackageVersion();
-  const devVersion = buildDevAddonVersion(packageVersion);
+  if (options.push) {
+    refreshRemoteReleaseContext(options.remote);
+    if (options.tagOnly) {
+      ensureHeadIsOnRemoteMain(options.remote);
+      ensureCleanWorktree();
+    } else {
+      ensureBranchContainsRemoteMain(options.remote);
+      ensureOnlyStagedChanges();
+    }
+  }
+
+  const devVersion = buildDevAddonVersion(resolveDevVersionBase(getPackageVersion()));
   const tagName = `navet-dev-${devVersion}`;
 
-  createReleaseCommit(devVersion);
+  if (!options.tagOnly) {
+    createReleaseCommit(devVersion);
+  }
   createTag(tagName, sourceBranch);
 
   if (options.push) {
-    pushRelease(options.remote, tagName, sourceBranch);
+    if (options.tagOnly) {
+      pushTag(options.remote, tagName);
+    } else {
+      pushRelease(options.remote, tagName, sourceBranch);
+    }
   }
 
   process.stdout.write(
@@ -441,6 +536,7 @@ try {
       tagName,
       remote: options.remote,
       pushed: options.push,
+      tagOnly: options.tagOnly,
     })}\n`
   );
 } catch (error) {

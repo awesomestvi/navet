@@ -1,6 +1,7 @@
 name: Publish Navet Dev
 
 on:
+  workflow_dispatch:
   push:
     tags:
       - 'navet-dev-*'
@@ -52,8 +53,6 @@ jobs:
             exit 1
           fi
 
-          node scripts/check-dev-release-surfaces.mjs --tag "${TAG_NAME}" --version "${DEV_VERSION}"
-
           # actions/checkout can materialize a tag push as a commit ref. Fetch the remote tag
           # object explicitly so annotated provenance is available and cannot be mistaken for
           # the release commit message.
@@ -83,6 +82,12 @@ jobs:
           else
             MAIN_BACKED=false
           fi
+
+          CHECK_ARGS=(--tag "${TAG_NAME}" --version "${DEV_VERSION}")
+          if [[ "${MAIN_BACKED}" == "true" ]]; then
+            CHECK_ARGS+=(--allow-stale-addon-metadata)
+          fi
+          node scripts/check-dev-release-surfaces.mjs "${CHECK_ARGS[@]}"
 
           {
             echo "dev_version=${DEV_VERSION}"
@@ -256,6 +261,16 @@ jobs:
     environment: edge
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
       - name: Build prerelease notes
         id: notes
         env:
@@ -264,8 +279,11 @@ jobs:
           RELEASE_SHA: ${{ needs.release-context.outputs.release_sha }}
           SOURCE_BRANCH: ${{ needs.release-context.outputs.source_branch }}
         run: |
+          CHANGE_NOTES="${RUNNER_TEMP}/navet-dev-release-notes.md"
+          node scripts/generate-release-notes.mjs --from "${RELEASE_SHA}^" --to "${RELEASE_SHA}" > "$CHANGE_NOTES"
+
           if [[ "${MAIN_BACKED}" == "true" ]]; then
-            SCOPE_NOTE="This build is backed by \`main\`. It advances the shared \`dev\` and \`edge\` image aliases and Home Assistant add-on discovery."
+            SCOPE_NOTE="This build is backed by \`main\`. It advances the shared \`dev\` and \`edge\` image aliases without changing protected \`main\` or Home Assistant Add-on Store metadata."
           else
             SCOPE_NOTE="This is an immutable branch validation build. It does not change \`main\`, the shared \`dev\` or \`edge\` aliases, or Home Assistant add-on discovery."
           fi
@@ -275,6 +293,8 @@ jobs:
             echo "Navet Dev publish for \`${DEV_VERSION}\`."
             echo
             echo "Source: \`${SOURCE_BRANCH}\` at \`${RELEASE_SHA}\`"
+            echo
+            cat "$CHANGE_NOTES"
             echo
             echo "$SCOPE_NOTE"
             echo

@@ -1,0 +1,118 @@
+name: Promote Navet Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_tag:
+        description: Tested Navet Dev, beta, or release-candidate tag to promote
+        required: true
+        type: string
+      release_tag:
+        description: New beta, release-candidate, or stable tag
+        required: true
+        type: string
+
+permissions:
+  actions: write
+  contents: write
+
+jobs:
+  promote-release:
+    name: Validate And Promote Tested Commit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout protected main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Validate promotion
+        id: promotion
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          SOURCE_TAG: ${{ inputs.source_tag }}
+        run: |
+          set -euo pipefail
+          git fetch --force origin main --tags
+
+          if [[ ! "${RELEASE_TAG}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-(beta|rc)\.[0-9]+)?$ ]]; then
+            echo "Release tag must look like v0.18.0, v0.18.0-beta.1, or v0.18.0-rc.1."
+            exit 1
+          fi
+          if ! git rev-parse --verify --quiet "refs/tags/${SOURCE_TAG}^{commit}" >/dev/null; then
+            echo "Source release tag does not exist: ${SOURCE_TAG}"
+            exit 1
+          fi
+          if git rev-parse --verify --quiet "refs/tags/${RELEASE_TAG}" >/dev/null; then
+            echo "Release tag already exists: ${RELEASE_TAG}"
+            exit 1
+          fi
+
+          if [[ "${RELEASE_TAG}" == *-beta.* ]]; then
+            [[ "${SOURCE_TAG}" == navet-dev-* ]] || {
+              echo "A beta must promote an immutable Navet Dev tag."
+              exit 1
+            }
+          elif [[ "${RELEASE_TAG}" == *-rc.* ]]; then
+            [[ "${SOURCE_TAG}" == navet-dev-* || "${SOURCE_TAG}" == v*-beta.* || "${SOURCE_TAG}" == v*-rc.* ]] || {
+              echo "A release candidate must promote a Dev, beta, or earlier RC tag."
+              exit 1
+            }
+          else
+            [[ "${SOURCE_TAG}" == v*-beta.* || "${SOURCE_TAG}" == v*-rc.* ]] || {
+              echo "A stable release must promote a tested beta or release candidate."
+              exit 1
+            }
+          fi
+
+          if [[ "${SOURCE_TAG}" == v* ]]; then
+            TARGET_BASE="${RELEASE_TAG%%-*}"
+            SOURCE_BASE="${SOURCE_TAG%%-*}"
+            [[ "${TARGET_BASE}" == "${SOURCE_BASE}" ]] || {
+              echo "Source and target release tags must use the same base version."
+              exit 1
+            }
+          fi
+
+          SOURCE_SHA="$(git rev-list -n 1 "${SOURCE_TAG}")"
+          git merge-base --is-ancestor "${SOURCE_SHA}" refs/remotes/origin/main || {
+            echo "The promoted commit must be contained in protected main."
+            exit 1
+          }
+
+          echo "source_sha=${SOURCE_SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Create and push promoted release tag
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          SOURCE_SHA: ${{ steps.promotion.outputs.source_sha }}
+          SOURCE_TAG: ${{ inputs.source_tag }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "${RELEASE_TAG}" "${SOURCE_SHA}" \
+            -m "Release ${RELEASE_TAG}" \
+            -m "Promoted-From: ${SOURCE_TAG}"
+          git push origin "refs/tags/${RELEASE_TAG}:refs/tags/${RELEASE_TAG}"
+
+      - name: Dispatch artifact promotion
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          SOURCE_TAG: ${{ inputs.source_tag }}
+        run: gh workflow run release.yml --ref "${RELEASE_TAG}" -f source_tag="${SOURCE_TAG}"
+
+      - name: Summarize promotion
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          SOURCE_TAG: ${{ inputs.source_tag }}
+        run: |
+          echo "Promoted ${SOURCE_TAG} to ${RELEASE_TAG} without advancing protected main."
+          echo "The release workflow will build beta from the tested commit or promote its tested beta/RC artifacts."

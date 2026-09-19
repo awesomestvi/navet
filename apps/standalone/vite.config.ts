@@ -47,6 +47,7 @@ type VitePwaManifestTransform = NonNullable<
 const packageJson = JSON.parse(readFileSync(path.resolve(repoRoot, 'package.json'), 'utf8')) as {
   version?: string;
 };
+const appVersion = (process.env.NAVET_VERSION ?? packageJson.version ?? '0.0.0').trim();
 const publicWebManifest = JSON.parse(
   readFileSync(path.resolve(repoRoot, 'assets/public/site.webmanifest'), 'utf8')
 ) as {
@@ -86,7 +87,7 @@ const DISABLED_INSTALLATION_AUTHORITY: ViteInstallationAuthority = {
   getCookieNames: (baseName) => createInstallationCookieNames(baseName),
 };
 
-const buildMetadata = createBuildMetadata(repoRoot, packageJson.version, 'git');
+const buildMetadata = createBuildMetadata(repoRoot, appVersion, 'git');
 
 const REACT_COMPILER_INCLUDE = [
   /[\\/]src[\\/]/,
@@ -304,7 +305,7 @@ export default defineConfig(({ command, mode }) => {
       base: './',
       envPrefix: ['VITE_'],
       define: {
-        __APP_VERSION__: JSON.stringify(packageJson.version ?? '0.0.0'),
+        __APP_VERSION__: JSON.stringify(appVersion),
         __APP_GIT_SHA__: JSON.stringify(buildMetadata.gitSha),
         __APP_BUILD_DATE__: JSON.stringify(buildMetadata.buildDate),
         __APP_RELEASE_CHANNEL__: JSON.stringify(buildMetadata.releaseChannel),

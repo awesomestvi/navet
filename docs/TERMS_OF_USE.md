@@ -8,7 +8,7 @@ Navet source code is licensed under the **GNU Affero General Public License v3.0
 
 See:
 
-- [../LICENSE.md](../LICENSE.md)
+- [../LICENSE](../LICENSE)
 - https://www.gnu.org/licenses/agpl-3.0-standalone.html
 
 ## Network Use

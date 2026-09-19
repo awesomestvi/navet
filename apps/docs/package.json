@@ -11,7 +11,7 @@
     "preview": "ASTRO_TELEMETRY_DISABLED=1 astro preview --host 127.0.0.1"
   },
   "devDependencies": {
-    "@astrojs/starlight": "^0.41.3",
-    "astro": "^7.0.7"
+    "@astrojs/starlight": "^0.42.0",
+    "astro": "^7.3.2"
   }
 }
