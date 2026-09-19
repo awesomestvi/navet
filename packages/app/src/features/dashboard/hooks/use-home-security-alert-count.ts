@@ -54,6 +54,9 @@ function stabilizeSecurityAlertDevices(
     : { devices: nextDevices, revision: nextRevision };
 }
 
+/**
+ * Selects the visible devices that follow the same security-candidate rules as the Security page.
+ */
 export function selectHomeSecurityAlertDevices(
   devices: DeviceCollection,
   hiddenEntityIds: string[]

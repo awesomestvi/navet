@@ -41,6 +41,7 @@ function sensor(overrides: Partial<SensorDevice> = {}): SensorDevice {
   };
 }
 
+/** Creates an ordinary cover fixture that is open but is not a security candidate. */
 function cover(overrides: Partial<CoverDevice> = {}): CoverDevice {
   return {
     id: 'cover.living_room_blind',
@@ -51,6 +52,37 @@ function cover(overrides: Partial<CoverDevice> = {}): CoverDevice {
     deviceClass: 'blind',
     ...overrides,
   };
+}
+
+/** Verifies that ordinary open covers cannot inflate Home or room security alert counts. */
+function verifyOrdinaryOpenCoversAreExcluded() {
+  const openDoor = sensor({
+    id: 'binary_sensor.front_door',
+    name: 'Front Door',
+    unit: '',
+    value: 'Open',
+    status: 'active',
+    securityKind: 'door',
+    securitySeverity: 'warning',
+  });
+  const devices: DeviceCollection = {
+    ...createEmptyDeviceCollection(),
+    covers: Array.from({ length: 6 }, (_, index) =>
+      cover({ id: `cover.blind_${index}`, name: `Blind ${index + 1}` })
+    ),
+    sensors: [openDoor],
+  };
+
+  const { result } = renderHook(() =>
+    useHomeSecurityAlertCount({
+      devices,
+      enabled: true,
+      hiddenEntityIds: EMPTY_HIDDEN_ENTITY_IDS,
+    })
+  );
+
+  expect(result.current).toBe(1);
+  expect(getRoomSecurityAlertCount(devices, [], 'Living Room')).toBe(0);
 }
 
 afterEach(() => {
@@ -89,35 +121,10 @@ describe('useHomeSecurityAlertCount', () => {
     expect(getRoomSecurityAlertCount(clearedDevices, [], 'Hallway')).toBe(0);
   });
 
-  it('does not count ordinary open covers that the Security dashboard excludes', () => {
-    const openDoor = sensor({
-      id: 'binary_sensor.front_door',
-      name: 'Front Door',
-      unit: '',
-      value: 'Open',
-      status: 'active',
-      securityKind: 'door',
-      securitySeverity: 'warning',
-    });
-    const devices: DeviceCollection = {
-      ...createEmptyDeviceCollection(),
-      covers: Array.from({ length: 6 }, (_, index) =>
-        cover({ id: `cover.blind_${index}`, name: `Blind ${index + 1}` })
-      ),
-      sensors: [openDoor],
-    };
-
-    const { result } = renderHook(() =>
-      useHomeSecurityAlertCount({
-        devices,
-        enabled: true,
-        hiddenEntityIds: EMPTY_HIDDEN_ENTITY_IDS,
-      })
-    );
-
-    expect(result.current).toBe(1);
-    expect(getRoomSecurityAlertCount(devices, [], 'Living Room')).toBe(0);
-  });
+  it(
+    'does not count ordinary open covers that the Security dashboard excludes',
+    verifyOrdinaryOpenCoversAreExcluded
+  );
 
   it('does not recompute security alerts when an unrelated sensor updates', () => {
     const alertCountSpy = vi.spyOn(securityDashboardModel, 'getSecurityDashboardAlertCount');
