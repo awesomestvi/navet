@@ -16,6 +16,7 @@ import {
 
 const EMPTY_HIDDEN_ENTITY_IDS: string[] = [];
 
+/** Creates a lock fixture that defaults to an unlocked security warning. */
 function lock(overrides: Partial<LockDevice> = {}): LockDevice {
   return {
     id: 'lock.front_door',
@@ -29,6 +30,7 @@ function lock(overrides: Partial<LockDevice> = {}): LockDevice {
   };
 }
 
+/** Creates a neutral sensor fixture that tests can specialize with security metadata. */
 function sensor(overrides: Partial<SensorDevice> = {}): SensorDevice {
   return {
     id: 'sensor.hall_temperature',

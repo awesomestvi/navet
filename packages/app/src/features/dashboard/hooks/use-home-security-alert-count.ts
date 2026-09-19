@@ -63,15 +63,19 @@ export function selectHomeSecurityAlertDevices(
 ): HomeSecurityAlertDevices {
   const expandedHiddenIds = new Set(getExpandedHiddenDashboardEntityIds(devices, hiddenEntityIds));
   const absorbedIds = new Set(getAbsorbedDashboardEntityIds(devices, []));
+  const covers: HomeSecurityAlertDevices['covers'] = [];
+
+  for (const device of devices.covers) {
+    if (isSecurityDashboardDevice(device) && !isDashboardEntityHidden(device, expandedHiddenIds)) {
+      covers.push(device);
+    }
+  }
 
   return {
     cameras: devices.cameras.filter(
       (device) => !isDashboardEntityHidden(device, expandedHiddenIds)
     ),
-    covers: devices.covers.filter(
-      (device) =>
-        isSecurityDashboardDevice(device) && !isDashboardEntityHidden(device, expandedHiddenIds)
-    ),
+    covers,
     helpers: devices.helpers.filter(
       (device) =>
         !isDashboardEntityHidden(device, expandedHiddenIds) &&
