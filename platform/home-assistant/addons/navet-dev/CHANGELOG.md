@@ -2,5 +2,9 @@
 
 ## In Progress
 
-- Current Navet Dev scope since `navet-dev-0.16.3-dev.20260915225200`.
-- No committed changes have landed after `navet-dev-0.16.3-dev.20260915225200` yet.
+- Current Navet Dev scope since `v0.17.1`.
+- Align cover security badges (#179)
+- Improve agent approval and communication (#178)
+- Simplify contribution workflow (#177)
+- Queue work without public bot prompts (#176)
+- Add agentic development control plane (#175)
