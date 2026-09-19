@@ -1,4 +1,7 @@
-import { getSecurityDashboardAlertCount } from '@navet/app/features/security/utils/security-camera-dashboard-model';
+import {
+  getSecurityDashboardAlertCount,
+  isSecurityDashboardDevice,
+} from '@navet/app/features/security/utils/security-camera-dashboard-model';
 import {
   getAbsorbedDashboardEntityIds,
   getExpandedHiddenDashboardEntityIds,
@@ -62,7 +65,10 @@ export function selectHomeSecurityAlertDevices(
     cameras: devices.cameras.filter(
       (device) => !isDashboardEntityHidden(device, expandedHiddenIds)
     ),
-    covers: devices.covers.filter((device) => !isDashboardEntityHidden(device, expandedHiddenIds)),
+    covers: devices.covers.filter(
+      (device) =>
+        isSecurityDashboardDevice(device) && !isDashboardEntityHidden(device, expandedHiddenIds)
+    ),
     helpers: devices.helpers.filter(
       (device) =>
         !isDashboardEntityHidden(device, expandedHiddenIds) &&

@@ -2,6 +2,7 @@ import { createEmptyDeviceCollection } from '@navet/app/core/navet-device-collec
 import * as securityDashboardModel from '@navet/app/features/security/utils/security-camera-dashboard-model';
 import type {
   CameraDevice,
+  CoverDevice,
   DeviceCollection,
   LockDevice,
   SensorDevice,
@@ -40,6 +41,18 @@ function sensor(overrides: Partial<SensorDevice> = {}): SensorDevice {
   };
 }
 
+function cover(overrides: Partial<CoverDevice> = {}): CoverDevice {
+  return {
+    id: 'cover.living_room_blind',
+    name: 'Living Room Blind',
+    room: 'Living Room',
+    size: 'small',
+    position: 100,
+    deviceClass: 'blind',
+    ...overrides,
+  };
+}
+
 afterEach(() => {
   vi.restoreAllMocks();
 });
@@ -74,6 +87,36 @@ describe('useHomeSecurityAlertCount', () => {
     rerender({ devices: clearedDevices });
     expect(result.current).toBe(0);
     expect(getRoomSecurityAlertCount(clearedDevices, [], 'Hallway')).toBe(0);
+  });
+
+  it('does not count ordinary open covers that the Security dashboard excludes', () => {
+    const openDoor = sensor({
+      id: 'binary_sensor.front_door',
+      name: 'Front Door',
+      unit: '',
+      value: 'Open',
+      status: 'active',
+      securityKind: 'door',
+      securitySeverity: 'warning',
+    });
+    const devices: DeviceCollection = {
+      ...createEmptyDeviceCollection(),
+      covers: Array.from({ length: 6 }, (_, index) =>
+        cover({ id: `cover.blind_${index}`, name: `Blind ${index + 1}` })
+      ),
+      sensors: [openDoor],
+    };
+
+    const { result } = renderHook(() =>
+      useHomeSecurityAlertCount({
+        devices,
+        enabled: true,
+        hiddenEntityIds: EMPTY_HIDDEN_ENTITY_IDS,
+      })
+    );
+
+    expect(result.current).toBe(1);
+    expect(getRoomSecurityAlertCount(devices, [], 'Living Room')).toBe(0);
   });
 
   it('does not recompute security alerts when an unrelated sensor updates', () => {
