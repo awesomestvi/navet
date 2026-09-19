@@ -2,6 +2,7 @@ import { createEmptyDeviceCollection } from '@navet/app/core/navet-device-collec
 import * as securityDashboardModel from '@navet/app/features/security/utils/security-camera-dashboard-model';
 import type {
   CameraDevice,
+  CoverDevice,
   DeviceCollection,
   LockDevice,
   SensorDevice,
@@ -15,6 +16,7 @@ import {
 
 const EMPTY_HIDDEN_ENTITY_IDS: string[] = [];
 
+/** Creates a lock fixture that defaults to an unlocked security warning. */
 function lock(overrides: Partial<LockDevice> = {}): LockDevice {
   return {
     id: 'lock.front_door',
@@ -28,6 +30,7 @@ function lock(overrides: Partial<LockDevice> = {}): LockDevice {
   };
 }
 
+/** Creates a neutral sensor fixture that tests can specialize with security metadata. */
 function sensor(overrides: Partial<SensorDevice> = {}): SensorDevice {
   return {
     id: 'sensor.hall_temperature',
@@ -38,6 +41,60 @@ function sensor(overrides: Partial<SensorDevice> = {}): SensorDevice {
     value: '21',
     ...overrides,
   };
+}
+
+/** Creates an ordinary cover fixture that is open but is not a security candidate. */
+function cover(overrides: Partial<CoverDevice> = {}): CoverDevice {
+  return {
+    id: 'cover.living_room_blind',
+    name: 'Living Room Blind',
+    room: 'Living Room',
+    size: 'small',
+    position: 100,
+    deviceClass: 'blind',
+    ...overrides,
+  };
+}
+
+/** Runs the Home security alert hook against a supplied device collection. */
+function useFixtureHomeSecurityAlertCount({ devices }: { devices: DeviceCollection }) {
+  return useHomeSecurityAlertCount({
+    devices,
+    enabled: true,
+    hiddenEntityIds: EMPTY_HIDDEN_ENTITY_IDS,
+  });
+}
+
+/** Verifies that ordinary open covers cannot inflate Home or room security alert counts. */
+function verifyOrdinaryOpenCoversAreExcluded() {
+  const openDoor = sensor({
+    id: 'binary_sensor.front_door',
+    name: 'Front Door',
+    unit: '',
+    value: 'Open',
+    status: 'active',
+    securityKind: 'door',
+    securitySeverity: 'warning',
+  });
+  const devices: DeviceCollection = {
+    ...createEmptyDeviceCollection(),
+    covers: [
+      cover({ id: 'cover.blind_1', name: 'Blind 1' }),
+      cover({ id: 'cover.blind_2', name: 'Blind 2' }),
+      cover({ id: 'cover.blind_3', name: 'Blind 3' }),
+      cover({ id: 'cover.blind_4', name: 'Blind 4' }),
+      cover({ id: 'cover.blind_5', name: 'Blind 5' }),
+      cover({ id: 'cover.blind_6', name: 'Blind 6' }),
+    ],
+    sensors: [openDoor],
+  };
+
+  const { result } = renderHook(useFixtureHomeSecurityAlertCount, {
+    initialProps: { devices },
+  });
+
+  expect(result.current).toBe(1);
+  expect(getRoomSecurityAlertCount(devices, [], 'Living Room')).toBe(0);
 }
 
 afterEach(() => {
@@ -75,6 +132,11 @@ describe('useHomeSecurityAlertCount', () => {
     expect(result.current).toBe(0);
     expect(getRoomSecurityAlertCount(clearedDevices, [], 'Hallway')).toBe(0);
   });
+
+  it(
+    'does not count ordinary open covers that the Security dashboard excludes',
+    verifyOrdinaryOpenCoversAreExcluded
+  );
 
   it('does not recompute security alerts when an unrelated sensor updates', () => {
     const alertCountSpy = vi.spyOn(securityDashboardModel, 'getSecurityDashboardAlertCount');

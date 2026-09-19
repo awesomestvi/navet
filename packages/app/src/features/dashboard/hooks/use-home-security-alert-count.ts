@@ -1,4 +1,7 @@
-import { getSecurityDashboardAlertCount } from '@navet/app/features/security/utils/security-camera-dashboard-model';
+import {
+  getSecurityDashboardAlertCount,
+  isSecurityDashboardDevice,
+} from '@navet/app/features/security/utils/security-camera-dashboard-model';
 import {
   getAbsorbedDashboardEntityIds,
   getExpandedHiddenDashboardEntityIds,
@@ -51,18 +54,28 @@ function stabilizeSecurityAlertDevices(
     : { devices: nextDevices, revision: nextRevision };
 }
 
+/**
+ * Selects the visible devices that follow the same security-candidate rules as the Security page.
+ */
 export function selectHomeSecurityAlertDevices(
   devices: DeviceCollection,
   hiddenEntityIds: string[]
 ): HomeSecurityAlertDevices {
   const expandedHiddenIds = new Set(getExpandedHiddenDashboardEntityIds(devices, hiddenEntityIds));
   const absorbedIds = new Set(getAbsorbedDashboardEntityIds(devices, []));
+  const covers: HomeSecurityAlertDevices['covers'] = [];
+
+  for (const device of devices.covers) {
+    if (isSecurityDashboardDevice(device) && !isDashboardEntityHidden(device, expandedHiddenIds)) {
+      covers.push(device);
+    }
+  }
 
   return {
     cameras: devices.cameras.filter(
       (device) => !isDashboardEntityHidden(device, expandedHiddenIds)
     ),
-    covers: devices.covers.filter((device) => !isDashboardEntityHidden(device, expandedHiddenIds)),
+    covers,
     helpers: devices.helpers.filter(
       (device) =>
         !isDashboardEntityHidden(device, expandedHiddenIds) &&
