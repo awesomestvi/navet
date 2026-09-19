@@ -54,6 +54,15 @@ function cover(overrides: Partial<CoverDevice> = {}): CoverDevice {
   };
 }
 
+/** Runs the Home security alert hook against a supplied device collection. */
+function useFixtureHomeSecurityAlertCount({ devices }: { devices: DeviceCollection }) {
+  return useHomeSecurityAlertCount({
+    devices,
+    enabled: true,
+    hiddenEntityIds: EMPTY_HIDDEN_ENTITY_IDS,
+  });
+}
+
 /** Verifies that ordinary open covers cannot inflate Home or room security alert counts. */
 function verifyOrdinaryOpenCoversAreExcluded() {
   const openDoor = sensor({
@@ -67,19 +76,20 @@ function verifyOrdinaryOpenCoversAreExcluded() {
   });
   const devices: DeviceCollection = {
     ...createEmptyDeviceCollection(),
-    covers: Array.from({ length: 6 }, (_, index) =>
-      cover({ id: `cover.blind_${index}`, name: `Blind ${index + 1}` })
-    ),
+    covers: [
+      cover({ id: 'cover.blind_1', name: 'Blind 1' }),
+      cover({ id: 'cover.blind_2', name: 'Blind 2' }),
+      cover({ id: 'cover.blind_3', name: 'Blind 3' }),
+      cover({ id: 'cover.blind_4', name: 'Blind 4' }),
+      cover({ id: 'cover.blind_5', name: 'Blind 5' }),
+      cover({ id: 'cover.blind_6', name: 'Blind 6' }),
+    ],
     sensors: [openDoor],
   };
 
-  const { result } = renderHook(() =>
-    useHomeSecurityAlertCount({
-      devices,
-      enabled: true,
-      hiddenEntityIds: EMPTY_HIDDEN_ENTITY_IDS,
-    })
-  );
+  const { result } = renderHook(useFixtureHomeSecurityAlertCount, {
+    initialProps: { devices },
+  });
 
   expect(result.current).toBe(1);
   expect(getRoomSecurityAlertCount(devices, [], 'Living Room')).toBe(0);
