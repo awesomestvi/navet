@@ -6,6 +6,9 @@ storybook-static
 .cache
 .vite
 .turbo
+.release-tools
+release-images
+release-assets
 .parcel-cache
 
 .git

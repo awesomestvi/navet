@@ -27,9 +27,12 @@ Navet uses four test tiers:
 
 Workflow expectations:
 
-- release and publish workflows depend on Tier 1 only
-- main CI blocks on Tier 1 and Tier 2
-- Tier 3 remains useful signal, but it is not a release prerequisite
+- runtime-impacting PRs require Tier 1, Tier 2, Tier 3, and Docker validation
+- local `pnpm test:tier3` runs the complete unit suite; CI uses `--exclude-blocking` to run
+  only files not already covered by its required Tier 1 and Tier 2 lanes, without deleting tests
+- non-runtime PRs retain quality checks and all script tests plus affected site builds
+- Dev publication runs Tier 1 source checks and verifies published container digests; subsequent
+  release versions require successful source evidence and their own actual-image runtime checks
 
 ## Source Of Truth
 

@@ -2,6 +2,11 @@ name: Release Safety Checks
 
 on:
   workflow_call:
+    inputs:
+      runtime:
+        description: Build local runtime fixtures (published images are tested separately during Dev publication)
+        type: boolean
+        default: true
 
 jobs:
   tier-1-release-critical:
@@ -41,6 +46,7 @@ jobs:
         run: node scripts/check-provider-boundaries.mjs
 
   addon-runtime:
+    if: inputs.runtime
     name: Validate add-on runtime (${{ matrix.arch }})
     runs-on: ubuntu-latest
     strategy:

@@ -1,102 +1,55 @@
 # Release And Publishing
 
-Use this file for maintainer and agent release work.
+Use this guide for maintainer and agent release work. The complete operational procedure,
+artifact model, recovery path and hosted rollout are in [Release Workflow](../release-workflow.md).
 
-## Hard Rules
+## Authority And Inputs
 
-- release-preparation agents may run non-publishing validation such as `pnpm release:check`
-- tag creation, pushes, production publication, and public communication require explicit authority
-- require one validated `.changes/*.yaml` fragment in every pull request, including an explicit
-  `internal` fragment when there is no user-facing change
-- generate release notes from all fragments added since the previous stable tag
-- keep root `repository.yaml` in the monorepo
-- treat `platform/home-assistant/custom_components/navet/` as the HACS integration source of truth
-- keep generated panel assets out of the monorepo; release automation assembles them into exports
+- Preparation may run non-publishing validation; tagging, pushing, and publication require explicit authority.
+- Every PR adds a validated `.changes/*.yaml` fragment, including `internal` for non-user-facing work.
+- Protected `main` is never advanced by a direct release commit or a bypass.
+- Keep root `repository.yaml` in the monorepo and Home Assistant sources under `platform/home-assistant`.
+- The annotated release tag identifies the source commit. GitHub Releases are the published changelog.
+- Website and docs clients read stable GitHub Releases; do not create per-release website metadata commits.
+- Generated panel files remain build outputs, not tracked source.
 
-## Release Inputs
+## Development And Publication
 
-- `.changes/*.yaml` records the user-facing outcome and affected audiences in the pull request
-- an immutable `navet-dev-*` tag identifies the exact tested commit and container images
-- a beta or release-candidate tag can be promoted again without rebuilding those images
-- GitHub Releases are the canonical published changelog; `CHANGELOG.md` is historical material
-- navet.app and docs.navet.app read stable versions and notes directly from GitHub Releases
+Merged runtime-impacting changes automatically create a main-backed Dev tag. Docs, marketing,
+automation-only and strictly version-only add-on metadata changes do not publish new product images.
+Manual Dev dispatch remains available. Dev publication runs source safety checks once and tests the
+actual published standalone and add-on image digests on both architectures before moving aliases.
 
-## Beta And Stable Promotion
+Run **Promote Navet Release** from `main` with an exact successful source tag and a new target tag.
+Beta starts from Dev; stable starts from a successful beta/RC of the same base version. Install the
+candidate first, then enable `installation_tested` when dispatching stable. This dispatch authorizes
+publication; beta/production environment credentials are restricted to trusted `main` workflows
+without repeated reviewer prompts.
 
-1. Choose an already-published Dev, beta, or release-candidate tag whose commit and artifacts have
-   been tested.
-2. Choose the new tag: `vX.Y.Z-beta.N`, `vX.Y.Z-rc.N`, or `vX.Y.Z`.
-3. Dispatch
-   [../../.github/workflows/release-tag-publish.yml](../../.github/workflows/release-tag-publish.yml)
-   with both tags.
-4. Treat that maintainer dispatch as authorization to publish the selected release; the `beta` and
-   `production` environments scope release secrets but do not add per-job reviewer prompts.
-5. Let [../../.github/workflows/release.yml](../../.github/workflows/release.yml) retag the tested
-   container digests, generate notes from fragments, and publish the panel and HACS artifacts.
+Each version receives correctly versioned packages and actual-image verification. Stable is a new
+package of the tested source, not a beta image with a different Docker tag. The panel is built once
+and reused for the archive and HACS. Existing versioned images and HACS tags are never overwritten.
+A generated metadata PR updates the existing Home Assistant App repository through normal protection.
+Only after verification and that PR completes do moving Docker channels advance.
 
-Important note:
+The successful run and its `navet-release-evidence.json` record establish publication completion.
+Do not infer completion from a GitHub release or image tag existing. Registry failures are not
+evidence that an image is absent.
 
-- do not ask maintainers to run `pnpm build:ha-panel` during normal release prep
-- the automated release and HACS workflows build the custom panel assets
-- promotion does not create or push another commit to protected `main`
-- stable releases must promote a tested beta or release candidate
-- beta releases must promote an immutable Dev tag
-- versions in HACS artifacts are injected during packaging; source files do not need a release commit
-- Home Assistant App Store metadata is the exception: automation creates its small protected-main
-  PR only after the matching images exist, so existing repository subscribers receive the update
-- automated tag publishers explicitly dispatch their downstream workflows after pushing tags;
-  do not rely on a `GITHUB_TOKEN` tag push to create another workflow run
+For recovery, dispatch **Publish Release** from current `main` with the existing release and source
+tags. An old run's retry uses its old workflow code. Conflicting published artifacts require a new
+version, never tag rewrites. Public-site availability does not gate product publication.
 
-## Immutable Navet Dev Flow
+## Validation And Deployments
 
-Every pull request merged into `main` automatically dispatches the main-backed flow:
+CI always runs quality, type, fragment and script checks. The change-aware Product review gate
+requires every applicable lane and Cloudflare preview bound to the current site inputs; unexpected skips fail.
+Runtime changes retain all three test tiers and Docker checks. Shared and unknown inputs run broadly.
 
-1. Let [../../.github/workflows/dev-tag-publish.yml](../../.github/workflows/dev-tag-publish.yml)
-   run Tier 1 validation after the merge.
-2. Let that workflow tag the merged commit as `navet-dev-0.x.y-dev.YYYYMMDDHHMMSS` without
-   creating or pushing another commit to protected `main`.
-3. Let [../../.github/workflows/dev-tag-release.yml](../../.github/workflows/dev-tag-release.yml)
-   publish the prerelease artifacts from the pushed tag.
-
-To publish an immutable build from another named branch:
-
-1. Commit and validate the changes you want to publish.
-2. Check out the named branch that owns those commits and make sure its worktree is clean.
-3. Run `pnpm release:dev-publish -- --push` locally from that branch.
-4. Let the script create and push the matching
-   `navet-dev-0.x.y-dev.YYYYMMDDHHMMSS` tag with branch and commit provenance.
-5. Let [../../.github/workflows/dev-tag-release.yml](../../.github/workflows/dev-tag-release.yml)
-   publish the prerelease artifacts from the pushed `navet-dev-*` tag.
-
-Channel behavior depends on the source branch:
-
-- a publish from `main` creates immutable exact-version and `sha-*` images and refreshes the moving
-  `edge` and `dev` aliases without changing protected `main`
-- a publish from any other named branch creates immutable exact-version and `sha-*` images plus a
-  GitHub prerelease only; it does not change `main`, `edge`, `dev`, or Home Assistant Add-on Store
-  metadata
-- automatic publishes do not change Home Assistant Add-on Store metadata; supervised `Navet Dev`
-  discovery advances only through a separately reviewed metadata change
-
-Fallback:
-
-- manually dispatch
-  [../../.github/workflows/dev-tag-publish.yml](../../.github/workflows/dev-tag-publish.yml) from
-  `main` if the automatic post-merge run needs to be repeated
-- the preparation workflow creates and pushes the `navet-dev-*` tag, then dispatches
-  `dev-tag-release.yml` using that tag
-- the tag-triggered publish workflow performs the actual artifact publication
-
-Important note:
-
-- immutable dev-tag versioning comes from the publish workflow and tag name
-- every dev tag retains its source branch and commit provenance
-- a main publish refreshes Docker `edge` and `dev` without writing to protected `main`
-- automatic dev publishes do not advance `platform/home-assistant/addons/navet-dev/config.yaml` or
-  the supervised `Navet Dev` Add-on Store surface
-- install a non-main publish by its exact immutable Docker version; do not expect the moving aliases
-  or Add-on Store to select it
-- dev publishes do not sync `awesomestvi/navet-home-assistant` and do not create HACS updates
+Cloudflare builds previews and production only for watched inputs. Keep hosted filters and merge
+protection synchronized with `scripts/pipeline-rollout.mjs`; apply only after the new gate is on
+`main`. Do not remove required checks independently. See the operational guide for setup and
+verification. No release workflow rebuilds the public sites.
 
 ## Release Notes
 
@@ -137,41 +90,9 @@ Example:
 - Fixed docs navigation on mobile.
 ```
 
-## Automated Workflow Expectations
-
-- Tier 1 release-critical validation is the release gate
-- Tier 2 remains blocking for main CI
-- Tier 3 is a blocking pull-request gate
-- beta builds release artifacts from a tested Dev commit; RC and stable promote those tested
-  container digests without rebuilding them
-- tagged releases build the custom-panel artifact from the promoted commit
-- tagged releases sync the exported HACS payload into `awesomestvi/navet-home-assistant/main`
-- after artifact verification, tagged releases open a generated Home Assistant App metadata PR in
-  `awesomestvi/navet`, wait for required checks, and merge it through normal branch protection
-- tagged releases also create or refresh the matching Git tag in `awesomestvi/navet-home-assistant`
-- missing HACS credentials fail the release instead of silently producing a partial release
-- the release GitHub App must also be installed on `awesomestvi/navet` with Contents and Pull
-  requests write access so the generated metadata PR can be created and merged without bypassing
-  branch protection
-- a release is complete only after exact app/add-on images, HACS release, panel archive, GitHub
-  release, and the canonical latest-release API response are verified
-- public sites deploy continuously from `main` and are monitored separately; their availability
-  does not gate beta, release-candidate, or stable artifact publication
-- local `pnpm sync:hacs` is still useful for previewing export output before release work
-
-## Publishing Rules
-
-- Cloudflare Pages deploys the marketing website, demo, Storybook, and docs as independent projects
-- GitHub Pages is retired for this surface
-- all dev tags publish immutable exact-version and `sha-*` app and add-on images
-- only dev tags sourced from `main` refresh the moving `edge` and `dev` aliases
-- dev tags do not write supervised add-on metadata to protected `main`
-- prerelease tags do not move `latest`
-- stable tags publish the exact tag, moving stable aliases, and `sha-*`
-- stable tags continue to move Docker `latest`; Navet does not publish a separate Docker `stable`
-  alias
 
 ## Related Guidance
 
-- command restrictions and commit rules: [commands.md](commands.md)
-- versioning and release-note policy: [../VERSIONING.md](../VERSIONING.md)
+- Command and commit policy: [commands.md](commands.md).
+- Version scheme: [../VERSIONING.md](../VERSIONING.md).
+- Maintainer procedure and hosted activation: [../release-workflow.md](../release-workflow.md).

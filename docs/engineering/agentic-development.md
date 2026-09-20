@@ -9,13 +9,14 @@ deterministic checks remain authoritative over agent claims.
 issue or product feedback
   -> delivery agent triage and implementation
   -> pull request
-  -> deterministic CI and Cloudflare previews
+  -> applicable deterministic CI and Cloudflare previews
   -> independent code review
   -> maintainer review and merge
-  -> automatic main-backed Navet Dev publish
+  -> automatic main-backed Navet Dev publish for runtime changes
   -> release preparation
-  -> maintainer release dispatch
-  -> artifact verification
+  -> beta publication and actual-image verification
+  -> maintainer installation test and stable dispatch
+  -> correctly versioned stable packaging and actual-image verification
   -> human-approved communication
 ```
 
@@ -214,11 +215,17 @@ configured after these files reach `main`:
 6. Protect `main`: require a pull request and resolved review conversations. For a solo-maintainer
    repository, set required approving reviews to zero and disable required CODEOWNER review; the
    maintainer's merge records acceptance for the current head. Require **CI / Product review gate**
-   plus the configured Cloudflare Pages preview checks.
+   as the aggregate gate for applicable tests and Cloudflare previews of the current site inputs.
+   A successful ancestor preview is reusable only when those inputs are unchanged. During migration,
+   retain the four existing Cloudflare requirements until the new gate is merged. Use the guarded
+   rollout in [Release Workflow](../release-workflow.md#activating-scoped-deployments) to update
+   requirements and build-watch paths together without weakening unrelated protections.
 7. Configure `beta` and `production` environments to scope the release GitHub App secrets. Do not
    add required reviewers: manually dispatching **Promote Navet Release** with exact source and
    target tags is the publication authorization, and downstream artifact jobs must run without
-   repeated approval prompts.
+   repeated approval prompts. Restrict these environments to the `main` branch. Stable dispatch
+   requires confirmation that the selected beta/RC was installed and tested; the workflow also
+   verifies the source release's successful run and recorded image digests.
 8. Keep Cloudflare preview deployments public only for repository/demo data. Preview projects must
    not receive Home Assistant URLs, tokens, provider OAuth secrets, production cookies, or private
    tunnel credentials.

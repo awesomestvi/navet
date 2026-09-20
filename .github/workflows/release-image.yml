@@ -1,0 +1,111 @@
+name: Build versioned release image
+
+on:
+  workflow_call:
+    inputs:
+      sha:
+        required: true
+        type: string
+      version:
+        required: true
+        type: string
+      channel:
+        required: true
+        type: string
+      standalone_tag:
+        default: ''
+        type: string
+      environment:
+        default: edge
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: navet
+            file: Dockerfile
+            platforms: linux/amd64,linux/arm64
+            arch: amd64
+            tag_prefix: v
+          - name: amd64-navet-addon
+            file: platform/home-assistant/addons/navet/Dockerfile
+            platforms: linux/amd64
+            arch: amd64
+            tag_prefix: ''
+          - name: aarch64-navet-addon
+            file: platform/home-assistant/addons/navet/Dockerfile
+            platforms: linux/arm64
+            arch: aarch64
+            tag_prefix: ''
+    env:
+      IMAGE: ghcr.io/${{ github.repository_owner }}/${{ matrix.name }}
+      IMAGE_TAG: ${{ matrix.name == 'navet' && inputs.standalone_tag || format('{0}{1}', matrix.tag_prefix, inputs.version) }}
+      VERSION: ${{ inputs.version }}
+      RELEASE_SHA: ${{ inputs.sha }}
+      RELEASE_CHANNEL: ${{ inputs.channel }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.sha }}
+      - name: Checkout trusted orchestration tools
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: .release-tools
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Reuse an existing exact version without overwriting it
+        id: existing
+        run: node .release-tools/scripts/release-image.mjs lookup
+      - name: Capture reproducible build date
+        id: metadata
+        run: echo "date=$(git show -s --format=%cI HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Build correctly versioned candidate
+        if: steps.existing.outputs.exists != 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.file }}
+          platforms: ${{ matrix.platforms }}
+          push: true
+          tags: ${{ env.IMAGE }}:${{ env.IMAGE_TAG }}
+          cache-from: type=gha,scope=release-${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=release-${{ matrix.name }},ignore-error=true
+          labels: |
+            org.opencontainers.image.version=${{ inputs.version }}
+            org.opencontainers.image.revision=${{ inputs.sha }}
+            io.navet.release-channel=${{ inputs.channel }}
+          build-args: |
+            BUILD_FROM=ghcr.io/home-assistant/${{ matrix.arch }}-base:3.20
+            BUILD_ARCH=${{ matrix.arch }}
+            BUILD_VERSION=${{ inputs.version }}
+            NAVET_VERSION=${{ inputs.version }}
+            NAVET_BUILD_VERSION=${{ inputs.version }}
+            NAVET_GIT_SHA=${{ inputs.sha }}
+            NAVET_RELEASE_CHANNEL=${{ inputs.channel }}
+            NAVET_BUILD_DATE=${{ steps.metadata.outputs.date }}
+      - name: Record immutable candidate digest
+        run: node .release-tools/scripts/release-image.mjs record
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-image-${{ matrix.name }}
+          path: release-images/*.json
+          if-no-files-found: error
