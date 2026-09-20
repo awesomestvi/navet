@@ -121,4 +121,22 @@ describe('immutable release note contract', () => {
     ).toThrow();
     expect(() => changelogNotes(first + '\n## 0.17.2\nwrong', '0.17.2')).toThrow('Duplicate');
   });
+
+  it('stops published notes before the development-only In Progress section', () => {
+    const body = '## Improvements and bug fixes\n\n- Fixed badge.';
+    const changelog = [
+      '# Changelog',
+      '',
+      '## 0.17.2-beta.2',
+      '',
+      body,
+      '',
+      '## In Progress',
+      '',
+      '- Current Navet Dev scope.',
+      '',
+    ].join('\n');
+
+    expect(changelogNotes(changelog, '0.17.2-beta.2')).toBe(body);
+  });
 });

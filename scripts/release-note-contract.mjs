@@ -12,12 +12,15 @@ export function assertNotes(actual, expected, label) {
     throw new Error(`${label}: published release notes differ from the pinned release notes.`);
 }
 
-// Category headings are also level two; only version headings delimit releases.
+// Category headings are also level two. Numbered versions and the development-only
+// In Progress section delimit published releases.
 export function changelogNotes(changelog, version) {
   const headings = [
     ...changelog
       .replace(/\r\n/g, '\n')
-      .matchAll(/^## (\d+\.\d+\.\d+(?:-[\w.]+)?)(?: \([^\n]+\))?\s*$/gm),
+      .matchAll(
+        /^## (?:(\d+\.\d+\.\d+(?:-[\w.]+)?)(?: \([^\n]+\))?|In Progress)\s*$/gm,
+      ),
   ];
   const matches = headings.filter((heading) => heading[1] === version);
   if (matches.length > 1) throw new Error(`Duplicate changelog entries for ${version}.`);
