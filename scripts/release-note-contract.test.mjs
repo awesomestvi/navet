@@ -19,8 +19,9 @@ import { renderHacsChangelog } from './hacs-changelog.mjs';
  *
  * @param {string} _lineEndingName Human-readable case label supplied by Vitest.
  * @param {string} lineEnding Line ending used to construct the changelog fixture.
+ * @param {string} boundaryHeading Supported development boundary heading.
  */
-function verifyDevelopmentBoundary(_lineEndingName, lineEnding) {
+function verifyDevelopmentBoundary(_lineEndingName, lineEnding, boundaryHeading) {
   const body = '## Improvements and bug fixes\n\n- Fixed badge.';
   const changelog = [
     '# Changelog',
@@ -31,7 +32,7 @@ function verifyDevelopmentBoundary(_lineEndingName, lineEnding) {
     '',
     '- Fixed badge.',
     '',
-    '## In Progress',
+    boundaryHeading,
     '',
     '- Current Navet Dev scope.',
     '',
@@ -151,7 +152,9 @@ describe('immutable release note contract', () => {
   });
 
   it.each([
-    ['LF', '\n'],
-    ['CRLF', '\r\n'],
-  ])('stops published notes at In Progress with %s input', verifyDevelopmentBoundary);
+    ['LF and In Progress', '\n', '## In Progress'],
+    ['CRLF and In Progress', '\r\n', '## In Progress'],
+    ['LF and Navet Dev In Progress', '\n', '## Navet Dev In Progress'],
+    ['CRLF and Navet Dev In Progress', '\r\n', '## Navet Dev In Progress'],
+  ])('stops published notes with %s', verifyDevelopmentBoundary);
 });
