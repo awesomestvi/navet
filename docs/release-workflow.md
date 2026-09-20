@@ -73,7 +73,8 @@ without moving shared aliases. Dev builds do not publish HACS or update supervis
    sources in the run summary without publishing. GitHub's form cannot load live tag choices;
    selection happens when the workflow runs.
 3. Run again with `preview_only` disabled to publish. Automatic selection is recalculated each
-   run. To publish exactly what you previewed or installed, copy the source tag into `source_tag`.
+   run. To reproduce the exact previewed plan, copy both selected tags into `source_tag` and
+   `release_tag`. To promote an installed candidate with an automatic target, pin only `source_tag`.
 4. Wait for **Publish Release** to complete. It builds correctly versioned artifacts, validates
    their actual registry digests, publishes HACS and the panel archive, and completes the
    protected Home Assistant metadata PR.

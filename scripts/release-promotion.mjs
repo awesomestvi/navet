@@ -7,6 +7,12 @@ const versionPattern = '(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)';
 const releasePattern = new RegExp(`^v${versionPattern}(?:-(beta|rc)\\.([1-9]\\d*))?$`);
 const devPattern = new RegExp(`^navet-dev-${versionPattern}-dev\\.(\\d{14})$`);
 
+/**
+ * Parse a supported Dev, beta, RC, or stable tag into sortable version fields.
+ * Return null for malformed tags or numeric fields outside the safe integer range.
+ * @param {string} tag Git tag name to inspect.
+ * @returns {object|null} Parsed tag identity, base version, channel, and sequence.
+ */
 export function parsePromotionTag(tag) {
   const release = releasePattern.exec(tag);
   const dev = devPattern.exec(tag);
@@ -24,15 +30,24 @@ export function parsePromotionTag(tag) {
   };
 }
 
+/** Compare parsed tags by major, minor, then patch version in ascending order. */
 const compareVersion = (a, b) => {
   for (let i = 0; i < 3; i += 1)
     if (a.version[i] !== b.version[i]) return a.version[i] - b.version[i];
   return 0;
 };
+/** Order candidates by base version, then RC above beta, then candidate number. */
 const compareCandidate = (a, b) =>
   compareVersion(a, b) ||
   (a.channel === b.channel ? a.sequence - b.sequence : a.channel === 'rc' ? 1 : -1);
 
+/**
+ * Resolve an eligible source and unused target without mutating Git or publishing.
+ * Blank overrides select channel defaults; all existing tags reserve their numbers.
+ * @param {object} options Channel, optional overrides, known tags, and verified sources.
+ * @returns {{source_tag: string, release_tag: string, source_sha: string}} Promotion plan.
+ * @throws {Error} If no eligible source exists or the requested promotion is invalid.
+ */
 export function resolvePromotion({
   channel = 'beta',
   sourceTag = '',
@@ -103,6 +118,13 @@ export function resolvePromotion({
   return { source_tag: source.tag, release_tag: releaseTag, source_sha: source.sha };
 }
 
+/**
+ * Collect published prereleases whose commits and publication evidence are eligible.
+ * Callbacks verify tag ancestry and channel-specific publication success; API errors
+ * propagate so an unavailable check cannot silently select an older source.
+ * @param {object} options Release records and injected verification callbacks.
+ * @returns {Promise<Array<{tag: string, sha: string}>>} Eligible source identities.
+ */
 export async function collectPromotionSources({
   releases,
   inspectTag,
@@ -124,6 +146,12 @@ export async function collectPromotionSources({
   return sources;
 }
 
+/**
+ * Read workflow inputs, discover eligible releases through Git and GitHub, and emit
+ * the resolved plan to stdout and optional Actions output and summary files.
+ * This entrypoint never creates tags, dispatches workflows, or publishes releases.
+ * @returns {Promise<void>}
+ */
 async function main() {
   const git = (...args) =>
     execFileSync('git', args, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
