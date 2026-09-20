@@ -53,21 +53,22 @@ jobs:
       RELEASE_SHA: ${{ inputs.sha }}
       RELEASE_CHANNEL: ${{ inputs.channel }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ inputs.sha }}
       - name: Checkout trusted orchestration tools
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ github.sha }}
           path: .release-tools
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
-      - uses: docker/setup-qemu-action@v3
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
+          package-manager-cache: false
+      - uses: docker/setup-qemu-action@v4
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -80,7 +81,7 @@ jobs:
         run: echo "date=$(git show -s --format=%cI HEAD)" >> "$GITHUB_OUTPUT"
       - name: Build correctly versioned candidate
         if: steps.existing.outputs.exists != 'true'
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ${{ matrix.file }}
@@ -104,7 +105,7 @@ jobs:
             NAVET_BUILD_DATE=${{ steps.metadata.outputs.date }}
       - name: Record immutable candidate digest
         run: node .release-tools/scripts/release-image.mjs record
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: release-image-${{ matrix.name }}
           path: release-images/*.json

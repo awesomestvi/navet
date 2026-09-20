@@ -1,0 +1,3 @@
+type: internal
+audiences: []
+summary: Upgrade workflow actions to Node 24-compatible releases before GitHub removes Node 20.
