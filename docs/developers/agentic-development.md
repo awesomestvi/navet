@@ -68,9 +68,8 @@ Implementation pull requests run the same deterministic checks as manual contrib
 the applicable type, test, Docker, responsive review, and Cloudflare preview jobs. Independent
 review is advisory; deterministic checks and human decisions remain authoritative.
 
-After CI completes, Navet Nisse creates or updates one review-summary comment with the deterministic
-result, preview links, and change-impact classification. The bot token is used only for that
-automated comment. GitHub Actions continues to own CI and descriptive labels.
+Use the pull request's checks to inspect CI results and open Cloudflare previews. Responsive
+screenshots are available in the CI run's artifacts.
 
 The maintainer reviews the current diff, previews, and resolved conversations before merging. The
 merge records human acceptance for ordinary, foundational, and security-sensitive changes; there
