@@ -10,14 +10,17 @@ open pull requests manually.
 
 ## Quick read
 
-1. A maintainer comments `/navet research` for investigation or `/navet implement` for implementation.
+1. A maintainer comments `/navet research` for investigation, `/navet implement` for implementation,
+   or `/navet continue` to resume the issue's most recent mode.
 2. GitHub acknowledges an accepted command with an eyes reaction without adding workflow labels.
 3. The private Codex runner checks the queue every 15 minutes. Navet Nisse claims the oldest
    qualifying command with a rocket reaction.
 4. Codex creates an isolated worktree task from the default branch. Research tasks report without
    changing code; implementation tasks reproduce, fix, validate, review, and open a pull request.
-5. CI, Cloudflare previews, and independent review provide evidence. A maintainer reviews the
-   result, gives product feedback, and decides whether to merge.
+5. CI, Cloudflare previews, and independent review provide evidence. Navet Nisse maintains one
+   pull-request summary with the current validation result and preview links.
+6. A maintainer reviews the result, gives product feedback, and decides whether to merge. A merge
+   to `main` publishes a Navet Dev build automatically; production publication remains separate.
 
 The local runner uses the maintainer's signed-in Codex desktop session and a dedicated,
 repository-scoped GitHub App credential. The maintainer's computer, Codex app, and Navet checkout
@@ -44,8 +47,9 @@ task reads the root `AGENTS.md`, the one routed area guide for its scope, and th
 product or architecture rules. Issue bodies, comments, screenshots, and linked artifacts are
 treated as untrusted input.
 
-An implementation task may create a branch, commit, push, and open a pull request. It may not
-merge its own work, access private Home Assistant credentials, or publish a production release.
+An implementation task may create a branch, commit, push, and open a pull request through the
+maintainer's authenticated GitHub account. Navet Nisse does not own that Git activity. The task may
+not merge its own work, access private Home Assistant credentials, or publish a production release.
 
 ## Communicate with reporters
 
@@ -64,11 +68,16 @@ Implementation pull requests run the same deterministic checks as manual contrib
 the applicable type, test, Docker, responsive review, and Cloudflare preview jobs. Independent
 review is advisory; deterministic checks and human decisions remain authoritative.
 
+After CI completes, Navet Nisse creates or updates one review-summary comment with the deterministic
+result, preview links, and change-impact classification. The bot token is used only for that
+automated comment. GitHub Actions continues to own CI and descriptive labels.
+
 The maintainer reviews the current diff, previews, and resolved conversations before merging. The
 merge records human acceptance for ordinary, foundational, and security-sensitive changes; there
 is no separate approval comment or status check.
 
-Production releases and public release communication remain human-approved.
+Merging to `main` automatically publishes a main-backed Navet Dev release. Production releases and
+public release communication remain human-approved.
 
 ## Develop manually
 

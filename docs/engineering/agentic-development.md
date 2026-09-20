@@ -12,7 +12,7 @@ issue or product feedback
   -> deterministic CI and Cloudflare previews
   -> independent code review
   -> maintainer review and merge
-  -> optional Navet Dev publish
+  -> automatic main-backed Navet Dev publish
   -> release preparation
   -> production environment approval
   -> artifact verification
@@ -123,11 +123,17 @@ than the GitHub issue. Scheduled repository workflows queue research by creating
 `github-actions[bot]`; the runner verifies that author and the expected workflow-owned issue type
 instead of trusting issue-body text or generating a command comment.
 
-Automated issue and pull-request comments and command reactions use the dedicated
+Automated issue and pull-request comments and runner claim reactions use the dedicated
 `navet-nisse[bot]` GitHub App identity and should read like useful collaboration with a person.
+Accepted command reactions use `github-actions[bot]`.
 Branches, commits, pushes, and pull requests continue to use the maintainer's GitHub identity.
 Manual maintainer comments also remain visibly authored by the maintainer. The App credential is
 restricted to the public conversation operations exposed by the repository wrapper.
+
+After deterministic CI completes, the trusted default-branch workflow creates or updates one
+mobile-friendly review-summary comment as `navet-nisse[bot]`. The built-in workflow token reads the
+pull request and manages descriptive impact labels. A short-lived App installation token is used
+only to write the summary comment.
 
 Public GitHub activity should follow these rules:
 
@@ -179,7 +185,10 @@ configured after these files reach `main`:
    Issues read/write and mandatory Metadata read. Do not grant Contents, Pull requests, Actions,
    Administration, Environments, Secrets, Workflows, package deletion, or organization/account
    permissions. Pull-request conversation comments use GitHub's issue-comment API.
-2. Store the App ID, installation ID, and private-key path in the private runner environment. Use
+2. Add `NAVET_NISSE_APP_ID` and `NAVET_NISSE_PRIVATE_KEY` as repository Actions secrets. The
+   pull-request summary workflow uses them to mint a short-lived installation token for its
+   automated comment. Do not grant the App additional repository permissions for this workflow.
+3. Store the App ID, installation ID, and private-key path in the private runner environment. Use
    the repository wrapper only for automated comments and command reactions. It deliberately does
    not expose arbitrary `gh`, Git push, pull-request creation, or repository-content operations.
    Confirm that the App cannot read or write contents, create pull requests, change repository
@@ -192,22 +201,22 @@ configured after these files reach `main`:
    command reactions with its `react` and `unreact` operations. The wrapper creates a short-lived
    installation token for each operation and cannot modify the repository remote or the
    maintainer's GitHub login.
-3. Configure one local Codex scheduled task to poll accepted `/navet` commands and scheduled issues
+4. Configure one local Codex scheduled task to poll accepted `/navet` commands and scheduled issues
    authored by `github-actions[bot]` with the expected workflow-owned issue type. Do not authorize
    work from issue-body markers. Claim no more than one issue per run and follow the private queue
    contract above. Keep only one active queue runner so two agents cannot claim the same command.
-4. Install one independent, read-only PR reviewer (CodeRabbit is the initial candidate for this
+5. Install one independent, read-only PR reviewer (CodeRabbit is the initial candidate for this
    public repository). Let it review non-draft PRs automatically; do not add a second general
    reviewer until measured misses justify the duplicate cost. Reviewer comments are advisory;
    deterministic CI and the maintainer's merge decision remain authoritative.
-5. Protect `main`: require a pull request and resolved review conversations. For a solo-maintainer
+6. Protect `main`: require a pull request and resolved review conversations. For a solo-maintainer
    repository, set required approving reviews to zero and disable required CODEOWNER review; the
    maintainer's merge records acceptance for the current head. Require **CI / Product review gate**
    plus the configured Cloudflare Pages preview checks.
-6. Configure the `production` environment with the maintainer as a required reviewer and prevent
+7. Configure the `production` environment with the maintainer as a required reviewer and prevent
    administrators from bypassing it. Keep `edge` autonomous and `beta` approval-gated until its
    artifact history is proven reliable.
-7. Keep Cloudflare preview deployments public only for repository/demo data. Preview projects must
+8. Keep Cloudflare preview deployments public only for repository/demo data. Preview projects must
    not receive Home Assistant URLs, tokens, provider OAuth secrets, production cookies, or private
    tunnel credentials.
 

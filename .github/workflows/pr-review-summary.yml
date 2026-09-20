@@ -27,7 +27,18 @@ jobs:
         with:
           node-version: 22
 
+      - name: Create Navet Nisse comment token
+        id: navet_nisse_token
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
+        with:
+          app-id: ${{ secrets.NAVET_NISSE_APP_ID }}
+          private-key: ${{ secrets.NAVET_NISSE_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+          permission-issues: write
+
       - name: Publish readiness and preview links
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NAVET_NISSE_TOKEN: ${{ steps.navet_nisse_token.outputs.token }}
         run: node scripts/update-pr-review-summary.mjs
