@@ -13,15 +13,16 @@ copy of important Navet dashboard configuration before switching to it.
 | Installation | Published Dev channel | Best for |
 |---|---|---|
 | HACS custom panel | No | Stable, Home Assistant-hosted Navet |
-| Home Assistant App | Yes: main-backed `Navet Dev` | Easiest Home Assistant development build |
+| Home Assistant App | Reviewed metadata updates | Home Assistant development builds |
 | Standalone Docker | Yes: `dev`, `edge`, and exact branch versions | Independent app, testing, and rollback control |
 
-Navet Dev publishes update the Home Assistant App and Docker images. They intentionally do not publish HACS
-updates. If you need the current development build inside the Home Assistant custom panel, use the
-advanced manual build below or choose the `Navet Dev` App instead.
+Navet Dev publishes update Docker images, including the image used by the Home Assistant App. They
+do not change protected App store metadata or publish HACS updates. If you need the current
+development build inside the Home Assistant custom panel, use the advanced manual build below.
 
 Every named clean branch can publish an immutable exact Dev version. Only a publish sourced from
-`main` advances the moving `dev` and `edge` tags or the Home Assistant App store metadata.
+`main` advances the moving `dev` and `edge` image tags. App store metadata changes require normal
+review through `main`.
 
 ## Home Assistant App
 
@@ -56,9 +57,8 @@ container-reachable URL and credentials.
 
 ### Update
 
-Each main-backed Navet Dev publish advances the version in the App repository. Home Assistant
-will show an update when it refreshes that repository. An exact publish from another branch is not
-offered by the App store until matching metadata lands on `main`.
+Home Assistant shows an update only when reviewed App metadata advances on `main`. Automatic Dev
+image publishes do not change that metadata, so the App store does not offer every merged-PR build.
 
 1. Open `Settings -> Apps -> Navet Dev`.
 2. Create a Home Assistant backup if the update is important to your setup.

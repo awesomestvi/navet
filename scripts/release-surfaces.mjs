@@ -122,7 +122,10 @@ export function buildDevAddonVersion(packageVersion, date = new Date()) {
 }
 
 export function isValidDevAddonVersion(version, packageVersion) {
-  const pattern = new RegExp(`^${packageVersion.replace(/\./g, '\\.')}-dev\\.\\d{14}$`);
+  const basePattern = packageVersion
+    ? packageVersion.replace(/\./g, '\\.')
+    : '\\d+\\.\\d+\\.\\d+';
+  const pattern = new RegExp(`^${basePattern}-dev\\.\\d{14}$`);
   return pattern.test(version);
 }
 
@@ -191,22 +194,20 @@ export function assertMainRepositoryMetadata() {
   }
 }
 
-export function assertHacsExport(exportRoot) {
+export function assertHacsExport(exportRoot, { expectedVersion = getPackageVersion() } = {}) {
   const manifestFile = resolve(exportRoot, 'custom_components/navet/manifest.json');
   if (!fs.existsSync(manifestFile)) {
     throw new Error(`HACS export is missing manifest.json: ${manifestFile}`);
   }
 
   const manifest = readJson(manifestFile);
-  const packageVersion = getPackageVersion();
-
   if (manifest.domain !== 'navet') {
     throw new Error(`HACS export manifest domain must be "navet", received "${manifest.domain}".`);
   }
 
-  if (manifest.version !== packageVersion) {
+  if (manifest.version !== expectedVersion) {
     throw new Error(
-      `HACS export manifest version ${manifest.version} does not match package.json ${packageVersion}.`
+      `HACS export manifest version ${manifest.version} does not match expected version ${expectedVersion}.`
     );
   }
 

@@ -556,14 +556,17 @@ describe('production njs provider credential sessions', () => {
     const cookieId = cookie.split('=')[1] ?? '';
     const sessionPath = join(paths.sessionsDirectory, `${cookieId}.json`);
     const readFile = fs.readFileSync.bind(fs);
-    vi.spyOn(fs, 'readFileSync').mockImplementation(((path, ...args) => {
+    vi.spyOn(fs, 'readFileSync').mockImplementation(((
+      ...args: Parameters<typeof fs.readFileSync>
+    ) => {
+      const [path] = args;
       if (String(path) === sessionPath) {
         const error = new Error('temporary I/O failure');
         // @ts-expect-error test-only errno
         error.code = 'EIO';
         throw error;
       }
-      return readFile(path, ...args);
+      return readFile(...args);
     }) as typeof fs.readFileSync);
 
     expect(() => store.bindingStore.readSession(cookieId)).toThrow('temporary I/O failure');
@@ -818,11 +821,14 @@ describe('production njs provider credential sessions', () => {
     );
     const readFile = fs.readFileSync.bind(fs);
     let sessionReads = 0;
-    vi.spyOn(fs, 'readFileSync').mockImplementation(((path, ...args) => {
+    vi.spyOn(fs, 'readFileSync').mockImplementation(((
+      ...args: Parameters<typeof fs.readFileSync>
+    ) => {
+      const [path] = args;
       if (String(path) === sessionPath || String(path) === otherSessionPath) {
         sessionReads += 1;
       }
-      return readFile(path, ...args);
+      return readFile(...args);
     }) as typeof fs.readFileSync);
 
     const proxy = createHomeyProxy(store);
@@ -1794,11 +1800,14 @@ describe('production njs provider credential sessions', () => {
     );
     const readFile = fs.readFileSync.bind(fs);
     let sessionReads = 0;
-    vi.spyOn(fs, 'readFileSync').mockImplementation(((path, ...args) => {
+    vi.spyOn(fs, 'readFileSync').mockImplementation(((
+      ...args: Parameters<typeof fs.readFileSync>
+    ) => {
+      const [path] = args;
       if (String(path) === sessionPath || String(path) === otherSessionPath) {
         sessionReads += 1;
       }
-      return readFile(path, ...args);
+      return readFile(...args);
     }) as typeof fs.readFileSync);
 
     const proxy = createOpenHABProxy(store);

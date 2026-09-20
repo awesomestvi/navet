@@ -11,22 +11,11 @@ const GROUPS = {
   website: [/^apps\/website\//, /^packages\/app\/src\/marketing\//, /^assets\/reference\/marketing\//],
   release: [
     /^\.github\/workflows\/(release|dev-tag)/,
+    /^\.changes\//,
     /(^|\/)Dockerfile$/,
     /^docker\//,
     /^platform\/home-assistant\//,
-    /^scripts\/(check-release|sync-release|extract-release|export-hacs|sync-hacs|create-dev-release|set-dev-addon)/,
-  ],
-  security: [
-    /(^|\/)(auth|security)(\/|\.|-)/,
-    /(credential|session|oauth|proxy|installation-authority|device-session)/,
-    /^SECURITY\.md$/,
-  ],
-  foundation: [
-    /^docs\/product\//,
-    /(^|\/)AGENTS\.md$/,
-    /^docs\/architecture\/(package-boundaries|provider-contract|provider-neutral-ui|dashboard-profile-ownership)\.md$/,
-    /^docs\/design-system\/UI-GUIDELINES\.md$/,
-    /^docs\/branding\/BRAND_FOUNDATIONS\.md$/,
+    /^scripts\/(check-release|sync-release|extract-release|generate-release|release-fragments|prepare-addon-release|export-hacs|sync-hacs|create-dev-release|set-dev-addon)/,
   ],
 };
 
@@ -50,14 +39,6 @@ export function classifyFiles(files) {
   );
 
   return { files: normalizedFiles, ...impact };
-}
-
-export function requiredApprovalGates(impact, labels = []) {
-  const labelSet = new Set(labels);
-  return {
-    foundation: impact.foundation || labelSet.has('gate: foundation'),
-    security: impact.security || labelSet.has('gate: security'),
-  };
 }
 
 export function impactLabels(impact) {

@@ -584,14 +584,17 @@ describe('production njs standalone OAuth sessions', () => {
     const cookieId = browser.cookie.split('=')[1] ?? '';
     const sessionPath = join(directory, 'sessions', `${cookieId}.json`);
     const readFile = fs.readFileSync.bind(fs);
-    vi.spyOn(fs, 'readFileSync').mockImplementation(((path, ...args) => {
+    vi.spyOn(fs, 'readFileSync').mockImplementation(((
+      ...args: Parameters<typeof fs.readFileSync>
+    ) => {
+      const [path] = args;
       if (String(path) === sessionPath) {
         const error = new Error('temporary I/O failure');
         // @ts-expect-error test-only errno
         error.code = 'EIO';
         throw error;
       }
-      return readFile(path, ...args);
+      return readFile(...args);
     }) as typeof fs.readFileSync);
 
     expect(() => store.readSession(cookieId)).toThrow('temporary I/O failure');

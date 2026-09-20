@@ -3,7 +3,6 @@ import {
   addonDevConfigPath,
   assertMainRepositoryMetadata,
   fail,
-  getPackageVersion,
   isValidDevAddonVersion,
   readAddonVersion,
 } from './release-surfaces.mjs';
@@ -13,6 +12,7 @@ const tagArgIndex = args.findIndex((arg) => arg === '--tag');
 const tagValue = tagArgIndex === -1 ? null : args[tagArgIndex + 1]?.trim();
 const versionArgIndex = args.findIndex((arg) => arg === '--version');
 const versionValue = versionArgIndex === -1 ? null : args[versionArgIndex + 1]?.trim();
+const allowStaleAddonMetadata = args.includes('--allow-stale-addon-metadata');
 
 try {
   if (!tagValue) {
@@ -25,16 +25,14 @@ try {
 
   assertMainRepositoryMetadata();
 
-  const packageVersion = getPackageVersion();
-
-  if (!isValidDevAddonVersion(versionValue, packageVersion)) {
+  if (!isValidDevAddonVersion(versionValue)) {
     throw new Error(
-      `Navet Dev version ${versionValue} must match ${packageVersion}-dev.YYYYMMDDHHMMSS.`
+      `Navet Dev version ${versionValue} must match X.Y.Z-dev.YYYYMMDDHHMMSS.`
     );
   }
 
   const addonVersion = readAddonVersion(addonDevConfigPath);
-  if (addonVersion !== versionValue) {
+  if (addonVersion !== versionValue && !allowStaleAddonMetadata) {
     throw new Error(
       `Navet Dev add-on version ${addonVersion} does not match requested version ${versionValue}.`
     );
@@ -47,7 +45,13 @@ try {
     );
   }
 
-  console.log(`Navet Dev release surfaces are aligned for ${versionValue}.`);
+  if (addonVersion !== versionValue) {
+    console.log(
+      `Navet Dev artifacts are aligned for ${versionValue}; protected main retains add-on metadata ${addonVersion}.`
+    );
+  } else {
+    console.log(`Navet Dev release surfaces are aligned for ${versionValue}.`);
+  }
 } catch (error) {
   fail(error instanceof Error ? error.message : String(error));
 }

@@ -41,7 +41,7 @@ criteria. It must ask for missing reproduction information instead of speculatin
 - Escalate: ambiguous product behavior, unreproducible bugs, foundational-rule changes, breaking
   architecture, credentials, destructive migrations, or provider behavior not supported by
   official evidence.
-- Forbidden: merge, approve its own work, change foundational principles to fit a solution, weaken
+- Forbidden: merge its own work, change foundational principles to fit a solution, weaken
   tests, publish, or report success with a failing deterministic gate.
 
 ### Independent reviewer
@@ -107,9 +107,6 @@ or made required while `main` is red.
 - `status: agent-queued`: a maintainer accepted the request and the private runner has not claimed
   it yet.
 - `status: agent-working`: a delivery agent owns the current iteration.
-- `review: foundation-approved`: foundational product or architecture changes were approved.
-- `review: security-approved`: security-sensitive changes received maintainer review.
-
 Use type, area, and risk labels to describe work; do not encode every transition as a new agent.
 
 ## Private Queue And Public Communication
@@ -136,15 +133,15 @@ Public GitHub activity should read like useful collaboration with a person:
 
 When blocked, the runner replaces `status: agent-working` with `status: needs-context`. Research
 work returns to `status: needs-triage` after its useful conclusion is recorded. Implementation work
-continues in the linked PR; the agent may push feedback-driven revisions but may not merge or
-satisfy its own human gates.
+continues in the linked PR; the agent may push feedback-driven revisions but may not merge its own
+work.
 
-## Human Approval
+## Human Authority
 
 Autonomous work may research, plan, implement, test, review, analyze documentation impact, deploy
 ephemeral previews, prepare Navet Dev artifacts, and draft release communication.
 
-Maintainer approval is required for:
+Maintainer authority is required for:
 
 - foundational product, design, dashboard, and architecture rules
 - explicitly security-sensitive or breaking architecture changes
@@ -152,13 +149,10 @@ Maintainer approval is required for:
 - release announcements and other publication beyond routine issue and PR collaboration
 - access to a private Home Assistant installation or its credentials
 
-For ordinary product and UI work, the maintainer reviews the previews and records acceptance by
-merging the PR after CI passes and review conversations are resolved. Foundation and security
-approvals use the corresponding SHA-bound commands shown in the PR review summary. The workflow
-rejects an approval when that reviewed commit is no longer the PR head, then records accepted
-approval as a commit status on that SHA. Labels are only a mobile-visible indicator. A new commit
-has no matching status, so feedback-driven agent iterations must be reviewed again even if label
-cleanup is delayed.
+For every pull request, the maintainer reviews the current diff and previews and records acceptance
+by merging after CI passes and review conversations are resolved. This merge decision covers
+ordinary, foundational, and security-sensitive changes without a second command or status check.
+Production publication remains separately protected by the `production` environment approval.
 
 ## Cost And Context
 
@@ -191,19 +185,15 @@ configured after these files reach `main`:
 4. Install one independent, read-only PR reviewer (CodeRabbit is the initial candidate for this
    public repository). Let it review non-draft PRs automatically; do not add a second general
    reviewer until measured misses justify the duplicate cost. Reviewer comments are advisory;
-   deterministic CI and the explicit human gates remain authoritative.
-5. Optionally set `NAVET_HUMAN_APPROVER` when the foundation or security approver differs from the
-   repository owner. `NAVET_PRODUCT_APPROVER` remains a compatibility fallback for existing setups.
-6. Protect `main`: require a pull request and resolved review conversations. For a solo-maintainer
+   deterministic CI and the maintainer's merge decision remain authoritative.
+5. Protect `main`: require a pull request and resolved review conversations. For a solo-maintainer
    repository, set required approving reviews to zero and disable required CODEOWNER review; the
-   maintainer's merge records acceptance for ordinary product and UI work. Use the SHA-bound
-   foundation and security commands only when those exceptional gates apply. Require **CI / Product
-   review gate** plus **Human Approval Gates / Current head approvals** and the configured
-   Cloudflare Pages preview checks.
-7. Configure the `production` environment with the maintainer as a required reviewer and prevent
+   maintainer's merge records acceptance for the current head. Require **CI / Product review gate**
+   plus the configured Cloudflare Pages preview checks.
+6. Configure the `production` environment with the maintainer as a required reviewer and prevent
    administrators from bypassing it. Keep `edge` autonomous and `beta` approval-gated until its
    artifact history is proven reliable.
-8. Keep Cloudflare preview deployments public only for repository/demo data. Preview projects must
+7. Keep Cloudflare preview deployments public only for repository/demo data. Preview projects must
    not receive Home Assistant URLs, tokens, provider OAuth secrets, production cookies, or private
    tunnel credentials.
 

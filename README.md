@@ -16,6 +16,8 @@
   <p>
     <a href="https://demo.navet.app/"><strong>Explore the demo</strong></a>
     ·
+    <a href="https://www.youtube.com/watch?v=FmdQCJASTZA">Watch the Navet teaser</a>
+    ·
     <a href="https://docs.navet.app/install/">Choose an installation</a>
     ·
     <a href="https://docs.navet.app/">Read the docs</a>
@@ -23,7 +25,7 @@
 
   <p>
     <a href="https://docs.navet.app/security/"><img src="https://img.shields.io/badge/local--first-self--hosted-14b8a6" alt="Local-first and self-hosted"></a>
-    <a href="LICENSE.md"><img src="https://img.shields.io/badge/license-AGPL--3.0-f97316" alt="AGPL-3.0 license"></a>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-f97316" alt="AGPL-3.0 license"></a>
     <a href="https://github.com/awesomestvi/navet/stargazers"><img src="https://img.shields.io/github/stars/awesomestvi/navet?style=flat" alt="GitHub stars"></a>
   </p>
 </div>
@@ -89,14 +91,6 @@ Hubitat and SmartThings are planned and are not supported today. Follow the
 | A development build | [Install Navet Dev](https://docs.navet.app/install/navet-dev/) |
 
 Not sure which route fits? [Compare every installation option](https://docs.navet.app/install/).
-
-## Connect another device
-
-On the new device, choose **Connect with another device** on the login page to display
-a one-time code. On your primary device, open your signed-in Navet app or PWA →
-**Settings → System → Authorized devices**, enter the code, then review and approve access.
-The new device connects automatically with its own revocable session. No camera or
-separate browser sign-in is needed; the code flow works on HTTP installations too.
 
 ## Contribute to Navet
 
@@ -174,7 +168,7 @@ please report anything that does not work as documented.
 
 ## License
 
-Navet is licensed under the [GNU Affero General Public License v3.0](LICENSE.md). If you run a modified
+Navet is licensed under the [GNU Affero General Public License v3.0](LICENSE). If you run a modified
 version for users over a network, the AGPL requires you to make the corresponding source available
 to those users. See the [terms of use](docs/TERMS_OF_USE.md) and
 [trademark policy](docs/branding/TRADEMARK_POLICY.md) for details.

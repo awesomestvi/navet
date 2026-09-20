@@ -1,12 +1,6 @@
 #!/usr/bin/env node
 import { readFile } from 'node:fs/promises';
-import { approvalsFromStatuses } from './approval-status.mjs';
-import {
-  classifyFiles,
-  impactLabels,
-  MANAGED_IMPACT_LABELS,
-  requiredApprovalGates,
-} from './change-impact.mjs';
+import { classifyFiles, impactLabels, MANAGED_IMPACT_LABELS } from './change-impact.mjs';
 
 const MARKER = '<!-- navet-pr-review-summary -->';
 const SUMMARY_AUTHOR = 'github-actions[bot]';
@@ -73,20 +67,11 @@ if (pull.head.sha !== run.head_sha) {
 }
 const changedFiles = await getAll(`/repos/${owner}/${repo}/pulls/${pullNumber}/files`);
 const comments = await getAll(`/repos/${owner}/${repo}/issues/${pullNumber}/comments`);
-const statuses = await getAll(`/repos/${owner}/${repo}/commits/${pull.head.sha}/statuses`);
 const labels = pull.labels.map(({ name }) => name);
 const impact = classifyFiles(changedFiles.map(({ filename }) => filename));
-const gates = requiredApprovalGates(impact, labels);
-const approvals = approvalsFromStatuses(statuses);
 const alias = branchAlias(pull.head.ref);
 const succeeded = run.conclusion === 'success';
 const title = succeeded ? 'Ready for Merge Review' : 'Validation Failed';
-const gateRows = [
-  ['Foundation', gates.foundation, approvals.foundation, `/approve-foundation ${pull.head.sha}`],
-  ['Security', gates.security, approvals.security, `/approve-security ${pull.head.sha}`],
-]
-  .filter(([, required]) => required)
-  .map(([name, , approved, command]) => `| ${name} | ${approved ? '✓ approved' : `pending — comment \`${command}\``} |`);
 
 const body = [
   MARKER,
@@ -107,14 +92,11 @@ const body = [
   '',
   'Cloudflare branch aliases may take a few minutes to appear. A link is reviewable only when its project is configured for branch previews; reported deployment checks are the source of truth.',
   '',
-  ...(gateRows.length > 0
-    ? ['### Human approval', '', '| Gate | Current PR head |', '| --- | --- |', ...gateRows, '']
-    : []),
   '### Change impact',
   '',
   impactLabels(impact).length > 0 ? impactLabels(impact).map((label) => `\`${label}\``).join(' · ') : 'No specialized impact detected.',
   '',
-  'Normal PR feedback is enough for another agent iteration. Any new commit invalidates prior human approval.',
+  'Normal PR feedback is enough for another agent iteration. After checks and review conversations are resolved, the maintainer merge records acceptance.',
 ].join('\n');
 
 const previous = comments.find(

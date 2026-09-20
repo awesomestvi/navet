@@ -15,7 +15,7 @@ an exact GitHub `editUrl`.
 
 ## Discovery pages
 
-- `/changelog/` renders `CHANGELOG.md` at build time through
+- `/changelog/` renders the historical `CHANGELOG.md` archive at build time through
   `src/components/ChangelogFeed.astro`. Keep writing release notes in the root changelog; there is
   no second public changelog to update.
 - `/resources/` is curated in `src/components/ResourcesHub.astro`. Add real showcases, guides, and
