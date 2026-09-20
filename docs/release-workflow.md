@@ -74,7 +74,9 @@ without moving shared aliases. Dev builds do not publish HACS or update supervis
    selection happens when the workflow runs.
 3. Run again with `preview_only` disabled to publish. Automatic selection is recalculated each
    run. To reproduce the exact previewed plan, copy both selected tags into `source_tag` and
-   `release_tag`. To promote an installed candidate with an automatic target, pin only `source_tag`.
+   `release_tag`. If another tag for the same version and channel appears before publishing,
+   rerun the preview with `release_tag` blank and review the newly selected target before publishing.
+   To promote an installed candidate with an automatic target, pin only `source_tag`.
 4. Wait for **Publish Release** to complete. It builds correctly versioned artifacts, validates
    their actual registry digests, publishes HACS and the panel archive, and completes the
    protected Home Assistant metadata PR.
