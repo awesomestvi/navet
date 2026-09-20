@@ -1230,7 +1230,20 @@ describe('Vite dashboard profile request handler', () => {
       resolvePrincipal: () => PRINCIPAL,
     });
 
-    for (let index = 0; index < 260; index += 1) {
+    // Seed the persisted boundary instead of registering hundreds of clients.
+    // The separate registry-capacity test covers its 200-client limit.
+    const seededRecords = Array.from({ length: 255 }, (_, index) => ({
+      key: index.toString(16).padStart(64, '0'),
+      bindingId: (index + 1).toString(16).padStart(64, '0'),
+      expiresAt: Date.now() + 4_000,
+    }));
+    writeFileSync(
+      store.getPaths().clientBindingBootstrap,
+      JSON.stringify({ contractVersion: 1, records: seededRecords }),
+      'utf8'
+    );
+
+    for (let index = 0; index < 5; index += 1) {
       const output = createResponse();
       await handler(
         createRequest('GET', '/preferences/client', {
@@ -1242,11 +1255,7 @@ describe('Vite dashboard profile request handler', () => {
         }),
         output.response
       );
-      expect(output.status).toBe(index < 200 ? 204 : 503);
-      if (index >= 200) {
-        expect(output.header('x-navet-profile-error-code')).toBe('client-capacity-reached');
-        expect(output.header('retry-after')).toBe('60');
-      }
+      expect(output.status).toBe(204);
     }
 
     const persisted = readFileSync(store.getPaths().clientBindingBootstrap, 'utf8');
@@ -1254,6 +1263,13 @@ describe('Vite dashboard profile request handler', () => {
       records: Array<{ key: string; bindingId: string; expiresAt: number }>;
     };
     expect(collection.records).toHaveLength(256);
+    const persistedKeys = new Set(collection.records.map((record) => record.key));
+    for (const record of seededRecords.slice(0, 4)) {
+      expect(persistedKeys.has(record.key)).toBe(false);
+    }
+    for (const record of seededRecords.slice(4)) {
+      expect(persistedKeys.has(record.key)).toBe(true);
+    }
     expect(persisted).not.toContain(PRINCIPAL.sessionId);
     expect(persisted).not.toContain('Navet bootstrap bounds test');
     expect(persisted).not.toContain('192.0.2.10');
