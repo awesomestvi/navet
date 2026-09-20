@@ -1,0 +1,3 @@
+type: internal
+audiences: []
+summary: Fixed release channel promotion for Home Assistant add-on images with inherited base-image labels.

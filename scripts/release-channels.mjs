@@ -4,6 +4,7 @@ import { pathToFileURL } from 'node:url';
 import { inspectImage } from './release-image.mjs';
 import { validateEvidence } from './release-evidence.mjs';
 
+/** Compare supported stable, beta, and release-candidate versions without channel rollback. */
 export function compareVersions(a, b) {
   const parse = (version) => {
     const match = /^(\d+)\.(\d+)\.(\d+)(?:-(beta|rc)\.(\d+))?$/.exec(version);
@@ -21,10 +22,11 @@ export function compareVersions(a, b) {
   return 0;
 }
 
-function imageVersions(value) {
+/** Collect Navet versions from an inspected image, preferring the add-on's own version label. */
+export function imageVersions(value) {
   if (!value || typeof value !== 'object') return [];
   const version =
-    value.Labels?.['org.opencontainers.image.version'] ?? value.Labels?.['io.hass.version'];
+    value.Labels?.['io.hass.version'] ?? value.Labels?.['org.opencontainers.image.version'];
   return version ? [version] : Object.values(value).flatMap(imageVersions);
 }
 

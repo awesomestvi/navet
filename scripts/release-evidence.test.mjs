@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { inspectImage, assertImageLabels } from './release-image.mjs';
-import { compareVersions } from './release-channels.mjs';
+import { compareVersions, imageVersions } from './release-channels.mjs';
 import { assertSameArtifactIdentity, validateEvidence } from './release-evidence.mjs';
 
 const sha = 'a'.repeat(40);
@@ -56,6 +56,23 @@ describe('immutable release artifacts', () => {
     ['0.17.2', '0.17.2', 0],
   ])('orders %s relative to %s without rolling channels backwards', (a, b, expected) => {
     expect(compareVersions(a, b)).toBe(expected);
+  });
+  it('uses the add-on version instead of the inherited base-image version', () => {
+    expect(
+      imageVersions({
+        config: {
+          Labels: {
+            'org.opencontainers.image.version': '2025.12.0',
+            'io.hass.version': '0.17.2-beta.1',
+          },
+        },
+      }),
+    ).toEqual(['0.17.2-beta.1']);
+    expect(
+      imageVersions({
+        config: { Labels: { 'org.opencontainers.image.version': '0.17.2-beta.1' } },
+      }),
+    ).toEqual(['0.17.2-beta.1']);
   });
   it('requires every distribution and binds evidence to version, commit and digest', () => {
     const version = '0.17.2-beta.1',
