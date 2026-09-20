@@ -12,25 +12,29 @@ export function assertNotes(actual, expected, label) {
     throw new Error(`${label}: published release notes differ from the pinned release notes.`);
 }
 
-// Category headings are also level two. Numbered versions and the development-only
-// In Progress section delimit published releases.
+/**
+ * Extracts one published version's normalized notes from a changelog.
+ * Category headings remain part of the notes; numbered versions and the
+ * development-only In Progress section delimit published releases.
+ *
+ * @param {string} changelog Changelog content using LF or CRLF line endings.
+ * @param {string} version Version without the leading `v`.
+ * @returns {string | null} The normalized notes, or null when the version is absent.
+ * @throws {Error} When the changelog contains the requested version more than once.
+ */
 export function changelogNotes(changelog, version) {
+  const normalizedChangelog = changelog.replace(/\r\n/g, '\n');
   const headings = [
-    ...changelog
-      .replace(/\r\n/g, '\n')
-      .matchAll(
-        /^## (?:(\d+\.\d+\.\d+(?:-[\w.]+)?)(?: \([^\n]+\))?|In Progress)\s*$/gm,
-      ),
+    ...normalizedChangelog.matchAll(
+      /^## (?:(\d+\.\d+\.\d+(?:-[\w.]+)?)(?: \([^\n]+\))?|In Progress)\s*$/gm,
+    ),
   ];
   const matches = headings.filter((heading) => heading[1] === version);
   if (matches.length > 1) throw new Error(`Duplicate changelog entries for ${version}.`);
   if (matches.length === 0) return null;
   const heading = matches[0];
   const next = headings[headings.indexOf(heading) + 1];
-  return changelog
-    .replace(/\r\n/g, '\n')
-    .slice(heading.index + heading[0].length, next?.index)
-    .trim();
+  return normalizedChangelog.slice(heading.index + heading[0].length, next?.index).trim();
 }
 
 export function validateNotesBundle(bundle, { tag, sha } = {}) {

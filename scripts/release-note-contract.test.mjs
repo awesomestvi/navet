@@ -139,4 +139,26 @@ describe('immutable release note contract', () => {
 
     expect(changelogNotes(changelog, '0.17.2-beta.2')).toBe(body);
   });
+
+  it('uses normalized offsets when verifying a CRLF add-on changelog', () => {
+    const body = '## Improvements and bug fixes\n\n- Fixed badge.';
+    const changelog = [
+      '# Changelog',
+      '',
+      '## 0.17.2-beta.2',
+      '',
+      '## Improvements and bug fixes',
+      '',
+      '- Fixed badge.',
+      '',
+      '## In Progress',
+      '',
+      '- Current Navet Dev scope.',
+      '',
+    ].join('\r\n');
+    const bundle = { tag: 'v0.17.2-beta.2', notes: { homeAssistant: body } };
+
+    expect(changelogNotes(changelog, '0.17.2-beta.2')).toBe(body);
+    expect(() => assertAddonNotes('version: "0.17.2-beta.2"\r\n', changelog, bundle)).not.toThrow();
+  });
 });
