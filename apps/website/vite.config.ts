@@ -16,10 +16,14 @@ const packageJson = JSON.parse(readFileSync(path.resolve(repoRoot, 'package.json
   version?: string;
 };
 const appVersion = packageJson.version ?? '0.0.0';
-const releaseHighlights = getMarketingReleaseHighlights(
-  readFileSync(path.resolve(repoRoot, 'CHANGELOG.md'), 'utf8'),
-  appVersion
-);
+const latestRelease = {
+  version: appVersion,
+  url: `https://github.com/awesomestvi/navet/releases/tag/v${appVersion}`,
+  highlights: getMarketingReleaseHighlights(
+    readFileSync(path.resolve(repoRoot, 'CHANGELOG.md'), 'utf8'),
+    appVersion
+  ),
+};
 const buildMetadata = createBuildMetadata(repoRoot, packageJson.version, 'environment');
 // Restrict the compiler to source modules: its content filter can also match CSS comments.
 const REACT_COMPILER_INCLUDE = [/[\\/]src[\\/].*\.(?:[jt]sx?|[cm][jt]s)(?:$|\?)/];
@@ -42,7 +46,7 @@ export default defineConfig({
     __APP_BUILD_DATE__: JSON.stringify(buildMetadata.buildDate),
     __APP_RELEASE_CHANNEL__: JSON.stringify(buildMetadata.releaseChannel),
     __APP_BUILD_VERSION__: JSON.stringify(buildMetadata.buildVersion),
-    __MARKETING_RELEASE_HIGHLIGHTS__: JSON.stringify(releaseHighlights),
+    __MARKETING_LATEST_RELEASE__: JSON.stringify(latestRelease),
     __NAVET_ENABLE_DEMO__: JSON.stringify(false),
   },
   resolve: {

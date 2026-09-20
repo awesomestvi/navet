@@ -19,9 +19,9 @@ const releases = [...changelogSource.matchAll(/^##\s+([^\s]+)\s+-\s+(\d{4}-\d{2}
   isChangelog ? (
     <nav class="navet-release-timeline" aria-labelledby="navet-release-timeline-title" data-release-timeline>
       <h2 id="navet-release-timeline-title">Timeline</h2>
-      <ol>
+      <ol data-release-timeline-list>
         {releases.map((release, index) => (
-          <li class:list={{ "is-active": index === 0 }}>
+          <li class:list={{ "is-active": index === 0 }} data-release-version={release.version}>
             <a href={`#${release.id}`} aria-current={index === 0 ? "location" : undefined}>
               <span>{release.version}</span>
               <time datetime={release.date}>{dateFormatter.format(new Date(`${release.date}T00:00:00Z`))}</time>

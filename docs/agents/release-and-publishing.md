@@ -19,6 +19,7 @@ Use this file for maintainer and agent release work.
 - an immutable `navet-dev-*` tag identifies the exact tested commit and container images
 - a beta or release-candidate tag can be promoted again without rebuilding those images
 - GitHub Releases are the canonical published changelog; `CHANGELOG.md` is historical material
+- navet.app and docs.navet.app read stable versions and notes directly from GitHub Releases
 
 ## Beta And Stable Promotion
 
@@ -152,7 +153,7 @@ Example:
   requests write access so the generated metadata PR can be created and merged without bypassing
   branch protection
 - a release is complete only after exact app/add-on images, HACS release, panel archive, GitHub
-  release, and public website/demo/docs/Storybook availability are verified
+  release, the canonical latest-release API response, and public site availability are verified
 - local `pnpm sync:hacs` is still useful for previewing export output before release work
 
 ## Publishing Rules

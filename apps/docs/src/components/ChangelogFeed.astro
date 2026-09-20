@@ -3,7 +3,7 @@ import changelogSource from "../../../../CHANGELOG.md?raw";
 
 type ChangeGroup = {
   title: string;
-  kind: "new" | "improved" | "fixed" | "other";
+  kind: "new" | "improved" | "fixed" | "security" | "other";
   items: string[];
 };
 
@@ -15,6 +15,7 @@ type Release = {
 
 const getKind = (heading: string): ChangeGroup["kind"] => {
   const normalized = heading.toLowerCase();
+  if (normalized.includes("security")) return "security";
   if (normalized.includes("new") || normalized.includes("feature")) return "new";
   if (normalized.includes("improv")) return "improved";
   if (normalized.includes("fix") || normalized.includes("bug")) return "fixed";
@@ -46,11 +47,7 @@ for (const rawLine of changelogSource.replace(/\r\n/g, "\n").split("\n")) {
   const groupMatch = line.match(/^##\s+(.+)$/);
   if (groupMatch && release) {
     const title = groupMatch[1];
-    group = {
-      title,
-      kind: getKind(title),
-      items: [],
-    };
+    group = { title, kind: getKind(title), items: [] };
     release.groups.push(group);
     continue;
   }
@@ -72,8 +69,8 @@ const releaseId = (version: string) => `release-${version.toLowerCase().replace(
 <div class="navet-changelog" data-changelog>
   <div class="navet-changelog-intro">
     <p>
-      Historical Navet releases from the repository archive. GitHub Releases is the canonical
-      source for new release notes.{" "}
+      Stable Navet releases load from the canonical GitHub release record, followed by the
+      historical repository archive.{" "}
       <a href="https://github.com/awesomestvi/navet/releases">View releases on GitHub <span aria-hidden="true">↗</span></a>
     </p>
   </div>
@@ -84,6 +81,7 @@ const releaseId = (version: string) => `release-${version.toLowerCase().replace(
       <button type="button" data-change-filter="new" aria-pressed="false">New</button>
       <button type="button" data-change-filter="improved" aria-pressed="false">Improved</button>
       <button type="button" data-change-filter="fixed" aria-pressed="false">Fixed</button>
+      <button type="button" data-change-filter="security" aria-pressed="false">Security</button>
     </div>
 
     <label class="navet-changelog-search">
@@ -102,6 +100,7 @@ const releaseId = (version: string) => `release-${version.toLowerCase().replace(
           class="navet-release"
           id={releaseId(item.version)}
           data-release
+          data-release-version={item.version}
           data-search-text={`${item.version} ${item.date} ${item.groups.flatMap((entry) => entry.items).join(" ")}`.toLowerCase()}
         >
           <header>
@@ -127,18 +126,123 @@ const releaseId = (version: string) => `release-${version.toLowerCase().replace(
 
   <div class="navet-changelog-source">
     <span aria-hidden="true">↻</span>
-    <p><strong>Release archive.</strong> This page reads the historical <a href="https://github.com/awesomestvi/navet/blob/main/CHANGELOG.md">CHANGELOG.md</a>. New releases are published on GitHub.</p>
+    <p><strong>Release archive.</strong> Current stable notes load directly from GitHub Releases; older entries remain in the historical <a href="https://github.com/awesomestvi/navet/blob/main/CHANGELOG.md">CHANGELOG.md</a>.</p>
   </div>
 </div>
 
 <script>
+  const RELEASES_API_URL = "https://api.github.com/repos/awesomestvi/navet/releases";
+  const STABLE_TAG_PATTERN = /^v(\d+\.\d+\.\d+)$/;
+
+  const releaseId = (version: string) => `release-${version.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+  const releaseKind = (heading: string) => {
+    const normalized = heading.toLowerCase();
+    if (normalized.includes("security")) return "security";
+    if (normalized.includes("new") || normalized.includes("feature")) return "new";
+    if (normalized.includes("improv")) return "improved";
+    if (normalized.includes("fix") || normalized.includes("bug")) return "fixed";
+    return "other";
+  };
+
+  const parseReleaseGroups = (body: string) => {
+    const groups: Array<{ title: string; kind: string; items: string[] }> = [];
+    let group: { title: string; kind: string; items: string[] } | undefined;
+
+    for (const rawLine of body.replace(/\r\n/g, "\n").split("\n")) {
+      const line = rawLine.trim();
+      const heading = line.match(/^##\s+(.+)$/)?.[1];
+      if (heading) {
+        group = { title: heading, kind: releaseKind(heading), items: [] };
+        groups.push(group);
+        continue;
+      }
+      const item = line.match(/^-\s+(.+)$/)?.[1];
+      if (item && group) group.items.push(item);
+    }
+
+    return groups.filter((entry) => entry.items.length > 0);
+  };
+
+  const createReleaseArticle = (release: {
+    version: string;
+    date: string;
+    url: string;
+    groups: ReturnType<typeof parseReleaseGroups>;
+  }) => {
+    const article = document.createElement("article");
+    article.className = "navet-release";
+    article.id = releaseId(release.version);
+    article.dataset.release = "";
+    article.dataset.releaseVersion = release.version;
+    article.dataset.searchText = `${release.version} ${release.date} ${release.groups.flatMap((entry) => entry.items).join(" ")}`.toLowerCase();
+
+    const header = document.createElement("header");
+    const time = document.createElement("time");
+    time.dateTime = release.date;
+    time.textContent = new Intl.DateTimeFormat("en", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      timeZone: "UTC",
+    }).format(new Date(`${release.date}T00:00:00Z`));
+    const heading = document.createElement("h2");
+    const link = document.createElement("a");
+    link.href = release.url;
+    link.textContent = `Navet ${release.version}`;
+    heading.append(link);
+    header.append(time, heading);
+    article.append(header);
+
+    const groupList = document.createElement("div");
+    groupList.className = "navet-release-groups";
+    for (const entry of release.groups) {
+      const section = document.createElement("section");
+      section.dataset.changeKind = entry.kind;
+      const sectionHeading = document.createElement("h3");
+      const marker = document.createElement("span");
+      marker.setAttribute("aria-hidden", "true");
+      sectionHeading.append(marker, entry.title);
+      const list = document.createElement("ul");
+      for (const item of entry.items) {
+        const listItem = document.createElement("li");
+        listItem.textContent = item;
+        list.append(listItem);
+      }
+      section.append(sectionHeading, list);
+      groupList.append(section);
+    }
+    article.append(groupList);
+    return article;
+  };
+
+  const createTimelineItem = (version: string, date: string) => {
+    const item = document.createElement("li");
+    item.dataset.releaseVersion = version;
+    const link = document.createElement("a");
+    link.href = `#${releaseId(version)}`;
+    const label = document.createElement("span");
+    label.textContent = version;
+    const time = document.createElement("time");
+    time.dateTime = date;
+    time.textContent = new Intl.DateTimeFormat("en", {
+      day: "numeric",
+      month: "short",
+      timeZone: "UTC",
+    }).format(new Date(`${date}T00:00:00Z`));
+    link.append(label, time);
+    item.append(link);
+    return item;
+  };
+
   const root = document.querySelector("[data-changelog]");
 
   if (root instanceof HTMLElement) {
     const filters = [...root.querySelectorAll("[data-change-filter]")];
-    const releases = [...root.querySelectorAll("[data-release]")];
+    let releases = [...root.querySelectorAll("[data-release]")];
     const search = root.querySelector("[data-change-search]");
     const empty = root.querySelector("[data-change-empty]");
+    const releaseList = root.querySelector(".navet-release-list");
+    const timelineList = document.querySelector("[data-release-timeline-list]");
     let activeFilter = "all";
 
     const applyFilters = () => {
@@ -180,5 +284,95 @@ const releaseId = (version: string) => `release-${version.toLowerCase().replace(
     }
 
     search?.addEventListener("input", applyFilters);
+
+    const archiveBoundary = releases.find(
+      (release) => release instanceof HTMLElement
+    )?.getAttribute("data-release-version");
+
+    if (releaseList instanceof HTMLElement && archiveBoundary) {
+      const loadStableReleases = async () => {
+        const stableReleases: Array<{
+          version: string;
+          date: string;
+          url: string;
+          groups: ReturnType<typeof parseReleaseGroups>;
+        }> = [];
+        let reachedArchive = false;
+
+        for (let page = 1; page <= 20 && !reachedArchive; page += 1) {
+          const response = await fetch(`${RELEASES_API_URL}?per_page=100&page=${page}`, {
+            headers: { Accept: "application/vnd.github+json" },
+          });
+          if (!response.ok) throw new Error(`GitHub releases request failed: ${response.status}`);
+          const entries = await response.json();
+          if (!Array.isArray(entries)) throw new Error("GitHub releases response was invalid.");
+
+          for (const entry of entries) {
+            if (!entry || typeof entry !== "object" || entry.draft || entry.prerelease) continue;
+            const tagMatch = typeof entry.tag_name === "string"
+              ? entry.tag_name.match(STABLE_TAG_PATTERN)
+              : null;
+            if (!tagMatch?.[1]) continue;
+            if (tagMatch[1] === archiveBoundary) {
+              reachedArchive = true;
+              break;
+            }
+            if (
+              typeof entry.body !== "string" ||
+              typeof entry.html_url !== "string" ||
+              typeof entry.published_at !== "string"
+            ) continue;
+            const groups = parseReleaseGroups(entry.body);
+            if (groups.length === 0) continue;
+            stableReleases.push({
+              version: tagMatch[1],
+              date: entry.published_at.slice(0, 10),
+              url: entry.html_url,
+              groups,
+            });
+          }
+
+          if (entries.length < 100) break;
+        }
+
+        const existingVersions = new Set(
+          releases.flatMap((release) =>
+            release instanceof HTMLElement && release.dataset.releaseVersion
+              ? [release.dataset.releaseVersion]
+              : []
+          )
+        );
+        const missingReleases = stableReleases.filter(
+          (release) => !existingVersions.has(release.version)
+        );
+        if (missingReleases.length === 0) return;
+
+        root.querySelector(".navet-release-latest")?.remove();
+        timelineList?.querySelector(".is-active")?.classList.remove("is-active");
+        timelineList?.querySelector("[aria-current]")?.removeAttribute("aria-current");
+        for (const release of [...missingReleases].reverse()) {
+          releaseList.prepend(createReleaseArticle(release));
+          timelineList?.prepend(createTimelineItem(release.version, release.date));
+        }
+
+        const latestArticle = releaseList.querySelector("[data-release]");
+        const latestHeader = latestArticle?.querySelector("header");
+        if (latestHeader) {
+          const badge = document.createElement("span");
+          badge.className = "navet-release-latest";
+          badge.textContent = "Latest";
+          latestHeader.append(badge);
+        }
+        const latestTimelineItem = timelineList?.querySelector("li");
+        latestTimelineItem?.classList.add("is-active");
+        latestTimelineItem?.querySelector("a")?.setAttribute("aria-current", "location");
+        releases = [...root.querySelectorAll("[data-release]")];
+        applyFilters();
+      };
+
+      loadStableReleases().catch(() => {
+        // Keep the historical archive visible when GitHub is unavailable.
+      });
+    }
   }
 </script>
