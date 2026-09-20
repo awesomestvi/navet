@@ -202,5 +202,5 @@ deployment results before declaring the hosted rollout complete.
 
 Maintainers choose versions, review release fragments, install and test candidates, authorize
 stable publication, and decide whether a rollback or new fix release is appropriate.
-Use **Draft Release Communication** for grounded announcement drafts; publication to community
+Request grounded announcement drafts explicitly when needed; publication to community
 channels requires separate approval.

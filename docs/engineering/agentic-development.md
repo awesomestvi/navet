@@ -91,6 +91,10 @@ the deterministic checks. The GitHub review remains an independent advisory chec
 - Forbidden: choose major product scope, publish without a maintainer dispatch, publish community
   communication, or call a partial release successful.
 
+Request community communication drafts explicitly when a release needs an announcement. Published
+release notes remain the source for the website and documentation changelogs; they do not require
+a separate communication task.
+
 QA is not a separate conversational agent. Linting, type checking, tests, builds, smoke checks,
 screenshots, and artifact verification are deterministic jobs. A reviewer may interpret failures;
 it may not override them.
