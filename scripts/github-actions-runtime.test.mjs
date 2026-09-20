@@ -57,4 +57,21 @@ describe('GitHub Actions JavaScript runtimes', () => {
       expect(step.with?.['package-manager-cache']).toBe(false);
     }
   });
+
+  it('uses the supported GitHub App client ID input', () => {
+    const workflowDirectory = resolve(process.cwd(), '.github/workflows');
+    const tokenSteps = readdirSync(workflowDirectory)
+      .filter((entry) => entry.endsWith('.yml'))
+      .flatMap((file) => {
+        const workflow = parse(readFileSync(resolve(workflowDirectory, file), 'utf8'));
+        return Object.values(workflow.jobs ?? {}).flatMap((job) => job.steps ?? []);
+      })
+      .filter((step) => step.uses === 'actions/create-github-app-token@v3');
+
+    expect(tokenSteps.length).toBeGreaterThan(0);
+    for (const step of tokenSteps) {
+      expect(step.with?.['client-id']).toBeTruthy();
+      expect(step.with?.['app-id']).toBeUndefined();
+    }
+  });
 });

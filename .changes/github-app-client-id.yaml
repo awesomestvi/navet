@@ -1,0 +1,3 @@
+type: internal
+audiences: []
+summary: Updated release automation to use the supported GitHub App client ID input while retaining workflow lint coverage.
