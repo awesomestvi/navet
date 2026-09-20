@@ -14,6 +14,35 @@ import {
 } from './release-note-contract.mjs';
 import { renderHacsChangelog } from './hacs-changelog.mjs';
 
+/**
+ * Verifies that add-on note extraction stops at the generated development boundary.
+ *
+ * @param {string} _lineEndingName Human-readable case label supplied by Vitest.
+ * @param {string} lineEnding Line ending used to construct the changelog fixture.
+ * @param {string} boundaryHeading Supported development boundary heading.
+ */
+function verifyDevelopmentBoundary(_lineEndingName, lineEnding, boundaryHeading) {
+  const body = '## Improvements and bug fixes\n\n- Fixed badge.';
+  const changelog = [
+    '# Changelog',
+    '',
+    '## 0.17.2-beta.2',
+    '',
+    '## Improvements and bug fixes',
+    '',
+    '- Fixed badge.',
+    '',
+    boundaryHeading,
+    '',
+    '- Current Navet Dev scope.',
+    '',
+  ].join(lineEnding);
+  const bundle = { tag: 'v0.17.2-beta.2', notes: { homeAssistant: body } };
+
+  expect(changelogNotes(changelog, '0.17.2-beta.2')).toBe(body);
+  expect(() => assertAddonNotes('version: "0.17.2-beta.2"\n', changelog, bundle)).not.toThrow();
+}
+
 describe('immutable release note contract', () => {
   it('reads the selected commit even after a fragment changes or disappears locally', () => {
     const root = mkdtempSync(join(tmpdir(), 'navet-pinned-notes-'));
@@ -121,4 +150,11 @@ describe('immutable release note contract', () => {
     ).toThrow();
     expect(() => changelogNotes(first + '\n## 0.17.2\nwrong', '0.17.2')).toThrow('Duplicate');
   });
+
+  it.each([
+    ['LF and In Progress', '\n', '## In Progress'],
+    ['CRLF and In Progress', '\r\n', '## In Progress'],
+    ['LF and Navet Dev In Progress', '\n', '## Navet Dev In Progress'],
+    ['CRLF and Navet Dev In Progress', '\r\n', '## Navet Dev In Progress'],
+  ])('stops published notes with %s', verifyDevelopmentBoundary);
 });
