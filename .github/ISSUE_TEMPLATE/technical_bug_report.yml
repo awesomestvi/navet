@@ -2,7 +2,6 @@ name: Technical bug report
 description: Provide reproducible diagnostics when you already have the technical details.
 title: "[Bug]: "
 labels:
-  - "status: needs-triage"
   - "type: bug"
 body:
   - type: markdown

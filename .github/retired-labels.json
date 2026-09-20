@@ -1,0 +1,8 @@
+[
+  "agent:implement",
+  "agent:research",
+  "status: needs-triage",
+  "status: needs-context",
+  "status: agent-queued",
+  "status: agent-working"
+]

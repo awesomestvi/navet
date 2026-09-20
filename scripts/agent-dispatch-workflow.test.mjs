@@ -6,51 +6,45 @@ import { describe, expect, it } from 'vitest';
 const workflowPath = resolve(process.cwd(), '.github/workflows/agent-dispatch.yml');
 const workflowSource = readFileSync(workflowPath, 'utf8');
 const workflow = parse(workflowSource);
-const queueScript = workflow.jobs.queue.steps.find(
-  (step) => step.name === 'Authorize request and update queue state'
+const scheduledWorkflowSources = [
+  '.github/workflows/docs-steward.yml',
+  '.github/workflows/release-communication.yml',
+].map((path) => readFileSync(resolve(process.cwd(), path), 'utf8'));
+const acceptScript = workflow.jobs.accept.steps.find(
+  (step) => step.name === 'Authorize and acknowledge command'
 )?.with?.script;
 
-describe('agent intake workflow', () => {
-  it('uses the minimum permissions needed for a quiet issue transition', () => {
-    expect(workflow.permissions).toEqual({
-      contents: 'read',
-      issues: 'write',
-    });
-    expect(workflow.concurrency).toEqual({
-      group: 'agent-intake-${{ github.repository }}-${{ github.event.issue.number }}',
-      'cancel-in-progress': false,
-    });
-    expect(queueScript).toBeTypeOf('string');
+describe('agent command workflow', () => {
+  it('listens for issue comments with narrow permissions', () => {
+    expect(workflow.on).toEqual({ issue_comment: { types: ['created'] } });
+    expect(workflow.permissions).toEqual({ contents: 'read', issues: 'write' });
+    expect(workflow.jobs.accept.if).toContain('github.event.issue.pull_request == null');
+    expect(workflow.jobs.accept.if).toContain("startsWith(github.event.comment.body, '/navet ')");
+    expect(acceptScript).toBeTypeOf('string');
   });
 
-  it('allows only maintainers or trusted repository automation to queue work', () => {
-    const authorizationStart = queueScript.indexOf('if (!trustedAutomation)');
-    const transitionStart = queueScript.indexOf('const otherMode');
-    expect(authorizationStart).toBeGreaterThan(-1);
-    expect(transitionStart).toBeGreaterThan(authorizationStart);
-
-    const authorizationBlock = queueScript.slice(authorizationStart, transitionStart);
-    expect(queueScript.slice(0, authorizationStart)).toContain(
-      "actor === 'github-actions[bot]'"
-    );
-    expect(authorizationBlock).toContain('getCollaboratorPermissionLevel');
-    expect(authorizationBlock).toContain("new Set(['admin', 'maintain', 'write'])");
-    expect(authorizationBlock).toContain('if (error.status !== 403) throw error');
-    expect(authorizationBlock).toContain('Could not verify');
-    expect(authorizationBlock).toContain('removeLabelIfPresent(process.env.AGENT_MODE)');
-    expect(authorizationBlock).toContain('core.setFailed');
-    expect(authorizationBlock).toContain('is not allowed to queue agent work');
+  it('accepts only exact supported commands from maintainers', () => {
+    expect(acceptScript).toContain('/^\\/navet\\s+(research|implement|continue)$/i');
+    expect(acceptScript).toContain("context.payload.issue.state !== 'open'");
+    expect(acceptScript).toContain('getCollaboratorPermissionLevel');
+    expect(acceptScript).toContain("new Set(['admin', 'maintain', 'write'])");
+    expect(acceptScript).toContain('Could not verify');
+    expect(acceptScript).toContain('is not allowed to dispatch Navet Nisse');
   });
 
-  it('queues one mode without posting orchestration details or assigning a bot', () => {
-    expect(queueScript).toContain('github.rest.issues.get');
-    expect(queueScript).toContain('if (!currentLabels.has(process.env.AGENT_MODE))');
-    expect(queueScript).toContain("labels: ['status: agent-queued']");
-    expect(queueScript).toContain("? 'agent:research'");
-    expect(queueScript).toContain(": 'agent:implement'");
-    expect(queueScript).toContain("'status: agent-working'");
+  it('acknowledges accepted work with one quiet reaction and no label churn', () => {
+    expect(acceptScript).toContain('reactions.createForIssueComment');
+    expect(acceptScript).toContain("content: 'eyes'");
+    expect(workflowSource).not.toContain('addLabels');
+    expect(workflowSource).not.toContain('removeLabel');
     expect(workflowSource).not.toContain('createComment');
     expect(workflowSource).not.toContain('addAssignees');
-    expect(workflowSource).not.toContain('NAVET_CODING_AGENT_LOGIN');
+  });
+
+  it('does not use spoofable issue-body markers for scheduled work', () => {
+    for (const source of scheduledWorkflowSources) {
+      expect(source).not.toContain('navet-agent:research');
+      expect(source).toContain('github.rest.issues.create');
+    }
   });
 });

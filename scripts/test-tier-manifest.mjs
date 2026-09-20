@@ -9,6 +9,7 @@ export const TEST_TIERS = {
     files: [
       'assets/public/boot-i18n.test.ts',
       'scripts/agent-dispatch-workflow.test.mjs',
+      'scripts/run-as-navet-nisse.test.mjs',
       'scripts/create-dev-release.test.mjs',
       'scripts/change-impact.test.mjs',
       'scripts/dev-tag-release-workflow.test.mjs',

@@ -3,7 +3,6 @@ description: Tell us what could be better. No technical knowledge or proposed so
 title: "[Idea]: "
 labels:
   - "type: ux"
-  - "status: needs-triage"
 body:
   - type: markdown
     attributes:

@@ -1,0 +1,3 @@
+type: internal
+audiences: []
+summary: Navet Nisse now handles agent work through quiet issue commands instead of workflow labels.

@@ -11,6 +11,9 @@ if (!token || !repository) {
 const labels = JSON.parse(
   await readFile(new URL('../.github/labels.json', import.meta.url), 'utf8')
 );
+const retiredLabels = JSON.parse(
+  await readFile(new URL('../.github/retired-labels.json', import.meta.url), 'utf8')
+);
 const [owner, repo] = repository.split('/');
 const headers = {
   Accept: 'application/vnd.github+json',
@@ -61,4 +64,13 @@ for (const label of labels) {
     });
     process.stdout.write(`Created ${label.name}\n`);
   }
+}
+
+for (const retiredLabel of retiredLabels) {
+  const existingName = existingNames.get(retiredLabel.toLowerCase());
+  if (!existingName) continue;
+  await request(`/repos/${owner}/${repo}/labels/${encodeURIComponent(existingName)}`, {
+    method: 'DELETE',
+  });
+  process.stdout.write(`Deleted retired label ${existingName}\n`);
 }

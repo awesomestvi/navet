@@ -1,9 +1,9 @@
-name: Queue Agent Work
+name: Accept Agent Command
 
 on:
-  issues:
+  issue_comment:
     types:
-      - labeled
+      - created
 
 concurrency:
   group: agent-intake-${{ github.repository }}-${{ github.event.issue.number }}
@@ -14,90 +14,63 @@ permissions:
   issues: write
 
 jobs:
-  queue:
-    name: Accept maintainer agent request
-    if: github.event.label.name == 'agent:implement' || github.event.label.name == 'agent:research'
+  accept:
+    name: Accept maintainer agent command
+    if: github.event.issue.pull_request == null && startsWith(github.event.comment.body, '/navet ')
     runs-on: ubuntu-latest
     steps:
-      - name: Authorize request and update queue state
+      - name: Authorize and acknowledge command
         uses: actions/github-script@v7
-        env:
-          AGENT_MODE: ${{ github.event.label.name }}
         with:
           script: |
             const owner = context.repo.owner;
             const repo = context.repo.repo;
             const issueNumber = context.payload.issue.number;
-            const actor = context.actor;
-            const trustedAutomation = actor === 'github-actions[bot]';
-            const removeLabelIfPresent = async (name) => {
-              try {
-                await github.rest.issues.removeLabel({
-                  owner,
-                  repo,
-                  issue_number: issueNumber,
-                  name,
-                });
-              } catch (error) {
-                if (error.status !== 404) throw error;
-              }
-            };
+            const commentId = context.payload.comment.id;
+            const actor = context.payload.comment.user.login;
+            const body = context.payload.comment.body.trim();
+            const match = /^\/navet\s+(research|implement|continue)$/i.exec(body);
 
-            const { data: currentIssue } = await github.rest.issues.get({
-              owner,
-              repo,
-              issue_number: issueNumber,
-            });
-            const currentLabels = new Set(
-              currentIssue.labels
-                .map((label) => typeof label === 'string' ? label : label.name)
-                .filter(Boolean)
-            );
-            if (!currentLabels.has(process.env.AGENT_MODE)) {
-              core.notice(`Ignoring stale ${process.env.AGENT_MODE} event for issue #${issueNumber}.`);
+            if (!match) {
+              core.notice(`Ignoring unrecognized Navet command on issue #${issueNumber}.`);
               return;
             }
 
-            if (!trustedAutomation) {
-              let permission;
-              try {
-                const { data } = await github.rest.repos.getCollaboratorPermissionLevel({
-                  owner,
-                  repo,
-                  username: actor,
-                });
-                permission = data.permission;
-              } catch (error) {
-                if (error.status !== 403) throw error;
-                core.warning(`Could not verify @${actor}'s repository permission.`);
-                await removeLabelIfPresent(process.env.AGENT_MODE);
-                core.setFailed('Agent request removed because authorization could not be verified.');
-                return;
-              }
-              const allowed = new Set(['admin', 'maintain', 'write']);
-              if (!allowed.has(permission)) {
-                await removeLabelIfPresent(process.env.AGENT_MODE);
-                core.setFailed(`@${actor} is not allowed to queue agent work.`);
-                return;
-              }
+            if (context.payload.issue.state !== 'open') {
+              core.notice(`Ignoring command on closed issue #${issueNumber}.`);
+              return;
             }
 
-            const otherMode = process.env.AGENT_MODE === 'agent:implement'
-              ? 'agent:research'
-              : 'agent:implement';
-
-            await github.rest.issues.addLabels({
-              owner,
-              repo,
-              issue_number: issueNumber,
-              labels: ['status: agent-queued'],
-            });
-
-            for (const name of [
-              otherMode,
-              'status: needs-triage',
-              'status: needs-context',
-              'status: agent-working',
-            ]) {
-              await removeLabelIfPresent(name);
+            let permission;
+            try {
+              const { data } = await github.rest.repos.getCollaboratorPermissionLevel({
+                owner,
+                repo,
+                username: actor,
+              });
+              permission = data.permission;
+            } catch (error) {
+              if (error.status !== 403 && error.status !== 404) throw error;
+              core.setFailed(`Could not verify @${actor}'s repository permission.`);
+              return;
             }
+
+            const allowed = new Set(['admin', 'maintain', 'write']);
+            if (!allowed.has(permission)) {
+              core.setFailed(`@${actor} is not allowed to dispatch Navet Nisse.`);
+              return;
+            }
+
+            try {
+              await github.rest.reactions.createForIssueComment({
+                owner,
+                repo,
+                comment_id: commentId,
+                content: 'eyes',
+              });
+            } catch (error) {
+              if (error.status !== 422) throw error;
+              core.notice(`Command on issue #${issueNumber} was already acknowledged.`);
+            }
+
+            core.notice(`Accepted /navet ${match[1].toLowerCase()} from @${actor}.`);

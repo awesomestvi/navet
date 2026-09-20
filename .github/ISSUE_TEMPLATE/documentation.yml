@@ -2,7 +2,6 @@ name: Documentation issue
 description: Report missing, confusing, or outdated documentation.
 title: "[Docs]: "
 labels:
-  - "status: needs-triage"
   - "type: docs"
 body:
   - type: checkboxes

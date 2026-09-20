@@ -35,7 +35,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               title,
-              labels: ['stewardship', 'agent:research', 'type: docs'],
+              labels: ['stewardship', 'type: docs'],
               body: [
                 'Review changes since the previous stewardship issue or, if none exists, the last 30 days.',
                 '',
