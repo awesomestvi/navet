@@ -10,14 +10,24 @@ const releaseWorkflow = parse(
 );
 
 describe('production release tag publisher', () => {
-  it('promotes an explicit tested tag without advancing protected main', () => {
+  it('resolves optional tags and only publishes outside preview without advancing protected main', () => {
     expect(workflow.on.workflow_dispatch.inputs.source_tag).toMatchObject({
-      required: true,
       type: 'string',
     });
     expect(workflow.on.workflow_dispatch.inputs.release_tag).toMatchObject({
-      required: true,
       type: 'string',
+    });
+    expect(workflow.on.workflow_dispatch.inputs.source_tag.required).not.toBe(true);
+    expect(workflow.on.workflow_dispatch.inputs.release_tag.required).not.toBe(true);
+    expect(workflow.on.workflow_dispatch.inputs.channel).toMatchObject({
+      type: 'choice',
+      default: 'beta',
+      options: ['beta', 'rc', 'stable'],
+    });
+    expect(workflow.on.workflow_dispatch.inputs.preview_only.default).toBe(true);
+    expect(workflow.concurrency).toEqual({
+      group: 'navet-release-promotion',
+      'cancel-in-progress': false,
     });
     expect(workflow.permissions).toEqual({ actions: 'write', contents: 'write' });
 
@@ -26,6 +36,22 @@ describe('production release tag publisher', () => {
     const validate = job.steps.find((step) => step.name === 'Validate promotion');
     const publish = job.steps.find((step) => step.name === 'Create and push promoted release tag');
     const dispatch = job.steps.find((step) => step.name === 'Dispatch artifact promotion');
+    const selection = job.steps.find((step) => step.id === 'selection');
+    const evidence = job.steps.find(
+      (step) => step.name === 'Require successful source publication before creating a tag',
+    );
+    expect(selection.run).toContain('node scripts/release-promotion.mjs');
+    expect(selection.run).toContain('git fetch --force origin main --tags');
+    for (const step of [validate, publish, dispatch, evidence]) {
+      expect(step.env.SOURCE_TAG).toBe('${{ steps.selection.outputs.source_tag }}');
+    }
+    for (const step of [validate, publish, dispatch]) {
+      expect(step.env.RELEASE_TAG).toBe('${{ steps.selection.outputs.release_tag }}');
+    }
+    for (const step of [publish, dispatch]) expect(step.if).toBe('${{ !inputs.preview_only }}');
+    expect(validate.run).toContain('"${PREVIEW_ONLY}" == true || "${INSTALLATION_TESTED}" == true');
+    expect(evidence.run).toBe('node scripts/release-evidence.mjs verify-source');
+    expect(job.steps.indexOf(evidence)).toBeLessThan(job.steps.indexOf(publish));
 
     expect(checkout.with.ref).toBe('main');
     expect(checkout.with['fetch-depth']).toBe(0);
@@ -109,7 +135,9 @@ describe('production release tag publisher', () => {
     expect(mergeStep.run).toContain('gh pr merge');
     expect(mergeStep.run).not.toContain('--admin');
     expect(mergeStep.run).toContain('--match-head-commit');
-    expect(metadataJob.steps.find((step) => step.id === 'metadata_content').run).toContain('verify-addon-release-metadata.mjs');
+    expect(metadataJob.steps.find((step) => step.id === 'metadata_content').run).toContain(
+      'verify-addon-release-metadata.mjs',
+    );
 
     const verificationSteps = releaseWorkflow.jobs['verify-release'].steps;
     expect(releaseWorkflow.jobs['github-release'].needs).toContain('publish-addon-metadata');

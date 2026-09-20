@@ -3,22 +3,36 @@ name: Promote Navet Release
 on:
   workflow_dispatch:
     inputs:
+      channel:
+        description: Release channel (blank tags are selected automatically)
+        type: choice
+        default: beta
+        options:
+          - beta
+          - rc
+          - stable
+      preview_only:
+        description: Preview selected tags without publishing
+        type: boolean
+        default: true
       installation_tested:
-        description: I installed and tested this beta/RC before promoting it to stable
+        description: I installed and tested the selected beta/RC before promoting it to stable
         type: boolean
         default: false
       source_tag:
-        description: Tested Navet Dev, beta, or release-candidate tag to promote
-        required: true
+        description: Optional source override (blank selects latest eligible published build)
         type: string
       release_tag:
-        description: New beta, release-candidate, or stable tag
-        required: true
+        description: Optional target override (blank selects next version for the channel)
         type: string
 
 permissions:
   actions: write
   contents: write
+
+concurrency:
+  group: navet-release-promotion
+  cancel-in-progress: false
 
 jobs:
   promote-release:
@@ -38,16 +52,28 @@ jobs:
         with:
           node-version: 22
 
-      - name: Validate promotion
-        id: promotion
+      - name: Select source and target
+        id: selection
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_CHANNEL: ${{ inputs.channel }}
           RELEASE_TAG: ${{ inputs.release_tag }}
           SOURCE_TAG: ${{ inputs.source_tag }}
-          INSTALLATION_TESTED: ${{ inputs.installation_tested }}
+          PREVIEW_ONLY: ${{ inputs.preview_only }}
         run: |
           set -euo pipefail
           git fetch --force origin main --tags
+          node scripts/release-promotion.mjs
 
+      - name: Validate promotion
+        id: promotion
+        env:
+          RELEASE_TAG: ${{ steps.selection.outputs.release_tag }}
+          SOURCE_TAG: ${{ steps.selection.outputs.source_tag }}
+          INSTALLATION_TESTED: ${{ inputs.installation_tested }}
+          PREVIEW_ONLY: ${{ inputs.preview_only }}
+        run: |
+          set -euo pipefail
           if [[ ! "${RELEASE_TAG}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-(beta|rc)\.[0-9]+)?$ ]]; then
             echo "Release tag must look like v0.18.0, v0.18.0-beta.1, or v0.18.0-rc.1."
             exit 1
@@ -72,7 +98,7 @@ jobs:
               exit 1
             }
           else
-            [[ "${INSTALLATION_TESTED}" == true ]] || { echo "Install and test the beta/RC before stable promotion."; exit 1; }
+            [[ "${PREVIEW_ONLY}" == true || "${INSTALLATION_TESTED}" == true ]] || { echo "Install and test the selected beta/RC before stable promotion."; exit 1; }
             [[ "${SOURCE_TAG}" == v*-beta.* || "${SOURCE_TAG}" == v*-rc.* ]] || {
               echo "A stable release must promote a tested beta or release candidate."
               exit 1
@@ -101,15 +127,16 @@ jobs:
       - name: Require successful source publication before creating a tag
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SOURCE_TAG: ${{ inputs.source_tag }}
+          SOURCE_TAG: ${{ steps.selection.outputs.source_tag }}
           RELEASE_SHA: ${{ steps.promotion.outputs.source_sha }}
         run: node scripts/release-evidence.mjs verify-source
 
       - name: Create and push promoted release tag
+        if: ${{ !inputs.preview_only }}
         env:
-          RELEASE_TAG: ${{ inputs.release_tag }}
+          RELEASE_TAG: ${{ steps.selection.outputs.release_tag }}
           SOURCE_SHA: ${{ steps.promotion.outputs.source_sha }}
-          SOURCE_TAG: ${{ inputs.source_tag }}
+          SOURCE_TAG: ${{ steps.selection.outputs.source_tag }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -119,17 +146,19 @@ jobs:
           git push origin "refs/tags/${RELEASE_TAG}:refs/tags/${RELEASE_TAG}"
 
       - name: Dispatch artifact promotion
+        if: ${{ !inputs.preview_only }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_TAG: ${{ inputs.release_tag }}
-          SOURCE_TAG: ${{ inputs.source_tag }}
+          RELEASE_TAG: ${{ steps.selection.outputs.release_tag }}
+          SOURCE_TAG: ${{ steps.selection.outputs.source_tag }}
           INSTALLATION_TESTED: ${{ inputs.installation_tested }}
         run: gh workflow run release.yml --ref main -f release_tag="${RELEASE_TAG}" -f source_tag="${SOURCE_TAG}" -f installation_tested="${INSTALLATION_TESTED}"
 
       - name: Summarize promotion
+        if: ${{ !inputs.preview_only }}
         env:
-          RELEASE_TAG: ${{ inputs.release_tag }}
-          SOURCE_TAG: ${{ inputs.source_tag }}
+          RELEASE_TAG: ${{ steps.selection.outputs.release_tag }}
+          SOURCE_TAG: ${{ steps.selection.outputs.source_tag }}
         run: |
           echo "Promoted ${SOURCE_TAG} to ${RELEASE_TAG} without advancing protected main."
           echo "The release workflow will build correctly versioned artifacts and test their published digests."
