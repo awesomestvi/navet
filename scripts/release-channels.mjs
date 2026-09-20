@@ -21,10 +21,11 @@ export function compareVersions(a, b) {
   return 0;
 }
 
-function imageVersions(value) {
+/** Collect Navet versions from an inspected image, preferring the add-on's own version label. */
+export function imageVersions(value) {
   if (!value || typeof value !== 'object') return [];
   const version =
-    value.Labels?.['org.opencontainers.image.version'] ?? value.Labels?.['io.hass.version'];
+    value.Labels?.['io.hass.version'] ?? value.Labels?.['org.opencontainers.image.version'];
   return version ? [version] : Object.values(value).flatMap(imageVersions);
 }
 
