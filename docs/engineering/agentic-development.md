@@ -14,7 +14,7 @@ issue or product feedback
   -> maintainer review and merge
   -> automatic main-backed Navet Dev publish
   -> release preparation
-  -> production environment approval
+  -> maintainer release dispatch
   -> artifact verification
   -> human-approved communication
 ```
@@ -81,12 +81,13 @@ the deterministic checks. The GitHub review remains an independent advisory chec
 - Trigger: explicit release-preparation issue or workflow dispatch.
 - Inputs: complete range since the previous stable tag, release-managed surfaces, CI results,
   artifacts, previews, and approved screenshots.
-- Permissions: prepare version/changelog PRs and drafts. Production publishing is environment-gated.
+- Permissions: prepare version/changelog PRs and drafts. Production publishing requires an
+  explicit maintainer workflow dispatch.
 - Output: aligned release surfaces, verified artifact plan, release notes, and channel-specific
   communication drafts grounded in the actual diff.
 - Escalate: SemVer choice, incomplete artifacts, migration risk, security notes, production
   approval, or claims not demonstrated by the release.
-- Forbidden: choose major product scope, bypass the production environment, publish community
+- Forbidden: choose major product scope, publish without a maintainer dispatch, publish community
   communication, or call a partial release successful.
 
 QA is not a separate conversational agent. Linting, type checking, tests, builds, smoke checks,
@@ -166,7 +167,8 @@ Maintainer authority is required for:
 For every pull request, the maintainer reviews the current diff and previews and records acceptance
 by merging after CI passes and review conversations are resolved. This merge decision covers
 ordinary, foundational, and security-sensitive changes without a second command or status check.
-Production publication remains separately protected by the `production` environment approval.
+Production publication remains separately protected by the maintainer selecting and dispatching an
+exact tested source tag and target release tag.
 
 ## Cost And Context
 
@@ -213,9 +215,10 @@ configured after these files reach `main`:
    repository, set required approving reviews to zero and disable required CODEOWNER review; the
    maintainer's merge records acceptance for the current head. Require **CI / Product review gate**
    plus the configured Cloudflare Pages preview checks.
-7. Configure the `production` environment with the maintainer as a required reviewer and prevent
-   administrators from bypassing it. Keep `edge` autonomous and `beta` approval-gated until its
-   artifact history is proven reliable.
+7. Configure `beta` and `production` environments to scope the release GitHub App secrets. Do not
+   add required reviewers: manually dispatching **Promote Navet Release** with exact source and
+   target tags is the publication authorization, and downstream artifact jobs must run without
+   repeated approval prompts.
 8. Keep Cloudflare preview deployments public only for repository/demo data. Preview projects must
    not receive Home Assistant URLs, tokens, provider OAuth secrets, production cookies, or private
    tunnel credentials.

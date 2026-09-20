@@ -208,8 +208,8 @@ Behavior:
 - marks prerelease tags as GitHub prereleases
 - never moves `latest` on prerelease tags
 - fails when HACS synchronization cannot run instead of reporting a partial success
-- verifies exact standalone and add-on images, the panel archive, both GitHub releases, the latest
-  stable GitHub API response, and the availability of the website and documentation site
+- verifies exact standalone and add-on images, the panel archive, both GitHub releases, and the
+  latest stable GitHub API response
 
 Production tag preparation:
 
@@ -244,14 +244,16 @@ Behavior:
 - every surface builds independently from the repository root and receives its own preview deploy
 
 Cloudflare Pages remains a continuous documentation, demo, Storybook, and marketing surface. It is
-not part of tagged release promotion in phase 1.
+not part of tagged release promotion in phase 1, and its availability does not gate release
+artifact publication.
 
 ## Maintainer Flow
 
 1. Select a tested immutable Dev tag for beta, or a tested beta/RC tag for stable.
 2. Select the new target tag, such as `v0.18.0-beta.1` or `v0.18.0`.
 3. Dispatch `/.github/workflows/release-tag-publish.yml` with both tags.
-4. Approve the `beta` or `production` environment.
+4. Treat that maintainer dispatch as authorization to publish the selected release. The `beta` and
+   `production` environments scope secrets without adding per-job approval prompts.
 5. Let the workflow create only the annotated tag, promote container digests, build the panel,
    generate release notes, and publish HACS.
 6. After verifying the artifacts, let it open the Home Assistant App metadata PR, wait for required

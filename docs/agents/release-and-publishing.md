@@ -29,7 +29,8 @@ Use this file for maintainer and agent release work.
 3. Dispatch
    [../../.github/workflows/release-tag-publish.yml](../../.github/workflows/release-tag-publish.yml)
    with both tags.
-4. Approve the `beta` or `production` GitHub environment.
+4. Treat that maintainer dispatch as authorization to publish the selected release; the `beta` and
+   `production` environments scope release secrets but do not add per-job reviewer prompts.
 5. Let [../../.github/workflows/release.yml](../../.github/workflows/release.yml) retag the tested
    container digests, generate notes from fragments, and publish the panel and HACS artifacts.
 
@@ -153,7 +154,9 @@ Example:
   requests write access so the generated metadata PR can be created and merged without bypassing
   branch protection
 - a release is complete only after exact app/add-on images, HACS release, panel archive, GitHub
-  release, the canonical latest-release API response, and public site availability are verified
+  release, and the canonical latest-release API response are verified
+- public sites deploy continuously from `main` and are monitored separately; their availability
+  does not gate beta, release-candidate, or stable artifact publication
 - local `pnpm sync:hacs` is still useful for previewing export output before release work
 
 ## Publishing Rules

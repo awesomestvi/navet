@@ -439,14 +439,8 @@ jobs:
             if [ "$attempt" -lt 4 ]; then sleep 10; fi
           done
           exit 1
-      - name: Smoke test public Navet surfaces
-        run: |
-          curl --fail --location --retry 3 --retry-all-errors --connect-timeout 10 --max-time 60 --silent --show-error https://navet.app/ >/dev/null
-          curl --fail --location --retry 3 --retry-all-errors --connect-timeout 10 --max-time 60 --silent --show-error https://demo.navet.app/demo/home >/dev/null
-          curl --fail --location --retry 3 --retry-all-errors --connect-timeout 10 --max-time 60 --silent --show-error https://docs.navet.app/ >/dev/null
-          curl --fail --location --retry 3 --retry-all-errors --connect-timeout 10 --max-time 60 --silent --show-error https://storybook.navet.app/ >/dev/null
       - name: Record complete release verification
-        run: echo "All versioned artifacts, distribution repositories, releases, and public surfaces were verified." >> "$GITHUB_STEP_SUMMARY"
+        run: echo "All versioned artifacts, distribution repositories, and releases were verified." >> "$GITHUB_STEP_SUMMARY"
 
   publish-addon-metadata:
     name: Publish Home Assistant App Metadata

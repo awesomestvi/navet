@@ -105,5 +105,14 @@ describe('production release tag publisher', () => {
     expect(mergeStep.run).toContain('gh pr checks');
     expect(mergeStep.run).toContain('gh pr merge');
     expect(mergeStep.run).not.toContain('--admin');
+
+    const verificationSteps = releaseWorkflow.jobs['verify-release'].steps;
+    expect(
+      verificationSteps.find((step) => step.name === 'Verify canonical latest stable release feed')
+        .if
+    ).toContain('prerelease');
+    expect(
+      verificationSteps.some((step) => step.name === 'Smoke test public Navet surfaces')
+    ).toBe(false);
   });
 });
