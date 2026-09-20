@@ -106,7 +106,7 @@ export function MarketingReleaseResourcesSection({ className }: { className?: st
           <div className="space-y-6">
             <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-orange-400">
               <History className="h-4 w-4" aria-hidden="true" />
-              Latest release
+              {latestRelease.status === 'fresh' ? 'Latest release' : 'Release notes'}
             </div>
             <div className="space-y-2">
               <Text className="text-2xl font-semibold tracking-[-0.03em] sm:text-3xl">
@@ -115,6 +115,17 @@ export function MarketingReleaseResourcesSection({ className }: { className?: st
               <Text tone="muted" className="max-w-md leading-7">
                 See what is new, improved, and fixed before updating your dashboard.
               </Text>
+              {latestRelease.status !== 'fresh' && (
+                <div role="status">
+                  <Text tone="muted" className="text-sm">
+                    {latestRelease.status === 'checking'
+                      ? 'Checking the latest release…'
+                      : latestRelease.lastChecked
+                        ? `Could not check for newer releases. Showing saved notes from ${new Date(latestRelease.lastChecked).toLocaleDateString()}.`
+                        : 'Could not check for newer releases. Showing the bundled archive; check GitHub for the latest release.'}
+                  </Text>
+                </div>
+              )}
             </div>
 
             <div className={cn('border-t pt-5', surface.border)}>

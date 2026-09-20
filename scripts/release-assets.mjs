@@ -3,6 +3,7 @@ import { mkdirSync, readFileSync, mkdtempSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { assertNotes, assertReleaseNotes, validateNotesBundle } from './release-note-contract.mjs';
 
 const { GITHUB_REPOSITORY: repo, RELEASE_TAG: tag } = process.env;
 if (!/^v\d+\.\d+\.\d+(?:-(?:beta|rc)\.\d+)?$/.test(tag ?? ''))
@@ -36,6 +37,15 @@ if (process.argv[2] === 'restore-panel') {
   const { appendFileSync } = await import('node:fs');
   appendFileSync(process.env.GITHUB_OUTPUT, `exists=${Boolean(asset)}\n`);
 } else if (process.argv[2] === 'publish') {
+  const bundle = validateNotesBundle(JSON.parse(readFileSync(process.env.NOTES_BUNDLE, 'utf8')), {
+    tag,
+    sha: process.env.RELEASE_SHA,
+  });
+  assertNotes(
+    readFileSync(process.env.NOTES_FILE, 'utf8'),
+    bundle.notes.general,
+    'Release notes file',
+  );
   if (!release) {
     const args = [
       'release',
@@ -55,6 +65,24 @@ if (process.argv[2] === 'restore-panel') {
   }
   if (release.draft || release.prerelease !== (process.env.PRERELEASE === 'true'))
     throw new Error('Existing release has incompatible publication state.');
+  assertReleaseNotes(release, {
+    tag,
+    prerelease: process.env.PRERELEASE === 'true',
+    notes: bundle.notes.general,
+  });
+  const notesAsset = 'navet-release-notes.json';
+  if (release.assets.some((entry) => entry.name === notesAsset)) {
+    const directory = mkdtempSync(join(tmpdir(), 'navet-notes-verify-'));
+    gh('release', 'download', tag, '--repo', repo, '--pattern', notesAsset, '--dir', directory);
+    const previous = validateNotesBundle(
+      JSON.parse(readFileSync(join(directory, notesAsset), 'utf8')),
+      { tag, sha: bundle.sha },
+    );
+    if (JSON.stringify(previous) !== JSON.stringify(bundle))
+      throw new Error('Published release notes bundle differs. Do not overwrite published notes.');
+  } else {
+    gh('release', 'upload', tag, process.env.NOTES_BUNDLE, '--repo', repo);
+  }
   if (asset) {
     const directory = mkdtempSync(join(tmpdir(), 'navet-panel-verify-'));
     gh('release', 'download', tag, '--repo', repo, '--pattern', assetName, '--dir', directory);

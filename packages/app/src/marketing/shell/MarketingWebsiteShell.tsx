@@ -466,7 +466,7 @@ export function MarketingWebsiteShell({
                 Changelog
               </WebsiteNavLink>
               <WebsiteNavLink href={latestRelease.url} className="min-h-0 px-0">
-                Latest: v{latestRelease.version}
+                {latestRelease.status === 'fresh' ? 'Latest' : 'Release'}: v{latestRelease.version}
               </WebsiteNavLink>
               <WebsiteNavLink href={MARKETING_URLS.resources} className="min-h-0 px-0">
                 Resources

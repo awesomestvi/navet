@@ -2,6 +2,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { repoRoot } from './repo-paths.mjs';
+import { assertNotes, changelogNotes, normalizeNotes } from './release-note-contract.mjs';
 
 const args = process.argv.slice(2);
 const valueFor = (flag, fallback = null) => {
@@ -17,7 +18,7 @@ const releaseTag = valueFor('--tag');
 
 if (!['stable', 'dev'].includes(channel) || !version || !notesFile || !releaseTag) {
   throw new Error(
-    'Usage: prepare-addon-release-metadata.mjs --channel <stable|dev> --version <version> --tag <tag> --notes-file <path> [--root <path>]'
+    'Usage: prepare-addon-release-metadata.mjs --channel <stable|dev> --version <version> --tag <tag> --notes-file <path> [--root <path>]',
   );
 }
 
@@ -29,7 +30,7 @@ const addonDirectory = resolve(
   root,
   channel === 'stable'
     ? 'platform/home-assistant/addons/navet'
-    : 'platform/home-assistant/addons/navet-dev'
+    : 'platform/home-assistant/addons/navet-dev',
 );
 const configPath = resolve(addonDirectory, 'config.yaml');
 const changelogPath = resolve(addonDirectory, 'CHANGELOG.md');
@@ -39,14 +40,17 @@ if (!/^version:\s*.*$/m.test(sourceConfig)) {
 }
 
 const nextConfig = sourceConfig.replace(/^version:\s*.*$/m, `version: "${version}"`);
-await writeFile(configPath, nextConfig, 'utf8');
 
-const releaseNotes = (await readFile(resolve(notesFile), 'utf8')).trim();
+const releaseNotes = normalizeNotes(await readFile(resolve(notesFile), 'utf8'));
 const currentChangelog = await readFile(changelogPath, 'utf8');
 const versionHeading = `## ${version}`;
-const escapedVersion = version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-if (!new RegExp(`^## ${escapedVersion}$`, 'm').test(currentChangelog)) {
-  const history = currentChangelog.replace(/\r\n/g, '\n').replace(/^# Changelog\s*/, '').trim();
+const existing = changelogNotes(currentChangelog, version);
+if (existing !== null) assertNotes(existing, releaseNotes, `Home Assistant ${version}`);
+if (existing === null) {
+  const history = currentChangelog
+    .replace(/\r\n/g, '\n')
+    .replace(/^# Changelog\s*/, '')
+    .trim();
   const nextChangelog = [
     '# Changelog',
     '',
@@ -58,6 +62,7 @@ if (!new RegExp(`^## ${escapedVersion}$`, 'm').test(currentChangelog)) {
   ].join('\n');
   await writeFile(changelogPath, nextChangelog, 'utf8');
 }
+await writeFile(configPath, nextConfig, 'utf8');
 
 const fragmentName = `release-metadata-${releaseTag.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.yaml`;
 const fragmentDirectory = resolve(root, '.changes');
@@ -70,7 +75,7 @@ await writeFile(
     `summary: Published Home Assistant App metadata for ${version}.`,
     '',
   ].join('\n'),
-  'utf8'
+  'utf8',
 );
 
 console.log(`Prepared ${channel} Home Assistant App metadata for ${version}.`);

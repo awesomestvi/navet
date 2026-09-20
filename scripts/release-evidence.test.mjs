@@ -69,6 +69,7 @@ describe('immutable release artifacts', () => {
       channel: 'beta',
       runId: 123,
       panelDigest: digest,
+      notesDigest: digest,
       images: ['navet', 'amd64-navet-addon', 'aarch64-navet-addon'].map((name) => ({
         image: `ghcr.io/${owner}/${name}`,
         tag: name === 'navet' ? tag : version,
@@ -80,6 +81,15 @@ describe('immutable release artifacts', () => {
     };
     expect(() => validateEvidence(evidence, { tag, sha, owner })).not.toThrow();
     expect(() => assertSameArtifactIdentity(evidence, { ...evidence, runId: 124 })).not.toThrow();
+    expect(() =>
+      assertSameArtifactIdentity(evidence, {
+        ...evidence,
+        notesDigest: `sha256:${'c'.repeat(64)}`,
+      }),
+    ).toThrow();
+    expect(() =>
+      validateEvidence({ ...evidence, notesDigest: undefined }, { tag, sha, owner }),
+    ).toThrow();
     expect(() =>
       assertSameArtifactIdentity(evidence, {
         ...evidence,

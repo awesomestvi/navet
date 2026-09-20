@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
 import { digestPattern, inspectImage } from './release-image.mjs';
+import { assertReleaseNotes, validateNotesBundle } from './release-note-contract.mjs';
 
 const gh = (...args) => execFileSync('gh', args, { encoding: 'utf8' }).trim();
 const fileDigest = (file) =>
@@ -20,6 +21,7 @@ export function validateEvidence(evidence, { tag, sha, owner }) {
     !Number.isSafeInteger(evidence.runId) ||
     evidence.runId <= 0 ||
     !digestPattern.test(evidence.panelDigest) ||
+    !digestPattern.test(evidence.notesDigest) ||
     evidence.channel !== (tag.includes('-') ? 'beta' : 'stable')
   ) {
     throw new Error('Source release evidence does not match the selected tag and commit.');
@@ -50,6 +52,7 @@ export function assertSameArtifactIdentity(previous, next) {
       version: evidence.version,
       channel: evidence.channel,
       panelDigest: evidence.panelDigest,
+      notesDigest: evidence.notesDigest,
       images: evidence.images
         .map(({ image, tag, digest, version, sha, channel }) => ({
           image,
@@ -115,6 +118,32 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
       gh('release', 'download', tag, '--repo', repo, '--pattern', panel, '--dir', directory);
       if (fileDigest(join(directory, panel)) !== evidence.panelDigest)
         throw new Error('Source panel changed after verification.');
+      gh(
+        'release',
+        'download',
+        tag,
+        '--repo',
+        repo,
+        '--pattern',
+        'navet-release-notes.json',
+        '--dir',
+        directory,
+      );
+      if (fileDigest(join(directory, 'navet-release-notes.json')) !== evidence.notesDigest)
+        throw new Error('Source notes changed after verification.');
+      const notes = validateNotesBundle(
+        JSON.parse(readFileSync(join(directory, 'navet-release-notes.json'), 'utf8')),
+        { tag, sha },
+      );
+      assertReleaseNotes(JSON.parse(gh('api', `repos/${repo}/releases/tags/${tag}`)), {
+        tag,
+        prerelease: tag.includes('-'),
+        notes: notes.notes.general,
+      });
+      assertReleaseNotes(
+        JSON.parse(gh('api', 'repos/awesomestvi/navet-home-assistant/releases/tags/' + tag)),
+        { tag, prerelease: tag.includes('-'), notes: notes.notes.hacs },
+      );
     }
   } else if (process.argv[2] === 'write') {
     const evidence = {
@@ -125,6 +154,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
       channel: process.env.RELEASE_CHANNEL,
       runId: Number(process.env.GITHUB_RUN_ID),
       panelDigest: fileDigest(`release-assets/navet-panel-${process.env.RELEASE_TAG}.tar.gz`),
+      notesDigest: fileDigest(process.env.NOTES_BUNDLE),
       images: readdirSync('release-images')
         .filter((file) => file.endsWith('.json'))
         .sort()

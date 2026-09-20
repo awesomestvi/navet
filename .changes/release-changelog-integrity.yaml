@@ -1,0 +1,3 @@
+type: fixed
+audiences: [standalone, home-assistant, hacs, docs]
+summary: Verified release notes across distribution channels and kept public changelogs readable when release information cannot be refreshed.

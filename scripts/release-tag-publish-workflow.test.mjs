@@ -51,7 +51,7 @@ describe('production release tag publisher', () => {
       (step) => step.name === 'Resolve and validate promotion',
     ).run;
     expect(contextRun).toContain('Promoted-From:');
-    expect(contextRun).toContain('scripts/generate-release-notes.mjs');
+    expect(contextRun).toContain('scripts/release-notes-bundle.mjs');
     expect(contextRun).toContain('head -n 1 || true');
     expect(contextRun).not.toContain('scripts/check-release-surfaces.mjs');
 
@@ -87,7 +87,7 @@ describe('production release tag publisher', () => {
       .join('\n');
     expect(hacsCommands).not.toMatch(/git tag -fa|git push.*--force/);
     expect(exportStep.env.NAVET_RELEASE_VERSION).toContain('package_version');
-    expect(exportStep.env.NAVET_RELEASE_NOTES_FILE).toContain('navet-hacs-release-notes.md');
+    expect(exportStep.env.NAVET_RELEASE_NOTES_FILE).toContain('release-notes/hacs.md');
 
     expect(releaseWorkflow.jobs['sync-addon-repository']).toBeUndefined();
     const metadataJob = releaseWorkflow.jobs['publish-addon-metadata'];
@@ -108,12 +108,16 @@ describe('production release tag publisher', () => {
     expect(mergeStep.run).toContain('gh pr checks');
     expect(mergeStep.run).toContain('gh pr merge');
     expect(mergeStep.run).not.toContain('--admin');
+    expect(mergeStep.run).toContain('--match-head-commit');
+    expect(metadataJob.steps.find((step) => step.id === 'metadata_content').run).toContain('verify-addon-release-metadata.mjs');
 
     const verificationSteps = releaseWorkflow.jobs['verify-release'].steps;
-    const feed = verificationSteps.find(
-      (step) => step.name === 'Verify canonical latest stable release feed',
-    );
-    expect(feed.if).toBe("needs.release-context.outputs.prerelease != 'true'");
+    expect(releaseWorkflow.jobs['github-release'].needs).toContain('publish-addon-metadata');
+    expect(releaseWorkflow.jobs['verify-release'].needs).not.toContain('github-release');
+    expect(releaseWorkflow.jobs['verify-distribution'].needs).toContain('github-release');
+    expect(releaseWorkflow.jobs['publish-channels'].needs).toContain('verify-distribution');
+    expect(releaseWorkflow.jobs['publish-channels'].name).toBe('Verify Complete Release');
+    expect(JSON.stringify(releaseWorkflow)).not.toContain('scripts/generate-release-notes.mjs');
     expect(verificationSteps.map((step) => step.run ?? '').join('\n')).not.toMatch(
       /https:\/\/(?:demo\.|docs\.|storybook\.)?navet\.app/,
     );

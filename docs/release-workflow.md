@@ -102,7 +102,7 @@ and HACS export. Existing published panel archives are reused. Existing HACS tag
 against the expected payload, never force-moved.
 
 The workflow creates a `navet-release-evidence.json` asset recording the source commit, version,
-image digests and publication run. It is verification metadata, not an application package;
+image digests, panel and release-note bundle digests, and publication run. It is verification metadata, not an application package;
 a recovery run can refresh this record after rechecking the same immutable artifacts. A source
 release is promotable only after the recorded run finishes successfully.
 
@@ -144,10 +144,21 @@ without verified source evidence must be rebuilt as a new candidate before stabl
 The release tag is the published version; GitHub Releases are the published changelog.
 `package.json` describes the source line, not the latest published release.
 
-Website and documentation clients read stable GitHub Releases directly. The root `CHANGELOG.md`
-is their historical fallback. Neither requires a release-specific source update or redeploy.
+Website and documentation clients read stable GitHub Releases directly and save validated notes
+in versioned browser storage. If GitHub cannot be reached, they show saved notes or the bundled
+historical archive, with a visible freshness warning instead of claiming that it is the latest
+release. Browser storage is optional; unavailable storage does not prevent loading fresh notes.
+Neither site requires a release-specific source update or redeploy. A release with no user-facing
+changes still appears with its version and explanatory note. Combined improvement/bug-fix groups
+appear under both documentation filters.
 Dev notes describe the merged change; beta/RC/stable notes include all user-facing fragments
 since the previous stable tag, filtered by audience where appropriate.
+
+The release workflow reads fragment contents from the selected release commit, not the current
+checkout. It generates one `navet-release-notes.json` bundle containing general, HACS, and Home
+Assistant notes with source/base commits and content hashes. All distribution jobs consume that
+same bundle. Existing release bodies, versioned changelog entries, and published note evidence
+must match on recovery; conflicts stop the run rather than silently replacing published notes.
 
 The monorepo owns Home Assistant integration and add-on sources under `platform/home-assistant`.
 HACS receives the integration export in `awesomestvi/navet-home-assistant`. The Home Assistant App
@@ -158,6 +169,14 @@ After artifact verification, automation opens the small App metadata PR and merg
 normal branch protection without bypass privileges. This PR gets quality/script checks and
 metadata-aware classification, not another full product release. Changes to config fields other
 than the version take the product-validation path.
+
+The main GitHub announcement is published only after the App metadata PR merges. Before moving
+channels, publication verifies both GitHub release bodies, the tagged HACS changelog, the merged
+App version and changelog, and the published notes bundle. Stable also checks the canonical
+latest-release API. `Verify Complete Release` completes only after these checks and channel
+updates succeed. Public-site availability does not gate installation releases; the sites consume
+the verified canonical release record. HACS and App metadata can become visible before the last
+step: distribution remains non-atomic, and the final successful workflow is the completion signal.
 
 ## Activating Scoped Deployments
 

@@ -162,6 +162,8 @@ describe('required merge gate', () => {
     ).toEqual(['failure']);
   });
   it('reuses ancestor previews only when the surface inputs are unchanged', () => {
+    expect(equivalentPagesInputs('docs', ['packages/app/src/utils/public-release-cache.ts'])).toBe(false);
+    expect(equivalentPagesInputs('website', ['packages/app/src/utils/public-release-cache.ts'])).toBe(false);
     expect(equivalentPagesInputs('docs', ['.changes/note.yaml'])).toBe(true);
     expect(equivalentPagesInputs('docs', [])).toBe(true);
     expect(equivalentPagesInputs('docs', ['apps/docs/src/content/docs/start.mdx'])).toBe(false);

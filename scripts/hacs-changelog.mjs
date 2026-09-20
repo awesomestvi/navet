@@ -4,6 +4,11 @@ export function renderHacsChangelog({
   releaseNotes,
   existingChangelog = '',
 }) {
+  const existing = changelogNotes(existingChangelog, releaseVersion);
+  if (existing !== null) {
+    assertNotes(existing, releaseNotes, `HACS ${releaseVersion}`);
+    return existingChangelog;
+  }
   const history = existingChangelog
     .replace(/\r\n/g, '\n')
     .replace(/^# Changelog\s*/, '')
@@ -12,3 +17,4 @@ export function renderHacsChangelog({
 
   return `# Changelog\n\n## ${releaseVersion} (${releaseDate})\n\n${releaseNotes.trim()}\n${historySection}`;
 }
+import { assertNotes, changelogNotes } from './release-note-contract.mjs';
