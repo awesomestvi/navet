@@ -21,7 +21,7 @@ try {
     );
   }
 
-  readReleaseFragments(files);
+  readReleaseFragments(files, head);
   console.log(`Validated ${files.length} release fragment(s): ${files.join(', ')}`);
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));

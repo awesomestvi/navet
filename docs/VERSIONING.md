@@ -8,12 +8,15 @@ Navet currently uses pre-`1.0` semantic versioning.
 ## Current Line
 
 - current version: `0.17.1`
+- published version: the latest stable GitHub Release
 - current phase: public beta
 - shared release line: standalone app, custom panel, and add-on ship from the same tagged version
 - release channels: main-backed `edge` and `dev`, immutable branch-capable dev tags as
   `0.x.y-dev.YYYYMMDDHHMMSS`, `beta` from prerelease tags, `latest` from stable tags
 
 ## Scheme
+
+The current version above is source-line metadata, not the latest published release.
 
 - `0.x.y` for stable beta-line releases
 - `0.x.y-beta.n` for prerelease milestones
@@ -47,7 +50,11 @@ Navet currently uses pre-`1.0` semantic versioning.
 - Home Assistant supervised detects Navet Dev updates from committed
   `platform/home-assistant/addons/navet-dev/config.yaml` metadata; automatic dev tags do not change
   that protected-branch surface
-- HACS updates remain stable-only and are not part of Navet Dev publishes
+- HACS follows beta/RC/stable releases and is not part of Navet Dev publishes
+- each version is packaged with its own embedded version/channel and tested by image digest;
+  stable packages the same source commit as its tested beta/RC but is not a byte-identical retag
+- commit-only `sha-*` aliases are not advanced because one commit can produce multiple versioned
+  packages; exact version tags and recorded digests identify artifacts
 
 ## Release Notes Rule
 

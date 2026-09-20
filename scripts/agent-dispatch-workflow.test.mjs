@@ -6,10 +6,10 @@ import { describe, expect, it } from 'vitest';
 const workflowPath = resolve(process.cwd(), '.github/workflows/agent-dispatch.yml');
 const workflowSource = readFileSync(workflowPath, 'utf8');
 const workflow = parse(workflowSource);
-const scheduledWorkflowSources = [
-  '.github/workflows/docs-steward.yml',
-  '.github/workflows/release-communication.yml',
-].map((path) => readFileSync(resolve(process.cwd(), path), 'utf8'));
+const stewardshipSource = readFileSync(
+  resolve(process.cwd(), '.github/workflows/docs-steward.yml'),
+  'utf8'
+);
 const acceptScript = workflow.jobs.accept.steps.find(
   (step) => step.name === 'Authorize and acknowledge command'
 )?.with?.script;
@@ -41,10 +41,18 @@ describe('agent command workflow', () => {
     expect(workflowSource).not.toContain('addAssignees');
   });
 
-  it('does not use spoofable issue-body markers for scheduled work', () => {
-    for (const source of scheduledWorkflowSources) {
-      expect(source).not.toContain('navet-agent:research');
-      expect(source).toContain('github.rest.issues.create');
-    }
+  it('does not use spoofable issue-body markers for scheduled stewardship', () => {
+    expect(stewardshipSource).not.toContain('navet-agent:research');
+    expect(stewardshipSource).toContain('github.rest.issues.create');
+  });
+
+  it('runs CI directly for pull requests without an unused callable entry point', () => {
+    const ci = parse(readFileSync(resolve(process.cwd(), '.github/workflows/ci.yml'), 'utf8'));
+    expect(ci.on).toEqual({
+      pull_request: {
+        branches: ['main'],
+        types: ['opened', 'reopened', 'synchronize', 'ready_for_review'],
+      },
+    });
   });
 });

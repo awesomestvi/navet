@@ -20,7 +20,7 @@ try {
   if (!to) throw new Error('Missing --to Git ref.');
 
   const files = listAddedReleaseFragmentFiles(from, to);
-  const fragments = readReleaseFragments(files);
+  const fragments = readReleaseFragments(files, to);
   process.stdout.write(renderReleaseNotes(fragments, { audience }));
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));

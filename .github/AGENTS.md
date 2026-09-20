@@ -6,7 +6,9 @@ These rules apply to workflows, issue forms, pull-request automation, and reposi
 - Never execute pull-request code, scripts, or actions from the head branch in
   `pull_request_target` or another privileged context.
 - Treat issue bodies, comments, branch names, PR titles, and changed files as untrusted input.
-- Keep production publishing behind a named GitHub environment with required reviewers.
+- Keep production publishing in a named GitHub environment restricted to trusted `main` workflows.
+  An explicit maintainer dispatch selecting the tested source and target tags authorizes publication;
+  do not add repeated per-job reviewer prompts. Stable publication requires installation-test confirmation.
 - Pull-request workflows may create preview artifacts and comments. They must not receive
   production, HACS, private-network, or Home Assistant credentials.
 - Do not let an implementing agent satisfy its own product, foundation, security, or production

@@ -1,9 +1,10 @@
 ---
 import changelogSource from "../../../../CHANGELOG.md?raw";
+import { releaseKind as getKind } from "../utils/release-feed";
 
 type ChangeGroup = {
   title: string;
-  kind: "new" | "improved" | "fixed" | "security" | "other";
+  kind: string;
   items: string[];
 };
 
@@ -11,15 +12,6 @@ type Release = {
   version: string;
   date: string;
   groups: ChangeGroup[];
-};
-
-const getKind = (heading: string): ChangeGroup["kind"] => {
-  const normalized = heading.toLowerCase();
-  if (normalized.includes("security")) return "security";
-  if (normalized.includes("new") || normalized.includes("feature")) return "new";
-  if (normalized.includes("improv")) return "improved";
-  if (normalized.includes("fix") || normalized.includes("bug")) return "fixed";
-  return "other";
 };
 
 const renderInline = (value: string) => value
@@ -75,6 +67,8 @@ const releaseId = (version: string) => `release-${version.toLowerCase().replace(
     </p>
   </div>
 
+  <p data-release-status role="status">Checking the latest stable releases…</p>
+
   <div class="navet-changelog-toolbar" aria-label="Filter release notes">
     <div class="navet-changelog-filters" role="group" aria-label="Change type">
       <button type="button" class="is-active" data-change-filter="all" aria-pressed="true">All updates</button>
@@ -108,7 +102,7 @@ const releaseId = (version: string) => `release-${version.toLowerCase().replace(
             <h2>
               <a href={`https://github.com/awesomestvi/navet/releases/tag/v${item.version}`}>Navet {item.version}</a>
             </h2>
-            {index === 0 && <span class="navet-release-latest">Latest</span>}
+            {index === 0 && <span class="navet-release-latest">Archive</span>}
           </header>
 
           <div class="navet-release-groups">
@@ -131,38 +125,12 @@ const releaseId = (version: string) => `release-${version.toLowerCase().replace(
 </div>
 
 <script>
+  import { parseReleaseGroups, parseCachedReleases, type FeedRelease } from "../utils/release-feed";
+  import { loadReleaseCache, saveReleaseCache } from "../../../../packages/app/src/utils/public-release-cache";
   const RELEASES_API_URL = "https://api.github.com/repos/awesomestvi/navet/releases";
   const STABLE_TAG_PATTERN = /^v(\d+\.\d+\.\d+)$/;
 
   const releaseId = (version: string) => `release-${version.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
-  const releaseKind = (heading: string) => {
-    const normalized = heading.toLowerCase();
-    if (normalized.includes("security")) return "security";
-    if (normalized.includes("new") || normalized.includes("feature")) return "new";
-    if (normalized.includes("improv")) return "improved";
-    if (normalized.includes("fix") || normalized.includes("bug")) return "fixed";
-    return "other";
-  };
-
-  const parseReleaseGroups = (body: string) => {
-    const groups: Array<{ title: string; kind: string; items: string[] }> = [];
-    let group: { title: string; kind: string; items: string[] } | undefined;
-
-    for (const rawLine of body.replace(/\r\n/g, "\n").split("\n")) {
-      const line = rawLine.trim();
-      const heading = line.match(/^##\s+(.+)$/)?.[1];
-      if (heading) {
-        group = { title: heading, kind: releaseKind(heading), items: [] };
-        groups.push(group);
-        continue;
-      }
-      const item = line.match(/^-\s+(.+)$/)?.[1];
-      if (item && group) group.items.push(item);
-    }
-
-    return groups.filter((entry) => entry.items.length > 0);
-  };
-
   const appendInlineMarkdown = (parent: HTMLElement, value: string) => {
     const pattern = /`([^`]+)`|\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g;
     let offset = 0;
@@ -279,7 +247,7 @@ const releaseId = (version: string) => `release-${version.toLowerCase().replace(
 
         for (const group of groups) {
           if (!(group instanceof HTMLElement)) continue;
-          const visible = activeFilter === "all" || group.dataset.changeKind === activeFilter;
+          const visible = activeFilter === "all" || group.dataset.changeKind?.split(" ").includes(activeFilter);
           group.hidden = !visible;
           if (visible) visibleGroups += 1;
         }
@@ -314,17 +282,16 @@ const releaseId = (version: string) => `release-${version.toLowerCase().replace(
 
     if (releaseList instanceof HTMLElement && archiveBoundary) {
       const loadStableReleases = async () => {
-        const stableReleases: Array<{
-          version: string;
-          date: string;
-          url: string;
-          groups: ReturnType<typeof parseReleaseGroups>;
-        }> = [];
+        let stableReleases: FeedRelease[] = [];
+        const status = root.querySelector("[data-release-status]");
+        let fresh = false;
+        try {
         let reachedArchive = false;
 
         for (let page = 1; page <= 20 && !reachedArchive; page += 1) {
           const response = await fetch(`${RELEASES_API_URL}?per_page=100&page=${page}`, {
             headers: { Accept: "application/vnd.github+json" },
+            signal: AbortSignal.timeout(10_000),
           });
           if (!response.ok) throw new Error(`GitHub releases request failed: ${response.status}`);
           const entries = await response.json();
@@ -345,17 +312,28 @@ const releaseId = (version: string) => `release-${version.toLowerCase().replace(
               typeof entry.html_url !== "string" ||
               typeof entry.published_at !== "string"
             ) continue;
-            const groups = parseReleaseGroups(entry.body);
-            if (groups.length === 0) continue;
             stableReleases.push({
               version: tagMatch[1],
               date: entry.published_at.slice(0, 10),
               url: entry.html_url,
-              groups,
+              body: entry.body,
             });
           }
 
           if (entries.length < 100) break;
+        }
+
+        if (!reachedArchive && stableReleases.length === 0) throw new Error("Stable release history was not found.");
+        stableReleases = parseCachedReleases(stableReleases);
+        saveReleaseCache("docs", stableReleases, new Date().toISOString());
+        fresh = true;
+        if (status) status.textContent = "Stable release notes checked with GitHub.";
+        } catch {
+          const cached = loadReleaseCache("docs", parseCachedReleases);
+          stableReleases = cached?.value ?? [];
+          if (status) status.textContent = cached
+            ? `Could not check for newer releases. Showing saved notes from ${new Date(cached.checkedAt).toLocaleDateString()} and the archive. Check GitHub for the latest release.`
+            : "Could not check for newer releases. Showing the bundled archive. Check GitHub for the latest release.";
         }
 
         const existingVersions = new Set(
@@ -368,13 +346,17 @@ const releaseId = (version: string) => `release-${version.toLowerCase().replace(
         const missingReleases = stableReleases.filter(
           (release) => !existingVersions.has(release.version)
         );
-        if (missingReleases.length === 0) return;
+        if (missingReleases.length === 0) {
+          const badge = root.querySelector(".navet-release-latest");
+          if (badge) badge.textContent = fresh ? "Latest" : "Archive";
+          return;
+        }
 
         root.querySelector(".navet-release-latest")?.remove();
         timelineList?.querySelector(".is-active")?.classList.remove("is-active");
         timelineList?.querySelector("[aria-current]")?.removeAttribute("aria-current");
         for (const release of [...missingReleases].reverse()) {
-          releaseList.prepend(createReleaseArticle(release));
+          releaseList.prepend(createReleaseArticle({ ...release, groups: parseReleaseGroups(release.body) }));
           timelineList?.prepend(createTimelineItem(release.version, release.date));
         }
 
@@ -383,7 +365,7 @@ const releaseId = (version: string) => `release-${version.toLowerCase().replace(
         if (latestHeader) {
           const badge = document.createElement("span");
           badge.className = "navet-release-latest";
-          badge.textContent = "Latest";
+          badge.textContent = fresh ? "Latest" : "Saved";
           latestHeader.append(badge);
         }
         const latestTimelineItem = timelineList?.querySelector("li");

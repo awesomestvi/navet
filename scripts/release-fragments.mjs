@@ -6,9 +6,9 @@ import { repoRoot } from './repo-paths.mjs';
 export const RELEASE_FRAGMENT_TYPES = ['new', 'improved', 'fixed', 'security', 'internal'];
 export const RELEASE_FRAGMENT_AUDIENCES = ['standalone', 'home-assistant', 'hacs', 'docs'];
 
-function runGit(args) {
+function runGit(args, cwd = repoRoot) {
   return execFileSync('git', args, {
-    cwd: repoRoot,
+    cwd,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
   }).trim();
@@ -26,7 +26,12 @@ export function listAddedReleaseFragmentFiles(fromRef, toRef = 'HEAD') {
     '.changes/*.yaml',
   ]);
 
-  return output ? output.split('\n').map((file) => file.trim()).filter(Boolean) : [];
+  return output
+    ? output
+        .split('\n')
+        .map((file) => file.trim())
+        .filter(Boolean)
+    : [];
 }
 
 export function parseReleaseFragment(content, file = 'release fragment') {
@@ -52,7 +57,11 @@ export function parseReleaseFragment(content, file = 'release fragment') {
       } else if (rawValue === '[]') {
         fragment.audiences = [];
       } else if (rawValue.startsWith('[') && rawValue.endsWith(']')) {
-        fragment.audiences = rawValue.slice(1, -1).split(',').map((value) => value.trim()).filter(Boolean);
+        fragment.audiences = rawValue
+          .slice(1, -1)
+          .split(',')
+          .map((value) => value.trim())
+          .filter(Boolean);
       } else {
         throw new Error(`${file} audiences must be a YAML list.`);
       }
@@ -81,13 +90,10 @@ export function parseReleaseFragment(content, file = 'release fragment') {
 
   const audiences = [...new Set(fragment.audiences)];
   const invalidAudiences = audiences.filter(
-    (audience) =>
-      typeof audience !== 'string' || !RELEASE_FRAGMENT_AUDIENCES.includes(audience)
+    (audience) => typeof audience !== 'string' || !RELEASE_FRAGMENT_AUDIENCES.includes(audience),
   );
   if (invalidAudiences.length > 0) {
-    throw new Error(
-      `${file} audiences must use: ${RELEASE_FRAGMENT_AUDIENCES.join(', ')}.`
-    );
+    throw new Error(`${file} audiences must use: ${RELEASE_FRAGMENT_AUDIENCES.join(', ')}.`);
   }
 
   if (fragment.type === 'internal') {
@@ -115,16 +121,19 @@ export function parseReleaseFragment(content, file = 'release fragment') {
   return { type: fragment.type, audiences, summary, file };
 }
 
-export function readReleaseFragments(files) {
+export function readReleaseFragments(files, ref, root = repoRoot) {
   return files.map((file) =>
-    parseReleaseFragment(readFileSync(resolve(repoRoot, file), 'utf8'), file)
+    parseReleaseFragment(
+      ref ? runGit(['show', `${ref}:${file}`], root) : readFileSync(resolve(root, file), 'utf8'),
+      file,
+    ),
   );
 }
 
 export function renderReleaseNotes(fragments, { audience } = {}) {
   const visible = fragments.filter(
     (fragment) =>
-      fragment.type !== 'internal' && (!audience || fragment.audiences.includes(audience))
+      fragment.type !== 'internal' && (!audience || fragment.audiences.includes(audience)),
   );
 
   if (visible.length === 0) return 'No user-facing changes in this release.\n';
@@ -149,7 +158,7 @@ export function renderReleaseNotes(fragments, { audience } = {}) {
       (section) =>
         `## ${section.heading}\n\n${section.items
           .map((fragment) => `- ${fragment.summary}`)
-          .join('\n')}`
+          .join('\n')}`,
     )
     .join('\n\n')}\n`;
 }

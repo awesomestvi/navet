@@ -32,7 +32,7 @@ identified by the branch or commit SHA.
 
 ## Branch Flow
 
-1. Check out the exact PR head on the preview host or pull an immutable `sha-*`/dev image created
+1. Check out the exact PR head on the preview host or pull an exact-version Dev image pinned by digest, created
    for that commit. Set `NAVET_PREVIEW_GIT_SHA` to the reviewed commit.
 2. Create an ignored `.env.private-preview` with a unique project name and host port for this
    branch, the exact commit SHA, and only the provider configuration needed for this test:

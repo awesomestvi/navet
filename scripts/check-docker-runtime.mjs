@@ -72,6 +72,8 @@ function resolveHomeAssistantAddonTarget() {
     throw new Error(`Unsupported Home Assistant add-on host architecture: ${architecture}`);
   }
 
+  if (process.env.NAVET_TEST_ADDON_IMAGE) return { ...target, compatibilityEntrypoint: false, exactBase: true };
+
   const exactBase = spawnSync(
     'docker',
     ['manifest', 'inspect', target.buildFrom],
@@ -2127,9 +2129,15 @@ async function verifyPersistedStateAfterReplacement({
 }
 
 let rssFixture = null;
-const imageTag = `navet-docker-runtime-check:${Date.now()}`;
-const addonImageTag = `navet-addon-runtime-check:${Date.now()}`;
-const expectedBuildVersion = '0.0.0-dev.20990101010101';
+const imageTag = process.env.NAVET_TEST_STANDALONE_IMAGE || `navet-docker-runtime-check:${Date.now()}`;
+const addonImageTag = process.env.NAVET_TEST_ADDON_IMAGE || `navet-addon-runtime-check:${Date.now()}`;
+const expectedBuildVersion = process.env.NAVET_TEST_BUILD_VERSION || '0.0.0-dev.20990101010101';
+if (Boolean(process.env.NAVET_TEST_STANDALONE_IMAGE) !== Boolean(process.env.NAVET_TEST_ADDON_IMAGE)) {
+  throw new Error('Prebuilt runtime validation requires both standalone and add-on images.');
+}
+for (const reference of [process.env.NAVET_TEST_STANDALONE_IMAGE, process.env.NAVET_TEST_ADDON_IMAGE].filter(Boolean)) {
+  if (!/(?:^|@)sha256:[a-f0-9]{64}$/.test(reference)) throw new Error('Prebuilt images must be pinned by digest.');
+}
 const containerName = `navet-docker-runtime-check-${process.pid}-${Date.now()}`;
 const addonContainerName = `${containerName}-addon`;
 const addonProbeContainerName = `${containerName}-addon-probe`;
@@ -2182,7 +2190,7 @@ try {
   ensureSerializedProfileRuntime();
   ensurePersistentDataConfiguration();
   ensureDockerAvailable();
-  run(
+  if (!process.env.NAVET_TEST_STANDALONE_IMAGE) run(
     'docker',
     [
       'build',
@@ -2223,7 +2231,7 @@ try {
   ]);
   assertConfiguredInstallationKeyIsNotLogged(imageTag);
   const addonTarget = resolveHomeAssistantAddonTarget();
-  run(
+  if (!process.env.NAVET_TEST_ADDON_IMAGE) run(
     'docker',
     [
       'build',
@@ -2290,6 +2298,7 @@ try {
     addonContainerName,
     addonProbeContainerName
   );
+  assertBuiltStandaloneMetadata(addonContainerName, expectedBuildVersion);
   assertHomeAssistantAddonDirectListener(addonProbeContainerName, addonContainerName);
   const addonCookie = assertHomeAssistantAddonIngressCookie(
     firstAddonProfile.cookie
@@ -2661,10 +2670,10 @@ try {
   spawnSync('docker', ['volume', 'rm', '-f', volumeName], {
     stdio: 'ignore',
   });
-  spawnSync('docker', ['image', 'rm', '-f', addonImageTag], {
+  if (!process.env.NAVET_TEST_ADDON_IMAGE) spawnSync('docker', ['image', 'rm', '-f', addonImageTag], {
     stdio: 'ignore',
   });
-  spawnSync('docker', ['image', 'rm', '-f', imageTag], {
+  if (!process.env.NAVET_TEST_STANDALONE_IMAGE) spawnSync('docker', ['image', 'rm', '-f', imageTag], {
     stdio: 'ignore',
   });
 }

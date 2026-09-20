@@ -41,7 +41,9 @@ export function parseGithubReleaseHighlights(body: string, limit = 3) {
   return highlights;
 }
 
-export function parseLatestGithubRelease(value: GithubReleaseResponse): MarketingLatestRelease {
+export function parseLatestGithubRelease(input: unknown): MarketingLatestRelease {
+  if (!input || typeof input !== 'object') throw new Error('Invalid GitHub release.');
+  const value = input as GithubReleaseResponse;
   if (typeof value.tag_name !== 'string' || !/^v\d+\.\d+\.\d+$/.test(value.tag_name)) {
     throw new Error('GitHub latest release does not have a stable Navet tag.');
   }
@@ -57,7 +59,10 @@ export function parseLatestGithubRelease(value: GithubReleaseResponse): Marketin
 
   const highlights = parseGithubReleaseHighlights(value.body);
   if (highlights.length === 0) {
-    throw new Error('GitHub latest release does not contain release highlights.');
+    highlights.push({
+      type: 'Improved',
+      description: value.body.trim() || 'No release notes were provided.',
+    });
   }
 
   return {

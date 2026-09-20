@@ -3,6 +3,10 @@ name: Promote Navet Release
 on:
   workflow_dispatch:
     inputs:
+      installation_tested:
+        description: I installed and tested this beta/RC before promoting it to stable
+        type: boolean
+        default: false
       source_tag:
         description: Tested Navet Dev, beta, or release-candidate tag to promote
         required: true
@@ -18,6 +22,7 @@ permissions:
 
 jobs:
   promote-release:
+    if: github.ref == 'refs/heads/main'
     name: Validate And Promote Tested Commit
     runs-on: ubuntu-latest
 
@@ -38,6 +43,7 @@ jobs:
         env:
           RELEASE_TAG: ${{ inputs.release_tag }}
           SOURCE_TAG: ${{ inputs.source_tag }}
+          INSTALLATION_TESTED: ${{ inputs.installation_tested }}
         run: |
           set -euo pipefail
           git fetch --force origin main --tags
@@ -66,6 +72,7 @@ jobs:
               exit 1
             }
           else
+            [[ "${INSTALLATION_TESTED}" == true ]] || { echo "Install and test the beta/RC before stable promotion."; exit 1; }
             [[ "${SOURCE_TAG}" == v*-beta.* || "${SOURCE_TAG}" == v*-rc.* ]] || {
               echo "A stable release must promote a tested beta or release candidate."
               exit 1
@@ -89,6 +96,15 @@ jobs:
 
           echo "source_sha=${SOURCE_SHA}" >> "$GITHUB_OUTPUT"
 
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Require successful source publication before creating a tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SOURCE_TAG: ${{ inputs.source_tag }}
+          RELEASE_SHA: ${{ steps.promotion.outputs.source_sha }}
+        run: node scripts/release-evidence.mjs verify-source
+
       - name: Create and push promoted release tag
         env:
           RELEASE_TAG: ${{ inputs.release_tag }}
@@ -107,7 +123,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ inputs.release_tag }}
           SOURCE_TAG: ${{ inputs.source_tag }}
-        run: gh workflow run release.yml --ref "${RELEASE_TAG}" -f source_tag="${SOURCE_TAG}"
+          INSTALLATION_TESTED: ${{ inputs.installation_tested }}
+        run: gh workflow run release.yml --ref main -f release_tag="${RELEASE_TAG}" -f source_tag="${SOURCE_TAG}" -f installation_tested="${INSTALLATION_TESTED}"
 
       - name: Summarize promotion
         env:
@@ -115,4 +132,4 @@ jobs:
           SOURCE_TAG: ${{ inputs.source_tag }}
         run: |
           echo "Promoted ${SOURCE_TAG} to ${RELEASE_TAG} without advancing protected main."
-          echo "The release workflow will build beta from the tested commit or promote its tested beta/RC artifacts."
+          echo "The release workflow will build correctly versioned artifacts and test their published digests."

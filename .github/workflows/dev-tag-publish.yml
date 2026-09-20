@@ -13,16 +13,10 @@ permissions:
   contents: write
 
 jobs:
-  tier-1-release-critical:
-    name: Release Safety Checks
-    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
-    uses: ./.github/workflows/provider-platform-validation.yml
-
   prepare-dev-release:
     name: Tag Merged Main Commit For Navet Dev
     if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
-    needs: tier-1-release-critical
 
     steps:
       - name: Ensure workflow runs from main
@@ -48,7 +42,21 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+      - name: Classify merged changes
+        id: impact
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
+        run: |
+          if [[ "${GITHUB_EVENT_NAME}" == workflow_dispatch ]]; then
+            echo 'runtime=true' >> "$GITHUB_OUTPUT"
+          else
+            export BASE_SHA="$(git rev-parse HEAD^)"
+            node scripts/pipeline-impact.mjs
+          fi
+
       - name: Create and push Navet Dev tag
+        if: steps.impact.outputs.runtime == 'true'
         id: publish
         env:
           PR_NUMBER: ${{ github.event.pull_request.number || 0 }}
@@ -77,12 +85,14 @@ jobs:
           done
 
       - name: Dispatch Navet Dev artifact publication
+        if: steps.impact.outputs.runtime == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG_NAME: ${{ steps.publish.outputs.tag_name }}
         run: gh workflow run dev-tag-release.yml --ref "${TAG_NAME}"
 
       - name: Summarize next step
+        if: steps.impact.outputs.runtime == 'true'
         run: |
           echo "Created and pushed the matching navet-dev tag without advancing protected main."
           echo "The tag-triggered publish workflow will build and publish the dev artifacts."

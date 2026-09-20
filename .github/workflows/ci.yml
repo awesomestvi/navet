@@ -9,17 +9,43 @@ on:
       - reopened
       - synchronize
       - ready_for_review
-  workflow_call:
 
 permissions:
   contents: read
+  checks: read
 
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
+  impact:
+    runs-on: ubuntu-latest
+    outputs:
+      runtime: ${{ steps.impact.outputs.runtime }}
+      website: ${{ steps.impact.outputs.website }}
+      docs: ${{ steps.impact.outputs.docs }}
+      demo: ${{ steps.impact.outputs.demo }}
+      storybook: ${{ steps.impact.outputs.storybook }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - id: impact
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          if [[ -z "$BASE_SHA" || "$BASE_SHA" == 0000000000000000000000000000000000000000 ]]; then
+            export BASE_SHA="$(git rev-parse HEAD^)"
+          fi
+          node scripts/pipeline-impact.mjs
+
   quality:
+    needs: impact
     runs-on: ubuntu-latest
 
     steps:
@@ -63,34 +89,61 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      - name: Validate pipeline and packaging scripts
+        if: needs.impact.outputs.runtime != 'true'
+        run: pnpm exec vitest run --config vitest.unit.config.ts scripts
+
+      - name: Validate GitHub workflow contracts
+        run: docker run --rm --volume "$GITHUB_WORKSPACE:/repo:ro" --workdir /repo rhysd/actionlint:1.7.12 -shellcheck= -pyflakes=
+
       - name: Build app
+        if: needs.impact.outputs.runtime == 'true'
         run: pnpm build
 
       - name: Check bundle budgets
+        if: needs.impact.outputs.runtime == 'true'
         run: pnpm check:bundle-budget
 
       - name: Build marketing website
+        if: needs.impact.outputs.website == 'true'
         run: pnpm website:build
 
       - name: Check marketing website performance and security gates
+        if: needs.impact.outputs.website == 'true'
         run: pnpm check:website-audit
 
       - name: Build public demo
+        if: needs.impact.outputs.demo == 'true' || needs.impact.outputs.runtime == 'true'
         run: pnpm build:demo
 
+      - name: Share tested demo build with visual review
+        if: needs.impact.outputs.demo == 'true' || needs.impact.outputs.runtime == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-demo
+          path: apps/demo/dist
+          if-no-files-found: error
+
       - name: Build Storybook
+        if: needs.impact.outputs.storybook == 'true'
         run: pnpm storybook:build
 
       - name: Build public documentation
+        if: needs.impact.outputs.docs == 'true'
         run: pnpm docs:build
 
       - name: Run Lighthouse CI
+        if: needs.impact.outputs.runtime == 'true'
         run: pnpm dlx @lhci/cli@0.15.1 autorun --config=./lighthouserc.cjs
 
   tier-1-release-critical:
+    needs: impact
+    if: needs.impact.outputs.runtime == 'true'
     uses: ./.github/workflows/provider-platform-validation.yml
 
   tier-2-blocking-app-contracts:
+    needs: impact
+    if: needs.impact.outputs.runtime == 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -114,6 +167,8 @@ jobs:
         run: pnpm test:tier2
 
   standalone-docker-smoke:
+    needs: impact
+    if: needs.impact.outputs.runtime == 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -134,6 +189,8 @@ jobs:
         run: node scripts/docker-smoke.mjs
 
   tier-3-broad-regression:
+    needs: impact
+    if: needs.impact.outputs.runtime == 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -154,9 +211,11 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run Tier 3 broad regression tests
-        run: pnpm test:tier3
+        run: pnpm test:tier3 -- --exclude-blocking
 
   responsive-review:
+    needs: [impact, quality]
+    if: needs.impact.outputs.demo == 'true' || needs.impact.outputs.runtime == 'true'
     name: Responsive visual review
     runs-on: ubuntu-latest
     timeout-minutes: 25
@@ -182,7 +241,13 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Capture responsive demo review and run smoke assertions
-        run: pnpm test:visual-review
+        uses: actions/download-artifact@v4
+        with:
+          name: ci-demo
+          path: apps/demo/dist
+
+      - name: Review the existing demo artifact
+        run: node scripts/run-pr-visual-review.mjs
 
       - name: Upload responsive review screenshots
         if: always()
@@ -195,9 +260,11 @@ jobs:
 
   product-review-gate:
     name: Product review gate
+    timeout-minutes: 25
     if: always()
     runs-on: ubuntu-latest
     needs:
+      - impact
       - quality
       - tier-1-release-critical
       - tier-2-blocking-app-contracts
@@ -206,23 +273,21 @@ jobs:
       - responsive-review
 
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
       - name: Require every deterministic gate
         env:
-          QUALITY: ${{ needs.quality.result }}
-          TIER_1: ${{ needs.tier-1-release-critical.result }}
-          TIER_2: ${{ needs.tier-2-blocking-app-contracts.result }}
-          DOCKER: ${{ needs.standalone-docker-smoke.result }}
-          TIER_3: ${{ needs.tier-3-broad-regression.result }}
-          VISUAL: ${{ needs.responsive-review.result }}
-        run: |
-          failures=0
-          for result in "$QUALITY" "$TIER_1" "$TIER_2" "$DOCKER" "$TIER_3" "$VISUAL"; do
-            if [[ "$result" != "success" ]]; then
-              failures=$((failures + 1))
-            fi
-          done
-          if [[ "$failures" -gt 0 ]]; then
-            echo "${failures} required CI lane(s) did not succeed."
-            exit 1
-          fi
-          echo "All deterministic gates passed."
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: node scripts/pipeline-gate.mjs
+
+      - name: Require successful previews for affected sites
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          IMPACT_JSON: ${{ toJSON(needs.impact.outputs) }}
+        run: node scripts/pages-gate.mjs

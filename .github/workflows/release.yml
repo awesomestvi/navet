@@ -3,20 +3,30 @@ name: Publish Release
 on:
   workflow_dispatch:
     inputs:
+      release_tag:
+        description: Existing annotated release tag to publish or recover
+        required: true
+        type: string
+      installation_tested:
+        description: I installed and tested the selected beta/RC before stable publication
+        type: boolean
+        default: false
       source_tag:
         description: Tested Dev, beta, or release-candidate tag being promoted
         required: true
         type: string
 
 permissions:
-  contents: write
-  packages: write
+  actions: read
+  contents: read
+  packages: read
 
 concurrency:
-  group: release-${{ github.ref }}
+  group: navet-release-publication
   cancel-in-progress: false
 
 env:
+  RELEASE_TAG: ${{ inputs.release_tag }}
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository_owner }}/navet
   HACS_REPOSITORY: awesomestvi/navet-home-assistant
@@ -24,22 +34,17 @@ env:
 jobs:
   release-context:
     name: Validate Promotion
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     outputs:
       package_version: ${{ steps.release.outputs.package_version }}
-      app_version: ${{ steps.release.outputs.app_version }}
       tag_name: ${{ steps.release.outputs.tag_name }}
       prerelease: ${{ steps.release.outputs.prerelease }}
       release_environment: ${{ steps.release.outputs.release_environment }}
-      addon_channel_tag: ${{ steps.release.outputs.addon_channel_tag }}
       release_sha: ${{ steps.release.outputs.release_sha }}
-      release_sha_short: ${{ steps.release.outputs.release_sha_short }}
-      source_standalone_tag: ${{ steps.release.outputs.source_standalone_tag }}
-      source_addon_tag: ${{ steps.release.outputs.source_addon_tag }}
-      source_is_dev: ${{ steps.release.outputs.source_is_dev }}
       notes_base_tag: ${{ steps.release.outputs.notes_base_tag }}
     steps:
-      - name: Checkout promoted tag
+      - name: Checkout trusted release tooling
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -47,14 +52,19 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Refuse stale publication before modifying distributions
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/release-preflight.mjs
       - name: Resolve and validate promotion
         id: release
         env:
           DISPATCH_SOURCE_TAG: ${{ inputs.source_tag }}
+          INSTALLATION_TESTED: ${{ inputs.installation_tested }}
         run: |
           set -euo pipefail
           git fetch --force origin main --tags
-          TAG_NAME="${GITHUB_REF_NAME}"
+          TAG_NAME="${RELEASE_TAG}"
           [[ "${TAG_NAME}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-(beta|rc)\.[0-9]+)?$ ]] || { echo "Unsupported release tag: ${TAG_NAME}"; exit 1; }
           [[ "$(git cat-file -t "refs/tags/${TAG_NAME}")" == tag ]] || { echo "Release tag must be annotated."; exit 1; }
           ANNOTATED_SOURCE_TAG="$(git for-each-ref --format='%(contents)' "refs/tags/${TAG_NAME}" | sed -n 's/^Promoted-From: //p' | tail -n 1)"
@@ -74,59 +84,70 @@ jobs:
           SOURCE_SHA="$(git rev-list -n 1 "${SOURCE_TAG}")"
           [[ "${RELEASE_SHA}" == "${SOURCE_SHA}" ]] || { echo "Release and source tags must resolve to the same tested commit."; exit 1; }
           git merge-base --is-ancestor "${RELEASE_SHA}" refs/remotes/origin/main || { echo "Promoted commit is not in protected main."; exit 1; }
-          if [[ "${SOURCE_TAG}" == navet-dev-* ]]; then
-            SOURCE_STANDALONE_TAG="${SOURCE_TAG#navet-dev-}"
-            SOURCE_ADDON_TAG="${SOURCE_TAG#navet-dev-}"
-            SOURCE_IS_DEV=true
-          elif [[ "${SOURCE_TAG}" == v* ]]; then
-            SOURCE_STANDALONE_TAG="${SOURCE_TAG}"
-            SOURCE_ADDON_TAG="${SOURCE_TAG#v}"
-            SOURCE_IS_DEV=false
-          else
-            echo "Unsupported source tag: ${SOURCE_TAG}"
-            exit 1
-          fi
           VERSION="${TAG_NAME#v}"
           if [[ "${TAG_NAME}" == *-beta.* || "${TAG_NAME}" == *-rc.* ]]; then
             PRERELEASE=true
             RELEASE_ENVIRONMENT=beta
-            ADDON_CHANNEL_TAG=beta
           else
+            [[ "${INSTALLATION_TESTED}" == true ]] || { echo "Install and test the selected beta/RC before stable publication."; exit 1; }
             PRERELEASE=false
             RELEASE_ENVIRONMENT=production
-            ADDON_CHANNEL_TAG=latest
           fi
           NOTES_BASE_TAG="$(git tag --merged "${RELEASE_SHA}" --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | grep -Fvx "${TAG_NAME}" | head -n 1 || true)"
           [[ -n "${NOTES_BASE_TAG}" ]] || { echo "No previous stable tag exists for changelog generation."; exit 1; }
-          node scripts/generate-release-notes.mjs --from "${NOTES_BASE_TAG}" --to "${RELEASE_SHA}" >/dev/null
+          mkdir -p "${RUNNER_TEMP}/release-notes"
+          node scripts/release-notes-bundle.mjs --from "${NOTES_BASE_TAG}" --to "${RELEASE_SHA}" --tag "${TAG_NAME}" --output "${RUNNER_TEMP}/release-notes/navet-release-notes.json"
           {
             echo "package_version=${VERSION}"
-            echo "app_version=${VERSION%%-*}"
             echo "tag_name=${TAG_NAME}"
             echo "prerelease=${PRERELEASE}"
             echo "release_environment=${RELEASE_ENVIRONMENT}"
-            echo "addon_channel_tag=${ADDON_CHANNEL_TAG}"
             echo "release_sha=${RELEASE_SHA}"
-            echo "release_sha_short=${RELEASE_SHA::7}"
-            echo "source_standalone_tag=${SOURCE_STANDALONE_TAG}"
-            echo "source_addon_tag=${SOURCE_ADDON_TAG}"
-            echo "source_is_dev=${SOURCE_IS_DEV}"
             echo "notes_base_tag=${NOTES_BASE_TAG}"
           } >> "$GITHUB_OUTPUT"
+      - name: Share pinned release notes
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: ${{ runner.temp }}/release-notes
+          if-no-files-found: error
 
-  tier-1-release-critical:
-    name: Release Safety Checks
+  source-evidence:
+    name: Verify successful source publication
+    runs-on: ubuntu-latest
     needs: release-context
-    uses: ./.github/workflows/provider-platform-validation.yml
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: docker/setup-buildx-action@v3
+      - env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SOURCE_TAG: ${{ inputs.source_tag }}
+          RELEASE_SHA: ${{ needs.release-context.outputs.release_sha }}
+        run: node scripts/release-evidence.mjs verify-source
 
   custom-panel-artifact:
     name: Package Home Assistant Panel
     runs-on: ubuntu-latest
-    needs: [release-context, tier-1-release-critical]
+    needs: [release-context, source-evidence]
     environment: ${{ needs.release-context.outputs.release_environment }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release-context.outputs.release_sha }}
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: .release-tools
+          persist-credentials: false
+      - name: Reuse an already published panel archive
+        id: existing
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node .release-tools/scripts/release-assets.mjs restore-panel
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
       - name: Setup Node.js
@@ -136,19 +157,22 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
       - name: Install dependencies
+        if: steps.existing.outputs.exists != 'true'
         run: pnpm install --frozen-lockfile
       - name: Build custom panel
+        if: steps.existing.outputs.exists != 'true'
         env:
           NAVET_BUILD_VERSION: ${{ needs.release-context.outputs.package_version }}
           NAVET_RELEASE_CHANNEL: ${{ needs.release-context.outputs.prerelease == 'true' && 'beta' || 'stable' }}
           NAVET_VERSION: ${{ needs.release-context.outputs.package_version }}
         run: pnpm build:ha-panel
       - name: Package custom panel artifact
+        if: steps.existing.outputs.exists != 'true'
         run: |
           PANEL_STAGE="release-assets/panel/platform/home-assistant/custom_components/navet"
           mkdir -p "$PANEL_STAGE"
           cp -R apps/ha-panel/dist "$PANEL_STAGE/frontend"
-          tar -C release-assets/panel -czf "$GITHUB_WORKSPACE/release-assets/navet-panel-${GITHUB_REF_NAME}.tar.gz" platform/home-assistant/custom_components/navet/frontend
+          tar -C release-assets/panel -czf "$GITHUB_WORKSPACE/release-assets/navet-panel-${RELEASE_TAG}.tar.gz" platform/home-assistant/custom_components/navet/frontend
       - name: Upload custom panel artifact
         uses: actions/upload-artifact@v4
         with:
@@ -156,142 +180,30 @@ jobs:
           path: release-assets/navet-panel-${{ needs.release-context.outputs.tag_name }}.tar.gz
           if-no-files-found: error
 
-  promote-standalone:
-    name: Publish Navet App Release Image
-    runs-on: ubuntu-latest
-    needs: [release-context, tier-1-release-critical]
-    environment: ${{ needs.release-context.outputs.release_environment }}
-    steps:
-      - name: Checkout release commit
-        if: needs.release-context.outputs.source_is_dev == 'true'
-        uses: actions/checkout@v4
-      - name: Capture build metadata
-        if: needs.release-context.outputs.source_is_dev == 'true'
-        id: metadata
-        run: echo "build_date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
-      - name: Set up QEMU
-        if: needs.release-context.outputs.source_is_dev == 'true'
-        uses: docker/setup-qemu-action@v3
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build release artifact from tested Dev commit
-        if: needs.release-context.outputs.source_is_dev == 'true'
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
-          cache-from: type=gha,scope=navet-standalone
-          cache-to: type=gha,mode=max,scope=navet-standalone
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.release-context.outputs.tag_name }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:beta
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ needs.release-context.outputs.release_sha_short }}
-          build-args: |
-            NAVET_VERSION=${{ needs.release-context.outputs.package_version }}
-            NAVET_GIT_SHA=${{ needs.release-context.outputs.release_sha }}
-            NAVET_BUILD_DATE=${{ steps.metadata.outputs.build_date }}
-            NAVET_RELEASE_CHANNEL=beta
-            NAVET_BUILD_VERSION=${{ needs.release-context.outputs.package_version }}
-      - name: Retag tested standalone image
-        if: needs.release-context.outputs.source_is_dev != 'true'
-        env:
-          SOURCE_TAG: ${{ needs.release-context.outputs.source_standalone_tag }}
-          TARGET_TAG: ${{ needs.release-context.outputs.tag_name }}
-          VERSION: ${{ needs.release-context.outputs.package_version }}
-          PRERELEASE: ${{ needs.release-context.outputs.prerelease }}
-          RELEASE_SHA_SHORT: ${{ needs.release-context.outputs.release_sha_short }}
-        run: |
-          set -euo pipefail
-          IMAGE="${REGISTRY}/${IMAGE_NAME}"
-          TARGETS=(--tag "${IMAGE}:${TARGET_TAG}" --tag "${IMAGE}:sha-${RELEASE_SHA_SHORT}")
-          if [[ "${PRERELEASE}" == true ]]; then TARGETS+=(--tag "${IMAGE}:beta"); else TARGETS+=(--tag "${IMAGE}:latest" --tag "${IMAGE}:${VERSION%.*}"); fi
-          docker buildx imagetools create "${TARGETS[@]}" "${IMAGE}:${SOURCE_TAG}"
+  images:
+    permissions:
+      contents: read
+      packages: write
+    needs: [release-context, source-evidence]
+    uses: ./.github/workflows/release-image.yml
+    with:
+      sha: ${{ needs.release-context.outputs.release_sha }}
+      version: ${{ needs.release-context.outputs.package_version }}
+      channel: ${{ needs.release-context.outputs.prerelease == 'true' && 'beta' || 'stable' }}
+      environment: ${{ needs.release-context.outputs.release_environment }}
 
-  promote-addon:
-    name: Promote Home Assistant Add-on (${{ matrix.arch }})
-    runs-on: ubuntu-latest
-    needs: [release-context, tier-1-release-critical]
-    environment: ${{ needs.release-context.outputs.release_environment }}
-    strategy:
-      fail-fast: false
-      matrix:
-        arch: [amd64, aarch64]
-    steps:
-      - name: Checkout release commit
-        if: needs.release-context.outputs.source_is_dev == 'true'
-        uses: actions/checkout@v4
-      - name: Capture build metadata
-        if: needs.release-context.outputs.source_is_dev == 'true'
-        id: metadata
-        run: echo "build_date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
-      - name: Resolve add-on build target
-        if: needs.release-context.outputs.source_is_dev == 'true'
-        id: target
-        run: |
-          if [[ "${{ matrix.arch }}" == amd64 ]]; then
-            echo "platform=linux/amd64" >> "$GITHUB_OUTPUT"
-            echo "build_from=ghcr.io/home-assistant/amd64-base:3.20" >> "$GITHUB_OUTPUT"
-          else
-            echo "platform=linux/arm64" >> "$GITHUB_OUTPUT"
-            echo "build_from=ghcr.io/home-assistant/aarch64-base:3.20" >> "$GITHUB_OUTPUT"
-          fi
-      - name: Set up QEMU
-        if: needs.release-context.outputs.source_is_dev == 'true'
-        uses: docker/setup-qemu-action@v3
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build release add-on from tested Dev commit
-        if: needs.release-context.outputs.source_is_dev == 'true'
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./platform/home-assistant/addons/navet/Dockerfile
-          platforms: ${{ steps.target.outputs.platform }}
-          push: true
-          cache-from: type=gha,scope=navet-addon-${{ matrix.arch }}
-          cache-to: type=gha,mode=max,scope=navet-addon-${{ matrix.arch }},ignore-error=true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/${{ matrix.arch }}-navet-addon:${{ needs.release-context.outputs.package_version }}
-            ghcr.io/${{ github.repository_owner }}/${{ matrix.arch }}-navet-addon:beta
-            ghcr.io/${{ github.repository_owner }}/${{ matrix.arch }}-navet-addon:sha-${{ needs.release-context.outputs.release_sha_short }}
-          build-args: |
-            BUILD_FROM=${{ steps.target.outputs.build_from }}
-            BUILD_VERSION=${{ needs.release-context.outputs.package_version }}
-            BUILD_ARCH=${{ matrix.arch }}
-            NAVET_VERSION=${{ needs.release-context.outputs.package_version }}
-            NAVET_GIT_SHA=${{ needs.release-context.outputs.release_sha }}
-            NAVET_BUILD_DATE=${{ steps.metadata.outputs.build_date }}
-            NAVET_RELEASE_CHANNEL=beta
-            NAVET_BUILD_VERSION=${{ needs.release-context.outputs.package_version }}
-      - name: Retag tested add-on image
-        if: needs.release-context.outputs.source_is_dev != 'true'
-        env:
-          CHANNEL_TAG: ${{ needs.release-context.outputs.addon_channel_tag }}
-          RELEASE_SHA_SHORT: ${{ needs.release-context.outputs.release_sha_short }}
-          SOURCE_TAG: ${{ needs.release-context.outputs.source_addon_tag }}
-          VERSION: ${{ needs.release-context.outputs.package_version }}
-        run: |
-          IMAGE="ghcr.io/${GITHUB_REPOSITORY_OWNER}/${{ matrix.arch }}-navet-addon"
-          docker buildx imagetools create --tag "${IMAGE}:${VERSION}" --tag "${IMAGE}:${CHANNEL_TAG}" --tag "${IMAGE}:sha-${RELEASE_SHA_SHORT}" "${IMAGE}:${SOURCE_TAG}"
+  runtime:
+    needs: [release-context, images]
+    uses: ./.github/workflows/release-runtime.yml
+    with:
+      sha: ${{ needs.release-context.outputs.release_sha }}
+      version: ${{ needs.release-context.outputs.package_version }}
+      channel: ${{ needs.release-context.outputs.prerelease == 'true' && 'beta' || 'stable' }}
 
   sync-hacs:
     name: Sync HACS Integration
     runs-on: ubuntu-latest
-    needs: [release-context, tier-1-release-critical]
+    needs: [release-context, runtime, custom-panel-artifact]
     concurrency:
       group: hacs-sync-navet-hacs-main
       cancel-in-progress: false
@@ -306,7 +218,14 @@ jobs:
       - name: Checkout monorepo
         uses: actions/checkout@v4
         with:
+          ref: ${{ needs.release-context.outputs.release_sha }}
           fetch-depth: 0
+      - name: Checkout trusted note tooling
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: .release-tools
+          persist-credentials: false
       - name: Create GitHub App token for HACS sync
         id: hacs_app_token
         uses: actions/create-github-app-token@v1
@@ -332,48 +251,80 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Generate HACS release notes
-        run: node scripts/generate-release-notes.mjs --from "${{ needs.release-context.outputs.notes_base_tag }}" --to "${{ needs.release-context.outputs.release_sha }}" --audience hacs > "${RUNNER_TEMP}/navet-hacs-release-notes.md"
+      - name: Download pinned release notes
+        uses: actions/download-artifact@v4
+        with:
+          name: release-notes
+          path: ${{ runner.temp }}/release-notes
+      - name: Download the already built panel
+        uses: actions/download-artifact@v4
+        with:
+          name: navet-panel-${{ needs.release-context.outputs.tag_name }}
+          path: release-assets
+      - name: Restore panel distribution
+        run: |
+          mkdir -p apps/ha-panel/dist
+          tar -xzf "release-assets/navet-panel-${RELEASE_TAG}.tar.gz" --strip-components=5 -C apps/ha-panel/dist
+      - name: Reuse an existing immutable HACS tag
+        id: existing
+        working-directory: navet-hacs
+        run: |
+          set -euo pipefail
+          if git ls-remote --exit-code origin "refs/tags/${RELEASE_TAG}" >/dev/null; then
+            git fetch origin "refs/tags/${RELEASE_TAG}:refs/tags/${RELEASE_TAG}"
+            git checkout --detach "${RELEASE_TAG}"
+            echo 'exists=true' >> "$GITHUB_OUTPUT"
+          else
+            status=$?
+            [[ "$status" == 2 ]] || exit "$status"
+          fi
       - name: Export HACS payload
         env:
+          NAVET_SKIP_HA_PANEL_BUILD: '1'
           NAVET_HACS_EXPORT_ROOT: ${{ github.workspace }}/navet-hacs
-          NAVET_RELEASE_NOTES_FILE: ${{ runner.temp }}/navet-hacs-release-notes.md
+          NAVET_RELEASE_NOTES_FILE: ${{ runner.temp }}/release-notes/hacs.md
           NAVET_RELEASE_VERSION: ${{ needs.release-context.outputs.package_version }}
-        run: node scripts/export-hacs-integration.mjs
+        run: |
+          node scripts/export-hacs-integration.mjs
+          node .release-tools/scripts/release-hacs-changelog.mjs
       - name: Commit and push HACS sync
         working-directory: navet-hacs
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [[ "${{ steps.existing.outputs.exists }}" == true ]]; then
+            git diff --exit-code -- custom_components hacs.json README.md LICENSE .github CHANGELOG.md
+            [[ -z "$(git ls-files --others --exclude-standard custom_components)" ]]
+            exit 0
+          fi
           git add -A
           if ! git diff --cached --quiet; then
-            git commit -m "chore: sync release export from ${GITHUB_REF_NAME}"
+            git commit -m "chore: sync release export from ${RELEASE_TAG}"
             git pull --rebase origin main
             git push origin HEAD:main
           fi
       - name: Sync matching HACS release tag
+        if: steps.existing.outputs.exists != 'true'
         working-directory: navet-hacs
         run: |
-          git tag -fa "${GITHUB_REF_NAME}" -m "Release ${GITHUB_REF_NAME}"
-          git push origin "refs/tags/${GITHUB_REF_NAME}" --force
+          git tag -a "${RELEASE_TAG}" -m "Release ${RELEASE_TAG}"
+          git push origin "refs/tags/${RELEASE_TAG}"
       - name: Create matching HACS GitHub release
         env:
           GH_TOKEN: ${{ steps.hacs_app_token.outputs.token }}
           PRERELEASE: ${{ needs.release-context.outputs.prerelease }}
-        run: |
-          if gh release view "${GITHUB_REF_NAME}" --repo "${HACS_REPOSITORY}" >/dev/null 2>&1; then
-            echo "HACS release ${GITHUB_REF_NAME} already exists."
-            exit 0
-          fi
-          args=(release create "${GITHUB_REF_NAME}" --repo "${HACS_REPOSITORY}" --verify-tag --title "${GITHUB_REF_NAME}" --notes-file "${RUNNER_TEMP}/navet-hacs-release-notes.md")
-          [[ "${PRERELEASE}" != true ]] || args+=(--prerelease)
-          gh "${args[@]}"
+          RELEASE_SHA: ${{ needs.release-context.outputs.release_sha }}
+          NOTES_BUNDLE: ${{ runner.temp }}/release-notes/navet-release-notes.json
+          NOTES_FILE: ${{ runner.temp }}/release-notes/hacs.md
+        run: node .release-tools/scripts/release-hacs-notes.mjs
 
   github-release:
+    permissions:
+      contents: write
     name: Create GitHub release
     runs-on: ubuntu-latest
-    needs: [release-context, promote-standalone, promote-addon, custom-panel-artifact, sync-hacs]
+    needs: [release-context, runtime, custom-panel-artifact, sync-hacs, publish-addon-metadata]
     environment: ${{ needs.release-context.outputs.release_environment }}
     steps:
       - name: Checkout
@@ -389,22 +340,42 @@ jobs:
         with:
           name: navet-panel-${{ needs.release-context.outputs.tag_name }}
           path: release-assets
-      - name: Build release notes
-        run: node scripts/generate-release-notes.mjs --from "${{ needs.release-context.outputs.notes_base_tag }}" --to "${{ needs.release-context.outputs.release_sha }}" > "${RUNNER_TEMP}/navet-release-notes.md"
-      - name: Create GitHub release
-        uses: softprops/action-gh-release@v2
+      - uses: actions/download-artifact@v4
         with:
-          tag_name: ${{ needs.release-context.outputs.tag_name }}
-          name: ${{ needs.release-context.outputs.tag_name }}
-          body_path: ${{ runner.temp }}/navet-release-notes.md
-          prerelease: ${{ needs.release-context.outputs.prerelease == 'true' }}
-          generate_release_notes: false
-          files: release-assets/navet-panel-${{ needs.release-context.outputs.tag_name }}.tar.gz
+          pattern: release-image-*
+          path: release-images
+          merge-multiple: true
+      - name: Download pinned release notes
+        uses: actions/download-artifact@v4
+        with:
+          name: release-notes
+          path: ${{ runner.temp }}/release-notes
+      - name: Record the verified package identities
+        env:
+          VERSION: ${{ needs.release-context.outputs.package_version }}
+          RELEASE_SHA: ${{ needs.release-context.outputs.release_sha }}
+          RELEASE_CHANNEL: ${{ needs.release-context.outputs.prerelease == 'true' && 'beta' || 'stable' }}
+          NOTES_BUNDLE: ${{ runner.temp }}/release-notes/navet-release-notes.json
+        run: node scripts/release-evidence.mjs write
+      - name: Create GitHub release without replacing published assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PRERELEASE: ${{ needs.release-context.outputs.prerelease }}
+          NOTES_FILE: ${{ runner.temp }}/release-notes/general.md
+          NOTES_BUNDLE: ${{ runner.temp }}/release-notes/navet-release-notes.json
+          RELEASE_SHA: ${{ needs.release-context.outputs.release_sha }}
+        run: node scripts/release-assets.mjs publish
+
+      - name: Preserve artifact identities and bind verification to this run
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_SHA: ${{ needs.release-context.outputs.release_sha }}
+        run: node scripts/release-evidence.mjs publish
 
   verify-release:
-    name: Verify Complete Release
+    name: Verify Installable Artifacts
     runs-on: ubuntu-latest
-    needs: [release-context, promote-standalone, promote-addon, custom-panel-artifact, sync-hacs, github-release]
+    needs: [release-context, runtime, custom-panel-artifact, sync-hacs]
     environment: ${{ needs.release-context.outputs.release_environment }}
     steps:
       - name: Set up Docker Buildx
@@ -417,30 +388,12 @@ jobs:
           docker buildx imagetools inspect "ghcr.io/${GITHUB_REPOSITORY_OWNER}/navet:${TAG_NAME}"
           docker buildx imagetools inspect "ghcr.io/${GITHUB_REPOSITORY_OWNER}/amd64-navet-addon:${VERSION}"
           docker buildx imagetools inspect "ghcr.io/${GITHUB_REPOSITORY_OWNER}/aarch64-navet-addon:${VERSION}"
-      - name: Verify GitHub and HACS releases
+      - name: Verify HACS release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG_NAME: ${{ needs.release-context.outputs.tag_name }}
         run: |
-          gh release view "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --json tagName,assets --jq '.assets[].name' | grep -Fx "navet-panel-${TAG_NAME}.tar.gz"
           gh release view "$TAG_NAME" --repo "$HACS_REPOSITORY" --json tagName --jq '.tagName' | grep -Fx "$TAG_NAME"
-      - name: Verify canonical latest stable release feed
-        if: needs.release-context.outputs.prerelease != 'true'
-        env:
-          TAG_NAME: ${{ needs.release-context.outputs.tag_name }}
-        run: |
-          for attempt in 1 2 3 4; do
-            if curl --fail --location --retry 3 --retry-all-errors --connect-timeout 10 --max-time 60 --silent --show-error \
-              --header "Accept: application/vnd.github+json" \
-              "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest" \
-              | jq -e --arg tag "${TAG_NAME}" '.draft == false and .prerelease == false and .tag_name == $tag'; then
-              exit 0
-            fi
-            if [ "$attempt" -lt 4 ]; then sleep 10; fi
-          done
-          exit 1
-      - name: Record complete release verification
-        run: echo "All versioned artifacts, distribution repositories, and releases were verified." >> "$GITHUB_STEP_SUMMARY"
 
   publish-addon-metadata:
     name: Publish Home Assistant App Metadata
@@ -473,6 +426,18 @@ jobs:
         with:
           node-version: 22
 
+      - name: Download pinned release notes
+        uses: actions/download-artifact@v4
+        with:
+          name: release-notes
+          path: ${{ runner.temp }}/release-notes
+      - name: Checkout trusted metadata tooling
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: .release-tools
+          persist-credentials: false
+
       - name: Prepare and open metadata PR
         id: metadata_pr
         env:
@@ -491,20 +456,20 @@ jobs:
             exit 0
           fi
 
-          NOTES_FILE="${RUNNER_TEMP}/navet-addon-release-notes.md"
-          node scripts/generate-release-notes.mjs --from "${NOTES_BASE_TAG}" --to "${RELEASE_SHA}" --audience home-assistant > "${NOTES_FILE}"
+          NOTES_FILE="${RUNNER_TEMP}/release-notes/homeAssistant.md"
           if [[ "${PRERELEASE}" == "true" ]]; then
             CHANNEL=dev
           else
             CHANNEL=stable
           fi
-          node scripts/prepare-addon-release-metadata.mjs \
+          node .release-tools/scripts/prepare-addon-release-metadata.mjs \
+            --root "${GITHUB_WORKSPACE}" \
             --channel "${CHANNEL}" \
             --version "${VERSION}" \
             --tag "${RELEASE_TAG}" \
             --notes-file "${NOTES_FILE}"
 
-          if git diff --quiet && [[ -z "$(git ls-files --others --exclude-standard)" ]]; then
+          if git diff --quiet -- platform/home-assistant/addons .changes && [[ -z "$(git ls-files --others --exclude-standard platform/home-assistant/addons .changes)" ]]; then
             echo "Home Assistant App metadata is already current."
             exit 0
           fi
@@ -512,7 +477,7 @@ jobs:
           git config user.name "navet-release[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git switch -c "${BRANCH}"
-          git add -A
+          git add platform/home-assistant/addons .changes
           git commit -m "chore(release): publish Home Assistant App ${VERSION}"
           git push --set-upstream origin "${BRANCH}"
 
@@ -536,12 +501,27 @@ jobs:
             --body-file "${BODY_FILE}")"
           echo "pr_url=${PR_URL}" >> "$GITHUB_OUTPUT"
 
+      - name: Verify exact metadata PR contents
+        id: metadata_content
+        if: steps.metadata_pr.outputs.pr_url != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ steps.metadata_pr.outputs.pr_url }}
+          NOTES_BUNDLE: ${{ runner.temp }}/release-notes/navet-release-notes.json
+          RELEASE_SHA: ${{ needs.release-context.outputs.release_sha }}
+        run: |
+          METADATA_SHA="$(gh pr view "$PR_URL" --json headRefOid --jq .headRefOid)"
+          export METADATA_SHA
+          node .release-tools/scripts/verify-addon-release-metadata.mjs
+          echo "sha=$METADATA_SHA" >> "$GITHUB_OUTPUT"
+
       - name: Wait for required checks and merge metadata PR
         if: steps.metadata_pr.outputs.pr_url != ''
         env:
           APP_TOKEN: ${{ steps.navet_app_token.outputs.token }}
           CHECKS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ steps.metadata_pr.outputs.pr_url }}
+          EXPECTED_HEAD: ${{ steps.metadata_content.outputs.sha }}
         run: |
           set -euo pipefail
           DEADLINE=$((SECONDS + 5100))
@@ -555,7 +535,7 @@ jobs:
               fi
             fi
 
-            if GH_TOKEN="${APP_TOKEN}" gh pr merge "${PR_URL}" --squash --delete-branch; then
+            if GH_TOKEN="${APP_TOKEN}" gh pr merge "${PR_URL}" --match-head-commit "${EXPECTED_HEAD}" --squash --delete-branch; then
               echo "Merged ${PR_URL} through the protected main branch after all required checks passed."
               exit 0
             fi
@@ -564,3 +544,53 @@ jobs:
 
           echo "Timed out waiting for required metadata PR checks. The PR remains open."
           exit 1
+
+  verify-distribution:
+    name: Verify Published Changelogs
+    runs-on: ubuntu-latest
+    needs: [release-context, github-release, publish-addon-metadata]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-notes
+          path: ${{ runner.temp }}/release-notes
+      - name: Compare all published notes with pinned evidence
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_SHA: ${{ needs.release-context.outputs.release_sha }}
+          NOTES_BUNDLE: ${{ runner.temp }}/release-notes/navet-release-notes.json
+        run: node scripts/verify-release-distribution.mjs
+
+  publish-channels:
+    permissions:
+      contents: read
+      packages: write
+    name: Verify Complete Release
+    runs-on: ubuntu-latest
+    needs: [release-context, verify-release, publish-addon-metadata, verify-distribution]
+    environment: ${{ needs.release-context.outputs.release_environment }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Advance aliases from this run's verified evidence
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.release-context.outputs.package_version }}
+          RELEASE_SHA: ${{ needs.release-context.outputs.release_sha }}
+          RELEASE_CHANNEL: ${{ needs.release-context.outputs.prerelease == 'true' && 'beta' || 'stable' }}
+        run: |
+          gh release download "$RELEASE_TAG" --pattern navet-release-evidence.json --repo "$GITHUB_REPOSITORY"
+          node scripts/release-channels.mjs
+          echo "Verified packages, distribution metadata and channel aliases are complete." >> "$GITHUB_STEP_SUMMARY"
