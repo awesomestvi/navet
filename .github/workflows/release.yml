@@ -429,10 +429,16 @@ jobs:
         env:
           TAG_NAME: ${{ needs.release-context.outputs.tag_name }}
         run: |
-          curl --fail --location --retry 3 --retry-all-errors --connect-timeout 10 --max-time 60 --silent --show-error \
-            --header "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest" \
-            | jq -e --arg tag "${TAG_NAME}" '.draft == false and .prerelease == false and .tag_name == $tag'
+          for attempt in 1 2 3 4; do
+            if curl --fail --location --retry 3 --retry-all-errors --connect-timeout 10 --max-time 60 --silent --show-error \
+              --header "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest" \
+              | jq -e --arg tag "${TAG_NAME}" '.draft == false and .prerelease == false and .tag_name == $tag'; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 4 ]; then sleep 10; fi
+          done
+          exit 1
       - name: Smoke test public Navet surfaces
         run: |
           curl --fail --location --retry 3 --retry-all-errors --connect-timeout 10 --max-time 60 --silent --show-error https://navet.app/ >/dev/null

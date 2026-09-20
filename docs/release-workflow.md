@@ -209,7 +209,7 @@ Behavior:
 - never moves `latest` on prerelease tags
 - fails when HACS synchronization cannot run instead of reporting a partial success
 - verifies exact standalone and add-on images, the panel archive, both GitHub releases, the latest
-  stable GitHub API response, and the availability of the website and documentation changelog
+  stable GitHub API response, and the availability of the website and documentation site
 
 Production tag preparation:
 

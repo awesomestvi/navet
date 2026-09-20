@@ -114,9 +114,9 @@ const releases = [...changelogSource.matchAll(/^##\s+([^\s]+)\s+-\s+(\d{4}-\d{2}
   const timeline = document.querySelector("[data-release-timeline]");
 
   if (timeline instanceof HTMLElement) {
-    const links = [...timeline.querySelectorAll("a[href^='#release-']")];
+    let links = [...timeline.querySelectorAll("a[href^='#release-']")];
     const list = timeline.querySelector("ol");
-    const targets = links
+    let targets = links
       .map((link) => document.querySelector(link.getAttribute("href") ?? ""))
       .filter((target): target is HTMLElement => target instanceof HTMLElement);
     let frame = 0;
@@ -156,8 +156,17 @@ const releases = [...changelogSource.matchAll(/^##\s+([^\s]+)\s+-\s+(\d{4}-\d{2}
       frame = requestAnimationFrame(updateTimeline);
     };
 
+    const refreshTimeline = () => {
+      links = [...timeline.querySelectorAll("a[href^='#release-']")];
+      targets = links
+        .map((link) => document.querySelector(link.getAttribute("href") ?? ""))
+        .filter((target): target is HTMLElement => target instanceof HTMLElement);
+      scheduleUpdate();
+    };
+
     updateTimeline();
     window.addEventListener("scroll", scheduleUpdate, { passive: true });
     window.addEventListener("resize", scheduleUpdate);
+    window.addEventListener("navet:release-timeline-refresh", refreshTimeline);
   }
 </script>

@@ -14,7 +14,11 @@ function loadLatestRelease() {
       if (!response.ok) throw new Error(`GitHub releases request failed: ${response.status}`);
       return response.json();
     })
-    .then(parseLatestGithubRelease);
+    .then(parseLatestGithubRelease)
+    .catch((error) => {
+      latestReleasePromise = undefined;
+      throw error;
+    });
 
   return latestReleasePromise;
 }

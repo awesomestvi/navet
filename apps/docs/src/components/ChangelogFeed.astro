@@ -163,6 +163,29 @@ const releaseId = (version: string) => `release-${version.toLowerCase().replace(
     return groups.filter((entry) => entry.items.length > 0);
   };
 
+  const appendInlineMarkdown = (parent: HTMLElement, value: string) => {
+    const pattern = /`([^`]+)`|\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g;
+    let offset = 0;
+
+    for (const match of value.matchAll(pattern)) {
+      const index = match.index ?? 0;
+      parent.append(document.createTextNode(value.slice(offset, index)));
+      if (match[1]) {
+        const code = document.createElement("code");
+        code.textContent = match[1];
+        parent.append(code);
+      } else if (match[2] && match[3]) {
+        const link = document.createElement("a");
+        link.href = match[3];
+        link.textContent = match[2];
+        parent.append(link);
+      }
+      offset = index + match[0].length;
+    }
+
+    parent.append(document.createTextNode(value.slice(offset)));
+  };
+
   const createReleaseArticle = (release: {
     version: string;
     date: string;
@@ -205,7 +228,7 @@ const releaseId = (version: string) => `release-${version.toLowerCase().replace(
       const list = document.createElement("ul");
       for (const item of entry.items) {
         const listItem = document.createElement("li");
-        listItem.textContent = item;
+        appendInlineMarkdown(listItem, item);
         list.append(listItem);
       }
       section.append(sectionHeading, list);
@@ -368,6 +391,7 @@ const releaseId = (version: string) => `release-${version.toLowerCase().replace(
         latestTimelineItem?.querySelector("a")?.setAttribute("aria-current", "location");
         releases = [...root.querySelectorAll("[data-release]")];
         applyFilters();
+        window.dispatchEvent(new Event("navet:release-timeline-refresh"));
       };
 
       loadStableReleases().catch(() => {
