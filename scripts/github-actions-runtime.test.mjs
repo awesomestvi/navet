@@ -8,7 +8,7 @@ const minimumNode24Major = new Map([
   ['actions/create-github-app-token', 3],
   ['actions/download-artifact', 7],
   ['actions/github-script', 8],
-  ['actions/setup-node', 5],
+  ['actions/setup-node', 7],
   ['actions/upload-artifact', 6],
   ['docker/build-push-action', 7],
   ['docker/login-action', 4],
@@ -49,7 +49,7 @@ describe('GitHub Actions JavaScript runtimes', () => {
         const workflow = parse(readFileSync(resolve(workflowDirectory, file), 'utf8'));
         return Object.values(workflow.jobs ?? {}).flatMap((job) => job.steps ?? []);
       })
-      .filter((step) => step.uses === 'actions/setup-node@v5');
+      .filter((step) => /^actions\/setup-node@v\d+$/.test(step.uses ?? ''));
 
     expect(setupSteps.length).toBeGreaterThan(0);
     for (const step of setupSteps) {
