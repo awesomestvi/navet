@@ -89,8 +89,9 @@ there is no candidate. Stable uses the highest eligible beta/RC newer than the l
 version; RC ranks above beta for the same base version. Failed or incomplete publications are
 not eligible. The full source-evidence check still runs before any tag is created.
 
-Candidate numbers advance past every existing tag for that version and channel, including tags
-from failed attempts. A Dev build's version is used when it is newer than the latest stable tag;
+Candidate numbers, including explicit overrides, must advance past every existing tag for that
+version and channel, including tags from failed attempts. A Dev build's version is used when it
+is newer than the latest stable tag;
 otherwise the next stable patch version is used. For example, after `v0.17.1`, a Dev build based
 on `0.17.1` targets `v0.17.2-beta.1`, or `v0.17.2-beta.2` if beta.1 already exists. Set
 `release_tag` explicitly to start a different minor/major version. Beta/RC sources retain their

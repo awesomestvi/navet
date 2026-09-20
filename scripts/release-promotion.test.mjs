@@ -50,6 +50,39 @@ describe('promotion defaults', () => {
     ).toBe('v0.17.2-rc.3');
     expect(plan({ channel: 'rc' }).release_tag).toBe('v0.17.2-rc.1');
   });
+  it.each(['beta', 'rc'])('rejects a %s override below a reserved number', (channel) => {
+    const tags = ['v0.17.1', `v0.17.2-${channel}.5`];
+    expect(() => plan({ channel, tags, releaseTag: `v0.17.2-${channel}.3` })).toThrow(
+      'number must advance',
+    );
+    expect(plan({ channel, tags, releaseTag: `v0.17.2-${channel}.6` }).release_tag).toBe(
+      `v0.17.2-${channel}.6`,
+    );
+  });
+  it('checks RC overrides against all tags, not just the selected source', () => {
+    expect(() =>
+      plan({
+        channel: 'rc',
+        sourceTag: 'v0.17.2-rc.1',
+        sources: [source('v0.17.2-rc.1')],
+        tags: ['v0.17.2-rc.5'],
+        releaseTag: 'v0.17.2-rc.3',
+      }),
+    ).toThrow('RC number must advance');
+  });
+  it('keeps numbering scoped to the target version and channel', () => {
+    expect(
+      plan({ tags: ['v0.17.1', 'v0.17.2-rc.9', 'v0.18.0-beta.9'], releaseTag: 'v0.17.2-beta.1' })
+        .release_tag,
+    ).toBe('v0.17.2-beta.1');
+    expect(
+      plan({
+        channel: 'stable',
+        sources: [source('v0.17.2-rc.9')],
+        tags: ['v0.17.1', 'v0.17.2-rc.9'],
+      }).release_tag,
+    ).toBe('v0.17.2');
+  });
   it('prefers RC to beta for stable and never selects already stable versions', () => {
     expect(
       plan({

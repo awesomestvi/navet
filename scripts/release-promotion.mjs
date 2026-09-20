@@ -115,6 +115,18 @@ export function resolvePromotion({
     throw new Error('Source and target must use the same base version.');
   if (source.channel === 'rc' && channel === 'rc' && target.sequence <= source.sequence)
     throw new Error('RC number must advance.');
+  if (channel !== 'stable') {
+    const highestSequence = Math.max(
+      0,
+      ...parsedTags
+        .filter((entry) => entry.base === target.base && entry.channel === channel)
+        .map((entry) => entry.sequence),
+    );
+    if (target.sequence <= highestSequence)
+      throw new Error(
+        `${channel === 'rc' ? 'RC' : 'Beta'} number must advance beyond every existing tag for this version.`,
+      );
+  }
   return { source_tag: source.tag, release_tag: releaseTag, source_sha: source.sha };
 }
 
