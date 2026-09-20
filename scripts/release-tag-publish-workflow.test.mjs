@@ -48,6 +48,7 @@ describe('production release tag publisher', () => {
     ).run;
     expect(contextRun).toContain('Promoted-From:');
     expect(contextRun).toContain('scripts/generate-release-notes.mjs');
+    expect(contextRun).toContain('head -n 1 || true');
     expect(contextRun).not.toContain('scripts/check-release-surfaces.mjs');
 
     const standaloneRun = releaseWorkflow.jobs['promote-standalone'].steps.find(
@@ -58,16 +59,26 @@ describe('production release tag publisher', () => {
     ).run;
     expect(standaloneRun).toContain('docker buildx imagetools create');
     expect(addonRun).toContain('docker buildx imagetools create');
-    expect(
-      releaseWorkflow.jobs['promote-standalone'].steps.find(
-        (step) => step.name === 'Build release artifact from tested Dev commit'
-      ).if
-    ).toContain('source_is_dev');
-    expect(
-      releaseWorkflow.jobs['promote-addon'].steps.find(
-        (step) => step.name === 'Build release add-on from tested Dev commit'
-      ).if
-    ).toContain('source_is_dev');
+    const standaloneBuild = releaseWorkflow.jobs['promote-standalone'].steps.find(
+      (step) => step.name === 'Build release artifact from tested Dev commit'
+    );
+    const addonBuild = releaseWorkflow.jobs['promote-addon'].steps.find(
+      (step) => step.name === 'Build release add-on from tested Dev commit'
+    );
+    expect(standaloneBuild.if).toContain('source_is_dev');
+    expect(addonBuild.if).toContain('source_is_dev');
+    expect(standaloneBuild.with['build-args']).toContain(
+      'NAVET_VERSION=${{ needs.release-context.outputs.package_version }}'
+    );
+    expect(standaloneBuild.with['build-args']).toContain(
+      'NAVET_BUILD_VERSION=${{ needs.release-context.outputs.package_version }}'
+    );
+    expect(addonBuild.with['build-args']).toContain(
+      'NAVET_VERSION=${{ needs.release-context.outputs.package_version }}'
+    );
+    expect(addonBuild.with['build-args']).toContain(
+      'NAVET_BUILD_VERSION=${{ needs.release-context.outputs.package_version }}'
+    );
 
     const exportStep = releaseWorkflow.jobs['sync-hacs'].steps.find(
       (step) => step.name === 'Export HACS payload'

@@ -38,5 +38,19 @@ describe('release fragments', () => {
         '.changes/invalid.yaml'
       )
     ).toThrow('must name at least one audience');
+
+    expect(() =>
+      parseReleaseFragment(
+        `type: fixed\naudiences: [standalone]\nsummary: ${'word '.repeat(21).trim()}\n`,
+        '.changes/verbose.yaml'
+      )
+    ).toThrow('20 words or fewer');
+
+    expect(() =>
+      parseReleaseFragment(
+        'type: fixed\naudiences: [standalone]\nsummary: Fixed setup.\nowner: maintainer\n',
+        '.changes/unknown-field.yaml'
+      )
+    ).toThrow('unsupported fields');
   });
 });

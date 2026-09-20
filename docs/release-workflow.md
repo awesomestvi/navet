@@ -144,6 +144,7 @@ Tag-triggered publish workflow:
 Trigger:
 
 - push a `navet-dev-*` tag
+- manual `workflow_dispatch` using an existing `navet-dev-*` tag ref
 
 Behavior:
 
@@ -174,7 +175,8 @@ Behavior:
 - starts a distinct publish for every merged pull request
 - tags that merge as `navet-dev-0.x.y-dev.YYYYMMDDHHMMSS` without advancing `main`
 - creates and pushes the matching `navet-dev-*` tag
-- relies on the tag-triggered publish workflow to perform the actual artifact publication
+- dispatches `dev-tag-release.yml` using the new tag so the artifact publication starts after tag
+  creation; the workflow's tag-push trigger remains available as the event-driven entry point
 
 ### Release publish
 

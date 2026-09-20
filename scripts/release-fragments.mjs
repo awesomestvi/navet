@@ -108,8 +108,8 @@ export function parseReleaseFragment(content, file = 'release fragment') {
   }
 
   const wordCount = summary.split(/\s+/).length;
-  if (wordCount > 24) {
-    throw new Error(`${file} summary must contain 24 words or fewer; received ${wordCount}.`);
+  if (wordCount > 20) {
+    throw new Error(`${file} summary must contain 20 words or fewer; received ${wordCount}.`);
   }
 
   return { type: fragment.type, audiences, summary, file };

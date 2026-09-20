@@ -81,7 +81,8 @@ Fallback:
 - manually dispatch
   [../../.github/workflows/dev-tag-publish.yml](../../.github/workflows/dev-tag-publish.yml) from
   `main` if the automatic post-merge run needs to be repeated
-- the dispatch workflow only creates and pushes the `navet-dev-*` tag
+- the preparation workflow creates and pushes the `navet-dev-*` tag, then dispatches
+  `dev-tag-release.yml` using that tag
 - the tag-triggered publish workflow performs the actual artifact publication
 
 Important note:

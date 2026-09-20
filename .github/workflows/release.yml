@@ -96,7 +96,7 @@ jobs:
             RELEASE_ENVIRONMENT=production
             ADDON_CHANNEL_TAG=latest
           fi
-          NOTES_BASE_TAG="$(git tag --merged "${RELEASE_SHA}" --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | grep -Fvx "${TAG_NAME}" | head -n 1)"
+          NOTES_BASE_TAG="$(git tag --merged "${RELEASE_SHA}" --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | grep -Fvx "${TAG_NAME}" | head -n 1 || true)"
           [[ -n "${NOTES_BASE_TAG}" ]] || { echo "No previous stable tag exists for changelog generation."; exit 1; }
           node scripts/generate-release-notes.mjs --from "${NOTES_BASE_TAG}" --to "${RELEASE_SHA}" >/dev/null
           {
@@ -195,11 +195,11 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:beta
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ needs.release-context.outputs.release_sha_short }}
           build-args: |
-            NAVET_VERSION=${{ needs.release-context.outputs.app_version }}
+            NAVET_VERSION=${{ needs.release-context.outputs.package_version }}
             NAVET_GIT_SHA=${{ needs.release-context.outputs.release_sha }}
             NAVET_BUILD_DATE=${{ steps.metadata.outputs.build_date }}
             NAVET_RELEASE_CHANNEL=beta
-            NAVET_BUILD_VERSION=${{ needs.release-context.outputs.app_version }}
+            NAVET_BUILD_VERSION=${{ needs.release-context.outputs.package_version }}
       - name: Retag tested standalone image
         if: needs.release-context.outputs.source_is_dev != 'true'
         env:
@@ -272,11 +272,11 @@ jobs:
             BUILD_FROM=${{ steps.target.outputs.build_from }}
             BUILD_VERSION=${{ needs.release-context.outputs.package_version }}
             BUILD_ARCH=${{ matrix.arch }}
-            NAVET_VERSION=${{ needs.release-context.outputs.app_version }}
+            NAVET_VERSION=${{ needs.release-context.outputs.package_version }}
             NAVET_GIT_SHA=${{ needs.release-context.outputs.release_sha }}
             NAVET_BUILD_DATE=${{ steps.metadata.outputs.build_date }}
             NAVET_RELEASE_CHANNEL=beta
-            NAVET_BUILD_VERSION=${{ needs.release-context.outputs.app_version }}
+            NAVET_BUILD_VERSION=${{ needs.release-context.outputs.package_version }}
       - name: Retag tested add-on image
         if: needs.release-context.outputs.source_is_dev != 'true'
         env:

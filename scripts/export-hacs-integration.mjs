@@ -11,6 +11,7 @@ import {
 } from './release-surfaces.mjs';
 import { assembleHomeAssistantIntegration } from './assemble-ha-integration.mjs';
 import { appPaths, homeAssistantPaths } from './repo-paths.mjs';
+import { renderHacsChangelog } from './hacs-changelog.mjs';
 
 const exportRoot = process.env.NAVET_HACS_EXPORT_ROOT
   ? resolve(process.env.NAVET_HACS_EXPORT_ROOT)
@@ -79,9 +80,13 @@ await writeFile(targetManifestPath, `${JSON.stringify(targetManifest, null, 2)}\
 if (releaseNotesFile) {
   const releaseNotes = (await readFile(resolve(releaseNotesFile), 'utf8')).trim();
   const releaseDate = new Date().toISOString().slice(0, 10);
+  const targetChangelogPath = resolve(exportRoot, 'CHANGELOG.md');
+  const existingChangelog = fs.existsSync(targetChangelogPath)
+    ? await readFile(targetChangelogPath, 'utf8')
+    : '';
   await writeFile(
-    resolve(exportRoot, 'CHANGELOG.md'),
-    `# Changelog\n\n## ${releaseVersion} (${releaseDate})\n\n${releaseNotes}\n`,
+    targetChangelogPath,
+    renderHacsChangelog({ releaseVersion, releaseDate, releaseNotes, existingChangelog }),
     'utf8'
   );
 } else {
