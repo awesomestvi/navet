@@ -20,6 +20,7 @@ export const TEST_TIERS = {
       'scripts/vite-preload-graph.test.mjs',
       'scripts/package-import-policy.test.mjs',
       'scripts/release-tag-publish-workflow.test.mjs',
+      'scripts/release-promotion.test.mjs',
       'scripts/release-fragments.test.mjs',
       'scripts/prepare-addon-release-metadata.test.mjs',
       'packages/provider-homeassistant/src/homeassistant-contract.test.ts',

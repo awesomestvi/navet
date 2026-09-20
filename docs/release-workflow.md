@@ -66,15 +66,39 @@ without moving shared aliases. Dev builds do not publish HACS or update supervis
 
 ## Beta, Release Candidates, And Stable
 
-1. Choose an immutable Dev tag whose publication workflow completed successfully.
-2. Run **Promote Navet Release** from `main`, providing `source_tag` and a new
-   `release_tag`, for example `v0.18.0-beta.1`.
-3. Wait for **Publish Release** to complete. It builds correctly versioned artifacts, validates
+1. Run **Promote Navet Release** from `main`. Choose `beta`, `rc`, or `stable` in `channel`.
+   Leave `source_tag` and `release_tag` blank for automatic selection, or enter exact tags to
+   override the defaults.
+2. Leave `preview_only` enabled to check the selected source, commit, target version, and eligible
+   sources in the run summary without publishing. GitHub's form cannot load live tag choices;
+   selection happens when the workflow runs.
+3. Run again with `preview_only` disabled to publish. Automatic selection is recalculated each
+   run. To reproduce the exact previewed plan, copy both selected tags into `source_tag` and
+   `release_tag`. If another tag for the same version and channel appears before publishing,
+   rerun the preview with `release_tag` blank and review the newly selected target before publishing.
+   To promote an installed candidate with an automatic target, pin only `source_tag`.
+4. Wait for **Publish Release** to complete. It builds correctly versioned artifacts, validates
    their actual registry digests, publishes HACS and the panel archive, and completes the
    protected Home Assistant metadata PR.
-4. Install that exact beta in your Docker/Home Assistant setup and test the relevant behavior.
-5. To publish stable, run **Promote Navet Release** from `main` with the tested beta/RC as
-   `source_tag`, the stable target tag, and `installation_tested` enabled.
+5. Install that exact beta/RC in your Docker/Home Assistant setup and test the relevant behavior.
+6. To publish stable, select `stable`, disable `preview_only`, and enable `installation_tested`.
+   This confirms you tested the selected source. Pin `source_tag` to your installed beta/RC if
+   a newer candidate could have appeared since testing. The stable target version is automatic.
+
+For beta, automatic selection uses the newest successfully published, main-backed Dev tag by
+its build timestamp. RC uses the highest eligible beta/RC version, falling back to Dev when
+there is no candidate. Stable uses the highest eligible beta/RC newer than the latest stable
+version; RC ranks above beta for the same base version. Failed or incomplete publications are
+not eligible. The full source-evidence check still runs before any tag is created.
+
+Candidate numbers, including explicit overrides, must advance past every existing tag for that
+version and channel, including tags from failed attempts. A Dev build's version is used when it
+is newer than the latest stable tag;
+otherwise the next stable patch version is used. For example, after `v0.17.1`, a Dev build based
+on `0.17.1` targets `v0.17.2-beta.1`, or `v0.17.2-beta.2` if beta.1 already exists. Set
+`release_tag` explicitly to start a different minor/major version. Beta/RC sources retain their
+base version when promoted. Existing tags cannot be overwritten; use **Publish Release** for
+recovery of an already-created target.
 
 Beta must start from Dev. An RC can start from Dev, beta, or another RC. Stable must start from a
 successfully published beta/RC of the same base version. Source and target tags resolve to the
