@@ -14,6 +14,34 @@ import {
 } from './release-note-contract.mjs';
 import { renderHacsChangelog } from './hacs-changelog.mjs';
 
+/**
+ * Verifies that add-on note extraction stops at the generated development boundary.
+ *
+ * @param {string} _lineEndingName Human-readable case label supplied by Vitest.
+ * @param {string} lineEnding Line ending used to construct the changelog fixture.
+ */
+function verifyDevelopmentBoundary(_lineEndingName, lineEnding) {
+  const body = '## Improvements and bug fixes\n\n- Fixed badge.';
+  const changelog = [
+    '# Changelog',
+    '',
+    '## 0.17.2-beta.2',
+    '',
+    '## Improvements and bug fixes',
+    '',
+    '- Fixed badge.',
+    '',
+    '## In Progress',
+    '',
+    '- Current Navet Dev scope.',
+    '',
+  ].join(lineEnding);
+  const bundle = { tag: 'v0.17.2-beta.2', notes: { homeAssistant: body } };
+
+  expect(changelogNotes(changelog, '0.17.2-beta.2')).toBe(body);
+  expect(() => assertAddonNotes('version: "0.17.2-beta.2"\n', changelog, bundle)).not.toThrow();
+}
+
 describe('immutable release note contract', () => {
   it('reads the selected commit even after a fragment changes or disappears locally', () => {
     const root = mkdtempSync(join(tmpdir(), 'navet-pinned-notes-'));
@@ -122,43 +150,8 @@ describe('immutable release note contract', () => {
     expect(() => changelogNotes(first + '\n## 0.17.2\nwrong', '0.17.2')).toThrow('Duplicate');
   });
 
-  it('stops published notes before the development-only In Progress section', () => {
-    const body = '## Improvements and bug fixes\n\n- Fixed badge.';
-    const changelog = [
-      '# Changelog',
-      '',
-      '## 0.17.2-beta.2',
-      '',
-      body,
-      '',
-      '## In Progress',
-      '',
-      '- Current Navet Dev scope.',
-      '',
-    ].join('\n');
-
-    expect(changelogNotes(changelog, '0.17.2-beta.2')).toBe(body);
-  });
-
-  it('uses normalized offsets when verifying a CRLF add-on changelog', () => {
-    const body = '## Improvements and bug fixes\n\n- Fixed badge.';
-    const changelog = [
-      '# Changelog',
-      '',
-      '## 0.17.2-beta.2',
-      '',
-      '## Improvements and bug fixes',
-      '',
-      '- Fixed badge.',
-      '',
-      '## In Progress',
-      '',
-      '- Current Navet Dev scope.',
-      '',
-    ].join('\r\n');
-    const bundle = { tag: 'v0.17.2-beta.2', notes: { homeAssistant: body } };
-
-    expect(changelogNotes(changelog, '0.17.2-beta.2')).toBe(body);
-    expect(() => assertAddonNotes('version: "0.17.2-beta.2"\r\n', changelog, bundle)).not.toThrow();
-  });
+  it.each([
+    ['LF', '\n'],
+    ['CRLF', '\r\n'],
+  ])('stops published notes at In Progress with %s input', verifyDevelopmentBoundary);
 });
