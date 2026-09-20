@@ -1,0 +1,6 @@
+type: fixed
+audiences:
+  - standalone
+  - home-assistant
+  - hacs
+summary: Fixed the Home security summary badge counting ordinary open covers, such as blinds, as security warnings.

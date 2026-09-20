@@ -9,10 +9,14 @@ const packageJson = JSON.parse(readFileSync(new URL('./package.json', import.met
   version?: string;
 };
 const appVersion = packageJson.version ?? '0.0.0';
-const releaseHighlights = getMarketingReleaseHighlights(
-  readFileSync(new URL('./CHANGELOG.md', import.meta.url), 'utf8'),
-  appVersion
-);
+const latestRelease = {
+  version: appVersion,
+  url: `https://github.com/awesomestvi/navet/releases/tag/v${appVersion}`,
+  highlights: getMarketingReleaseHighlights(
+    readFileSync(new URL('./CHANGELOG.md', import.meta.url), 'utf8'),
+    appVersion
+  ),
+};
 
 export default defineConfig({
   plugins: [react()],
@@ -22,7 +26,7 @@ export default defineConfig({
     __APP_BUILD_DATE__: JSON.stringify('2026-01-01T00:00:00.000Z'),
     __APP_RELEASE_CHANNEL__: JSON.stringify('development'),
     __APP_BUILD_VERSION__: JSON.stringify(appVersion),
-    __MARKETING_RELEASE_HIGHLIGHTS__: JSON.stringify(releaseHighlights),
+    __MARKETING_LATEST_RELEASE__: JSON.stringify(latestRelease),
   },
   test: {
     name: 'unit',

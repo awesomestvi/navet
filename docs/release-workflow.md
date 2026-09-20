@@ -30,6 +30,10 @@ Navet does not use GitFlow.
 The release tag is the canonical published version. GitHub Releases are the canonical published
 changelog. A release no longer needs a version-bump commit on `main`.
 
+The marketing site reads the latest stable version and notes directly from GitHub Releases. The
+documentation changelog reads stable GitHub Releases and places them before the older root
+`CHANGELOG.md` archive. Neither public site needs a release-specific source update.
+
 Every pull request adds one `.changes/*.yaml` fragment. The fragment records a concise outcome,
 its category, and affected audiences. Use `type: internal` with an empty audience list when a pull
 request has no user-facing change. CI requires and validates the newly added fragment.
@@ -204,8 +208,8 @@ Behavior:
 - marks prerelease tags as GitHub prereleases
 - never moves `latest` on prerelease tags
 - fails when HACS synchronization cannot run instead of reporting a partial success
-- verifies exact standalone and add-on images, the panel archive, both GitHub releases, and the
-  availability of the website, demo, docs, and Storybook before the workflow is complete
+- verifies exact standalone and add-on images, the panel archive, both GitHub releases, the latest
+  stable GitHub API response, and the availability of the website and documentation site
 
 Production tag preparation:
 

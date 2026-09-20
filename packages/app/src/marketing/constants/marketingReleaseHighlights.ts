@@ -3,6 +3,12 @@ export type MarketingReleaseHighlight = {
   description: string;
 };
 
-declare const __MARKETING_RELEASE_HIGHLIGHTS__: readonly MarketingReleaseHighlight[];
+export type MarketingLatestRelease = {
+  version: string;
+  url: string;
+  highlights: readonly MarketingReleaseHighlight[];
+};
 
-export const MARKETING_RELEASE_HIGHLIGHTS = __MARKETING_RELEASE_HIGHLIGHTS__;
+declare const __MARKETING_LATEST_RELEASE__: MarketingLatestRelease;
+
+export const MARKETING_LATEST_RELEASE = __MARKETING_LATEST_RELEASE__;

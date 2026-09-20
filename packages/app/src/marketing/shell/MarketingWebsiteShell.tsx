@@ -7,12 +7,12 @@ import {
   navetTypographyTokens,
 } from '@navet/app/components/system/tokens';
 import { cn } from '@navet/app/components/ui/utils';
-import { APP_VERSION } from '@navet/app/constants/app-version';
 import { useTheme } from '@navet/app/hooks/use-theme';
 import {
   getMarketingWebsitePath,
   MARKETING_URLS,
 } from '@navet/app/marketing/constants/marketingLinks';
+import { useLatestGithubRelease } from '@navet/app/marketing/hooks/use-latest-github-release';
 import { GithubMark } from '@navet/app/marketing/icons/GithubMark';
 import { storage } from '@navet/app/utils/storage';
 import { AnimatedGridPattern } from '@website/components/effects/animated-grid-pattern';
@@ -180,6 +180,7 @@ export function MarketingWebsiteShell({
   children: ReactNode;
   currentPathname: string;
 }) {
+  const latestRelease = useLatestGithubRelease();
   const { theme, accentColor } = useTheme();
   const isLightTheme = theme === 'light';
   const isHomePage = currentPathname === '/';
@@ -464,11 +465,8 @@ export function MarketingWebsiteShell({
               <WebsiteNavLink href={MARKETING_URLS.changelog} className="min-h-0 px-0">
                 Changelog
               </WebsiteNavLink>
-              <WebsiteNavLink
-                href={`${MARKETING_URLS.github}/releases/tag/v${APP_VERSION}`}
-                className="min-h-0 px-0"
-              >
-                Latest: v{APP_VERSION}
+              <WebsiteNavLink href={latestRelease.url} className="min-h-0 px-0">
+                Latest: v{latestRelease.version}
               </WebsiteNavLink>
               <WebsiteNavLink href={MARKETING_URLS.resources} className="min-h-0 px-0">
                 Resources

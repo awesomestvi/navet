@@ -6,18 +6,14 @@ import openhabLogo from '@navet/app/assets/providers/openhab.svg';
 import { Link, Panel, Text } from '@navet/app/components/primitives';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { cn } from '@navet/app/components/ui/utils';
-import { APP_VERSION } from '@navet/app/constants/app-version';
 import { useTheme } from '@navet/app/hooks';
 import { MarketingResponsiveImage } from '@navet/app/marketing/components/MarketingResponsiveImage';
 import { MARKETING_URLS } from '@navet/app/marketing/constants/marketingLinks';
-import {
-  MARKETING_RELEASE_HIGHLIGHTS,
-  type MarketingReleaseHighlight,
-} from '@navet/app/marketing/constants/marketingReleaseHighlights';
+import type { MarketingReleaseHighlight } from '@navet/app/marketing/constants/marketingReleaseHighlights';
+import { useLatestGithubRelease } from '@navet/app/marketing/hooks/use-latest-github-release';
 import { MarketingSectionShell } from '@navet/app/marketing/shell/MarketingSectionShell';
 import { ArrowUpRight, BookOpen, Boxes, History, Lightbulb, type LucideIcon } from 'lucide-react';
 
-const RELEASE_URL = `${MARKETING_URLS.github}/releases/tag/v${APP_VERSION}`;
 const RELEASE_MARKER_CLASS_NAMES: Record<MarketingReleaseHighlight['type'], string> = {
   Fixed: 'bg-orange-400',
   Improved: 'bg-sky-400',
@@ -92,6 +88,7 @@ const GUIDE_LINKS: readonly GuideLink[] = [
 export function MarketingReleaseResourcesSection({ className }: { className?: string }) {
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
+  const latestRelease = useLatestGithubRelease();
 
   return (
     <MarketingSectionShell
@@ -113,7 +110,7 @@ export function MarketingReleaseResourcesSection({ className }: { className?: st
             </div>
             <div className="space-y-2">
               <Text className="text-2xl font-semibold tracking-[-0.03em] sm:text-3xl">
-                Navet v{APP_VERSION}
+                Navet v{latestRelease.version}
               </Text>
               <Text tone="muted" className="max-w-md leading-7">
                 See what is new, improved, and fixed before updating your dashboard.
@@ -130,7 +127,7 @@ export function MarketingReleaseResourcesSection({ className }: { className?: st
                 Release highlights
               </Text>
               <ul className="mt-4 space-y-4">
-                {MARKETING_RELEASE_HIGHLIGHTS.map((highlight) => (
+                {latestRelease.highlights.map((highlight) => (
                   <li
                     key={`${highlight.type}-${highlight.description}`}
                     className="grid grid-cols-[auto_1fr] gap-3"
@@ -157,8 +154,8 @@ export function MarketingReleaseResourcesSection({ className }: { className?: st
           </div>
           <div className="flex flex-wrap gap-x-5 gap-y-3">
             <Link href={MARKETING_URLS.changelog}>Read the changelog</Link>
-            <Link href={RELEASE_URL} target="_blank" showExternalIcon>
-              View v{APP_VERSION} on GitHub
+            <Link href={latestRelease.url} target="_blank" showExternalIcon>
+              View v{latestRelease.version} on GitHub
             </Link>
           </div>
         </Panel>

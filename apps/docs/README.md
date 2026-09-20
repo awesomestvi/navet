@@ -15,9 +15,9 @@ an exact GitHub `editUrl`.
 
 ## Discovery pages
 
-- `/changelog/` renders the historical `CHANGELOG.md` archive at build time through
-  `src/components/ChangelogFeed.astro`. Keep writing release notes in the root changelog; there is
-  no second public changelog to update.
+- `/changelog/` loads current stable entries directly from the GitHub Releases API and follows them
+  with the historical `CHANGELOG.md` archive through `src/components/ChangelogFeed.astro`. GitHub
+  Releases remain canonical; no release-specific documentation update is required.
 - `/resources/` is curated in `src/components/ResourcesHub.astro`. Add real showcases, guides, and
   videos there as they are published. Planned walkthroughs may appear as non-interactive entries
   clearly marked **Planned**, without invented dates, durations, or placeholder links. Do not

@@ -19,9 +19,9 @@ const releases = [...changelogSource.matchAll(/^##\s+([^\s]+)\s+-\s+(\d{4}-\d{2}
   isChangelog ? (
     <nav class="navet-release-timeline" aria-labelledby="navet-release-timeline-title" data-release-timeline>
       <h2 id="navet-release-timeline-title">Timeline</h2>
-      <ol>
+      <ol data-release-timeline-list>
         {releases.map((release, index) => (
-          <li class:list={{ "is-active": index === 0 }}>
+          <li class:list={{ "is-active": index === 0 }} data-release-version={release.version}>
             <a href={`#${release.id}`} aria-current={index === 0 ? "location" : undefined}>
               <span>{release.version}</span>
               <time datetime={release.date}>{dateFormatter.format(new Date(`${release.date}T00:00:00Z`))}</time>
@@ -114,9 +114,9 @@ const releases = [...changelogSource.matchAll(/^##\s+([^\s]+)\s+-\s+(\d{4}-\d{2}
   const timeline = document.querySelector("[data-release-timeline]");
 
   if (timeline instanceof HTMLElement) {
-    const links = [...timeline.querySelectorAll("a[href^='#release-']")];
+    let links = [...timeline.querySelectorAll("a[href^='#release-']")];
     const list = timeline.querySelector("ol");
-    const targets = links
+    let targets = links
       .map((link) => document.querySelector(link.getAttribute("href") ?? ""))
       .filter((target): target is HTMLElement => target instanceof HTMLElement);
     let frame = 0;
@@ -156,8 +156,17 @@ const releases = [...changelogSource.matchAll(/^##\s+([^\s]+)\s+-\s+(\d{4}-\d{2}
       frame = requestAnimationFrame(updateTimeline);
     };
 
+    const refreshTimeline = () => {
+      links = [...timeline.querySelectorAll("a[href^='#release-']")];
+      targets = links
+        .map((link) => document.querySelector(link.getAttribute("href") ?? ""))
+        .filter((target): target is HTMLElement => target instanceof HTMLElement);
+      scheduleUpdate();
+    };
+
     updateTimeline();
     window.addEventListener("scroll", scheduleUpdate, { passive: true });
     window.addEventListener("resize", scheduleUpdate);
+    window.addEventListener("navet:release-timeline-refresh", refreshTimeline);
   }
 </script>
