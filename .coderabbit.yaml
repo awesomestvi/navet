@@ -1,9 +1,41 @@
 # yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
 
 language: "en-US"
+inheritance: false
+tone_instructions: |
+  Be concise, direct, and evidence-led. Explain the user or architecture impact
+  before implementation detail. Do not repeat formatter, linter, or passing-CI
+  output as review findings.
+knowledge_base:
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - files: "AGENTS.md"
+        applyTo: "**/*"
+      - files: ".github/AGENTS.md"
+        applyTo: ".github/**"
+      - files: "docs/product/vision.md,docs/product/design-principles.md"
+        applyTo: "packages/**,apps/**"
+      - files: "docs/product/dashboard-principles.md,ai/skills/navet-ux.md"
+        applyTo: "packages/app/src/components/**,packages/app/src/features/**,packages/app/src/ui-kit/**,packages/ui/**"
+      - files: "docs/agents/architecture.md,docs/architecture/package-boundaries.md"
+        applyTo: "packages/**,apps/**,scripts/**"
+      - files: "ai/skills/home-assistant-integration.md"
+        applyTo: "packages/provider-homeassistant/**,platform/home-assistant/**"
+      - files: "ai/skills/testing-architecture.md"
+        applyTo: "**/*.test.*,**/*.spec.*,**/__tests__/**,apps/storybook/**"
+  learnings:
+    scope: "local"
+  issues:
+    scope: "local"
+  pull_requests:
+    scope: "local"
 reviews:
   profile: "chill"
   request_changes_workflow: false
+  auto_assign_reviewers: false
+  suggested_reviewers: false
+  assess_linked_issues: true
   high_level_summary: true
   review_status: true
   auto_review:
@@ -21,6 +53,11 @@ reviews:
         truth for repository architecture, test policy, documentation, and
         validation. Verify lasting behavior against the implementation rather
         than trusting plans or stale Markdown.
+
+        Distinguish a real regression from an incomplete long-term migration.
+        Do not demand broad package moves, cleanups, or documentation solely
+        because the target architecture is not fully reached in the touched
+        area. Report only issues introduced or made materially worse by the PR.
 
     - path: "packages/core/**"
       instructions: |
@@ -41,15 +78,67 @@ reviews:
         Keep provider auth, transport, mapping, realtime updates, and command
         translation inside the owning provider package. Confirm that exposed
         behavior is backed by that provider's capabilities and does not create a
-        global primary-provider assumption.
+        global primary-provider assumption. Provider parity is not required:
+        assess Home Assistant, Homey, and openHAB against their own documented
+        capabilities and flag claims that make planned Hubitat or SmartThings
+        support look implemented.
 
     - path: "packages/app/src/**"
       instructions: |
-        Review shared product behavior for provider neutrality and preserve
-        compatibility with the current app-owned models. Prefer an existing
-        shared primitive or contract over a competing local interface. Check
-        mobile information hierarchy, keyboard access, and runtime guards for
-        browser APIs.
+        This package owns product composition, provider registration, settings,
+        persistence, and boot wiring. Review shared behavior for provider
+        neutrality and route entity commands to each source's owning provider;
+        never introduce a global primary-provider preference. Preserve the
+        current app-owned compatibility models instead of treating them as new
+        public contracts. Prefer an existing primitive or contract over a
+        competing local interface.
+
+    - path: "packages/app/src/infrastructure/home-assistant/**"
+      instructions: |
+        Treat this as a documented compatibility and migration seam, not a
+        preferred home for new provider behavior. Flag new auth, transport,
+        mapping, realtime, or command-translation logic that belongs in
+        packages/provider-homeassistant. Do not request unrelated migration of
+        existing code in a narrowly scoped PR.
+
+    - path: "packages/app/src/**/*{store,migration,profile,persist}*"
+      instructions: |
+        Treat persisted-data compatibility and ownership as correctness
+        requirements. Look for stable storage keys, compatible reads, explicit
+        scope, deterministic reconciliation, and protection against silent data
+        loss. Require the persisted-data migration contract to be consulted when
+        a stored shape or migration is changed or removed.
+
+    - path: "packages/app/src/{components,features,ui-kit}/**"
+      instructions: |
+        Review information architecture and semantic reading order before
+        cosmetic detail. Essential controls must remain available on mobile,
+        tablet, and wide layouts; interactive behavior needs keyboard and screen
+        reader support. Shared UI must consume normalized state and
+        provider-neutral commands even while its current owner remains app.
+
+    - path: "apps/**"
+      instructions: |
+        Keep deployment entrypoints thin. Flag duplicated domain policy,
+        provider mapping, or persistence logic that belongs in a package. Check
+        the distinct standalone, demo, documentation, website, panel, and
+        Storybook runtime assumptions instead of assuming one deployment mode.
+
+    - path: ".github/workflows/**"
+      instructions: |
+        Treat workflow permissions, protected-main behavior, untrusted pull
+        request input, secret exposure, current-head checks, and release
+        authority as high risk. Do not suggest bypassing normal hooks or required
+        checks. Production publication must remain an explicit maintainer action;
+        development publication and tag-only flows must operate from the exact
+        intended commit.
+
+    - path: "scripts/**"
+      instructions: |
+        Scripts enforce repository, validation, preview, and release contracts.
+        Look for fail-open behavior, unsafe subprocess or input handling,
+        nondeterministic path selection, and disagreement between local checks
+        and CI. Preserve dry-run and test seams where they exist.
 
     - path: "**/*.{test,spec}.{ts,tsx,js,jsx}"
       instructions: |
@@ -64,7 +153,9 @@ reviews:
         Documentation is for first-time users. Require current UI labels and
         direct, verified steps; keep obsolete-workflow comparisons in changelogs
         or migration guides. Shared guidance should remain provider-neutral and
-        link to provider-specific instructions instead of duplicating them.
+        link to provider-specific instructions instead of duplicating them. Do
+        not request a documentation change for an internal refactor with no
+        lasting user, contributor, setup, capability, or architecture impact.
 
     - path: "platform/home-assistant/**"
       instructions: |
