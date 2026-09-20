@@ -3,14 +3,17 @@ import { readFile } from 'node:fs/promises';
 import { classifyFiles, impactLabels, MANAGED_IMPACT_LABELS } from './change-impact.mjs';
 
 const MARKER = '<!-- navet-pr-review-summary -->';
-const SUMMARY_AUTHOR = 'github-actions[bot]';
+const SUMMARY_AUTHOR = 'navet-nisse[bot]';
 const event = JSON.parse(await readFile(process.env.GITHUB_EVENT_PATH, 'utf8'));
 const run = event.workflow_run;
 const token = process.env.GITHUB_TOKEN;
+const commentToken = process.env.NAVET_NISSE_TOKEN;
 const repository = process.env.GITHUB_REPOSITORY;
 
-if (!run || !token || !repository) {
-  throw new Error('This script requires a workflow_run event, GITHUB_TOKEN, and GITHUB_REPOSITORY.');
+if (!run || !token || !commentToken || !repository) {
+  throw new Error(
+    'This script requires a workflow_run event, GITHUB_TOKEN, NAVET_NISSE_TOKEN, and GITHUB_REPOSITORY.'
+  );
 }
 
 const pullReference = run.pull_requests?.[0];
@@ -21,16 +24,15 @@ if (!pullReference) {
 
 const [owner, repo] = repository.split('/');
 const pullNumber = pullReference.number;
-const headers = {
-  Accept: 'application/vnd.github+json',
-  Authorization: `Bearer ${token}`,
-  'X-GitHub-Api-Version': '2022-11-28',
-};
-
-async function request(path, init = {}) {
+async function request(path, init = {}, authToken = token) {
   const response = await fetch(`https://api.github.com${path}`, {
     ...init,
-    headers: { ...headers, ...init.headers },
+    headers: {
+      Accept: 'application/vnd.github+json',
+      Authorization: `Bearer ${authToken}`,
+      'X-GitHub-Api-Version': '2022-11-28',
+      ...init.headers,
+    },
   });
   if (!response.ok) {
     const error = new Error(
@@ -103,15 +105,23 @@ const previous = comments.find(
   (comment) => comment.user?.login === SUMMARY_AUTHOR && comment.body?.includes(MARKER)
 );
 if (previous) {
-  await request(`/repos/${owner}/${repo}/issues/comments/${previous.id}`, {
-    method: 'PATCH',
-    body: JSON.stringify({ body }),
-  });
+  await request(
+    `/repos/${owner}/${repo}/issues/comments/${previous.id}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ body }),
+    },
+    commentToken
+  );
 } else {
-  await request(`/repos/${owner}/${repo}/issues/${pullNumber}/comments`, {
-    method: 'POST',
-    body: JSON.stringify({ body }),
-  });
+  await request(
+    `/repos/${owner}/${repo}/issues/${pullNumber}/comments`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ body }),
+    },
+    commentToken
+  );
 }
 
 const desiredImpactLabels = impactLabels(impact);

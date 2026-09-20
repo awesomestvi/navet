@@ -2,7 +2,6 @@ name: Device compatibility
 description: Report a Home Assistant entity, integration, or device that Navet does not handle correctly.
 title: "[Device]: "
 labels:
-  - "status: needs-triage"
   - "type: bug"
   - "area: home-assistant"
 body:

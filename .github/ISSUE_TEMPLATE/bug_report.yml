@@ -2,7 +2,6 @@ name: Report a problem
 description: Tell us what went wrong. No technical knowledge or detailed diagnostics needed.
 title: "[Problem]: "
 labels:
-  - "status: needs-triage"
   - "type: bug"
 body:
   - type: markdown

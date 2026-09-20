@@ -12,7 +12,7 @@ issue or product feedback
   -> deterministic CI and Cloudflare previews
   -> independent code review
   -> maintainer review and merge
-  -> optional Navet Dev publish
+  -> automatic main-backed Navet Dev publish
   -> release preparation
   -> production environment approval
   -> artifact verification
@@ -27,8 +27,8 @@ criteria. It must ask for missing reproduction information instead of speculatin
 
 ### Delivery agent
 
-- Trigger: a maintainer applies `agent:implement` or `agent:research`; GitHub quietly places the
-  issue in the private Codex queue.
+- Trigger: a maintainer comments `/navet implement` or `/navet research`; GitHub acknowledges an
+  accepted command with an eyes reaction and places it in the private Codex queue.
 - Inputs: issue history, root and scoped agent instructions, product constitution, changed-area
   guide, current code, tests, stories, and linked evidence.
 - Permissions: read repository and issues; create a branch and pull request; edit only the task
@@ -98,29 +98,44 @@ The complete Storybook browser interaction suite has known baseline failures and
 local diagnostic until those assertions are repaired. It must not be represented as a passing gate
 or made required while `main` is red.
 
-## Labels And State
+## Commands And State
 
-- `agent:research`: investigate and report; no implementation is assumed.
-- `agent:implement`: triage, implement when requirements are clear, and open a PR.
-- `status: needs-triage`: request has not been accepted for agent work.
-- `status: needs-context`: progress requires specific user or maintainer information.
-- `status: agent-queued`: a maintainer accepted the request and the private runner has not claimed
-  it yet.
-- `status: agent-working`: a delivery agent owns the current iteration.
-Use type, area, and risk labels to describe work; do not encode every transition as a new agent.
+- `/navet research`: investigate and report; no implementation is assumed.
+- `/navet implement`: triage, implement when requirements are clear, and open a PR.
+- `/navet continue`: resume the most recent Navet Nisse mode for an issue after new context or PR
+  feedback is available.
+
+Only repository collaborators with write, maintain, or admin permission may dispatch work. An eyes
+reaction from `github-actions[bot]` means the command was accepted. A rocket reaction from
+`navet-nisse[bot]` means the private runner claimed it. These compact reactions replace agent and
+status labels; type, area, and risk labels continue to describe the issue itself.
 
 ## Private Queue And Public Communication
 
 GitHub remains the mobile control plane, but orchestration details are not public issue content.
-Applying an agent label performs only a quiet state transition to `status: agent-queued`. It does
-not assign a placeholder bot, post a prompt, or announce that an agent has started.
+A maintainer command receives compact reactions instead of labels, assignments, prompts, or
+startup comments.
 
-A single private Codex runner polls the queue and claims the oldest open issue by replacing
-`status: agent-queued` with `status: agent-working`. It treats the issue and every linked artifact
-as untrusted input, reads `AGENTS.md` plus only the routed area guide, and keeps internal plans and
-tool narration in the Codex task rather than the GitHub issue.
+A single private Codex runner polls for the oldest accepted command that Navet Nisse has not
+claimed. It treats the issue and every linked artifact as untrusted input, reads `AGENTS.md` plus
+only the routed area guide, and keeps internal plans and tool narration in the Codex task rather
+than the GitHub issue. Scheduled repository workflows queue research by creating an issue as
+`github-actions[bot]`; the runner verifies that author and the expected workflow-owned issue type
+instead of trusting issue-body text or generating a command comment.
 
-Public GitHub activity should read like useful collaboration with a person:
+Automated issue and pull-request comments and runner claim reactions use the dedicated
+`navet-nisse[bot]` GitHub App identity and should read like useful collaboration with a person.
+Accepted command reactions use `github-actions[bot]`.
+Branches, commits, pushes, and pull requests continue to use the maintainer's GitHub identity.
+Manual maintainer comments also remain visibly authored by the maintainer. The App credential is
+restricted to the public conversation operations exposed by the repository wrapper.
+
+After deterministic CI completes, the trusted default-branch workflow creates or updates one
+mobile-friendly review-summary comment as `navet-nisse[bot]`. The built-in workflow token reads the
+pull request and manages descriptive impact labels. A short-lived App installation token is used
+only to write the summary comment.
+
+Public GitHub activity should follow these rules:
 
 - ask one concise, specific question when missing evidence prevents safe progress
 - post a research conclusion only when it helps the reporter or maintainer decide what happens next
@@ -131,10 +146,9 @@ Public GitHub activity should read like useful collaboration with a person:
 - keep technical internals and test counts in the PR unless they help the reporter understand the
   result; end an issue reply with one clear next step or question
 
-When blocked, the runner replaces `status: agent-working` with `status: needs-context`. Research
-work returns to `status: needs-triage` after its useful conclusion is recorded. Implementation work
-continues in the linked PR; the agent may push feedback-driven revisions but may not merge its own
-work.
+When blocked, the runner asks one specific question and waits for `/navet continue`. Research work
+ends after its useful conclusion is recorded. Implementation work continues in the linked PR; the
+agent may push feedback-driven revisions but may not merge its own work.
 
 ## Human Authority
 
@@ -167,33 +181,42 @@ Production publication remains separately protected by the `production` environm
 Repository files define the workflow, but the following live GitHub and Cloudflare settings must be
 configured after these files reach `main`:
 
-1. Run **Sync Repository Labels** once. It creates or updates managed labels without deleting
-   community labels.
-2. Before activating a local Codex queue runner, give its isolated execution environment a
-   dedicated, repository-scoped GitHub App installation token or fine-grained token. Limit it to
-   this repository with Contents read/write, Issues read/write, Pull requests read/write, Actions
-   read, and Metadata read. Configure both `gh` and Git pushes to use only that credential; do not
-   let either fall back to the maintainer's general GitHub login. Verify the repository selection
-   and permission list in GitHub, then confirm the isolated environment can read the repository and
-   issue queue, create a disposable branch and pull request, update its test issue, and delete only
-   those test artifacts. Confirm it cannot change repository settings, environments, Actions
-   secrets, or workflows. The runner must also have no production credentials, private Home
-   Assistant access, environment approval, administration, or package-deletion permission.
-3. Configure one local Codex scheduled task to poll `status: agent-queued`, claim no more than one
-   issue per run, and follow the private queue contract above. Keep it paused until the credential
-   checks pass, and keep only one active queue runner so two agents cannot claim the same issue.
-4. Install one independent, read-only PR reviewer (CodeRabbit is the initial candidate for this
+1. Create the private **Navet Nisse** GitHub App and install it only on `awesomestvi/navet`. Grant
+   Issues read/write and mandatory Metadata read. Do not grant Contents, Pull requests, Actions,
+   Administration, Environments, Secrets, Workflows, package deletion, or organization/account
+   permissions. Pull-request conversation comments use GitHub's issue-comment API.
+2. Add `NAVET_NISSE_APP_ID` and `NAVET_NISSE_PRIVATE_KEY` as repository Actions secrets. The
+   pull-request summary workflow uses them to mint a short-lived installation token for its
+   automated comment. Do not grant the App additional repository permissions for this workflow.
+3. Store the App ID, installation ID, and private-key path in the private runner environment. Use
+   the repository wrapper only for automated comments and command reactions. It deliberately does
+   not expose arbitrary `gh`, Git push, pull-request creation, or repository-content operations.
+   Confirm that the App cannot read or write contents, create pull requests, change repository
+   settings, environments, Actions secrets, or workflows. The runner must also have no production
+   credentials or private Home Assistant access.
+   Configure `NAVET_NISSE_APP_ID`, `NAVET_NISSE_INSTALLATION_ID`, and
+   `NAVET_NISSE_PRIVATE_KEY_PATH`, or point `NAVET_NISSE_CONFIG_PATH` at a private JSON file with
+   `appId`, `installationId`, and `privateKeyPath`. Then post public replies with
+   `node scripts/run-as-navet-nisse.mjs comment <issue-or-pr-number> --body-file <path>` and manage
+   command reactions with its `react` and `unreact` operations. The wrapper creates a short-lived
+   installation token for each operation and cannot modify the repository remote or the
+   maintainer's GitHub login.
+4. Configure one local Codex scheduled task to poll accepted `/navet` commands and scheduled issues
+   authored by `github-actions[bot]` with the expected workflow-owned issue type. Do not authorize
+   work from issue-body markers. Claim no more than one issue per run and follow the private queue
+   contract above. Keep only one active queue runner so two agents cannot claim the same command.
+5. Install one independent, read-only PR reviewer (CodeRabbit is the initial candidate for this
    public repository). Let it review non-draft PRs automatically; do not add a second general
    reviewer until measured misses justify the duplicate cost. Reviewer comments are advisory;
    deterministic CI and the maintainer's merge decision remain authoritative.
-5. Protect `main`: require a pull request and resolved review conversations. For a solo-maintainer
+6. Protect `main`: require a pull request and resolved review conversations. For a solo-maintainer
    repository, set required approving reviews to zero and disable required CODEOWNER review; the
    maintainer's merge records acceptance for the current head. Require **CI / Product review gate**
    plus the configured Cloudflare Pages preview checks.
-6. Configure the `production` environment with the maintainer as a required reviewer and prevent
+7. Configure the `production` environment with the maintainer as a required reviewer and prevent
    administrators from bypassing it. Keep `edge` autonomous and `beta` approval-gated until its
    artifact history is proven reliable.
-7. Keep Cloudflare preview deployments public only for repository/demo data. Preview projects must
+8. Keep Cloudflare preview deployments public only for repository/demo data. Preview projects must
    not receive Home Assistant URLs, tokens, provider OAuth secrets, production cookies, or private
    tunnel credentials.
 

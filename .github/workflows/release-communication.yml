@@ -48,7 +48,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               title,
-              labels: ['communication', 'agent:research'],
+              labels: ['communication'],
               body: [
                 `Prepare channel-appropriate drafts for Navet ${tag}.`,
                 '',

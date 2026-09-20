@@ -2,7 +2,6 @@ name: Detailed feature proposal
 description: Propose a feature when you can describe the problem, solution, and product area.
 title: "[Feature]: "
 labels:
-  - "status: needs-triage"
   - "type: feature"
 body:
   - type: markdown
