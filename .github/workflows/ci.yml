@@ -28,12 +28,13 @@ jobs:
       demo: ${{ steps.impact.outputs.demo }}
       storybook: ${{ steps.impact.outputs.storybook }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
+          package-manager-cache: false
       - id: impact
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
@@ -50,17 +51,18 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
+          package-manager-cache: false
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
@@ -118,7 +120,7 @@ jobs:
 
       - name: Share tested demo build with visual review
         if: needs.impact.outputs.demo == 'true' || needs.impact.outputs.runtime == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ci-demo
           path: apps/demo/dist
@@ -148,15 +150,16 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
+          package-manager-cache: false
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
@@ -173,12 +176,13 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
+          package-manager-cache: false
 
       - name: Build standalone Docker image
         run: docker build -t navet:ci .
@@ -195,15 +199,16 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
+          package-manager-cache: false
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
@@ -222,15 +227,16 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
+          package-manager-cache: false
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
@@ -241,7 +247,7 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Capture responsive demo review and run smoke assertions
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: ci-demo
           path: apps/demo/dist
@@ -251,7 +257,7 @@ jobs:
 
       - name: Upload responsive review screenshots
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: responsive-review-${{ github.event.pull_request.number || github.run_id }}
           path: .cache/pr-review/*.png
@@ -273,12 +279,13 @@ jobs:
       - responsive-review
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
+          package-manager-cache: false
       - name: Require every deterministic gate
         env:
           NEEDS_JSON: ${{ toJSON(needs) }}

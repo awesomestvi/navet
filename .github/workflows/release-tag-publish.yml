@@ -42,15 +42,16 @@ jobs:
 
     steps:
       - name: Checkout protected main
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: main
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
+          package-manager-cache: false
 
       - name: Select source and target
         id: selection
@@ -122,7 +123,7 @@ jobs:
 
           echo "source_sha=${SOURCE_SHA}" >> "$GITHUB_OUTPUT"
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
 
       - name: Require successful source publication before creating a tag
         env:
