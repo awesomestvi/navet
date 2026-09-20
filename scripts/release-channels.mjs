@@ -4,6 +4,7 @@ import { pathToFileURL } from 'node:url';
 import { inspectImage } from './release-image.mjs';
 import { validateEvidence } from './release-evidence.mjs';
 
+/** Compare supported stable, beta, and release-candidate versions without channel rollback. */
 export function compareVersions(a, b) {
   const parse = (version) => {
     const match = /^(\d+)\.(\d+)\.(\d+)(?:-(beta|rc)\.(\d+))?$/.exec(version);
