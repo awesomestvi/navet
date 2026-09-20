@@ -1,0 +1,3 @@
+type: internal
+audiences: []
+summary: Add automatic source selection, next-version defaults, and preview mode to release promotion.
