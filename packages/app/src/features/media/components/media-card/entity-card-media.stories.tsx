@@ -166,6 +166,17 @@ export const TVLongName: Story = {
     name: 'Samsung The Frame 65 QE65LS03AAUXXC',
     size: 'medium',
   },
+  globals: { viewport: { value: 'mobile1', isRotated: false } },
+  play: async ({ canvas }) => {
+    const title = canvas.getByText('Samsung The Frame 65 QE65LS03AAUXXC');
+    const selectButton = canvas.getByRole('button', { name: /^select$/i });
+    const dpad = selectButton.closest<HTMLElement>('.relative.shrink-0');
+
+    await expect(dpad).not.toBeNull();
+    await expect(title.getBoundingClientRect().right).toBeLessThanOrEqual(
+      dpad?.getBoundingClientRect().left ?? 0
+    );
+  },
 };
 
 /** Small TV: header gamepad toggles the D-pad; settings stays bottom-right while the pad is open. */
