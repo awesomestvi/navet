@@ -2,7 +2,7 @@ import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import { renderWithProviders } from '@navet/app/test/render';
 import type { DeviceWithType } from '@navet/app/types/device.types';
 import { screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { RoomSection } from '../room-section';
 
 vi.mock('@navet/app/hooks/use-breakpoint-cols', () => ({
@@ -57,6 +57,10 @@ function renderRoomSection(options?: { densePerformanceMode?: boolean; isEditMod
 }
 
 describe('RoomSection dense paint policy', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('enables section-level offscreen paint optimization in dense performance mode', () => {
     renderRoomSection({ densePerformanceMode: true });
 
@@ -70,6 +74,17 @@ describe('RoomSection dense paint policy', () => {
 
   it('keeps section paint optimization disabled while editing', () => {
     renderRoomSection({ densePerformanceMode: true, isEditMode: true });
+
+    const section = screen.getByText('Kitchen').closest('[data-dashboard-room-section]');
+
+    expect(section).not.toHaveStyle({ contentVisibility: 'auto' });
+  });
+
+  it('keeps dense room sections visible in Safari', () => {
+    vi.spyOn(window.navigator, 'userAgent', 'get').mockReturnValue(
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148'
+    );
+    renderRoomSection({ densePerformanceMode: true });
 
     const section = screen.getByText('Kitchen').closest('[data-dashboard-room-section]');
 

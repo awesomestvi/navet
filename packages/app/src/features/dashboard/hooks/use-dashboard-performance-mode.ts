@@ -30,6 +30,7 @@ interface DashboardPerformanceModeOptions {
   reducedEffectsEnabled?: boolean;
   visibleCardCount: number;
   visibleDevices: Iterable<DeviceWithType>;
+  supportsOffscreenPaintOptimization?: boolean;
 }
 
 export interface DashboardPerformanceProfile {
@@ -160,6 +161,7 @@ export function resolveDashboardPerformanceProfile({
   reducedEffectsEnabled = lowPowerMode,
   visibleCardCount,
   visibleDevices,
+  supportsOffscreenPaintOptimization = supportsDashboardOffscreenPaintOptimization(),
 }: DashboardPerformanceModeOptions): DashboardPerformanceProfile {
   const resolvedEffectsQuality = resolveEffectsQuality(effectsQuality, reducedEffectsEnabled);
   const { densePerformanceMode, reason, heavyDeviceCount } =
@@ -189,7 +191,8 @@ export function resolveDashboardPerformanceProfile({
     allowBackdropBlur: effectiveEffectsQuality !== 'low',
     allowAnimatedGradients: effectiveEffectsQuality === 'high',
     allowParallax: effectiveEffectsQuality === 'high',
-    optimizeOffscreenPaint: !isEditMode && effectiveEffectsQuality !== 'high',
+    optimizeOffscreenPaint:
+      supportsOffscreenPaintOptimization && !isEditMode && effectiveEffectsQuality !== 'high',
     preferSnapshotOverLive:
       effectiveEffectsQuality === 'low' || (deviceTier === 'low' && !isEditMode),
     batchHeavyCards:
@@ -207,6 +210,19 @@ export function resolveDashboardPerformanceProfile({
     progressiveBatchSize:
       effectiveEffectsQuality === 'high' ? 10 : effectiveEffectsQuality === 'medium' ? 6 : 2,
   };
+}
+
+export function supportsDashboardOffscreenPaintOptimization(
+  userAgent = typeof navigator === 'undefined' ? '' : navigator.userAgent
+): boolean {
+  // Safari can leave content-visibility cards blank after its dynamic viewport changes while
+  // scrolling. Keep the other reduced-effects policies, but let Safari paint the full card tree.
+  const isAppleWebKit =
+    /AppleWebKit/i.test(userAgent) &&
+    /(?:iPhone|iPad|iPod|Macintosh)/i.test(userAgent) &&
+    !/(?:Chrome|Chromium|CriOS|Edg|EdgiOS|FxiOS|OPiOS)/i.test(userAgent);
+
+  return !isAppleWebKit;
 }
 
 export function resolveDenseDashboardPerformanceMode(

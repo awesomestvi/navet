@@ -5,6 +5,7 @@ import type { DeviceWithType } from '@navet/app/types/device.types';
 import { type CSSProperties, memo } from 'react';
 import { DashboardCardItem } from '../components/dashboard-card-item';
 import { DashboardEditActions } from '../components/dashboard-edit-actions';
+import { supportsDashboardOffscreenPaintOptimization } from '../hooks/use-dashboard-performance-mode';
 import { useFitDashboardGrid } from '../hooks/use-fit-dashboard-grid';
 import type { CustomCard } from '../stores/custom-cards-store';
 
@@ -53,7 +54,8 @@ export const RoomSection = memo(function RoomSection({
   const breakpointCols = useBreakpointCols();
   const { outerRef, innerRef, outerContainerStyle, innerContainerStyle, isAutoScaled, gridStyle } =
     useFitDashboardGrid(breakpointCols);
-  const optimizeOffscreenPaint = densePerformanceMode && !isEditMode;
+  const optimizeOffscreenPaint =
+    densePerformanceMode && !isEditMode && supportsDashboardOffscreenPaintOptimization();
   const estimatedRows = Math.max(1, Math.ceil(totalItems / Math.max(1, breakpointCols)));
   const sectionPaintStyle = optimizeOffscreenPaint
     ? ({

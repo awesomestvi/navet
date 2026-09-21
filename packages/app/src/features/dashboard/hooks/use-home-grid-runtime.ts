@@ -152,8 +152,7 @@ export function useHomeGridRuntime({
     innerRef,
     isAutoScaled,
     microCardMinWidth,
-    optimizeOffscreenPaint:
-      !isEditMode && (densePerformanceMode || performanceProfile.optimizeOffscreenPaint),
+    optimizeOffscreenPaint: !isEditMode && performanceProfile.optimizeOffscreenPaint,
     outerContainerStyle,
     outerRef,
     renderedGridCols,

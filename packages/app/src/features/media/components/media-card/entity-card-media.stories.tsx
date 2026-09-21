@@ -160,6 +160,14 @@ export const TV: Story = {
   },
 };
 
+export const TVLongName: Story = {
+  args: {
+    ...tvCardStoryArgs,
+    name: 'Samsung The Frame 65 QE65LS03AAUXXC',
+    size: 'medium',
+  },
+};
+
 /** Small TV: header gamepad toggles the D-pad; settings stays bottom-right while the pad is open. */
 export const TVSmall: Story = {
   args: {

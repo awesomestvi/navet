@@ -55,7 +55,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   const sizeTokens = getInputSizeTokens(size);
 
   return (
-    <div className={cn('relative', containerClassName)}>
+    <div className={cn('relative min-w-0 max-w-full', containerClassName)}>
       {leading ? (
         <div
           className={cn(
@@ -81,7 +81,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           onBlur?.(event);
         }}
         className={cn(
-          'w-full border outline-none transition-[border-color,box-shadow,background-color] disabled:cursor-not-allowed disabled:opacity-50',
+          'min-w-0 max-w-full w-full border outline-none transition-[border-color,box-shadow,background-color] disabled:cursor-not-allowed disabled:opacity-50',
           navetRadiusTokens.field,
           sizeTokens.heightClassName,
           sizeTokens.insetClassName,

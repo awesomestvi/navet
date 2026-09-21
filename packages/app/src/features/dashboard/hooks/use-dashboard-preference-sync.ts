@@ -79,12 +79,20 @@ function materializeRemoteProjection(
   remote: PreferenceProjection
 ): PreferenceProjection {
   const defaults = projectDefaultLayer(layer);
+  const settings = {
+    ...defaults.settings,
+    ...remote.settings,
+  };
+
+  // Browser zoom joined the version-1 device document after that schema was already live. An
+  // absent field is therefore a legacy document, not an explicit request to reset the local value.
+  if (layer === 'device' && !Object.hasOwn(remote.settings, 'preventBrowserZoom')) {
+    settings.preventBrowserZoom = projectLayer('device').settings.preventBrowserZoom;
+  }
+
   return {
     schemaVersion: SETTINGS_PROFILE_SCHEMA_VERSION,
-    settings: {
-      ...defaults.settings,
-      ...remote.settings,
-    },
+    settings,
   } as PreferenceProjection;
 }
 
