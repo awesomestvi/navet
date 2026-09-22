@@ -1,0 +1,4 @@
+type: improved
+audiences:
+  - docs
+summary: Load guide screenshots as readers reach them while preserving image dimensions and alt text.

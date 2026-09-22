@@ -38,6 +38,7 @@ async function dimensionsFor(source) {
 }
 
 let updatedImages = 0;
+let deferredImages = 0;
 let updatedPages = 0;
 
 for await (const filePath of htmlFiles(distDir)) {
@@ -46,22 +47,22 @@ for await (const filePath of htmlFiles(distDir)) {
   let output = html;
 
   for (const [tag] of imageTags) {
-    const hasWidth = /\bwidth\s*=/i.test(tag);
-    const hasHeight = /\bheight\s*=/i.test(tag);
-    if (hasWidth && hasHeight) continue;
     const source = tag.match(/\bsrc=(['"])(.*?)\1/i)?.[2];
     if (!source) continue;
     const dimensions = await dimensionsFor(source);
     if (!dimensions) continue;
 
-    output = output.replace(
-      tag,
-      tag.replace(
-        '<img',
-        `<img${hasWidth ? '' : ` width="${dimensions.width}"`}${hasHeight ? '' : ` height="${dimensions.height}"`}`
-      )
-    );
+    const attributes = [
+      !/\swidth\s*=/i.test(tag) && `width="${dimensions.width}"`,
+      !/\sheight\s*=/i.test(tag) && `height="${dimensions.height}"`,
+      !/\sloading\s*=/i.test(tag) && 'loading="lazy"',
+      !/\sdecoding\s*=/i.test(tag) && 'decoding="async"',
+    ].filter(Boolean);
+    if (attributes.length === 0) continue;
+
+    output = output.replace(tag, tag.replace('<img', `<img ${attributes.join(' ')}`));
     updatedImages += 1;
+    if (attributes.includes('loading="lazy"')) deferredImages += 1;
   }
 
   if (output !== html) {
@@ -70,4 +71,6 @@ for await (const filePath of htmlFiles(distDir)) {
   }
 }
 
-console.log(`Added intrinsic dimensions to ${updatedImages} images on ${updatedPages} docs pages`);
+console.log(
+  `Optimized ${updatedImages} images on ${updatedPages} docs pages; deferred ${deferredImages} until near the viewport`
+);
