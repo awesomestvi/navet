@@ -15,6 +15,8 @@ This is the first pass on `feature/performance-accessibility-audit`. It covers t
 
 The live home, demo, docs, and Storybook roots returned HTTP 200. The docs and Storybook already expose skip links. All four sites send HSTS, a content security policy, a referrer policy, a permissions policy, and `X-Content-Type-Options: nosniff`. The production demo rendered its dashboard sections; docs and Storybook rendered their navigation and primary content. The docs build produced 78 pages and kept its how-to screenshots. These checks are a route and markup sample, not a full accessibility certification.
 
+A targeted source search of the app and public entrypoints found no production use of `dangerouslySetInnerHTML`, `eval`, or `new Function`. The three production `window.open` call sites include `noopener,noreferrer`, and the shared `Link` primitive supplies `noreferrer` for new tabs. This is a sink review, not a full security assessment.
+
 ## Tagged findings — no flow change yet
 
 | Tag | Evidence | Next safe step |
