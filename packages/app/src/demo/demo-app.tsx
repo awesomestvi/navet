@@ -1881,7 +1881,17 @@ function DemoContent() {
               showCustomizeButton={false}
             />
           ) : null}
-          <Suspense fallback={<LoadingSpinner />}>
+          <Suspense
+            fallback={
+              section === 'tasks' || section === 'settings' ? (
+                <main aria-busy="true">
+                  <LoadingSpinner />
+                </main>
+              ) : (
+                <LoadingSpinner />
+              )
+            }
+          >
             <DemoSectionContent
               section={section}
               activeRoom={activeRoom}
