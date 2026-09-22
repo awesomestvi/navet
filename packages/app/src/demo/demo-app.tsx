@@ -1785,7 +1785,7 @@ function getDemoSectionFromPath() {
   const demoSegmentIndex = pathSegments.indexOf('demo');
 
   if (demoSegmentIndex === -1) {
-    return null;
+    return pathSegments.length === 1 ? sanitizeDemoSection(pathSegments[0]) : null;
   }
 
   return sanitizeDemoSection(pathSegments[demoSegmentIndex + 1]);
