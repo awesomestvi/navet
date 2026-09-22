@@ -20,7 +20,6 @@ import { CalendarCard } from '@navet/app/features/calendar/components/calendar-c
 import { ClimateCard } from '@navet/app/features/climate/components/climate-card';
 import { HumidifierCard } from '@navet/app/features/climate/components/humidifier-card';
 import type { ClimateDashboardSection } from '@navet/app/features/climate/types/climate-dashboard';
-import { AddEntityDialogPrimitive } from '@navet/app/features/dashboard/components/add-entity-dialog';
 import type { CardTemplate } from '@navet/app/features/dashboard/components/add-entity-dialog/types';
 import type { DashboardLibraryCard } from '@navet/app/features/dashboard/components/dashboard-library-list';
 import { HomeEditCommandBar } from '@navet/app/features/dashboard/components/home-edit-command-bar';
@@ -110,6 +109,12 @@ const SettingsSection = lazy(async () => {
 const CameraCard = lazy(async () => {
   const module = await import('@navet/app/features/security/components/camera-card');
   return { default: module.CameraCard };
+});
+const loadAddEntityDialogPrimitive = () =>
+  import('@navet/app/features/dashboard/components/add-entity-dialog/primitive');
+const AddEntityDialogPrimitive = lazy(async () => {
+  const module = await loadAddEntityDialogPrimitive();
+  return { default: module.AddEntityDialogPrimitive };
 });
 
 const noopCardSizeChange = () => {};
@@ -1765,6 +1770,14 @@ function DemoContent() {
   const section = sanitizeDemoSection(activeSection ?? demoSection ?? 'home');
 
   useEffect(() => {
+    if (section === 'home' && isEditMode) {
+      void loadAddEntityDialogPrimitive().catch(() => {
+        // The dialog still attempts to load when opened if this optional preload fails.
+      });
+    }
+  }, [isEditMode, section]);
+
+  useEffect(() => {
     if (!runtimeReady || !authSession || authSession.sessions.home_assistant) return;
     authSession.replaceSession({
       providerId: 'home_assistant',
@@ -1839,18 +1852,22 @@ function DemoContent() {
           onToggleEditMode={toggleEditMode}
         />
       ) : null}
-      <AddEntityDialogPrimitive
-        open={addCardOpen}
-        onClose={() => setAddCardOpen(false)}
-        onAddCard={addDemoCard}
-        onAddLibraryCard={addDemoEntity}
-        currentRoom={ALL_ROOMS_ID}
-        libraryCards={demoHomeLibraryCards.filter(
-          (card) => !addedWidgets.some((widget) => widget.data?.entityId === card.id)
-        )}
-        description="Choose a sample device or add a Navet content card."
-        allowedTemplateIds={['note', 'info']}
-      />
+      {addCardOpen ? (
+        <Suspense fallback={<LoadingSpinner />}>
+          <AddEntityDialogPrimitive
+            open={addCardOpen}
+            onClose={() => setAddCardOpen(false)}
+            onAddCard={addDemoCard}
+            onAddLibraryCard={addDemoEntity}
+            currentRoom={ALL_ROOMS_ID}
+            libraryCards={demoHomeLibraryCards.filter(
+              (card) => !addedWidgets.some((widget) => widget.data?.entityId === card.id)
+            )}
+            description="Choose a sample device or add a Navet content card."
+            allowedTemplateIds={['note', 'info']}
+          />
+        </Suspense>
+      ) : null}
       <DashboardLayout
         mobileEditActions={{ isEditMode, onToggleEditMode: toggleEditMode }}
         mobileRoomNavigation={
