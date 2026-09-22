@@ -43,9 +43,9 @@ import {
   SummaryBarStack,
 } from '@navet/app/features/sensors/components/info-badge-strip';
 import { SensorCard } from '@navet/app/features/sensors/components/sensor-card';
-import { VacuumCard } from '@navet/app/features/vacuum/components/vacuum-card';
 import { WeatherCard } from '@navet/app/features/weather/components/weather-card';
 import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
+import { useDeferredVisibility } from '@navet/app/hooks/use-deferred-visibility';
 import { I18nProvider } from '@navet/app/i18n';
 import { integrationSessionRuntime } from '@navet/app/integration-session-runtime';
 import type { Section } from '@navet/app/navigation/sections';
@@ -65,6 +65,7 @@ import {
   type CSSProperties,
   lazy,
   type ReactNode,
+  type Ref,
   Suspense,
   useEffect,
   useState,
@@ -106,6 +107,10 @@ const SettingsSection = lazy(async () => {
 const CameraCard = lazy(async () => {
   const module = await import('@navet/app/features/security/components/camera-card');
   return { default: module.CameraCard };
+});
+const VacuumCard = lazy(async () => {
+  const module = await import('@navet/app/features/vacuum/components/vacuum-card');
+  return { default: module.VacuumCard };
 });
 const loadAddEntityDialogPrimitive = () =>
   import('@navet/app/features/dashboard/components/add-entity-dialog/primitive');
@@ -1011,17 +1016,53 @@ function useDemoDisplayDefaults() {
   return runtimeReady;
 }
 
-function CardSlot({ size, children }: { size: CardSize; children: ReactNode }) {
+function CardSlot({
+  size,
+  children,
+  viewportRef,
+}: {
+  size: CardSize;
+  children: ReactNode;
+  viewportRef?: Ref<HTMLDivElement>;
+}) {
   const breakpointCols = useBreakpointCols();
   const { heightPx } = getDashboardCardFootprint(size, breakpointCols);
 
   return (
     <div
+      ref={viewportRef}
       className={`${getCardSpanClass(size)} min-w-0 [&>*]:h-full`}
       style={{ minHeight: heightPx }}
     >
       {children}
     </div>
+  );
+}
+
+function DemoVacuumCard() {
+  const { ref, isVisible } = useDeferredVisibility<HTMLDivElement>({ rootMargin: '400px 0px' });
+
+  return (
+    <CardSlot size="medium" viewportRef={ref}>
+      {isVisible ? (
+        <Suspense fallback={<LoadingSpinner />}>
+          <VacuumCard
+            id="vacuum.downstairs"
+            name="Downstairs Vacuum"
+            status="docked"
+            battery={92}
+            cleanedArea="48 m²"
+            cleaningTime="42 min"
+            nextCleaning="Tomorrow"
+            size="medium"
+            onSizeChange={noopCardSizeChange}
+            isEditMode={false}
+          />
+        </Suspense>
+      ) : (
+        <div aria-hidden="true" />
+      )}
+    </CardSlot>
   );
 }
 
@@ -1297,20 +1338,7 @@ function ProductGrid({ addedWidgets }: { addedWidgets: CustomCard[] }) {
           isEditMode={false}
         />
       </CardSlot>
-      <CardSlot size="medium">
-        <VacuumCard
-          id="vacuum.downstairs"
-          name="Downstairs Vacuum"
-          status="docked"
-          battery={92}
-          cleanedArea="48 m²"
-          cleaningTime="42 min"
-          nextCleaning="Tomorrow"
-          size="medium"
-          onSizeChange={noopCardSizeChange}
-          isEditMode={false}
-        />
-      </CardSlot>
+      <DemoVacuumCard />
       {[...demoHomeWidgets, ...addedWidgets].map((card) => (
         <DemoWidgetCard key={card.id} card={card} />
       ))}

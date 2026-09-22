@@ -1,0 +1,4 @@
+type: improved
+audiences:
+  - standalone
+summary: Load the demo vacuum card when it nears view, reducing Home's initial script size.
