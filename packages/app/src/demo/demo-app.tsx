@@ -40,7 +40,6 @@ import { MediaCard } from '@navet/app/features/media/components/media-card';
 import { PersonCard } from '@navet/app/features/person/components/person-card';
 import { SceneCard } from '@navet/app/features/scenes/components/scene-card';
 import { AlarmPanelCard } from '@navet/app/features/security/components/alarm-panel-card';
-import { CameraCard } from '@navet/app/features/security/components/camera-card';
 import { CoverCard } from '@navet/app/features/security/components/cover-card';
 import { LockCard } from '@navet/app/features/security/components/lock-card';
 import { buildSecurityCameraDashboardModel } from '@navet/app/features/security/utils/security-camera-dashboard-model';
@@ -115,6 +114,10 @@ const MediaSection = lazy(async () => {
 const SettingsSection = lazy(async () => {
   const module = await import('@navet/app/features/settings/components/settings-section');
   return { default: module.SettingsSection };
+});
+const CameraCard = lazy(async () => {
+  const module = await import('@navet/app/features/security/components/camera-card');
+  return { default: module.CameraCard };
 });
 
 const noopCardSizeChange = () => {};
@@ -1666,18 +1669,20 @@ function RoomShot({ room }: { room: string }) {
     return (
       <DashboardGrid>
         <CardSlot size="medium">
-          <CameraCard
-            id="camera.front_door_room"
-            name="Front Door Cam"
-            room="Outside"
-            entityPicture={sampleCameraFallbackImage}
-            entityPictureSources={sampleCameraSources}
-            supportedFeatures={0}
-            isStreamCapable={false}
-            size="medium"
-            onSizeChange={noopCardSizeChange}
-            isEditMode={false}
-          />
+          <Suspense fallback={<LoadingSpinner />}>
+            <CameraCard
+              id="camera.front_door_room"
+              name="Front Door Cam"
+              room="Outside"
+              entityPicture={sampleCameraFallbackImage}
+              entityPictureSources={sampleCameraSources}
+              supportedFeatures={0}
+              isStreamCapable={false}
+              size="medium"
+              onSizeChange={noopCardSizeChange}
+              isEditMode={false}
+            />
+          </Suspense>
         </CardSlot>
         <CardSlot size="small">
           <LockCard id="lock.front_door_room" name="Front Door" initialState size="small" />
