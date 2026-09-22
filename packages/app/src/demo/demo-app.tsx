@@ -14,7 +14,6 @@ import {
   getDashboardCardFootprint,
   getDashboardGridColumnCount,
 } from '@navet/app/components/shared/card-size-selector';
-import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { ALL_ROOMS_ID, isAllRooms } from '@navet/app/constants/rooms';
 import { CalendarCard } from '@navet/app/features/calendar/components/calendar-card';
 import { ClimateCard } from '@navet/app/features/climate/components/climate-card';
@@ -37,7 +36,6 @@ import { SceneCard } from '@navet/app/features/scenes/components/scene-card';
 import { AlarmPanelCard } from '@navet/app/features/security/components/alarm-panel-card';
 import { CoverCard } from '@navet/app/features/security/components/cover-card';
 import { LockCard } from '@navet/app/features/security/components/lock-card';
-import { buildSecurityCameraDashboardModel } from '@navet/app/features/security/utils/security-camera-dashboard-model';
 import { GroupedSensorCard } from '@navet/app/features/sensors/components/grouped-sensor-card';
 import type { HomeStatusSummaryItem } from '@navet/app/features/sensors/components/home-status-summary-model';
 import {
@@ -47,7 +45,6 @@ import {
 import { SensorCard } from '@navet/app/features/sensors/components/sensor-card';
 import { VacuumCard } from '@navet/app/features/vacuum/components/vacuum-card';
 import { WeatherCard } from '@navet/app/features/weather/components/weather-card';
-import { useTheme } from '@navet/app/hooks';
 import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
 import { I18nProvider } from '@navet/app/i18n';
 import { integrationSessionRuntime } from '@navet/app/integration-session-runtime';
@@ -86,9 +83,9 @@ const ClimateDashboard = lazy(async () => {
   const module = await import('@navet/app/features/climate/components/climate-dashboard');
   return { default: module.ClimateDashboard };
 });
-const SecurityCameraDashboard = lazy(async () => {
-  const module = await import('@navet/app/features/security/components/security-camera-dashboard');
-  return { default: module.SecurityCameraDashboard };
+const DemoSecurityShot = lazy(async () => {
+  const module = await import('./demo-security-shot');
+  return { default: module.DemoSecurityShot };
 });
 const TasksShot = lazy(async () => {
   const module = await import('./demo-household-section');
@@ -1368,29 +1365,6 @@ function ClimateShot() {
   );
 }
 
-function SecurityShot() {
-  const isEditMode = useEditModeStore((state) => state.isEditMode);
-  const [cardSizes, setCardSizes] = useState<Record<string, CardSize>>({});
-  const { theme } = useTheme();
-  const surface = getThemeSurfaceTokens(theme);
-  const model = buildSecurityCameraDashboardModel({
-    cameras: demoSecurityCameras,
-    locks: demoSecurityLocks,
-    sensors: demoSecuritySensors,
-  });
-
-  return (
-    <SecurityCameraDashboard
-      model={model}
-      isEditMode={isEditMode}
-      alarms={demoAlarmEntities}
-      cardSizes={cardSizes}
-      updateCardSize={(id, size) => setCardSizes((previous) => ({ ...previous, [id]: size }))}
-      surface={surface}
-    />
-  );
-}
-
 function LightsShot() {
   return (
     <LightsDashboard
@@ -1721,7 +1695,15 @@ function DemoSectionContent({
 }) {
   if (section === 'energy') return <EnergyShot />;
   if (section === 'climate') return <ClimateShot />;
-  if (section === 'security') return <SecurityShot />;
+  if (section === 'security')
+    return (
+      <DemoSecurityShot
+        cameras={demoSecurityCameras}
+        locks={demoSecurityLocks}
+        sensors={demoSecuritySensors}
+        alarms={demoAlarmEntities}
+      />
+    );
   if (section === 'tasks') return <TasksShot />;
   if (section === 'lights') return <LightsShot />;
   if (section === 'media') return <MediaShot />;
