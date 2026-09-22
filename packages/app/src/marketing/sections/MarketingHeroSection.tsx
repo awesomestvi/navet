@@ -1,5 +1,4 @@
 import heroBackgroundRoomAvif from '@assets/reference/marketing/use-cases/navet-hero-background-room.avif';
-import heroBackgroundRoomPng from '@assets/reference/marketing/use-cases/navet-hero-background-room.png';
 import heroBackgroundRoomWebp from '@assets/reference/marketing/use-cases/navet-hero-background-room.webp';
 import heroBackgroundRoomOff from '@assets/reference/marketing/use-cases/navet-hero-background-room-off.webp';
 import heroDashboardTabletOff from '@assets/reference/marketing/use-cases/navet-hero-dashboard-light-off.webp';
@@ -100,11 +99,8 @@ export function MarketingHeroSection() {
         data-room-light={lightOn ? 'on' : 'off'}
       >
         <MarketingResponsiveImage
-          src={heroBackgroundRoomPng}
-          sources={[
-            { srcSet: heroBackgroundRoomAvif, type: 'image/avif' },
-            { srcSet: heroBackgroundRoomWebp, type: 'image/webp' },
-          ]}
+          src={heroBackgroundRoomWebp}
+          sources={[{ srcSet: heroBackgroundRoomAvif, type: 'image/avif' }]}
           alt="Warm modern living space used as the background for the Navet marketing hero"
           width={1672}
           height={941}
