@@ -9,10 +9,13 @@ import { integrationWeatherFeatureService } from '@navet/app/services/integratio
 import { settingsSelectors } from '@navet/app/stores/selectors';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import type { IntegrationProviderId } from '@navet/app/types/provider';
-import { UNKNOWN_ROOM_LABEL } from '@navet/app/utils/device-location';
 import { createProviderScopedId } from '@navet/app/utils/provider-ids';
 import { areStringArraysEqual } from '@navet/app/utils/structural-equality';
 import { useCallback, useMemo, useRef } from 'react';
+import {
+  resolveProviderFeatureEntityName,
+  resolveProviderFeatureEntityRoom,
+} from './provider-feature-entity-labels';
 import { useIntegrationStore } from './use-integration-store';
 import {
   useHydratingProviderCollection,
@@ -40,36 +43,6 @@ const mergeForecasts = (previous: WeatherForecastState, next: WeatherForecastSta
   ...previous,
   ...next,
 });
-
-function resolveEntityName(
-  entityId: string,
-  entity: { attributes?: Record<string, unknown> },
-  entityName?: string | null
-) {
-  if (typeof entityName === 'string' && entityName.trim().length > 0) {
-    return entityName.trim();
-  }
-
-  return (
-    (typeof entity.attributes?.friendly_name === 'string' && entity.attributes.friendly_name) ||
-    entityId ||
-    'Unknown'
-  );
-}
-
-function resolveEntityRoom(
-  _scopedEntityId: string,
-  entity: { attributes?: Record<string, unknown> },
-  entityRoom?: string
-) {
-  return (
-    entityRoom ||
-    (typeof entity.attributes?.room === 'string' ? entity.attributes.room : null) ||
-    (typeof entity.attributes?.area === 'string' ? entity.attributes.area : null) ||
-    (typeof entity.attributes?.zone === 'string' ? entity.attributes.zone : null) ||
-    UNKNOWN_ROOM_LABEL
-  );
-}
 
 export function useProviderWeatherDevices(
   providerId?: IntegrationProviderId,
@@ -142,8 +115,12 @@ export function useProviderWeatherDevices(
       return mapWeatherDevice(
         scopedEntityId,
         weatherEntity,
-        resolveEntityName(entityId, weatherEntity, entityRegistryMap.get(entityId)?.name),
-        resolveEntityRoom(scopedEntityId, weatherEntity, undefined),
+        resolveProviderFeatureEntityName(
+          entityId,
+          weatherEntity,
+          entityRegistryMap.get(entityId)?.name
+        ),
+        resolveProviderFeatureEntityRoom(weatherEntity),
         {
           sunEntity: entities[SUN_ENTITY_ID],
           config: null,
