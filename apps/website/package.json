@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "vite",
     "generate:social-card": "node scripts/generate-social-card.mjs",
-    "build": "vite build && node ../../scripts/remove-copied-doc-screenshots.mjs website && node scripts/clone-route-entrypoints.mjs && node ../../scripts/inject-cloudflare-web-analytics.mjs website",
+    "build": "vite build && node ../../scripts/remove-copied-doc-screenshots.mjs website && node ../../scripts/prune-duplicate-fonts.mjs website && node scripts/clone-route-entrypoints.mjs && node ../../scripts/inject-cloudflare-web-analytics.mjs website",
     "preview": "vite preview"
   },
   "dependencies": {
