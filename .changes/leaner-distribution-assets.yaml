@@ -1,0 +1,5 @@
+type: improved
+audiences:
+  - standalone
+  - home-assistant
+summary: Reduced app distribution size by excluding documentation-only screenshots from runtime builds.
