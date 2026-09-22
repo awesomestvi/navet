@@ -1,5 +1,8 @@
 import { SheetSurface } from '@navet/app/components/primitives';
-import { getThemeColorValue } from '@navet/app/components/shared/theme/theme-colors';
+import {
+  getReadableAccentForeground,
+  getThemeColorValue,
+} from '@navet/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import {
   AlertDialog,
@@ -107,7 +110,10 @@ export const UserDropdown = memo(function UserDropdown({
             }}
           >
             {avatarUrl ? <AvatarImage src={avatarUrl} alt={fullName} /> : null}
-            <AvatarFallback className="bg-transparent font-semibold text-white">
+            <AvatarFallback
+              className="bg-transparent font-semibold"
+              style={{ color: getReadableAccentForeground(accentColor) }}
+            >
               {initials || t('userDropdown.defaultInitial')}
             </AvatarFallback>
           </Avatar>
@@ -176,7 +182,10 @@ export const UserDropdown = memo(function UserDropdown({
           }}
         >
           {avatarUrl ? <AvatarImage src={avatarUrl} alt={fullName} /> : null}
-          <AvatarFallback className="bg-transparent text-white text-xs font-semibold md:text-sm">
+          <AvatarFallback
+            className="bg-transparent text-xs font-semibold md:text-sm"
+            style={{ color: getReadableAccentForeground(accentColor) }}
+          >
             {initials || t('userDropdown.defaultInitial')}
           </AvatarFallback>
         </Avatar>

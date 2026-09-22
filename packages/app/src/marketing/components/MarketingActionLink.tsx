@@ -1,3 +1,4 @@
+import { getReadableAccentForeground } from '@navet/app/components/shared/theme/theme-colors';
 import {
   getButtonSizeTokens,
   getThemeFocusRingClassName,
@@ -45,11 +46,16 @@ export function MarketingActionLink({
         navetSpacingTokens.inline.sm,
         navetControlTokens.button.radiusClassName,
         sizeTokens.textClassName,
-        variant === 'primary' ? 'border-transparent text-white' : secondaryClassName,
+        variant === 'primary' ? 'border-transparent' : secondaryClassName,
         getThemeFocusRingClassName(theme),
         className
       )}
-      style={{ ...(variant === 'primary' ? { backgroundColor: accentColor } : {}), ...style }}
+      style={{
+        ...(variant === 'primary'
+          ? { backgroundColor: accentColor, color: getReadableAccentForeground(accentColor) }
+          : {}),
+        ...style,
+      }}
     >
       <span>{children}</span>
     </a>

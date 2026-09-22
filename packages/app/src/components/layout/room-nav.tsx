@@ -1,5 +1,6 @@
 import { InteractivePill } from '@navet/app/components/primitives/interactive-pill';
 import { getThemeDropdownSurfaceClasses } from '@navet/app/components/shared/theme/dropdown-surface-tokens';
+import { getReadableAccentForeground } from '@navet/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import {
   DropdownMenu,
@@ -811,6 +812,7 @@ export const RoomNav = memo(function RoomNav({
                   isEditMode
                     ? {
                         backgroundColor: accentColor,
+                        color: getReadableAccentForeground(accentColor),
                         borderColor: `${accentColor}66`,
                         boxShadow: `0 14px 28px -18px ${accentColor}`,
                       }
@@ -819,8 +821,8 @@ export const RoomNav = memo(function RoomNav({
               >
                 {isEditMode ? (
                   <>
-                    <Check className="h-4 w-4 text-white" />
-                    <span className="hidden text-sm font-medium text-white md:inline">
+                    <Check className="h-4 w-4" />
+                    <span className="hidden text-sm font-medium md:inline">
                       {t('dashboard.roomNav.doneEditing')}
                     </span>
                   </>
