@@ -1,0 +1,5 @@
+type: improved
+audiences:
+  - standalone
+  - home-assistant
+summary: Load a smaller Homey logo in sign-in and provider settings.
