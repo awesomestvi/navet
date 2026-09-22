@@ -20,12 +20,14 @@ import { CalendarCard } from '@navet/app/features/calendar/components/calendar-c
 import { ClimateCard } from '@navet/app/features/climate/components/climate-card';
 import { HumidifierCard } from '@navet/app/features/climate/components/humidifier-card';
 import type { ClimateDashboardSection } from '@navet/app/features/climate/types/climate-dashboard';
-import { type CustomCard, DashboardLayout, WidgetCard } from '@navet/app/features/dashboard';
 import { AddEntityDialogPrimitive } from '@navet/app/features/dashboard/components/add-entity-dialog';
 import type { CardTemplate } from '@navet/app/features/dashboard/components/add-entity-dialog/types';
 import type { DashboardLibraryCard } from '@navet/app/features/dashboard/components/dashboard-library-list';
 import { HomeEditCommandBar } from '@navet/app/features/dashboard/components/home-edit-command-bar';
+import { WidgetCard } from '@navet/app/features/dashboard/components/widget-card';
 import { useProgressiveBatching } from '@navet/app/features/dashboard/hooks/use-progressive-batching';
+import { DashboardLayout } from '@navet/app/features/dashboard/shell';
+import type { CustomCard } from '@navet/app/features/dashboard/stores/custom-cards-store';
 import { EnergyNowCardView } from '@navet/app/features/energy/components/widgets/energy-now-card-view';
 import { FanCard } from '@navet/app/features/lighting/components/fan-card';
 import { LightCard } from '@navet/app/features/lighting/components/light-card';
