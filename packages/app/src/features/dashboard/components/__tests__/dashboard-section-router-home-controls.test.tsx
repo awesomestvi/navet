@@ -264,6 +264,22 @@ describe('DashboardSectionRouter home controls', () => {
     expect(screen.queryByText(/1 remaining/)).not.toBeInTheDocument();
   });
 
+  it('does not rerender another section when the chore workspace changes', () => {
+    const controller = createController();
+    controller.activeSection = 'climate';
+
+    renderWithProviders(<DashboardSectionRouter controller={controller} />);
+    dashboardLayoutMock.mockClear();
+
+    act(() => {
+      useChoreWorkspaceStore.getState().setPreviewDocument({
+        data: createChoreDemoWorkspace({ copy: choreCopy }),
+      });
+    });
+
+    expect(dashboardLayoutMock).not.toHaveBeenCalled();
+  });
+
   it('keeps the tasks workspace available when chores are disabled', async () => {
     useSettingsStore.getState().updateSettings({ choresEnabled: false });
     const controller = createController();

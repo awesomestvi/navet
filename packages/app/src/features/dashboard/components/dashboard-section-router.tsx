@@ -101,7 +101,9 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
   const showSummaryBar = useSettingsStore(settingsSelectors.showHomeSummaryBar);
   const choresEnabled = useSettingsStore(settingsSelectors.choresEnabled);
   const roomWorkspace = useRoomWorkspaceStore((state) => state.workspace);
-  const choreWorkspace = useChoreWorkspaceStore((state) => state.data);
+  const choreWorkspace = useChoreWorkspaceStore((state) =>
+    controller.activeSection === 'home' && !isAllRooms(controller.activeRoom) ? state.data : null
+  );
   const activeCustomSidebarActionId = useNavigationStore(
     (state) => state.activeCustomSidebarActionId
   );
