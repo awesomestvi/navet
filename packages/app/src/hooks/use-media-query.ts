@@ -1,40 +1,57 @@
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 
-/**
- * Custom hook for responsive design with media queries
- *
- * @param query - The media query string
- * @returns boolean indicating if the media query matches
- *
- * @example
- * const isMobile = useMediaQuery('(max-width: 768px)');
- * const isDark = useMediaQuery('(prefers-color-scheme: dark)');
- */
+type MediaQueryStore = {
+  getSnapshot: () => boolean;
+  subscribe: (listener: () => void) => () => void;
+};
+
+const queryStores = new Map<string, MediaQueryStore>();
+const getServerSnapshot = () => false;
+const serverStore: MediaQueryStore = {
+  getSnapshot: getServerSnapshot,
+  subscribe: () => () => {},
+};
+
+function getMediaQueryStore(query: string): MediaQueryStore {
+  if (typeof window === 'undefined') return serverStore;
+
+  const existing = queryStores.get(query);
+  if (existing) return existing;
+
+  const mediaQuery = window.matchMedia(query);
+  const listeners = new Set<() => void>();
+  const handleChange = () => {
+    listeners.forEach((listener) => {
+      listener();
+    });
+  };
+
+  const store: MediaQueryStore = {
+    getSnapshot: () => mediaQuery.matches,
+    subscribe: (listener) => {
+      listeners.add(listener);
+      if (listeners.size === 1) {
+        queryStores.set(query, store);
+        mediaQuery.addEventListener('change', handleChange);
+      }
+
+      return () => {
+        listeners.delete(listener);
+        if (listeners.size === 0) {
+          mediaQuery.removeEventListener('change', handleChange);
+          if (queryStores.get(query) === store) {
+            queryStores.delete(query);
+          }
+        }
+      };
+    },
+  };
+  queryStores.set(query, store);
+  return store;
+}
+
+/** Shares one browser change listener among consumers of the same query. */
 export function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
-    return window.matchMedia(query).matches;
-  });
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const mediaQuery = window.matchMedia(query);
-
-    const handleChange = (event: MediaQueryListEvent) => {
-      setMatches(event.matches);
-    };
-
-    // Set initial value
-    setMatches(mediaQuery.matches);
-
-    // Listen for changes
-    mediaQuery.addEventListener('change', handleChange);
-
-    return () => {
-      mediaQuery.removeEventListener('change', handleChange);
-    };
-  }, [query]);
-
-  return matches;
+  const store = getMediaQueryStore(query);
+  return useSyncExternalStore(store.subscribe, store.getSnapshot, getServerSnapshot);
 }
