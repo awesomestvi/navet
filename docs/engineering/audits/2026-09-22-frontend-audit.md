@@ -58,6 +58,7 @@ A targeted source search of the app and public entrypoints found no production u
 - Focused Biome, `pnpm check:bundle-budget`, `pnpm check:website-audit`, `pnpm check:stories`, provider and UI-kit boundary checks, runtime policy and lockfile checks, and `git diff --check` passed.
 - `pnpm check:docker` passed its standalone and Home Assistant add-on runtime checks.
 - `pnpm audit --prod --audit-level high` reported no known production dependency vulnerabilities when run with network access.
+- The broad Tier 3 test run found one outdated hero assertion from the earlier navigation change. The legacy test was classified **Rewrite** and now verifies that Explore the demo is a link to the configured demo URL. Its focused run passed, then the full Tier 3 rerun passed: 522 files and 3,560 tests.
 - The media-query hook, dashboard layout, and app unit checks passed together (43 tests). A later 390 px demo scan covered all eight routes, the mobile Settings list and detail, and keyboard scrolling in Energy and Climate; each route had one main landmark and no horizontal page overflow.
 - Local browser checks covered website skip-link focus and hero dimensions, plus all eight demo section landmarks and demo skip-link focus.
 - A generated-HTML check found one main landmark, one h1, and an English document language on all 79 docs HTML pages. Storybook's shell and preview frames are JavaScript-driven and were excluded from this static landmark count.
