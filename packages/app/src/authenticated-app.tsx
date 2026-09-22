@@ -501,31 +501,33 @@ function AppContent() {
           }
         />
       </Suspense>
-      <PwaUpdatePrompt />
-      {isAuthenticated && !appError && !needsHomeySelection ? (
-        <Suspense fallback={null}>
-          <NetworkStatusBanner
-            connected={connected}
-            connecting={connecting}
-            reconnecting={reconnecting}
-            isOnline={isOnline}
-            providerLabel={provider.label}
-            lastError={providerHealth.lastError}
-          />
-        </Suspense>
-      ) : null}
       <Suspense fallback={null}>
         <Toaster />
       </Suspense>
-      {needsHomeySelection ? (
-        <Suspense fallback={<AuthenticatedLoadingScreen message={t('common.loading')} />}>
-          <HomeySelectionPage />
-        </Suspense>
-      ) : (
-        <Suspense fallback={<AuthenticatedLoadingScreen message={t('common.loading')} />}>
-          <DashboardPage />
-        </Suspense>
-      )}
+      <div className="contents" aria-hidden={Boolean(appError)} inert={Boolean(appError)}>
+        <PwaUpdatePrompt />
+        {isAuthenticated && !appError && !needsHomeySelection ? (
+          <Suspense fallback={null}>
+            <NetworkStatusBanner
+              connected={connected}
+              connecting={connecting}
+              reconnecting={reconnecting}
+              isOnline={isOnline}
+              providerLabel={provider.label}
+              lastError={providerHealth.lastError}
+            />
+          </Suspense>
+        ) : null}
+        {needsHomeySelection ? (
+          <Suspense fallback={<AuthenticatedLoadingScreen message={t('common.loading')} />}>
+            <HomeySelectionPage />
+          </Suspense>
+        ) : (
+          <Suspense fallback={<AuthenticatedLoadingScreen message={t('common.loading')} />}>
+            <DashboardPage />
+          </Suspense>
+        )}
+      </div>
     </>
   );
 }

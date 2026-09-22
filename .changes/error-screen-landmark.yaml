@@ -1,0 +1,5 @@
+type: improved
+audiences:
+  - standalone
+  - home-assistant
+summary: Keep keyboard and screen-reader focus on the error screen while recovery is needed.

@@ -6,7 +6,7 @@ import { useErrorStore } from '@navet/app/stores';
 import { appErrorSelectors } from '@navet/app/stores/selectors';
 import { getPublicAssetUrl } from '@navet/app/utils/public-assets';
 import { ChevronDown, LogIn, OctagonAlert, RefreshCw, X } from 'lucide-react';
-import { memo } from 'react';
+import { memo, useEffect, useRef } from 'react';
 
 interface ErrorDisplayProps {
   onRetry?: () => void;
@@ -24,6 +24,7 @@ export const ErrorDisplay = memo(function ErrorDisplay({
   const surface = getThemeSurfaceTokens(theme);
   const error = useErrorStore(appErrorSelectors.error);
   const clearError = useErrorStore(appErrorSelectors.clearError);
+  const mainRef = useRef<HTMLElement>(null);
   const logoSrc = getPublicAssetUrl('logo.svg');
   const isLightTheme = theme === 'light';
   const isBlack = theme === 'black';
@@ -39,6 +40,10 @@ export const ErrorDisplay = memo(function ErrorDisplay({
   const dismissError = () => {
     clearError();
   };
+
+  useEffect(() => {
+    if (error) mainRef.current?.focus();
+  }, [error]);
 
   if (!error) return null;
 
@@ -66,7 +71,11 @@ export const ErrorDisplay = memo(function ErrorDisplay({
       `}</style>
       <div className="pointer-events-none absolute left-1/2 top-[28%] h-80 w-80 -translate-x-1/2 rounded-full bg-orange-500/18 blur-3xl" />
 
-      <section className="relative mx-auto flex min-h-[100dvh] w-full max-w-3xl flex-col items-center justify-start pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] pl-[calc(env(safe-area-inset-left,0px)+1rem)] pr-[calc(env(safe-area-inset-right,0px)+1rem)] pt-[calc(env(safe-area-inset-top,0px)+0.75rem)] text-center sm:pb-[calc(env(safe-area-inset-bottom,0px)+1.25rem)] sm:pl-[calc(env(safe-area-inset-left,0px)+1.5rem)] sm:pr-[calc(env(safe-area-inset-right,0px)+1.5rem)] sm:pt-[calc(env(safe-area-inset-top,0px)+1.25rem)] lg:justify-center">
+      <main
+        ref={mainRef}
+        tabIndex={-1}
+        className="relative mx-auto flex min-h-[100dvh] w-full max-w-3xl flex-col items-center justify-start pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] pl-[calc(env(safe-area-inset-left,0px)+1rem)] pr-[calc(env(safe-area-inset-right,0px)+1rem)] pt-[calc(env(safe-area-inset-top,0px)+0.75rem)] text-center sm:pb-[calc(env(safe-area-inset-bottom,0px)+1.25rem)] sm:pl-[calc(env(safe-area-inset-left,0px)+1.5rem)] sm:pr-[calc(env(safe-area-inset-right,0px)+1.5rem)] sm:pt-[calc(env(safe-area-inset-top,0px)+1.25rem)] lg:justify-center"
+      >
         <div className="w-full [animation:navet-error-rise_0.9s_ease-out_both]">
           <div className="mx-auto flex min-h-14 w-full max-w-[18rem] items-center justify-center sm:min-h-20">
             <div className="relative flex h-14 w-14 items-center justify-center sm:h-20 sm:w-20">
@@ -217,7 +226,7 @@ export const ErrorDisplay = memo(function ErrorDisplay({
             </div>
           </div>
         </div>
-      </section>
+      </main>
     </div>
   );
 });
