@@ -676,7 +676,11 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
           ) : null}
         </>
       ) : null}
-      {sectionContent}
+      {activeSection === 'tasks' || activeSection === 'settings' ? (
+        sectionContent
+      ) : (
+        <main className="min-w-0">{sectionContent}</main>
+      )}
     </DashboardLayout>
   );
 }

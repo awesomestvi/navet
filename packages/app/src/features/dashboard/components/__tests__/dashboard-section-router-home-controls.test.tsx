@@ -57,7 +57,7 @@ vi.mock('@navet/app/features/dashboard/shell', () => ({
 vi.mock('../home-dashboard-overview', () => ({
   HomeDashboardOverview: (props: unknown) => {
     homeDashboardPropsMock(props);
-    return <main>Home dashboard</main>;
+    return <div>Home dashboard</div>;
   },
 }));
 
@@ -76,7 +76,7 @@ vi.mock('../../device-grid', () => ({
       deviceGridMountCount += 1;
     }, []);
 
-    return <main>Room grid</main>;
+    return <div>Room grid</div>;
   },
 }));
 
@@ -273,6 +273,7 @@ describe('DashboardSectionRouter home controls', () => {
 
     expect(await screen.findByText('Tasks dashboard')).toBeInTheDocument();
     expect(screen.queryByText('Household dashboard')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('main')).toHaveLength(1);
   });
 
   it('does not expose dashboard customize actions in the household workspace', async () => {
@@ -282,6 +283,7 @@ describe('DashboardSectionRouter home controls', () => {
     renderWithProviders(<DashboardSectionRouter controller={controller} />);
 
     expect(await screen.findByText('Household dashboard')).toBeInTheDocument();
+    expect(screen.getAllByRole('main')).toHaveLength(1);
     const layoutProps = dashboardLayoutMock.mock.calls[0]?.[0] as {
       mobileEditActions?: Record<string, unknown>;
     };
@@ -400,6 +402,7 @@ describe('DashboardSectionRouter home controls', () => {
 
     expect(layoutProps.mobileEditActions).toBeUndefined();
     expect(screen.queryByRole('button', { name: 'KPIs' })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('main')).toHaveLength(1);
     expect(screen.queryByRole('button', { name: 'Layout' })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Hide KPIs' }));
     await waitFor(() =>
