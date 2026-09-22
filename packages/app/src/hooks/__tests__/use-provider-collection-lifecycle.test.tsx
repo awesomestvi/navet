@@ -18,6 +18,47 @@ const empty: string[] = [];
 describe('provider collection lifecycle', () => {
   beforeEach(() => unsubscribe.mockClear());
 
+  it('does not commit a second empty state when mounted disabled', () => {
+    let renderCount = 0;
+    const load = vi.fn<() => Promise<string[]>>();
+    const { result } = renderHook(() => {
+      renderCount += 1;
+      return useProviderCollectionData({
+        providerId: 'home_assistant',
+        enabled: false,
+        interval: 1000,
+        empty,
+        load,
+      });
+    });
+
+    expect(result.current).toBe(empty);
+    expect(renderCount).toBe(1);
+    expect(load).not.toHaveBeenCalled();
+  });
+
+  it('clears previously loaded data when disabled', async () => {
+    const load = vi.fn<() => Promise<string[]>>().mockResolvedValue(['forecast']);
+    const { result, rerender } = renderHook(
+      ({ enabled }) =>
+        useProviderCollectionData({
+          providerId: 'home_assistant',
+          enabled,
+          interval: 1000,
+          empty,
+          load,
+        }),
+      { initialProps: { enabled: true } }
+    );
+
+    await act(async () => refresh());
+    expect(result.current).toEqual(['forecast']);
+
+    rerender({ enabled: false });
+    expect(result.current).toBe(empty);
+    expect(unsubscribe).toHaveBeenCalledTimes(1);
+  });
+
   it('retains successful data on failure and ignores a superseded provider request', async () => {
     const load = vi.fn<() => Promise<string[]>>().mockResolvedValue(['forecast']);
     let providerId: 'home_assistant' | 'homey' = 'home_assistant';
