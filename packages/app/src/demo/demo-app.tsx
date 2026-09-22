@@ -17,8 +17,6 @@ import {
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { ALL_ROOMS_ID, isAllRooms } from '@navet/app/constants/rooms';
 import { CalendarCard } from '@navet/app/features/calendar/components/calendar-card';
-import { createChoreDemoWorkspace } from '@navet/app/features/chores/chore-demo-fixture';
-import { useChoreWorkspaceStore } from '@navet/app/features/chores/chore-workspace-store';
 import { ClimateCard } from '@navet/app/features/climate/components/climate-card';
 import { HumidifierCard } from '@navet/app/features/climate/components/humidifier-card';
 import type { ClimateDashboardSection } from '@navet/app/features/climate/types/climate-dashboard';
@@ -48,7 +46,7 @@ import {
 import { SensorCard } from '@navet/app/features/sensors/components/sensor-card';
 import { VacuumCard } from '@navet/app/features/vacuum/components/vacuum-card';
 import { WeatherCard } from '@navet/app/features/weather/components/weather-card';
-import { useI18n, useTheme } from '@navet/app/hooks';
+import { useTheme } from '@navet/app/hooks';
 import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
 import { I18nProvider } from '@navet/app/i18n';
 import { integrationSessionRuntime } from '@navet/app/integration-session-runtime';
@@ -74,7 +72,6 @@ import {
   useState,
 } from 'react';
 import type { CameraDevice, DeviceWithType, LockDevice, SensorDevice } from '../types/device.types';
-import { installDemoChoreActions } from './demo-chore-actions';
 import { installDemoDeviceAuthority } from './demo-device-authority';
 import { PHOTO_FRAME_DEMO_IMAGES } from './photo-frame-demo-images';
 
@@ -92,9 +89,9 @@ const SecurityCameraDashboard = lazy(async () => {
   const module = await import('@navet/app/features/security/components/security-camera-dashboard');
   return { default: module.SecurityCameraDashboard };
 });
-const HouseholdSection = lazy(async () => {
-  const module = await import('@navet/app/features/chores/components/household-section');
-  return { default: module.HouseholdSection };
+const TasksShot = lazy(async () => {
+  const module = await import('./demo-household-section');
+  return { default: module.DemoHouseholdSection };
 });
 const LightsDashboard = lazy(async () => {
   const module = await import('@navet/app/features/lighting/dashboard/lights-dashboard');
@@ -1409,43 +1406,6 @@ function SettingsShot() {
 
 function MediaShot() {
   return <MediaSection />;
-}
-
-function TasksShot() {
-  const { t } = useI18n();
-  useEffect(() => {
-    useChoreWorkspaceStore.getState().setPreviewDocument({
-      data: createChoreDemoWorkspace({
-        copy: {
-          dishwasher: t('household.demo.dishwasher'),
-          toys: t('household.demo.toys'),
-          hallway: t('household.demo.hallway'),
-          laundry: t('household.demo.laundry'),
-          plants: t('household.demo.plants'),
-          bins: t('household.demo.bins'),
-          missionTitle: t('household.demo.missionTitle'),
-          missionDescription: t('household.demo.missionDescription'),
-          upcomingMissionTitle: t('household.demo.upcomingMissionTitle'),
-          upcomingMissionDescription: t('household.demo.upcomingMissionDescription'),
-          rewardTitle: t('household.demo.rewardTitle'),
-          secondRewardTitle: t('household.demo.secondRewardTitle'),
-          childDishwasher: t('household.demo.childDishwasher'),
-          childToys: t('household.demo.childToys'),
-          childHallway: t('household.demo.childHallway'),
-          kitchen: t('household.demo.kitchen'),
-          bedroom: t('household.demo.bedroom'),
-          hallwayRoom: t('household.demo.hallwayRoom'),
-          livingRoom: t('household.demo.livingRoom'),
-        },
-      }),
-    });
-    const restoreChoreActions = installDemoChoreActions();
-    return () => {
-      restoreChoreActions();
-      useChoreWorkspaceStore.getState().reset();
-    };
-  }, [t]);
-  return <HouseholdSection syncEnabled={false} />;
 }
 
 function HomeRoomShot({

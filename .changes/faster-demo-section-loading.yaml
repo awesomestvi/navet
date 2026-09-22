@@ -1,4 +1,4 @@
 type: improved
 audiences:
   - standalone
-summary: Load demo dashboard sections, Energy sample data, and the Outside camera as they are opened to make the initial demo download smaller.
+summary: Load demo dashboard sections, their sample data, and the Outside camera as they are opened to make the initial demo download smaller.
