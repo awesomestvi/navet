@@ -1,3 +1,4 @@
 @import "@navet/app/styles/index.css";
 
 @source "./**/*.{js,ts,jsx,tsx}";
+@source "../../../packages/app/src/marketing/**/*.{js,ts,jsx,tsx}";

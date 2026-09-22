@@ -1,0 +1,5 @@
+type: improved
+audiences:
+  - standalone
+  - home-assistant
+summary: Reduce the app stylesheet by generating marketing-only styles for the website alone.
