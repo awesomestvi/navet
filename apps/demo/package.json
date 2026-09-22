@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node ../../scripts/remove-copied-doc-screenshots.mjs demo && node ../../scripts/write-pages-surface-headers.mjs demo && node ../../scripts/inject-cloudflare-web-analytics.mjs demo",
+    "build": "vite build && node ../../scripts/remove-copied-doc-screenshots.mjs demo && node ../../scripts/inject-cloudflare-web-analytics.mjs demo && node ../../scripts/write-pages-surface-headers.mjs demo",
     "preview": "vite preview"
   }
 }

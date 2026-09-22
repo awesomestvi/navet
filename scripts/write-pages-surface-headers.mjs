@@ -21,13 +21,23 @@ if (rootRuleStart === -1 || rootRuleEnd === -1) {
 }
 
 const rootRule = sharedHeaders.slice(rootRuleStart, rootRuleEnd);
-const surfaceRootRule = rootRule.replace(
-  "script-src 'self' ",
-  "script-src 'self' 'unsafe-inline' "
-);
+const surfaceRootRule =
+  surface === 'storybook'
+    ? rootRule.replace("script-src 'self' ", "script-src 'self' 'unsafe-inline' ")
+    : rootRule;
 
-if (rootRule === surfaceRootRule) {
+if (surface === 'storybook' && rootRule === surfaceRootRule) {
   throw new Error('Could not update the root script-src directive');
+}
+
+if (surface === 'demo') {
+  const demoHtml = await readFile(path.join(repoRoot, 'apps/demo/dist/index.html'), 'utf8');
+  const inlineScripts = [...demoHtml.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)].filter(
+    ([, attributes, content]) => !/\bsrc\s*=/.test(attributes) && content.trim()
+  );
+  if (inlineScripts.length > 0) {
+    throw new Error('Demo build contains an inline script; review its CSP before publishing');
+  }
 }
 
 const surfaceHeaders = `${sharedHeaders.slice(0, rootRuleStart)}${surfaceRootRule}${sharedHeaders.slice(rootRuleEnd)}`;
