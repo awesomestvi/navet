@@ -21,13 +21,18 @@ if (rootRuleStart === -1 || rootRuleEnd === -1) {
 }
 
 const rootRule = sharedHeaders.slice(rootRuleStart, rootRuleEnd);
-const surfaceRootRule =
-  surface === 'storybook'
-    ? rootRule.replace("script-src 'self' ", "script-src 'self' 'unsafe-inline' ")
-    : rootRule;
-
-if (surface === 'storybook' && rootRule === surfaceRootRule) {
-  throw new Error('Could not update the root script-src directive');
+let surfaceRootRule = rootRule;
+if (surface === 'storybook') {
+  const storybookDirectives = [
+    ["script-src 'self' ", "script-src 'self' 'unsafe-inline' "],
+    ['frame-src ', "frame-src 'self' "],
+  ];
+  for (const [before, after] of storybookDirectives) {
+    if (!surfaceRootRule.includes(before)) {
+      throw new Error(`Could not update the Storybook ${before.trim()} directive`);
+    }
+    surfaceRootRule = surfaceRootRule.replace(before, after);
+  }
 }
 
 if (surface === 'demo') {
