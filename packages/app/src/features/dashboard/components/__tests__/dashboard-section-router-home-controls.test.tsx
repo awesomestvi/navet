@@ -2,6 +2,8 @@ import { ALL_ROOMS_ID } from '@navet/app/constants/rooms';
 import { createChoreDemoWorkspace } from '@navet/app/features/chores/chore-demo-fixture';
 import { useChoreWorkspaceStore } from '@navet/app/features/chores/chore-workspace-store';
 import type { DashboardController } from '@navet/app/features/dashboard/hooks/use-dashboard-controller';
+import { useRoomWorkspaceStore } from '@navet/app/features/dashboard/rooms/room-workspace-store';
+import { parseRoomWorkspaceV2 } from '@navet/app/features/dashboard/rooms/room-workspace-v2';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { renderWithProviders } from '@navet/app/test/render';
 import { resetAppStores } from '@navet/app/test/store-reset';
@@ -39,6 +41,25 @@ const choreCopy = {
   hallwayRoom: 'Hallway',
   livingRoom: 'Living room',
 };
+
+function createGroupedRoomWorkspace() {
+  const workspace = parseRoomWorkspaceV2({
+    version: 2,
+    groups: [{ id: 'group_kitchen', displayName: 'Downstairs', order: 0 }],
+    rooms: [
+      {
+        id: 'room_kitchen',
+        displayName: 'Kitchen',
+        origin: 'navet',
+        sourceRefs: [],
+        metadata: { order: 0, visibility: 'visible', groupId: 'group_kitchen' },
+      },
+    ],
+    reviewIssues: [],
+  });
+  if (!workspace) throw new Error('Room workspace fixture did not parse');
+  return workspace;
+}
 
 vi.mock('@navet/app/components/layout/room-nav', () => ({
   RoomNav: (props: unknown) => {
@@ -278,6 +299,53 @@ describe('DashboardSectionRouter home controls', () => {
     });
 
     expect(dashboardLayoutMock).not.toHaveBeenCalled();
+  });
+
+  it('ignores room workspace changes outside Home and reads the latest groups on return', () => {
+    const controller = createController();
+    controller.activeSection = 'climate';
+    const { rerender } = renderWithProviders(<DashboardSectionRouter controller={controller} />);
+    dashboardLayoutMock.mockClear();
+
+    const workspace = createGroupedRoomWorkspace();
+    act(() => useRoomWorkspaceStore.setState({ workspace }));
+
+    expect(dashboardLayoutMock).not.toHaveBeenCalled();
+
+    rerender(<DashboardSectionRouter controller={{ ...controller, activeSection: 'home' }} />);
+
+    expect(roomNavMock.mock.calls.at(-1)?.[0]).toMatchObject({
+      roomGroups: [{ id: 'group_kitchen', name: 'Downstairs', rooms: ['Kitchen'] }],
+    });
+
+    act(() =>
+      useRoomWorkspaceStore.setState({
+        workspace: {
+          ...workspace,
+          groups: [{ ...workspace.groups[0], displayName: 'Shared rooms' }],
+        },
+      })
+    );
+
+    expect(roomNavMock.mock.calls.at(-1)?.[0]).toMatchObject({
+      roomGroups: [{ id: 'group_kitchen', name: 'Shared rooms', rooms: ['Kitchen'] }],
+    });
+  });
+
+  it('keeps kiosk room groups current outside Home', () => {
+    useSettingsStore.getState().updateSettings({ kioskMode: true });
+    const controller = createController();
+    controller.activeSection = 'climate';
+    renderWithProviders(<DashboardSectionRouter controller={controller} />);
+    dashboardLayoutMock.mockClear();
+
+    act(() => useRoomWorkspaceStore.setState({ workspace: createGroupedRoomWorkspace() }));
+
+    expect(dashboardLayoutMock.mock.calls.at(-1)?.[0]).toMatchObject({
+      mobileRoomNavigation: {
+        groups: [{ id: 'group_kitchen', name: 'Downstairs', rooms: ['Kitchen'] }],
+      },
+    });
   });
 
   it('keeps the tasks workspace available when chores are disabled', async () => {

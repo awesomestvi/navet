@@ -98,9 +98,11 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
     integrationSelectors.manageableRoomsByProviderId
   );
   const kioskMode = useSettingsStore(settingsSelectors.kioskMode);
+  const roomWorkspace = useRoomWorkspaceStore((state) =>
+    controller.activeSection === 'home' || kioskMode ? state.workspace : null
+  );
   const showSummaryBar = useSettingsStore(settingsSelectors.showHomeSummaryBar);
   const choresEnabled = useSettingsStore(settingsSelectors.choresEnabled);
-  const roomWorkspace = useRoomWorkspaceStore((state) => state.workspace);
   const choreWorkspace = useChoreWorkspaceStore((state) =>
     controller.activeSection === 'home' && !isAllRooms(controller.activeRoom) ? state.data : null
   );
