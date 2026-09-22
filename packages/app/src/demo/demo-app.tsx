@@ -29,10 +29,6 @@ import type { DashboardLibraryCard } from '@navet/app/features/dashboard/compone
 import { HomeEditCommandBar } from '@navet/app/features/dashboard/components/home-edit-command-bar';
 import { useProgressiveBatching } from '@navet/app/features/dashboard/hooks/use-progressive-batching';
 import { EnergyNowCardView } from '@navet/app/features/energy/components/widgets/energy-now-card-view';
-import {
-  getEnergyDashboardScenario,
-  getMockEnergySourceDiagnostics,
-} from '@navet/app/features/energy/data/mock-energy-dashboard';
 import { FanCard } from '@navet/app/features/lighting/components/fan-card';
 import { LightCard } from '@navet/app/features/lighting/components/light-card';
 import { SwitchCard } from '@navet/app/features/lighting/components/switch-card';
@@ -80,16 +76,13 @@ import {
 import type { CameraDevice, DeviceWithType, LockDevice, SensorDevice } from '../types/device.types';
 import { installDemoChoreActions } from './demo-chore-actions';
 import { installDemoDeviceAuthority } from './demo-device-authority';
-import { demoEnergyHistorySources, loadDemoEnergyHistory } from './demo-energy-history';
 import { PHOTO_FRAME_DEMO_IMAGES } from './photo-frame-demo-images';
 
 type DemoSection = Section;
 
-const EnergyDashboardPage = lazy(async () => {
-  const module = await import(
-    '@navet/app/features/energy/components/dashboard/energy-dashboard-page'
-  );
-  return { default: module.EnergyDashboardPage };
+const EnergyShot = lazy(async () => {
+  const module = await import('./demo-energy-section');
+  return { default: module.DemoEnergySection };
 });
 const ClimateDashboard = lazy(async () => {
   const module = await import('@navet/app/features/climate/components/climate-dashboard');
@@ -167,8 +160,6 @@ const energyTrend = [
   timestampMs: Date.UTC(2026, 4, 16, index * 3),
 }));
 
-const demoEnergyScenario = getEnergyDashboardScenario('default');
-const demoEnergySourceDiagnostics = getMockEnergySourceDiagnostics(demoEnergyScenario.dashboard);
 const sampleArtworkImage = artworksOriginal;
 const sampleCameraFallbackImage = cameraSampleImageWebp;
 const sampleCameraSources = [
@@ -1347,20 +1338,6 @@ function DemoWidgetCard({ card }: { card: CustomCard }) {
     <CardSlot size={card.size}>
       <WidgetCard card={card} isEditMode={false} onUpdate={() => undefined} />
     </CardSlot>
-  );
-}
-
-function EnergyShot() {
-  const isEditMode = useEditModeStore((state) => state.isEditMode);
-  return (
-    <EnergyDashboardPage
-      dashboard={demoEnergyScenario.dashboard}
-      sourceDiagnostics={demoEnergySourceDiagnostics}
-      isEditMode={isEditMode}
-      currentLoadStatisticId="sensor.whole_home_power"
-      historyStatisticsLoader={loadDemoEnergyHistory}
-      historySources={demoEnergyHistorySources}
-    />
   );
 }
 
