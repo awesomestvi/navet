@@ -10,7 +10,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { defineConfig } from 'vite';
 
-const repoRoot = path.resolve(__dirname, '../..');
+const repoRoot = path.resolve(import.meta.dirname, '../..');
 const packageJson = JSON.parse(readFileSync(path.resolve(repoRoot, 'package.json'), 'utf8')) as {
   version?: string;
 };
@@ -18,7 +18,7 @@ const buildMetadata = createBuildMetadata(repoRoot, packageJson.version, 'enviro
 const REACT_COMPILER_INCLUDE = [/[\\/]src[\\/]/, /[\\/]packages[\\/][^\\/]+[\\/]src[\\/]/];
 
 export default defineConfig({
-  root: __dirname,
+  root: import.meta.dirname,
   optimizeDeps: {
     exclude: ['maplibre-gl'],
   },
@@ -65,7 +65,7 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: path.resolve(__dirname, 'dist'),
+    outDir: path.resolve(import.meta.dirname, 'dist'),
     emptyOutDir: true,
     chunkSizeWarningLimit: 500,
   },
