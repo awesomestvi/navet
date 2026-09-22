@@ -17,6 +17,8 @@ function resolveCurrentProviderId(
   return providerId ?? authProviderId ?? integrationStore.getState().currentProviderId;
 }
 
+const EMPTY_SELECTED_PROVIDER_IDS: IntegrationProviderId[] = [];
+
 export function resolveProviderIdForFeatureSupport(
   entityId: string | undefined,
   fallbackProviderId?: IntegrationProviderId
@@ -36,7 +38,9 @@ export function useProviderFeatureMatrix(
 ): IntegrationProviderFeatureMatrix {
   const authSession = useOptionalAuthSession();
   const resolvedProviderId = resolveCurrentProviderId(providerId, authSession?.providerId);
-  const selectedProviderIds = useIntegrationStore((state) => state.selectedProviderIds);
+  const selectedProviderIds = useIntegrationStore((state) =>
+    providerId ? EMPTY_SELECTED_PROVIDER_IDS : state.selectedProviderIds
+  );
   return useMemo(() => {
     if (providerId || selectedProviderIds.length === 0)
       return getProviderFeatureMatrix(resolvedProviderId);
