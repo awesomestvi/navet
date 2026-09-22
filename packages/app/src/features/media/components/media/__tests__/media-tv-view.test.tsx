@@ -28,6 +28,27 @@ const defaultProps = {
 };
 
 describe('MediaTvView', () => {
+  it('reserves the navigation pad footprint for long medium-card names', () => {
+    const playerName = 'Samsung The Frame 65 QE65LS03AAUXXC';
+    const { container, rerender } = renderWithProviders(
+      <MediaTvView {...defaultProps} size="medium" playerName={playerName} />
+    );
+
+    const reservedHeader = container.querySelector('.pr-28');
+    expect(reservedHeader).toHaveTextContent(playerName);
+    expect(reservedHeader?.nextElementSibling).toHaveClass('relative', 'flex', 'min-h-0');
+
+    rerender(
+      <MediaTvView
+        {...defaultProps}
+        size="medium"
+        playerName={playerName}
+        remoteAvailable={false}
+      />
+    );
+    expect(screen.getByText(playerName).closest('.pr-28')).toBeNull();
+  });
+
   it('renders the small TV control buttons and toggles the D-pad controls', () => {
     renderWithProviders(<MediaTvView {...defaultProps} />);
 

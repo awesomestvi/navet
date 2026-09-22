@@ -4,6 +4,7 @@ import {
   countHeavyDashboardDevices,
   resolveDashboardPerformanceProfile,
   resolveDenseDashboardPerformanceMode,
+  supportsDashboardOffscreenPaintOptimization,
 } from '../use-dashboard-performance-mode';
 
 function createDevice(id: string, type: DeviceWithType['type'] = 'lights'): DeviceWithType {
@@ -20,6 +21,38 @@ function createDevice(id: string, type: DeviceWithType['type'] = 'lights'): Devi
 }
 
 describe('useDashboardPerformanceMode helpers', () => {
+  it('avoids off-screen paint optimization in Safari', () => {
+    expect(
+      supportsDashboardOffscreenPaintOptimization(
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148'
+      )
+    ).toBe(false);
+    expect(
+      supportsDashboardOffscreenPaintOptimization(
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/140.0.0.0 Safari/537.36'
+      )
+    ).toBe(true);
+  });
+
+  it('keeps reduced-effects batching without Safari content visibility', () => {
+    expect(
+      resolveDashboardPerformanceProfile({
+        activeSection: 'home',
+        deviceTier: 'low',
+        effectsQuality: 'low',
+        isEditMode: false,
+        lowPowerMode: true,
+        supportsOffscreenPaintOptimization: false,
+        visibleCardCount: 20,
+        visibleDevices: [createDevice('light.kitchen', 'lights')],
+      })
+    ).toMatchObject({
+      batchHeavyCards: true,
+      optimizeOffscreenPaint: false,
+      progressiveBatchInitialCount: 2,
+    });
+  });
+
   it('counts only heavy dashboard device types', () => {
     expect(
       countHeavyDashboardDevices([

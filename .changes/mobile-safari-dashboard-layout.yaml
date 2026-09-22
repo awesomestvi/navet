@@ -1,0 +1,6 @@
+type: fixed
+audiences:
+  - standalone
+  - home-assistant
+  - hacs
+summary: Fixed mobile dashboard cards, media controls, chore fields, and the browser zoom preference in Safari.

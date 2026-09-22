@@ -84,7 +84,7 @@ export function ChoreFormGroup({
   const surface = getThemeSurfaceTokens(theme);
 
   return (
-    <section>
+    <section className="min-w-0 max-w-full">
       <h3
         className={cn(
           'mb-2 px-1 font-semibold',
@@ -96,7 +96,7 @@ export function ChoreFormGroup({
       </h3>
       <div
         className={cn(
-          'grid gap-4 rounded-[22px] border p-4 sm:grid-cols-2 sm:p-5',
+          'grid min-w-0 max-w-full grid-cols-[minmax(0,1fr)] gap-4 rounded-[22px] border p-4 sm:grid-cols-2 sm:p-5',
           surface.subtleBg,
           surface.borderStrong
         )}
@@ -128,7 +128,7 @@ export function ChoreFormGroup({
         ) : null}
       </div>
       {moreOptions && moreOptionsLayout === 'section' ? (
-        <div className="mt-6">
+        <div className="mt-6 min-w-0 max-w-full">
           <h4
             className={cn(
               'mb-2 px-1 font-semibold',
@@ -140,7 +140,7 @@ export function ChoreFormGroup({
           </h4>
           <div
             className={cn(
-              'grid gap-4 rounded-[22px] border p-4 sm:grid-cols-2 sm:p-5',
+              'grid min-w-0 max-w-full grid-cols-[minmax(0,1fr)] gap-4 rounded-[22px] border p-4 sm:grid-cols-2 sm:p-5',
               surface.subtleBg,
               surface.borderStrong
             )}

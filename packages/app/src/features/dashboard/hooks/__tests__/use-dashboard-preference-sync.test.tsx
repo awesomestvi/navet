@@ -1524,6 +1524,52 @@ describe('useDashboardPreferenceSync', () => {
     ).toBe(8);
   });
 
+  it('keeps a locally persisted browser zoom preference when the device document predates it', async () => {
+    useSettingsStore.getState().updateSettings({ preventBrowserZoom: true });
+    loadDashboardPreferences.mockResolvedValue(
+      availableDocument('client', 8, {
+        schemaVersion: 1,
+        settings: {
+          lowPowerMode: false,
+        },
+      })
+    );
+
+    renderHookWithProviders(() =>
+      useDashboardPreferenceSync({
+        accountEnabled: false,
+        client: CLIENT,
+        enabled: true,
+      })
+    );
+    await flushEffects();
+
+    expect(useSettingsStore.getState().preventBrowserZoom).toBe(true);
+  });
+
+  it('applies an explicit browser zoom preference from the current device document', async () => {
+    useSettingsStore.getState().updateSettings({ preventBrowserZoom: true });
+    loadDashboardPreferences.mockResolvedValue(
+      availableDocument('client', 8, {
+        schemaVersion: 1,
+        settings: {
+          preventBrowserZoom: false,
+        },
+      })
+    );
+
+    renderHookWithProviders(() =>
+      useDashboardPreferenceSync({
+        accountEnabled: false,
+        client: CLIENT,
+        enabled: true,
+      })
+    );
+    await flushEffects();
+
+    expect(useSettingsStore.getState().preventBrowserZoom).toBe(false);
+  });
+
   it('drops a pending device write when the browser client identity changes', async () => {
     const nextClient: DashboardProfileClient = {
       ...CLIENT,

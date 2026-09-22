@@ -630,6 +630,33 @@ export const EditWeeklyStartDate: Story = {
   },
 };
 
+export const MobileEditScheduleFieldsStayContained: Story = {
+  render: () => <ChoreEditingWeeklyDateStory />,
+  play: async ({ canvasElement }) => {
+    const dialog = within(canvasElement.ownerDocument.body).getByRole('dialog', {
+      name: 'Edit chore',
+    });
+    await userEvent.click(within(dialog).getByRole('button', { name: /When it repeats/ }));
+
+    for (const label of ['Due time', 'Start date', 'End date', 'Dates to skip']) {
+      const input = within(dialog).getByLabelText(label);
+      const fieldGrid = input.closest('section')?.querySelector(':scope > div');
+      await expect(fieldGrid).not.toBeNull();
+
+      const inputRect = input.getBoundingClientRect();
+      const gridRect = (fieldGrid as HTMLElement).getBoundingClientRect();
+      await expect(inputRect.left).toBeGreaterThanOrEqual(gridRect.left);
+      await expect(inputRect.right).toBeLessThanOrEqual(gridRect.right);
+    }
+  },
+  globals: {
+    viewport: {
+      value: 'mobile1',
+      isRotated: false,
+    },
+  },
+};
+
 export const EditSidebarStepper: Story = {
   render: () => <ChoreEditingStory />,
   play: async ({ canvasElement }) => {
