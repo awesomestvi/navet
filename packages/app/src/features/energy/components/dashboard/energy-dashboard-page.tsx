@@ -1548,9 +1548,19 @@ function DeviceTable({
               </InteractivePill>
             </div>
           </div>
-          <div
-            className={`min-h-0 flex-1 touch-pan-y overflow-auto overscroll-contain rounded-[22px] border [-webkit-overflow-scrolling:touch] ${surface.border} ${surface.panelMuted}`}
+          {/* biome-ignore-start lint/a11y/noNoninteractiveTabindex: The scrollable usage list needs a keyboard focus target when its rows have no controls. */}
+          <section
+            aria-label={
+              contentView === 'devices'
+                ? t('energy.dashboard.devices')
+                : contentView === 'rooms'
+                  ? t('dashboard.multiple.group.rooms')
+                  : t('energy.dashboard.sources')
+            }
+            tabIndex={0}
+            className={`min-h-0 flex-1 touch-pan-y overflow-auto overscroll-contain rounded-[22px] border focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 [-webkit-overflow-scrolling:touch] ${surface.border} ${surface.panelMuted}`}
           >
+            {/* biome-ignore-end lint/a11y/noNoninteractiveTabindex: End scroll region opening tag. */}
             {contentView === 'devices' ? (
               consumers.length === 0 && untrackedTodayKWh <= 0 ? (
                 <div className={`px-4 py-5 text-sm ${surface.textMuted}`}>
@@ -1738,7 +1748,7 @@ function DeviceTable({
                 ))}
               </div>
             ) : null}
-          </div>
+          </section>
         </div>
       </div>
     </BaseCard>

@@ -305,7 +305,7 @@ export function SettingsNavigationShell({
               </main>
             </div>
           ) : (
-            <div className="overflow-x-clip px-3 py-4">
+            <main className="overflow-x-clip px-3 py-4">
               <header className="pb-4">
                 <h1 className={cn('px-2', navetTypographyTokens.pageHeading, styles.textColor)}>
                   {title}
@@ -336,7 +336,7 @@ export function SettingsNavigationShell({
                   />
                 </nav>
               )}
-            </div>
+            </main>
           )}
         </NavigationWorkspace.Frame>
       </div>

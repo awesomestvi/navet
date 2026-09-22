@@ -1,0 +1,5 @@
+type: improved
+audiences:
+  - standalone
+  - home-assistant
+summary: Make mobile dashboard scroll areas keyboard accessible and restore main landmarks in Household and Settings.
