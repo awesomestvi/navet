@@ -1,0 +1,4 @@
+type: improved
+audiences:
+  - standalone
+summary: Load demo dashboard sections as they are opened to make the initial demo download smaller.

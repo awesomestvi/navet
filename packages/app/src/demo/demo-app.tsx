@@ -3,9 +3,9 @@ import cameraSampleImageAvif from '@assets/reference/media/camera-sample.avif';
 import cameraSampleImageWebp from '@assets/reference/media/camera-sample.webp';
 import { RUNTIME_SAMPLE_SCREENSHOTS } from '@navet/app/assets/runtime-sample-images';
 import { AuthProvider, useOptionalAuthSession } from '@navet/app/auth/AuthProvider';
-import { MediaSection } from '@navet/app/components/layout/media-section';
 import { RoomNav } from '@navet/app/components/layout/room-nav';
 import type { RoomNavigationGroup } from '@navet/app/components/layout/room-nav.utils';
+import { LoadingSpinner } from '@navet/app/components/primitives/loading-spinner';
 import { SkipLink } from '@navet/app/components/primitives/skip-link';
 import {
   type CardSize,
@@ -19,9 +19,7 @@ import { ALL_ROOMS_ID, isAllRooms } from '@navet/app/constants/rooms';
 import { CalendarCard } from '@navet/app/features/calendar/components/calendar-card';
 import { createChoreDemoWorkspace } from '@navet/app/features/chores/chore-demo-fixture';
 import { useChoreWorkspaceStore } from '@navet/app/features/chores/chore-workspace-store';
-import { HouseholdSection } from '@navet/app/features/chores/components/household-section';
 import { ClimateCard } from '@navet/app/features/climate/components/climate-card';
-import { ClimateDashboard } from '@navet/app/features/climate/components/climate-dashboard';
 import { HumidifierCard } from '@navet/app/features/climate/components/humidifier-card';
 import type { ClimateDashboardSection } from '@navet/app/features/climate/types/climate-dashboard';
 import { type CustomCard, DashboardLayout, WidgetCard } from '@navet/app/features/dashboard';
@@ -30,7 +28,6 @@ import type { CardTemplate } from '@navet/app/features/dashboard/components/add-
 import type { DashboardLibraryCard } from '@navet/app/features/dashboard/components/dashboard-library-list';
 import { HomeEditCommandBar } from '@navet/app/features/dashboard/components/home-edit-command-bar';
 import { useProgressiveBatching } from '@navet/app/features/dashboard/hooks/use-progressive-batching';
-import { EnergyDashboardPage } from '@navet/app/features/energy/components/dashboard/energy-dashboard-page';
 import { EnergyNowCardView } from '@navet/app/features/energy/components/widgets/energy-now-card-view';
 import {
   getEnergyDashboardScenario,
@@ -39,7 +36,6 @@ import {
 import { FanCard } from '@navet/app/features/lighting/components/fan-card';
 import { LightCard } from '@navet/app/features/lighting/components/light-card';
 import { SwitchCard } from '@navet/app/features/lighting/components/switch-card';
-import { LightsDashboard } from '@navet/app/features/lighting/dashboard/lights-dashboard';
 import { MediaCard } from '@navet/app/features/media/components/media-card';
 import { PersonCard } from '@navet/app/features/person/components/person-card';
 import { SceneCard } from '@navet/app/features/scenes/components/scene-card';
@@ -47,7 +43,6 @@ import { AlarmPanelCard } from '@navet/app/features/security/components/alarm-pa
 import { CameraCard } from '@navet/app/features/security/components/camera-card';
 import { CoverCard } from '@navet/app/features/security/components/cover-card';
 import { LockCard } from '@navet/app/features/security/components/lock-card';
-import { SecurityCameraDashboard } from '@navet/app/features/security/components/security-camera-dashboard';
 import { buildSecurityCameraDashboardModel } from '@navet/app/features/security/utils/security-camera-dashboard-model';
 import { GroupedSensorCard } from '@navet/app/features/sensors/components/grouped-sensor-card';
 import type { HomeStatusSummaryItem } from '@navet/app/features/sensors/components/home-status-summary-model';
@@ -56,7 +51,6 @@ import {
   SummaryBarStack,
 } from '@navet/app/features/sensors/components/info-badge-strip';
 import { SensorCard } from '@navet/app/features/sensors/components/sensor-card';
-import { SettingsSection } from '@navet/app/features/settings/components/settings-section';
 import { VacuumCard } from '@navet/app/features/vacuum/components/vacuum-card';
 import { WeatherCard } from '@navet/app/features/weather/components/weather-card';
 import { useI18n, useTheme } from '@navet/app/hooks';
@@ -75,7 +69,15 @@ import { defaultSettings, useSettingsStore } from '@navet/app/stores/settings-st
 import { useThemeStore } from '@navet/app/stores/theme-store';
 import type { NavetAlarmEntity } from '@navet/core/alarm-types';
 import { Fan, Lightbulb, ShieldCheck, Speaker, Zap } from 'lucide-react';
-import { Children, type CSSProperties, type ReactNode, useEffect, useState } from 'react';
+import {
+  Children,
+  type CSSProperties,
+  lazy,
+  type ReactNode,
+  Suspense,
+  useEffect,
+  useState,
+} from 'react';
 import type { CameraDevice, DeviceWithType, LockDevice, SensorDevice } from '../types/device.types';
 import { installDemoChoreActions } from './demo-chore-actions';
 import { installDemoDeviceAuthority } from './demo-device-authority';
@@ -83,6 +85,37 @@ import { demoEnergyHistorySources, loadDemoEnergyHistory } from './demo-energy-h
 import { PHOTO_FRAME_DEMO_IMAGES } from './photo-frame-demo-images';
 
 type DemoSection = Section;
+
+const EnergyDashboardPage = lazy(async () => {
+  const module = await import(
+    '@navet/app/features/energy/components/dashboard/energy-dashboard-page'
+  );
+  return { default: module.EnergyDashboardPage };
+});
+const ClimateDashboard = lazy(async () => {
+  const module = await import('@navet/app/features/climate/components/climate-dashboard');
+  return { default: module.ClimateDashboard };
+});
+const SecurityCameraDashboard = lazy(async () => {
+  const module = await import('@navet/app/features/security/components/security-camera-dashboard');
+  return { default: module.SecurityCameraDashboard };
+});
+const HouseholdSection = lazy(async () => {
+  const module = await import('@navet/app/features/chores/components/household-section');
+  return { default: module.HouseholdSection };
+});
+const LightsDashboard = lazy(async () => {
+  const module = await import('@navet/app/features/lighting/dashboard/lights-dashboard');
+  return { default: module.LightsDashboard };
+});
+const MediaSection = lazy(async () => {
+  const module = await import('@navet/app/components/layout/media-section');
+  return { default: module.MediaSection };
+});
+const SettingsSection = lazy(async () => {
+  const module = await import('@navet/app/features/settings/components/settings-section');
+  return { default: module.SettingsSection };
+});
 
 const noopCardSizeChange = () => {};
 const noopRemoveEntity = () => {};
@@ -1904,11 +1937,13 @@ function DemoContent() {
               showCustomizeButton={false}
             />
           ) : null}
-          <DemoSectionContent
-            section={section}
-            activeRoom={activeRoom}
-            addedWidgets={addedWidgets}
-          />
+          <Suspense fallback={<LoadingSpinner />}>
+            <DemoSectionContent
+              section={section}
+              activeRoom={activeRoom}
+              addedWidgets={addedWidgets}
+            />
+          </Suspense>
         </div>
       </DashboardLayout>
     </>
