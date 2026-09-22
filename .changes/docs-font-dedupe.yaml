@@ -1,0 +1,4 @@
+type: improved
+audiences:
+  - docs
+summary: Remove duplicate Inter font files from the documentation build.
