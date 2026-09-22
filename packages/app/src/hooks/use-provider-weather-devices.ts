@@ -16,7 +16,7 @@ import {
   resolveProviderFeatureEntityName,
   resolveProviderFeatureEntityRoom,
 } from './provider-feature-entity-labels';
-import { useIntegrationStore } from './use-integration-store';
+import { useIntegrationStore, useProviderId } from './use-integration-store';
 import {
   useHydratingProviderCollection,
   useProviderCollectionData,
@@ -49,8 +49,7 @@ export function useProviderWeatherDevices(
   options?: { enabled?: boolean }
 ): PlatformWeatherDevice[] {
   const enabled = options?.enabled ?? true;
-  const currentProviderId = useIntegrationStore((state) => state.currentProviderId);
-  const resolvedProviderId = providerId ?? currentProviderId;
+  const resolvedProviderId = useProviderId(providerId);
   const entitiesHydrated = useIntegrationStore(
     (state) =>
       (state.providerRuntime[resolvedProviderId] ?? state.providerRuntime[state.currentProviderId])
