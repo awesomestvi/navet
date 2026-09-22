@@ -116,7 +116,12 @@ export function DashboardPage() {
 
   if (!isDashboardReady) {
     return page.connecting ? (
-      <LoadingSpinner message={t('dashboard.page.connectingHomeAssistant')} fullScreen />
+      <>
+        <SkipLink targetId="dashboard-main-content" />
+        <main id="dashboard-main-content" tabIndex={-1} aria-busy="true">
+          <LoadingSpinner message={t('dashboard.page.connectingHomeAssistant')} fullScreen />
+        </main>
+      </>
     ) : null;
   }
 

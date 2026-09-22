@@ -53,8 +53,8 @@ const Toaster = lazy(async () => {
 
 function AuthenticatedLoadingScreen({ message }: { message: string }) {
   return (
-    <div
-      role="status"
+    <main
+      aria-busy="true"
       className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-background text-foreground"
     >
       <span
@@ -62,8 +62,10 @@ function AuthenticatedLoadingScreen({ message }: { message: string }) {
         className="h-8 w-8 animate-spin rounded-full border-2 border-current border-r-transparent"
         style={{ color: 'var(--navet-accent)' }}
       />
-      <p className="text-sm text-muted-foreground">{message}</p>
-    </div>
+      <p role="status" className="text-sm text-muted-foreground">
+        {message}
+      </p>
+    </main>
   );
 }
 

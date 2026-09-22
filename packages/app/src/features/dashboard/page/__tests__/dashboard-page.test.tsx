@@ -115,6 +115,11 @@ describe('DashboardPage loading recovery', () => {
     renderWithProviders(<DashboardPage />);
 
     expect(screen.getByText('Connecting to your smart home...')).toBeInTheDocument();
+    expect(screen.getByRole('main')).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getByRole('link', { name: 'Skip to main content' })).toHaveAttribute(
+      'href',
+      '#dashboard-main-content'
+    );
     expect(useErrorStore.getState().error).toBeNull();
   });
 
