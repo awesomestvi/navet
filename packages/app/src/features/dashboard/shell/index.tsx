@@ -247,6 +247,7 @@ export const DashboardLayout = memo(function DashboardLayout({
               mobileRoomNavigation={mobileRoomNavigation}
             />
           ) : null}
+          <span id="dashboard-main-content" tabIndex={-1} className="sr-only" />
           {children}
         </div>
         {kioskMode && !showNavetSidebar ? (

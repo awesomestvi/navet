@@ -78,6 +78,7 @@ describe('DashboardLayout', () => {
     );
 
     expect(screen.getByText('Dashboard content')).toBeInTheDocument();
+    expect(document.getElementById('dashboard-main-content')).toHaveAttribute('tabindex', '-1');
     expect(screen.getByTestId('header')).toBeInTheDocument();
     expect(screen.getByTestId('sidebar')).toBeInTheDocument();
     expect(screen.queryByTestId('kiosk-orbit-menu')).not.toBeInTheDocument();

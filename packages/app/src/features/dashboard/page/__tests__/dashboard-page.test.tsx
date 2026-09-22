@@ -80,6 +80,10 @@ describe('DashboardPage loading recovery', () => {
     rerender(<DashboardPage />);
 
     expect(screen.getByText('dashboard ready')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Skip to main content' })).toHaveAttribute(
+      'href',
+      '#dashboard-main-content'
+    );
   });
 
   it('waits for profile sync before rendering the dashboard shell', () => {

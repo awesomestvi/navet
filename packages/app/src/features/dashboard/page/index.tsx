@@ -1,4 +1,5 @@
 import { LoadingSpinner } from '@navet/app/components/primitives/loading-spinner';
+import { SkipLink } from '@navet/app/components/primitives/skip-link';
 import { RenderProfiler } from '@navet/app/components/shared/render-profiler';
 import { isAllRooms } from '@navet/app/constants/rooms';
 import { useI18n } from '@navet/app/hooks';
@@ -121,6 +122,7 @@ export function DashboardPage() {
 
   return (
     <>
+      <SkipLink targetId="dashboard-main-content" />
       <DashboardArrivalReveal
         open={
           page.activeSection === 'home' &&

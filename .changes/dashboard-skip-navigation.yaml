@@ -1,0 +1,5 @@
+type: improved
+audiences:
+  - standalone
+  - home-assistant
+summary: Add a keyboard shortcut to skip dashboard navigation and reach its content.
