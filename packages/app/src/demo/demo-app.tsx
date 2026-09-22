@@ -6,6 +6,7 @@ import { AuthProvider, useOptionalAuthSession } from '@navet/app/auth/AuthProvid
 import { MediaSection } from '@navet/app/components/layout/media-section';
 import { RoomNav } from '@navet/app/components/layout/room-nav';
 import type { RoomNavigationGroup } from '@navet/app/components/layout/room-nav.utils';
+import { SkipLink } from '@navet/app/components/primitives/skip-link';
 import {
   type CardSize,
   getCardGridAutoRowsStyle,
@@ -1850,6 +1851,7 @@ function DemoContent() {
 
   return (
     <>
+      <SkipLink targetId="demo-main-content" />
       {section === 'home' && isEditMode ? (
         <HomeEditCommandBar
           canUndo={addedWidgets.length > 0}
@@ -1886,6 +1888,9 @@ function DemoContent() {
         }
       >
         <div
+          id="demo-main-content"
+          role={section === 'tasks' || section === 'settings' ? undefined : 'main'}
+          tabIndex={-1}
           className={`flex w-full flex-col gap-2 md:gap-4 min-[1025px]:gap-6 ${section === 'home' && isEditMode ? 'pt-14' : ''}`}
         >
           {section === 'home' ? (

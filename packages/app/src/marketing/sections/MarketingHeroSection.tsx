@@ -105,6 +105,8 @@ export function MarketingHeroSection() {
             { srcSet: heroBackgroundRoomWebp, type: 'image/webp' },
           ]}
           alt="Warm modern living space used as the background for the Navet marketing hero"
+          width={1672}
+          height={941}
           pictureClassName="marketing-hero-background-shell absolute inset-0"
           className="marketing-hero-background-image absolute inset-0 h-full w-full object-cover object-center"
           fetchPriority="low"

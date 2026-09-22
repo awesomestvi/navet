@@ -1,4 +1,5 @@
 import logoHorizontalLight from '@assets/public/logo-horizontal-light.svg';
+import { SkipLink } from '@navet/app/components/primitives/skip-link';
 import { Text } from '@navet/app/components/primitives/text';
 import { DiscordMark, RedditMark, YouTubeMark } from '@navet/app/components/shared/social-marks';
 import {
@@ -324,6 +325,7 @@ export function MarketingWebsiteShell({
           : 'bg-[radial-gradient(circle_at_top,rgba(249,115,22,0.18),transparent_24%),radial-gradient(circle_at_82%_12%,rgba(59,130,246,0.12),transparent_20%),linear-gradient(180deg,#080c13_0%,#06080d_100%)] text-white'
       )}
     >
+      <SkipLink targetId="marketing-main-content" />
       <div aria-hidden="true" className="pointer-events-none fixed inset-0">
         <div className="marketing-aurora marketing-aurora--amber" />
         <div className="marketing-aurora marketing-aurora--blue" />
@@ -435,6 +437,8 @@ export function MarketingWebsiteShell({
         </header>
 
         <main
+          id="marketing-main-content"
+          tabIndex={-1}
           className={cn(
             'pb-12 md:pb-16',
             isHomePage
