@@ -1,0 +1,3 @@
+type: internal
+audiences: []
+summary: Remove unused duplicate Storybook fonts and favicon wrapper from its distribution.
