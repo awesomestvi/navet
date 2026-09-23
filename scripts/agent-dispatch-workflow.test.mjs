@@ -49,7 +49,7 @@ describe('agent issue intake', () => {
     expect(workflow.on).toEqual({ issue_comment: { types: ['created'] } });
     expect(workflow.permissions).toEqual({ contents: 'read', issues: 'write' });
     expect(workflow.jobs.accept.if).toContain('github.event.issue.pull_request == null');
-    expect(workflow.jobs.accept.steps.some((step) => step.uses === 'actions/checkout@v4')).toBe(true);
+    expect(workflow.jobs.accept.steps.some((step) => step.uses === 'actions/checkout@v5')).toBe(true);
     expect(workflow.jobs.accept.steps.at(-1).with.script).toContain('acceptAgentComment');
   });
 
