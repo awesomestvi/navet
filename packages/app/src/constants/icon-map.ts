@@ -58,19 +58,18 @@ export const LIGHT_ICON_MAP: Record<string, LucideIcon> = {
 
 export const DEFAULT_LIGHT_ICON = 'Zap';
 const emojiIconRegex = /\p{Extended_Pictographic}/u;
-const lucideIconRegistry = new Map<string, LucideIcon>(
-  Object.entries(LucideIcons).flatMap(([key, value]) =>
-    /^[A-Z]/.test(key) && (typeof value === 'function' || typeof value === 'object')
-      ? [[key, value as LucideIcon]]
-      : []
-  )
-);
 const lowerCaseLightIconMap = new Map(
   Object.keys(LIGHT_ICON_MAP).map((key) => [key.toLowerCase(), key] as const)
 );
-const lowerCaseLucideIconRegistry = new Map(
-  Array.from(lucideIconRegistry.keys(), (key) => [key.toLowerCase(), key] as const)
-);
+const lowerCaseLucideIconRegistry = new Map<string, { name: string; component: LucideIcon }>();
+for (const [key, value] of Object.entries(LucideIcons)) {
+  if (/^[A-Z]/.test(key) && (typeof value === 'function' || typeof value === 'object')) {
+    lowerCaseLucideIconRegistry.set(key.toLowerCase(), {
+      name: key,
+      component: value as LucideIcon,
+    });
+  }
+}
 
 function toPascalCaseIconName(value: string) {
   return value
@@ -103,12 +102,12 @@ export function normalizeLightIconName(value: string) {
 
   const lucideMatchedKey = lowerCaseLucideIconRegistry.get(lowerTrimmed);
   if (lucideMatchedKey) {
-    return lucideMatchedKey;
+    return lucideMatchedKey.name;
   }
 
   const pascalCaseLucideMatch = lowerCaseLucideIconRegistry.get(pascalCaseValue.toLowerCase());
   if (pascalCaseLucideMatch) {
-    return pascalCaseLucideMatch;
+    return pascalCaseLucideMatch.name;
   }
 
   return pascalCaseValue || trimmed;
@@ -124,7 +123,11 @@ export function resolveLightIconComponent(iconName: string) {
     return LIGHT_ICON_MAP[normalizedIconName];
   }
 
-  return lucideIconRegistry.get(normalizedIconName) ?? null;
+  const match = lowerCaseLucideIconRegistry.get(normalizedIconName.toLowerCase());
+  if (match?.name !== normalizedIconName) {
+    return null;
+  }
+  return match.component;
 }
 
 export function isEmojiLightIcon(iconName: string) {
