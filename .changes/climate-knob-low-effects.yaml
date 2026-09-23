@@ -1,0 +1,6 @@
+type: fixed
+audiences:
+  - standalone
+  - home-assistant
+  - hacs
+summary: Climate and humidifier knobs no longer show a solid glow shape on low-effects devices.

@@ -28,6 +28,7 @@ const CLIENT_SETTING_KEYS = {
   headerTitleMode: true,
   headerCustomText: true,
   keepDeviceAwake: true,
+  preventBrowserZoom: true,
   compactMode: true,
   kioskMode: true,
   kioskSwipeRooms: true,

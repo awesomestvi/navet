@@ -9,7 +9,7 @@ import {
 } from '@navet/app/components/ui/dropdown-menu';
 import { useTheme } from '@navet/app/hooks';
 import type { ThemeType } from '@navet/app/hooks/use-theme';
-import { ChevronDown } from 'lucide-react';
+import { LayoutGrid } from 'lucide-react';
 
 export interface DashboardGroupingOption {
   id: string;
@@ -91,17 +91,11 @@ export function DashboardGroupingNavigation({
           <DropdownMenuTrigger asChild>
             <InteractivePill
               aria-label={`${groupingLabel}: ${selectedMode.label}`}
+              title={`${groupingLabel}: ${selectedMode.label}`}
               size="compact"
-              intent="navigation"
-              variant="ghost"
-              className={`shrink-0 gap-1 whitespace-nowrap rounded-[22px] border sm:gap-2 sm:px-3.5 sm:font-medium ${getGroupingPillClassName(
-                false,
-                theme,
-                surface
-              )}`}
+              className="w-9 shrink-0 px-0"
             >
-              <span>{selectedMode.label}</span>
-              <ChevronDown aria-hidden="true" className="h-3.5 w-3.5" />
+              <LayoutGrid aria-hidden="true" className="h-4 w-4" />
             </InteractivePill>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" sideOffset={8}>
@@ -119,11 +113,6 @@ export function DashboardGroupingNavigation({
             </DropdownMenuRadioGroup>
           </DropdownMenuContent>
         </DropdownMenu>
-
-        <span
-          aria-hidden="true"
-          className={`mx-0.5 h-5 shrink-0 self-center border-l ${surface.border}`}
-        />
 
         <div role="tablist" aria-label={ariaLabel} className="flex gap-2">
           {items.map((item) => {

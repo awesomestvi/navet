@@ -5,6 +5,11 @@ import {
 import { getClimateDashboardGroup } from '@navet/app/features/climate/utils/climate-dashboard-group';
 import { buildSecurityCameraDashboardModel } from '@navet/app/features/security/utils/security-camera-dashboard-model';
 import { buildDashboardVisibilityResult } from '@navet/app/hooks/use-dashboard-devices';
+import { integrationStore } from '@navet/app/stores/integration-store';
+import { useNavigationStore } from '@navet/app/stores/navigation-store';
+import { renderHookWithProviders } from '@navet/app/test/render';
+import { resetAppStores } from '@navet/app/test/store-reset';
+import { mapHomeAssistantEntitiesToNavetEntities } from '@navet/provider-homeassistant';
 import { mapHomeySnapshotToNavetEntities } from '@navet/provider-homey';
 import { describe, expect, it } from 'vitest';
 import {
@@ -12,6 +17,7 @@ import {
   resolveDashboardShownSensorEntityIds,
   resolveShouldIncludeFeatureCollections,
   resolveShouldTrackMediaDevices,
+  useDashboardController,
 } from '../use-dashboard-controller';
 
 describe('Lights scene collections', () => {
@@ -21,6 +27,66 @@ describe('Lights scene collections', () => {
 });
 
 describe('Climate environmental sensor visibility', () => {
+  it('shows Home Assistant air purifier readings in Climate while honoring explicit hiding', async () => {
+    await resetAppStores();
+    const hassEntity = (entity_id: string, state: string, device_class?: string) => ({
+      entity_id,
+      state,
+      attributes: { friendly_name: entity_id, device_class },
+      last_changed: '2026-09-23T10:00:00.000Z',
+      last_updated: '2026-09-23T10:00:00.000Z',
+      context: { id: 'ctx-1', parent_id: null, user_id: null },
+    });
+    const devices = mapNavetEntitiesToDeviceCollection(
+      mapHomeAssistantEntitiesToNavetEntities({
+        entities: {
+          'fan.office_air_purifier': hassEntity('fan.office_air_purifier', 'on'),
+          'sensor.office_humidity': hassEntity('sensor.office_humidity', '55', 'humidity'),
+          'sensor.office_temperature': hassEntity('sensor.office_temperature', '21', 'temperature'),
+          'sensor.office_pm25': hassEntity('sensor.office_pm25', '12', 'pm25'),
+        },
+        areas: [],
+        deviceRegistry: [],
+        entityRegistry: [
+          { entity_id: 'fan.office_air_purifier', device_id: 'device-air-purifier' },
+          { entity_id: 'sensor.office_humidity', device_id: 'device-air-purifier' },
+          { entity_id: 'sensor.office_temperature', device_id: 'device-air-purifier' },
+          { entity_id: 'sensor.office_pm25', device_id: 'device-air-purifier' },
+        ],
+      })
+    );
+    const shown = resolveDashboardShownSensorEntityIds('climate', devices, []);
+    const visible = buildDashboardVisibilityResult(devices, [], shown).visibleDevices.sensors;
+
+    expect(visible.map((sensor) => sensor.deviceClass)).toEqual([
+      'humidity',
+      'temperature',
+      'pm25',
+    ]);
+    expect(
+      visible.map((sensor) => getClimateDashboardGroup({ ...sensor, type: 'sensors' }))
+    ).toEqual(['humidity', 'temperature', 'airQuality']);
+    expect(
+      buildDashboardVisibilityResult(devices, [visible[0].id], shown).visibleDevices.sensors.map(
+        (sensor) => sensor.id
+      )
+    ).toEqual(visible.slice(1).map((sensor) => sensor.id));
+
+    integrationStore.setState({
+      selectedProviderIds: ['home_assistant'],
+      providerDeviceCollectionsByProviderId: { home_assistant: devices },
+    });
+    useNavigationStore.setState({ activeSection: 'climate' });
+    const { result } = renderHookWithProviders(() => useDashboardController());
+    expect(result.current.section.sectionData.climateSections).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ key: 'humidity', orderedIds: [visible[0].id] }),
+        expect.objectContaining({ key: 'temperature', orderedIds: [visible[1].id] }),
+        expect.objectContaining({ key: 'airQuality', orderedIds: [visible[2].id] }),
+      ])
+    );
+  });
+
   it.each([
     ['temperature', 'temperature', '24.2', '°C'],
     ['pm25', 'airQuality', '28', 'μg/m³'],

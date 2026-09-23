@@ -13,12 +13,21 @@ describe('getClimateTemperatureStatusLabel', () => {
     expect(getClimateTemperatureStatusLabel(t, 18, 21, 'heat')).toBe('climate.heatingTo:18');
   });
 
-  it('uses idle copy when visual mode is idle', () => {
-    expect(getClimateTemperatureStatusLabel(t, 76, 75, 'idle')).toBe('climate.idle');
+  it('keeps the target visible when visual mode is idle', () => {
+    expect(getClimateTemperatureStatusLabel(t, '76°F', '75°F', 'idle')).toBe('climate.idle · 76°F');
   });
 
-  it('uses off copy when visual mode is off', () => {
-    expect(getClimateTemperatureStatusLabel(t, 24, 25.7, 'off')).toBe('common.off');
+  it('keeps the last target visible when visual mode is off', () => {
+    expect(getClimateTemperatureStatusLabel(t, '24°C', '25.7°C', 'off')).toBe('common.off · 24°C');
+  });
+
+  it('shows only the status when an idle or off climate device has no target', () => {
+    expect(getClimateTemperatureStatusLabel(t, '21°C', '20°C', 'idle', 21, 20, false)).toBe(
+      'climate.idle'
+    );
+    expect(getClimateTemperatureStatusLabel(t, '21°C', '20°C', 'off', 21, 20, false)).toBe(
+      'common.off'
+    );
   });
 
   it('falls back to target and current temperature comparison for unknown visual mode', () => {

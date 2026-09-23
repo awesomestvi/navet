@@ -163,6 +163,68 @@ describe('mapNavetEntitiesToDeviceCollection', () => {
     expect(devices.sensors).toHaveLength(0);
   });
 
+  it.each([
+    'temperature',
+    'humidity',
+    'air_quality',
+    'carbon_dioxide',
+    'pm1',
+    'pm25',
+    'pm10',
+    'volatile_organic_compounds',
+    'volatile_organic_compounds_parts',
+    'pressure',
+  ])('keeps a %s sensor alongside its air purifier fan', (deviceClass) => {
+    const devices = mapNavetEntitiesToDeviceCollection([
+      createEntity({
+        canonicalId: 'home_assistant:fan.office_air_purifier',
+        externalId: 'fan.office_air_purifier',
+        type: 'fan',
+        name: 'Office air purifier',
+        attributes: { value: 'on', deviceId: 'device-air-purifier' },
+      }),
+      createEntity({
+        canonicalId: `home_assistant:sensor.office_air_purifier_${deviceClass}`,
+        externalId: `sensor.office_air_purifier_${deviceClass}`,
+        type: 'sensor',
+        name: `Office ${deviceClass}`,
+        attributes: { value: '55', unit: '%', deviceId: 'device-air-purifier', deviceClass },
+      }),
+    ]);
+
+    expect(devices.fans).toHaveLength(1);
+    expect(devices.sensors).toMatchObject([{ deviceClass, value: '55' }]);
+  });
+
+  it('keeps environmental measurements beside climate controls without surfacing accessory sensors', () => {
+    const climate = createEntity({
+      canonicalId: 'home_assistant:climate.bedroom',
+      externalId: 'climate.bedroom',
+      type: 'climate',
+      name: 'Bedroom thermostat',
+      attributes: { value: 'heat', deviceId: 'device-thermostat' },
+    });
+    const sensor = (name: string, deviceClass: string, entityCategory?: string) =>
+      createEntity({
+        canonicalId: `home_assistant:sensor.bedroom_${name}`,
+        externalId: `sensor.bedroom_${name}`,
+        type: 'sensor',
+        name,
+        attributes: { value: '21', deviceId: 'device-thermostat', deviceClass, entityCategory },
+      });
+    const devices = mapNavetEntitiesToDeviceCollection([
+      climate,
+      sensor('temperature', 'temperature'),
+      sensor('power', 'power'),
+      sensor('diagnostic_humidity', 'humidity', 'diagnostic'),
+    ]);
+
+    expect(devices.climate).toHaveLength(1);
+    expect(devices.sensors.map((device) => device.id)).toEqual([
+      'home_assistant:sensor.bedroom_temperature',
+    ]);
+  });
+
   it('retains independent measurements alongside their device control when requested', () => {
     const devices = mapNavetEntitiesToDeviceCollection([
       createEntity({

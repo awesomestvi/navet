@@ -1,0 +1,6 @@
+type: fixed
+audiences:
+  - standalone
+  - home-assistant
+  - hacs
+summary: Climate now shows environmental readings from devices that also have controls, such as air purifiers and thermostats.

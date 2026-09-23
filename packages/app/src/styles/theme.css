@@ -312,6 +312,12 @@
     }
   }
 
+  /* A blurred knob glow becomes a solid gray disc when low quality removes filters. */
+  html[data-effects-quality="low"] [data-rotary-knob-glow="true"],
+  [data-navet-effects-quality="low"] [data-rotary-knob-glow="true"] {
+    display: none;
+  }
+
   html[data-effects-quality="low"] body {
     /* biome-ignore lint/complexity/noImportantStyles: removes the standalone boot gradient that otherwise remains as a full-viewport repaint layer */
     background-image: none !important;

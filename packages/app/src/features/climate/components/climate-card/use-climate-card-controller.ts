@@ -656,6 +656,12 @@ export function useClimateCardController({
             temperatureUnit
           )
         : formatTemperatureValue(value, temperatureUnit),
+    hasTargetTemperature: liveEntity
+      ? resolveClimateTargetTemperature(liveEntity) !== null
+      : providerState
+        ? typeof providerState.temperature === 'number' &&
+          Number.isFinite(providerState.temperature)
+        : true,
     isMedium,
     isOn,
     isSettingsOpen,

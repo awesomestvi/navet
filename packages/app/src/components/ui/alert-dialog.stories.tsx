@@ -66,7 +66,7 @@ const meta = {
           '',
           'Review before merging:',
           '- Verify keyboard focus order and escape/cancel behavior.',
-          '- Verify destructive action prominence without making cancel hard to find.',
+          '- Verify the centered phone and desktop layout, including Navet’s button styling.',
         ].join('\n'),
       },
     },
@@ -91,8 +91,34 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
 
-export const PhoneCoverSheet: Story = {
+export const PhoneAlert: Story = {
   render: () => <AlertDialogStory defaultOpen />,
+  globals: {
+    viewport: {
+      value: 'mobile1',
+      isRotated: false,
+    },
+  },
+};
+
+export const ProviderDisconnect: Story = {
+  render: () => (
+    <AlertDialog defaultOpen>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Disconnect Home Assistant?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This disconnects Home Assistant on all connected devices. You can connect it again
+            later.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction>Disconnect</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  ),
   globals: {
     viewport: {
       value: 'mobile1',

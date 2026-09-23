@@ -22,10 +22,11 @@ including humidity readings exposed by thermostats. Sensors you hide stay hidden
 ## Adjust a thermostat
 
 1. Open **Climate**.
-2. Select a thermostat.
-3. Adjust the target temperature.
-4. Choose an HVAC mode or preset when available.
-5. Close the dialog after the provider reports the updated state.
+2. Find the thermostat card. The large number is the current temperature; the smaller line shows
+   its status and target temperature.
+3. Use **−** or **+** on the card to adjust the target. The new target appears on the card as you
+   change it.
+4. Select the thermostat for more controls, including available HVAC modes and presets.
 
 ## Humidity and water devices
 

@@ -133,5 +133,12 @@ second-stage reading.
 5. Run the narrowest validation that proves the behavior. Use `pnpm validate -- --dry-run` when
    the correct scope is unclear.
 
+In a new worktree, install workspace dependencies with `pnpm install --frozen-lockfile` before
+running dependency-backed checks. If registry access fails, retry with
+`pnpm install --offline --frozen-lockfile` when the local store has the needed packages. If installation
+still fails, a clean main checkout at the exact same commit can run
+focused baseline tests for read-only research. State which checkout ran the tests; tests in main do
+not validate uncommitted worktree changes.
+
 Stop reading when the owner, rules, and verification path are clear. Existing plans and Markdown
 are leads to verify, not evidence that the product still behaves that way.

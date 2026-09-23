@@ -1,5 +1,5 @@
 import { AUTH_SESSION_REFRESHED_EVENT } from '@navet/app/auth/session-events';
-import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
+import { STORAGE_KEYS, STORE_STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import { DASHBOARD_CLIENT_IDENTITY_EVENT } from '@navet/app/features/dashboard/clients/dashboard-client-identity';
 import {
   readDashboardPreferenceReceipt,
@@ -1914,6 +1914,48 @@ describe('useDashboardPreferenceSync', () => {
       expect.objectContaining({
         settings: expect.objectContaining({ lowPowerMode: true }),
       }),
+      7,
+      expect.any(Object)
+    );
+  });
+
+  it('keeps browser zoom after a reload before its device preference write', async () => {
+    loadDashboardPreferences.mockResolvedValue(
+      availableDocument('client', 7, {
+        schemaVersion: 1,
+        settings: { preventBrowserZoom: false },
+      })
+    );
+    saveDashboardPreferences.mockImplementation(
+      async (
+        scope: DashboardPreferenceScope,
+        values: Record<string, unknown>,
+        baseRevision: number
+      ) => savedDocument(scope, baseRevision + 1, values)
+    );
+
+    const firstMount = renderPreferenceHook(() =>
+      useDashboardPreferenceSync({ accountEnabled: false, client: CLIENT, enabled: true })
+    );
+    await flushEffects();
+    act(() => useSettingsStore.getState().updateSettings({ preventBrowserZoom: true }));
+    firstMount.unmount();
+
+    const persistedSettings = localStorage.getItem(STORE_STORAGE_KEYS.settings);
+    expect(persistedSettings).toContain('"preventBrowserZoom":true');
+    useSettingsStore.setState(useSettingsStore.getInitialState(), true);
+    localStorage.setItem(STORE_STORAGE_KEYS.settings, persistedSettings ?? '');
+    await useSettingsStore.persist.rehydrate();
+
+    renderHookWithProviders(() =>
+      useDashboardPreferenceSync({ accountEnabled: false, client: CLIENT, enabled: true })
+    );
+    await flushEffects();
+
+    expect(useSettingsStore.getState().preventBrowserZoom).toBe(true);
+    expect(saveDashboardPreferences).toHaveBeenCalledWith(
+      'client',
+      expect.objectContaining({ settings: expect.objectContaining({ preventBrowserZoom: true }) }),
       7,
       expect.any(Object)
     );

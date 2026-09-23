@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { DashboardGroupingNavigation } from './dashboard-grouping-navigation';
 
 describe('DashboardGroupingNavigation', () => {
-  it('selects a grouping mode from the neutral dropdown and a count-free item tab', () => {
+  it('selects a grouping mode from the compact icon menu and a count-free item tab', () => {
     const onModeChange = vi.fn();
     const onItemChange = vi.fn();
 
@@ -29,6 +29,9 @@ describe('DashboardGroupingNavigation', () => {
     );
 
     const groupingTrigger = screen.getByRole('button', { name: 'Group cards by: Type' });
+    expect(groupingTrigger).toHaveClass('h-9', 'w-9');
+    expect(groupingTrigger).not.toHaveTextContent('Type');
+    expect(groupingTrigger).toHaveAttribute('title', 'Group cards by: Type');
     fireEvent.pointerDown(groupingTrigger, { button: 0, ctrlKey: false });
     fireEvent.click(screen.getByRole('menuitemradio', { name: 'Room' }));
     expect(onModeChange).toHaveBeenCalledWith('room');

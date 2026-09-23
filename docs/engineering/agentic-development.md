@@ -46,6 +46,11 @@ criteria. It must ask for missing reproduction information instead of speculatin
 - Forbidden: merge its own work, change foundational principles to fit a solution, weaken
   tests, publish, or report success with a failing deterministic gate.
 
+The delivery agent runs deterministic validation, then opens a non-draft PR. CodeRabbit reviews
+the PR while CI runs and posts findings as review comments. Verify each finding against the current
+PR head, fix valid issues, and continue until no actionable findings remain. The maintainer decides
+when to merge.
+
 ### Independent reviewer
 
 - Trigger: non-draft PR after CI begins.
@@ -57,15 +62,6 @@ criteria. It must ask for missing reproduction information instead of speculatin
   risk, or insufficient evidence.
 - Forbidden: silently patch the implementation, approve product taste, or treat implementation
   agent explanations as proof.
-
-Before pushing a substantial PR or a review-driven fix, run deterministic validation first, fetch
-the current `origin/main`, then run `coderabbit review --agent --base origin/main` from the branch.
-This reviews the complete proposed PR diff rather than only the latest commit. Verify each finding,
-fix valid issues, and repeat the full-diff review until no actionable finding remains. The CLI is
-cloud-assisted rather than offline: it sends the diff to CodeRabbit and therefore requires the same
-authorization and trust decision as the GitHub integration. Keep it an explicit review step rather
-than a Git hook so network, authentication, quota, or reviewer availability cannot bypass or block
-the deterministic checks. The GitHub review remains an independent advisory check after push.
 
 ### Steward
 
@@ -174,10 +170,10 @@ linked PR; the agent may push feedback-driven revisions but may not merge its ow
 The private Codex runner also checks open, non-draft PRs linked to its delivery tasks for new,
 unresolved CodeRabbit review threads. It sends the comment links and IDs to the existing delivery
 task once, without creating a new task or making a public claim. The delivery task verifies each
-finding against the current PR head, fixes only valid issues, runs focused checks and the local
-full-diff review, then replies in the review thread and resolves it when addressed. If a finding
-needs a product or architecture decision, the task asks the maintainer instead of guessing. The
-runner does not dispatch comments on unrelated PRs, and review feedback never authorizes a merge.
+finding against the current PR head, fixes only valid issues, runs focused checks, then replies in
+the review thread and resolves it when addressed. If a finding needs a product or architecture
+decision, the task asks the maintainer instead of guessing. The runner does not dispatch comments
+on unrelated PRs, and review feedback never authorizes a merge.
 
 ## Human Authority
 

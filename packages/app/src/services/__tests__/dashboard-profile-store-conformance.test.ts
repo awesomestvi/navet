@@ -488,6 +488,48 @@ describe('dashboard profile backend conformance', () => {
     expect([njsOwnerRead.status, viteOwnerRead.status]).toEqual([200, 200]);
   });
 
+  it('persists both browser zoom choices in device preferences across backends', async () => {
+    profileStore.setProfileStoreFsForTests(createMockFs());
+    const directory = mkdtempSync(join(tmpdir(), 'navet-browser-zoom-preference-'));
+    tempDirectories.push(directory);
+    const viteStore = createViteDashboardProfileStore(join(directory, 'profile.json'));
+    const viteHandler = createViteDashboardProfileRequestHandler({
+      store: viteStore,
+      resolvePrincipal: () => PRINCIPAL,
+    });
+
+    for (const [index, preventBrowserZoom] of [true, false].entries()) {
+      const headers = {
+        ...CLIENT_HEADERS,
+        'X-Navet-Base-Revision': String(index),
+      };
+      const body = JSON.stringify({
+        schemaVersion: 1,
+        values: { schemaVersion: 1, settings: { preventBrowserZoom } },
+      });
+      const njsWrite = runNjs('PUT', headers, body, true, PRINCIPAL, '/preferences/client');
+      const viteWrite = createViteResponse();
+      await viteHandler(
+        createViteRequest('PUT', headers, body, '/preferences/client'),
+        viteWrite.response
+      );
+      expect([njsWrite.status, viteWrite.status]).toEqual([200, 200]);
+
+      const njsRead = runNjs('GET', CLIENT_HEADERS, '', true, PRINCIPAL, '/preferences/client');
+      const viteRead = createViteResponse();
+      await viteHandler(
+        createViteRequest('GET', CLIENT_HEADERS, '', '/preferences/client'),
+        viteRead.response
+      );
+      expect([njsRead.status, viteRead.status]).toEqual([200, 200]);
+      for (const responseBody of [njsRead.body, viteRead.body]) {
+        expect(JSON.parse(responseBody ?? '{}').values).toMatchObject({
+          settings: { preventBrowserZoom },
+        });
+      }
+    }
+  });
+
   it('keeps linked display policies and one-time copies consistent across backends', async () => {
     profileStore.setProfileStoreFsForTests(createMockFs());
     const directory = mkdtempSync(join(tmpdir(), 'navet-display-profile-conformance-'));

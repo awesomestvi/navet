@@ -1,0 +1,6 @@
+type: improved
+audiences:
+  - standalone
+  - home-assistant
+  - hacs
+summary: Thermostat cards show the target temperature while idle or off, so setpoint changes stay visible.

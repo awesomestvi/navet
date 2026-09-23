@@ -142,6 +142,55 @@ describe('provider-state pipeline', () => {
     expect(second.deviceCollection.lights[changedIndex]?.state).toBe(false);
   });
 
+  it('rebuilds sensor membership when a device reading enters or leaves Climate', () => {
+    const fan: NavetEntity = {
+      ...makeLight({
+        id: 'fan.office_air_purifier',
+        canonicalId: 'home_assistant:fan.office_air_purifier',
+        externalId: 'fan.office_air_purifier',
+        name: 'Office air purifier',
+        attributes: { value: 'on', deviceId: 'device-air-purifier' },
+      }),
+      type: 'fan',
+    };
+    const sensor: NavetEntity = {
+      ...makeLight({
+        id: 'sensor.office_reading',
+        canonicalId: 'home_assistant:sensor.office_reading',
+        externalId: 'sensor.office_reading',
+        name: 'Office reading',
+        attributes: { value: '21', deviceId: 'device-air-purifier', deviceClass: 'power' },
+      }),
+      type: 'sensor',
+      primaryState: '21',
+    };
+    const providerState = (deviceClass: string) =>
+      makeProviderState({
+        rooms: [],
+        entities: [fan, { ...sensor, attributes: { ...sensor.attributes, deviceClass } }],
+      });
+    const first = buildProviderScopedState({
+      providerId: 'home_assistant',
+      providerState: providerState('power'),
+    });
+    const second = buildProviderScopedState({
+      providerId: 'home_assistant',
+      providerState: providerState('temperature'),
+      previousState: first,
+    });
+
+    expect(first.deviceCollection.sensors).toHaveLength(0);
+    expect(second.deviceCollection.sensors).toMatchObject([{ deviceClass: 'temperature' }]);
+
+    const third = buildProviderScopedState({
+      providerId: 'home_assistant',
+      providerState: providerState('power'),
+      previousState: second,
+    });
+
+    expect(third.deviceCollection.sensors).toHaveLength(0);
+  });
+
   it('returns the previous scoped state when the provider snapshot is unchanged', () => {
     const providerState = makeProviderState();
     const first = buildProviderScopedState({

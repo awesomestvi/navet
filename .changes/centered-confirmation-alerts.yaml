@@ -1,0 +1,6 @@
+type: improved
+audiences:
+  - standalone
+  - home-assistant
+  - hacs
+summary: Confirmation alerts now appear as centered dialogs on phones and larger screens instead of phone cover sheets.

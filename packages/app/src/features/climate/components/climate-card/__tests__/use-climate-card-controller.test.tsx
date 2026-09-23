@@ -469,6 +469,30 @@ describe('useClimateCardController', () => {
     expect(result.current.visualMode).toBe('idle');
   });
 
+  it('does not treat the fallback setpoint as a target when the live entity has none', () => {
+    const entity = createClimateEntity({ current_temperature: 20, hvac_action: 'idle' }, 'heat');
+    delete (entity.attributes as Record<string, unknown>).temperature;
+    homeAssistantStore.setState({ entities: { 'climate.hallway': entity } });
+
+    const { result } = renderHookWithProviders(() =>
+      useClimateCardController({
+        id: 'climate.hallway',
+        name: 'Hallway',
+        initialTemp: 21,
+        initialCurrentTemp: 20,
+        initialMode: 'heat',
+        initialAction: 'idle',
+        initialState: true,
+        isEditMode: false,
+        size: 'medium',
+      })
+    );
+
+    expect(result.current.visualMode).toBe('idle');
+    expect(result.current.targetTemp).toBe(21);
+    expect(result.current.hasTargetTemperature).toBe(false);
+  });
+
   it('commits Nest-style cooling changes through target_temp_high', async () => {
     homeAssistantStore.setState({
       entities: {

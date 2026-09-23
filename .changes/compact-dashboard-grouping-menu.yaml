@@ -1,0 +1,6 @@
+type: improved
+audiences:
+  - standalone
+  - home-assistant
+  - hacs
+summary: Climate, Media, and Security grouping controls use a compact icon menu, leaving more room for section tabs.
