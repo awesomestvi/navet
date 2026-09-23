@@ -111,4 +111,15 @@ describe('SectionCanvas memoization', () => {
 
     expect(onResizeSection).toHaveBeenCalledWith('section-a', expect.any(Number), nextMinWidths);
   });
+
+  it('names the section editor and preserves renaming', () => {
+    const onRenameSection = vi.fn();
+    renderWithProviders(<SectionCanvas {...createProps({ onRenameSection })} />);
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Section name' }), {
+      target: { value: 'Morning controls' },
+    });
+
+    expect(onRenameSection).toHaveBeenCalledWith('section-a', 'Morning controls');
+  });
 });
