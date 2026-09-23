@@ -1,0 +1,4 @@
+type: improved
+audiences:
+  - website
+summary: Ship smaller fallback images for the dashboard previews on the website.

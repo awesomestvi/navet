@@ -1,12 +1,9 @@
 import demoHomeImageAvif from '@assets/reference/marketing/screenshots/navet-ipad-landscape-home.avif';
-import demoHomeImage from '@assets/reference/marketing/screenshots/navet-ipad-landscape-home.jpg';
-import demoHomeImageWebp from '@assets/reference/marketing/screenshots/navet-ipad-landscape-home.webp';
+import demoHomeImage from '@assets/reference/marketing/screenshots/navet-ipad-landscape-home.webp';
 import demoMobileImageAvif from '@assets/reference/marketing/screenshots/navet-mobile-pwa-home.avif';
-import demoMobileImage from '@assets/reference/marketing/screenshots/navet-mobile-pwa-home.jpg';
-import demoMobileImageWebp from '@assets/reference/marketing/screenshots/navet-mobile-pwa-home.webp';
+import demoMobileImage from '@assets/reference/marketing/screenshots/navet-mobile-pwa-home.webp';
 import demoTabletImageAvif from '@assets/reference/marketing/screenshots/navet-tablet-portrait-home.avif';
-import demoTabletImage from '@assets/reference/marketing/screenshots/navet-tablet-portrait-home.jpg';
-import demoTabletImageWebp from '@assets/reference/marketing/screenshots/navet-tablet-portrait-home.webp';
+import demoTabletImage from '@assets/reference/marketing/screenshots/navet-tablet-portrait-home.webp';
 import artworksOriginalAvif from '@assets/reference/media/artworks-original.avif';
 import artworksOriginalWebp from '@assets/reference/media/artworks-original.webp';
 import cameraSampleImageAvif from '@assets/reference/media/camera-sample.avif';
@@ -52,7 +49,6 @@ export const MARKETING_SCREENSHOTS = [
     src: demoHomeImage,
     sources: [
       { srcSet: demoHomeImageAvif, type: 'image/avif' },
-      { srcSet: demoHomeImageWebp, type: 'image/webp' },
     ] satisfies readonly MarketingResponsiveImageSource[],
     alt: 'Navet home dashboard shown on a landscape iPad layout',
     label: 'Landscape dashboard',
@@ -61,7 +57,6 @@ export const MARKETING_SCREENSHOTS = [
     src: demoTabletImage,
     sources: [
       { srcSet: demoTabletImageAvif, type: 'image/avif' },
-      { srcSet: demoTabletImageWebp, type: 'image/webp' },
     ] satisfies readonly MarketingResponsiveImageSource[],
     alt: 'Navet home dashboard shown on a portrait tablet layout',
     label: 'Portrait tablet',
@@ -70,7 +65,6 @@ export const MARKETING_SCREENSHOTS = [
     src: demoMobileImage,
     sources: [
       { srcSet: demoMobileImageAvif, type: 'image/avif' },
-      { srcSet: demoMobileImageWebp, type: 'image/webp' },
     ] satisfies readonly MarketingResponsiveImageSource[],
     alt: 'Navet home dashboard shown on a phone layout',
     label: 'Phone layout',
