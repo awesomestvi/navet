@@ -164,6 +164,14 @@ should end with "please retest" or "let us know" so issue intake can recognize t
 Research work ends after its useful conclusion is recorded. Implementation work continues in the
 linked PR; the agent may push feedback-driven revisions but may not merge its own work.
 
+The private Codex runner also checks open, non-draft PRs linked to its delivery tasks for new,
+unresolved CodeRabbit review threads. It sends the comment links and IDs to the existing delivery
+task once, without creating a new task or making a public claim. The delivery task verifies each
+finding against the current PR head, fixes only valid issues, runs focused checks and the local
+full-diff review, then replies in the review thread and resolves it when addressed. If a finding
+needs a product or architecture decision, the task asks the maintainer instead of guessing. The
+runner does not dispatch comments on unrelated PRs, and review feedback never authorizes a merge.
+
 ## Human Authority
 
 Autonomous work may research, plan, implement, test, review, analyze documentation impact, deploy
@@ -214,10 +222,11 @@ configured after these files reach `main`:
    installation token for each operation and cannot modify the repository remote or the
    maintainer's GitHub login.
 3. Configure one local Codex scheduled task to poll accepted `/navet` commands, accepted answers,
-   and scheduled issues authored by `github-actions[bot]` with the expected workflow-owned issue
-   type. Do not authorize
-   work from issue-body markers. Claim no more than one issue per run and follow the private queue
-   contract above. Keep only one active queue runner so two agents cannot claim the same command.
+   scheduled issues authored by `github-actions[bot]` with the expected workflow-owned issue type,
+   and unresolved CodeRabbit review threads on PRs linked to its delivery tasks. Do not authorize
+   work from issue-body markers. Dispatch no more than one issue or PR per run and follow the
+   private queue contract above. Keep only one active queue runner so two agents cannot claim the
+   same work.
 4. Install one independent, read-only PR reviewer (CodeRabbit is the initial candidate for this
    public repository). Let it review non-draft PRs automatically; do not add a second general
    reviewer until measured misses justify the duplicate cost. Reviewer comments are advisory;
