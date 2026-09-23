@@ -4,6 +4,7 @@ import { useChoreWorkspaceStore } from '@navet/app/features/chores/chore-workspa
 import type { DashboardController } from '@navet/app/features/dashboard/hooks/use-dashboard-controller';
 import { useRoomWorkspaceStore } from '@navet/app/features/dashboard/rooms/room-workspace-store';
 import { parseRoomWorkspaceV2 } from '@navet/app/features/dashboard/rooms/room-workspace-v2';
+import { integrationStore } from '@navet/app/stores/integration-store';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { renderWithProviders } from '@navet/app/test/render';
 import { resetAppStores } from '@navet/app/test/store-reset';
@@ -133,6 +134,49 @@ describe('DashboardSectionRouter home controls', () => {
     expect(roomNavProps).not.toHaveProperty('allViewGrouping');
     expect(roomNavProps).not.toHaveProperty('onAllViewGroupingChange');
     expect(layoutProps.mobileEditActions).toBeUndefined();
+  });
+
+  it('does not rerender another section when provider room management changes', () => {
+    const controller = createController();
+    controller.activeSection = 'climate';
+
+    renderWithProviders(<DashboardSectionRouter controller={controller} />);
+    const renderCount = dashboardLayoutMock.mock.calls.length;
+
+    act(() => {
+      integrationStore.setState({ manageableRoomsByProviderId: { home_assistant: [] } });
+    });
+
+    expect(dashboardLayoutMock).toHaveBeenCalledTimes(renderCount);
+  });
+
+  it('updates Home room controls when provider rooms change', () => {
+    renderWithProviders(<DashboardSectionRouter controller={createController()} />);
+
+    act(() => {
+      integrationStore.setState({
+        manageableRoomsByProviderId: {
+          home_assistant: [
+            {
+              id: 'home_assistant:kitchen',
+              name: 'Kitchen',
+              providerId: 'home_assistant',
+              canAssign: true,
+              canDelete: true,
+              canOrder: true,
+            },
+          ],
+        },
+      });
+    });
+
+    expect(dashboardLayoutMock.mock.calls.at(-1)?.[0]).toMatchObject({
+      mobileEditActions: {
+        reorderRooms: {
+          manageableRooms: [{ id: 'home_assistant:kitchen', name: 'Kitchen' }],
+        },
+      },
+    });
   });
 
   it('suppresses duplicated edit actions for a room-scoped home view', async () => {

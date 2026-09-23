@@ -73,6 +73,9 @@ const AddEntityDialog = lazy(async () => {
   const module = await import('./add-entity-dialog');
   return { default: module.AddEntityDialog };
 });
+const EMPTY_MANAGEABLE_ROOMS_BY_PROVIDER_ID: ReturnType<
+  typeof integrationSelectors.manageableRoomsByProviderId
+> = {};
 
 interface DashboardSectionRouterProps {
   controller: DashboardSectionModel;
@@ -94,8 +97,10 @@ export function shouldSubscribeTaskRoutines(
 
 function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterProps) {
   const { t } = useI18n();
-  const manageableRoomsByProviderId = useIntegrationStore(
-    integrationSelectors.manageableRoomsByProviderId
+  const manageableRoomsByProviderId = useIntegrationStore((state) =>
+    controller.activeSection === 'home'
+      ? integrationSelectors.manageableRoomsByProviderId(state)
+      : EMPTY_MANAGEABLE_ROOMS_BY_PROVIDER_ID
   );
   const kioskMode = useSettingsStore(settingsSelectors.kioskMode);
   const roomWorkspace = useRoomWorkspaceStore((state) =>
@@ -148,10 +153,6 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
     sectionData,
     updateCardSize,
   } = controller;
-  useEffect(() => {
-    if (activeSection !== 'energy' || !isEditMode) {
-    }
-  }, [activeSection, isEditMode]);
   useChoreWorkspaceSync(choresEnabled && activeSection === 'home' && !isAllRooms(activeRoom));
   const activeRoomWorkspace = useMemo(
     () => roomWorkspace?.rooms.find((room) => roomNamesMatch(room.displayName, activeRoom)),
