@@ -85,6 +85,15 @@ export const SmallIdle: Story = {
   },
 };
 
+export const IdleLowEffects: Story = {
+  args: Idle.args,
+  render: (args) => (
+    <div data-navet-effects-quality="low">
+      <ClimateCardStory {...args} />
+    </div>
+  ),
+};
+
 export const Docs: Story = {
   parameters: {
     docsOnly: true,

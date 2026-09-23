@@ -440,6 +440,7 @@ export const RotaryKnob = memo(function RotaryKnob({
     <div className={cn('relative h-[22rem] w-[22rem] overflow-visible', className)}>
       {isOn && glowClassName ? (
         <div
+          data-rotary-knob-glow="true"
           className={cn(
             'pointer-events-none absolute right-[-6.5rem] top-1/2 h-80 w-80 -translate-y-1/2 rounded-full blur-3xl opacity-75',
             glowClassName
