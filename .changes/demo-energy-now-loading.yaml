@@ -1,0 +1,4 @@
+type: improved
+audiences:
+  - demo
+summary: Load the lower Home energy card when it approaches view.

@@ -25,7 +25,6 @@ import { WidgetCard } from '@navet/app/features/dashboard/components/widget-card
 import { useProgressiveBatching } from '@navet/app/features/dashboard/hooks/use-progressive-batching';
 import { DashboardLayout } from '@navet/app/features/dashboard/shell';
 import type { CustomCard } from '@navet/app/features/dashboard/stores/custom-cards-store';
-import { EnergyNowCardView } from '@navet/app/features/energy/components/widgets/energy-now-card-view';
 import { FanCard } from '@navet/app/features/lighting/components/fan-card';
 import { LightCard } from '@navet/app/features/lighting/components/light-card';
 import { SwitchCard } from '@navet/app/features/lighting/components/switch-card';
@@ -109,6 +108,10 @@ const SettingsSection = lazy(async () => {
 const CameraCard = lazy(async () => {
   const module = await import('@navet/app/features/security/components/camera-card');
   return { default: module.CameraCard };
+});
+const EnergyNowCardView = lazy(async () => {
+  const module = await import('@navet/app/features/energy/components/widgets/energy-now-card-view');
+  return { default: module.EnergyNowCardView };
 });
 const VacuumCard = lazy(async () => {
   const module = await import('@navet/app/features/vacuum/components/vacuum-card');
@@ -1310,7 +1313,7 @@ function ProductGrid({ addedWidgets }: { addedWidgets: CustomCard[] }) {
           onSizeChange={noopCardSizeChange}
         />
       </DemoLazyCardSlot>
-      <CardSlot size="medium">
+      <DemoLazyCardSlot size="medium">
         <EnergyNowCardView
           title="Energy now"
           currentLoadW={842}
@@ -1319,7 +1322,7 @@ function ProductGrid({ addedWidgets }: { addedWidgets: CustomCard[] }) {
           accentColor="#f97316"
           size="medium"
         />
-      </CardSlot>
+      </DemoLazyCardSlot>
       <CardSlot size="small">
         <SwitchCard
           id="switch.desk_power"
