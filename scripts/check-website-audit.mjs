@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { basename, join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { appPaths, repoRoot } from './repo-paths.mjs';
@@ -128,6 +129,39 @@ const oauthHtml = requireFile(
 ).toString('utf8');
 if (!oauthHtml.includes('content="noindex,nofollow"')) {
   fail('OAuth callback route must be excluded from search indexing');
+}
+
+function contentSecurityPolicyFor(routePath) {
+  const rule = headers.split(/\r?\n\r?\n/).find((block) => block.startsWith(`${routePath}\n`));
+  const policy = rule?.split(/\r?\n/).find((line) => line.includes('Content-Security-Policy:'));
+  if (!policy) fail(`missing Content-Security-Policy for ${routePath}`);
+  return policy;
+}
+
+for (const [routePath, html] of [
+  ['/', indexHtml],
+  ['/roadmap/*', roadmapHtml],
+]) {
+  const matches = [
+    ...html.matchAll(
+      /<script id="navet-structured-data" type="application\/ld\+json">([\s\S]*?)<\/script>/g
+    ),
+  ];
+  if (matches.length !== 1) fail(`${routePath} must have one structured-data script`);
+
+  const hash = createHash('sha256').update(matches[0][1], 'utf8').digest('base64');
+  const policy = contentSecurityPolicyFor(routePath);
+  const scriptDirective = policy.split(';').find((part) => part.trimStart().startsWith('script-src '));
+  if (!scriptDirective?.includes(`'sha256-${hash}'`)) {
+    fail(`${routePath} CSP does not allow its generated structured data`);
+  }
+  if (scriptDirective.includes("'unsafe-inline'")) {
+    fail(`${routePath} script CSP must not allow all inline scripts`);
+  }
+}
+
+if (oauthHtml.includes('id="navet-structured-data"')) {
+  fail('OAuth callback must not include structured data');
 }
 
 requireFile(join(distDir, 'robots.txt'), 'robots.txt');
