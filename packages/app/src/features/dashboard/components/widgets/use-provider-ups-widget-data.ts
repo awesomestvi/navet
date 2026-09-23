@@ -35,6 +35,8 @@ const EMPTY_DEVICE_COLLECTION = {
   cameras: [],
   'grouped-sensors': [],
 };
+const EMPTY_SOURCE_DEVICE_IDS: string[] = [];
+const EMPTY_SOURCE_DEVICES_BY_SOURCE_ID: Record<string, NavetEntity | null> = {};
 
 function getSourceDeviceIds(sensors: SensorDevice[]) {
   return Array.from(new Set(sensors.map(resolveHomeyUpsSourceDeviceId))).sort();
@@ -46,17 +48,26 @@ export function useProviderUpsWidgetData(
   const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
   const providerDeviceCollection = useIntegrationStore(
     (state) =>
-      integrationSelectors.providerDeviceCollectionById(currentProviderId)(state) ??
-      EMPTY_DEVICE_COLLECTION,
+      currentProviderId === 'home_assistant'
+        ? EMPTY_DEVICE_COLLECTION
+        : (integrationSelectors.providerDeviceCollectionById(currentProviderId)(state) ??
+          EMPTY_DEVICE_COLLECTION),
     Object.is
   );
   const supportsProviderEnergyNow = getProviderFeatureMatrix(currentProviderId).energyNow;
   const homeAssistantData = useHomeAssistantUpsWidgetData(options, supportsProviderEnergyNow);
   const sourceDeviceIds = useMemo(
-    () => getSourceDeviceIds(providerDeviceCollection.sensors),
-    [providerDeviceCollection.sensors]
+    () =>
+      currentProviderId === 'home_assistant'
+        ? EMPTY_SOURCE_DEVICE_IDS
+        : getSourceDeviceIds(providerDeviceCollection.sensors),
+    [currentProviderId, providerDeviceCollection.sensors]
   );
   const sourceDevicesBySourceDeviceId = useIntegrationStore((state) => {
+    if (sourceDeviceIds.length === 0) {
+      return EMPTY_SOURCE_DEVICES_BY_SOURCE_ID;
+    }
+
     const entities = integrationSelectors.providerEntitiesForId(currentProviderId)(state);
     const entityLookup = integrationSelectors.providerEntityLookupForId(currentProviderId)(state);
 
