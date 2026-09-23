@@ -1,4 +1,3 @@
-import { IconButton } from '@navet/app/components/primitives/icon-button';
 import { InteractivePill } from '@navet/app/components/primitives/interactive-pill';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import {
@@ -90,13 +89,14 @@ export function DashboardGroupingNavigation({
       <div className="flex w-max min-w-full flex-nowrap gap-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <IconButton
-              label={`${groupingLabel}: ${selectedMode.label}`}
-              icon={<LayoutGrid aria-hidden="true" className="h-4 w-4" />}
-              size="small"
-              variant="secondary"
-              className="shrink-0 rounded-full"
-            />
+            <InteractivePill
+              aria-label={`${groupingLabel}: ${selectedMode.label}`}
+              title={`${groupingLabel}: ${selectedMode.label}`}
+              size="compact"
+              className="w-9 shrink-0 px-0"
+            >
+              <LayoutGrid aria-hidden="true" className="h-4 w-4" />
+            </InteractivePill>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" sideOffset={8}>
             <DropdownMenuRadioGroup
