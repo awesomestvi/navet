@@ -242,6 +242,30 @@ describe('HomeAssistantResourceResolver', () => {
     expect(resource.url).toBeUndefined();
   });
 
+  it('rejects root-relative image paths that the browser would resolve off origin', () => {
+    const resolver = new HomeAssistantResourceResolver(() => null);
+
+    const resource = resolver.resolveSync({
+      kind: 'absolute_url',
+      url: '/\\evil.example/pixel',
+    });
+
+    expect(resource.kind).toBe('unavailable');
+    expect(resource.url).toBeUndefined();
+  });
+
+  it('rejects malformed relative paths before routing through the Home Assistant proxy', () => {
+    const resolver = new HomeAssistantResourceResolver(() => null);
+
+    const resource = resolver.resolveSync({
+      kind: 'absolute_url',
+      url: '/__navet_ha_proxy__\\..\\private',
+    });
+
+    expect(resource.kind).toBe('unavailable');
+    expect(resource.url).toBeUndefined();
+  });
+
   it('reuses cached resources for semantically identical refs and options', () => {
     window.__NAVET_CONFIG__ = { hassUrl: oauthSessionFixture.haBaseUrl };
     resetRuntimeContextForTests();

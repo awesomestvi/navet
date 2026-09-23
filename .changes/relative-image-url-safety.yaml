@@ -1,0 +1,5 @@
+type: security
+audiences:
+  - standalone
+  - home-assistant
+summary: Reject malformed relative image paths that could resolve to another host.
