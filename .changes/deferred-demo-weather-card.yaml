@@ -1,0 +1,4 @@
+type: improved
+audiences:
+  - standalone
+summary: Load demo Weather cards on demand to reduce the initial Home script size.

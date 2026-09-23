@@ -43,7 +43,6 @@ import {
   SummaryBarStack,
 } from '@navet/app/features/sensors/components/info-badge-strip';
 import { SensorCard } from '@navet/app/features/sensors/components/sensor-card';
-import { WeatherCard } from '@navet/app/features/weather/components/weather-card';
 import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
 import { useDeferredVisibility } from '@navet/app/hooks/use-deferred-visibility';
 import { I18nProvider } from '@navet/app/i18n';
@@ -111,6 +110,10 @@ const CameraCard = lazy(async () => {
 const VacuumCard = lazy(async () => {
   const module = await import('@navet/app/features/vacuum/components/vacuum-card');
   return { default: module.VacuumCard };
+});
+const WeatherCard = lazy(async () => {
+  const module = await import('@navet/app/features/weather/components/weather-card');
+  return { default: module.WeatherCard };
 });
 const loadAddEntityDialogPrimitive = () =>
   import('@navet/app/features/dashboard/components/add-entity-dialog/primitive');
@@ -1066,6 +1069,56 @@ function DemoVacuumCard() {
   );
 }
 
+function DemoWeatherCard({
+  id,
+  location,
+  size,
+  deferUntilVisible = false,
+}: {
+  id: string;
+  location: string;
+  size: CardSize;
+  deferUntilVisible?: boolean;
+}) {
+  const { ref, isVisible } = useDeferredVisibility<HTMLDivElement>({
+    disabled: !deferUntilVisible,
+    rootMargin: '400px 0px',
+  });
+
+  return (
+    <CardSlot size={size} viewportRef={ref}>
+      {isVisible ? (
+        <Suspense fallback={<LoadingSpinner />}>
+          <WeatherCard
+            id={id}
+            location={location}
+            temperature={18}
+            feelsLikeTemperature={17}
+            condition="partlycloudy"
+            humidity={58}
+            windSpeed={12}
+            precipitation={0.4}
+            precipitationUnit="mm"
+            sunrise="05:08"
+            sunset="20:51"
+            daylight="15h 43m"
+            rainForecast="Light rain possible later"
+            forecast={forecast}
+            forecastMode="weekly"
+            highTemp={22}
+            lowTemp={13}
+            size={size}
+            onSizeChange={noopCardSizeChange}
+            isEditMode={false}
+          />
+        </Suspense>
+      ) : (
+        <div aria-hidden="true" />
+      )}
+    </CardSlot>
+  );
+}
+
 function getRoomEntitySlug(room: string) {
   return room.toLowerCase().replace(/\s+/g, '_');
 }
@@ -1236,30 +1289,7 @@ function ProductGrid({ addedWidgets }: { addedWidgets: CustomCard[] }) {
           isEditMode={false}
         />
       </CardSlot>
-      <CardSlot size="large">
-        <WeatherCard
-          id="weather.home"
-          location="Stockholm"
-          temperature={18}
-          feelsLikeTemperature={17}
-          condition="partlycloudy"
-          humidity={58}
-          windSpeed={12}
-          precipitation={0.4}
-          precipitationUnit="mm"
-          sunrise="05:08"
-          sunset="20:51"
-          daylight="15h 43m"
-          rainForecast="Light rain possible later"
-          forecast={forecast}
-          forecastMode="weekly"
-          highTemp={22}
-          lowTemp={13}
-          size="large"
-          onSizeChange={noopCardSizeChange}
-          isEditMode={false}
-        />
-      </CardSlot>
+      <DemoWeatherCard id="weather.home" location="Stockholm" size="large" deferUntilVisible />
       <CardSlot size="large">
         <CalendarCard
           id="calendar.home"
@@ -1642,30 +1672,7 @@ function RoomShot({ room }: { room: string }) {
             isEditMode={false}
           />
         </CardSlot>
-        <CardSlot size="medium">
-          <WeatherCard
-            id="weather.outside_room"
-            location="Home"
-            temperature={18}
-            feelsLikeTemperature={17}
-            condition="partlycloudy"
-            humidity={58}
-            windSpeed={12}
-            precipitation={0.4}
-            precipitationUnit="mm"
-            sunrise="05:08"
-            sunset="20:51"
-            daylight="15h 43m"
-            rainForecast="Light rain possible later"
-            forecast={forecast}
-            forecastMode="weekly"
-            highTemp={22}
-            lowTemp={13}
-            size="medium"
-            onSizeChange={noopCardSizeChange}
-            isEditMode={false}
-          />
-        </CardSlot>
+        <DemoWeatherCard id="weather.outside_room" location="Home" size="medium" />
       </DashboardGrid>
     );
   }
