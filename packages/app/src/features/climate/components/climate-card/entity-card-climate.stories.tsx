@@ -67,6 +67,24 @@ export const Medium: Story = {
   },
 };
 
+export const Idle: Story = {
+  args: {
+    name: 'Floor Thermostat',
+    initialTemp: 22,
+    initialCurrentTemp: 24.7,
+    initialMode: 'heat',
+    initialAction: 'idle',
+    size: 'medium',
+  },
+};
+
+export const SmallIdle: Story = {
+  args: {
+    ...Idle.args,
+    size: 'small',
+  },
+};
+
 export const Docs: Story = {
   parameters: {
     docsOnly: true,

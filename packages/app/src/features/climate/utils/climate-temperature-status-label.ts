@@ -17,11 +17,11 @@ export function getClimateTemperatureStatusLabel(
   }
 
   if (visualMode === 'idle') {
-    return t('climate.idle');
+    return `${t('climate.idle')} · ${targetTemp}`;
   }
 
   if (visualMode === 'off') {
-    return t('common.off');
+    return `${t('common.off')} · ${targetTemp}`;
   }
 
   return comparisonTargetTemp < comparisonCurrentTemp
