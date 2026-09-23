@@ -1,0 +1,5 @@
+type: improved
+audiences:
+  - standalone
+  - home-assistant
+summary: Improve text contrast on accent-colored actions and navigation.

@@ -332,6 +332,7 @@ export function AssistDialog({
   return (
     <ModalSurface
       isOpen={open}
+      titleInContent
       onOpenChange={onOpenChange}
       title={settingsOnly ? t('widgets.assist.settingsTitle') : t('widgets.assist.title')}
       description={

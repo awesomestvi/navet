@@ -23,7 +23,13 @@ export function useProviderCollectionData<T>({
   useEffect(() => {
     let cancelled = false;
     if (!enabled) {
-      startTransition(() => setState({ providerId, data: empty }));
+      startTransition(() =>
+        setState((previous) =>
+          previous.providerId === providerId && Object.is(previous.data, empty)
+            ? previous
+            : { providerId, data: empty }
+        )
+      );
       return;
     }
     const unsubscribe = subscribeVisibilityAwareAsyncTask(

@@ -28,7 +28,14 @@ describe('url-security', () => {
   it('rejects unsafe relative paths', () => {
     expect(isSafeRelativePath('/api/camera_proxy/camera.front')).toBe(true);
     expect(isSafeRelativePath('//evil.example/path')).toBe(false);
+    expect(isSafeRelativePath('/\\evil.example/path')).toBe(false);
+    expect(isSafeRelativePath('/api\\..\\config')).toBe(false);
+    expect(isSafeRelativePath('/%5cevil.example/path')).toBe(false);
+    expect(isSafeRelativePath('/%2fevil.example/path')).toBe(false);
+    expect(isSafeRelativePath('/\n/evil.example/path')).toBe(false);
+    expect(isSafeRelativePath('/%0a/evil.example/path')).toBe(false);
     expect(isSafeRelativePath('/api/../config')).toBe(false);
     expect(isSafeRelativePath('/api/%2e%2e/config')).toBe(false);
+    expect(isSafeRelativePath('/api/camera_proxy/front?token=a\\b')).toBe(true);
   });
 });

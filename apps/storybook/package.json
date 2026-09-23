@@ -4,6 +4,6 @@
   "type": "module",
   "scripts": {
     "storybook": "storybook dev --ci --port 6006 -c ./.storybook",
-    "build": "storybook build -c ./.storybook -o ./dist && node ../../scripts/write-pages-surface-headers.mjs storybook && node ../../scripts/inject-cloudflare-web-analytics.mjs storybook"
+    "build": "storybook build -c ./.storybook -o ./dist && node ../../scripts/remove-copied-doc-screenshots.mjs storybook && node ../../scripts/prune-duplicate-fonts.mjs storybook && node ../../scripts/prune-duplicate-storybook-assets.mjs && node ../../scripts/prune-unused-public-assets.mjs storybook && node ../../scripts/prune-public-source-files.mjs storybook && node ../../scripts/write-pages-surface-headers.mjs storybook && node ../../scripts/inject-cloudflare-web-analytics.mjs storybook && node ../../scripts/check-storybook-csp.mjs"
   }
 }

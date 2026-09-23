@@ -24,7 +24,7 @@ vi.mock('@navet/app/features/dashboard/shell', () => ({
 }));
 
 vi.mock('../home-dashboard-overview', () => ({
-  HomeDashboardOverview: () => <main>Home dashboard</main>,
+  HomeDashboardOverview: () => <div>Home dashboard</div>,
 }));
 
 vi.mock('@navet/app/features/lighting/dashboard/lights-dashboard', () => ({
@@ -45,6 +45,7 @@ describe('DashboardSectionRouter kiosk mode', () => {
 
     expect(await screen.findByText('Home dashboard')).toBeInTheDocument();
     expect(screen.getByTestId('room-nav')).toBeInTheDocument();
+    expect(screen.getAllByRole('main')).toHaveLength(1);
   });
 
   it('limits RoomNav to the active dashboard room scope', async () => {
@@ -76,6 +77,7 @@ describe('DashboardSectionRouter kiosk mode', () => {
 
     expect(await screen.findByText('No Climate Devices')).toBeInTheDocument();
     expect(screen.queryByTestId('room-nav')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('main')).toHaveLength(1);
   });
 
   it('groups climate controls by room and keeps environmental detail by type', async () => {

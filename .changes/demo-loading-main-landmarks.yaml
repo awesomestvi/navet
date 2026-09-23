@@ -1,0 +1,4 @@
+type: improved
+audiences:
+  - standalone
+summary: Keep a main landmark available while demo sections load.

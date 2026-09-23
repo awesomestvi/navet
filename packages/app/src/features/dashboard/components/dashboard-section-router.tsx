@@ -73,6 +73,9 @@ const AddEntityDialog = lazy(async () => {
   const module = await import('./add-entity-dialog');
   return { default: module.AddEntityDialog };
 });
+const EMPTY_MANAGEABLE_ROOMS_BY_PROVIDER_ID: ReturnType<
+  typeof integrationSelectors.manageableRoomsByProviderId
+> = {};
 
 interface DashboardSectionRouterProps {
   controller: DashboardSectionModel;
@@ -94,14 +97,20 @@ export function shouldSubscribeTaskRoutines(
 
 function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterProps) {
   const { t } = useI18n();
-  const manageableRoomsByProviderId = useIntegrationStore(
-    integrationSelectors.manageableRoomsByProviderId
+  const manageableRoomsByProviderId = useIntegrationStore((state) =>
+    controller.activeSection === 'home'
+      ? integrationSelectors.manageableRoomsByProviderId(state)
+      : EMPTY_MANAGEABLE_ROOMS_BY_PROVIDER_ID
   );
   const kioskMode = useSettingsStore(settingsSelectors.kioskMode);
+  const roomWorkspace = useRoomWorkspaceStore((state) =>
+    controller.activeSection === 'home' || kioskMode ? state.workspace : null
+  );
   const showSummaryBar = useSettingsStore(settingsSelectors.showHomeSummaryBar);
   const choresEnabled = useSettingsStore(settingsSelectors.choresEnabled);
-  const roomWorkspace = useRoomWorkspaceStore((state) => state.workspace);
-  const choreWorkspace = useChoreWorkspaceStore((state) => state.data);
+  const choreWorkspace = useChoreWorkspaceStore((state) =>
+    controller.activeSection === 'home' && !isAllRooms(controller.activeRoom) ? state.data : null
+  );
   const activeCustomSidebarActionId = useNavigationStore(
     (state) => state.activeCustomSidebarActionId
   );
@@ -144,10 +153,6 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
     sectionData,
     updateCardSize,
   } = controller;
-  useEffect(() => {
-    if (activeSection !== 'energy' || !isEditMode) {
-    }
-  }, [activeSection, isEditMode]);
   useChoreWorkspaceSync(choresEnabled && activeSection === 'home' && !isAllRooms(activeRoom));
   const activeRoomWorkspace = useMemo(
     () => roomWorkspace?.rooms.find((room) => roomNamesMatch(room.displayName, activeRoom)),
@@ -676,7 +681,11 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
           ) : null}
         </>
       ) : null}
-      {sectionContent}
+      {activeSection === 'tasks' || activeSection === 'settings' ? (
+        sectionContent
+      ) : (
+        <main className="min-w-0">{sectionContent}</main>
+      )}
     </DashboardLayout>
   );
 }

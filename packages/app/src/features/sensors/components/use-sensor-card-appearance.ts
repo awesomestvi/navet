@@ -1,13 +1,8 @@
-import {
-  isEmojiLightIcon,
-  normalizeLightIconName,
-  resolveLightIconComponent,
-} from '@navet/app/constants/icon-map';
+import { resolveCardIconAppearance } from '@navet/app/components/shared/card-icon-appearance';
 import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import type { SensorIconType } from '@navet/app/features/sensors/components/sensors';
 import { storage } from '@navet/app/utils/storage';
-import type { LucideIcon } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { iconMap } from './sensors';
 
 function normalizeStoredIcon(value: unknown, fallback: string, defaultIcon: SensorIconType) {
@@ -57,19 +52,8 @@ export function useSensorCardAppearance({
     storage.set(iconStorageKey, selectedIcon);
   }, [iconStorageKey, selectedIcon]);
 
-  const normalizedSelectedIcon = normalizeLightIconName(selectedIcon);
-  const customIconComponent = normalizedSelectedIcon
-    ? resolveLightIconComponent(normalizedSelectedIcon)
-    : null;
-  const headerIconText =
-    !customIconComponent && isEmojiLightIcon(selectedIcon) ? selectedIcon.trim() : null;
-  const HeaderIconComponent = useMemo(
-    () =>
-      headerIconText
-        ? null
-        : ((customIconComponent ?? iconMap[defaultIcon] ?? iconMap.gauge) as LucideIcon | null),
-    [customIconComponent, defaultIcon, headerIconText]
-  );
+  const { iconComponent: HeaderIconComponent, iconText: headerIconText } =
+    resolveCardIconAppearance(selectedIcon, iconMap[defaultIcon] ?? iconMap.gauge);
 
   const setSelectedIcon = (iconName: string) => {
     setSelectedIconState(iconName.trim() || defaultIconName);

@@ -63,7 +63,10 @@ function AppLoading({
   const hasBackToLoginAction = Boolean(onBackToLogin && backToLoginLabel);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950 text-white">
+    <main
+      aria-busy={!detail}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950 text-white"
+    >
       <div className="flex max-w-md flex-col items-center gap-4 px-6 text-center">
         <svg
           viewBox="0 0 24 24"
@@ -104,7 +107,7 @@ function AppLoading({
           </div>
         ) : null}
       </div>
-    </div>
+    </main>
   );
 }
 

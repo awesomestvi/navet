@@ -1,0 +1,3 @@
+type: internal
+audiences: []
+summary: Tighten the demo site's script policy after verifying its external script loading.

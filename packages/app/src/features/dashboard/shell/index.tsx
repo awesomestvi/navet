@@ -82,7 +82,6 @@ export const DashboardLayout = memo(function DashboardLayout({
   const isMediumEffects = resolvedEffectsQuality === 'medium';
   const isLowEffects = resolvedEffectsQuality === 'low';
   const showSharedGlassBlur = isGlass && resolvedEffectsQuality !== 'low';
-  const headerController = useHeaderController();
   const [editingSidebarActionId, setEditingSidebarActionId] = useState<string | null>(null);
   const [isSidebarCustomizationOpen, setIsSidebarCustomizationOpen] = useState(false);
   const [isKioskControlCenterOpen, setIsKioskControlCenterOpen] = useState(false);
@@ -212,43 +211,18 @@ export const DashboardLayout = memo(function DashboardLayout({
 
       {/* Content */}
       <div className="relative z-10 min-h-[100dvh] overflow-x-clip">
-        {showNavetSidebar ? (
-          <Sidebar
-            activeColorValue={headerController.activeColorValue}
-            handleClearSearch={headerController.handleClearSearch}
-            handleSearchChange={headerController.handleSearchChange}
-            handleToggleMobileSearch={headerController.handleToggleMobileSearch}
-            hoverBg={headerController.hoverBg}
-            inputBg={headerController.inputBg}
-            isMobileSearchOpen={headerController.isMobileSearchOpen}
-            isSearchActive={headerController.isSearchActive}
-            isSearchFocused={headerController.isSearchFocused}
-            mobileRoomNavigation={mobileRoomNavigation}
-            mobileSearchInputRef={headerController.mobileSearchInputRef}
-            searchQuery={headerController.searchQuery}
-            setIsSearchFocused={headerController.setIsSearchFocused}
-            textPrimary={headerController.textPrimary}
-            textSecondary={headerController.textSecondary}
-          />
-        ) : null}
-
-        <div
-          data-testid="dashboard-layout-content"
-          data-kiosk-room-swipe={kioskMode && kioskSwipeRooms ? 'enabled' : undefined}
-          onPointerCancel={kioskSwipeHandlers.onPointerCancel}
-          onPointerDown={kioskSwipeHandlers.onPointerDown}
-          onPointerUp={kioskSwipeHandlers.onPointerUp}
-          className={`safe-area-pt-5 min-w-0 flex flex-col overflow-x-clip ${contentSpacingClassName}`}
+        <DashboardChrome
+          contentSpacingClassName={contentSpacingClassName}
+          kioskMode={kioskMode}
+          kioskSwipeHandlers={kioskSwipeHandlers}
+          kioskSwipeRooms={kioskSwipeRooms}
+          mobileEditActions={mobileEditActions}
+          mobileRoomNavigation={mobileRoomNavigation}
+          showNavetHeader={showNavetHeader}
+          showNavetSidebar={showNavetSidebar}
         >
-          {showNavetHeader ? (
-            <Header
-              controller={headerController}
-              mobileEditActions={mobileEditActions}
-              mobileRoomNavigation={mobileRoomNavigation}
-            />
-          ) : null}
           {children}
-        </div>
+        </DashboardChrome>
         {kioskMode && !showNavetSidebar ? (
           <Suspense fallback={null}>
             <KioskControlCenter
@@ -286,5 +260,69 @@ export const DashboardLayout = memo(function DashboardLayout({
     </div>
   );
 });
+
+function DashboardChrome({
+  children,
+  contentSpacingClassName,
+  kioskMode,
+  kioskSwipeHandlers,
+  kioskSwipeRooms,
+  mobileEditActions,
+  mobileRoomNavigation,
+  showNavetHeader,
+  showNavetSidebar,
+}: Pick<DashboardLayoutProps, 'children' | 'mobileEditActions' | 'mobileRoomNavigation'> & {
+  contentSpacingClassName: string;
+  kioskMode: boolean;
+  kioskSwipeHandlers: ReturnType<typeof useKioskRoomSwipeNavigation>;
+  kioskSwipeRooms: boolean;
+  showNavetHeader: boolean;
+  showNavetSidebar: boolean;
+}) {
+  const headerController = useHeaderController();
+
+  return (
+    <>
+      {showNavetSidebar ? (
+        <Sidebar
+          activeColorValue={headerController.activeColorValue}
+          handleClearSearch={headerController.handleClearSearch}
+          handleSearchChange={headerController.handleSearchChange}
+          handleToggleMobileSearch={headerController.handleToggleMobileSearch}
+          hoverBg={headerController.hoverBg}
+          inputBg={headerController.inputBg}
+          isMobileSearchOpen={headerController.isMobileSearchOpen}
+          isSearchActive={headerController.isSearchActive}
+          isSearchFocused={headerController.isSearchFocused}
+          mobileRoomNavigation={mobileRoomNavigation}
+          mobileSearchInputRef={headerController.mobileSearchInputRef}
+          searchQuery={headerController.searchQuery}
+          setIsSearchFocused={headerController.setIsSearchFocused}
+          textPrimary={headerController.textPrimary}
+          textSecondary={headerController.textSecondary}
+        />
+      ) : null}
+
+      <div
+        data-testid="dashboard-layout-content"
+        data-kiosk-room-swipe={kioskMode && kioskSwipeRooms ? 'enabled' : undefined}
+        onPointerCancel={kioskSwipeHandlers.onPointerCancel}
+        onPointerDown={kioskSwipeHandlers.onPointerDown}
+        onPointerUp={kioskSwipeHandlers.onPointerUp}
+        className={`safe-area-pt-5 min-w-0 flex flex-col overflow-x-clip ${contentSpacingClassName}`}
+      >
+        {showNavetHeader ? (
+          <Header
+            controller={headerController}
+            mobileEditActions={mobileEditActions}
+            mobileRoomNavigation={mobileRoomNavigation}
+          />
+        ) : null}
+        <span id="dashboard-main-content" tabIndex={-1} className="sr-only" />
+        {children}
+      </div>
+    </>
+  );
+}
 
 export type { DashboardLayoutProps } from './types';

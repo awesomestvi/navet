@@ -1,4 +1,5 @@
 import { LoadingSpinner } from '@navet/app/components/primitives/loading-spinner';
+import { SkipLink } from '@navet/app/components/primitives/skip-link';
 import { RenderProfiler } from '@navet/app/components/shared/render-profiler';
 import { isAllRooms } from '@navet/app/constants/rooms';
 import { useI18n } from '@navet/app/hooks';
@@ -115,12 +116,18 @@ export function DashboardPage() {
 
   if (!isDashboardReady) {
     return page.connecting ? (
-      <LoadingSpinner message={t('dashboard.page.connectingHomeAssistant')} fullScreen />
+      <>
+        <SkipLink targetId="dashboard-main-content" label={t('common.skipToMainContent')} />
+        <main id="dashboard-main-content" tabIndex={-1} aria-busy="true">
+          <LoadingSpinner message={t('dashboard.page.connectingHomeAssistant')} fullScreen />
+        </main>
+      </>
     ) : null;
   }
 
   return (
     <>
+      <SkipLink targetId="dashboard-main-content" label={t('common.skipToMainContent')} />
       <DashboardArrivalReveal
         open={
           page.activeSection === 'home' &&

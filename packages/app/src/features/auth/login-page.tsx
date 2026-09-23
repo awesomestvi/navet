@@ -1,5 +1,5 @@
 import homeAssistantLogo from '@navet/app/assets/providers/home-assistant.svg';
-import homeyLogo from '@navet/app/assets/providers/homey.svg';
+import homeyLogo from '@navet/app/assets/providers/homey-ui.webp';
 import openhabLogo from '@navet/app/assets/providers/openhab.svg';
 import { useAuthSession } from '@navet/app/auth/AuthProvider';
 import { canConnectFromAuthorizedDevice } from '@navet/app/auth/device-authorization';

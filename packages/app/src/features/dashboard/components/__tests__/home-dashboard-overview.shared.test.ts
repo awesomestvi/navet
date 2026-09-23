@@ -3,8 +3,10 @@ import {
   getResponsiveCardSize,
   PHONE_SMALL_CARD_TARGET_WIDTH_PX,
 } from '@navet/app/components/shared/card-size-selector';
+import { useHomeDashboardEditor } from '@navet/app/features/dashboard/hooks/use-home-dashboard-editor';
 import type { HomeDashboardLayoutState } from '@navet/app/features/dashboard/hooks/use-home-dashboard-layout';
 import { useDashboardDevices } from '@navet/app/hooks/use-dashboard-devices';
+import { renderHookWithProviders } from '@navet/app/test/render';
 import type { DeviceCollection, DeviceWithType } from '@navet/app/types/device.types';
 import { renderHook } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
@@ -106,6 +108,36 @@ describe('home dashboard overview collections', () => {
     expect(collections.allCards.has('missing.entity')).toBe(false);
     expect(collections.flowCards).toEqual([]);
     expect(collections.sectionCards[0]?.cardIds).toEqual(['calendar.kitchen']);
+  });
+
+  it('keeps editor placement and card counts aligned with the shared Home topology', () => {
+    const deviceMap = new Map([['calendar.kitchen', kitchenCalendar]]);
+    const { result } = renderHookWithProviders(() =>
+      useHomeDashboardEditor({
+        deviceMap,
+        allCustomCards: [],
+        homeLayout,
+        cardSizes: {},
+        hiddenEntityCount: 0,
+        moveHomeCard: () => {},
+        moveHomeSection: () => {},
+        moveHomeColumn: () => {},
+      })
+    );
+
+    expect(result.current.sectionCards[0]?.cardIds).toEqual(['calendar.kitchen']);
+    expect(result.current.flowCards).toEqual([]);
+    expect(result.current.summaryItems[0]?.value).toBe(1);
+  });
+
+  it('keeps assigned cards in the flow when Home uses flow mode', () => {
+    const collections = buildHomeOverviewCollections({
+      deviceMap: new Map([['calendar.kitchen', kitchenCalendar]]),
+      allCustomCards: [],
+      homeLayout: { ...homeLayout, mode: 'flow' },
+    });
+
+    expect(collections.flowCards).toEqual(['calendar.kitchen']);
   });
 
   it('retains topology references while publishing current state-only card values', () => {

@@ -1,3 +1,4 @@
+import { CardDialogHeader } from '@navet/app/components/patterns/card-dialog';
 import { renderWithProviders } from '@navet/app/test/render';
 import { fireEvent, screen, within } from '@testing-library/react';
 import { Sliders } from 'lucide-react';
@@ -5,6 +6,35 @@ import { describe, expect, it, vi } from 'vitest';
 import { BaseCardDialog } from '.';
 
 describe('BaseCardDialog', () => {
+  it('uses one title ID when the visible content supplies the dialog title', () => {
+    renderWithProviders(
+      <BaseCardDialog
+        variant="modal"
+        isOpen
+        onOpenChange={vi.fn()}
+        title="Add card"
+        description="Choose a card"
+        titleInContent
+        theme="dark"
+      >
+        <CardDialogHeader
+          title="Add card"
+          description="Choose a card"
+          editableTitle={false}
+          showRoomSelector={false}
+        />
+      </BaseCardDialog>
+    );
+
+    const dialog = screen.getByRole('dialog', { name: 'Add card' });
+    expect(within(dialog).getByRole('heading', { name: 'Add card' })).toBeInTheDocument();
+    const titleId = dialog.getAttribute('aria-labelledby');
+    expect(titleId).toBeTruthy();
+    expect(
+      Array.from(document.querySelectorAll('[id]')).filter((node) => node.id === titleId)
+    ).toHaveLength(1);
+  });
+
   it('anchors the mobile sheet dismiss independently from its header', () => {
     const onOpenChange = vi.fn();
     renderWithProviders(

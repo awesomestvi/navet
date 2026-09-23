@@ -87,6 +87,7 @@ export function MissionDialog({
   return (
     <BaseCardDialog
       variant="modal"
+      titleInContent
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       title={mission ? t('household.missionDialog.editTitle') : t('household.missionDialog.title')}
@@ -263,6 +264,7 @@ export function RewardDialog({
   return (
     <BaseCardDialog
       variant="modal"
+      titleInContent
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       title={reward ? t('household.rewardDialog.editTitle') : t('household.rewardDialog.title')}

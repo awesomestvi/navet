@@ -932,6 +932,22 @@ describe('EnergyDashboardPage', () => {
     expect(usageMetrics[0]?.compareDocumentPosition(usage)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
   });
 
+  it('uses the phone card-grid gap so four minimum tracks fit the available width', () => {
+    const previousInnerWidth = window.innerWidth;
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
+    setVisualViewportSize(390, 844);
+    setMediaQueryMatch(PHONE_QUERY, true);
+    try {
+      renderDashboardPage('default');
+      expect(screen.getByTestId('energy-overview-grid')).toHaveStyle({ gap: '8px' });
+    } finally {
+      Object.defineProperty(window, 'innerWidth', {
+        configurable: true,
+        value: previousInnerWidth,
+      });
+    }
+  });
+
   it('uses the active accent for whole-home Energy usage', () => {
     useThemeStore.setState({
       ...useThemeStore.getState(),

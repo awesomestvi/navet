@@ -1,0 +1,4 @@
+type: fixed
+audiences:
+  - docs
+summary: Restore Storybook component previews under its content security policy.

@@ -1,13 +1,9 @@
+import { resolveCardIconAppearance } from '@navet/app/components/shared/card-icon-appearance';
 import {
   type CardSize,
   isExtraSmallCardSize,
 } from '@navet/app/components/shared/card-size-selector';
-import {
-  DEFAULT_LIGHT_ICON,
-  isEmojiLightIcon,
-  normalizeLightIconName,
-  resolveLightIconComponent,
-} from '@navet/app/constants/icon-map';
+import { DEFAULT_LIGHT_ICON, resolveLightIconComponent } from '@navet/app/constants/icon-map';
 import { TEMP_OPTIONS } from '@navet/app/constants/light-constants';
 import type { NavetLightState } from '@navet/app/core/navet-device-state';
 import { useI18n } from '@navet/app/hooks';
@@ -74,15 +70,10 @@ export function useLightCardDisplay({
   const isSmall = isExtraSmall || size === 'small';
   const padding = 'p-3';
 
-  const normalizedSelectedIcon = normalizeLightIconName(selectedIcon);
-  const customIconComponent = normalizedSelectedIcon
-    ? resolveLightIconComponent(normalizedSelectedIcon)
-    : null;
-  const iconText =
-    !customIconComponent && isEmojiLightIcon(selectedIcon) ? selectedIcon.trim() : null;
-  const IconComponent = iconText
-    ? null
-    : ((customIconComponent ?? resolveLightIconComponent(DEFAULT_LIGHT_ICON)) as LucideIcon);
+  const { iconComponent: IconComponent, iconText } = resolveCardIconAppearance(
+    selectedIcon,
+    resolveLightIconComponent(DEFAULT_LIGHT_ICON)
+  );
 
   return {
     isSmall,

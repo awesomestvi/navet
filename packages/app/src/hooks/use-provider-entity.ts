@@ -20,7 +20,7 @@ import { integrationSelectors } from '@navet/app/stores/selectors';
 import type { IntegrationProviderId } from '@navet/app/types/provider';
 import { areStringArraysEqual } from '@navet/app/utils/structural-equality';
 import { useCallback, useMemo, useRef, useSyncExternalStore } from 'react';
-import { useIntegrationStore } from './use-integration-store';
+import { useIntegrationStore, useProviderId } from './use-integration-store';
 import { useProviderEntityModel } from './use-provider-device';
 
 const EMPTY_PROVIDER_CONFIG = null;
@@ -166,8 +166,7 @@ export function useProviderEntitySnapshots(options?: {
   providerId?: IntegrationProviderId;
   enabled?: boolean;
 }): PlatformEntitySnapshotMap | null {
-  const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
-  const providerId = options?.providerId ?? currentProviderId;
+  const providerId = useProviderId(options?.providerId);
   const query = useMemo(() => getProviderRuntimeQuery(providerId), [providerId]);
   const enabled = options?.enabled ?? true;
   return useSyncExternalStore(
@@ -181,8 +180,7 @@ export function useProviderEntitySnapshotsByPrefix(
   prefixes: readonly string[],
   options?: { providerId?: IntegrationProviderId; enabled?: boolean }
 ) {
-  const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
-  const providerId = options?.providerId ?? currentProviderId;
+  const providerId = useProviderId(options?.providerId);
   const query = useMemo(() => getProviderRuntimeQuery(providerId), [providerId]);
   const normalizedPrefixes = useMemo(
     () => prefixes.map((prefix) => prefix.trim()).filter(Boolean),
@@ -227,8 +225,7 @@ export function useProviderEntityIdsByPrefix(
   prefixes: string[],
   options?: { providerId?: IntegrationProviderId; enabled?: boolean }
 ) {
-  const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
-  const providerId = options?.providerId ?? currentProviderId;
+  const providerId = useProviderId(options?.providerId);
   const normalizedPrefixes = useMemo(
     () =>
       prefixes
@@ -254,8 +251,7 @@ export function useProviderEntityRegistryEntries(options?: {
   providerId?: IntegrationProviderId;
   enabled?: boolean;
 }) {
-  const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
-  const providerId = options?.providerId ?? currentProviderId;
+  const providerId = useProviderId(options?.providerId);
   const query = useMemo(() => getProviderRuntimeQuery(providerId), [providerId]);
   const enabled = options?.enabled ?? true;
   return useSyncExternalStore(
@@ -269,8 +265,7 @@ export function useProviderEntityRegistryEntriesByIds(
   entityIds: string[],
   options?: { providerId?: IntegrationProviderId; enabled?: boolean }
 ) {
-  const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
-  const providerId = options?.providerId ?? currentProviderId;
+  const providerId = useProviderId(options?.providerId);
   const query = useMemo(() => getProviderRuntimeQuery(providerId), [providerId]);
   const runtimeEntityIds = useMemo(
     () => resolveUniqueRuntimeEntityIds(entityIds, providerId),
@@ -292,8 +287,7 @@ export function useProviderEntityRegistryEntriesByDeviceId(
   deviceId: string | null,
   options?: { providerId?: IntegrationProviderId; enabled?: boolean }
 ) {
-  const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
-  const providerId = options?.providerId ?? currentProviderId;
+  const providerId = useProviderId(options?.providerId);
   const query = useMemo(() => getProviderRuntimeQuery(providerId), [providerId]);
   const getSelection = useCallback(
     () => query.selectRegistryByDeviceId(deviceId),
@@ -311,8 +305,7 @@ export function useProviderEntitySnapshotRecord(
   entityIds: string[],
   options?: { providerId?: IntegrationProviderId; enabled?: boolean }
 ) {
-  const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
-  const providerId = options?.providerId ?? currentProviderId;
+  const providerId = useProviderId(options?.providerId);
   const query = useMemo(() => getProviderRuntimeQuery(providerId), [providerId]);
   const runtimeEntityIds = useMemo(
     () => resolveUniqueRuntimeEntityIds(entityIds, providerId),
@@ -331,8 +324,7 @@ export function useProviderEntitySnapshotRecord(
 }
 
 export function useProviderTemperatureUnit(providerId?: IntegrationProviderId) {
-  const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
-  const resolvedProviderId = providerId ?? currentProviderId;
+  const resolvedProviderId = useProviderId(providerId);
   const query = useMemo(() => getProviderRuntimeQuery(resolvedProviderId), [resolvedProviderId]);
   const config = useSyncExternalStore(
     query.subscribeConfig,
@@ -346,8 +338,7 @@ export function useProviderTemperatureUnit(providerId?: IntegrationProviderId) {
 }
 
 export function useProviderConnectionState(providerId?: IntegrationProviderId) {
-  const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
-  const resolvedProviderId = providerId ?? currentProviderId;
+  const resolvedProviderId = useProviderId(providerId);
   return useIntegrationStore(integrationSelectors.providerRuntimeById(resolvedProviderId))
     .connected;
 }

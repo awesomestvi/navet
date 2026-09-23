@@ -55,14 +55,30 @@ export function sanitizeImageUrl(
   return sanitizeExternalUrl(trimmed, baseUrl);
 }
 
+function hasControlCharacter(value: string): boolean {
+  for (let index = 0; index < value.length; index += 1) {
+    const code = value.charCodeAt(index);
+    if (code < 32 || code === 127) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export function isSafeRelativePath(value: string): boolean {
   if (!value.startsWith('/') || value.startsWith('//')) {
     return false;
   }
 
   try {
-    const decodedPath = decodeURIComponent(value);
-    return !decodedPath.split('/').includes('..');
+    const path = value.split(/[?#]/, 1)[0] ?? '';
+    const decodedPath = decodeURIComponent(path);
+    return (
+      !decodedPath.startsWith('//') &&
+      !decodedPath.includes('\\') &&
+      !hasControlCharacter(decodedPath) &&
+      !decodedPath.split('/').includes('..')
+    );
   } catch {
     return false;
   }

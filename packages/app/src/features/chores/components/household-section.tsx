@@ -688,28 +688,32 @@ export function HouseholdSection({ syncEnabled = true }: { syncEnabled?: boolean
 
   if (loading) {
     return (
-      <div
-        className="flex min-h-64 items-center justify-center"
-        role="status"
-        aria-label={t('household.loading')}
-      >
-        <LoadingSpinner />
-      </div>
+      <main>
+        <div
+          className="flex min-h-64 items-center justify-center"
+          role="status"
+          aria-label={t('household.loading')}
+        >
+          <LoadingSpinner />
+        </div>
+      </main>
     );
   }
 
   if (workspaceUnavailable) {
     return (
-      <HouseholdUnavailable
-        status={choreStatus as 'unavailable' | 'unauthorized' | 'error'}
-        retry={() => void load({ force: true })}
-      />
+      <main>
+        <HouseholdUnavailable
+          status={choreStatus as 'unavailable' | 'unauthorized' | 'error'}
+          retry={() => void load({ force: true })}
+        />
+      </main>
     );
   }
 
   if (!setupComplete) {
     return (
-      <div className="h-full min-w-0 overflow-x-hidden overflow-y-auto pb-24 md:pb-0">
+      <main className="h-full min-w-0 overflow-x-hidden overflow-y-auto pb-24 md:pb-0">
         {error && data ? (
           <MessageBar tone="error" title={t('household.error.title')} className="mb-4">
             {error}
@@ -751,12 +755,12 @@ export function HouseholdSection({ syncEnabled = true }: { syncEnabled?: boolean
           onUnlockManagement={unlockManagement}
           onComplete={completeSetup}
         />
-      </div>
+      </main>
     );
   }
 
   return (
-    <div className="h-full min-w-0 overflow-x-hidden overflow-y-auto pb-24 md:pb-0">
+    <main className="h-full min-w-0 overflow-x-hidden overflow-y-auto pb-24 md:pb-0">
       {error && data ? (
         <MessageBar tone="error" title={t('household.error.title')} className="mb-4">
           {error}
@@ -1120,6 +1124,6 @@ export function HouseholdSection({ syncEnabled = true }: { syncEnabled?: boolean
         }}
         onSave={saveReward}
       />
-    </div>
+    </main>
   );
 }

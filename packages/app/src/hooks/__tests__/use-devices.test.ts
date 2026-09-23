@@ -614,6 +614,40 @@ describe('useDevices', () => {
     expect(result.current).toEqual(createEmptyDeviceCollection());
   });
 
+  it('does not rerender disabled device collections for room placement updates', async () => {
+    await resetAppStores();
+    let renderCount = 0;
+    const { rerender } = renderHookWithProviders(
+      ({ enabled }: { enabled: boolean }) => {
+        renderCount += 1;
+        useDeviceCollectionsByKeys(['lights'], { enabled });
+        useAggregatedDevices({ enabled });
+      },
+      { initialProps: { enabled: false } }
+    );
+    const disabledRenderCount = renderCount;
+
+    act(() => {
+      integrationStore.setState({ normalizedRoomsByCanonicalId: {} });
+      useRoomWorkspaceStore.setState({
+        workspace: migrateLegacyRoomWorkspaceV2({
+          discoveredRooms: [],
+          idFactory: () => 'room_test' as RoomWorkspaceRoomId,
+        }),
+      });
+      useEntityRoomOverridesStore.getState().setRoomOverride('light.kitchen', 'room_kitchen');
+    });
+
+    expect(renderCount).toBe(disabledRenderCount);
+
+    rerender({ enabled: true });
+    const enabledRenderCount = renderCount;
+    act(() => {
+      useEntityRoomOverridesStore.getState().setRoomOverride('light.kitchen', 'room_office');
+    });
+    expect(renderCount).toBeGreaterThan(enabledRenderCount);
+  });
+
   it('keeps the full hook aligned with the keyed hook contract', async () => {
     await resetAppStores();
 

@@ -80,6 +80,7 @@ export function HeaderNotificationButton({
         ref={buttonRef}
         type="button"
         aria-label={t('notifications.title')}
+        aria-expanded={isNotificationOpen}
         onClick={() => setIsNotificationOpen(!isNotificationOpen)}
         className={
           mobile
@@ -96,7 +97,7 @@ export function HeaderNotificationButton({
         ) : null}
       </button>
 
-      {renderPanel ? (
+      {renderPanel && isNotificationOpen ? (
         <NotificationPanel
           isOpen={isNotificationOpen}
           onClose={() => setIsNotificationOpen(false)}

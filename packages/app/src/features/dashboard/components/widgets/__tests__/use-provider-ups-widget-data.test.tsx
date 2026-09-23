@@ -1,6 +1,7 @@
 import { createEmptyDeviceCollection } from '@navet/app/core/navet-device-collections';
 import { integrationStore } from '@navet/app/stores/integration-store';
 import { renderHookWithProviders } from '@navet/app/test/render';
+import { act } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useProviderUpsWidgetData } from '../use-provider-ups-widget-data';
 
@@ -213,6 +214,70 @@ describe('useProviderUpsWidgetData', () => {
           'homey:light.kitchen': 'homey:light.kitchen',
         },
       },
+    });
+
+    expect(renderCount).toBe(1);
+    expect(result.current).toBe(initialResult);
+  });
+
+  it('updates a Homey UPS name when its source device changes', () => {
+    const { result } = renderHookWithProviders(() =>
+      useProviderUpsWidgetData({ use24HourTime: true })
+    );
+    const sourceDevice =
+      integrationStore.getState().providerEntitiesByProviderId.homey?.['homey:ups-1'];
+    expect(sourceDevice).toBeDefined();
+    if (!sourceDevice) throw new Error('Missing Homey UPS source device');
+
+    act(() => {
+      integrationStore.setState({
+        providerEntitiesByProviderId: {
+          ...integrationStore.getState().providerEntitiesByProviderId,
+          homey: {
+            ...(integrationStore.getState().providerEntitiesByProviderId.homey ?? {}),
+            'homey:ups-1': {
+              ...sourceDevice,
+              name: 'Office UPS',
+            },
+          },
+        },
+      });
+    });
+
+    expect(result.current.devices[0]?.name).toBe('Office UPS');
+  });
+
+  it('ignores normalized device updates when Home Assistant owns UPS data', () => {
+    integrationStore.setState({ currentProviderId: 'home_assistant' });
+    let renderCount = 0;
+    const { result } = renderHookWithProviders(() => {
+      renderCount += 1;
+      return useProviderUpsWidgetData({ use24HourTime: true });
+    });
+    const initialResult = result.current;
+
+    act(() => {
+      integrationStore.setState({
+        providerDeviceCollectionsByProviderId: {
+          ...integrationStore.getState().providerDeviceCollectionsByProviderId,
+          home_assistant: {
+            ...createEmptyDeviceCollection(),
+            sensors: [
+              {
+                id: 'home_assistant:sensor.ups_battery',
+                canonicalId: 'home_assistant:sensor.ups_battery',
+                providerId: 'home_assistant',
+                name: 'UPS Battery',
+                room: 'Office',
+                size: 'small',
+                value: '81',
+                unit: '%',
+                deviceClass: 'battery',
+              },
+            ],
+          },
+        },
+      });
     });
 
     expect(renderCount).toBe(1);

@@ -1,0 +1,4 @@
+type: improved
+audiences:
+  - standalone
+summary: Load demo sections, sample data, and the Outside camera on demand to reduce startup download.

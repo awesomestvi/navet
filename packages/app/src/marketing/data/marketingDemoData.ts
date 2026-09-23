@@ -1,16 +1,10 @@
 import demoHomeImageAvif from '@assets/reference/marketing/screenshots/navet-ipad-landscape-home.avif';
-import demoHomeImage from '@assets/reference/marketing/screenshots/navet-ipad-landscape-home.jpg';
-import demoHomeImageWebp from '@assets/reference/marketing/screenshots/navet-ipad-landscape-home.webp';
+import demoHomeImage from '@assets/reference/marketing/screenshots/navet-ipad-landscape-home.webp';
 import demoMobileImageAvif from '@assets/reference/marketing/screenshots/navet-mobile-pwa-home.avif';
-import demoMobileImage from '@assets/reference/marketing/screenshots/navet-mobile-pwa-home.jpg';
-import demoMobileImageWebp from '@assets/reference/marketing/screenshots/navet-mobile-pwa-home.webp';
+import demoMobileImage from '@assets/reference/marketing/screenshots/navet-mobile-pwa-home.webp';
 import demoTabletImageAvif from '@assets/reference/marketing/screenshots/navet-tablet-portrait-home.avif';
-import demoTabletImage from '@assets/reference/marketing/screenshots/navet-tablet-portrait-home.jpg';
-import demoTabletImageWebp from '@assets/reference/marketing/screenshots/navet-tablet-portrait-home.webp';
+import demoTabletImage from '@assets/reference/marketing/screenshots/navet-tablet-portrait-home.webp';
 import artworksOriginalAvif from '@assets/reference/media/artworks-original.avif';
-import artworksOriginalWebp from '@assets/reference/media/artworks-original.webp';
-import cameraSampleImageAvif from '@assets/reference/media/camera-sample.avif';
-import cameraSampleImage from '@assets/reference/media/camera-sample.webp';
 import { PHOTO_FRAME_DEMO_IMAGES } from '@navet/app/demo/photo-frame-demo-images';
 import type { CalendarCard } from '@navet/app/features/calendar';
 import type { ClimateCard, HumidifierCard } from '@navet/app/features/climate';
@@ -26,7 +20,7 @@ import type { MediaCard } from '@navet/app/features/media';
 import type { PersonCard } from '@navet/app/features/person';
 import type { RSSItem, RSSProvider } from '@navet/app/features/rss/components/rss-feed-card/types';
 import type { SceneCard } from '@navet/app/features/scenes';
-import type { CameraCard, CoverCard, LockCard } from '@navet/app/features/security';
+import type { CoverCard, LockCard } from '@navet/app/features/security';
 import type { GroupedSensorCard, InfoCard } from '@navet/app/features/sensors';
 import type { VacuumCard } from '@navet/app/features/vacuum';
 import type { WeatherCard } from '@navet/app/features/weather';
@@ -52,7 +46,6 @@ export const MARKETING_SCREENSHOTS = [
     src: demoHomeImage,
     sources: [
       { srcSet: demoHomeImageAvif, type: 'image/avif' },
-      { srcSet: demoHomeImageWebp, type: 'image/webp' },
     ] satisfies readonly MarketingResponsiveImageSource[],
     alt: 'Navet home dashboard shown on a landscape iPad layout',
     label: 'Landscape dashboard',
@@ -61,7 +54,6 @@ export const MARKETING_SCREENSHOTS = [
     src: demoTabletImage,
     sources: [
       { srcSet: demoTabletImageAvif, type: 'image/avif' },
-      { srcSet: demoTabletImageWebp, type: 'image/webp' },
     ] satisfies readonly MarketingResponsiveImageSource[],
     alt: 'Navet home dashboard shown on a portrait tablet layout',
     label: 'Portrait tablet',
@@ -70,22 +62,11 @@ export const MARKETING_SCREENSHOTS = [
     src: demoMobileImage,
     sources: [
       { srcSet: demoMobileImageAvif, type: 'image/avif' },
-      { srcSet: demoMobileImageWebp, type: 'image/webp' },
     ] satisfies readonly MarketingResponsiveImageSource[],
     alt: 'Navet home dashboard shown on a phone layout',
     label: 'Phone layout',
   },
 ] as const;
-
-export const MARKETING_MEDIA_SOURCES = {
-  artworksOriginal: [
-    { srcSet: artworksOriginalAvif, type: 'image/avif' },
-    { srcSet: artworksOriginalWebp, type: 'image/webp' },
-  ] satisfies readonly MarketingResponsiveImageSource[],
-  cameraSample: [
-    { srcSet: cameraSampleImageAvif, type: 'image/avif' },
-  ] satisfies readonly MarketingResponsiveImageSource[],
-} as const;
 
 export const MARKETING_PREVIEW_CARDS = {
   weather: {
@@ -231,16 +212,6 @@ export const MARKETING_BENTO_CARDS = {
   calendar: {
     ...MARKETING_PREVIEW_CARDS.calendar,
   } satisfies Omit<ComponentProps<typeof CalendarCard>, 'onSizeChange'>,
-  camera: {
-    id: 'camera.front_door',
-    name: 'Front Door Cam',
-    room: 'Entrance',
-    entityPicture: cameraSampleImage,
-    supportedFeatures: 2,
-    isStreamCapable: true,
-    size: 'large',
-    isEditMode: false,
-  } satisfies Omit<ComponentProps<typeof CameraCard>, 'onSizeChange'>,
   cover: {
     id: 'cover.living_room_blind',
     name: 'Living Room Blind',

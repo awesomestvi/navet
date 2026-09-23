@@ -59,6 +59,22 @@ function hexToRgb(color: string) {
   };
 }
 
+export function getReadableAccentForeground(accentColor: string): '#000000' | '#ffffff' {
+  const color = normalizeHexColor(accentColor);
+  if (!color) {
+    return '#ffffff';
+  }
+
+  const { r, g, b } = hexToRgb(color);
+  const linear = (channel: number) => {
+    const normalized = channel / 255;
+    return normalized <= 0.04045 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4;
+  };
+  const luminance = 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b);
+
+  return luminance > 0.179 ? '#000000' : '#ffffff';
+}
+
 export function resolvePrimaryColorValue(color: PrimaryColor, customColor?: string | null): string {
   if (color !== 'custom') {
     return themeColorValues[color];

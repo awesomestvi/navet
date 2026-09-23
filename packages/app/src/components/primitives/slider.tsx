@@ -57,7 +57,6 @@ export function Slider({
       max={max}
       step={step}
       disabled={disabled}
-      aria-label={ariaLabel}
       data-card-interactive={dataCardInteractive || undefined}
       onValueChange={(values) => {
         const nextValue = values[0];

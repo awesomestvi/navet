@@ -1,0 +1,5 @@
+type: improved
+audiences:
+  - standalone
+  - home-assistant
+summary: Reuse entity alias lookups across dashboard card updates.

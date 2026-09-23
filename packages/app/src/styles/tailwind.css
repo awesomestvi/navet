@@ -5,7 +5,6 @@
 @source "../hooks/**/*.{js,ts,jsx,tsx}";
 @source "../i18n/**/*.{js,ts,jsx,tsx}";
 @source "../infrastructure/**/*.{js,ts,jsx,tsx}";
-@source "../marketing/**/*.{js,ts,jsx,tsx}";
 @source "../platform/**/*.{js,ts,jsx,tsx}";
 @source "../services/**/*.{js,ts,jsx,tsx}";
 @source "../stores/**/*.{js,ts,jsx,tsx}";

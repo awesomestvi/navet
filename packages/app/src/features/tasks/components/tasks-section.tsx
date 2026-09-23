@@ -185,24 +185,28 @@ export function TasksSection() {
   };
 
   if (controller.isLoading) {
-    return <TasksLoadingState />;
+    return (
+      <main>
+        <TasksLoadingState />
+      </main>
+    );
   }
 
   if (totalTasks === 0) {
     return (
-      <div className="flex h-full items-center justify-center p-6">
+      <main className="flex h-full items-center justify-center p-6">
         <DashboardEmptyState
           icon={ClipboardList}
           title={t('sections.tasks.emptyTitle')}
           description={t('sections.tasks.emptyDescription')}
           className="w-full max-w-md"
         />
-      </div>
+      </main>
     );
   }
 
   return (
-    <div className="h-full min-w-0 overflow-x-hidden overflow-y-auto">
+    <main className="h-full min-w-0 overflow-x-hidden overflow-y-auto">
       <SummaryBarStack className="w-full min-w-0">
         <AttentionBand
           items={attentionItems}
@@ -414,6 +418,6 @@ export function TasksSection() {
           </div>
         </section>
       </SummaryBarStack>
-    </div>
+    </main>
   );
 }

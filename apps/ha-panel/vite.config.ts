@@ -9,9 +9,9 @@ import react, { reactCompilerPreset } from '@vitejs/plugin-react';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { defineConfig } from 'vite';
-import { getAppChunkName, getVendorChunkName } from '../../scripts/vite-chunking';
+import { getAppChunkName, getVendorChunkName } from '../../scripts/vite-chunking.ts';
 
-const repoRoot = path.resolve(__dirname, '../..');
+const repoRoot = path.resolve(import.meta.dirname, '../..');
 const packageJson = JSON.parse(readFileSync(path.resolve(repoRoot, 'package.json'), 'utf8')) as {
   version?: string;
 };
@@ -20,7 +20,7 @@ const buildMetadata = createBuildMetadata(repoRoot, appVersion, 'git');
 const REACT_COMPILER_INCLUDE = [/[\\/]src[\\/]/, /[\\/]packages[\\/][^\\/]+[\\/]src[\\/]/];
 
 export default defineConfig({
-  root: __dirname,
+  root: import.meta.dirname,
   optimizeDeps: {
     exclude: ['maplibre-gl'],
   },
@@ -55,7 +55,7 @@ export default defineConfig({
   },
   assetsInclude: ['**/*.svg'],
   build: {
-    outDir: path.resolve(__dirname, 'dist'),
+    outDir: path.resolve(import.meta.dirname, 'dist'),
     emptyOutDir: true,
     manifest: true,
     rollupOptions: {

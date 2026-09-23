@@ -3,7 +3,7 @@ import path from 'node:path';
 import { readFileSync } from 'node:fs';
 import { defineConfig } from 'vite';
 
-const repoRoot = path.resolve(__dirname, '../..');
+const repoRoot = path.resolve(import.meta.dirname, '../..');
 const packageJson = JSON.parse(readFileSync(path.resolve(repoRoot, 'package.json'), 'utf8')) as {
   version?: string;
 };

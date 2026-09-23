@@ -1,6 +1,6 @@
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { cn } from '@navet/app/components/ui/utils';
-import { useI18n, useTheme } from '@navet/app/hooks';
+import { useI18n, useMediaQuery, useTheme } from '@navet/app/hooks';
 import type { Section } from '@navet/app/navigation/sections';
 import { sortOperationalItems } from '@navet/app/types/operational-signal';
 import { darkenColor } from '@navet/app/utils/color-utils';
@@ -27,6 +27,7 @@ export const SummaryBar = memo(function SummaryBar({
 }: SummaryBarProps) {
   const { theme } = useTheme();
   const { t } = useI18n();
+  const isMobileViewport = useMediaQuery('(max-width: 767px)');
   const surface = getThemeSurfaceTokens(theme);
   const orderedItems = sortOperationalItems(items);
 
@@ -36,7 +37,12 @@ export const SummaryBar = memo(function SummaryBar({
 
   return (
     <nav className={`min-w-0 ${className}`} aria-label={ariaLabel}>
-      <div className="scrollbar-hide flex gap-1.5 overflow-x-auto md:flex-wrap md:gap-2 md:overflow-visible">
+      {/* biome-ignore-start lint/a11y/noNoninteractiveTabindex: Static status chips need a focus target so keyboard users can scroll them on narrow screens. */}
+      <div
+        tabIndex={isMobileViewport ? 0 : undefined}
+        className="scrollbar-hide flex gap-1.5 overflow-x-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 md:flex-wrap md:gap-2 md:overflow-visible"
+      >
+        {/* biome-ignore-end lint/a11y/noNoninteractiveTabindex: End scroll region opening tag. */}
         {leadingContent}
         {orderedItems.map((item) => {
           const IconComponent = item.icon;

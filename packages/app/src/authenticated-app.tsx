@@ -53,8 +53,8 @@ const Toaster = lazy(async () => {
 
 function AuthenticatedLoadingScreen({ message }: { message: string }) {
   return (
-    <div
-      role="status"
+    <main
+      aria-busy="true"
       className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-background text-foreground"
     >
       <span
@@ -62,8 +62,10 @@ function AuthenticatedLoadingScreen({ message }: { message: string }) {
         className="h-8 w-8 animate-spin rounded-full border-2 border-current border-r-transparent"
         style={{ color: 'var(--navet-accent)' }}
       />
-      <p className="text-sm text-muted-foreground">{message}</p>
-    </div>
+      <p role="status" className="text-sm text-muted-foreground">
+        {message}
+      </p>
+    </main>
   );
 }
 
@@ -499,31 +501,33 @@ function AppContent() {
           }
         />
       </Suspense>
-      <PwaUpdatePrompt />
-      {isAuthenticated && !appError && !needsHomeySelection ? (
-        <Suspense fallback={null}>
-          <NetworkStatusBanner
-            connected={connected}
-            connecting={connecting}
-            reconnecting={reconnecting}
-            isOnline={isOnline}
-            providerLabel={provider.label}
-            lastError={providerHealth.lastError}
-          />
-        </Suspense>
-      ) : null}
       <Suspense fallback={null}>
         <Toaster />
       </Suspense>
-      {needsHomeySelection ? (
-        <Suspense fallback={<AuthenticatedLoadingScreen message={t('common.loading')} />}>
-          <HomeySelectionPage />
-        </Suspense>
-      ) : (
-        <Suspense fallback={<AuthenticatedLoadingScreen message={t('common.loading')} />}>
-          <DashboardPage />
-        </Suspense>
-      )}
+      <div className="contents" aria-hidden={Boolean(appError)} inert={Boolean(appError)}>
+        <PwaUpdatePrompt />
+        {isAuthenticated && !appError && !needsHomeySelection ? (
+          <Suspense fallback={null}>
+            <NetworkStatusBanner
+              connected={connected}
+              connecting={connecting}
+              reconnecting={reconnecting}
+              isOnline={isOnline}
+              providerLabel={provider.label}
+              lastError={providerHealth.lastError}
+            />
+          </Suspense>
+        ) : null}
+        {needsHomeySelection ? (
+          <Suspense fallback={<AuthenticatedLoadingScreen message={t('common.loading')} />}>
+            <HomeySelectionPage />
+          </Suspense>
+        ) : (
+          <Suspense fallback={<AuthenticatedLoadingScreen message={t('common.loading')} />}>
+            <DashboardPage />
+          </Suspense>
+        )}
+      </div>
     </>
   );
 }

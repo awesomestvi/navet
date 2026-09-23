@@ -1,0 +1,5 @@
+type: improved
+audiences:
+  - standalone
+  - home-assistant
+summary: Keep unrelated dashboard sections steady when room groups change while preserving kiosk navigation.

@@ -1,6 +1,10 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { RSSArticleListLarge } from '../rss-article-list';
+import {
+  RSSArticleListLarge,
+  RSSArticleListMedium,
+  RSSArticleListSmall,
+} from '../rss-article-list';
 import { getRSSFeedCardSurfaceTokens } from '../surface-tokens';
 import type { RSSItem } from '../types';
 
@@ -42,3 +46,29 @@ describe('RSSArticleListLarge', () => {
     expect(screen.getByAltText('Second article')).toHaveAttribute('decoding', 'async');
   });
 });
+
+for (const [size, List] of [
+  ['small', RSSArticleListSmall],
+  ['medium', RSSArticleListMedium],
+  ['large', RSSArticleListLarge],
+] as const) {
+  it(`${size} articles expose only safe links and open valid URLs`, () => {
+    const handleArticleClick = vi.fn();
+    render(
+      <List
+        items={[items[0], { ...items[1], url: 'javascript:alert(1)' }]}
+        inEditMode={false}
+        rssSurface={getRSSFeedCardSurfaceTokens('glass', '#f97316')}
+        handleArticleClick={handleArticleClick}
+      />
+    );
+
+    const validArticle = screen.getByRole('link', { name: /First article/ });
+    const invalidArticle = screen.getByText('Second article').closest('a');
+    expect(validArticle).toHaveAttribute('href', 'https://example.com/first');
+    expect(invalidArticle).not.toHaveAttribute('href');
+    fireEvent.click(validArticle);
+    fireEvent.click(invalidArticle as HTMLElement);
+    expect(handleArticleClick).toHaveBeenCalledExactlyOnceWith('https://example.com/first');
+  });
+}

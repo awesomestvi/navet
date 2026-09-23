@@ -1,5 +1,8 @@
 import { getThemeAppearancePickerTokens } from '@navet/app/components/shared/theme/theme-appearance-picker-tokens';
-import { getThemeColorValue } from '@navet/app/components/shared/theme/theme-colors';
+import {
+  getReadableAccentForeground,
+  getThemeColorValue,
+} from '@navet/app/components/shared/theme/theme-colors';
 import {
   getButtonSizeTokens,
   getThemeFocusRingClassName,
@@ -62,7 +65,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
 
   const variantClassName =
     variant === 'primary'
-      ? 'border-transparent text-white'
+      ? 'border-transparent'
       : variant === 'destructive'
         ? theme === 'light'
           ? 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100'
@@ -132,7 +135,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
         className
       )}
       style={{
-        ...(variant === 'primary' && !isDisabled ? { backgroundColor: accentColor } : {}),
+        ...(variant === 'primary' && !isDisabled
+          ? { backgroundColor: accentColor, color: getReadableAccentForeground(accentColor) }
+          : {}),
         ...(iconOnly && loading ? { borderColor: accentColor } : {}),
         ...style,
       }}

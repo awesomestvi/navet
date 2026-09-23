@@ -1,0 +1,3 @@
+type: internal
+audiences: []
+summary: Allow generated website structured data through its route-specific content security policy.

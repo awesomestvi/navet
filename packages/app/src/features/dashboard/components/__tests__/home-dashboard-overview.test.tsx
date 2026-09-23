@@ -13,6 +13,11 @@ const overviewMocks = vi.hoisted(() => ({
   useHomeEnergySummary: vi.fn(() => ({
     gridImportTodayKWh: undefined,
   })),
+  useHomeOverviewCollections: vi.fn(() => ({
+    allCards: new Map(),
+    flowCards: [],
+    sectionCards: [],
+  })),
 }));
 
 vi.mock('@navet/app/hooks', async () => {
@@ -103,11 +108,7 @@ vi.mock('../home-dashboard-overview.shared', async () => {
       effectiveCols: 4,
       isPortrait: false,
     }),
-    buildHomeOverviewCollections: () => ({
-      allCards: new Map(),
-      flowCards: [],
-      sectionCards: [],
-    }),
+    useHomeOverviewCollections: overviewMocks.useHomeOverviewCollections,
   };
 });
 
@@ -126,6 +127,7 @@ describe('HomeDashboardOverview', () => {
     overviewMocks.showHomeSummaryBar = true;
     overviewMocks.choresEnabled = true;
     overviewMocks.useHomeEnergySummary.mockClear();
+    overviewMocks.useHomeOverviewCollections.mockClear();
   });
 
   it('builds the home summary bar from the visible summary map instead of hidden raw devices', () => {
@@ -256,16 +258,19 @@ describe('HomeDashboardOverview', () => {
 
     expect(screen.getByTestId('home-presentation')).toBeInTheDocument();
     expect(screen.queryByTestId('home-edit')).not.toBeInTheDocument();
+    expect(overviewMocks.useHomeOverviewCollections).toHaveBeenCalledTimes(1);
 
     rerender(<HomeDashboardOverview {...props} isEditMode />);
 
     expect(await screen.findByTestId('home-edit')).toBeInTheDocument();
     expect(screen.queryByTestId('home-presentation')).not.toBeInTheDocument();
+    expect(overviewMocks.useHomeOverviewCollections).toHaveBeenCalledTimes(1);
 
     rerender(<HomeDashboardOverview {...props} isEditMode={false} />);
 
     expect(screen.getByTestId('home-presentation')).toBeInTheDocument();
     expect(screen.queryByTestId('home-edit')).not.toBeInTheDocument();
+    expect(overviewMocks.useHomeOverviewCollections).toHaveBeenCalledTimes(2);
   });
 
   it('does not mount Home summary data work when the summary bar is disabled', () => {

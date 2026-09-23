@@ -1,7 +1,7 @@
 import { setMediaQueryMatch } from '@navet/app/test/browser-mocks';
 import { renderHookWithProviders } from '@navet/app/test/render';
 import { act, waitFor } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { useMediaQuery } from '../use-media-query';
 
 describe('useMediaQuery', () => {
@@ -19,6 +19,28 @@ describe('useMediaQuery', () => {
     act(() => setMediaQueryMatch('(prefers-color-scheme: dark)', true));
 
     await waitFor(() => expect(result.current).toBe(true));
+  });
+
+  it('shares a browser subscription while both consumers receive changes', async () => {
+    const query = '(min-width: 1137px)';
+    const mediaQuery = window.matchMedia(query);
+    const addListener = vi.spyOn(mediaQuery, 'addEventListener');
+    const removeListener = vi.spyOn(mediaQuery, 'removeEventListener');
+
+    const first = renderHookWithProviders(() => useMediaQuery(query));
+    const second = renderHookWithProviders(() => useMediaQuery(query));
+    expect(addListener).toHaveBeenCalledTimes(1);
+
+    act(() => setMediaQueryMatch(query, true));
+    await waitFor(() => {
+      expect(first.result.current).toBe(true);
+      expect(second.result.current).toBe(true);
+    });
+
+    first.unmount();
+    expect(removeListener).not.toHaveBeenCalled();
+    second.unmount();
+    expect(removeListener).toHaveBeenCalledTimes(1);
   });
 
   it('resubscribes when the query prop changes', async () => {

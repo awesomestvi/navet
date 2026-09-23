@@ -1,3 +1,4 @@
+import { MARKETING_URLS } from '@navet/app/marketing/constants/marketingLinks';
 import { renderWithProviders } from '@navet/app/test/render';
 import { fireEvent, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
@@ -13,7 +14,10 @@ describe('MarketingHeroSection', () => {
     expect(
       screen.getByRole('heading', { name: /A smart home dashboard for every screen/i })
     ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Explore the demo/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Explore the demo/i })).toHaveAttribute(
+      'href',
+      MARKETING_URLS.demo
+    );
     expect(screen.getByRole('link', { name: /How to install/i })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /View GitHub/i })).not.toBeInTheDocument();
     expect(

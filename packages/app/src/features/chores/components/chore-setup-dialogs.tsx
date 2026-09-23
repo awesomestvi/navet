@@ -306,6 +306,7 @@ export function AddPersonDialog({
   return (
     <BaseCardDialog
       variant="modal"
+      titleInContent
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       title={
@@ -714,6 +715,7 @@ export function ChoreManagementPinDialog({
   return (
     <ModalSurface
       isOpen={isOpen}
+      titleInContent
       onOpenChange={onOpenChange}
       title={t('household.management.title')}
       description={t('household.management.description')}
@@ -834,6 +836,7 @@ export function ChoreManagementPinEditorDialog({
   return (
     <ModalSurface
       isOpen={isOpen}
+      titleInContent
       onOpenChange={onOpenChange}
       title={title}
       description={t('household.setup.securityDescription')}
@@ -1490,6 +1493,7 @@ export function AddChoreDialog({
   return (
     <BaseCardDialog
       variant="fullscreen"
+      titleInContent
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       title={dialogTitle}

@@ -1,0 +1,5 @@
+type: improved
+audiences:
+  - standalone
+  - home-assistant
+summary: Keep dashboard views tied to a chosen provider steady when the current provider changes.

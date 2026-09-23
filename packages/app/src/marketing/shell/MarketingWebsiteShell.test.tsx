@@ -1,5 +1,5 @@
 import { renderWithProviders } from '@navet/app/test/render';
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MarketingWebsiteShell } from './MarketingWebsiteShell';
 
@@ -28,12 +28,16 @@ describe('MarketingWebsiteShell', () => {
   it('renders the premium navbar links without a Home link', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status: 500 }));
 
-    renderWithProviders(
+    render(
       <MarketingWebsiteShell currentPathname="/">
         <div>Marketing body</div>
       </MarketingWebsiteShell>
     );
 
+    expect(screen.getByRole('link', { name: 'Skip to main content' })).toHaveAttribute(
+      'href',
+      '#marketing-main-content'
+    );
     const header = screen.getByRole('banner');
 
     expect(within(header).getByRole('link', { name: 'Navet home' })).toBeInTheDocument();

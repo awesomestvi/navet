@@ -50,6 +50,7 @@ vi.mock('@navet/app/stores/settings-store', () => ({
 }));
 
 vi.mock('../use-integration-store', () => ({
+  useProviderId: (providerId?: string) => providerId ?? 'home_assistant',
   useIntegrationStore: (
     selector: (state: {
       currentProviderId: string;

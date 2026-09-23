@@ -76,7 +76,13 @@ describe('AddEntityDialog', () => {
 
   it('uses Home library search and type navigation without custom-card actions', () => {
     renderWithProviders(<AddEntityDialog {...defaults} />);
-    expect(screen.getByRole('dialog', { name: /add entity/i })).toBeInTheDocument();
+    const dialog = screen.getByRole('dialog', { name: /add entity/i });
+    expect(within(dialog).getByRole('heading', { name: /add entity/i })).toBeInTheDocument();
+    const titleId = dialog.getAttribute('aria-labelledby');
+    expect(titleId).toBeTruthy();
+    expect(
+      Array.from(document.querySelectorAll('[id]')).filter((node) => node.id === titleId)
+    ).toHaveLength(1);
     const sidebar = screen.getByRole('navigation', { name: /add entity/i });
     expect(within(sidebar).queryByRole('button', { name: /Custom cards/ })).not.toBeInTheDocument();
     fireEvent.click(within(sidebar).getByRole('button', { name: /Camera/ }));

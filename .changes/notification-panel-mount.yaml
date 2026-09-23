@@ -1,0 +1,5 @@
+type: fixed
+audiences:
+  - standalone
+  - home-assistant
+summary: Keep closed notification panels from doing dashboard work and expose the bell state.

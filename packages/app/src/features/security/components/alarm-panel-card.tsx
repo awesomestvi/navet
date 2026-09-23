@@ -801,6 +801,7 @@ export function SecurityPanelCard({
         <BaseCard
           size="large"
           fullBleed
+          role="group"
           aria-label={t('security.alarm.controls')}
           className="h-auto"
           data-testid="security-alarm-compact"
@@ -991,6 +992,7 @@ export function SecurityPanelCard({
 
       <BaseCardDialog
         variant="modal"
+        titleInContent
         isOpen={moreActionsOpen}
         onOpenChange={setMoreActionsOpen}
         title={t('security.alarm.controls')}
@@ -1015,6 +1017,7 @@ export function SecurityPanelCard({
 
       <BaseCardDialog
         variant="modal"
+        titleInContent
         isOpen={codeDialogOpen}
         onOpenChange={(open) => {
           if (!open) {

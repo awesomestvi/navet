@@ -1,0 +1,3 @@
+type: internal
+audiences: []
+summary: Restrict Storybook manager and preview inline scripts to exact generated CSP hashes.

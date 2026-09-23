@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node ../../scripts/remove-copied-doc-screenshots.mjs standalone && node ../../scripts/prune-duplicate-fonts.mjs standalone && node ../../scripts/prune-public-source-files.mjs standalone",
     "postbuild": "node ../../scripts/check-built-module-syntax.mjs dist",
     "preview": "vite preview"
   }

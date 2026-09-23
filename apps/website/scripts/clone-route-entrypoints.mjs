@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -94,5 +95,39 @@ for (const route of routeClones) {
 for (const assetName of deploymentAssetNames) {
   fs.copyFileSync(path.join(workspaceRoot, assetName), path.join(distDir, assetName));
 }
+
+const structuredDataRoutes = [
+  { headerPath: '/', htmlPath: indexPath },
+  { headerPath: '/roadmap/*', htmlPath: path.join(distDir, 'roadmap', 'index.html') },
+];
+const headersPath = path.join(distDir, '_headers');
+const headerRules = fs.readFileSync(headersPath, 'utf8').split(/\n\n/);
+
+for (const { headerPath, htmlPath } of structuredDataRoutes) {
+  const html = fs.readFileSync(htmlPath, 'utf8');
+  const scripts = [
+    ...html.matchAll(
+      /<script id="navet-structured-data" type="application\/ld\+json">([\s\S]*?)<\/script>/g
+    ),
+  ];
+  if (scripts.length !== 1) {
+    throw new Error(`Expected one structured-data script in ${htmlPath}; found ${scripts.length}`);
+  }
+
+  const hash = createHash('sha256').update(scripts[0][1], 'utf8').digest('base64');
+  const ruleIndex = headerRules.findIndex((rule) => rule.startsWith(`${headerPath}\n`));
+  if (ruleIndex === -1) throw new Error(`Missing CSP rule for ${headerPath}`);
+
+  const scriptDirective = "script-src 'self'";
+  if (!headerRules[ruleIndex].includes(scriptDirective)) {
+    throw new Error(`Missing script-src directive for ${headerPath}`);
+  }
+  headerRules[ruleIndex] = headerRules[ruleIndex].replace(
+    scriptDirective,
+    `${scriptDirective} 'sha256-${hash}'`
+  );
+}
+
+fs.writeFileSync(headersPath, headerRules.join('\n\n'));
 
 console.log(`Cloned website route entrypoints into ${distDir}`);

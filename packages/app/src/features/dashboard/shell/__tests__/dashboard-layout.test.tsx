@@ -1,10 +1,11 @@
 import { EffectiveEffectsQualityProvider } from '@navet/app/components/shared/theme/effective-effects-quality';
+import * as themeSurfaceTokens from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { useNavigationStore, useSettingsStore } from '@navet/app/stores';
 import { useThemeStore } from '@navet/app/stores/theme-store';
 import { setMediaQueryMatch } from '@navet/app/test/browser-mocks';
 import { renderWithProviders } from '@navet/app/test/render';
 import { resetAppStores } from '@navet/app/test/store-reset';
-import { fireEvent, screen } from '@testing-library/react';
+import { act, fireEvent, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DashboardLayout } from '../index';
 
@@ -22,6 +23,7 @@ vi.mock('@navet/app/components/layout/sidebar', () => ({
 
 vi.mock('@navet/app/components/layout/use-header-controller', () => ({
   useHeaderController: () => ({
+    headerCustomText: useSettingsStore((state) => state.headerCustomText),
     activeColorValue: '#f97316',
     handleClearSearch: vi.fn(),
     handleSearchChange: vi.fn(),
@@ -78,9 +80,25 @@ describe('DashboardLayout', () => {
     );
 
     expect(screen.getByText('Dashboard content')).toBeInTheDocument();
+    expect(document.getElementById('dashboard-main-content')).toHaveAttribute('tabindex', '-1');
     expect(screen.getByTestId('header')).toBeInTheDocument();
     expect(screen.getByTestId('sidebar')).toBeInTheDocument();
     expect(screen.queryByTestId('kiosk-orbit-menu')).not.toBeInTheDocument();
+  });
+
+  it('does not recalculate the dashboard surface for header-only updates', () => {
+    const surfaceSpy = vi.spyOn(themeSurfaceTokens, 'getThemeSurfaceTokens');
+    renderWithProviders(
+      <DashboardLayout>
+        <main>Dashboard content</main>
+      </DashboardLayout>
+    );
+    surfaceSpy.mockClear();
+
+    act(() => useSettingsStore.getState().updateSettings({ headerCustomText: 'Kitchen' }));
+
+    expect(surfaceSpy).not.toHaveBeenCalled();
+    surfaceSpy.mockRestore();
   });
 
   it('keeps the dashboard surface behind content taller than the viewport', () => {

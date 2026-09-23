@@ -80,43 +80,20 @@ const HomeStatusSummary = memo(function HomeStatusSummary({
   ) : null;
 });
 
-export const HomeDashboardOverview = memo(function HomeDashboardOverview({
+const HomePresentationView = memo(function HomePresentationView({
   deviceMap,
-  summaryDeviceMap,
   cardSizes,
   updateCardSize,
-  isEditMode,
-  hiddenEntityCount,
   allCustomCards,
   homeLayout,
-  canRedoHomeLayout,
-  canUndoHomeLayout,
-  removeHomeCard,
-  moveHomeCard,
-  setHomeLayoutMode,
-  addHomeSection,
-  addHomeColumnSection,
-  addHomeSectionBelow,
-  moveHomeSection,
-  moveHomeColumn,
-  renameHomeSection,
-  removeHomeSection,
-  resizeHomeSection,
-  redoHomeLayout,
-  undoHomeLayout,
-  onOpenAddCardDialog,
-  onApplyDashboardPack,
   onUpdateCard,
   onToggleEditMode,
-  onNavigateSection,
-  routineCount,
-  securityAlertCount,
   densePerformanceMode = false,
+  infoBadgeStrip,
 }: HomeDashboardOverviewProps) {
   const { t } = useI18n();
   const theme = useThemeMode();
   const accentColor = useAccentColor();
-  const showHomeSummaryBar = useSettingsStore(settingsSelectors.showHomeSummaryBar);
   const { effectiveCols: sectionGridCols, isPortrait: isPortraitHome } = useHomeLayoutViewport();
   const surface = getThemeSurfaceTokens(theme);
   const { allCards, flowCards, sectionCards } = useHomeOverviewCollections({
@@ -124,16 +101,7 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
     allCustomCards,
     homeLayout,
   });
-  const infoBadgeStrip =
-    showHomeSummaryBar && onNavigateSection ? (
-      <HomeStatusSummary
-        summaryDeviceMap={summaryDeviceMap}
-        routineCount={routineCount}
-        securityAlertCount={securityAlertCount}
-        onNavigateSection={onNavigateSection}
-      />
-    ) : null;
-  const presentation = (
+  return (
     <SummaryBarStack>
       {infoBadgeStrip}
       <HomePresentation
@@ -156,43 +124,30 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
       />
     </SummaryBarStack>
   );
+});
 
-  if (!isEditMode) {
-    return presentation;
+export const HomeDashboardOverview = memo(function HomeDashboardOverview(
+  props: HomeDashboardOverviewProps
+) {
+  const { t } = useI18n();
+  const showHomeSummaryBar = useSettingsStore(settingsSelectors.showHomeSummaryBar);
+  const infoBadgeStrip =
+    showHomeSummaryBar && props.onNavigateSection ? (
+      <HomeStatusSummary
+        summaryDeviceMap={props.summaryDeviceMap}
+        routineCount={props.routineCount}
+        securityAlertCount={props.securityAlertCount}
+        onNavigateSection={props.onNavigateSection}
+      />
+    ) : null;
+
+  if (!props.isEditMode) {
+    return <HomePresentationView {...props} infoBadgeStrip={infoBadgeStrip} />;
   }
 
   return (
     <Suspense fallback={<LoadingSpinner message={t('common.loading')} />}>
-      <HomeDashboardOverviewEdit
-        deviceMap={deviceMap}
-        summaryDeviceMap={summaryDeviceMap}
-        cardSizes={cardSizes}
-        updateCardSize={updateCardSize}
-        isEditMode={isEditMode}
-        hiddenEntityCount={hiddenEntityCount}
-        allCustomCards={allCustomCards}
-        homeLayout={homeLayout}
-        canRedoHomeLayout={canRedoHomeLayout}
-        canUndoHomeLayout={canUndoHomeLayout}
-        removeHomeCard={removeHomeCard}
-        moveHomeCard={moveHomeCard}
-        setHomeLayoutMode={setHomeLayoutMode}
-        addHomeSection={addHomeSection}
-        addHomeColumnSection={addHomeColumnSection}
-        addHomeSectionBelow={addHomeSectionBelow}
-        moveHomeSection={moveHomeSection}
-        moveHomeColumn={moveHomeColumn}
-        renameHomeSection={renameHomeSection}
-        removeHomeSection={removeHomeSection}
-        resizeHomeSection={resizeHomeSection}
-        redoHomeLayout={redoHomeLayout}
-        undoHomeLayout={undoHomeLayout}
-        onOpenAddCardDialog={onOpenAddCardDialog}
-        onApplyDashboardPack={onApplyDashboardPack}
-        onUpdateCard={onUpdateCard}
-        onToggleEditMode={onToggleEditMode}
-        infoBadgeStrip={infoBadgeStrip}
-      />
+      <HomeDashboardOverviewEdit {...props} infoBadgeStrip={infoBadgeStrip} />
     </Suspense>
   );
 });

@@ -1,5 +1,4 @@
 import heroBackgroundRoomAvif from '@assets/reference/marketing/use-cases/navet-hero-background-room.avif';
-import heroBackgroundRoomPng from '@assets/reference/marketing/use-cases/navet-hero-background-room.png';
 import heroBackgroundRoomWebp from '@assets/reference/marketing/use-cases/navet-hero-background-room.webp';
 import heroBackgroundRoomOff from '@assets/reference/marketing/use-cases/navet-hero-background-room-off.webp';
 import heroDashboardTabletOff from '@assets/reference/marketing/use-cases/navet-hero-dashboard-light-off.webp';
@@ -9,6 +8,7 @@ import { Heading } from '@navet/app/components/primitives/heading';
 import { Link } from '@navet/app/components/primitives/link';
 import { Text } from '@navet/app/components/primitives/text';
 import { cn } from '@navet/app/components/ui/utils';
+import { MarketingActionLink } from '@navet/app/marketing/components/MarketingActionLink';
 import { MarketingPillGroup } from '@navet/app/marketing/components/MarketingEditorial';
 import { MarketingResponsiveImage } from '@navet/app/marketing/components/MarketingResponsiveImage';
 import { MarketingTeaserButton } from '@navet/app/marketing/components/MarketingTeaserButton';
@@ -99,12 +99,11 @@ export function MarketingHeroSection() {
         data-room-light={lightOn ? 'on' : 'off'}
       >
         <MarketingResponsiveImage
-          src={heroBackgroundRoomPng}
-          sources={[
-            { srcSet: heroBackgroundRoomAvif, type: 'image/avif' },
-            { srcSet: heroBackgroundRoomWebp, type: 'image/webp' },
-          ]}
+          src={heroBackgroundRoomWebp}
+          sources={[{ srcSet: heroBackgroundRoomAvif, type: 'image/avif' }]}
           alt="Warm modern living space used as the background for the Navet marketing hero"
+          width={1672}
+          height={941}
           pictureClassName="marketing-hero-background-shell absolute inset-0"
           className="marketing-hero-background-image absolute inset-0 h-full w-full object-cover object-center"
           fetchPriority="low"
@@ -149,17 +148,15 @@ export function MarketingHeroSection() {
               </Text>
             </div>
             <div className="marketing-hero-actions flex flex-col gap-3 sm:flex-row">
-              <Button
+              <MarketingActionLink
+                href={primaryDemoCta.href}
                 className="w-full justify-center sm:w-auto sm:justify-start"
-                onClick={() => {
-                  window.location.assign(primaryDemoCta.href);
-                }}
               >
                 <span className="inline-flex items-center gap-2">
                   {primaryDemoCta.label}
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </span>
-              </Button>
+              </MarketingActionLink>
               <MarketingTeaserButton />
             </div>
             <MarketingPillGroup

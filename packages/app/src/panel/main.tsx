@@ -6,10 +6,11 @@ import { useAccentColor, useSyncHomeAssistantPanelKioskMode } from '@navet/app/h
 import { useViewportResize } from '@navet/app/hooks/use-viewport-resize';
 import { I18nProvider } from '@navet/app/i18n';
 import type { HomeAssistantPanelHass } from '@navet/app/services/home-assistant-panel-adapter';
+import { useErrorStore } from '@navet/app/stores/error-store';
 import { homeAssistantStore } from '@navet/app/stores/home-assistant-store';
 import { startNavigationStoreSync } from '@navet/app/stores/navigation-store';
 import { initializeSearchStore } from '@navet/app/stores/search-store';
-import { settingsSelectors } from '@navet/app/stores/selectors';
+import { appErrorSelectors, settingsSelectors } from '@navet/app/stores/selectors';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import navetPanelStylesUrl from '@navet/app/styles/index.css?url';
 import { resolveEffectsQuality } from '@navet/app/utils/effects-quality';
@@ -100,6 +101,7 @@ interface HomeAssistantPanelProps {
 
 function PanelRuntime({ hass }: HomeAssistantPanelProps) {
   const accentColor = useAccentColor();
+  const appError = useErrorStore(appErrorSelectors.error);
   const { disableAnimations, lowPowerMode, effectsQuality } = useSettingsStore(
     useShallow(settingsSelectors.displaySettings)
   );
@@ -175,7 +177,9 @@ function PanelRuntime({ hass }: HomeAssistantPanelProps) {
     <>
       <ErrorDisplay />
       <Toaster />
-      <DashboardPage />
+      <div className="contents" aria-hidden={Boolean(appError)} inert={Boolean(appError)}>
+        <DashboardPage />
+      </div>
     </>
   );
 }

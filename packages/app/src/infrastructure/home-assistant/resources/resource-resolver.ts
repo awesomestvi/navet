@@ -191,6 +191,15 @@ export class HomeAssistantResourceResolver {
         };
       }
 
+      if (resourceUrl.startsWith('/') && !isSafeRelativePath(resourceUrl)) {
+        return {
+          id: resourceUrl,
+          kind: 'unavailable',
+          cacheKey,
+          authStrategy: 'none',
+        };
+      }
+
       if (resourceUrl.startsWith(HOME_ASSISTANT_PROXY_PATH)) {
         const resolvedUrl =
           runtime.kind === 'ha_panel'
@@ -207,11 +216,7 @@ export class HomeAssistantResourceResolver {
         };
       }
 
-      if (
-        resourceUrl.startsWith('/') &&
-        isSafeRelativePath(resourceUrl) &&
-        isHomeAssistantRelativeUrl(resourceUrl)
-      ) {
+      if (resourceUrl.startsWith('/') && isHomeAssistantRelativeUrl(resourceUrl)) {
         const embeddedProxyPath = getEmbeddedProxyPath(resourceUrl);
 
         if (embeddedProxyPath) {
@@ -262,7 +267,7 @@ export class HomeAssistantResourceResolver {
         };
       }
 
-      if (resourceUrl.startsWith('/') && isSafeRelativePath(resourceUrl)) {
+      if (resourceUrl.startsWith('/')) {
         return {
           id: resourceUrl,
           kind: 'image',

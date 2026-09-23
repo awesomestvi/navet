@@ -1,0 +1,5 @@
+type: fixed
+audiences:
+  - standalone
+  - home-assistant
+summary: Keep invalid article URLs out of RSS card links in every card size.

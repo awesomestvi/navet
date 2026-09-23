@@ -1,0 +1,3 @@
+type: internal
+audiences: []
+summary: Reuse one Home card placement calculation in view and edit modes.

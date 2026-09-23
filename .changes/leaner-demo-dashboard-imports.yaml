@@ -1,0 +1,4 @@
+type: improved
+audiences:
+  - standalone
+summary: Reduce demo startup JavaScript by importing dashboard modules directly.

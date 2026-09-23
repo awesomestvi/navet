@@ -105,6 +105,7 @@ export function ProviderHubDialog({
   return (
     <ModalSurface
       isOpen
+      titleInContent
       onOpenChange={(open) => {
         if (!open) onClose();
       }}

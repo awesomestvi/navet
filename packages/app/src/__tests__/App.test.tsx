@@ -1,5 +1,6 @@
 import { resetRuntimeContextForTests } from '@navet/app/infrastructure/home-assistant/runtime/runtime-detector';
 import { homeyService } from '@navet/app/services/homey.service';
+import { useErrorStore } from '@navet/app/stores/error-store';
 import { homeAssistantStore } from '@navet/app/stores/home-assistant-store';
 import { integrationStore } from '@navet/app/stores/integration-store';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
@@ -313,6 +314,29 @@ describe('App Home Assistant connection recovery', () => {
     });
   });
 
+  it('keeps only the error screen reachable while a dashboard error is shown', async () => {
+    vi.useRealTimers();
+    setStoredHomeySession();
+
+    await act(async () => {
+      render(<App />);
+    });
+    await screen.findByText('dashboard');
+    screen.getByRole('button', { name: 'Logout' }).focus();
+
+    act(() => useErrorStore.getState().setError('Connection lost'));
+    await screen.findByText('Connection lost');
+    const errorMain = screen.getByRole('main');
+    expect(errorMain).toHaveTextContent('Connection lost');
+    expect(document.activeElement).toBe(errorMain);
+    expect(screen.getByText('dashboard').parentElement).toHaveAttribute('inert');
+    expect(screen.getByText('dashboard').parentElement).toHaveAttribute('aria-hidden', 'true');
+
+    act(() => useErrorStore.getState().clearError());
+    await waitFor(() => expect(screen.getByRole('main')).toHaveTextContent('dashboard'));
+    expect(screen.getByText('dashboard').parentElement).not.toHaveAttribute('inert');
+  });
+
   it('hydrates a saved openHAB session without opening a Home Assistant connection', async () => {
     vi.useRealTimers();
     setStoredOpenHABSession();
@@ -436,6 +460,7 @@ describe('App Home Assistant connection recovery', () => {
     });
 
     expect(screen.getByText('Starting your dashboard...')).toBeInTheDocument();
+    expect(screen.getByRole('main')).toHaveAttribute('aria-busy', 'true');
     expect(screen.queryByRole('button', { name: 'Back to login' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /retry/i })).not.toBeInTheDocument();
     expect(screen.queryByText('login')).not.toBeInTheDocument();
@@ -447,6 +472,7 @@ describe('App Home Assistant connection recovery', () => {
 
     expect(screen.queryByText('login')).not.toBeInTheDocument();
     expect(screen.getByText('Starting your dashboard...')).toBeInTheDocument();
+    expect(screen.getByRole('main')).toHaveAttribute('aria-busy', 'false');
     expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Back to login' })).toBeInTheDocument();
   });

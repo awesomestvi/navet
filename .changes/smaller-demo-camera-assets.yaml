@@ -1,0 +1,4 @@
+type: improved
+audiences:
+  - standalone
+summary: Reduce the demo camera sample download while keeping its full image resolution.

@@ -1,0 +1,5 @@
+type: improved
+audiences:
+  - standalone
+  - home-assistant
+summary: Name the dashboard section editor, show keyboard focus, and translate the skip link.

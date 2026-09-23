@@ -1,0 +1,4 @@
+type: improved
+audiences:
+  - docs
+summary: Reserve space for documentation images as pages load.

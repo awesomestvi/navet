@@ -52,9 +52,10 @@ export function useFitDashboardGrid(logicalColumns: number, enabled = true) {
     () =>
       ({
         ...getCardGridAutoRowsStyle(logicalColumns),
+        gap: gridGapPx,
         gridTemplateColumns: `repeat(${renderedGridCols}, minmax(${microCardMinWidthPx}px, 1fr))`,
       }) as CSSProperties,
-    [logicalColumns, microCardMinWidthPx, renderedGridCols]
+    [gridGapPx, logicalColumns, microCardMinWidthPx, renderedGridCols]
   );
 
   return {

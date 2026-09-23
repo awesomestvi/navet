@@ -1248,6 +1248,7 @@ function PointAdjustmentDialog({
   return (
     <BaseCardDialog
       variant="modal"
+      titleInContent
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       title={t(direction === 'add' ? 'household.points.addFor' : 'household.points.removeFor', {

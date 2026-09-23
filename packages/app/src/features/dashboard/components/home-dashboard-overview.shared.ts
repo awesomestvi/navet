@@ -246,29 +246,27 @@ export function buildHomeOverviewTopology({
   const sectionIdSet = new Set(homeLayout.sections.map((section) => section.id));
   const selectedIds = homeLayout.cardIds.filter((id) => availableCardIds.has(id));
   const groupedCards = new Map<string, string[]>();
+  const flowCards: string[] = [];
 
   for (const id of selectedIds) {
     const sectionId = homeLayout.cardSectionAssignments[id];
-    if (!sectionId || !sectionIdSet.has(sectionId)) {
-      continue;
+    const assignedToSection = Boolean(sectionId && sectionIdSet.has(sectionId));
+    if (assignedToSection && sectionId) {
+      const existing = groupedCards.get(sectionId);
+      if (existing) {
+        existing.push(id);
+      } else {
+        groupedCards.set(sectionId, [id]);
+      }
     }
-
-    const existing = groupedCards.get(sectionId);
-    if (existing) {
-      existing.push(id);
-    } else {
-      groupedCards.set(sectionId, [id]);
+    if (homeLayout.mode !== 'sectioned' || !assignedToSection) {
+      flowCards.push(id);
     }
   }
 
   return {
-    flowCards:
-      homeLayout.mode !== 'sectioned'
-        ? selectedIds
-        : selectedIds.filter((id) => {
-            const assignedSectionId = homeLayout.cardSectionAssignments[id];
-            return !assignedSectionId || !sectionIdSet.has(assignedSectionId);
-          }),
+    flowCards,
+    selectedCardCount: selectedIds.length,
     sectionCards: homeLayout.sections.map((section) => ({
       ...section,
       cardIds: groupedCards.get(section.id) ?? [],

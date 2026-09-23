@@ -1,0 +1,4 @@
+type: improved
+audiences:
+  - standalone
+summary: Load the demo Security model only when opening Security, reducing the initial download.

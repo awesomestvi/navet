@@ -1,0 +1,5 @@
+type: improved
+audiences:
+  - standalone
+  - docs
+summary: Remove duplicate Inter font files from frontend builds.

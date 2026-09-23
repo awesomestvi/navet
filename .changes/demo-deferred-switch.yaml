@@ -1,0 +1,3 @@
+type: internal
+audiences: []
+summary: Load lower demo switches on demand while preserving keyboard and room controls.

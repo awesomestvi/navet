@@ -1,6 +1,44 @@
 import { OverlayScrollArea } from '@navet/app/components/primitives';
+import { sanitizeExternalUrl } from '@navet/app/utils/url-security';
+import type { ReactNode } from 'react';
 import type { RSSFeedCardSurfaceTokens } from './surface-tokens';
 import type { RSSItem } from './types';
+
+function RSSArticleLink({
+  children,
+  className,
+  handleArticleClick,
+  inEditMode,
+  item,
+  rssSurface,
+}: {
+  children: ReactNode;
+  className: string;
+  handleArticleClick: (url: string) => void;
+  inEditMode: boolean;
+  item: RSSItem;
+  rssSurface: RSSFeedCardSurfaceTokens;
+}) {
+  const safeUrl = sanitizeExternalUrl(item.url);
+
+  return (
+    <a
+      href={safeUrl ?? undefined}
+      target={safeUrl ? '_blank' : undefined}
+      rel={safeUrl ? 'noopener noreferrer' : undefined}
+      className={`${className} ${!inEditMode && safeUrl ? `cursor-pointer ${rssSurface.hoverClassName}` : ''}`}
+      onClick={(event) => {
+        event.preventDefault();
+        if (inEditMode) return;
+        event.stopPropagation();
+        if (!safeUrl) return;
+        handleArticleClick(safeUrl);
+      }}
+    >
+      {children}
+    </a>
+  );
+}
 
 interface RSSArticleListItemProps {
   item: RSSItem;
@@ -20,23 +58,12 @@ export function RSSArticleListItem({
   handleArticleClick,
 }: RSSArticleListItemProps) {
   return (
-    <a
-      key={item.id}
-      href={item.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={`group/item -m-1 block min-w-0 rounded-lg px-1 py-1 text-left no-underline transition-colors ${
-        inEditMode ? '' : `cursor-pointer ${rssSurface.hoverClassName}`
-      }`}
-      onClick={(e) => {
-        if (inEditMode) {
-          e.preventDefault();
-          return;
-        }
-        e.preventDefault();
-        e.stopPropagation();
-        handleArticleClick(item.url);
-      }}
+    <RSSArticleLink
+      item={item}
+      inEditMode={inEditMode}
+      rssSurface={rssSurface}
+      handleArticleClick={handleArticleClick}
+      className="group/item -m-1 block min-w-0 rounded-lg px-1 py-1 text-left no-underline transition-colors"
     >
       <h3
         className="text-left text-xs font-semibold leading-[1.35] line-clamp-2"
@@ -52,7 +79,7 @@ export function RSSArticleListItem({
       {index < Math.min(totalItems, 4) - 1 ? (
         <div className={`mt-1.5 h-px ${rssSurface.dividerClassName}`} />
       ) : null}
-    </a>
+    </RSSArticleLink>
   );
 }
 
@@ -102,23 +129,13 @@ export function RSSArticleListMedium({
   return (
     <OverlayScrollArea className="flex-1" contentClassName="space-y-2 pr-3">
       {items.map((item, index) => (
-        <a
+        <RSSArticleLink
           key={item.id}
-          href={item.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={`group/item -m-1 block min-w-0 rounded-lg px-1 py-1.5 text-left no-underline transition-colors ${
-            inEditMode ? '' : `cursor-pointer ${rssSurface.hoverClassName}`
-          }`}
-          onClick={(e) => {
-            if (inEditMode) {
-              e.preventDefault();
-              return;
-            }
-            e.preventDefault();
-            e.stopPropagation();
-            handleArticleClick(item.url);
-          }}
+          item={item}
+          inEditMode={inEditMode}
+          rssSurface={rssSurface}
+          handleArticleClick={handleArticleClick}
+          className="group/item -m-1 block min-w-0 rounded-lg px-1 py-1.5 text-left no-underline transition-colors"
         >
           <h3
             className="mb-0.5 text-left text-sm font-semibold leading-tight line-clamp-2 transition-colors"
@@ -134,7 +151,7 @@ export function RSSArticleListMedium({
           {index < items.length - 1 && (
             <div className={`mt-2 h-px ${rssSurface.dividerClassName}`} />
           )}
-        </a>
+        </RSSArticleLink>
       ))}
     </OverlayScrollArea>
   );
@@ -156,23 +173,13 @@ export function RSSArticleListLarge({
   return (
     <OverlayScrollArea className="flex-1" contentClassName="space-y-2 pr-3">
       {items.map((item, index) => (
-        <a
+        <RSSArticleLink
           key={item.id}
-          href={item.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={`group/item -m-2 block min-w-0 rounded-xl p-2 text-left no-underline transition-colors ${
-            inEditMode ? '' : `cursor-pointer ${rssSurface.hoverClassName}`
-          }`}
-          onClick={(e) => {
-            if (inEditMode) {
-              e.preventDefault();
-              return;
-            }
-            e.preventDefault();
-            e.stopPropagation();
-            handleArticleClick(item.url);
-          }}
+          item={item}
+          inEditMode={inEditMode}
+          rssSurface={rssSurface}
+          handleArticleClick={handleArticleClick}
+          className="group/item -m-2 block min-w-0 rounded-xl p-2 text-left no-underline transition-colors"
         >
           <div className="flex gap-3">
             {item.imageUrl && (
@@ -223,7 +230,7 @@ export function RSSArticleListLarge({
           {index < items.length - 1 && (
             <div className={`mt-2 h-px ${rssSurface.dividerClassName}`} />
           )}
-        </a>
+        </RSSArticleLink>
       ))}
     </OverlayScrollArea>
   );

@@ -3,9 +3,10 @@ import cameraSampleImageAvif from '@assets/reference/media/camera-sample.avif';
 import cameraSampleImageWebp from '@assets/reference/media/camera-sample.webp';
 import { RUNTIME_SAMPLE_SCREENSHOTS } from '@navet/app/assets/runtime-sample-images';
 import { AuthProvider, useOptionalAuthSession } from '@navet/app/auth/AuthProvider';
-import { MediaSection } from '@navet/app/components/layout/media-section';
 import { RoomNav } from '@navet/app/components/layout/room-nav';
 import type { RoomNavigationGroup } from '@navet/app/components/layout/room-nav.utils';
+import { LoadingSpinner } from '@navet/app/components/primitives/loading-spinner';
+import { SkipLink } from '@navet/app/components/primitives/skip-link';
 import {
   type CardSize,
   getCardGridAutoRowsStyle,
@@ -13,41 +14,25 @@ import {
   getDashboardCardFootprint,
   getDashboardGridColumnCount,
 } from '@navet/app/components/shared/card-size-selector';
-import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { ALL_ROOMS_ID, isAllRooms } from '@navet/app/constants/rooms';
-import { CalendarCard } from '@navet/app/features/calendar/components/calendar-card';
-import { createChoreDemoWorkspace } from '@navet/app/features/chores/chore-demo-fixture';
-import { useChoreWorkspaceStore } from '@navet/app/features/chores/chore-workspace-store';
-import { HouseholdSection } from '@navet/app/features/chores/components/household-section';
 import { ClimateCard } from '@navet/app/features/climate/components/climate-card';
-import { ClimateDashboard } from '@navet/app/features/climate/components/climate-dashboard';
 import { HumidifierCard } from '@navet/app/features/climate/components/humidifier-card';
 import type { ClimateDashboardSection } from '@navet/app/features/climate/types/climate-dashboard';
-import { type CustomCard, DashboardLayout, WidgetCard } from '@navet/app/features/dashboard';
-import { AddEntityDialogPrimitive } from '@navet/app/features/dashboard/components/add-entity-dialog';
 import type { CardTemplate } from '@navet/app/features/dashboard/components/add-entity-dialog/types';
 import type { DashboardLibraryCard } from '@navet/app/features/dashboard/components/dashboard-library-list';
 import { HomeEditCommandBar } from '@navet/app/features/dashboard/components/home-edit-command-bar';
+import { WidgetCard } from '@navet/app/features/dashboard/components/widget-card';
 import { useProgressiveBatching } from '@navet/app/features/dashboard/hooks/use-progressive-batching';
-import { EnergyDashboardPage } from '@navet/app/features/energy/components/dashboard/energy-dashboard-page';
-import { EnergyNowCardView } from '@navet/app/features/energy/components/widgets/energy-now-card-view';
-import {
-  getEnergyDashboardScenario,
-  getMockEnergySourceDiagnostics,
-} from '@navet/app/features/energy/data/mock-energy-dashboard';
+import { DashboardLayout } from '@navet/app/features/dashboard/shell';
+import type { CustomCard } from '@navet/app/features/dashboard/stores/custom-cards-store';
 import { FanCard } from '@navet/app/features/lighting/components/fan-card';
 import { LightCard } from '@navet/app/features/lighting/components/light-card';
-import { SwitchCard } from '@navet/app/features/lighting/components/switch-card';
-import { LightsDashboard } from '@navet/app/features/lighting/dashboard/lights-dashboard';
 import { MediaCard } from '@navet/app/features/media/components/media-card';
 import { PersonCard } from '@navet/app/features/person/components/person-card';
 import { SceneCard } from '@navet/app/features/scenes/components/scene-card';
 import { AlarmPanelCard } from '@navet/app/features/security/components/alarm-panel-card';
-import { CameraCard } from '@navet/app/features/security/components/camera-card';
 import { CoverCard } from '@navet/app/features/security/components/cover-card';
 import { LockCard } from '@navet/app/features/security/components/lock-card';
-import { SecurityCameraDashboard } from '@navet/app/features/security/components/security-camera-dashboard';
-import { buildSecurityCameraDashboardModel } from '@navet/app/features/security/utils/security-camera-dashboard-model';
 import { GroupedSensorCard } from '@navet/app/features/sensors/components/grouped-sensor-card';
 import type { HomeStatusSummaryItem } from '@navet/app/features/sensors/components/home-status-summary-model';
 import {
@@ -55,12 +40,9 @@ import {
   SummaryBarStack,
 } from '@navet/app/features/sensors/components/info-badge-strip';
 import { SensorCard } from '@navet/app/features/sensors/components/sensor-card';
-import { SettingsSection } from '@navet/app/features/settings/components/settings-section';
-import { VacuumCard } from '@navet/app/features/vacuum/components/vacuum-card';
-import { WeatherCard } from '@navet/app/features/weather/components/weather-card';
-import { useI18n, useTheme } from '@navet/app/hooks';
 import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
-import { I18nProvider } from '@navet/app/i18n';
+import { useDeferredVisibility } from '@navet/app/hooks/use-deferred-visibility';
+import { I18nProvider, useI18n } from '@navet/app/i18n';
 import { integrationSessionRuntime } from '@navet/app/integration-session-runtime';
 import type { Section } from '@navet/app/navigation/sections';
 import {
@@ -74,14 +56,84 @@ import { defaultSettings, useSettingsStore } from '@navet/app/stores/settings-st
 import { useThemeStore } from '@navet/app/stores/theme-store';
 import type { NavetAlarmEntity } from '@navet/core/alarm-types';
 import { Fan, Lightbulb, ShieldCheck, Speaker, Zap } from 'lucide-react';
-import { Children, type CSSProperties, type ReactNode, useEffect, useState } from 'react';
+import {
+  Children,
+  type ComponentProps,
+  type CSSProperties,
+  lazy,
+  type ReactNode,
+  type Ref,
+  type RefObject,
+  Suspense,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import type { CameraDevice, DeviceWithType, LockDevice, SensorDevice } from '../types/device.types';
-import { installDemoChoreActions } from './demo-chore-actions';
 import { installDemoDeviceAuthority } from './demo-device-authority';
-import { demoEnergyHistorySources, loadDemoEnergyHistory } from './demo-energy-history';
 import { PHOTO_FRAME_DEMO_IMAGES } from './photo-frame-demo-images';
 
 type DemoSection = Section;
+
+const EnergyShot = lazy(async () => {
+  const module = await import('./demo-energy-section');
+  return { default: module.DemoEnergySection };
+});
+const CalendarCard = lazy(async () => {
+  const module = await import('@navet/app/features/calendar/components/calendar-card');
+  return { default: module.CalendarCard };
+});
+const ClimateDashboard = lazy(async () => {
+  const module = await import('@navet/app/features/climate/components/climate-dashboard');
+  return { default: module.ClimateDashboard };
+});
+const DemoSecurityShot = lazy(async () => {
+  const module = await import('./demo-security-shot');
+  return { default: module.DemoSecurityShot };
+});
+const TasksShot = lazy(async () => {
+  const module = await import('./demo-household-section');
+  return { default: module.DemoHouseholdSection };
+});
+const LightsDashboard = lazy(async () => {
+  const module = await import('@navet/app/features/lighting/dashboard/lights-dashboard');
+  return { default: module.LightsDashboard };
+});
+const MediaSection = lazy(async () => {
+  const module = await import('@navet/app/components/layout/media-section');
+  return { default: module.MediaSection };
+});
+const SettingsSection = lazy(async () => {
+  const module = await import('@navet/app/features/settings/components/settings-section');
+  return { default: module.SettingsSection };
+});
+const CameraCard = lazy(async () => {
+  const module = await import('@navet/app/features/security/components/camera-card');
+  return { default: module.CameraCard };
+});
+const EnergyNowCardView = lazy(async () => {
+  const module = await import('@navet/app/features/energy/components/widgets/energy-now-card-view');
+  return { default: module.EnergyNowCardView };
+});
+const SwitchCard = lazy(async () => {
+  const module = await import('@navet/app/features/lighting/components/switch-card');
+  return { default: module.SwitchCard };
+});
+const VacuumCard = lazy(async () => {
+  const module = await import('@navet/app/features/vacuum/components/vacuum-card');
+  return { default: module.VacuumCard };
+});
+const WeatherCard = lazy(async () => {
+  const module = await import('@navet/app/features/weather/components/weather-card');
+  return { default: module.WeatherCard };
+});
+const loadAddEntityDialogPrimitive = () =>
+  import('@navet/app/features/dashboard/components/add-entity-dialog/primitive');
+const AddEntityDialogPrimitive = lazy(async () => {
+  const module = await loadAddEntityDialogPrimitive();
+  return { default: module.AddEntityDialogPrimitive };
+});
 
 const noopCardSizeChange = () => {};
 const noopRemoveEntity = () => {};
@@ -130,8 +182,6 @@ const energyTrend = [
   timestampMs: Date.UTC(2026, 4, 16, index * 3),
 }));
 
-const demoEnergyScenario = getEnergyDashboardScenario('default');
-const demoEnergySourceDiagnostics = getMockEnergySourceDiagnostics(demoEnergyScenario.dashboard);
 const sampleArtworkImage = artworksOriginal;
 const sampleCameraFallbackImage = cameraSampleImageWebp;
 const sampleCameraSources = [
@@ -982,17 +1032,222 @@ function useDemoDisplayDefaults() {
   return runtimeReady;
 }
 
-function CardSlot({ size, children }: { size: CardSize; children: ReactNode }) {
+function CardSlot({
+  size,
+  children,
+  viewportRef,
+}: {
+  size: CardSize;
+  children: ReactNode;
+  viewportRef?: Ref<HTMLDivElement>;
+}) {
   const breakpointCols = useBreakpointCols();
   const { heightPx } = getDashboardCardFootprint(size, breakpointCols);
 
   return (
     <div
+      ref={viewportRef}
       className={`${getCardSpanClass(size)} min-w-0 [&>*]:h-full`}
       style={{ minHeight: heightPx }}
     >
       {children}
     </div>
+  );
+}
+
+function DemoLazyCardSlot({
+  size,
+  children,
+  deferUntilVisible = true,
+  keyboardLabel,
+}: {
+  size: CardSize;
+  children: ReactNode;
+  deferUntilVisible?: boolean;
+  keyboardLabel?: string;
+}) {
+  const { ref, isVisible } = useDeferredVisibility<HTMLDivElement>({
+    disabled: !deferUntilVisible,
+    rootMargin: '400px 0px',
+  });
+  const [keyboardRequested, setKeyboardRequested] = useState(false);
+  const shouldTransferFocus = useRef(false);
+  const shouldRender = isVisible || keyboardRequested;
+
+  return (
+    <CardSlot size={size} viewportRef={ref}>
+      {shouldRender ? (
+        <Suspense
+          fallback={
+            keyboardLabel ? (
+              <DeferredCardLoadingButton
+                label={keyboardLabel}
+                shouldTransferFocus={shouldTransferFocus}
+              />
+            ) : (
+              <LoadingSpinner />
+            )
+          }
+        >
+          {keyboardLabel ? (
+            <FocusDeferredCardControl shouldFocus={shouldTransferFocus}>
+              {children}
+            </FocusDeferredCardControl>
+          ) : (
+            children
+          )}
+        </Suspense>
+      ) : keyboardLabel ? (
+        <button
+          type="button"
+          aria-label={keyboardLabel}
+          className="h-full w-full rounded-2xl focus-visible:outline-2 focus-visible:outline-orange-500"
+          onFocus={() => {
+            shouldTransferFocus.current = true;
+            setKeyboardRequested(true);
+          }}
+          onClick={() => {
+            shouldTransferFocus.current = true;
+            setKeyboardRequested(true);
+          }}
+        />
+      ) : (
+        <div aria-hidden="true" />
+      )}
+    </CardSlot>
+  );
+}
+
+function DeferredCardLoadingButton({
+  label,
+  shouldTransferFocus,
+}: {
+  label: string;
+  shouldTransferFocus: RefObject<boolean>;
+}) {
+  const ref = useRef<HTMLButtonElement>(null);
+  useLayoutEffect(() => {
+    if (shouldTransferFocus.current) ref.current?.focus();
+  }, [shouldTransferFocus]);
+
+  return (
+    <button
+      ref={ref}
+      type="button"
+      aria-label={label}
+      aria-busy="true"
+      className="flex h-full w-full items-center justify-center rounded-2xl focus-visible:outline-2 focus-visible:outline-orange-500"
+      onFocus={() => {
+        shouldTransferFocus.current = true;
+      }}
+      onBlur={() => {
+        shouldTransferFocus.current = false;
+      }}
+    >
+      <LoadingSpinner />
+    </button>
+  );
+}
+
+function FocusDeferredCardControl({
+  children,
+  shouldFocus,
+}: {
+  children: ReactNode;
+  shouldFocus: RefObject<boolean>;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (!shouldFocus.current) return;
+    ref.current
+      ?.querySelector<HTMLElement>(
+        'button:not(:disabled), a[href], input:not(:disabled), [role="button"][tabindex], [tabindex="0"]'
+      )
+      ?.focus();
+    shouldFocus.current = false;
+  }, [shouldFocus]);
+
+  return (
+    <div ref={ref} className="h-full [&>*]:h-full">
+      {children}
+    </div>
+  );
+}
+
+function DemoVacuumCard() {
+  return (
+    <DemoLazyCardSlot size="medium" keyboardLabel="Downstairs Vacuum">
+      <VacuumCard
+        id="vacuum.downstairs"
+        name="Downstairs Vacuum"
+        status="docked"
+        battery={92}
+        cleanedArea="48 m²"
+        cleaningTime="42 min"
+        nextCleaning="Tomorrow"
+        size="medium"
+        onSizeChange={noopCardSizeChange}
+        isEditMode={false}
+      />
+    </DemoLazyCardSlot>
+  );
+}
+
+function DemoSwitchCard({
+  deferUntilVisible = false,
+  ...props
+}: ComponentProps<typeof SwitchCard> & { deferUntilVisible?: boolean }) {
+  return (
+    <DemoLazyCardSlot
+      size={props.size}
+      deferUntilVisible={deferUntilVisible}
+      keyboardLabel={props.name}
+    >
+      <SwitchCard {...props} />
+    </DemoLazyCardSlot>
+  );
+}
+
+function DemoWeatherCard({
+  id,
+  location,
+  size,
+  deferUntilVisible = false,
+}: {
+  id: string;
+  location: string;
+  size: CardSize;
+  deferUntilVisible?: boolean;
+}) {
+  return (
+    <DemoLazyCardSlot
+      size={size}
+      deferUntilVisible={deferUntilVisible}
+      keyboardLabel={`Weather in ${location}`}
+    >
+      <WeatherCard
+        id={id}
+        location={location}
+        temperature={18}
+        feelsLikeTemperature={17}
+        condition="partlycloudy"
+        humidity={58}
+        windSpeed={12}
+        precipitation={0.4}
+        precipitationUnit="mm"
+        sunrise="05:08"
+        sunset="20:51"
+        daylight="15h 43m"
+        rainForecast="Light rain possible later"
+        forecast={forecast}
+        forecastMode="weekly"
+        highTemp={22}
+        lowTemp={13}
+        size={size}
+        onSizeChange={noopCardSizeChange}
+        isEditMode={false}
+      />
+    </DemoLazyCardSlot>
   );
 }
 
@@ -1166,31 +1421,8 @@ function ProductGrid({ addedWidgets }: { addedWidgets: CustomCard[] }) {
           isEditMode={false}
         />
       </CardSlot>
-      <CardSlot size="large">
-        <WeatherCard
-          id="weather.home"
-          location="Stockholm"
-          temperature={18}
-          feelsLikeTemperature={17}
-          condition="partlycloudy"
-          humidity={58}
-          windSpeed={12}
-          precipitation={0.4}
-          precipitationUnit="mm"
-          sunrise="05:08"
-          sunset="20:51"
-          daylight="15h 43m"
-          rainForecast="Light rain possible later"
-          forecast={forecast}
-          forecastMode="weekly"
-          highTemp={22}
-          lowTemp={13}
-          size="large"
-          onSizeChange={noopCardSizeChange}
-          isEditMode={false}
-        />
-      </CardSlot>
-      <CardSlot size="large">
+      <DemoWeatherCard id="weather.home" location="Stockholm" size="large" deferUntilVisible />
+      <DemoLazyCardSlot size="large" keyboardLabel="Family Calendar">
         <CalendarCard
           id="calendar.home"
           name="Family Calendar"
@@ -1200,8 +1432,8 @@ function ProductGrid({ addedWidgets }: { addedWidgets: CustomCard[] }) {
           size="large"
           onSizeChange={noopCardSizeChange}
         />
-      </CardSlot>
-      <CardSlot size="medium">
+      </DemoLazyCardSlot>
+      <DemoLazyCardSlot size="medium">
         <EnergyNowCardView
           title="Energy now"
           currentLoadW={842}
@@ -1210,40 +1442,37 @@ function ProductGrid({ addedWidgets }: { addedWidgets: CustomCard[] }) {
           accentColor="#f97316"
           size="medium"
         />
-      </CardSlot>
-      <CardSlot size="small">
-        <SwitchCard
-          id="switch.desk_power"
-          name="Desk power"
-          initialState
-          size="small"
-          isEditMode={false}
-        />
-      </CardSlot>
-      <CardSlot size="small">
-        <SwitchCard
-          id="input_boolean.guest_mode"
-          name="Guest mode"
-          initialState
-          entityType="helper"
-          serviceDomain="input_boolean"
-          serviceAction="toggle"
-          size="small"
-          isEditMode={false}
-        />
-      </CardSlot>
-      <CardSlot size="small">
-        <SwitchCard
-          id="script.goodnight"
-          name="Goodnight"
-          initialState={false}
-          entityType="script"
-          serviceDomain="script"
-          serviceAction="turn_on"
-          size="small"
-          isEditMode={false}
-        />
-      </CardSlot>
+      </DemoLazyCardSlot>
+      <DemoSwitchCard
+        id="switch.desk_power"
+        name="Desk power"
+        initialState
+        size="small"
+        isEditMode={false}
+        deferUntilVisible
+      />
+      <DemoSwitchCard
+        id="input_boolean.guest_mode"
+        name="Guest mode"
+        initialState
+        entityType="helper"
+        serviceDomain="input_boolean"
+        serviceAction="toggle"
+        size="small"
+        isEditMode={false}
+        deferUntilVisible
+      />
+      <DemoSwitchCard
+        id="script.goodnight"
+        name="Goodnight"
+        initialState={false}
+        entityType="script"
+        serviceDomain="script"
+        serviceAction="turn_on"
+        size="small"
+        isEditMode={false}
+        deferUntilVisible
+      />
       <CardSlot size="small">
         <SceneCard
           id="scene.movie_mode"
@@ -1268,20 +1497,7 @@ function ProductGrid({ addedWidgets }: { addedWidgets: CustomCard[] }) {
           isEditMode={false}
         />
       </CardSlot>
-      <CardSlot size="medium">
-        <VacuumCard
-          id="vacuum.downstairs"
-          name="Downstairs Vacuum"
-          status="docked"
-          battery={92}
-          cleanedArea="48 m²"
-          cleaningTime="42 min"
-          nextCleaning="Tomorrow"
-          size="medium"
-          onSizeChange={noopCardSizeChange}
-          isEditMode={false}
-        />
-      </CardSlot>
+      <DemoVacuumCard />
       {[...demoHomeWidgets, ...addedWidgets].map((card) => (
         <DemoWidgetCard key={card.id} card={card} />
       ))}
@@ -1313,20 +1529,6 @@ function DemoWidgetCard({ card }: { card: CustomCard }) {
   );
 }
 
-function EnergyShot() {
-  const isEditMode = useEditModeStore((state) => state.isEditMode);
-  return (
-    <EnergyDashboardPage
-      dashboard={demoEnergyScenario.dashboard}
-      sourceDiagnostics={demoEnergySourceDiagnostics}
-      isEditMode={isEditMode}
-      currentLoadStatisticId="sensor.whole_home_power"
-      historyStatisticsLoader={loadDemoEnergyHistory}
-      historySources={demoEnergyHistorySources}
-    />
-  );
-}
-
 function ClimateShot() {
   const reduceRenderingWork = useSettingsStore(
     (state) =>
@@ -1346,29 +1548,6 @@ function ClimateShot() {
       onRemoveEntity={noopRemoveEntity}
       densePerformanceMode={reduceRenderingWork}
       optimizeOffscreenPaint={reduceRenderingWork}
-    />
-  );
-}
-
-function SecurityShot() {
-  const isEditMode = useEditModeStore((state) => state.isEditMode);
-  const [cardSizes, setCardSizes] = useState<Record<string, CardSize>>({});
-  const { theme } = useTheme();
-  const surface = getThemeSurfaceTokens(theme);
-  const model = buildSecurityCameraDashboardModel({
-    cameras: demoSecurityCameras,
-    locks: demoSecurityLocks,
-    sensors: demoSecuritySensors,
-  });
-
-  return (
-    <SecurityCameraDashboard
-      model={model}
-      isEditMode={isEditMode}
-      alarms={demoAlarmEntities}
-      cardSizes={cardSizes}
-      updateCardSize={(id, size) => setCardSizes((previous) => ({ ...previous, [id]: size }))}
-      surface={surface}
     />
   );
 }
@@ -1395,43 +1574,6 @@ function SettingsShot() {
 
 function MediaShot() {
   return <MediaSection />;
-}
-
-function TasksShot() {
-  const { t } = useI18n();
-  useEffect(() => {
-    useChoreWorkspaceStore.getState().setPreviewDocument({
-      data: createChoreDemoWorkspace({
-        copy: {
-          dishwasher: t('household.demo.dishwasher'),
-          toys: t('household.demo.toys'),
-          hallway: t('household.demo.hallway'),
-          laundry: t('household.demo.laundry'),
-          plants: t('household.demo.plants'),
-          bins: t('household.demo.bins'),
-          missionTitle: t('household.demo.missionTitle'),
-          missionDescription: t('household.demo.missionDescription'),
-          upcomingMissionTitle: t('household.demo.upcomingMissionTitle'),
-          upcomingMissionDescription: t('household.demo.upcomingMissionDescription'),
-          rewardTitle: t('household.demo.rewardTitle'),
-          secondRewardTitle: t('household.demo.secondRewardTitle'),
-          childDishwasher: t('household.demo.childDishwasher'),
-          childToys: t('household.demo.childToys'),
-          childHallway: t('household.demo.childHallway'),
-          kitchen: t('household.demo.kitchen'),
-          bedroom: t('household.demo.bedroom'),
-          hallwayRoom: t('household.demo.hallwayRoom'),
-          livingRoom: t('household.demo.livingRoom'),
-        },
-      }),
-    });
-    const restoreChoreActions = installDemoChoreActions();
-    return () => {
-      restoreChoreActions();
-      useChoreWorkspaceStore.getState().reset();
-    };
-  }, [t]);
-  return <HouseholdSection syncEnabled={false} />;
 }
 
 function HomeRoomShot({
@@ -1484,20 +1626,18 @@ function RoomShot({ room }: { room: string }) {
             isEditMode={false}
           />
         </CardSlot>
-        <CardSlot size="small">
-          <SwitchCard
-            id="switch.espresso"
-            name="Espresso"
-            initialState
-            entityType="switch"
-            serviceDomain="switch"
-            serviceAction="toggle"
-            power={1140}
-            size="small"
-            isEditMode={false}
-          />
-        </CardSlot>
-        <CardSlot size="medium">
+        <DemoSwitchCard
+          id="switch.espresso"
+          name="Espresso"
+          initialState
+          entityType="switch"
+          serviceDomain="switch"
+          serviceAction="toggle"
+          power={1140}
+          size="small"
+          isEditMode={false}
+        />
+        <DemoLazyCardSlot size="medium" deferUntilVisible={false} keyboardLabel="Family Calendar">
           <CalendarCard
             id="calendar.kitchen"
             name="Family Calendar"
@@ -1507,7 +1647,7 @@ function RoomShot({ room }: { room: string }) {
             size="medium"
             onSizeChange={noopCardSizeChange}
           />
-        </CardSlot>
+        </DemoLazyCardSlot>
       </DashboardGrid>
     );
   }
@@ -1632,55 +1772,32 @@ function RoomShot({ room }: { room: string }) {
     return (
       <DashboardGrid>
         <CardSlot size="medium">
-          <CameraCard
-            id="camera.front_door_room"
-            name="Front Door Cam"
-            room="Outside"
-            entityPicture={sampleCameraFallbackImage}
-            entityPictureSources={sampleCameraSources}
-            supportedFeatures={0}
-            isStreamCapable={false}
-            size="medium"
-            onSizeChange={noopCardSizeChange}
-            isEditMode={false}
-          />
+          <Suspense fallback={<LoadingSpinner />}>
+            <CameraCard
+              id="camera.front_door_room"
+              name="Front Door Cam"
+              room="Outside"
+              entityPicture={sampleCameraFallbackImage}
+              entityPictureSources={sampleCameraSources}
+              supportedFeatures={0}
+              isStreamCapable={false}
+              size="medium"
+              onSizeChange={noopCardSizeChange}
+              isEditMode={false}
+            />
+          </Suspense>
         </CardSlot>
         <CardSlot size="small">
           <LockCard id="lock.front_door_room" name="Front Door" initialState size="small" />
         </CardSlot>
-        <CardSlot size="small">
-          <SwitchCard
-            id="switch.porch_lights"
-            name="Porch lights"
-            initialState
-            size="small"
-            isEditMode={false}
-          />
-        </CardSlot>
-        <CardSlot size="medium">
-          <WeatherCard
-            id="weather.outside_room"
-            location="Home"
-            temperature={18}
-            feelsLikeTemperature={17}
-            condition="partlycloudy"
-            humidity={58}
-            windSpeed={12}
-            precipitation={0.4}
-            precipitationUnit="mm"
-            sunrise="05:08"
-            sunset="20:51"
-            daylight="15h 43m"
-            rainForecast="Light rain possible later"
-            forecast={forecast}
-            forecastMode="weekly"
-            highTemp={22}
-            lowTemp={13}
-            size="medium"
-            onSizeChange={noopCardSizeChange}
-            isEditMode={false}
-          />
-        </CardSlot>
+        <DemoSwitchCard
+          id="switch.porch_lights"
+          name="Porch lights"
+          initialState
+          size="small"
+          isEditMode={false}
+        />
+        <DemoWeatherCard id="weather.outside_room" location="Home" size="medium" />
       </DashboardGrid>
     );
   }
@@ -1714,15 +1831,13 @@ function RoomShot({ room }: { room: string }) {
           isEditMode={false}
         />
       </CardSlot>
-      <CardSlot size="small">
-        <SwitchCard
-          id={`switch.${roomSlug}_power`}
-          name="Power"
-          initialState={room !== 'Unassigned'}
-          size="small"
-          isEditMode={false}
-        />
-      </CardSlot>
+      <DemoSwitchCard
+        id={`switch.${roomSlug}_power`}
+        name="Power"
+        initialState={room !== 'Unassigned'}
+        size="small"
+        isEditMode={false}
+      />
     </DashboardGrid>
   );
 }
@@ -1738,7 +1853,15 @@ function DemoSectionContent({
 }) {
   if (section === 'energy') return <EnergyShot />;
   if (section === 'climate') return <ClimateShot />;
-  if (section === 'security') return <SecurityShot />;
+  if (section === 'security')
+    return (
+      <DemoSecurityShot
+        cameras={demoSecurityCameras}
+        locks={demoSecurityLocks}
+        sensors={demoSecuritySensors}
+        alarms={demoAlarmEntities}
+      />
+    );
   if (section === 'tasks') return <TasksShot />;
   if (section === 'lights') return <LightsShot />;
   if (section === 'media') return <MediaShot />;
@@ -1751,7 +1874,7 @@ function getDemoSectionFromPath() {
   const demoSegmentIndex = pathSegments.indexOf('demo');
 
   if (demoSegmentIndex === -1) {
-    return null;
+    return pathSegments.length === 1 ? sanitizeDemoSection(pathSegments[0]) : null;
   }
 
   return sanitizeDemoSection(pathSegments[demoSegmentIndex + 1]);
@@ -1774,6 +1897,7 @@ function sanitizeDemoSection(value: unknown): DemoSection {
 }
 
 function DemoContent() {
+  const { t } = useI18n();
   const runtimeReady = useDemoDisplayDefaults();
   const authSession = useOptionalAuthSession();
   const [activeRoom, setActiveRoom] = useState<string>(ALL_ROOMS_ID);
@@ -1785,6 +1909,14 @@ function DemoContent() {
   const activeSection = useNavigationStore((state) => state.activeSection);
   const demoSection = getDemoSectionFromPath();
   const section = sanitizeDemoSection(activeSection ?? demoSection ?? 'home');
+
+  useEffect(() => {
+    if (section === 'home' && isEditMode) {
+      void loadAddEntityDialogPrimitive().catch(() => {
+        // The dialog still attempts to load when opened if this optional preload fails.
+      });
+    }
+  }, [isEditMode, section]);
 
   useEffect(() => {
     if (!runtimeReady || !authSession || authSession.sessions.home_assistant) return;
@@ -1850,6 +1982,7 @@ function DemoContent() {
 
   return (
     <>
+      <SkipLink targetId="demo-main-content" label={t('common.skipToMainContent')} />
       {section === 'home' && isEditMode ? (
         <HomeEditCommandBar
           canUndo={addedWidgets.length > 0}
@@ -1860,18 +1993,22 @@ function DemoContent() {
           onToggleEditMode={toggleEditMode}
         />
       ) : null}
-      <AddEntityDialogPrimitive
-        open={addCardOpen}
-        onClose={() => setAddCardOpen(false)}
-        onAddCard={addDemoCard}
-        onAddLibraryCard={addDemoEntity}
-        currentRoom={ALL_ROOMS_ID}
-        libraryCards={demoHomeLibraryCards.filter(
-          (card) => !addedWidgets.some((widget) => widget.data?.entityId === card.id)
-        )}
-        description="Choose a sample device or add a Navet content card."
-        allowedTemplateIds={['note', 'info']}
-      />
+      {addCardOpen ? (
+        <Suspense fallback={<LoadingSpinner />}>
+          <AddEntityDialogPrimitive
+            open={addCardOpen}
+            onClose={() => setAddCardOpen(false)}
+            onAddCard={addDemoCard}
+            onAddLibraryCard={addDemoEntity}
+            currentRoom={ALL_ROOMS_ID}
+            libraryCards={demoHomeLibraryCards.filter(
+              (card) => !addedWidgets.some((widget) => widget.data?.entityId === card.id)
+            )}
+            description="Choose a sample device or add a Navet content card."
+            allowedTemplateIds={['note', 'info']}
+          />
+        </Suspense>
+      ) : null}
       <DashboardLayout
         mobileEditActions={{ isEditMode, onToggleEditMode: toggleEditMode }}
         mobileRoomNavigation={
@@ -1886,6 +2023,9 @@ function DemoContent() {
         }
       >
         <div
+          id="demo-main-content"
+          role={section === 'tasks' || section === 'settings' ? undefined : 'main'}
+          tabIndex={-1}
           className={`flex w-full flex-col gap-2 md:gap-4 min-[1025px]:gap-6 ${section === 'home' && isEditMode ? 'pt-14' : ''}`}
         >
           {section === 'home' ? (
@@ -1899,11 +2039,23 @@ function DemoContent() {
               showCustomizeButton={false}
             />
           ) : null}
-          <DemoSectionContent
-            section={section}
-            activeRoom={activeRoom}
-            addedWidgets={addedWidgets}
-          />
+          <Suspense
+            fallback={
+              section === 'tasks' || section === 'settings' ? (
+                <main aria-busy="true">
+                  <LoadingSpinner />
+                </main>
+              ) : (
+                <LoadingSpinner />
+              )
+            }
+          >
+            <DemoSectionContent
+              section={section}
+              activeRoom={activeRoom}
+              addedWidgets={addedWidgets}
+            />
+          </Suspense>
         </div>
       </DashboardLayout>
     </>

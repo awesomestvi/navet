@@ -572,6 +572,7 @@ const HumidifierSettingsDialog = memo(function HumidifierSettingsDialog({
   return (
     <BaseCardDialog
       variant="modal"
+      titleInContent
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       title={name}

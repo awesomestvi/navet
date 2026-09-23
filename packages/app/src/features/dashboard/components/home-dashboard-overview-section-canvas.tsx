@@ -118,11 +118,12 @@ export const SectionCanvas = memo(function SectionCanvas({
         </button>
         <input
           type="text"
+          aria-label={t('dashboard.edit.sectionName')}
           value={title}
           onChange={(event) => onRenameSection(sectionId, event.target.value)}
           onFocus={() => onSelectSection(sectionId)}
           onClick={(event) => event.stopPropagation()}
-          className={`min-w-0 flex-1 bg-transparent text-sm font-normal outline-none ${surface.textPrimary}`}
+          className={`min-w-0 flex-1 rounded-sm bg-transparent text-sm font-normal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current focus-visible:ring-offset-2 ${surface.ringOffset} ${surface.textPrimary}`}
         />
         {rowSiblingCount > 1 ? (
           <>

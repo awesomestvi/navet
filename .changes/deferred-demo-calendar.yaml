@@ -1,0 +1,4 @@
+type: improved
+audiences:
+  - standalone
+summary: Load the demo Home calendar as it approaches view while keeping Kitchen's calendar ready when selected.
