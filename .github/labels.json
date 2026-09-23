@@ -9,5 +9,7 @@
   { "name": "impact: release", "color": "f9d0c4", "description": "Changes packaging, distribution, or release automation" },
   { "name": "impact: website", "color": "fef2c0", "description": "Changes the public website or marketing surface" },
   { "name": "stewardship", "color": "6f42c1", "description": "Documentation and architecture drift review" },
-  { "name": "communication", "color": "d4c5f9", "description": "Human-approved release and community communication draft" }
+  { "name": "communication", "color": "d4c5f9", "description": "Human-approved release and community communication draft" },
+  { "name": "navet: research", "color": "d4c5f9", "description": "Request one Navet Nisse research run; cleared after dispatch" },
+  { "name": "navet: implement", "color": "0e8a16", "description": "Request one Navet Nisse implementation run; cleared after dispatch" }
 ]

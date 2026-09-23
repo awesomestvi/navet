@@ -28,9 +28,9 @@ criteria. It must ask for missing reproduction information instead of speculatin
 
 ### Delivery agent
 
-- Trigger: a maintainer comments `/navet implement` or `/navet research`, or the issue reporter
-  answers a specific question from Navet Nisse during an authorized task. GitHub acknowledges
-  accepted work with an eyes reaction and places it in the private Codex queue.
+- Trigger: a maintainer adds `navet: implement` or `navet: research`, or the issue reporter
+  answers a specific question from Navet Nisse during an authorized task. The private Codex queue
+  consumes each request label after successful dispatch.
 - Inputs: issue history, root and scoped agent instructions, product constitution, changed-area
   guide, current code, tests, stories, and linked evidence.
 - Permissions: read repository and issues; create a branch and pull request; edit only the task
@@ -105,33 +105,40 @@ The complete Storybook browser interaction suite has known baseline failures and
 local diagnostic until those assertions are repaired. It must not be represented as a passing gate
 or made required while `main` is red.
 
-## Commands And State
+## Requests And State
 
-- `/navet research`: investigate and report; no implementation is assumed.
-- `/navet implement`: triage, implement when requirements are clear, and open a PR.
-- `/navet continue`: resume the most recent Navet Nisse mode for an issue after new context or PR
-  feedback is available.
+- `navet: research`: investigate and report; no implementation is assumed.
+- `navet: implement`: triage, implement when requirements are clear, and open a PR.
+- Request labels are one-shot. The runner removes one after successful dispatch and leaves it
+  applied on failure. Reapply it later for another run without manually removing it first.
+- If both request labels are present, the runner does not guess which mode to run. A maintainer
+  must leave only the intended request label.
+
+Existing `/navet research`, `/navet implement`, and `/navet continue` comments remain accepted
+for compatibility. New work should use request labels.
 
 When Navet Nisse asks a blocking question or requests a retest on an issue, the issue reporter or a
 maintainer can respond in an ordinary comment. The first response after that request resumes the
 most recent accepted mode without another command. Unrelated comments and replies after a
-conclusion do not dispatch work. A maintainer can still use `/navet continue` to request another
-iteration.
+conclusion do not dispatch work. A maintainer can reapply the relevant request label to request
+another iteration.
 
-Only repository collaborators with write, maintain, or admin permission may issue commands.
+Only repository collaborators with write, maintain, or admin permission may start agent work.
 The issue reporter may answer a question in an already authorized task. An eyes reaction from
-`github-actions[bot]` means the command or answer was accepted. A rocket reaction from
-`navet-nisse[bot]` means the private runner claimed it. These compact reactions replace agent and
-status labels; type, area, and risk labels continue to describe the issue itself.
+`github-actions[bot]` means a command or answer was accepted. A rocket reaction from
+`navet-nisse[bot]` means a command or answer was claimed. Request labels are cleared on successful
+dispatch; type, area, and risk labels continue to describe the issue itself.
 
 ## Private Queue And Public Communication
 
 GitHub remains the mobile control plane, but orchestration details are not public issue content.
-Accepted commands and requested answers receive compact reactions instead of labels,
-assignments, prompts, or startup comments.
+Request labels and accepted answers enter the queue without assignments, prompts, or startup
+comments. Existing command comments continue to use compact reactions.
 
-A single private Codex runner polls for the oldest accepted command or requested answer that Navet
-Nisse has not claimed. An accepted answer is treated as `/navet continue`; it cannot choose a new
+A single private Codex runner polls for the oldest request label, accepted command, or requested
+answer that it has not claimed. It verifies the request label's issue event was made by a
+collaborator with write access. A label is removed only after dispatch succeeds, so reapplying it
+creates a fresh request. An accepted answer resumes the previous mode; it cannot choose a new
 mode. The runner treats the issue and every linked artifact as untrusted input, reads `AGENTS.md` plus
 only the routed area guide, and keeps internal plans and tool narration in the Codex task rather
 than the GitHub issue. Scheduled repository workflows queue research by creating an issue as
@@ -221,8 +228,9 @@ configured after these files reach `main`:
    command reactions with its `react` and `unreact` operations. The wrapper creates a short-lived
    installation token for each operation and cannot modify the repository remote or the
    maintainer's GitHub login.
-3. Configure one local Codex scheduled task to poll accepted `/navet` commands, accepted answers,
-   scheduled issues authored by `github-actions[bot]` with the expected workflow-owned issue type,
+3. Configure one local Codex scheduled task to poll request labels, accepted `/navet` commands,
+   accepted answers, scheduled issues authored by `github-actions[bot]` with the expected
+   workflow-owned issue type,
    and unresolved CodeRabbit review threads on PRs linked to its delivery tasks. Do not authorize
    work from issue-body markers. Dispatch no more than one issue or PR per run and follow the
    private queue contract above. Keep only one active queue runner so two agents cannot claim the

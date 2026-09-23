@@ -7,19 +7,24 @@ import { acceptAgentComment } from './agent-dispatch-intake.mjs';
 const workflowSource = readFileSync(resolve(process.cwd(), '.github/workflows/agent-dispatch.yml'), 'utf8');
 const workflow = parse(workflowSource);
 const stewardshipSource = readFileSync(resolve(process.cwd(), '.github/workflows/docs-steward.yml'), 'utf8');
+const managedLabels = JSON.parse(readFileSync(resolve(process.cwd(), '.github/labels.json'), 'utf8'));
+const retiredLabels = JSON.parse(readFileSync(resolve(process.cwd(), '.github/retired-labels.json'), 'utf8'));
 
 function comment(id, login, body) {
-  return { id, user: { login }, body };
+  return { id, user: { login }, body, created_at: new Date(Date.UTC(2026, 0, 1, 0, id)).toISOString() };
 }
 
-function harness({ actor = 'reporter', body = 'iOS 27, Navet 0.17.2', comments = [], reactions = {} } = {}) {
+function harness({ actor = 'reporter', body = 'iOS 27, Navet 0.17.2', comments = [], reactions = {}, events = [] } = {}) {
   const current = comment(5, actor, body);
   const createForIssueComment = vi.fn(async () => ({}));
   const core = { notice: vi.fn(), setFailed: vi.fn() };
   const github = {
     paginate: vi.fn(async (method, args) => method(args)),
     rest: {
-      issues: { listComments: vi.fn(async () => [...comments, current]) },
+      issues: {
+        listComments: vi.fn(async () => [...comments, current]),
+        listEvents: vi.fn(async () => events),
+      },
       reactions: {
         listForIssueComment: vi.fn(async ({ comment_id }) => reactions[comment_id] ?? []),
         createForIssueComment,
@@ -45,6 +50,13 @@ const questionThread = [
 ];
 
 describe('agent issue intake', () => {
+  it('manages both one-shot request labels without retiring them', () => {
+    for (const name of ['navet: research', 'navet: implement']) {
+      expect(managedLabels.some((label) => label.name === name)).toBe(true);
+      expect(retiredLabels).not.toContain(name);
+    }
+  });
+
   it('listens to issue comments with narrow permissions', () => {
     expect(workflow.on).toEqual({ issue_comment: { types: ['created'] } });
     expect(workflow.permissions).toEqual({ contents: 'read', issues: 'write' });
@@ -70,6 +82,33 @@ describe('agent issue intake', () => {
     });
     await acceptAgentComment(input);
     expect(input.createForIssueComment).toHaveBeenCalledWith(expect.objectContaining({ comment_id: 5, content: 'eyes' }));
+  });
+
+  it('accepts a requested answer after an authorized research label was applied', async () => {
+    const input = harness({
+      comments: [comment(2, 'navet-nisse[bot]', 'Which Navet version are you using?')],
+      events: [{
+        event: 'labeled',
+        label: { name: 'navet: research' },
+        actor: { login: 'maintainer' },
+        created_at: comment(1, 'maintainer', '').created_at,
+      }],
+    });
+    await acceptAgentComment(input);
+    expect(input.createForIssueComment).toHaveBeenCalledOnce();
+  });
+
+  it('rejects a requested answer without an authorized earlier request label', async () => {
+    const cases = [
+      { event: 'labeled', label: { name: 'navet: research' }, actor: { login: 'reporter' }, created_at: comment(1, 'reporter', '').created_at },
+      { event: 'labeled', label: { name: 'navet: research' }, actor: { login: 'maintainer' }, created_at: comment(3, 'maintainer', '').created_at },
+      { event: 'labeled', label: { name: 'type: bug' }, actor: { login: 'maintainer' }, created_at: comment(1, 'maintainer', '').created_at },
+    ];
+    for (const event of cases) {
+      const input = harness({ comments: [comment(2, 'navet-nisse[bot]', 'Which Navet version?')], events: [event] });
+      await acceptAgentComment(input);
+      expect(input.createForIssueComment).not.toHaveBeenCalled();
+    }
   });
 
   it('ignores URL query marks in a conclusion', async () => {
