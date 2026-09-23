@@ -1,5 +1,6 @@
 import type { DeviceCollection } from '@navet/app/types/device.types';
 import type { NavetEntity } from '@navet/core/types';
+import { getClimateSensorGroup } from './climate-sensor-group';
 
 export function createEmptyDeviceCollection(): DeviceCollection {
   return {
@@ -168,6 +169,9 @@ export function hasStableDeviceCollectionMembership(
     previous.name === next.name &&
     readDeviceId(previousState) === readDeviceId(nextState) &&
     previousState.entityCategory === nextState.entityCategory &&
+    (getClimateSensorGroup(previousState.deviceClass) !== null) ===
+      (getClimateSensorGroup(nextState.deviceClass) !== null) &&
+    previousState.retainSensorCard === nextState.retainSensorCard &&
     previousState.securityKind === nextState.securityKind
   );
 }
@@ -453,7 +457,10 @@ export function mapNavetEntitiesToDeviceCollection(entities: NavetEntity[]): Dev
         if (
           deviceId &&
           indexes.deviceIdsWithPrimaryCards.has(deviceId) &&
-          state.retainSensorCard !== true
+          state.retainSensorCard !== true &&
+          (entity.type !== 'sensor' ||
+            isSuppressedEntityCategory(state) ||
+            getClimateSensorGroup(state.deviceClass) === null)
         ) {
           break;
         }
