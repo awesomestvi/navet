@@ -58,3 +58,5 @@ Create a separate Pages project for the documentation site with:
 
 The output is fully static and includes Pagefind search data and a sitemap. Cloudflare should not
 run a second framework preset or HTML minifier over the generated output.
+The build also emits `_redirects` rules that keep duplicate screenshot URLs serving identical
+images after their extra copies are removed from `dist`.
