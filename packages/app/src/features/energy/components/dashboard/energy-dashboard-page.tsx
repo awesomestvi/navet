@@ -1902,12 +1902,12 @@ function SourceDiagnostics({
               href={homeAssistantEnergyUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
+              className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${surface.textPrimary} ${
                 theme === 'light' ? 'bg-white/88 hover:bg-white' : 'bg-black/18 hover:bg-black/24'
               }`}
               style={{
                 borderColor: `${accentColor}${theme === 'light' ? '33' : '29'}`,
-                color: accentColor,
+                color: theme === 'light' ? undefined : accentColor,
               }}
             >
               <ExternalLink className="h-3.5 w-3.5" />
