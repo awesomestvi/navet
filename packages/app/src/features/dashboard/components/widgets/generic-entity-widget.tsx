@@ -10,6 +10,7 @@ import {
   type TranslationKey,
 } from '@navet/app/i18n';
 import { integrationSelectors } from '@navet/app/stores/selectors';
+import type { DashboardEntityView } from '@navet/ui/dashboard-entity-view';
 import { Activity, CircleAlert, CircleHelp, CircleSlash } from 'lucide-react';
 
 export interface GenericEntityWidgetData {
@@ -21,6 +22,32 @@ interface GenericEntityWidgetProps {
   data?: GenericEntityWidgetData;
   language?: AppLanguage;
   t?: TranslateFn;
+}
+
+// Provider view records are replaced when their entities change. Share alias work across cards
+// and store notifications while letting old snapshots be collected.
+const entityViewAliases = new WeakMap<object, Map<string, DashboardEntityView>>();
+
+function findEntityViewByAlias(
+  viewsByProviderId: ReturnType<typeof integrationSelectors.providerEntityViewsByProviderId>,
+  entityId: string
+) {
+  let aliases = entityViewAliases.get(viewsByProviderId);
+  if (!aliases) {
+    aliases = new Map<string, DashboardEntityView>();
+    for (const providerViews of Object.values(viewsByProviderId)) {
+      for (const view of Object.values(providerViews)) {
+        for (const alias of [view.id, view.externalId, view.canonicalId]) {
+          if (alias && !aliases.has(alias)) {
+            aliases.set(alias, view);
+          }
+        }
+      }
+    }
+    entityViewAliases.set(viewsByProviderId, aliases);
+  }
+
+  return aliases.get(entityId) ?? null;
 }
 
 function formatEntityState(value: unknown, t: TranslateFn) {
@@ -143,19 +170,10 @@ export function GenericEntityWidget({
       return directEntity;
     }
 
-    for (const providerViews of Object.values(
-      integrationSelectors.providerEntityViewsByProviderId(state)
-    )) {
-      const matchedView = Object.values(providerViews).find(
-        (view) =>
-          view.id === entityId || view.externalId === entityId || view.canonicalId === entityId
-      );
-      if (matchedView) {
-        return matchedView;
-      }
-    }
-
-    return null;
+    return findEntityViewByAlias(
+      integrationSelectors.providerEntityViewsByProviderId(state),
+      entityId
+    );
   });
 
   const availability = getAvailabilityMeta(entity?.availability, t);

@@ -113,4 +113,46 @@ describe('GenericEntityWidget', () => {
     expect(screen.getByText('Custom Entity')).toBeInTheDocument();
     expect(screen.getAllByText('Unknown').length).toBeGreaterThan(0);
   });
+
+  it('resolves a saved external ID in provider order and uses fresh entity views', () => {
+    const originalView =
+      baseState.providerEntityViewsByCanonicalId['home_assistant:sensor.kitchen_temperature'];
+    let state = {
+      ...baseState,
+      providerEntityViewsByCanonicalId: {},
+      providerEntityViewsByProviderId: {
+        home_assistant: {
+          [originalView.canonicalId]: originalView,
+        },
+        homey: {
+          'homey:sensor.kitchen_temperature': {
+            ...originalView,
+            id: 'homey:sensor.kitchen_temperature',
+            canonicalId: 'homey:sensor.kitchen_temperature',
+            providerId: 'homey',
+            name: 'Other Kitchen Temperature',
+          },
+        },
+      },
+    };
+    useIntegrationStoreMock.mockImplementation((selector) => selector(state));
+
+    const widget = renderWidget('sensor.kitchen_temperature');
+    expect(screen.getByText('Kitchen Temperature')).toBeInTheDocument();
+    expect(screen.queryByText('Other Kitchen Temperature')).not.toBeInTheDocument();
+
+    state = {
+      ...state,
+      providerEntityViewsByProviderId: {
+        ...state.providerEntityViewsByProviderId,
+        home_assistant: {
+          [originalView.canonicalId]: { ...originalView, name: 'Updated Kitchen Temperature' },
+        },
+      },
+    };
+    widget.rerender(
+      <GenericEntityWidget size="small" data={{ entityId: originalView.externalId }} />
+    );
+    expect(screen.getByText('Updated Kitchen Temperature')).toBeInTheDocument();
+  });
 });
