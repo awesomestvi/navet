@@ -10,43 +10,43 @@ open pull requests manually.
 
 ## Quick read
 
-1. A maintainer comments `/navet research` for investigation or `/navet implement` for
-   implementation. When Navet Nisse asks a blocking question or requests a retest, the issue
-   reporter or a maintainer can reply normally. Other replies need a maintainer's `/navet continue`
-   to start another iteration.
-2. GitHub acknowledges an accepted command or requested answer with an eyes reaction without
-   adding workflow labels.
-3. The private Codex runner checks the queue every 15 minutes. Navet Nisse claims the oldest
-   qualifying command or answer with a rocket reaction.
-4. Codex creates an isolated worktree task from the default branch. Research tasks report without
+1. A maintainer adds `navet: research` for investigation or `navet: implement` for a fix.
+   When Navet Nisse asks a blocking question or requests a retest, the issue reporter or a
+   maintainer can reply normally.
+2. The private Codex runner checks the queue every 15 minutes. After dispatch succeeds, it
+   removes the request label. Add the same label later to request another run; you do not need
+   to remove it first. If dispatch fails, the label stays in place for a retry.
+3. Codex creates an isolated worktree task from the default branch. Research tasks report without
    changing code; implementation tasks reproduce, fix, validate, review, and open a pull request.
-5. CI, Cloudflare previews, and independent review provide evidence. Navet Nisse maintains one
+4. CI, Cloudflare previews, and independent review provide evidence. Navet Nisse maintains one
    pull-request summary with the current validation result and preview links.
-6. A maintainer reviews the result, gives product feedback, and decides whether to merge. A merge
+5. A maintainer reviews the result, gives product feedback, and decides whether to merge. A merge
    to `main` publishes a Navet Dev build automatically; production publication remains separate.
 
 The local runner uses the maintainer's signed-in Codex desktop session and a dedicated,
 repository-scoped GitHub App credential. The maintainer's computer, Codex app, and Navet checkout
-must remain available for queued work to start. If the runner is offline, the accepted command
-waits. If task creation fails, the coordinator removes its claim so a later run can retry.
+must remain available for queued work to start. If the runner is offline, the request
+waits. If task creation fails, the coordinator leaves a request label applied or removes a command
+claim so a later run can retry.
 
 ## Choose the type of work
 
 Only maintainers with repository write access can start work on an issue. The issue reporter can
 resume already authorized work by answering a question from Navet Nisse.
 
-- `/navet research` asks Codex to investigate current behavior, relevant code, tests, and evidence.
+- `navet: research` asks Codex to investigate current behavior, relevant code, tests, and evidence.
   It must not modify code or open a pull request.
-- `/navet implement` asks Codex to establish acceptance criteria, reproduce the problem where
+- `navet: implement` asks Codex to establish acceptance criteria, reproduce the problem where
   practical, implement the smallest durable change, validate it, and open a linked pull request.
-- `/navet continue` resumes the most recent mode after you provide requested context or PR feedback.
+- Add a request label again after it clears to resume that mode with new context or PR feedback.
 
 If Navet Nisse asks for missing information or asks you to retest, reply on the issue. The first
-response from the issue reporter or a maintainer resumes the previous mode automatically. You do
-not need to add `/navet continue` to the reply. Replies outside those requests do not resume work.
+response from the issue reporter or a maintainer resumes the previous mode automatically. Replies
+outside those requests do not resume work.
 
 The queue handles one issue per run. An eyes reaction from `github-actions[bot]` means GitHub
-accepted the command or answer; a rocket reaction from `navet-nisse[bot]` means the runner claimed it.
+accepted a requested answer. For existing `/navet` commands, eyes still means accepted and a rocket
+reaction from `navet-nisse[bot]` means claimed.
 
 ## Work in an isolated task
 
@@ -96,7 +96,7 @@ Managed Codex worktrees stay separate from the maintainer's normal checkout, so 
 agent-assisted changes can proceed in parallel.
 
 Initial issue dispatch and follow-up work are automated. After adding unrelated context or PR
-feedback, a maintainer can comment `/navet continue` on the issue to queue another iteration.
+feedback, a maintainer can add the appropriate request label to queue another iteration.
 
 For the complete roles, permissions, and approval contract, see the
 [repository workflow specification](https://github.com/awesomestvi/navet/blob/main/docs/engineering/agentic-development.md).

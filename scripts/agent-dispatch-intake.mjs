@@ -1,6 +1,7 @@
 const COMMAND = /^\/navet\s+(research|implement|continue)$/i;
 const NISSE = 'navet-nisse[bot]';
 const ACTIONS = 'github-actions[bot]';
+const REQUEST_LABELS = new Set(['navet: research', 'navet: implement']);
 
 async function hasReaction(github, owner, repo, commentId, content, actor) {
   const reactions = await github.paginate(github.rest.reactions.listForIssueComment, {
@@ -56,6 +57,26 @@ async function isRequestedAnswer(github, owner, repo, issue, comment, actor) {
     if (await hasReaction(github, owner, repo, item.id, 'eyes', ACTIONS)) {
       hasAcceptedCommand = true;
       break;
+    }
+  }
+  if (!hasAcceptedCommand) {
+    const events = await github.paginate(github.rest.issues.listEvents, {
+      owner,
+      repo,
+      issue_number: issue.number,
+      per_page: 100,
+    });
+    for (const event of events) {
+      if (
+        event.event === 'labeled' &&
+        REQUEST_LABELS.has(event.label?.name?.toLowerCase()) &&
+        event.created_at < lastNisse.created_at &&
+        event.actor?.login &&
+        (await hasWritePermission(github, owner, repo, event.actor.login))
+      ) {
+        hasAcceptedCommand = true;
+        break;
+      }
     }
   }
   if (!hasAcceptedCommand) return false;
