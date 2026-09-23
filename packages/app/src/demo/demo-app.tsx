@@ -15,7 +15,6 @@ import {
   getDashboardGridColumnCount,
 } from '@navet/app/components/shared/card-size-selector';
 import { ALL_ROOMS_ID, isAllRooms } from '@navet/app/constants/rooms';
-import { CalendarCard } from '@navet/app/features/calendar/components/calendar-card';
 import { ClimateCard } from '@navet/app/features/climate/components/climate-card';
 import { HumidifierCard } from '@navet/app/features/climate/components/humidifier-card';
 import type { ClimateDashboardSection } from '@navet/app/features/climate/types/climate-dashboard';
@@ -78,6 +77,10 @@ type DemoSection = Section;
 const EnergyShot = lazy(async () => {
   const module = await import('./demo-energy-section');
   return { default: module.DemoEnergySection };
+});
+const CalendarCard = lazy(async () => {
+  const module = await import('@navet/app/features/calendar/components/calendar-card');
+  return { default: module.CalendarCard };
 });
 const ClimateDashboard = lazy(async () => {
   const module = await import('@navet/app/features/climate/components/climate-dashboard');
@@ -1042,30 +1045,47 @@ function CardSlot({
   );
 }
 
-function DemoVacuumCard() {
-  const { ref, isVisible } = useDeferredVisibility<HTMLDivElement>({ rootMargin: '400px 0px' });
+function DemoLazyCardSlot({
+  size,
+  children,
+  deferUntilVisible = true,
+}: {
+  size: CardSize;
+  children: ReactNode;
+  deferUntilVisible?: boolean;
+}) {
+  const { ref, isVisible } = useDeferredVisibility<HTMLDivElement>({
+    disabled: !deferUntilVisible,
+    rootMargin: '400px 0px',
+  });
 
   return (
-    <CardSlot size="medium" viewportRef={ref}>
+    <CardSlot size={size} viewportRef={ref}>
       {isVisible ? (
-        <Suspense fallback={<LoadingSpinner />}>
-          <VacuumCard
-            id="vacuum.downstairs"
-            name="Downstairs Vacuum"
-            status="docked"
-            battery={92}
-            cleanedArea="48 m²"
-            cleaningTime="42 min"
-            nextCleaning="Tomorrow"
-            size="medium"
-            onSizeChange={noopCardSizeChange}
-            isEditMode={false}
-          />
-        </Suspense>
+        <Suspense fallback={<LoadingSpinner />}>{children}</Suspense>
       ) : (
         <div aria-hidden="true" />
       )}
     </CardSlot>
+  );
+}
+
+function DemoVacuumCard() {
+  return (
+    <DemoLazyCardSlot size="medium">
+      <VacuumCard
+        id="vacuum.downstairs"
+        name="Downstairs Vacuum"
+        status="docked"
+        battery={92}
+        cleanedArea="48 m²"
+        cleaningTime="42 min"
+        nextCleaning="Tomorrow"
+        size="medium"
+        onSizeChange={noopCardSizeChange}
+        isEditMode={false}
+      />
+    </DemoLazyCardSlot>
   );
 }
 
@@ -1080,42 +1100,31 @@ function DemoWeatherCard({
   size: CardSize;
   deferUntilVisible?: boolean;
 }) {
-  const { ref, isVisible } = useDeferredVisibility<HTMLDivElement>({
-    disabled: !deferUntilVisible,
-    rootMargin: '400px 0px',
-  });
-
   return (
-    <CardSlot size={size} viewportRef={ref}>
-      {isVisible ? (
-        <Suspense fallback={<LoadingSpinner />}>
-          <WeatherCard
-            id={id}
-            location={location}
-            temperature={18}
-            feelsLikeTemperature={17}
-            condition="partlycloudy"
-            humidity={58}
-            windSpeed={12}
-            precipitation={0.4}
-            precipitationUnit="mm"
-            sunrise="05:08"
-            sunset="20:51"
-            daylight="15h 43m"
-            rainForecast="Light rain possible later"
-            forecast={forecast}
-            forecastMode="weekly"
-            highTemp={22}
-            lowTemp={13}
-            size={size}
-            onSizeChange={noopCardSizeChange}
-            isEditMode={false}
-          />
-        </Suspense>
-      ) : (
-        <div aria-hidden="true" />
-      )}
-    </CardSlot>
+    <DemoLazyCardSlot size={size} deferUntilVisible={deferUntilVisible}>
+      <WeatherCard
+        id={id}
+        location={location}
+        temperature={18}
+        feelsLikeTemperature={17}
+        condition="partlycloudy"
+        humidity={58}
+        windSpeed={12}
+        precipitation={0.4}
+        precipitationUnit="mm"
+        sunrise="05:08"
+        sunset="20:51"
+        daylight="15h 43m"
+        rainForecast="Light rain possible later"
+        forecast={forecast}
+        forecastMode="weekly"
+        highTemp={22}
+        lowTemp={13}
+        size={size}
+        onSizeChange={noopCardSizeChange}
+        isEditMode={false}
+      />
+    </DemoLazyCardSlot>
   );
 }
 
@@ -1290,7 +1299,7 @@ function ProductGrid({ addedWidgets }: { addedWidgets: CustomCard[] }) {
         />
       </CardSlot>
       <DemoWeatherCard id="weather.home" location="Stockholm" size="large" deferUntilVisible />
-      <CardSlot size="large">
+      <DemoLazyCardSlot size="large">
         <CalendarCard
           id="calendar.home"
           name="Family Calendar"
@@ -1300,7 +1309,7 @@ function ProductGrid({ addedWidgets }: { addedWidgets: CustomCard[] }) {
           size="large"
           onSizeChange={noopCardSizeChange}
         />
-      </CardSlot>
+      </DemoLazyCardSlot>
       <CardSlot size="medium">
         <EnergyNowCardView
           title="Energy now"
@@ -1510,7 +1519,7 @@ function RoomShot({ room }: { room: string }) {
             isEditMode={false}
           />
         </CardSlot>
-        <CardSlot size="medium">
+        <DemoLazyCardSlot size="medium" deferUntilVisible={false}>
           <CalendarCard
             id="calendar.kitchen"
             name="Family Calendar"
@@ -1520,7 +1529,7 @@ function RoomShot({ room }: { room: string }) {
             size="medium"
             onSizeChange={noopCardSizeChange}
           />
-        </CardSlot>
+        </DemoLazyCardSlot>
       </DashboardGrid>
     );
   }
