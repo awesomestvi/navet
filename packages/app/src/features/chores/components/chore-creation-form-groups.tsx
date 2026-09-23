@@ -397,6 +397,7 @@ export function ChoreCreationFormGroups({
               invalid={!dueTimeValid}
               required
               type="time"
+              inputClassName="chore-schedule-native-input"
               value={dueTime}
               onChange={(event) => onDueTimeChange(event.target.value)}
             />
@@ -413,6 +414,7 @@ export function ChoreCreationFormGroups({
               invalid={!startDateValid}
               required
               type="date"
+              inputClassName="chore-schedule-native-input"
               value={startDate}
               onChange={(event) => onStartDateChange(event.target.value)}
             />
@@ -429,6 +431,7 @@ export function ChoreCreationFormGroups({
                 aria-label={t('household.choreDialog.endDate')}
                 invalid={!endDateValid}
                 type="date"
+                inputClassName="chore-schedule-native-input"
                 min={startDate}
                 value={endDate}
                 onChange={(event) => onEndDateChange(event.target.value)}
