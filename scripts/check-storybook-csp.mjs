@@ -37,8 +37,15 @@ for (const [route, htmlFile] of [
   if (route === '/' && !policy.includes("frame-src 'self'")) {
     throw new Error('Storybook manager CSP must allow its same-origin preview frame');
   }
-  if (route !== '/' && !policy.includes("frame-ancestors 'self'")) {
-    throw new Error('Storybook preview CSP must allow its same-origin manager');
+  const ancestorDirectives = policy
+    .split(';')
+    .map((directive) => directive.trim())
+    .filter((directive) => directive.startsWith('frame-ancestors '));
+  if (
+    route !== '/' &&
+    (ancestorDirectives.length !== 1 || ancestorDirectives[0] !== "frame-ancestors 'self'")
+  ) {
+    throw new Error('Storybook preview CSP must allow only its same-origin manager');
   }
 }
 
