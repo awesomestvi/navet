@@ -191,7 +191,7 @@ export const ClimateDashboard = memo(function ClimateDashboard({
   );
 
   return (
-    <div className="space-y-6 md:space-y-7" data-testid="climate-dashboard">
+    <div className="space-y-3 md:space-y-7" data-testid="climate-dashboard">
       <SummaryBarStack>
         <SummaryBar
           items={overview.summaryItems}
