@@ -1,0 +1,5 @@
+type: improved
+audiences:
+  - standalone
+  - home-assistant
+summary: Avoid duplicate Home dashboard collection work while editing sections.

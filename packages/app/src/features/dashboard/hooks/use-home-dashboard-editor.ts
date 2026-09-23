@@ -2,7 +2,10 @@ import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import { useI18n } from '@navet/app/hooks';
 import type { DeviceWithType } from '@navet/app/types/device.types';
 import { useEffect, useMemo, useState } from 'react';
-import { buildSectionStacks } from '../components/home-dashboard-overview.shared';
+import {
+  buildHomeOverviewCardMap,
+  buildSectionStacks,
+} from '../components/home-dashboard-overview.shared';
 import type { CustomCard } from '../stores/custom-cards-store';
 import { moveSectionStack } from '../utils/layout-engine';
 import { useDashboardDragState } from './use-dashboard-drag-state';
@@ -48,12 +51,10 @@ export function useHomeDashboardEditor({
   const { t } = useI18n();
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
 
-  const allCards = useMemo(() => {
-    const cards = new Map<string, DeviceWithType | CustomCard>();
-    for (const [id, device] of deviceMap) cards.set(id, device);
-    for (const card of allCustomCards) cards.set(card.id, card);
-    return cards;
-  }, [allCustomCards, deviceMap]);
+  const allCards = useMemo(
+    () => buildHomeOverviewCardMap({ deviceMap, allCustomCards }),
+    [allCustomCards, deviceMap]
+  );
 
   const selectedIds = useMemo(
     () => homeLayout.cardIds.filter((id) => allCards.has(id)),
