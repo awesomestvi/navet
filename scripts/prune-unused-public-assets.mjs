@@ -16,6 +16,9 @@ const assetNames = [
   'pwa-maskable-192.png',
   'pwa-maskable-512.png',
 ];
+if (app === 'docs' || app === 'storybook') {
+  assetNames.push('navet-social-card.jpg');
+}
 const assetPaths = new Set(assetNames.map((name) => join(dist, name)));
 const resourceAttributes = /\b(?:href|src|srcset|content)\s*=\s*(["'])(.*?)\1/gi;
 const inlineResources = /<(?:script|style)\b[^>]*>([\s\S]*?)<\/(?:script|style)>/gi;
@@ -66,4 +69,4 @@ for (const name of assetNames) {
   rmSync(target);
 }
 
-console.log(`Removed ${removedBytes} unused PWA asset bytes from the ${app} build`);
+console.log(`Removed ${removedBytes} unreferenced public asset bytes from the ${app} build`);

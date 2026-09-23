@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "ASTRO_TELEMETRY_DISABLED=1 astro dev --host 127.0.0.1",
-    "build": "ASTRO_TELEMETRY_DISABLED=1 astro build && node ../../scripts/prune-duplicate-fonts.mjs docs && node ../../scripts/prune-unused-doc-wallpapers.mjs && node ../../scripts/prune-nonapp-pwa-assets.mjs docs && node ../../scripts/prune-public-source-files.mjs docs && node ../../scripts/optimize-docs-images.mjs && node scripts/write-deployment-assets.mjs && node ../../scripts/inject-cloudflare-web-analytics.mjs docs && node ../../scripts/check-docs-csp.mjs && node ../../scripts/prune-duplicate-doc-svgs.mjs",
+    "build": "ASTRO_TELEMETRY_DISABLED=1 astro build && node ../../scripts/prune-duplicate-fonts.mjs docs && node ../../scripts/prune-unused-doc-wallpapers.mjs && node ../../scripts/prune-unused-public-assets.mjs docs && node ../../scripts/prune-public-source-files.mjs docs && node ../../scripts/optimize-docs-images.mjs && node scripts/write-deployment-assets.mjs && node ../../scripts/inject-cloudflare-web-analytics.mjs docs && node ../../scripts/check-docs-csp.mjs && node ../../scripts/prune-duplicate-doc-svgs.mjs",
     "preview": "ASTRO_TELEMETRY_DISABLED=1 astro preview --host 127.0.0.1"
   },
   "devDependencies": {

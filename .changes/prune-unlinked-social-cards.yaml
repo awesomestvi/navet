@@ -1,0 +1,3 @@
+type: internal
+audiences: []
+summary: Omit unlinked social-card copies from the docs and Storybook distributions.
