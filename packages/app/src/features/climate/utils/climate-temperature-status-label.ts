@@ -6,7 +6,8 @@ export function getClimateTemperatureStatusLabel(
   currentTemp: string | number,
   visualMode?: string,
   comparisonTargetTemp = Number(targetTemp),
-  comparisonCurrentTemp = Number(currentTemp)
+  comparisonCurrentTemp = Number(currentTemp),
+  hasTargetTemperature = true
 ) {
   if (visualMode === 'cool') {
     return t('climate.coolingDownTo', { temp: targetTemp });
@@ -17,11 +18,11 @@ export function getClimateTemperatureStatusLabel(
   }
 
   if (visualMode === 'idle') {
-    return `${t('climate.idle')} · ${targetTemp}`;
+    return hasTargetTemperature ? `${t('climate.idle')} · ${targetTemp}` : t('climate.idle');
   }
 
   if (visualMode === 'off') {
-    return `${t('common.off')} · ${targetTemp}`;
+    return hasTargetTemperature ? `${t('common.off')} · ${targetTemp}` : t('common.off');
   }
 
   return comparisonTargetTemp < comparisonCurrentTemp

@@ -21,6 +21,15 @@ describe('getClimateTemperatureStatusLabel', () => {
     expect(getClimateTemperatureStatusLabel(t, '24°C', '25.7°C', 'off')).toBe('common.off · 24°C');
   });
 
+  it('shows only the status when an idle or off climate device has no target', () => {
+    expect(getClimateTemperatureStatusLabel(t, '21°C', '20°C', 'idle', 21, 20, false)).toBe(
+      'climate.idle'
+    );
+    expect(getClimateTemperatureStatusLabel(t, '21°C', '20°C', 'off', 21, 20, false)).toBe(
+      'common.off'
+    );
+  });
+
   it('falls back to target and current temperature comparison for unknown visual mode', () => {
     expect(getClimateTemperatureStatusLabel(t, 18, 21, 'auto')).toBe('climate.coolingDownTo:18');
     expect(getClimateTemperatureStatusLabel(t, 22, 20, 'auto')).toBe('climate.heatingTo:22');

@@ -63,7 +63,8 @@ export const ClimateCard = memo(function ClimateCard({
     controller.formatTemperature(controller.currentTemp),
     controller.visualMode,
     controller.targetTemp,
-    controller.currentTemp
+    controller.currentTemp,
+    controller.hasTargetTemperature
   );
   const tone =
     !controller.isOn || controller.visualMode === 'idle'
