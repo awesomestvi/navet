@@ -1995,7 +1995,10 @@ export function MediaDashboard({
             <div
               data-testid="media-dashboard-layout"
               className="grid w-full gap-3 lg:gap-4"
-              style={{ gridTemplateColumns: dashboardGridStyle.gridTemplateColumns }}
+              style={{
+                gap: dashboardGridStyle.gap,
+                gridTemplateColumns: dashboardGridStyle.gridTemplateColumns,
+              }}
             >
               <section
                 className={`order-1 min-w-0 space-y-4 ${hasActiveMediaSession ? 'max-[899px]:sticky max-[899px]:top-2 max-[899px]:z-20' : ''}`}
