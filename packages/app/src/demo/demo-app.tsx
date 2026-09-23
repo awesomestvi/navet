@@ -63,8 +63,11 @@ import {
   lazy,
   type ReactNode,
   type Ref,
+  type RefObject,
   Suspense,
   useEffect,
+  useLayoutEffect,
+  useRef,
   useState,
 } from 'react';
 import type { CameraDevice, DeviceWithType, LockDevice, SensorDevice } from '../types/device.types';
@@ -1052,20 +1055,58 @@ function DemoLazyCardSlot({
   size,
   children,
   deferUntilVisible = true,
+  keyboardLabel,
 }: {
   size: CardSize;
   children: ReactNode;
   deferUntilVisible?: boolean;
+  keyboardLabel?: string;
 }) {
   const { ref, isVisible } = useDeferredVisibility<HTMLDivElement>({
     disabled: !deferUntilVisible,
     rootMargin: '400px 0px',
   });
+  const [keyboardRequested, setKeyboardRequested] = useState(false);
+  const shouldTransferFocus = useRef(false);
+  const shouldRender = isVisible || keyboardRequested;
 
   return (
     <CardSlot size={size} viewportRef={ref}>
-      {isVisible ? (
-        <Suspense fallback={<LoadingSpinner />}>{children}</Suspense>
+      {shouldRender ? (
+        <Suspense
+          fallback={
+            keyboardLabel ? (
+              <DeferredCardLoadingButton
+                label={keyboardLabel}
+                shouldTransferFocus={shouldTransferFocus}
+              />
+            ) : (
+              <LoadingSpinner />
+            )
+          }
+        >
+          {keyboardLabel ? (
+            <FocusDeferredCardControl shouldFocus={shouldTransferFocus}>
+              {children}
+            </FocusDeferredCardControl>
+          ) : (
+            children
+          )}
+        </Suspense>
+      ) : keyboardLabel ? (
+        <button
+          type="button"
+          aria-label={keyboardLabel}
+          className="h-full w-full rounded-2xl focus-visible:outline-2 focus-visible:outline-orange-500"
+          onFocus={() => {
+            shouldTransferFocus.current = true;
+            setKeyboardRequested(true);
+          }}
+          onClick={() => {
+            shouldTransferFocus.current = true;
+            setKeyboardRequested(true);
+          }}
+        />
       ) : (
         <div aria-hidden="true" />
       )}
@@ -1073,9 +1114,65 @@ function DemoLazyCardSlot({
   );
 }
 
+function DeferredCardLoadingButton({
+  label,
+  shouldTransferFocus,
+}: {
+  label: string;
+  shouldTransferFocus: RefObject<boolean>;
+}) {
+  const ref = useRef<HTMLButtonElement>(null);
+  useLayoutEffect(() => {
+    if (shouldTransferFocus.current) ref.current?.focus();
+  }, [shouldTransferFocus]);
+
+  return (
+    <button
+      ref={ref}
+      type="button"
+      aria-label={label}
+      aria-busy="true"
+      className="flex h-full w-full items-center justify-center rounded-2xl focus-visible:outline-2 focus-visible:outline-orange-500"
+      onFocus={() => {
+        shouldTransferFocus.current = true;
+      }}
+      onBlur={() => {
+        shouldTransferFocus.current = false;
+      }}
+    >
+      <LoadingSpinner />
+    </button>
+  );
+}
+
+function FocusDeferredCardControl({
+  children,
+  shouldFocus,
+}: {
+  children: ReactNode;
+  shouldFocus: RefObject<boolean>;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (!shouldFocus.current) return;
+    ref.current
+      ?.querySelector<HTMLElement>(
+        'button:not(:disabled), a[href], input:not(:disabled), [role="button"][tabindex], [tabindex="0"]'
+      )
+      ?.focus();
+    shouldFocus.current = false;
+  }, [shouldFocus]);
+
+  return (
+    <div ref={ref} className="h-full [&>*]:h-full">
+      {children}
+    </div>
+  );
+}
+
 function DemoVacuumCard() {
   return (
-    <DemoLazyCardSlot size="medium">
+    <DemoLazyCardSlot size="medium" keyboardLabel="Downstairs Vacuum">
       <VacuumCard
         id="vacuum.downstairs"
         name="Downstairs Vacuum"
@@ -1104,7 +1201,11 @@ function DemoWeatherCard({
   deferUntilVisible?: boolean;
 }) {
   return (
-    <DemoLazyCardSlot size={size} deferUntilVisible={deferUntilVisible}>
+    <DemoLazyCardSlot
+      size={size}
+      deferUntilVisible={deferUntilVisible}
+      keyboardLabel={`Weather in ${location}`}
+    >
       <WeatherCard
         id={id}
         location={location}
@@ -1302,7 +1403,7 @@ function ProductGrid({ addedWidgets }: { addedWidgets: CustomCard[] }) {
         />
       </CardSlot>
       <DemoWeatherCard id="weather.home" location="Stockholm" size="large" deferUntilVisible />
-      <DemoLazyCardSlot size="large">
+      <DemoLazyCardSlot size="large" keyboardLabel="Family Calendar">
         <CalendarCard
           id="calendar.home"
           name="Family Calendar"
@@ -1522,7 +1623,7 @@ function RoomShot({ room }: { room: string }) {
             isEditMode={false}
           />
         </CardSlot>
-        <DemoLazyCardSlot size="medium" deferUntilVisible={false}>
+        <DemoLazyCardSlot size="medium" deferUntilVisible={false} keyboardLabel="Family Calendar">
           <CalendarCard
             id="calendar.kitchen"
             name="Family Calendar"

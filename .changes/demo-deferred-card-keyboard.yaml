@@ -1,0 +1,3 @@
+type: internal
+audiences: []
+summary: Keep deferred demo card controls reachable by keyboard while their code loads.
