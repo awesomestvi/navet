@@ -216,7 +216,7 @@ export const CardDialogHeader = memo(function CardDialogHeader({
           )}
         >
           <Dialog.Title asChild>
-            <div
+            <h2
               className={cn(
                 navetTypographyTokens.sectionHeading,
                 'min-w-0',
@@ -251,7 +251,7 @@ export const CardDialogHeader = memo(function CardDialogHeader({
               ) : (
                 displayTitle
               )}
-            </div>
+            </h2>
           </Dialog.Title>
           {canEditTitle ? (
             isEditingTitle ? (

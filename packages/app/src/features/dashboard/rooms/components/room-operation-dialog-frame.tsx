@@ -39,6 +39,7 @@ export function RoomOperationDialogFrame({
   return (
     <BaseCardDialog
       variant="modal"
+      titleInContent
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       title={title}

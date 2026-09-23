@@ -32,6 +32,7 @@ export const SensorSettingsDialog = memo(function SensorSettingsDialog({
   return (
     <BaseCardDialog
       variant="modal"
+      titleInContent
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       title={name}

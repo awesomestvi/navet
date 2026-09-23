@@ -201,6 +201,7 @@ export function AddEntityDialogView({
   return (
     <BaseCardDialog
       variant="fullscreen"
+      titleInContent
       isOpen={open}
       onOpenChange={(nextOpen) => {
         if (!nextOpen) {

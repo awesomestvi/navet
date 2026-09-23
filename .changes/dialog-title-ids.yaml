@@ -1,0 +1,5 @@
+type: fixed
+audiences:
+  - standalone
+  - home-assistant
+summary: Give dashboard dialogs one accessible title and a semantic visible heading.

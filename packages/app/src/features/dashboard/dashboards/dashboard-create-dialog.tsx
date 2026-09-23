@@ -253,6 +253,7 @@ function DashboardCreateForm({ isOpen, onOpenChange, onCreated }: DashboardCreat
   return (
     <BaseCardDialog
       variant="fullscreen"
+      titleInContent
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       title={t('dashboard.multiple.create.title')}

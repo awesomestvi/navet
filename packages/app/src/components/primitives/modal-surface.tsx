@@ -11,6 +11,7 @@ export interface ModalSurfaceProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
+  titleInContent?: boolean;
   description?: string;
   children: ReactNode;
   contentClassName?: string;
@@ -30,6 +31,7 @@ export function ModalSurface({
   isOpen,
   onOpenChange,
   title,
+  titleInContent = false,
   description,
   children,
   contentClassName,
@@ -52,6 +54,7 @@ export function ModalSurface({
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       title={title}
+      titleInContent={titleInContent}
       description={description}
       theme={theme}
       overlayClassName={overlayClassName}

@@ -223,6 +223,7 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
   return (
     <ModalSurface
       isOpen={isOpen}
+      titleInContent
       onOpenChange={(open) => {
         if (!open) {
           onClose();

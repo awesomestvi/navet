@@ -992,6 +992,7 @@ export function SecurityPanelCard({
 
       <BaseCardDialog
         variant="modal"
+        titleInContent
         isOpen={moreActionsOpen}
         onOpenChange={setMoreActionsOpen}
         title={t('security.alarm.controls')}
@@ -1016,6 +1017,7 @@ export function SecurityPanelCard({
 
       <BaseCardDialog
         variant="modal"
+        titleInContent
         isOpen={codeDialogOpen}
         onOpenChange={(open) => {
           if (!open) {

@@ -1089,6 +1089,7 @@ export function ChoreOnboardingDialog({
     <Fragment key="chore-onboarding-dialog">
       <BaseCardDialog
         variant="fullscreen"
+        titleInContent
         isOpen={isOpen}
         onOpenChange={onOpenChange}
         title={t('household.setup.dialogTitle')}

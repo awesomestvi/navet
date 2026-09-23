@@ -48,6 +48,8 @@ interface BaseCardDialogSharedProps {
   onOpenChange: (open: boolean) => void;
   title: string;
   description?: string;
+  /** The dialog content renders its own Radix title, such as CardDialogHeader. */
+  titleInContent?: boolean;
   theme: ThemeType;
   overlayClassName?: string;
   contentClassName?: string;
@@ -714,6 +716,7 @@ function BaseCardDialogModalVariant({
   children,
   contentTitle,
   contentDescription,
+  titleInContent = false,
   bodyPadding = true,
   mobileCoverSheet = false,
   persistentMobileDismiss = false,
@@ -727,7 +730,7 @@ function BaseCardDialogModalVariant({
       onOpenChange={onOpenChange}
       disableOpenAutoFocus={disableOpenAutoFocus}
       overlayClassName={overlayClassName ?? surface.dialogBackdrop}
-      contentTitle={contentTitle ?? title}
+      contentTitle={titleInContent ? undefined : (contentTitle ?? title)}
       contentDescription={contentDescription ?? description}
       contentClassName={cn(
         settingsDialogContentClass(surface, {
@@ -777,6 +780,7 @@ function BaseCardDialogSheetVariant({
   accentColor,
   contentTitle,
   contentDescription,
+  titleInContent = false,
   persistentMobileDismiss = true,
   closeLabel,
 }: BaseCardDialogSheetProps) {
@@ -793,7 +797,7 @@ function BaseCardDialogSheetVariant({
     <BaseCardDialogRoot
       isOpen={isOpen}
       onOpenChange={onOpenChange}
-      contentTitle={contentTitle ?? title}
+      contentTitle={titleInContent ? undefined : (contentTitle ?? title)}
       contentDescription={contentDescription ?? description}
       overlayClassName={overlayClassName ?? 'animate-in fade-in bg-black/55 backdrop-blur-sm'}
       contentClassName={cn(
@@ -834,6 +838,7 @@ function BaseCardDialogFullscreenVariant({
   children,
   contentTitle,
   contentDescription,
+  titleInContent = false,
   mobileCoverSheet = true,
   persistentMobileDismiss = true,
 }: BaseCardDialogFullscreenProps) {
@@ -847,7 +852,7 @@ function BaseCardDialogFullscreenVariant({
       mobileCoverSheet={mobileCoverSheet}
       persistentMobileDismiss={persistentMobileDismiss}
       overlayClassName={overlayClassName ?? `animate-in fade-in ${surface.dialogBackdrop}`}
-      contentTitle={contentTitle ?? title}
+      contentTitle={titleInContent ? undefined : (contentTitle ?? title)}
       contentDescription={contentDescription ?? description}
       contentClassName={cn(
         'fixed inset-3 z-50 overflow-hidden rounded-[28px] border border-white/10 shadow-2xl outline-none animate-in fade-in zoom-in-95 duration-200 md:inset-8',
