@@ -9,6 +9,7 @@ const rules = headers.split(/\r?\n\r?\n/);
 
 for (const [route, htmlFile] of [
   ['/', 'index.html'],
+  ['/iframe', 'iframe.html'],
   ['/iframe.html', 'iframe.html'],
 ]) {
   const rule = rules.find((block) => block.startsWith(`${route}\n`));
@@ -36,7 +37,7 @@ for (const [route, htmlFile] of [
   if (route === '/' && !policy.includes("frame-src 'self'")) {
     throw new Error('Storybook manager CSP must allow its same-origin preview frame');
   }
-  if (route === '/iframe.html' && !policy.includes("frame-ancestors 'self'")) {
+  if (route !== '/' && !policy.includes("frame-ancestors 'self'")) {
     throw new Error('Storybook preview CSP must allow its same-origin manager');
   }
 }

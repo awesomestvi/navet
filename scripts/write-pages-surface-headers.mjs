@@ -49,10 +49,13 @@ if (surface === 'storybook') {
 
   const iframePolicy = rootRule.match(/^  Content-Security-Policy: .+$/m)?.[0];
   if (!iframePolicy) throw new Error('Could not find the Storybook preview CSP policy');
-  iframeRule = `\n\n/iframe.html\n${iframePolicy
+  const previewPolicy = iframePolicy
     .replace("frame-ancestors 'none'", "frame-ancestors 'self'")
     .replace("script-src 'self' ", `script-src 'self' ${previewHashes.join(' ')} `)
-    .replace('frame-src ', "frame-src 'self' ")}`;
+    .replace('frame-src ', "frame-src 'self' ");
+  iframeRule = ['/iframe', '/iframe.html']
+    .map((route) => `\n\n${route}\n${previewPolicy}`)
+    .join('');
 }
 
 if (surface === 'demo') {
