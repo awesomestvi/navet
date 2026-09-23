@@ -1,4 +1,3 @@
-type: improved
-audiences:
-  - website
+type: internal
+audiences: []
 summary: Ship smaller fallback images for the dashboard previews on the website.
