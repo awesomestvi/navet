@@ -1,0 +1,3 @@
+type: internal
+audiences: []
+summary: Remove unused website media assets and keep the marketing skip link independent of app language loading.

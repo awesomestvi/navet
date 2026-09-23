@@ -117,7 +117,7 @@ export function DashboardPage() {
   if (!isDashboardReady) {
     return page.connecting ? (
       <>
-        <SkipLink targetId="dashboard-main-content" />
+        <SkipLink targetId="dashboard-main-content" label={t('common.skipToMainContent')} />
         <main id="dashboard-main-content" tabIndex={-1} aria-busy="true">
           <LoadingSpinner message={t('dashboard.page.connectingHomeAssistant')} fullScreen />
         </main>
@@ -127,7 +127,7 @@ export function DashboardPage() {
 
   return (
     <>
-      <SkipLink targetId="dashboard-main-content" />
+      <SkipLink targetId="dashboard-main-content" label={t('common.skipToMainContent')} />
       <DashboardArrivalReveal
         open={
           page.activeSection === 'home' &&

@@ -7,6 +7,7 @@ const meta = {
   tags: ['autodocs'],
   args: {
     targetId: 'story-main-content',
+    label: 'Skip to main content',
   },
   parameters: {
     docs: {

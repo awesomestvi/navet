@@ -42,7 +42,7 @@ import {
 import { SensorCard } from '@navet/app/features/sensors/components/sensor-card';
 import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
 import { useDeferredVisibility } from '@navet/app/hooks/use-deferred-visibility';
-import { I18nProvider } from '@navet/app/i18n';
+import { I18nProvider, useI18n } from '@navet/app/i18n';
 import { integrationSessionRuntime } from '@navet/app/integration-session-runtime';
 import type { Section } from '@navet/app/navigation/sections';
 import {
@@ -1897,6 +1897,7 @@ function sanitizeDemoSection(value: unknown): DemoSection {
 }
 
 function DemoContent() {
+  const { t } = useI18n();
   const runtimeReady = useDemoDisplayDefaults();
   const authSession = useOptionalAuthSession();
   const [activeRoom, setActiveRoom] = useState<string>(ALL_ROOMS_ID);
@@ -1981,7 +1982,7 @@ function DemoContent() {
 
   return (
     <>
-      <SkipLink targetId="demo-main-content" />
+      <SkipLink targetId="demo-main-content" label={t('common.skipToMainContent')} />
       {section === 'home' && isEditMode ? (
         <HomeEditCommandBar
           canUndo={addedWidgets.length > 0}
