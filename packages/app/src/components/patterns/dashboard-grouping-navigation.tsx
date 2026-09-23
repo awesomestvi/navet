@@ -10,7 +10,7 @@ import {
 } from '@navet/app/components/ui/dropdown-menu';
 import { useTheme } from '@navet/app/hooks';
 import type { ThemeType } from '@navet/app/hooks/use-theme';
-import { ListFilter } from 'lucide-react';
+import { LayoutGrid } from 'lucide-react';
 
 export interface DashboardGroupingOption {
   id: string;
@@ -92,7 +92,7 @@ export function DashboardGroupingNavigation({
           <DropdownMenuTrigger asChild>
             <IconButton
               label={`${groupingLabel}: ${selectedMode.label}`}
-              icon={<ListFilter aria-hidden="true" className="h-4 w-4" />}
+              icon={<LayoutGrid aria-hidden="true" className="h-4 w-4" />}
               size="small"
               variant="secondary"
               className="shrink-0 rounded-full"
@@ -113,11 +113,6 @@ export function DashboardGroupingNavigation({
             </DropdownMenuRadioGroup>
           </DropdownMenuContent>
         </DropdownMenu>
-
-        <span
-          aria-hidden="true"
-          className={`mx-0.5 h-5 shrink-0 self-center border-l ${surface.border}`}
-        />
 
         <div role="tablist" aria-label={ariaLabel} className="flex gap-2">
           {items.map((item) => {
