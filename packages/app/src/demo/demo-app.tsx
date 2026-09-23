@@ -27,7 +27,6 @@ import { DashboardLayout } from '@navet/app/features/dashboard/shell';
 import type { CustomCard } from '@navet/app/features/dashboard/stores/custom-cards-store';
 import { FanCard } from '@navet/app/features/lighting/components/fan-card';
 import { LightCard } from '@navet/app/features/lighting/components/light-card';
-import { SwitchCard } from '@navet/app/features/lighting/components/switch-card';
 import { MediaCard } from '@navet/app/features/media/components/media-card';
 import { PersonCard } from '@navet/app/features/person/components/person-card';
 import { SceneCard } from '@navet/app/features/scenes/components/scene-card';
@@ -59,6 +58,7 @@ import type { NavetAlarmEntity } from '@navet/core/alarm-types';
 import { Fan, Lightbulb, ShieldCheck, Speaker, Zap } from 'lucide-react';
 import {
   Children,
+  type ComponentProps,
   type CSSProperties,
   lazy,
   type ReactNode,
@@ -115,6 +115,10 @@ const CameraCard = lazy(async () => {
 const EnergyNowCardView = lazy(async () => {
   const module = await import('@navet/app/features/energy/components/widgets/energy-now-card-view');
   return { default: module.EnergyNowCardView };
+});
+const SwitchCard = lazy(async () => {
+  const module = await import('@navet/app/features/lighting/components/switch-card');
+  return { default: module.SwitchCard };
 });
 const VacuumCard = lazy(async () => {
   const module = await import('@navet/app/features/vacuum/components/vacuum-card');
@@ -1189,6 +1193,21 @@ function DemoVacuumCard() {
   );
 }
 
+function DemoSwitchCard({
+  deferUntilVisible = false,
+  ...props
+}: ComponentProps<typeof SwitchCard> & { deferUntilVisible?: boolean }) {
+  return (
+    <DemoLazyCardSlot
+      size={props.size}
+      deferUntilVisible={deferUntilVisible}
+      keyboardLabel={props.name}
+    >
+      <SwitchCard {...props} />
+    </DemoLazyCardSlot>
+  );
+}
+
 function DemoWeatherCard({
   id,
   location,
@@ -1424,39 +1443,36 @@ function ProductGrid({ addedWidgets }: { addedWidgets: CustomCard[] }) {
           size="medium"
         />
       </DemoLazyCardSlot>
-      <CardSlot size="small">
-        <SwitchCard
-          id="switch.desk_power"
-          name="Desk power"
-          initialState
-          size="small"
-          isEditMode={false}
-        />
-      </CardSlot>
-      <CardSlot size="small">
-        <SwitchCard
-          id="input_boolean.guest_mode"
-          name="Guest mode"
-          initialState
-          entityType="helper"
-          serviceDomain="input_boolean"
-          serviceAction="toggle"
-          size="small"
-          isEditMode={false}
-        />
-      </CardSlot>
-      <CardSlot size="small">
-        <SwitchCard
-          id="script.goodnight"
-          name="Goodnight"
-          initialState={false}
-          entityType="script"
-          serviceDomain="script"
-          serviceAction="turn_on"
-          size="small"
-          isEditMode={false}
-        />
-      </CardSlot>
+      <DemoSwitchCard
+        id="switch.desk_power"
+        name="Desk power"
+        initialState
+        size="small"
+        isEditMode={false}
+        deferUntilVisible
+      />
+      <DemoSwitchCard
+        id="input_boolean.guest_mode"
+        name="Guest mode"
+        initialState
+        entityType="helper"
+        serviceDomain="input_boolean"
+        serviceAction="toggle"
+        size="small"
+        isEditMode={false}
+        deferUntilVisible
+      />
+      <DemoSwitchCard
+        id="script.goodnight"
+        name="Goodnight"
+        initialState={false}
+        entityType="script"
+        serviceDomain="script"
+        serviceAction="turn_on"
+        size="small"
+        isEditMode={false}
+        deferUntilVisible
+      />
       <CardSlot size="small">
         <SceneCard
           id="scene.movie_mode"
@@ -1610,19 +1626,17 @@ function RoomShot({ room }: { room: string }) {
             isEditMode={false}
           />
         </CardSlot>
-        <CardSlot size="small">
-          <SwitchCard
-            id="switch.espresso"
-            name="Espresso"
-            initialState
-            entityType="switch"
-            serviceDomain="switch"
-            serviceAction="toggle"
-            power={1140}
-            size="small"
-            isEditMode={false}
-          />
-        </CardSlot>
+        <DemoSwitchCard
+          id="switch.espresso"
+          name="Espresso"
+          initialState
+          entityType="switch"
+          serviceDomain="switch"
+          serviceAction="toggle"
+          power={1140}
+          size="small"
+          isEditMode={false}
+        />
         <DemoLazyCardSlot size="medium" deferUntilVisible={false} keyboardLabel="Family Calendar">
           <CalendarCard
             id="calendar.kitchen"
@@ -1776,15 +1790,13 @@ function RoomShot({ room }: { room: string }) {
         <CardSlot size="small">
           <LockCard id="lock.front_door_room" name="Front Door" initialState size="small" />
         </CardSlot>
-        <CardSlot size="small">
-          <SwitchCard
-            id="switch.porch_lights"
-            name="Porch lights"
-            initialState
-            size="small"
-            isEditMode={false}
-          />
-        </CardSlot>
+        <DemoSwitchCard
+          id="switch.porch_lights"
+          name="Porch lights"
+          initialState
+          size="small"
+          isEditMode={false}
+        />
         <DemoWeatherCard id="weather.outside_room" location="Home" size="medium" />
       </DashboardGrid>
     );
@@ -1819,15 +1831,13 @@ function RoomShot({ room }: { room: string }) {
           isEditMode={false}
         />
       </CardSlot>
-      <CardSlot size="small">
-        <SwitchCard
-          id={`switch.${roomSlug}_power`}
-          name="Power"
-          initialState={room !== 'Unassigned'}
-          size="small"
-          isEditMode={false}
-        />
-      </CardSlot>
+      <DemoSwitchCard
+        id={`switch.${roomSlug}_power`}
+        name="Power"
+        initialState={room !== 'Unassigned'}
+        size="small"
+        isEditMode={false}
+      />
     </DashboardGrid>
   );
 }
