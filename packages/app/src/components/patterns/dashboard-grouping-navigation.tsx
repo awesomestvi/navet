@@ -1,3 +1,4 @@
+import { IconButton } from '@navet/app/components/primitives/icon-button';
 import { InteractivePill } from '@navet/app/components/primitives/interactive-pill';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import {
@@ -9,7 +10,7 @@ import {
 } from '@navet/app/components/ui/dropdown-menu';
 import { useTheme } from '@navet/app/hooks';
 import type { ThemeType } from '@navet/app/hooks/use-theme';
-import { ChevronDown } from 'lucide-react';
+import { ListFilter } from 'lucide-react';
 
 export interface DashboardGroupingOption {
   id: string;
@@ -89,20 +90,13 @@ export function DashboardGroupingNavigation({
       <div className="flex w-max min-w-full flex-nowrap gap-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <InteractivePill
-              aria-label={`${groupingLabel}: ${selectedMode.label}`}
-              size="compact"
-              intent="navigation"
-              variant="ghost"
-              className={`shrink-0 gap-1 whitespace-nowrap rounded-[22px] border sm:gap-2 sm:px-3.5 sm:font-medium ${getGroupingPillClassName(
-                false,
-                theme,
-                surface
-              )}`}
-            >
-              <span>{selectedMode.label}</span>
-              <ChevronDown aria-hidden="true" className="h-3.5 w-3.5" />
-            </InteractivePill>
+            <IconButton
+              label={`${groupingLabel}: ${selectedMode.label}`}
+              icon={<ListFilter aria-hidden="true" className="h-4 w-4" />}
+              size="small"
+              variant="secondary"
+              className="shrink-0 rounded-full"
+            />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" sideOffset={8}>
             <DropdownMenuRadioGroup

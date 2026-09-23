@@ -242,7 +242,7 @@ describe('ClimateDashboard', () => {
     ]);
 
     const groupingTrigger = screen.getByRole('button', { name: 'Group cards by: Type' });
-    expect(groupingTrigger).toHaveTextContent('Type');
+    expect(groupingTrigger).not.toHaveTextContent('Type');
     expect(screen.getByTestId('device-grid')).toHaveTextContent('climate.living_room');
 
     const airQualityTab = screen.getByRole('tab', { name: 'Air Quality' });
@@ -252,7 +252,7 @@ describe('ClimateDashboard', () => {
 
     fireEvent.pointerDown(groupingTrigger, { button: 0, ctrlKey: false });
     fireEvent.click(screen.getByRole('menuitemradio', { name: 'Room' }));
-    expect(groupingTrigger).toHaveTextContent('Room');
+    expect(groupingTrigger).toHaveAccessibleName('Group cards by: Room');
     fireEvent.click(screen.getByRole('tab', { name: /Office/ }));
     expect(screen.getByTestId('device-grid')).toHaveTextContent('sensor.office_air_quality');
     expect(screen.getByTestId('device-grid')).not.toHaveTextContent('sensor.living_temperature');
