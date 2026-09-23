@@ -13,7 +13,7 @@ import {
 } from './alert-dialog';
 
 describe('AlertDialog', () => {
-  it('uses phone cover-sheet geometry while retaining the desktop modal breakpoint', () => {
+  it('centers a compact alert at every viewport and keeps the safe action first', () => {
     renderWithProviders(
       <AlertDialog open>
         <AlertDialogContent>
@@ -30,19 +30,18 @@ describe('AlertDialog', () => {
     );
 
     const dialog = screen.getByRole('alertdialog', { name: 'Reset dashboard?' });
-    expect(dialog).toHaveClass(
-      'right-0',
-      'bottom-0',
-      'left-0',
-      'rounded-t-[30px]',
-      'rounded-b-none'
-    );
-    expect(dialog).toHaveClass('sm:top-[50%]', 'sm:left-[50%]', 'sm:rounded-[32px]');
-    expect(dialog.querySelector('[aria-hidden="true"]')).toHaveClass('sm:hidden');
+    expect(dialog).toHaveClass('top-1/2', 'left-1/2', 'max-w-lg', 'rounded-[30px]');
+    expect(dialog).not.toHaveClass('bottom-0', 'rounded-b-none');
+    expect(dialog.querySelector('.h-1.w-16')).toBeNull();
     const footer = dialog.querySelector('[data-slot="alert-dialog-footer"]');
     expect(footer).toHaveClass('flex-nowrap', 'items-center', 'justify-end');
-    expect(footer).not.toHaveClass('flex-col-reverse');
-    expect(screen.getByRole('button', { name: 'Cancel' })).toHaveClass('h-10');
-    expect(screen.getByRole('button', { name: 'Reset' })).toHaveClass('h-10');
+    expect(screen.getByRole('button', { name: 'Cancel' })).toHaveClass('h-10', 'rounded-full');
+    expect(screen.getByRole('button', { name: 'Reset' })).toHaveClass('h-10', 'rounded-full');
+    expect(
+      screen
+        .getByRole('button', { name: 'Cancel' })
+        .compareDocumentPosition(screen.getByRole('button', { name: 'Reset' })) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
   });
 });
