@@ -1,12 +1,9 @@
-import {
-  isEmojiLightIcon,
-  normalizeLightIconName,
-  resolveLightIconComponent,
-} from '@navet/app/constants/icon-map';
+import { resolveCardIconAppearance } from '@navet/app/components/shared/card-icon-appearance';
+import { resolveLightIconComponent } from '@navet/app/constants/icon-map';
 import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import { storage } from '@navet/app/utils/storage';
 import type { LucideIcon } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface UseSwitchCardAppearanceParams {
   id: string;
@@ -72,20 +69,8 @@ export function useSwitchCardAppearance({
     storage.set(tintStorageKey, tintColor);
   }, [tintColor, tintStorageKey]);
 
-  const normalizedSelectedIcon = normalizeLightIconName(selectedIcon);
-  const customIconComponent = normalizedSelectedIcon
-    ? resolveLightIconComponent(normalizedSelectedIcon)
-    : null;
-  const headerIconText =
-    !customIconComponent && isEmojiLightIcon(selectedIcon) ? selectedIcon.trim() : null;
-  const HeaderIconComponent = useMemo(
-    () =>
-      headerIconText
-        ? null
-        : ((customIconComponent ??
-            resolveLightIconComponent(defaultIconName)) as LucideIcon | null),
-    [customIconComponent, defaultIconName, headerIconText]
-  );
+  const { iconComponent: HeaderIconComponent, iconText: headerIconText } =
+    resolveCardIconAppearance(selectedIcon, resolveLightIconComponent(defaultIconName));
 
   const setSelectedIcon = (iconName: string) => {
     setSelectedIconState(iconName.trim() || defaultIconName);
