@@ -30,7 +30,14 @@ describe('AlertDialog', () => {
     );
 
     const dialog = screen.getByRole('alertdialog', { name: 'Reset dashboard?' });
-    expect(dialog).toHaveClass('top-1/2', 'left-1/2', 'max-w-lg', 'rounded-[30px]');
+    expect(dialog).toHaveClass(
+      'top-1/2',
+      'left-1/2',
+      '-translate-x-1/2',
+      '-translate-y-1/2',
+      'max-w-lg',
+      'rounded-[30px]'
+    );
     expect(dialog).not.toHaveClass('bottom-0', 'rounded-b-none');
     expect(dialog.querySelector('.h-1.w-16')).toBeNull();
     const footer = dialog.querySelector('[data-slot="alert-dialog-footer"]');
