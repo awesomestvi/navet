@@ -90,7 +90,8 @@ function normalizeBundleReference(
 
 /**
  * Returns the version-atomic startup graph: entry chunks, their recursive static imports,
- * entry-referenced assets, and CSS. Dynamic imports intentionally remain runtime-cached.
+ * entry-referenced assets, and CSS imported by that graph. Dynamic imports and their CSS
+ * intentionally remain runtime-cached.
  */
 export function collectViteAppShellBundleFiles(bundle: ViteOutputBundle) {
   const shellFiles = new Set<string>();
@@ -126,9 +127,6 @@ export function collectViteAppShellBundleFiles(bundle: ViteOutputBundle) {
   for (const output of Object.values(bundle)) {
     if (output.type === 'chunk' && output.isEntry) {
       visitChunk(output.fileName);
-    }
-    if (output.type === 'asset' && output.fileName.endsWith('.css')) {
-      shellFiles.add(output.fileName);
     }
   }
 

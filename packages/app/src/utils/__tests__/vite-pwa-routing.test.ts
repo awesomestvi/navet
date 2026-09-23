@@ -76,10 +76,17 @@ describe('Vite PWA cache policy', () => {
         dynamicImports: [],
         isEntry: false,
         referencedFiles: [],
+        viteMetadata: {
+          importedCss: new Set(['assets/map-widget-live.css']),
+        },
       },
       'assets/index.css': {
         type: 'asset',
         fileName: 'assets/index.css',
+      },
+      'assets/map-widget-live.css': {
+        type: 'asset',
+        fileName: 'assets/map-widget-live.css',
       },
       'assets/homey.svg': {
         type: 'asset',
@@ -143,6 +150,7 @@ describe('Vite PWA cache policy', () => {
       });
 
     expect(matches('/assets/authenticated-app-a1b2c3.js')).toBe(true);
+    expect(matches('/assets/vendor~map-widget-live-a1b2c3.css')).toBe(true);
     expect(matches('/wall/assets/dashboard-a1b2c3.css')).toBe(true);
     expect(matches('/assets/homey-a1b2c3.svg')).toBe(true);
     expect(matches('/assets/inter-latin-wght-normal-a1b2c3.woff2')).toBe(true);
