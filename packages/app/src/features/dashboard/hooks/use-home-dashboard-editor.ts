@@ -4,6 +4,7 @@ import type { DeviceWithType } from '@navet/app/types/device.types';
 import { useEffect, useMemo, useState } from 'react';
 import {
   buildHomeOverviewCardMap,
+  buildHomeOverviewTopology,
   buildSectionStacks,
 } from '../components/home-dashboard-overview.shared';
 import type { CustomCard } from '../stores/custom-cards-store';
@@ -56,43 +57,15 @@ export function useHomeDashboardEditor({
     [allCustomCards, deviceMap]
   );
 
-  const selectedIds = useMemo(
-    () => homeLayout.cardIds.filter((id) => allCards.has(id)),
-    [allCards, homeLayout.cardIds]
-  );
-
-  const sectionIds = useMemo(
-    () => new Set(homeLayout.sections.map((s) => s.id)),
-    [homeLayout.sections]
-  );
-
-  const cardsBySection = useMemo(() => {
-    const grouped = new Map<string, string[]>();
-
-    for (const id of selectedIds) {
-      const sectionId = homeLayout.cardSectionAssignments[id];
-      if (!sectionId || !sectionIds.has(sectionId)) {
-        continue;
-      }
-
-      const existing = grouped.get(sectionId);
-      if (existing) {
-        existing.push(id);
-      } else {
-        grouped.set(sectionId, [id]);
-      }
-    }
-
-    return grouped;
-  }, [homeLayout.cardSectionAssignments, sectionIds, selectedIds]);
-
-  const sectionCards = useMemo<HomeEditorSection[]>(
-    () =>
-      homeLayout.sections.map((section) => ({
-        ...section,
-        cardIds: cardsBySection.get(section.id) ?? [],
-      })),
-    [cardsBySection, homeLayout.sections]
+  const { flowCards, sectionCards, selectedCardCount } = useMemo(
+    () => buildHomeOverviewTopology({ availableCardIds: new Set(allCards.keys()), homeLayout }),
+    [
+      allCards,
+      homeLayout.cardIds,
+      homeLayout.cardSectionAssignments,
+      homeLayout.mode,
+      homeLayout.sections,
+    ]
   );
 
   useEffect(() => {
@@ -107,17 +80,6 @@ export function useHomeDashboardEditor({
       previous && sectionIdSet.has(previous) ? previous : firstSectionId
     );
   }, [homeLayout.mode, homeLayout.sections]);
-
-  const flowCards = useMemo(() => {
-    if (homeLayout.mode !== 'sectioned') {
-      return selectedIds;
-    }
-
-    return selectedIds.filter((id) => {
-      const assignedSectionId = homeLayout.cardSectionAssignments[id];
-      return !assignedSectionId || !sectionIds.has(assignedSectionId);
-    });
-  }, [homeLayout.cardSectionAssignments, homeLayout.mode, sectionIds, selectedIds]);
 
   const sectionToColumnId = useMemo(() => {
     const mappings: Record<string, string> = {};
@@ -161,11 +123,11 @@ export function useHomeDashboardEditor({
 
   const summaryItems = useMemo(
     () => [
-      { label: t('dashboard.homePersonal.stats.cards'), value: selectedIds.length },
+      { label: t('dashboard.homePersonal.stats.cards'), value: selectedCardCount },
       { label: t('dashboard.homePersonal.stats.widgets'), value: allCustomCards.length },
       { label: t('dashboard.homePersonal.stats.hidden'), value: hiddenEntityCount },
     ],
-    [allCustomCards.length, hiddenEntityCount, selectedIds.length, t]
+    [allCustomCards.length, hiddenEntityCount, selectedCardCount, t]
   );
 
   return {
