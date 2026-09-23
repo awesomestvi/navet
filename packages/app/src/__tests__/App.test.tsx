@@ -460,6 +460,7 @@ describe('App Home Assistant connection recovery', () => {
     });
 
     expect(screen.getByText('Starting your dashboard...')).toBeInTheDocument();
+    expect(screen.getByRole('main')).toHaveAttribute('aria-busy', 'true');
     expect(screen.queryByRole('button', { name: 'Back to login' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /retry/i })).not.toBeInTheDocument();
     expect(screen.queryByText('login')).not.toBeInTheDocument();
@@ -471,6 +472,7 @@ describe('App Home Assistant connection recovery', () => {
 
     expect(screen.queryByText('login')).not.toBeInTheDocument();
     expect(screen.getByText('Starting your dashboard...')).toBeInTheDocument();
+    expect(screen.getByRole('main')).toHaveAttribute('aria-busy', 'false');
     expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Back to login' })).toBeInTheDocument();
   });
