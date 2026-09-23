@@ -1,0 +1,3 @@
+type: internal
+audiences: []
+summary: Reuse the existing smaller media artwork in Storybook card and dashboard stories.

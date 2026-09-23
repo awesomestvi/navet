@@ -1,4 +1,4 @@
-import artworksOriginal from '@assets/reference/media/artworks-original.jpg';
+import artworksOriginal from '@assets/reference/media/artworks-original.avif';
 import { MediaCard } from '@navet/app/features/media';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import { EntityCardStoryFrame, noopCardSizeChange } from '@navet/app/storybook/story-frames';

@@ -1,4 +1,4 @@
-import artworksOriginal from '@assets/reference/media/artworks-original.jpg';
+import artworksOriginal from '@assets/reference/media/artworks-original.avif';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import {
   getMediaPlayerCapabilities,
