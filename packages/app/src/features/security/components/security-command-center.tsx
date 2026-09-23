@@ -732,7 +732,6 @@ function ActivityPanel({
   return (
     <BaseCard
       size="large"
-      aria-label={t('security.activity.title')}
       title={t('security.activity.title')}
       subtitle={
         lastUpdatedAt
@@ -753,6 +752,7 @@ function ActivityPanel({
           className="h-[21rem] md:h-96"
           viewportClassName="touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch]"
           viewportProps={{
+            role: 'region',
             'aria-label': t('security.activity.title'),
             'data-testid': 'security-activity-scroll',
             tabIndex: 0,

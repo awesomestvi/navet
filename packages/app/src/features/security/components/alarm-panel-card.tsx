@@ -801,6 +801,7 @@ export function SecurityPanelCard({
         <BaseCard
           size="large"
           fullBleed
+          role="group"
           aria-label={t('security.alarm.controls')}
           className="h-auto"
           data-testid="security-alarm-compact"

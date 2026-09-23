@@ -1,0 +1,5 @@
+type: improved
+audiences:
+  - standalone
+  - home-assistant
+summary: Give Security controls and activity scrolling useful screen reader roles while keeping media sliders correctly named.
