@@ -58,11 +58,9 @@ criteria. It must ask for missing reproduction information instead of speculatin
 - Forbidden: silently patch the implementation, approve product taste, or treat implementation
   agent explanations as proof.
 
-Run deterministic validation before pushing, then open a non-draft PR. CodeRabbit reviews the PR
-while CI runs and can leave its findings as review comments. Do not run the CodeRabbit CLI at
-commit time or as a pre-push task. Verify each finding against the current PR head, fix valid
-issues, and review the updated PR until no actionable findings remain. CodeRabbit availability
-does not block commits or pushes; the PR review is advisory and the maintainer decides when to merge.
+Run deterministic validation, then open a non-draft PR. CodeRabbit reviews the PR while CI runs
+and posts findings as review comments. Verify each finding against the current PR head, fix valid
+issues, and continue until no actionable findings remain. The maintainer decides when to merge.
 
 ### Steward
 
