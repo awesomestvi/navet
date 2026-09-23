@@ -306,7 +306,7 @@ function HeaderView({
         </div>
       </div>
 
-      {isMobileViewport ? (
+      {isMobileViewport && isNotificationOpen ? (
         <NotificationPanel
           isOpen={isNotificationOpen}
           onClose={closeNotifications}
