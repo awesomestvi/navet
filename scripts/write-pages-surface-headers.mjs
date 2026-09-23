@@ -1,6 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { inlineScriptHashes } from './inline-script-csp.mjs';
 
 const surface = process.argv[2];
 const supportedSurfaces = new Set(['demo', 'storybook']);
@@ -22,9 +23,21 @@ if (rootRuleStart === -1 || rootRuleEnd === -1) {
 
 const rootRule = sharedHeaders.slice(rootRuleStart, rootRuleEnd);
 let surfaceRootRule = rootRule;
+let iframeRule = '';
 if (surface === 'storybook') {
+  const storybookDist = path.join(repoRoot, 'apps/storybook/dist');
+  const managerHashes = inlineScriptHashes(
+    await readFile(path.join(storybookDist, 'index.html'), 'utf8')
+  );
+  const previewHashes = inlineScriptHashes(
+    await readFile(path.join(storybookDist, 'iframe.html'), 'utf8')
+  );
+  if (managerHashes.length === 0 || previewHashes.length === 0) {
+    throw new Error('Expected Storybook manager and preview to contain inline boot scripts');
+  }
+
   const storybookDirectives = [
-    ["script-src 'self' ", "script-src 'self' 'unsafe-inline' "],
+    ["script-src 'self' ", `script-src 'self' ${managerHashes.join(' ')} `],
     ['frame-src ', "frame-src 'self' "],
   ];
   for (const [before, after] of storybookDirectives) {
@@ -33,6 +46,13 @@ if (surface === 'storybook') {
     }
     surfaceRootRule = surfaceRootRule.replace(before, after);
   }
+
+  const iframePolicy = rootRule.match(/^  Content-Security-Policy: .+$/m)?.[0];
+  if (!iframePolicy) throw new Error('Could not find the Storybook preview CSP policy');
+  iframeRule = `\n\n/iframe.html\n${iframePolicy
+    .replace("frame-ancestors 'none'", "frame-ancestors 'self'")
+    .replace("script-src 'self' ", `script-src 'self' ${previewHashes.join(' ')} `)
+    .replace('frame-src ', "frame-src 'self' ")}`;
 }
 
 if (surface === 'demo') {
@@ -45,7 +65,10 @@ if (surface === 'demo') {
   }
 }
 
-const surfaceHeaders = `${sharedHeaders.slice(0, rootRuleStart)}${surfaceRootRule}${sharedHeaders.slice(rootRuleEnd)}`;
+const surfaceHeaders = `${sharedHeaders.slice(0, rootRuleStart)}${surfaceRootRule}${iframeRule}${sharedHeaders.slice(rootRuleEnd)}`;
+if (surfaceHeaders.split(/\r?\n/).some((line) => line.length > 2_000)) {
+  throw new Error(`${surface} _headers rule exceeds the Cloudflare Pages line limit`);
+}
 
 await writeFile(outputHeadersPath, surfaceHeaders);
 
