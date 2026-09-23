@@ -72,6 +72,45 @@ describe('agent issue intake', () => {
     expect(input.createForIssueComment).toHaveBeenCalledWith(expect.objectContaining({ comment_id: 5, content: 'eyes' }));
   });
 
+  it('ignores URL query marks in a conclusion', async () => {
+    const input = harness({
+      comments: [
+        comment(1, 'maintainer', '/navet research'),
+        comment(2, 'navet-nisse[bot]', 'Read https://example.com/?state=ready for the conclusion.'),
+      ],
+      reactions: { 1: accepted },
+    });
+    await acceptAgentComment(input);
+    expect(input.createForIssueComment).not.toHaveBeenCalled();
+  });
+
+  it('uses the latest accepted command despite later rejected command text', async () => {
+    const beforeQuestion = harness({
+      comments: [
+        comment(1, 'maintainer', '/navet research'),
+        comment(2, 'reporter', '/navet implement'),
+        comment(3, 'navet-nisse[bot]', 'Which version?'),
+      ],
+      reactions: { 1: accepted },
+    });
+    await acceptAgentComment(beforeQuestion);
+    expect(beforeQuestion.createForIssueComment).toHaveBeenCalledOnce();
+
+    const afterQuestion = harness({
+      comments: [...questionThread, comment(3, 'reporter', '/navet implement')],
+      reactions: { 1: accepted },
+    });
+    await acceptAgentComment(afterQuestion);
+    expect(afterQuestion.createForIssueComment).toHaveBeenCalledOnce();
+
+    const acceptedAfterQuestion = harness({
+      comments: [...questionThread, comment(3, 'maintainer', '/navet implement')],
+      reactions: { 1: accepted, 3: accepted },
+    });
+    await acceptAgentComment(acceptedAfterQuestion);
+    expect(acceptedAfterQuestion.createForIssueComment).not.toHaveBeenCalled();
+  });
+
   it('accepts an exact maintainer command', async () => {
     const input = harness({ actor: 'maintainer', body: '/navet implement' });
     await acceptAgentComment(input);
@@ -106,7 +145,10 @@ describe('agent issue intake', () => {
 
   it('does not churn labels, comment, or use spoofable issue-body markers', () => {
     expect(workflowSource).not.toContain('addLabels');
+    expect(workflowSource).not.toContain('removeLabel');
     expect(workflowSource).not.toContain('createComment');
+    expect(workflowSource).not.toContain('addAssignees');
     expect(stewardshipSource).not.toContain('navet-agent:research');
+    expect(stewardshipSource).toContain('github.rest.issues.create');
   });
 });

@@ -29,7 +29,7 @@ async function hasWritePermission(github, owner, repo, actor) {
 function requestsReply(body) {
   const paragraphs = body.trim().split(/\n\s*\n/);
   const closing = paragraphs.at(-1) ?? '';
-  return closing.includes('?') || /\b(?:let us know|please retest)\b/i.test(closing);
+  return /\?(?=\s|$)/.test(closing) || /\b(?:let us know|please retest)\b/i.test(closing);
 }
 
 async function isRequestedAnswer(github, owner, repo, issue, comment, actor) {
@@ -48,15 +48,25 @@ async function isRequestedAnswer(github, owner, repo, issue, comment, actor) {
   const lastNisse = earlier.findLast((item) => item.user.login === NISSE);
   if (!lastNisse || !requestsReply(lastNisse.body)) return false;
 
-  const commands = earlier.filter((item) => COMMAND.test(item.body.trim()));
-  const latestCommand = commands.at(-1);
-  if (!latestCommand || latestCommand.id > lastNisse.id) return false;
-  if (!(await hasReaction(github, owner, repo, latestCommand.id, 'eyes', ACTIONS))) return false;
+  const commands = earlier.filter(
+    (item) => item.id < lastNisse.id && COMMAND.test(item.body.trim())
+  );
+  let hasAcceptedCommand = false;
+  for (const item of commands.toReversed()) {
+    if (await hasReaction(github, owner, repo, item.id, 'eyes', ACTIONS)) {
+      hasAcceptedCommand = true;
+      break;
+    }
+  }
+  if (!hasAcceptedCommand) return false;
 
   // One answer starts one continuation. Later comments remain available as context to that task.
   for (const item of earlier) {
     if (item.id <= lastNisse.id || item.user.login === NISSE) continue;
-    if (COMMAND.test(item.body.trim())) return false;
+    if (COMMAND.test(item.body.trim())) {
+      if (await hasReaction(github, owner, repo, item.id, 'eyes', ACTIONS)) return false;
+      continue;
+    }
     if (
       !item.user.login.endsWith('[bot]') &&
       (item.user.login === issue.user.login ||
