@@ -5,6 +5,10 @@ import {
 import { getClimateDashboardGroup } from '@navet/app/features/climate/utils/climate-dashboard-group';
 import { buildSecurityCameraDashboardModel } from '@navet/app/features/security/utils/security-camera-dashboard-model';
 import { buildDashboardVisibilityResult } from '@navet/app/hooks/use-dashboard-devices';
+import { integrationStore } from '@navet/app/stores/integration-store';
+import { useNavigationStore } from '@navet/app/stores/navigation-store';
+import { renderHookWithProviders } from '@navet/app/test/render';
+import { resetAppStores } from '@navet/app/test/store-reset';
 import { mapHomeAssistantEntitiesToNavetEntities } from '@navet/provider-homeassistant';
 import { mapHomeySnapshotToNavetEntities } from '@navet/provider-homey';
 import { describe, expect, it } from 'vitest';
@@ -13,6 +17,7 @@ import {
   resolveDashboardShownSensorEntityIds,
   resolveShouldIncludeFeatureCollections,
   resolveShouldTrackMediaDevices,
+  useDashboardController,
 } from '../use-dashboard-controller';
 
 describe('Lights scene collections', () => {
@@ -22,7 +27,8 @@ describe('Lights scene collections', () => {
 });
 
 describe('Climate environmental sensor visibility', () => {
-  it('shows Home Assistant air purifier readings in Climate while honoring explicit hiding', () => {
+  it('shows Home Assistant air purifier readings in Climate while honoring explicit hiding', async () => {
+    await resetAppStores();
     const hassEntity = (entity_id: string, state: string, device_class?: string) => ({
       entity_id,
       state,
@@ -65,6 +71,20 @@ describe('Climate environmental sensor visibility', () => {
         (sensor) => sensor.id
       )
     ).toEqual(visible.slice(1).map((sensor) => sensor.id));
+
+    integrationStore.setState({
+      selectedProviderIds: ['home_assistant'],
+      providerDeviceCollectionsByProviderId: { home_assistant: devices },
+    });
+    useNavigationStore.setState({ activeSection: 'climate' });
+    const { result } = renderHookWithProviders(() => useDashboardController());
+    expect(result.current.section.sectionData.climateSections).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ key: 'humidity', orderedIds: [visible[0].id] }),
+        expect.objectContaining({ key: 'temperature', orderedIds: [visible[1].id] }),
+        expect.objectContaining({ key: 'airQuality', orderedIds: [visible[2].id] }),
+      ])
+    );
   });
 
   it.each([

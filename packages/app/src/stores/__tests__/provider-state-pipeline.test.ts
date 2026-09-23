@@ -142,7 +142,7 @@ describe('provider-state pipeline', () => {
     expect(second.deviceCollection.lights[changedIndex]?.state).toBe(false);
   });
 
-  it('rebuilds sensor membership when a device reading becomes a Climate measurement', () => {
+  it('rebuilds sensor membership when a device reading enters or leaves Climate', () => {
     const fan: NavetEntity = {
       ...makeLight({
         id: 'fan.office_air_purifier',
@@ -181,6 +181,14 @@ describe('provider-state pipeline', () => {
 
     expect(first.deviceCollection.sensors).toHaveLength(0);
     expect(second.deviceCollection.sensors).toMatchObject([{ deviceClass: 'temperature' }]);
+
+    const third = buildProviderScopedState({
+      providerId: 'home_assistant',
+      providerState: providerState('power'),
+      previousState: second,
+    });
+
+    expect(third.deviceCollection.sensors).toHaveLength(0);
   });
 
   it('returns the previous scoped state when the provider snapshot is unchanged', () => {

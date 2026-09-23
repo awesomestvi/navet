@@ -46,6 +46,11 @@ criteria. It must ask for missing reproduction information instead of speculatin
 - Forbidden: merge its own work, change foundational principles to fit a solution, weaken
   tests, publish, or report success with a failing deterministic gate.
 
+The delivery agent runs deterministic validation, then opens a non-draft PR. CodeRabbit reviews
+the PR while CI runs and posts findings as review comments. Verify each finding against the current
+PR head, fix valid issues, and continue until no actionable findings remain. The maintainer decides
+when to merge.
+
 ### Independent reviewer
 
 - Trigger: non-draft PR after CI begins.
@@ -57,10 +62,6 @@ criteria. It must ask for missing reproduction information instead of speculatin
   risk, or insufficient evidence.
 - Forbidden: silently patch the implementation, approve product taste, or treat implementation
   agent explanations as proof.
-
-Run deterministic validation, then open a non-draft PR. CodeRabbit reviews the PR while CI runs
-and posts findings as review comments. Verify each finding against the current PR head, fix valid
-issues, and continue until no actionable findings remain. The maintainer decides when to merge.
 
 ### Steward
 
