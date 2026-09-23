@@ -1,4 +1,4 @@
-name: Accept Agent Command
+name: Accept Agent Intake
 
 on:
   issue_comment:
@@ -15,62 +15,14 @@ permissions:
 
 jobs:
   accept:
-    name: Accept maintainer agent command
-    if: github.event.issue.pull_request == null && startsWith(github.event.comment.body, '/navet ')
+    name: Accept maintainer command or requested answer
+    if: github.event.issue.pull_request == null
     runs-on: ubuntu-latest
     steps:
-      - name: Authorize and acknowledge command
+      - uses: actions/checkout@v5
+      - name: Authorize and acknowledge issue comment
         uses: actions/github-script@v8
         with:
           script: |
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-            const issueNumber = context.payload.issue.number;
-            const commentId = context.payload.comment.id;
-            const actor = context.payload.comment.user.login;
-            const body = context.payload.comment.body.trim();
-            const match = /^\/navet\s+(research|implement|continue)$/i.exec(body);
-
-            if (!match) {
-              core.notice(`Ignoring unrecognized Navet command on issue #${issueNumber}.`);
-              return;
-            }
-
-            if (context.payload.issue.state !== 'open') {
-              core.notice(`Ignoring command on closed issue #${issueNumber}.`);
-              return;
-            }
-
-            let permission;
-            try {
-              const { data } = await github.rest.repos.getCollaboratorPermissionLevel({
-                owner,
-                repo,
-                username: actor,
-              });
-              permission = data.permission;
-            } catch (error) {
-              if (error.status !== 403 && error.status !== 404) throw error;
-              core.setFailed(`Could not verify @${actor}'s repository permission.`);
-              return;
-            }
-
-            const allowed = new Set(['admin', 'maintain', 'write']);
-            if (!allowed.has(permission)) {
-              core.setFailed(`@${actor} is not allowed to dispatch Navet Nisse.`);
-              return;
-            }
-
-            try {
-              await github.rest.reactions.createForIssueComment({
-                owner,
-                repo,
-                comment_id: commentId,
-                content: 'eyes',
-              });
-            } catch (error) {
-              if (error.status !== 422) throw error;
-              core.notice(`Command on issue #${issueNumber} was already acknowledged.`);
-            }
-
-            core.notice(`Accepted /navet ${match[1].toLowerCase()} from @${actor}.`);
+            const { acceptAgentComment } = await import(`${process.env.GITHUB_WORKSPACE}/scripts/agent-dispatch-intake.mjs`);
+            await acceptAgentComment({ github, context, core });

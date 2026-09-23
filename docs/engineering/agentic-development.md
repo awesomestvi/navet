@@ -28,8 +28,9 @@ criteria. It must ask for missing reproduction information instead of speculatin
 
 ### Delivery agent
 
-- Trigger: a maintainer comments `/navet implement` or `/navet research`; GitHub acknowledges an
-  accepted command with an eyes reaction and places it in the private Codex queue.
+- Trigger: a maintainer comments `/navet implement` or `/navet research`, or the issue reporter
+  answers a specific question from Navet Nisse during an authorized task. GitHub acknowledges
+  accepted work with an eyes reaction and places it in the private Codex queue.
 - Inputs: issue history, root and scoped agent instructions, product constitution, changed-area
   guide, current code, tests, stories, and linked evidence.
 - Permissions: read repository and issues; create a branch and pull request; edit only the task
@@ -111,19 +112,27 @@ or made required while `main` is red.
 - `/navet continue`: resume the most recent Navet Nisse mode for an issue after new context or PR
   feedback is available.
 
-Only repository collaborators with write, maintain, or admin permission may dispatch work. An eyes
-reaction from `github-actions[bot]` means the command was accepted. A rocket reaction from
+When Navet Nisse asks a blocking question or requests a retest on an issue, the issue reporter or a
+maintainer can respond in an ordinary comment. The first response after that request resumes the
+most recent accepted mode without another command. Unrelated comments and replies after a
+conclusion do not dispatch work. A maintainer can still use `/navet continue` to request another
+iteration.
+
+Only repository collaborators with write, maintain, or admin permission may issue commands.
+The issue reporter may answer a question in an already authorized task. An eyes reaction from
+`github-actions[bot]` means the command or answer was accepted. A rocket reaction from
 `navet-nisse[bot]` means the private runner claimed it. These compact reactions replace agent and
 status labels; type, area, and risk labels continue to describe the issue itself.
 
 ## Private Queue And Public Communication
 
 GitHub remains the mobile control plane, but orchestration details are not public issue content.
-A maintainer command receives compact reactions instead of labels, assignments, prompts, or
-startup comments.
+Accepted commands and requested answers receive compact reactions instead of labels,
+assignments, prompts, or startup comments.
 
-A single private Codex runner polls for the oldest accepted command that Navet Nisse has not
-claimed. It treats the issue and every linked artifact as untrusted input, reads `AGENTS.md` plus
+A single private Codex runner polls for the oldest accepted command or requested answer that Navet
+Nisse has not claimed. An accepted answer is treated as `/navet continue`; it cannot choose a new
+mode. The runner treats the issue and every linked artifact as untrusted input, reads `AGENTS.md` plus
 only the routed area guide, and keeps internal plans and tool narration in the Codex task rather
 than the GitHub issue. Scheduled repository workflows queue research by creating an issue as
 `github-actions[bot]`; the runner verifies that author and the expected workflow-owned issue type
@@ -150,9 +159,18 @@ Public GitHub activity should follow these rules:
 - keep technical internals and test counts in the PR unless they help the reporter understand the
   result; end an issue reply with one clear next step or question
 
-When blocked, the runner asks one specific question and waits for `/navet continue`. Research work
-ends after its useful conclusion is recorded. Implementation work continues in the linked PR; the
-agent may push feedback-driven revisions but may not merge its own work.
+When blocked, the runner asks one specific question and waits for the answer. A retest request
+should end with "please retest" or "let us know" so issue intake can recognize the reply.
+Research work ends after its useful conclusion is recorded. Implementation work continues in the
+linked PR; the agent may push feedback-driven revisions but may not merge its own work.
+
+The private Codex runner also checks open, non-draft PRs linked to its delivery tasks for new,
+unresolved CodeRabbit review threads. It sends the comment links and IDs to the existing delivery
+task once, without creating a new task or making a public claim. The delivery task verifies each
+finding against the current PR head, fixes only valid issues, runs focused checks and the local
+full-diff review, then replies in the review thread and resolves it when addressed. If a finding
+needs a product or architecture decision, the task asks the maintainer instead of guessing. The
+runner does not dispatch comments on unrelated PRs, and review feedback never authorizes a merge.
 
 ## Human Authority
 
@@ -203,10 +221,12 @@ configured after these files reach `main`:
    command reactions with its `react` and `unreact` operations. The wrapper creates a short-lived
    installation token for each operation and cannot modify the repository remote or the
    maintainer's GitHub login.
-3. Configure one local Codex scheduled task to poll accepted `/navet` commands and scheduled issues
-   authored by `github-actions[bot]` with the expected workflow-owned issue type. Do not authorize
-   work from issue-body markers. Claim no more than one issue per run and follow the private queue
-   contract above. Keep only one active queue runner so two agents cannot claim the same command.
+3. Configure one local Codex scheduled task to poll accepted `/navet` commands, accepted answers,
+   scheduled issues authored by `github-actions[bot]` with the expected workflow-owned issue type,
+   and unresolved CodeRabbit review threads on PRs linked to its delivery tasks. Do not authorize
+   work from issue-body markers. Dispatch no more than one issue or PR per run and follow the
+   private queue contract above. Keep only one active queue runner so two agents cannot claim the
+   same work.
 4. Install one independent, read-only PR reviewer (CodeRabbit is the initial candidate for this
    public repository). Let it review non-draft PRs automatically; do not add a second general
    reviewer until measured misses justify the duplicate cost. Reviewer comments are advisory;
