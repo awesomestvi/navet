@@ -645,8 +645,10 @@ export const MobileEditScheduleFieldsStayContained: Story = {
 
       const inputRect = input.getBoundingClientRect();
       const gridRect = (fieldGrid as HTMLElement).getBoundingClientRect();
+      const dialogRect = dialog.getBoundingClientRect();
       await expect(inputRect.left).toBeGreaterThanOrEqual(gridRect.left);
       await expect(inputRect.right).toBeLessThanOrEqual(gridRect.right);
+      await expect(gridRect.right).toBeLessThanOrEqual(dialogRect.right);
     }
   },
   globals: {

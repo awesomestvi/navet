@@ -557,6 +557,15 @@
    * opt-in so regular browsers and dense kiosk grids do not gain extra layers.
    */
   @supports (-webkit-touch-callout: none) {
+    /* WebKit 301648: iOS adds inline padding to the width of native date/time inputs. */
+    .chore-schedule-native-input {
+      padding-inline: 0;
+    }
+
+    .chore-schedule-native-input::-webkit-datetime-edit {
+      margin-inline: 1rem;
+    }
+
     @media (display-mode: standalone), (display-mode: fullscreen) {
       .ios-pwa-scroll-repaint {
         transform: scale(1);

@@ -1,0 +1,5 @@
+type: fixed
+audiences:
+  - standalone
+  - home-assistant
+summary: Keep chore date and time fields inside the editor on iPhone Safari.
