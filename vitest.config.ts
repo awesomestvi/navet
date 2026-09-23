@@ -1,11 +1,9 @@
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
 import { playwright } from '@vitest/browser-playwright';
 
-const dirname =
-  typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
+const dirname = import.meta.dirname;
 const storybookConfigDir = path.join(dirname, 'apps/storybook/.storybook');
 
 export default defineConfig({
@@ -13,7 +11,7 @@ export default defineConfig({
     projects: [
       './vitest.unit.config.ts',
       {
-        extends: './vitest.unit.config.ts',
+        extends: './vitest.shared.config.ts',
         plugins: [
           storybookTest({
             configDir: storybookConfigDir,
