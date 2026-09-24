@@ -409,11 +409,7 @@ export const MediaStackWidget = memo(function MediaStackWidget({
       roomLabel,
       roomOptions,
       onRoomChange,
-      onUpdate: (next: {
-        entityIds: string[];
-        priorityOrder: string[];
-        idleBehavior: MediaStackIdleBehavior;
-      }) => {
+      onUpdate: (next: MediaStackWidgetUpdate) => {
         onUpdate?.(createWidgetUpdatePayload(next));
       },
     }),
