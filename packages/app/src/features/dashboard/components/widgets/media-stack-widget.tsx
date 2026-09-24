@@ -3,10 +3,7 @@ import { BaseCard } from '@navet/app/components/primitives';
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { MediaCard } from '@navet/app/features/media';
-import type {
-  MediaDialogMediaStackSettings,
-  MediaStackIdleBehavior,
-} from '@navet/app/features/media/components/media/media-dialog.types';
+import type { MediaDialogMediaStackSettings } from '@navet/app/features/media/components/media/media-dialog.types';
 import { useAreaRooms, useDeviceCollectionsByKeys, useI18n, useTheme } from '@navet/app/hooks';
 import { useDashboardWidgetRoomOptions } from '@navet/app/hooks/use-dashboard-widget-room-options';
 import type { MediaDevice } from '@navet/app/types/device.types';
@@ -28,13 +25,15 @@ export interface MediaStackPlayerOption {
 interface MediaStackWidgetProps {
   size?: CardSize;
   data?: MediaStackWidgetData;
-  onUpdate?: (data: MediaStackWidgetData) => void;
+  onUpdate?: (data: MediaStackWidgetUpdate) => void;
   room?: string;
   onRoomChange?: (room: string) => void;
   openSettingsRequestKey?: number;
   availableEntityIds?: readonly string[];
   anchorEntityId?: string;
 }
+
+type MediaStackWidgetUpdate = Parameters<MediaDialogMediaStackSettings['onUpdate']>[0];
 
 function sortPlayers(left: MediaDevice, right: MediaDevice) {
   const roomComparison = left.room.localeCompare(right.room);
@@ -46,11 +45,7 @@ function sortPlayers(left: MediaDevice, right: MediaDevice) {
 }
 
 const noopCardSizeChange = () => {};
-function createWidgetUpdatePayload(next: {
-  entityIds: string[];
-  priorityOrder: string[];
-  idleBehavior: MediaStackIdleBehavior;
-}): MediaStackWidgetData {
+function createWidgetUpdatePayload(next: MediaStackWidgetUpdate): MediaStackWidgetUpdate {
   return {
     entityIds: next.entityIds,
     priorityOrder: next.priorityOrder,
