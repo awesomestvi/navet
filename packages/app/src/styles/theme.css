@@ -852,6 +852,16 @@
     }
   }
 
+  @media (prefers-reduced-motion: no-preference) {
+    .navet-weather-cloud-motion {
+      animation-name: navet-weather-cloud-loop;
+      animation-timing-function: linear;
+      animation-iteration-count: infinite;
+      transform-box: view-box;
+      will-change: transform;
+    }
+  }
+
   @keyframes navet-weather-rain-loop {
     from {
       transform: translate3d(0, 0, 0);

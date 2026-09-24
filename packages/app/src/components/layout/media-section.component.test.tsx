@@ -180,7 +180,7 @@ describe('MediaSection grouping', () => {
     expect(screen.getByTestId('media-display-group')).toHaveTextContent(
       'media_player.kitchen,media_player.living_room_tv'
     );
-    expect(screen.getByTestId('media-display-group').parentElement).toHaveClass(
+    expect(screen.getByTestId('media-display-group').closest('.col-span-4')).toHaveClass(
       'col-span-4',
       'row-span-4'
     );

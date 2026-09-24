@@ -34,10 +34,7 @@ export function PassageWaveOverlaySvg({
       : size === 'medium'
         ? 'translateY(-30%) scaleY(0.94)'
         : 'translateY(-23%) scaleY(0.88)';
-  const cloudMotionClassName =
-    effectsQuality === 'low'
-      ? undefined
-      : 'motion-safe:[animation-name:navet-weather-cloud-loop] motion-safe:[animation-timing-function:linear] motion-safe:[animation-iteration-count:infinite] motion-safe:will-change-transform [transform-box:view-box]';
+  const cloudMotionClassName = effectsQuality === 'low' ? undefined : 'navet-weather-cloud-motion';
   // The parent SVG group flips the Y axis, so the first path renders as the
   // lower foreground silhouette and the last path renders farthest back.
   const frontCloudDuration = effectsQuality === 'high' ? '64s' : '96s';
@@ -59,36 +56,47 @@ export function PassageWaveOverlaySvg({
         }
       >
         <g transform="translate(0 780) scale(1 -1)">
-          <g
-            className={cloudMotionClassName}
-            data-weather-cloud-depth="front"
-            style={{ animationDuration: frontCloudDuration }}
-          >
-            <path d={FAR_CLOUD_PATH} fill={layerOneColor} />
-            <path d={FAR_CLOUD_PATH} fill={layerOneColor} transform="translate(1600 0)" />
-          </g>
-          <g
-            className={cloudMotionClassName}
-            data-weather-cloud-depth="middle"
-            style={{ animationDuration: middleCloudDuration }}
-          >
-            <path d={MIDDLE_CLOUD_PATH} fill={layerTwoColor} />
-            <path d={MIDDLE_CLOUD_PATH} fill={layerTwoColor} transform="translate(1600 0)" />
-          </g>
-          <g
-            className={cloudMotionClassName}
-            data-weather-cloud-depth="rear"
-            style={{ animationDuration: rearCloudDuration }}
-          >
-            <path d={NEAR_CLOUD_PATH} fill={layerThreeColor} />
-            <path d={NEAR_CLOUD_PATH} fill={layerThreeColor} transform="translate(1600 0)" />
-            {rimColor ? (
-              <>
-                <path d={CLOUD_RIM_PATH} fill={rimColor} />
-                <path d={CLOUD_RIM_PATH} fill={rimColor} transform="translate(1600 0)" />
-              </>
-            ) : null}
-          </g>
+          {effectsQuality === 'low' ? (
+            <>
+              <path d={FAR_CLOUD_PATH} fill={layerOneColor} />
+              <path d={MIDDLE_CLOUD_PATH} fill={layerTwoColor} />
+              <path d={NEAR_CLOUD_PATH} fill={layerThreeColor} />
+              {rimColor ? <path d={CLOUD_RIM_PATH} fill={rimColor} /> : null}
+            </>
+          ) : (
+            <>
+              <g
+                className={cloudMotionClassName}
+                data-weather-cloud-depth="front"
+                style={{ animationDuration: frontCloudDuration }}
+              >
+                <path d={FAR_CLOUD_PATH} fill={layerOneColor} />
+                <path d={FAR_CLOUD_PATH} fill={layerOneColor} transform="translate(1600 0)" />
+              </g>
+              <g
+                className={cloudMotionClassName}
+                data-weather-cloud-depth="middle"
+                style={{ animationDuration: middleCloudDuration }}
+              >
+                <path d={MIDDLE_CLOUD_PATH} fill={layerTwoColor} />
+                <path d={MIDDLE_CLOUD_PATH} fill={layerTwoColor} transform="translate(1600 0)" />
+              </g>
+              <g
+                className={cloudMotionClassName}
+                data-weather-cloud-depth="rear"
+                style={{ animationDuration: rearCloudDuration }}
+              >
+                <path d={NEAR_CLOUD_PATH} fill={layerThreeColor} />
+                <path d={NEAR_CLOUD_PATH} fill={layerThreeColor} transform="translate(1600 0)" />
+                {rimColor ? (
+                  <>
+                    <path d={CLOUD_RIM_PATH} fill={rimColor} />
+                    <path d={CLOUD_RIM_PATH} fill={rimColor} transform="translate(1600 0)" />
+                  </>
+                ) : null}
+              </g>
+            </>
+          )}
         </g>
       </svg>
     </div>

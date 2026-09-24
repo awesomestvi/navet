@@ -1,0 +1,5 @@
+type: new
+audiences:
+  - standalone
+  - home-assistant
+summary: Add quality-aware ambient motion to weather cards for clouds, rain, snow, sun, wind, fog, and storms.
