@@ -33,6 +33,17 @@ something new takes fewer steps.
 Choose a primary session or destination, then add compatible speakers. Grouping support and group
 ownership come from the provider.
 
+## Show several players in one card
+
+Open **Media**, enter edit mode, and choose **Media Stack**. In the new card, choose **Media players**
+and select the players to include. You can combine a TV, console, receiver, and speakers in the
+same stack. Move selected players up or down to set their priority.
+
+The stack shows one player at a time. Playing media takes precedence over paused media, then a
+powered-on player; priority resolves ties. Under **Idle behavior**, choose a fallback card or hide
+the stack while all selected players are inactive. A hidden stack remains available in edit mode.
+This display choice does not join the players for synchronized playback.
+
 ## Use TV controls
 
 Supported media devices can expose source selection, volume, channel controls, and a navigation

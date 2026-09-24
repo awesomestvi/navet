@@ -29,6 +29,7 @@ interface MediaStackWidgetProps {
   room?: string;
   onRoomChange?: (room: string) => void;
   openSettingsRequestKey?: number;
+  availableEntityIds?: readonly string[];
 }
 
 function sortPlayers(left: MediaDevice, right: MediaDevice) {
@@ -67,6 +68,7 @@ export const MediaStackWidget = memo(function MediaStackWidget({
   room,
   onRoomChange,
   openSettingsRequestKey = 0,
+  availableEntityIds,
 }: MediaStackWidgetProps) {
   const { t } = useI18n();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -76,7 +78,12 @@ export const MediaStackWidget = memo(function MediaStackWidget({
     () => normalizeMediaStackWidgetData(data as Record<string, unknown> | undefined),
     [data]
   );
-  const mediaDevices = useMemo(() => [...devices.media].sort(sortPlayers), [devices.media]);
+  const mediaDevices = useMemo(() => {
+    const allowedIds = availableEntityIds ? new Set(availableEntityIds) : null;
+    return devices.media
+      .filter((device) => !allowedIds || allowedIds.has(device.id))
+      .sort(sortPlayers);
+  }, [availableEntityIds, devices.media]);
   const playerOptions = useMemo<MediaStackPlayerOption[]>(
     () =>
       mediaDevices.map((device) => ({
@@ -112,18 +119,36 @@ export const MediaStackWidget = memo(function MediaStackWidget({
         entityIds: string[];
         priorityOrder: string[];
         idleBehavior: MediaStackIdleBehavior;
-      }) => onUpdate?.(createWidgetUpdatePayload(next)),
+      }) => {
+        if (configuredEntityIds.length === 0 || next.entityIds.length === 0) {
+          setIsDialogOpen(true);
+        }
+        onUpdate?.(createWidgetUpdatePayload(next));
+      },
     }),
-    [normalizedData, onRoomChange, onUpdate, playerOptions, roomLabel, roomOptions, roomValue]
+    [
+      configuredEntityIds.length,
+      normalizedData,
+      onRoomChange,
+      onUpdate,
+      playerOptions,
+      roomLabel,
+      roomOptions,
+      roomValue,
+    ]
   );
 
   useEffect(() => {
-    if (openSettingsRequestKey > 0 && onUpdate) {
+    if (
+      openSettingsRequestKey > 0 &&
+      onUpdate &&
+      (!selection || (selection.isFallback && normalizedData?.idleBehavior === 'compact'))
+    ) {
       setIsDialogOpen(true);
     }
-  }, [onUpdate, openSettingsRequestKey]);
+  }, [normalizedData?.idleBehavior, onUpdate, openSettingsRequestKey, selection]);
 
-  const emptyDialog = (
+  const emptyDialog = isDialogOpen ? (
     <Suspense fallback={null}>
       <MediaDialog
         entityId="media-stack"
@@ -167,7 +192,7 @@ export const MediaStackWidget = memo(function MediaStackWidget({
         initialTab="stack"
       />
     </Suspense>
-  );
+  ) : null;
 
   if (mediaDevices.length === 0) {
     return (
@@ -224,35 +249,58 @@ export const MediaStackWidget = memo(function MediaStackWidget({
     );
   }
 
+  if (selection.isFallback && normalizedData?.idleBehavior === 'compact') {
+    return (
+      <>
+        <BaseCard size={size} fullBleed contentClassName="h-full">
+          <div className="h-full p-4">
+            <CardEmptyState
+              title={selection.device.name}
+              description={t('media.nothingPlaying')}
+              icon={Radio}
+              actionLabel={onUpdate ? t('widgets.mediaStack.settings.players') : undefined}
+              onAction={onUpdate ? () => setIsDialogOpen(true) : undefined}
+              size={size}
+            />
+          </div>
+        </BaseCard>
+        {emptyDialog}
+      </>
+    );
+  }
+
   return (
-    <MediaCard
-      id={selection.device.id}
-      name={selection.device.name}
-      room={selection.device.room}
-      title={selection.device.title}
-      artist={selection.device.artist}
-      entityType={selection.device.entityType}
-      deviceClass={selection.device.deviceClass}
-      source={selection.device.source}
-      sourceList={selection.device.sourceList}
-      entityPicture={selection.device.entityPicture}
-      state={selection.device.state}
-      volume={selection.device.volume}
-      isMuted={selection.device.isMuted}
-      elapsedSeconds={selection.device.elapsedSeconds}
-      durationSeconds={selection.device.durationSeconds}
-      positionUpdatedAt={selection.device.positionUpdatedAt}
-      mediaCapabilities={selection.device.mediaCapabilities}
-      supportsGrouping={selection.device.supportsGrouping}
-      supportsPreviousTrack={selection.device.supportsPreviousTrack}
-      supportsNextTrack={selection.device.supportsNextTrack}
-      groupMembers={selection.device.groupMembers}
-      size={size}
-      onSizeChange={noopCardSizeChange}
-      isEditMode={false}
-      mediaStackAppearance
-      mediaStackSettings={mediaStackSettings}
-      openSettingsRequestKey={openSettingsRequestKey}
-    />
+    <>
+      <MediaCard
+        id={selection.device.id}
+        name={selection.device.name}
+        room={selection.device.room}
+        title={selection.device.title}
+        artist={selection.device.artist}
+        entityType={selection.device.entityType}
+        deviceClass={selection.device.deviceClass}
+        source={selection.device.source}
+        sourceList={selection.device.sourceList}
+        entityPicture={selection.device.entityPicture}
+        state={selection.device.state}
+        volume={selection.device.volume}
+        isMuted={selection.device.isMuted}
+        elapsedSeconds={selection.device.elapsedSeconds}
+        durationSeconds={selection.device.durationSeconds}
+        positionUpdatedAt={selection.device.positionUpdatedAt}
+        mediaCapabilities={selection.device.mediaCapabilities}
+        supportsGrouping={selection.device.supportsGrouping}
+        supportsPreviousTrack={selection.device.supportsPreviousTrack}
+        supportsNextTrack={selection.device.supportsNextTrack}
+        groupMembers={selection.device.groupMembers}
+        size={size}
+        onSizeChange={noopCardSizeChange}
+        isEditMode={false}
+        mediaStackAppearance
+        mediaStackSettings={mediaStackSettings}
+        openSettingsRequestKey={openSettingsRequestKey}
+      />
+      {emptyDialog}
+    </>
   );
 });

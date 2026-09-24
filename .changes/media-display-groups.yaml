@@ -1,0 +1,5 @@
+type: new
+audiences:
+  - standalone
+  - home-assistant
+summary: Group media players into one card that surfaces the active player, with priority and idle display options.

@@ -1,7 +1,10 @@
 import { DashboardEmptyState, DashboardGroupingNavigation } from '@navet/app/components/patterns';
+import { Button } from '@navet/app/components/primitives/button';
 import { InteractivePill } from '@navet/app/components/primitives/interactive-pill';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { ALL_ROOMS_ID } from '@navet/app/constants/rooms';
+import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
+import { MediaStackWidget } from '@navet/app/features/dashboard/components/widgets/media-stack-widget';
 import { useDashboardEntitiesStore } from '@navet/app/features/dashboard/stores/dashboard-entities-store';
 import {
   getMediaEntityTypeKey,
@@ -13,16 +16,24 @@ import {
   useEditMode,
   useI18n,
   useMediaQuery,
+  usePersistedState,
   useTheme,
 } from '@navet/app/hooks';
 import type { MediaDevice } from '@navet/app/types/device.types';
 import { getDeviceRoomLabel } from '@navet/app/utils/device-location';
 import { getProviderNativeId } from '@navet/app/utils/provider-ids';
-import { Plus, Tv } from 'lucide-react';
+import { Plus, Trash2, Tv } from 'lucide-react';
 import { lazy, Suspense, useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { useShallow } from 'zustand/react/shallow';
 import { EntityGrid } from './entity-grid';
+import {
+  getAvailableMediaDisplayGroupEntityIds,
+  getMediaDisplayGroupMemberIds,
+  isMediaDisplayGroupVisible,
+  type MediaDisplayGroup,
+  normalizeMediaDisplayGroups,
+} from './media-display-groups';
 import { SectionCustomizeShell } from './section-customize-shell';
 
 const AddEntityDialog = lazy(async () => {
@@ -238,6 +249,14 @@ export function MediaSection() {
     type: '',
     room: '',
   });
+  const [storedDisplayGroups, setStoredDisplayGroups] = usePersistedState<MediaDisplayGroup[]>(
+    STORAGE_KEYS.mediaDisplayGroups,
+    []
+  );
+  const displayGroups = useMemo(
+    () => normalizeMediaDisplayGroups(storedDisplayGroups),
+    [storedDisplayGroups]
+  );
   const { hiddenEntityIds, hideEntity, showEntity } = useDashboardEntitiesStore(
     useShallow((state) => ({
       hiddenEntityIds: state.hiddenEntityIds,
@@ -264,6 +283,50 @@ export function MediaSection() {
   const mediaDevices = useMemo(
     () => allMediaDevices.filter((device) => !hiddenEntityIdSet.has(device.id)),
     [allMediaDevices, hiddenEntityIdSet]
+  );
+  const visibleMediaEntityIds = useMemo(
+    () => mediaDevices.map((device) => device.id),
+    [mediaDevices]
+  );
+  const groupedMediaEntityIds = useMemo(
+    () => getMediaDisplayGroupMemberIds(displayGroups),
+    [displayGroups]
+  );
+  const visibleDisplayGroups = useMemo(
+    () =>
+      isEditMode
+        ? displayGroups
+        : displayGroups.filter((group) => isMediaDisplayGroupVisible(group, mediaDevices)),
+    [displayGroups, isEditMode, mediaDevices]
+  );
+  const addDisplayGroup = useCallback(() => {
+    setStoredDisplayGroups((current) => [
+      ...normalizeMediaDisplayGroups(current),
+      {
+        id: `media-group-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+        data: { entityIds: [], priorityOrder: [], idleBehavior: 'compact' },
+      },
+    ]);
+  }, [setStoredDisplayGroups]);
+  const removeDisplayGroup = useCallback(
+    (groupId: string) => {
+      if (!window.confirm(t('widgets.deleteConfirm'))) return;
+      setStoredDisplayGroups((current) =>
+        normalizeMediaDisplayGroups(current).filter((group) => group.id !== groupId)
+      );
+    },
+    [setStoredDisplayGroups, t]
+  );
+  const updateDisplayGroup = useCallback(
+    (groupId: string, data: Parameters<typeof MediaStackWidget>[0]['data']) => {
+      if (!data) return;
+      setStoredDisplayGroups((current) =>
+        normalizeMediaDisplayGroups(current).map((group) =>
+          group.id === groupId ? { ...group, data } : group
+        )
+      );
+    },
+    [setStoredDisplayGroups]
   );
   const handleRemoveEntity = useCallback(
     (entityId: string) => {
@@ -338,11 +401,19 @@ export function MediaSection() {
       isEditMode
         ? groupedMediaPresentation.devices
         : excludePromotedMediaDevices(
-            groupedMediaPresentation.devices.filter((device) => !isSpotifyAccountDevice(device)),
+            groupedMediaPresentation.devices.filter(
+              (device) => !isSpotifyAccountDevice(device) && !groupedMediaEntityIds.has(device.id)
+            ),
             promotedEntityIdsForSections,
             mediaDevices
           ),
-    [groupedMediaPresentation.devices, isEditMode, mediaDevices, promotedEntityIdsForSections]
+    [
+      groupedMediaPresentation.devices,
+      groupedMediaEntityIds,
+      isEditMode,
+      mediaDevices,
+      promotedEntityIdsForSections,
+    ]
   );
   const typeSections = useMemo(
     () =>
@@ -421,12 +492,60 @@ export function MediaSection() {
       actions={isMobileViewport ? null : addHiddenEntityAction}
       showCustomizeButton={false}
     >
+      {isEditMode ? (
+        <div className="flex justify-end">
+          <Button
+            variant="soft"
+            size="small"
+            leading={<Plus className="h-4 w-4" aria-hidden="true" />}
+            onClick={addDisplayGroup}
+          >
+            {t('dashboard.addCard.templates.mediaStack.name')}
+          </Button>
+        </div>
+      ) : null}
       {!isEditMode ? (
         <MediaDashboard
           devices={mediaDevices}
           initialDeviceId={featuredMediaDevice?.id}
           onPromotedEntitiesChange={handlePromotedEntitiesChange}
         />
+      ) : null}
+
+      {visibleDisplayGroups.length > 0 ? (
+        <section
+          className="space-y-4"
+          aria-label={t('dashboard.addCard.templates.mediaStack.name')}
+        >
+          <h2 className={`text-lg font-semibold md:text-xl ${surface.textPrimary}`}>
+            {t('dashboard.addCard.templates.mediaStack.name')}
+          </h2>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3 lg:gap-4">
+            {visibleDisplayGroups.map((group) => (
+              <div key={group.id} className="min-w-0 space-y-2">
+                <MediaStackWidget
+                  data={group.data}
+                  availableEntityIds={getAvailableMediaDisplayGroupEntityIds(
+                    group.id,
+                    displayGroups,
+                    visibleMediaEntityIds
+                  )}
+                  onUpdate={(data) => updateDisplayGroup(group.id, data)}
+                />
+                {isEditMode ? (
+                  <Button
+                    variant="ghost"
+                    size="small"
+                    leading={<Trash2 className="h-4 w-4" aria-hidden="true" />}
+                    onClick={() => removeDisplayGroup(group.id)}
+                  >
+                    {t('widgets.delete')}
+                  </Button>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        </section>
       ) : null}
 
       {selectedSection ? (

@@ -1147,7 +1147,7 @@ function createHomeAssistantState(
           ? 'paused'
           : entity.state === 'idle'
             ? 'idle'
-            : entity.state === 'on' && deviceClass === 'tv'
+            : entity.state === 'on'
               ? 'idle'
               : 'off';
     const entityPicture =
@@ -1161,6 +1161,7 @@ function createHomeAssistantState(
     return {
       ...commonState,
       value: normalizedState,
+      isPoweredOn: entity.state === 'on',
       title:
         (typeof entity.attributes?.media_title === 'string' && entity.attributes.media_title) ||
         (typeof entity.attributes?.app_name === 'string' && entity.attributes.app_name) ||
