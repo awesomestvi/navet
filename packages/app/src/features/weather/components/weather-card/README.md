@@ -94,6 +94,14 @@ interface WeatherCardProps {
 - Persists per-card tint color and shared weather settings through the controller/store layer
 - Includes handcrafted dynamic weather illustration variants for:
   sunny day, clear night, cloudy, rain, storm, fog, snow day, snow night, windy, and fallback states
+- Tiles cloud bands into continuous horizontal loops with different parallax speeds at high effects
+  quality, reduces the motion to one distant band at medium quality, and keeps the artwork static for
+  low quality or reduced motion
+- Animates rainfall with one composited layer at medium quality and three depth layers at high
+  quality; sunny backgrounds use a slow transform-only breathing motion on the sun and its rings
+- Adds condition-specific motion for clear-night moon halos, wind streaks, fog banks, and falling
+  snow so every weather background retains a subtle sense of live conditions
+- Flashes the existing storm lightning and halo intermittently with a short double pulse
 - The overlay atoms are split by weather effect; `weather-card-overlays.tsx` now only composes them
 
 ## Maintenance Notes

@@ -1,6 +1,6 @@
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import type { EffectsQuality } from '@navet/app/stores/settings-store';
-import { useMemo } from 'react';
+import { useId, useMemo } from 'react';
 import { getWeatherSvgOverlayTransform } from './weather-card-utils';
 
 type RainOverlayIntensity = 'rain' | 'storm';
@@ -185,6 +185,7 @@ function buildRainLayerPath(drops: ReturnType<typeof buildDeterministicRaindrops
 }
 
 export function RainOverlaySvg({ size, intensity = 'rain', effectsQuality }: RainOverlaySvgProps) {
+  const layerIdPrefix = useId();
   const isLowQuality = effectsQuality === 'low';
   const baseCounts = getRainBaseCounts(size, intensity);
   const resolveCount = (baseCount: number) =>
@@ -246,6 +247,33 @@ export function RainOverlaySvg({ size, intensity = 'rain', effectsQuality }: Rai
       };
     });
   }, [farDrops, intensity, isLowQuality, midDrops, nearDrops]);
+  const mediumMotionClassName =
+    effectsQuality === 'medium'
+      ? intensity === 'storm'
+        ? 'motion-safe:animate-[navet-weather-rain-loop_6.5s_linear_infinite] motion-safe:will-change-transform [transform-box:view-box]'
+        : 'motion-safe:animate-[navet-weather-rain-loop_8s_linear_infinite] motion-safe:will-change-transform [transform-box:view-box]'
+      : undefined;
+  const farMotionClassName =
+    effectsQuality === 'high'
+      ? intensity === 'storm'
+        ? 'motion-safe:animate-[navet-weather-rain-loop_8s_linear_infinite] motion-safe:will-change-transform [transform-box:view-box]'
+        : 'motion-safe:animate-[navet-weather-rain-loop_10.5s_linear_infinite] motion-safe:will-change-transform [transform-box:view-box]'
+      : undefined;
+  const midMotionClassName =
+    effectsQuality === 'high'
+      ? intensity === 'storm'
+        ? 'motion-safe:animate-[navet-weather-rain-loop_5.7s_linear_infinite] motion-safe:will-change-transform [transform-box:view-box]'
+        : 'motion-safe:animate-[navet-weather-rain-loop_8s_linear_infinite] motion-safe:will-change-transform [transform-box:view-box]'
+      : undefined;
+  const nearMotionClassName =
+    effectsQuality === 'high'
+      ? intensity === 'storm'
+        ? 'motion-safe:animate-[navet-weather-rain-loop_4s_linear_infinite] motion-safe:will-change-transform [transform-box:view-box]'
+        : 'motion-safe:animate-[navet-weather-rain-loop_5.7s_linear_infinite] motion-safe:will-change-transform [transform-box:view-box]'
+      : undefined;
+  const farLayerId = `${layerIdPrefix}-rain-far`;
+  const midLayerId = `${layerIdPrefix}-rain-mid`;
+  const nearLayerId = `${layerIdPrefix}-rain-near`;
 
   return (
     <svg
@@ -273,50 +301,108 @@ export function RainOverlaySvg({ size, intensity = 'rain', effectsQuality }: Rai
         ))
       ) : (
         <>
-          {farDrops.map((drop, index) => (
-            <line
-              key={`${intensity}-far-${index}`}
-              x1={drop.x1}
-              y1={drop.y1}
-              x2={drop.x2}
-              y2={drop.y2}
-              stroke="rgba(170,200,239,0.84)"
-              strokeWidth={drop.strokeWidth}
-              strokeLinecap="round"
-              opacity={drop.opacity}
-              vectorEffect="non-scaling-stroke"
-            />
-          ))}
-          {midDrops.map((drop, index) => (
-            <line
-              key={`${intensity}-mid-${index}`}
-              x1={drop.x1}
-              y1={drop.y1}
-              x2={drop.x2}
-              y2={drop.y2}
-              stroke="rgba(198,223,248,0.9)"
-              strokeWidth={drop.strokeWidth}
-              strokeLinecap="round"
-              opacity={drop.opacity}
-              vectorEffect="non-scaling-stroke"
-            />
-          ))}
-          {nearDrops.map((drop, index) => (
-            <line
-              key={`${intensity}-near-${index}`}
-              x1={drop.x1}
-              y1={drop.y1}
-              x2={drop.x2}
-              y2={drop.y2}
-              stroke="rgba(233,244,255,0.96)"
-              strokeWidth={drop.strokeWidth}
-              strokeLinecap="round"
-              opacity={drop.opacity}
-              vectorEffect="non-scaling-stroke"
-            />
-          ))}
+          <defs>
+            <g id={farLayerId}>
+              {farDrops.map((drop, index) => (
+                <line
+                  key={`${intensity}-far-${index}`}
+                  x1={drop.x1}
+                  y1={drop.y1}
+                  x2={drop.x2}
+                  y2={drop.y2}
+                  stroke="rgba(170,200,239,0.84)"
+                  strokeWidth={drop.strokeWidth}
+                  strokeLinecap="round"
+                  opacity={drop.opacity}
+                  vectorEffect="non-scaling-stroke"
+                />
+              ))}
+            </g>
+            <g id={midLayerId}>
+              {midDrops.map((drop, index) => (
+                <line
+                  key={`${intensity}-mid-${index}`}
+                  x1={drop.x1}
+                  y1={drop.y1}
+                  x2={drop.x2}
+                  y2={drop.y2}
+                  stroke="rgba(198,223,248,0.9)"
+                  strokeWidth={drop.strokeWidth}
+                  strokeLinecap="round"
+                  opacity={drop.opacity}
+                  vectorEffect="non-scaling-stroke"
+                />
+              ))}
+            </g>
+            <g id={nearLayerId}>
+              {nearDrops.map((drop, index) => (
+                <line
+                  key={`${intensity}-near-${index}`}
+                  x1={drop.x1}
+                  y1={drop.y1}
+                  x2={drop.x2}
+                  y2={drop.y2}
+                  stroke="rgba(233,244,255,0.96)"
+                  strokeWidth={drop.strokeWidth}
+                  strokeLinecap="round"
+                  opacity={drop.opacity}
+                  vectorEffect="non-scaling-stroke"
+                />
+              ))}
+            </g>
+          </defs>
+          <g
+            className={mediumMotionClassName}
+            style={mediumMotionClassName ? { animationDelay: '-1.1s' } : undefined}
+          >
+            {effectsQuality === 'medium' ? (
+              <>
+                <use href={`#${farLayerId}`} />
+                <use href={`#${midLayerId}`} />
+                <use href={`#${nearLayerId}`} />
+                <use href={`#${farLayerId}`} transform="translate(0 -40)" />
+                <use href={`#${midLayerId}`} transform="translate(0 -40)" />
+                <use href={`#${nearLayerId}`} transform="translate(0 -40)" />
+              </>
+            ) : (
+              <>
+                <LoopedRainLayer
+                  href={`#${farLayerId}`}
+                  className={farMotionClassName}
+                  animationDelay="-1.7s"
+                />
+                <LoopedRainLayer
+                  href={`#${midLayerId}`}
+                  className={midMotionClassName}
+                  animationDelay="-0.9s"
+                />
+                <LoopedRainLayer
+                  href={`#${nearLayerId}`}
+                  className={nearMotionClassName}
+                  animationDelay="-0.35s"
+                />
+              </>
+            )}
+          </g>
         </>
       )}
     </svg>
+  );
+}
+
+function LoopedRainLayer({
+  animationDelay,
+  className,
+  href,
+}: {
+  animationDelay: string;
+  className?: string;
+  href: string;
+}) {
+  return (
+    <g className={className} style={className ? { animationDelay } : undefined}>
+      <use href={href} />
+      <use href={href} transform="translate(0 -40)" />
+    </g>
   );
 }
