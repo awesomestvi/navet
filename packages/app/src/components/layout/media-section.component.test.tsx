@@ -1,3 +1,4 @@
+import type { MediaDialogMediaStackSettings } from '@navet/app/features/media/components/media/media-dialog.types';
 import { renderWithProviders } from '@navet/app/test/render';
 import type { MediaDevice } from '@navet/app/types/device.types';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
@@ -84,13 +85,52 @@ vi.mock('@navet/app/features/dashboard/components/widgets/media-stack-widget', (
 }));
 
 vi.mock('./entity-grid', () => ({
-  EntityGrid: ({ devices }: { devices: MediaSectionDevice[] }) => (
-    <div data-testid="media-group-grid">{devices.map((device) => device.id).join(',')}</div>
-  ),
-}));
+  EntityGrid: ({
+    devices,
+    cardReplacementById,
+    mediaStackSettingsById,
+  }: {
+    devices: MediaSectionDevice[];
+    cardReplacementById?: ReadonlyMap<string, { size: string; node: ReactNode }>;
+    mediaStackSettingsById?: ReadonlyMap<string, MediaDialogMediaStackSettings>;
+  }) => (
+    <div data-testid="media-group-grid">
+      {devices.map((device) => {
+        const replacement = cardReplacementById?.get(device.id);
+        if (replacement) {
+          return (
+            <div
+              key={device.id}
+              className={replacement.size === 'large' ? 'col-span-4 row-span-4' : undefined}
+            >
+              {replacement.node}
+            </div>
+          );
+        }
 
-vi.mock('./section-customize-shell', () => ({
-  SectionCustomizeShell: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+        const settings = mediaStackSettingsById?.get(device.id);
+        return (
+          <div key={device.id}>
+            {device.id}
+            {settings ? (
+              <button
+                type="button"
+                onClick={() =>
+                  settings.onUpdate({
+                    entityIds: [device.id, 'media_player.living_room_tv'],
+                    priorityOrder: [device.id, 'media_player.living_room_tv'],
+                    idleBehavior: 'compact',
+                  })
+                }
+              >
+                {`Create stack from ${device.name}`}
+              </button>
+            ) : null}
+          </div>
+        );
+      })}
+    </div>
+  ),
 }));
 
 describe('MediaSection grouping', () => {
@@ -125,9 +165,10 @@ describe('MediaSection grouping', () => {
       JSON.stringify([
         {
           id: 'living-room',
+          size: 'large',
           data: {
-            entityIds: ['media_player.living_room_tv'],
-            priorityOrder: ['media_player.living_room_tv'],
+            entityIds: ['media_player.kitchen', 'media_player.living_room_tv'],
+            priorityOrder: ['media_player.kitchen', 'media_player.living_room_tv'],
             idleBehavior: 'compact',
           },
         },
@@ -137,27 +178,66 @@ describe('MediaSection grouping', () => {
     renderWithProviders(<MediaSection />);
 
     expect(screen.getByTestId('media-display-group')).toHaveTextContent(
-      'media_player.living_room_tv'
+      'media_player.kitchen,media_player.living_room_tv'
+    );
+    expect(screen.getByTestId('media-display-group').parentElement).toHaveClass(
+      'col-span-4',
+      'row-span-4'
     );
     expect(screen.getByTestId('media-group-grid')).toHaveTextContent('media_player.kitchen');
     expect(screen.queryByRole('tab', { name: 'TVs' })).not.toBeInTheDocument();
+  });
+
+  it('keeps idle players in the media cards when their display group is hidden', () => {
+    window.localStorage.setItem(
+      'navet-media-display-groups',
+      JSON.stringify([
+        {
+          id: 'all-players',
+          data: {
+            entityIds: ['media_player.kitchen', 'media_player.living_room_tv'],
+            priorityOrder: ['media_player.kitchen', 'media_player.living_room_tv'],
+            idleBehavior: 'hidden',
+          },
+        },
+      ])
+    );
+
+    renderWithProviders(<MediaSection />);
+
+    expect(screen.queryByTestId('media-display-group')).not.toBeInTheDocument();
+    expect(screen.getByTestId('media-group-grid')).toHaveTextContent('media_player.kitchen');
+    fireEvent.click(screen.getByRole('tab', { name: 'TVs' }));
+    expect(screen.getByTestId('media-group-grid')).toHaveTextContent('media_player.living_room_tv');
   });
 
   it('can create a group in edit mode and save its selected players', async () => {
     isEditModeMock.mockReturnValue(true);
     renderWithProviders(<MediaSection />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Media Stack' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Choose TV' }));
+    expect(screen.queryByRole('button', { name: 'Add Entity' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Create stack from Kitchen speaker' }));
 
     await waitFor(() => {
       expect(JSON.parse(window.localStorage.getItem('navet-media-display-groups') ?? '[]')).toEqual(
         [
           expect.objectContaining({
-            data: expect.objectContaining({ entityIds: ['media_player.living_room_tv'] }),
+            anchorEntityId: 'media_player.kitchen',
+            data: expect.objectContaining({
+              entityIds: ['media_player.kitchen', 'media_player.living_room_tv'],
+            }),
           }),
         ]
       );
     });
+  });
+
+  it('opens Add Entity from the dashboard edit command', async () => {
+    isEditModeMock.mockReturnValue(true);
+    const { rerender } = renderWithProviders(<MediaSection addEntityRequestKey={0} />);
+
+    rerender(<MediaSection addEntityRequestKey={1} />);
+
+    expect(await screen.findByRole('dialog', { name: 'Add Entity' })).toBeInTheDocument();
   });
 });

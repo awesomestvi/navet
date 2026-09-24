@@ -20,6 +20,7 @@ export interface MediaDialogMediaStackPlayer {
 
 export interface MediaDialogMediaStackSettings {
   entityIds: string[];
+  requiredEntityIds?: string[];
   priorityOrder: string[];
   idleBehavior: MediaStackIdleBehavior;
   playerOptions: MediaDialogMediaStackPlayer[];

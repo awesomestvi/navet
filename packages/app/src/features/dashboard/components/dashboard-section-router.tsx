@@ -127,6 +127,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
   const [isAddClimateEntityDialogOpen, setIsAddClimateEntityDialogOpen] = useState(false);
   const [isRoomManagementOpen, setIsRoomManagementOpen] = useState(false);
   const [securityAddEntityRequestKey, setSecurityAddEntityRequestKey] = useState(0);
+  const [mediaAddEntityRequestKey, setMediaAddEntityRequestKey] = useState(0);
   const {
     activeRoom,
     activeSection,
@@ -330,6 +331,10 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
       return openSecurityAddEntityDialog;
     }
 
+    if (activeSection === 'media') {
+      return () => setMediaAddEntityRequestKey((previous) => previous + 1);
+    }
+
     if (activeSection === 'lights' && sectionData.hiddenLightEntityIds.length > 0) {
       return onOpenAddEntityDialog;
     }
@@ -493,7 +498,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
   } else if (activeSection === 'media') {
     sectionContent = (
       <Suspense fallback={<LoadingSpinner />}>
-        <MediaSection />
+        <MediaSection addEntityRequestKey={mediaAddEntityRequestKey} />
       </Suspense>
     );
   } else if (activeSection === 'settings') {

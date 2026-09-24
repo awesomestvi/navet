@@ -23,18 +23,27 @@ const player: MediaDevice = {
 describe('media display groups', () => {
   it('keeps valid persisted groups and rejects malformed entries', () => {
     const groups = normalizeMediaDisplayGroups([
-      { id: 'living-room', data: { entityIds: [player.id], idleBehavior: 'hidden' } },
+      {
+        id: 'living-room',
+        size: 'large',
+        data: { entityIds: [player.id], idleBehavior: 'hidden' },
+      },
       { id: 'living-room', data: { entityIds: [] } },
       { id: '', data: {} },
     ]);
 
     expect(groups).toHaveLength(1);
+    expect(groups[0]?.size).toBe('large');
     expect(groups[0]?.data).toMatchObject({
       entityIds: [player.id],
       priorityOrder: [player.id],
       idleBehavior: 'hidden',
     });
     expect(getMediaDisplayGroupMemberIds(groups)).toEqual(new Set([player.id]));
+  });
+
+  it('defaults legacy groups to a medium card', () => {
+    expect(normalizeMediaDisplayGroups([{ id: 'legacy', data: {} }])[0]?.size).toBe('medium');
   });
 
   it('shows a powered console and hides an idle group when configured', () => {

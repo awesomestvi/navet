@@ -324,6 +324,7 @@ describe('MediaDialog', () => {
     );
 
     expect(screen.getByText('Media players')).toBeInTheDocument();
+    expect(screen.queryByText('Priority')).not.toBeInTheDocument();
     const [firstCheckbox] = screen.getAllByRole('checkbox');
 
     expect(firstCheckbox).toBeDefined();
@@ -333,8 +334,8 @@ describe('MediaDialog', () => {
 
     fireEvent.click(firstCheckbox);
     expect(onUpdate).toHaveBeenCalledWith({
-      entityIds: ['media_player.speaker'],
-      priorityOrder: ['media_player.speaker'],
+      entityIds: ['media_player.living_room'],
+      priorityOrder: ['media_player.living_room'],
       idleBehavior: 'compact',
     });
   });

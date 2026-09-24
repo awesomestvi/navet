@@ -92,6 +92,12 @@ Request community communication drafts explicitly when a release needs an announ
 release notes remain the source for the website and documentation changelogs; they do not require
 a separate communication task.
 
+After a stable release completes artifact, distribution, and channel verification, Navet Nisse
+comments on each issue in this repository linked as closed by a pull request merged since the
+previous stable tag. The comment links to the published stable release. This routine issue
+follow-up is authorized by the stable release dispatch. Retries skip issues already notified for
+that exact tag.
+
 QA is not a separate conversational agent. Linting, type checking, tests, builds, smoke checks,
 screenshots, and artifact verification are deterministic jobs. A reviewer may interpret failures;
 it may not override them.
@@ -249,6 +255,10 @@ configured after these files reach `main`:
    repeated approval prompts. Restrict these environments to the `main` branch. Stable dispatch
    requires confirmation that the selected beta/RC was installed and tested; the workflow also
    verifies the source release's successful run and recorded image digests.
+   Add `NAVET_NISSE_CLIENT_ID` and `NAVET_NISSE_APP_PRIVATE_KEY` to the `production` environment
+   for stable issue follow-up. Use the GitHub App Client ID, not its numeric App ID; the local
+   runner's `NAVET_NISSE_APP_ID` is a separate setting. The App needs only Issues read/write and
+   Metadata read; the workflow's own read token identifies merged PRs and linked issues.
 7. Keep Cloudflare preview deployments public only for repository/demo data. Preview projects must
    not receive Home Assistant URLs, tokens, provider OAuth secrets, production cookies, or private
    tunnel credentials.

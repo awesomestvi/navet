@@ -10,7 +10,7 @@ import type { NavetMediaCapabilities } from '@navet/app/core/navet-device-state'
 import { useI18n, useTheme } from '@navet/app/hooks';
 import type { ThemeMode } from '@navet/app/stores/theme-store';
 import type { CSSProperties, ReactNode } from 'react';
-import { lazy, memo, Suspense, useEffect, useState } from 'react';
+import { lazy, memo, Suspense, useCallback, useEffect, useState } from 'react';
 import type { MediaDialogMediaStackSettings } from '../media/media-dialog.types';
 import { MediaLargeView } from '../media/media-large-view';
 import { MediaMediumVerticalView } from '../media/media-medium-vertical-view';
@@ -119,6 +119,7 @@ interface MediaCardProps {
   mediaStackAppearance?: boolean;
   mediaStackCount?: number;
   mediaStackSettings?: MediaDialogMediaStackSettings;
+  onDerivedBackgroundChange?: (entityId: string, backgroundColor: string) => void;
   openSettingsRequestKey?: number;
   disableTransportPlayback?: boolean;
   hideTransportControls?: boolean;
@@ -159,6 +160,7 @@ export const MediaCard = memo(function MediaCard({
   mediaStackAppearance = false,
   mediaStackCount,
   mediaStackSettings,
+  onDerivedBackgroundChange,
   openSettingsRequestKey = 0,
   disableTransportPlayback = false,
   hideTransportControls = false,
@@ -260,6 +262,10 @@ export const MediaCard = memo(function MediaCard({
     id,
     `${displayTitle}::${displayArtist}`
   );
+  const reportDerivedBackground = useCallback(
+    (backgroundColor: string) => onDerivedBackgroundChange?.(id, backgroundColor),
+    [id, onDerivedBackgroundChange]
+  );
 
   const isSmall = mediaSize === 'small';
   const isMedium = mediaSize === 'medium';
@@ -325,6 +331,7 @@ export const MediaCard = memo(function MediaCard({
     volume,
     isMuted,
     theme,
+    onDerivedBackgroundChange: onDerivedBackgroundChange ? reportDerivedBackground : undefined,
   };
   const mediaControlProps = {
     hideTransportControls: effectiveHideTransportControls,
@@ -481,6 +488,9 @@ export const MediaCard = memo(function MediaCard({
                 volume={volume}
                 isMuted={isMuted}
                 theme={theme}
+                onDerivedBackgroundChange={
+                  onDerivedBackgroundChange ? reportDerivedBackground : undefined
+                }
                 remoteAvailable={tvRemoteAvailable}
                 canSetVolume={mediaCapabilities?.canSetVolume ?? false}
                 canMuteVolume={mediaCapabilities?.canMuteVolume ?? false}

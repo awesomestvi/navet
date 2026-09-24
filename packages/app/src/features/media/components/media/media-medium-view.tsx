@@ -36,6 +36,10 @@ import {
   withAlpha,
 } from './use-media-artwork-colors';
 import { useMediaVolumeMode } from './use-media-volume-mode';
+import {
+  type MediaDerivedColorsReporter,
+  useReportMediaDerivedColors,
+} from './use-report-media-derived-colors';
 import { useStableMediaArtwork } from './use-stable-media-artwork';
 
 interface MediaMediumViewProps {
@@ -54,6 +58,7 @@ interface MediaMediumViewProps {
   elapsedSeconds: number;
   durationSeconds: number;
   theme: ThemeType;
+  onDerivedBackgroundChange?: MediaDerivedColorsReporter;
   hideTransportControls?: boolean;
   repeatMode: 'off' | 'one' | 'all';
   shuffleEnabled: boolean;
@@ -92,6 +97,7 @@ export function MediaMediumView({
   elapsedSeconds,
   durationSeconds,
   theme,
+  onDerivedBackgroundChange,
   hideTransportControls = false,
   repeatMode,
   shuffleEnabled,
@@ -151,6 +157,7 @@ export function MediaMediumView({
     backgroundColorOverride: textSideBackgroundColor,
   });
   const resolvedTitleColor = readableForeground.titleColor;
+  useReportMediaDerivedColors(onDerivedBackgroundChange, textSideBackgroundColor);
   const resolvedSubtitleColor = readableForeground.subtitleColor;
   const controlIconStyle = { color: resolvedTitleColor };
   const neutralButtonStyle = {

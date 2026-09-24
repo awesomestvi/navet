@@ -2,7 +2,7 @@ changed_files="$(git diff --cached --name-only)"
 should_verify_release_artifacts=false
 should_check_release_docker=false
 
-if printf '%s\n' "$changed_files" | grep -Eq '^(package\.json|CHANGELOG\.md|custom_components/navet/manifest\.json|addons/navet/config\.yaml|docs/VERSIONING\.md)$'; then
+if printf '%s\n' "$changed_files" | grep -Eq '^(CHANGELOG\.md|custom_components/navet/manifest\.json|addons/navet/config\.yaml|docs/VERSIONING\.md)$'; then
   should_verify_release_artifacts=true
 fi
 
@@ -21,6 +21,7 @@ if printf '%s\n' "$changed_files" | grep -Eq '^package\.json$'; then
   fi
 
   if [ "$staged_version" != "$head_version" ]; then
+    should_verify_release_artifacts=true
     should_check_release_docker=true
   fi
 fi

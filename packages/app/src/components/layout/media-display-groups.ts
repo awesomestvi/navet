@@ -1,3 +1,4 @@
+import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import {
   type MediaStackWidgetData,
   normalizeMediaStackWidgetData,
@@ -7,8 +8,12 @@ import type { MediaDevice } from '@navet/app/types/device.types';
 
 export interface MediaDisplayGroup {
   id: string;
+  size: CardSize;
   data: MediaStackWidgetData;
+  anchorEntityId?: string;
 }
+
+const MEDIA_STACK_SIZES: CardSize[] = ['small', 'medium', 'large'];
 
 export function normalizeMediaDisplayGroups(value: unknown): MediaDisplayGroup[] {
   if (!Array.isArray(value)) return [];
@@ -16,20 +21,34 @@ export function normalizeMediaDisplayGroups(value: unknown): MediaDisplayGroup[]
   const seenIds = new Set<string>();
   return value.flatMap((candidate) => {
     if (!candidate || typeof candidate !== 'object') return [];
-    const { id, data } = candidate as Record<string, unknown>;
+    const { anchorEntityId, id, data, size } = candidate as Record<string, unknown>;
     if (typeof id !== 'string' || !id.trim() || seenIds.has(id)) return [];
     seenIds.add(id);
     return [
       {
         id,
+        size: MEDIA_STACK_SIZES.includes(size as CardSize) ? (size as CardSize) : 'medium',
         data: normalizeMediaStackWidgetData(
           data && typeof data === 'object' && !Array.isArray(data)
             ? (data as Record<string, unknown>)
             : {}
         ) ?? { entityIds: [], priorityOrder: [], idleBehavior: 'compact' },
+        anchorEntityId:
+          typeof anchorEntityId === 'string' && anchorEntityId.trim() ? anchorEntityId : undefined,
       },
     ];
   });
+}
+
+export function getMediaDisplayGroupAnchorId(group: MediaDisplayGroup): string | undefined {
+  if (group.anchorEntityId && group.data.entityIds?.includes(group.anchorEntityId)) {
+    return group.anchorEntityId;
+  }
+
+  return (
+    group.data.priorityOrder?.find((entityId) => group.data.entityIds?.includes(entityId)) ??
+    group.data.entityIds?.[0]
+  );
 }
 
 export function getMediaDisplayGroupMemberIds(groups: MediaDisplayGroup[]): Set<string> {

@@ -7,6 +7,9 @@ releases. A product release does not redeploy or smoke-test the public sites.
 
 Every pull request adds a validated `.changes/*.yaml` fragment. Use `internal` and an empty
 audience list when there is no user-facing change.
+Use `pnpm release:status` to see the pending fragments against the last completed stable release;
+add `--all` to see released files as well. The command reads publication evidence and does not
+change repository files.
 
 CI always runs quality checks, type checking, release-fragment validation, and script tests
 (through the product test lanes for runtime changes, or a focused script lane otherwise).
@@ -201,6 +204,11 @@ latest-release API. `Verify Complete Release` completes only after these checks 
 updates succeed. Public-site availability does not gate installation releases; the sites consume
 the verified canonical release record. HACS and App metadata can become visible before the last
 step: distribution remains non-atomic, and the final successful workflow is the completion signal.
+
+For stable releases, Navet Nisse comments on issues linked as closed by PRs merged between the
+previous stable tag and the released commit. Each comment links to the stable GitHub release. This
+runs after channel verification and skips comments already made for that tag, so a recovery run can
+finish any missed replies.
 
 ## Activating Scoped Deployments
 

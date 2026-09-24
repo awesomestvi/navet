@@ -1,10 +1,8 @@
 import { renderWithProviders } from '@navet/app/test/render';
 import type { DeviceCollection } from '@navet/app/types/device.types';
-import { fireEvent, screen } from '@testing-library/react';
-import { useState } from 'react';
+import { act, fireEvent, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MediaStackWidget } from '../media-stack-widget';
-import type { MediaStackWidgetData } from '../media-stack-widget-data';
 
 const { useAreaRoomsMock, useDeviceCollectionsByKeysMock, mediaCardMock } = vi.hoisted(() => ({
   useAreaRoomsMock: vi.fn(),
@@ -101,76 +99,55 @@ describe('MediaStackWidget', () => {
     mediaCardMock.mockReset();
   });
 
-  it('shows an empty state until media players are selected', async () => {
+  it('shows a non-interactive legacy empty state when no players are selected', () => {
     renderWithProviders(<MediaStackWidget onUpdate={vi.fn()} />);
 
     expect(screen.getByText('No media players selected')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Media players' }));
-    expect(await screen.findByText('Media stack')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Media players' })).not.toBeInTheDocument();
   });
 
-  it('saves player selection from settings', async () => {
-    const onUpdate = vi.fn();
-
-    renderWithProviders(<MediaStackWidget onUpdate={onUpdate} />);
-
-    fireEvent.click(screen.getByRole('button', { name: 'Media players' }));
-    fireEvent.click(await screen.findByText('Living Room TV'));
-
-    expect(onUpdate).toHaveBeenCalledWith({
-      entityIds: ['media_player.living_room_tv'],
-      priorityOrder: ['media_player.living_room_tv'],
-      idleBehavior: 'compact',
-    });
-  });
-
-  it('keeps settings open when the first selected player becomes the card', async () => {
-    function MediaGroup() {
-      const [data, setData] = useState<MediaStackWidgetData>();
-      return <MediaStackWidget data={data} onUpdate={setData} />;
-    }
-
-    renderWithProviders(<MediaGroup />);
-
-    fireEvent.click(screen.getByRole('button', { name: 'Media players' }));
-    fireEvent.click(await screen.findByText('Living Room TV'));
-
-    expect(screen.getByText('media-card:media_player.living_room_tv:Apple TV')).toBeInTheDocument();
-    expect(screen.getByText('Media stack')).toBeInTheDocument();
-
-    fireEvent.click(screen.getByText('Living Room Speaker'));
-    expect(
-      screen.getByText('media-card:media_player.living_room_speaker:Jazz FM')
-    ).toBeInTheDocument();
-    expect(screen.getByText('Media stack')).toBeInTheDocument();
-  });
-
-  it('only offers media players available to this display group', async () => {
-    renderWithProviders(
-      <MediaStackWidget onUpdate={vi.fn()} availableEntityIds={['media_player.living_room_tv']} />
-    );
-
-    fireEvent.click(screen.getByRole('button', { name: 'Media players' }));
-    expect(await screen.findByText('Living Room TV')).toBeInTheDocument();
-    expect(screen.queryByText('Living Room Speaker')).not.toBeInTheDocument();
-  });
-
-  it('forwards settings requests to the stacked media card dialog', () => {
+  it('only supplies media players available to this stack', () => {
     renderWithProviders(
       <MediaStackWidget
         onUpdate={vi.fn()}
+        availableEntityIds={['media_player.living_room_tv']}
         data={{
-          entityIds: ['media_player.living_room_tv', 'media_player.living_room_speaker'],
-          priorityOrder: ['media_player.living_room_speaker', 'media_player.living_room_tv'],
+          entityIds: ['media_player.living_room_tv'],
+          priorityOrder: ['media_player.living_room_tv'],
           idleBehavior: 'compact',
         }}
-        openSettingsRequestKey={1}
       />
     );
 
-    expect(mediaCardMock).toHaveBeenCalledWith(
+    expect(mediaCardMock).toHaveBeenLastCalledWith(
       expect.objectContaining({
+        mediaStackSettings: expect.objectContaining({
+          playerOptions: [expect.objectContaining({ id: 'media_player.living_room_tv' })],
+        }),
+      })
+    );
+  });
+
+  it('forwards edit settings to the visible media card with stack settings', () => {
+    const data = {
+      entityIds: ['media_player.living_room_tv', 'media_player.living_room_speaker'],
+      priorityOrder: ['media_player.living_room_speaker', 'media_player.living_room_tv'],
+      idleBehavior: 'compact' as const,
+    };
+    const onUpdate = vi.fn();
+    const { rerender } = renderWithProviders(
+      <MediaStackWidget onUpdate={onUpdate} data={data} openSettingsRequestKey={0} />
+    );
+
+    rerender(<MediaStackWidget onUpdate={onUpdate} data={data} openSettingsRequestKey={1} />);
+
+    expect(mediaCardMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        id: 'media_player.living_room_speaker',
         openSettingsRequestKey: 1,
+        mediaStackSettings: expect.objectContaining({
+          entityIds: ['media_player.living_room_tv', 'media_player.living_room_speaker'],
+        }),
       })
     );
   });
@@ -192,9 +169,45 @@ describe('MediaStackWidget', () => {
     expect(mediaCardMock).toHaveBeenCalledWith(
       expect.objectContaining({
         id: 'media_player.living_room_speaker',
-        mediaStackAppearance: true,
       })
     );
+  });
+
+  it('shows side indicators and switches players with a vertical swipe or arrow keys', () => {
+    vi.useFakeTimers();
+    const { container } = renderWithProviders(
+      <MediaStackWidget
+        data={{
+          entityIds: ['media_player.living_room_tv', 'media_player.living_room_speaker'],
+          priorityOrder: ['media_player.living_room_tv', 'media_player.living_room_speaker'],
+          idleBehavior: 'compact',
+        }}
+      />
+    );
+
+    const stack = container.querySelector('[data-media-stack]');
+    expect(stack).not.toBeNull();
+    const dots = container.querySelectorAll('[data-media-stack] [data-active]');
+    expect(dots).toHaveLength(1);
+    expect(screen.queryByRole('button', { name: /Media players:/ })).not.toBeInTheDocument();
+    fireEvent.touchStart(stack as Element, { touches: [{ clientX: 80, clientY: 120 }] });
+    fireEvent.touchMove(stack as Element, { touches: [{ clientX: 82, clientY: 40 }] });
+    expect(container.querySelector('[data-media-stack-card]')).toHaveStyle({
+      transform: 'translate3d(0, -80px, 0)',
+    });
+    fireEvent.touchEnd(stack as Element, { changedTouches: [{ clientX: 82, clientY: 40 }] });
+    act(() => vi.advanceTimersByTime(220));
+    expect(screen.getByText('media-card:media_player.living_room_tv:Apple TV')).toBeInTheDocument();
+    fireEvent.touchStart(stack as Element, { touches: [{ clientX: 80, clientY: 40 }] });
+    fireEvent.touchMove(stack as Element, { touches: [{ clientX: 82, clientY: 120 }] });
+    fireEvent.touchEnd(stack as Element, { changedTouches: [{ clientX: 82, clientY: 120 }] });
+    act(() => vi.advanceTimersByTime(220));
+    expect(
+      screen.getByText('media-card:media_player.living_room_speaker:Jazz FM')
+    ).toBeInTheDocument();
+    fireEvent.keyDown(stack as Element, { key: 'ArrowDown' });
+    expect(screen.getByText('media-card:media_player.living_room_tv:Apple TV')).toBeInTheDocument();
+    vi.useRealTimers();
   });
 
   it('shows a compact fallback when none of the selected players is active', () => {
