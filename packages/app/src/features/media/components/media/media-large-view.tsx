@@ -32,6 +32,10 @@ import {
   useMediaArtworkColors,
   withAlpha,
 } from './use-media-artwork-colors';
+import {
+  type MediaDerivedColorsReporter,
+  useReportMediaDerivedColors,
+} from './use-report-media-derived-colors';
 import { useStableMediaArtwork } from './use-stable-media-artwork';
 
 interface MediaLargeViewProps {
@@ -50,6 +54,7 @@ interface MediaLargeViewProps {
   elapsedSeconds: number;
   durationSeconds: number;
   theme: ThemeType;
+  onDerivedBackgroundChange?: MediaDerivedColorsReporter;
   hideTransportControls?: boolean;
   hideHeader?: boolean;
   fallbackArtworkIcon?: 'disc' | 'spotify';
@@ -90,6 +95,7 @@ export function MediaLargeView({
   elapsedSeconds,
   durationSeconds,
   theme,
+  onDerivedBackgroundChange,
   hideTransportControls = false,
   hideHeader = false,
   fallbackArtworkIcon = 'disc',
@@ -157,6 +163,7 @@ export function MediaLargeView({
       }
     : readableForeground;
   const resolvedTitleColor = foreground.titleColor;
+  useReportMediaDerivedColors(onDerivedBackgroundChange, palette.gradientEnd);
   const resolvedSubtitleColor = foreground.subtitleColor;
   const controlIconStyle = { color: resolvedTitleColor };
   const neutralButtonStyle = {

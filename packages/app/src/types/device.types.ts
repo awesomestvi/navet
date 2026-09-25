@@ -138,6 +138,7 @@ export interface WeatherDevice extends BaseDevice {
 
 // Media device
 export interface MediaDevice extends BaseDevice {
+  isPoweredOn?: boolean;
   room: string;
   title: string;
   artist: string;

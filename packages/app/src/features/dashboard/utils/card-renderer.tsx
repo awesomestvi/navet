@@ -11,6 +11,7 @@ import {
   readNavetPersonState,
   readNavetSensorState,
 } from '@navet/app/core/navet-device-state';
+import type { MediaDialogMediaStackSettings } from '@navet/app/features/media/components/media/media-dialog.types';
 import type { SensorReading } from '@navet/app/features/sensors/components/sensors';
 import type { VacuumStatus } from '@navet/app/features/vacuum/components/vacuum/vacuum-utils';
 import { isLawnMowerEntityId } from '@navet/app/features/vacuum/components/vacuum/vacuum-utils';
@@ -40,6 +41,7 @@ interface CardRendererOptions {
   isEditMode: boolean;
   headerSubtitleOverride?: string;
   presentationVariant?: 'media-stack';
+  mediaStackSettings?: MediaDialogMediaStackSettings;
 }
 
 type CardRenderFn = (options: CardRendererOptions) => ReactElement | null;
@@ -428,7 +430,14 @@ const cardRegistry: Partial<Record<string, CardRenderFn>> = {
     />
   ),
 
-  media: ({ device, size, handleSizeChange, isEditMode, presentationVariant }) => (
+  media: ({
+    device,
+    size,
+    handleSizeChange,
+    isEditMode,
+    presentationVariant,
+    mediaStackSettings,
+  }) => (
     <MediaCard
       id={device.id as string}
       name={device.name as string}
@@ -456,6 +465,7 @@ const cardRegistry: Partial<Record<string, CardRenderFn>> = {
       onSizeChange={handleSizeChange}
       isEditMode={isEditMode}
       mediaStackAppearance={presentationVariant === 'media-stack'}
+      mediaStackSettings={mediaStackSettings}
     />
   ),
 

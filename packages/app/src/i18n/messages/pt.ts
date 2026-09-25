@@ -2432,13 +2432,6 @@ export const ptMessages = {
   'widgets.mediaStack.settings.priorityEmpty':
     'Selecione pelo menos um reprodutor de mídia para definir a ordem de prioridade.',
   'widgets.mediaStack.settings.priorityPosition': 'Prioridade {position}',
-  'widgets.mediaStack.settings.idleBehavior': 'Comportamento ocioso',
-  'widgets.mediaStack.settings.idleBehaviorHelp':
-    'Escolha o que este widget deve fazer quando nada estiver sendo reproduzido ativamente.',
-  'widgets.mediaStack.settings.idleBehavior.compact': 'Mostrar um cartão substituto compacto',
-  'widgets.mediaStack.settings.idleBehavior.hidden': 'Ocultar o widget quando estiver inativo',
-  'widgets.mediaStack.settings.idleBehavior.top-priority':
-    'Mostrar sempre o leitor com maior prioridade',
   'widgets.mediaStack.settings.moveUp': 'Subir',
   'widgets.mediaStack.settings.moveDown': 'Mover para baixo',
   'widgets.mediaStack.badge': 'Pilha',

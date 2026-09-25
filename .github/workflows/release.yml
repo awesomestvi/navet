@@ -602,3 +602,41 @@ jobs:
           gh release download "$RELEASE_TAG" --pattern navet-release-evidence.json --repo "$GITHUB_REPOSITORY"
           node scripts/release-channels.mjs
           echo "Verified packages, distribution metadata and channel aliases are complete." >> "$GITHUB_STEP_SUMMARY"
+
+  notify-included-issues:
+    name: Notify issues in stable release
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    needs: [release-context, publish-channels]
+    if: needs.release-context.outputs.prerelease == 'false' && github.repository == 'awesomestvi/navet'
+    environment: production
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+    steps:
+      - name: Checkout trusted release tooling and history
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          package-manager-cache: false
+      - name: Create issue-comment token for Navet Nisse
+        id: nisse_token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ secrets.NAVET_NISSE_CLIENT_ID }}
+          private-key: ${{ secrets.NAVET_NISSE_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: navet
+          permission-issues: write
+      - name: Comment on linked issues once
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NAVET_NISSE_TOKEN: ${{ steps.nisse_token.outputs.token }}
+          NOTES_BASE_TAG: ${{ needs.release-context.outputs.notes_base_tag }}
+          RELEASE_SHA: ${{ needs.release-context.outputs.release_sha }}
+        run: node scripts/notify-release-issues.mjs

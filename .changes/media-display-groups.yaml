@@ -1,0 +1,5 @@
+type: new
+audiences:
+  - standalone
+  - home-assistant
+summary: Group media players into one swipeable card that surfaces the active player and supports drag ordering.

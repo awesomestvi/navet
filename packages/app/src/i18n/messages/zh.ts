@@ -2247,12 +2247,6 @@ export const zhMessages = {
     '多个播放器同时活动时，位置靠前的播放器具有更高优先级。',
   'widgets.mediaStack.settings.priorityEmpty': '至少选择一个媒体播放器来定义优先顺序。',
   'widgets.mediaStack.settings.priorityPosition': '优先级 {position}',
-  'widgets.mediaStack.settings.idleBehavior': '闲置行为',
-  'widgets.mediaStack.settings.idleBehaviorHelp':
-    '选择当没有任何活动正在播放时此小部件应执行的操作。',
-  'widgets.mediaStack.settings.idleBehavior.compact': '显示紧凑的后备卡',
-  'widgets.mediaStack.settings.idleBehavior.hidden': '空闲时隐藏小部件',
-  'widgets.mediaStack.settings.idleBehavior.top-priority': '始终显示优先级最高的播放器',
   'widgets.mediaStack.settings.moveUp': '向上移动',
   'widgets.mediaStack.settings.moveDown': '下移',
   'widgets.mediaStack.badge': '媒体组',

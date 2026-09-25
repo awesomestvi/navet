@@ -2419,7 +2419,7 @@ export const enMessages = {
   'widgets.energyNow.empty.sparkline': 'Not enough data to show sparkline yet.',
   'widgets.mediaStack.settings.title': 'Media stack',
   'widgets.mediaStack.settings.players': 'Media players',
-  'widgets.mediaStack.settings.help': 'Choose which media players this widget can rotate between.',
+  'widgets.mediaStack.settings.help': 'Add players and drag selected players to set their order.',
   'widgets.mediaStack.settings.noneAvailable': 'No media players are available right now.',
   'widgets.mediaStack.settings.priority': 'Priority',
   'widgets.mediaStack.settings.priorityHelp':
@@ -2427,12 +2427,6 @@ export const enMessages = {
   'widgets.mediaStack.settings.priorityEmpty':
     'Select at least one media player to define the priority order.',
   'widgets.mediaStack.settings.priorityPosition': 'Priority {position}',
-  'widgets.mediaStack.settings.idleBehavior': 'Idle behavior',
-  'widgets.mediaStack.settings.idleBehaviorHelp':
-    'Choose what this widget should do when nothing is actively playing.',
-  'widgets.mediaStack.settings.idleBehavior.compact': 'Show a compact fallback card',
-  'widgets.mediaStack.settings.idleBehavior.hidden': 'Hide the widget when idle',
-  'widgets.mediaStack.settings.idleBehavior.top-priority': 'Always show the top-priority player',
   'widgets.mediaStack.settings.moveUp': 'Move up',
   'widgets.mediaStack.settings.moveDown': 'Move down',
   'widgets.mediaStack.badge': 'Stack',
@@ -2470,7 +2464,7 @@ export const enMessages = {
     'Pin a custom energy-related sensor such as prepaid balance, credit remaining, tariff, or meter status.',
   'dashboard.addCard.templates.mediaStack.name': 'Media Stack',
   'dashboard.addCard.templates.mediaStack.description':
-    'One media card that surfaces the most relevant player for the room.',
+    'Show selected media players in one card, with the active player first.',
   'dashboard.addCard.templates.button.name': 'Action',
   'dashboard.addCard.templates.button.description':
     'Tap to trigger any Home Assistant service, scene, or script.',

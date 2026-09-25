@@ -1,4 +1,8 @@
-import { CardDialogSection, SelectableCheckboxRow } from '@navet/app/components/patterns';
+import {
+  CardDialogSection,
+  SelectableCheckboxList,
+  SelectableCheckboxRow,
+} from '@navet/app/components/patterns';
 import { BaseCardDialogWithState, Button } from '@navet/app/components/primitives';
 import { normalizeCustomCardTint } from '@navet/app/components/shared/theme/custom-card-tint-surface';
 import { getThemeColorValue } from '@navet/app/components/shared/theme/theme-colors';
@@ -37,8 +41,6 @@ export function BatterySettingsDialog({
   const { theme, primaryColor } = useTheme();
   const { t } = useI18n();
   const surface = getDashboardWidgetSurfaceTokens(theme, tintColor);
-  const baseSurface = getDashboardWidgetSurfaceTokens(theme);
-  const rowFill = baseSurface.subtleFill;
   const accentHex = normalizeCustomCardTint(tintColor) ?? getThemeColorValue(primaryColor);
   const effectiveSelectedIds = useMemo(
     () => selectedEntityIds ?? batteries.map((battery) => battery.id),
@@ -94,7 +96,7 @@ export function BatterySettingsDialog({
             {t('widgets.battery.settings.noneAvailable')}
           </p>
         ) : (
-          <ul className="min-w-0 max-w-full space-y-1.5 sm:max-h-72 sm:overflow-x-hidden sm:overflow-y-auto sm:pr-1">
+          <SelectableCheckboxList className="sm:max-h-72 sm:overflow-y-auto">
             {batteries.map((battery) => {
               const isChecked = selectedIdSet.has(battery.id);
               return (
@@ -119,20 +121,15 @@ export function BatterySettingsDialog({
                               : t('common.unavailable')}
                       </div>
                     }
-                    rowClassName={`w-full min-w-0 max-w-full overflow-hidden ${surface.borderClassName} ${surface.textPrimary}`}
+                    rowClassName={`overflow-hidden ${surface.textPrimary}`}
                     labelClassName="truncate"
                     descriptionClassName={`whitespace-normal break-all ${surface.textMuted}`}
                     checkboxPaletteColor={accentHex}
-                    style={{ background: rowFill }}
-                    selectedStyle={{
-                      background: rowFill,
-                      borderColor: `${accentHex}4d`,
-                    }}
                   />
                 </li>
               );
             })}
-          </ul>
+          </SelectableCheckboxList>
         )}
       </div>
     </CardDialogSection>

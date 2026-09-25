@@ -46,4 +46,6 @@ export interface AddEntityDialogProps {
   title?: string;
   description?: string;
   actionLabel?: string;
+  onAddCard?: (template: CardTemplate, size: CardSize) => void;
+  allowedTemplateIds?: CardTemplateId[];
 }

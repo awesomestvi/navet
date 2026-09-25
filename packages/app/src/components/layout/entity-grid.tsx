@@ -3,6 +3,7 @@ import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-
 import type { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import { DashboardCardItem, DashboardEditActions } from '@navet/app/features/dashboard';
 import { useFitDashboardGrid } from '@navet/app/features/dashboard/hooks/use-fit-dashboard-grid';
+import type { MediaDialogMediaStackSettings } from '@navet/app/features/media/components/media/media-dialog.types';
 import { useCardState, useTheme } from '@navet/app/hooks';
 import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
 import type { DeviceCollection, DeviceWithType } from '@navet/app/types/device.types';
@@ -26,6 +27,9 @@ export const EntityGrid = memo(function EntityGrid({
   isCollapsed = false,
   onToggleCollapse,
   showHeader = true,
+  extraCards,
+  cardReplacementById,
+  mediaStackSettingsById,
 }: {
   devices: DeviceWithType[];
   rawDevices: DeviceCollection;
@@ -43,6 +47,9 @@ export const EntityGrid = memo(function EntityGrid({
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
   showHeader?: boolean;
+  extraCards?: ReactNode;
+  cardReplacementById?: ReadonlyMap<string, { size: CardSize; node: ReactNode }>;
+  mediaStackSettingsById?: ReadonlyMap<string, MediaDialogMediaStackSettings>;
 }) {
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
@@ -106,22 +113,30 @@ export const EntityGrid = memo(function EntityGrid({
                   className="grid w-full grid-flow-row-dense gap-3 lg:gap-4"
                   style={gridStyle as CSSProperties}
                 >
+                  {extraCards}
                   {devices.map((device) => {
-                    const size = (cardSizes[device.id] ?? device.size) as CardSize;
+                    const replacement = cardReplacementById?.get(device.id);
+                    const size =
+                      replacement?.size ?? ((cardSizes[device.id] ?? device.size) as CardSize);
 
                     return (
                       <div key={device.id} className={getCardSpanClass(size)}>
-                        <DashboardCardItem
-                          id={device.id}
-                          device={device}
-                          size={size}
-                          isEditMode={isEditMode}
-                          handleSizeChange={updateCardSize}
-                          onRemoveEntity={onRemoveEntity}
-                          allowEntityRemoval={allowEntityRemoval}
-                          usesHideAction={usesHideAction}
-                          presentationVariant={cardVariantById?.get(device.id)}
-                        />
+                        {replacement ? (
+                          replacement.node
+                        ) : (
+                          <DashboardCardItem
+                            id={device.id}
+                            device={device}
+                            size={size}
+                            isEditMode={isEditMode}
+                            handleSizeChange={updateCardSize}
+                            onRemoveEntity={onRemoveEntity}
+                            allowEntityRemoval={allowEntityRemoval}
+                            usesHideAction={usesHideAction}
+                            presentationVariant={cardVariantById?.get(device.id)}
+                            mediaStackSettings={mediaStackSettingsById?.get(device.id)}
+                          />
+                        )}
                       </div>
                     );
                   })}

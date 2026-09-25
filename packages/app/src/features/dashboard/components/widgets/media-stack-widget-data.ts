@@ -65,21 +65,21 @@ function getPriorityOrder(
   return devices.map((device) => device.id);
 }
 
-function getStateRank(state: MediaDevice['state']): number {
-  switch (state) {
+function getStateRank(device: MediaDevice): number {
+  switch (device.state) {
     case 'playing':
-      return 3;
+      return 4;
     case 'paused':
-      return 2;
+      return 3;
     case 'idle':
-      return 1;
+      return device.isPoweredOn ? 2 : 1;
     default:
       return 0;
   }
 }
 
-function isActiveState(state: MediaDevice['state']): boolean {
-  return state === 'playing' || state === 'paused';
+function isActiveState(device: MediaDevice): boolean {
+  return device.state === 'playing' || device.state === 'paused' || device.isPoweredOn === true;
 }
 
 export function selectMediaStackDevice(
@@ -98,7 +98,7 @@ export function selectMediaStackDevice(
     return leftIndex - rightIndex;
   });
   const activeCandidates = [...sortedDevices].sort((left, right) => {
-    const stateRankDifference = getStateRank(right.state) - getStateRank(left.state);
+    const stateRankDifference = getStateRank(right) - getStateRank(left);
     if (stateRankDifference !== 0) {
       return stateRankDifference;
     }
@@ -107,7 +107,7 @@ export function selectMediaStackDevice(
     const rightIndex = priorityIndex.get(right.id) ?? Number.MAX_SAFE_INTEGER;
     return leftIndex - rightIndex;
   });
-  const activeDevice = activeCandidates.find((device) => isActiveState(device.state));
+  const activeDevice = activeCandidates.find(isActiveState);
 
   if (activeDevice) {
     return {

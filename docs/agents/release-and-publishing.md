@@ -62,6 +62,12 @@ Source:
    complete range since the previous stable tag.
 5. `internal` fragments prove the pull request was considered but are omitted from published notes.
 
+Run `pnpm release:status` to list fragments pending since the last completed stable release.
+Use `pnpm release:status --all` to list released fragments too. The command checks the published
+release evidence and successful workflow run before choosing its baseline; a tag alone is not
+proof of publication. `local` means the file has not been added to Git. If a released fragment is
+shown as `revised`, create a new fragment for the new change instead of reusing its filename.
+
 Writing style:
 
 - Use plain, direct language. Write for people using Navet, not contributors reading the diff.

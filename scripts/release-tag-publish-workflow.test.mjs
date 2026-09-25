@@ -145,6 +145,23 @@ describe('production release tag publisher', () => {
     expect(releaseWorkflow.jobs['verify-distribution'].needs).toContain('github-release');
     expect(releaseWorkflow.jobs['publish-channels'].needs).toContain('verify-distribution');
     expect(releaseWorkflow.jobs['publish-channels'].name).toBe('Verify Complete Release');
+    const issueJob = releaseWorkflow.jobs['notify-included-issues'];
+    expect(issueJob.needs).toEqual(['release-context', 'publish-channels']);
+    expect(issueJob['continue-on-error']).toBe(true);
+    expect(issueJob.if).toContain("prerelease == 'false'");
+    expect(issueJob.environment).toBe('production');
+    expect(issueJob.permissions).toEqual({
+      contents: 'read',
+      'pull-requests': 'read',
+      issues: 'read',
+    });
+    expect(issueJob.steps.find((step) => step.id === 'nisse_token').with).toMatchObject({
+      repositories: 'navet',
+      'permission-issues': 'write',
+      'client-id': '${{ secrets.NAVET_NISSE_CLIENT_ID }}',
+      'private-key': '${{ secrets.NAVET_NISSE_APP_PRIVATE_KEY }}',
+    });
+    expect(issueJob.steps.at(-1).run).toBe('node scripts/notify-release-issues.mjs');
     expect(JSON.stringify(releaseWorkflow)).not.toContain('scripts/generate-release-notes.mjs');
     expect(verificationSteps.map((step) => step.run ?? '').join('\n')).not.toMatch(
       /https:\/\/(?:demo\.|docs\.|storybook\.)?navet\.app/,

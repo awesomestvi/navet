@@ -16,6 +16,7 @@ import {
   useEffectiveEffectsQuality,
 } from '@navet/app/components/shared/theme/effective-effects-quality';
 import { getBaseCardRadiusClassName } from '@navet/app/components/system/tokens';
+import type { MediaDialogMediaStackSettings } from '@navet/app/features/media/components/media/media-dialog.types';
 import { useAccentColor, useI18n, useTheme } from '@navet/app/hooks';
 import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
 import { settingsSelectors } from '@navet/app/stores/selectors';
@@ -55,6 +56,7 @@ interface DashboardCardItemProps {
   optimizeOffscreenPaint?: boolean;
   headerSubtitleOverride?: string;
   presentationVariant?: 'media-stack';
+  mediaStackSettings?: MediaDialogMediaStackSettings;
 }
 
 const DashboardCardItemDraggable = lazy(async () => {
@@ -82,6 +84,7 @@ export const DashboardCardItem = memo(function DashboardCardItem({
   optimizeOffscreenPaint = false,
   headerSubtitleOverride,
   presentationVariant,
+  mediaStackSettings,
 }: DashboardCardItemProps) {
   const { t } = useI18n();
   const { theme } = useTheme();
@@ -176,6 +179,7 @@ export const DashboardCardItem = memo(function DashboardCardItem({
       isEditMode,
       headerSubtitleOverride,
       presentationVariant,
+      mediaStackSettings,
     })
   ) : card ? (
     <WidgetCard
@@ -359,6 +363,33 @@ function EditModeCardBackdrop({ size }: { size: CardSize }) {
       className={`pointer-events-none absolute inset-0 z-300 ${getBaseCardRadiusClassName(size)} bg-[radial-gradient(circle_at_top_left,rgba(0,0,0,0.52),transparent_54%),radial-gradient(circle_at_top_right,rgba(0,0,0,0.56),transparent_50%),linear-gradient(to_bottom,rgba(0,0,0,0.28),rgba(0,0,0,0.12)_30%,rgba(0,0,0,0.16)_56%,rgba(0,0,0,0.52))]`}
       aria-hidden="true"
     />
+  );
+}
+
+export function DashboardCardEditBackdrop({ size }: { size: CardSize }) {
+  return <EditModeCardBackdrop size={size} />;
+}
+
+export function DashboardCardEditDock({
+  cardSize,
+  children,
+}: {
+  cardSize: CardSize;
+  children: ReactNode;
+}) {
+  const accentColor = useAccentColor();
+  const { theme } = useTheme();
+  const effectsQuality = useEffectiveEffectsQuality();
+
+  return (
+    <EditModeActionDock
+      cardSize={cardSize}
+      accentColor={accentColor}
+      effectsQuality={effectsQuality}
+      theme={theme}
+    >
+      {children}
+    </EditModeActionDock>
   );
 }
 
@@ -930,6 +961,7 @@ function areDashboardCardItemPropsEqual(
     previous.densePerformanceMode === next.densePerformanceMode &&
     previous.optimizeOffscreenPaint === next.optimizeOffscreenPaint &&
     previous.headerSubtitleOverride === next.headerSubtitleOverride &&
-    previous.presentationVariant === next.presentationVariant
+    previous.presentationVariant === next.presentationVariant &&
+    previous.mediaStackSettings === next.mediaStackSettings
   );
 }

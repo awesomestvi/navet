@@ -2464,14 +2464,6 @@ export const deMessages = {
   'widgets.mediaStack.settings.priorityEmpty':
     'Wählen Sie mindestens einen Mediaplayer aus, um die Prioritätsreihenfolge festzulegen.',
   'widgets.mediaStack.settings.priorityPosition': 'Priorität {position}',
-  'widgets.mediaStack.settings.idleBehavior': 'Leerlaufverhalten',
-  'widgets.mediaStack.settings.idleBehaviorHelp':
-    'Wählen Sie, was dieses Widget tun soll, wenn nichts aktiv abgespielt wird.',
-  'widgets.mediaStack.settings.idleBehavior.compact': 'Kompakte Ersatzkarte anzeigen',
-  'widgets.mediaStack.settings.idleBehavior.hidden':
-    'Blenden Sie das Widget aus, wenn es inaktiv ist',
-  'widgets.mediaStack.settings.idleBehavior.top-priority':
-    'Immer den Player mit der höchsten Priorität anzeigen',
   'widgets.mediaStack.settings.moveUp': 'Nach oben',
   'widgets.mediaStack.settings.moveDown': 'Nach unten',
   'widgets.mediaStack.badge': 'Stapel',

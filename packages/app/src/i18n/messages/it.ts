@@ -2458,13 +2458,6 @@ export const itMessages = {
   'widgets.mediaStack.settings.priorityEmpty':
     "Seleziona almeno un lettore multimediale per definire l'ordine di priorità.",
   'widgets.mediaStack.settings.priorityPosition': 'Priorità {position}',
-  'widgets.mediaStack.settings.idleBehavior': 'Comportamento inattivo',
-  'widgets.mediaStack.settings.idleBehaviorHelp':
-    'Scegli cosa dovrebbe fare questo widget quando non è in corso alcuna riproduzione attiva.',
-  'widgets.mediaStack.settings.idleBehavior.compact': 'Mostra una carta di riserva compatta',
-  'widgets.mediaStack.settings.idleBehavior.hidden': 'Nascondi il widget quando è inattivo',
-  'widgets.mediaStack.settings.idleBehavior.top-priority':
-    'Mostra sempre il lettore con la priorità più alta',
   'widgets.mediaStack.settings.moveUp': 'Vai su',
   'widgets.mediaStack.settings.moveDown': 'Spostati giù',
   'widgets.mediaStack.badge': 'Pila',

@@ -2427,13 +2427,6 @@ export const noMessages = {
   'widgets.mediaStack.settings.priorityEmpty':
     'Velg minst én mediespiller for å definere prioritetsrekkefølgen.',
   'widgets.mediaStack.settings.priorityPosition': 'Prioritet {position}',
-  'widgets.mediaStack.settings.idleBehavior': 'Ledig oppførsel',
-  'widgets.mediaStack.settings.idleBehaviorHelp':
-    'Velg hva denne widgeten skal gjøre når ingenting spiller aktivt.',
-  'widgets.mediaStack.settings.idleBehavior.compact': 'Vis et kompakt reservekort',
-  'widgets.mediaStack.settings.idleBehavior.hidden': 'Skjul widgeten når den er inaktiv',
-  'widgets.mediaStack.settings.idleBehavior.top-priority':
-    'Vis alltid den høyeste prioriterte spilleren',
   'widgets.mediaStack.settings.moveUp': 'Flytt opp',
   'widgets.mediaStack.settings.moveDown': 'Flytt ned',
   'widgets.mediaStack.badge': 'Stabel',

@@ -255,12 +255,26 @@ export function WeatherBackground({
           : 'right-[-18%] top-[-28%] h-40 w-40 opacity-72',
     });
     const sunnySurface = getSunnyThemeSurface(theme);
+    const sunCoreMotionClassName =
+      effectsQuality === 'low'
+        ? ''
+        : 'motion-safe:animate-[navet-weather-sun-breathe_9s_ease-in-out_infinite_alternate] motion-safe:will-change-transform';
+    const sunInnerRingMotionClassName =
+      effectsQuality === 'high'
+        ? 'motion-safe:animate-[navet-weather-sun-ring-inner_13s_ease-in-out_infinite_alternate] motion-safe:will-change-transform'
+        : '';
+    const sunOuterRingMotionClassName =
+      effectsQuality === 'high'
+        ? 'motion-safe:animate-[navet-weather-sun-ring-outer_17s_ease-in-out_infinite_alternate] motion-safe:will-change-transform'
+        : '';
     return (
       <>
         <div className={`absolute inset-0 ${surface.baseGradient}`} />
-        <div className={`absolute rounded-full bg-[#ffd364]/95 ${sunClassName}`} />
         <div
-          className={`absolute rounded-full border border-[#ffd975]/48 ${
+          className={`absolute rounded-full bg-[#ffd364]/95 ${sunClassName} ${sunCoreMotionClassName}`}
+        />
+        <div
+          className={`absolute rounded-full border border-[#ffd975]/48 ${sunInnerRingMotionClassName} ${
             isLarge
               ? 'right-[-2%] top-[-4%] h-44 w-44'
               : isMedium
@@ -269,7 +283,7 @@ export function WeatherBackground({
           }`}
         />
         <div
-          className={`absolute rounded-full border border-[#ffd975]/28 ${
+          className={`absolute rounded-full border border-[#ffd975]/28 ${sunOuterRingMotionClassName} ${
             isLarge
               ? 'right-[-12%] top-[-14%] h-64 w-64'
               : isMedium
@@ -286,21 +300,29 @@ export function WeatherBackground({
   }
 
   if (variant === 'clear-night') {
+    const moonMotionClassName =
+      effectsQuality === 'low'
+        ? ''
+        : 'motion-safe:animate-[navet-weather-moon-float_16s_ease-in-out_infinite_alternate] motion-safe:will-change-transform';
+    const moonRingMotionClassName =
+      effectsQuality === 'high'
+        ? 'motion-safe:animate-[navet-weather-moon-ring_22s_ease-in-out_infinite_alternate] motion-safe:will-change-transform'
+        : '';
     return (
       <>
         <div className={`absolute inset-0 ${surface.baseGradient}`} />
         <div
-          className={`absolute rounded-full bg-[#f6e39b]/92 ${
+          className={`absolute rounded-full bg-[#f6e39b]/92 ${moonMotionClassName} ${
             isLarge ? 'right-[10%] top-[6%] h-20 w-20' : 'right-[10%] top-[0%] h-14 w-14'
           }`}
         />
         <div
-          className={`absolute rounded-full border border-[#f2dda1]/18 ${
+          className={`absolute rounded-full border border-[#f2dda1]/18 ${moonRingMotionClassName} ${
             isLarge ? 'right-[4%] top-[-2%] h-32 w-32' : 'right-[2%] top-[-12%] h-24 w-24'
           }`}
         />
         <div
-          className={`absolute rounded-full border border-[#7386cc]/14 ${
+          className={`absolute rounded-full border border-[#7386cc]/14 ${moonRingMotionClassName} ${
             isLarge ? 'right-[-2%] top-[-8%] h-44 w-44' : 'right-[-8%] top-[-20%] h-32 w-32'
           }`}
         />
@@ -324,6 +346,7 @@ export function WeatherBackground({
         <div className={`absolute inset-0 ${surface.baseGradient}`} />
         <PassageWaveOverlaySvg
           size={size}
+          effectsQuality={effectsQuality}
           layerOneColor="rgba(207,231,255,0.28)"
           layerTwoColor="rgba(174,212,246,0.20)"
           layerThreeColor="rgba(140,190,235,0.18)"
@@ -350,6 +373,7 @@ export function WeatherBackground({
         <div className={`absolute inset-0 ${surface.baseGradient}`} />
         <PassageWaveOverlaySvg
           size={size}
+          effectsQuality={effectsQuality}
           layerOneColor="rgba(142,162,210,0.16)"
           layerTwoColor="rgba(102,122,176,0.16)"
           layerThreeColor="rgba(67,86,136,0.22)"
@@ -384,6 +408,7 @@ export function WeatherBackground({
         <StormLightningOverlaySvg size={size} effectsQuality={effectsQuality} />
         <PassageWaveOverlaySvg
           size={size}
+          effectsQuality={effectsQuality}
           layerOneColor="rgba(130,145,196,0.16)"
           layerTwoColor="rgba(88,104,160,0.18)"
           layerThreeColor="rgba(50,66,118,0.24)"
@@ -392,6 +417,7 @@ export function WeatherBackground({
         />
         <PassageWaveOverlaySvg
           size={size}
+          effectsQuality={effectsQuality}
           layerOneColor="rgba(89,104,154,0.16)"
           layerTwoColor="rgba(58,71,120,0.22)"
           layerThreeColor="rgba(30,40,82,0.28)"
@@ -411,7 +437,7 @@ export function WeatherBackground({
     return (
       <>
         <div className={`absolute inset-0 ${surface.baseGradient}`} />
-        <WindOverlaySvg size={size} />
+        <WindOverlaySvg size={size} effectsQuality={effectsQuality} />
         {surface.themeSurfaceClassName ? (
           <div className={`absolute inset-0 ${surface.themeSurfaceClassName}`} />
         ) : null}
@@ -432,13 +458,14 @@ export function WeatherBackground({
         <div className={`absolute inset-0 ${surface.baseGradient}`} />
         <PassageWaveOverlaySvg
           size={size}
+          effectsQuality={effectsQuality}
           layerOneColor="rgba(235,243,252,0.18)"
           layerTwoColor="rgba(215,230,245,0.14)"
           layerThreeColor="rgba(182,205,228,0.12)"
           rimColor="rgba(255,255,255,0.08)"
           className={fogOpacity}
         />
-        <FogOverlaySvg size={size} />
+        <FogOverlaySvg size={size} effectsQuality={effectsQuality} />
         {surface.themeSurfaceClassName ? (
           <div className={`absolute inset-0 ${surface.themeSurfaceClassName}`} />
         ) : null}
@@ -453,6 +480,7 @@ export function WeatherBackground({
         <div className={`absolute inset-0 ${surface.baseGradient}`} />
         <PassageWaveOverlaySvg
           size={size}
+          effectsQuality={effectsQuality}
           layerOneColor="rgba(116,138,192,0.14)"
           layerTwoColor="rgba(79,104,160,0.14)"
           layerThreeColor="rgba(42,63,110,0.20)"
@@ -464,7 +492,7 @@ export function WeatherBackground({
             isLarge ? 'right-[10%] top-[4%] h-16 w-16' : 'right-[10%] top-[-2%] h-12 w-12'
           }`}
         />
-        <SnowflakeOverlaySvg size={size} tone="night" />
+        <SnowflakeOverlaySvg size={size} tone="night" effectsQuality={effectsQuality} />
         {surface.themeSurfaceClassName ? (
           <div className={`absolute inset-0 ${surface.themeSurfaceClassName}`} />
         ) : null}
@@ -479,6 +507,7 @@ export function WeatherBackground({
         <div className={`absolute inset-0 ${surface.baseGradient}`} />
         <PassageWaveOverlaySvg
           size={size}
+          effectsQuality={effectsQuality}
           layerOneColor="rgba(220,230,245,0.16)"
           layerTwoColor="rgba(184,201,222,0.14)"
           layerThreeColor="rgba(129,149,179,0.18)"
@@ -486,7 +515,7 @@ export function WeatherBackground({
           className="opacity-90"
         />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),transparent_34%,rgba(255,255,255,0.03)_66%,transparent)]" />
-        <SnowflakeOverlaySvg size={size} tone="day" />
+        <SnowflakeOverlaySvg size={size} tone="day" effectsQuality={effectsQuality} />
         {surface.themeSurfaceClassName ? (
           <div className={`absolute inset-0 ${surface.themeSurfaceClassName}`} />
         ) : null}
@@ -507,6 +536,7 @@ export function WeatherBackground({
       <div className={`absolute inset-0 ${surface.baseGradient}`} />
       <PassageWaveOverlaySvg
         size={size}
+        effectsQuality={effectsQuality}
         layerOneColor="rgba(207,231,255,0.28)"
         layerTwoColor="rgba(174,212,246,0.20)"
         layerThreeColor="rgba(140,190,235,0.18)"

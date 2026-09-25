@@ -324,17 +324,11 @@ describe('MediaDialog', () => {
     );
 
     expect(screen.getByText('Media players')).toBeInTheDocument();
-    const [firstCheckbox] = screen.getAllByRole('checkbox');
-
-    expect(firstCheckbox).toBeDefined();
-    if (!firstCheckbox) {
-      throw new Error('Expected media stack checkbox to be rendered');
-    }
-
-    fireEvent.click(firstCheckbox);
+    expect(screen.queryByText('Priority')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Remove: Living Room Speaker' }));
     expect(onUpdate).toHaveBeenCalledWith({
-      entityIds: ['media_player.speaker'],
-      priorityOrder: ['media_player.speaker'],
+      entityIds: ['media_player.living_room'],
+      priorityOrder: ['media_player.living_room'],
       idleBehavior: 'compact',
     });
   });

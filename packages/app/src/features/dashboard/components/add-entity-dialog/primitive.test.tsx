@@ -351,7 +351,7 @@ describe('AddEntityDialogPrimitive', () => {
     expect(screen.queryByRole('button', { name: /^extra-small\b/i })).not.toBeInTheDocument();
   });
 
-  it('hides the media stack template from the custom card chooser', () => {
+  it('does not offer Media Stack as a separate custom card', () => {
     renderWithProviders(
       <AddEntityDialogPrimitive
         open

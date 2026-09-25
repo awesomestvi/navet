@@ -1,6 +1,7 @@
 import {
   CardDialogChoicePill,
   FieldBlock,
+  SelectableCheckboxList,
   SelectableCheckboxRow,
 } from '@navet/app/components/patterns';
 import {
@@ -572,7 +573,7 @@ function CameraFullscreenInformationRow({
   const hiddenIds = new Set(hiddenAccessoryIds);
 
   return (
-    <ul className="max-h-64 space-y-1.5 overflow-y-auto pr-1">
+    <SelectableCheckboxList className="max-h-64 overflow-y-auto">
       {accessories.map((accessory, index) => {
         const label = compactRepeatedLabelGroup(
           compactRepeatedDeviceLabel(labels[index] ?? '', cameraName, labels),
@@ -596,9 +597,8 @@ function CameraFullscreenInformationRow({
               onCheckedChange={(checked) => onVisibilityChange(accessory.id, checked)}
               label={<span className="block truncate">{label}</span>}
               description={description}
-              rowClassName={`${surface.panelMuted} ${surface.border} ${surface.textPrimary}`}
+              rowClassName={`${surface.hoverBg} ${surface.textPrimary}`}
               descriptionClassName={surface.textSecondary}
-              selectedClassName={`${surface.panel} ${surface.borderStrong}`}
               checkboxAppearance="secondary"
               checkboxPalette="custom"
               checkboxPaletteColor={NEUTRAL_DIALOG_CONTROL_ACCENT}
@@ -606,7 +606,7 @@ function CameraFullscreenInformationRow({
           </li>
         );
       })}
-    </ul>
+    </SelectableCheckboxList>
   );
 }
 
