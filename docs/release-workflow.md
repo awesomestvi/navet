@@ -208,7 +208,8 @@ step: distribution remains non-atomic, and the final successful workflow is the 
 For stable releases, Navet Nisse comments on issues linked as closed by PRs merged between the
 previous stable tag and the released commit. Each comment links to the stable GitHub release. This
 runs after channel verification and skips comments already made for that tag, so a recovery run can
-finish any missed replies.
+finish any missed replies. Notification failures remain visible in the job log but do not invalidate
+an otherwise verified and published stable release.
 
 ## Activating Scoped Deployments
 

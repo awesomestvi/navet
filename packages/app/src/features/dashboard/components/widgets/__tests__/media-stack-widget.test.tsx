@@ -1,14 +1,16 @@
 import { renderWithProviders } from '@navet/app/test/render';
 import type { DeviceCollection } from '@navet/app/types/device.types';
-import { act, fireEvent, screen } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MediaStackWidget } from '../media-stack-widget';
 
-const { useAreaRoomsMock, useDeviceCollectionsByKeysMock, mediaCardMock } = vi.hoisted(() => ({
-  useAreaRoomsMock: vi.fn(),
-  useDeviceCollectionsByKeysMock: vi.fn(),
-  mediaCardMock: vi.fn(),
-}));
+const { useAreaRoomsMock, useDeviceCollectionsByKeysMock, mediaCardMock, mediaDialogMock } =
+  vi.hoisted(() => ({
+    useAreaRoomsMock: vi.fn(),
+    useDeviceCollectionsByKeysMock: vi.fn(),
+    mediaCardMock: vi.fn(),
+    mediaDialogMock: vi.fn(),
+  }));
 
 vi.mock('@navet/app/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@navet/app/hooks')>();
@@ -24,6 +26,13 @@ vi.mock('@navet/app/features/media', () => ({
   MediaCard: (props: { id: string; title: string }) => {
     mediaCardMock(props);
     return <div>{`media-card:${props.id}:${props.title}`}</div>;
+  },
+}));
+
+vi.mock('@navet/app/features/media/components/media/media-dialog', () => ({
+  MediaDialog: (props: { isOpen: boolean }) => {
+    mediaDialogMock(props);
+    return props.isOpen ? <div aria-label="Stack settings" role="dialog" /> : null;
   },
 }));
 
@@ -97,6 +106,7 @@ describe('MediaStackWidget', () => {
       ])
     );
     mediaCardMock.mockReset();
+    mediaDialogMock.mockReset();
   });
 
   it('shows a non-interactive legacy empty state when no players are selected', () => {
@@ -229,6 +239,50 @@ describe('MediaStackWidget', () => {
 
     expect(screen.getByText('Nothing playing')).toBeInTheDocument();
     expect(screen.queryByText(/media-card:/)).not.toBeInTheDocument();
+  });
+
+  it('opens stack settings from edit mode while the compact idle fallback is shown', async () => {
+    useDeviceCollectionsByKeysMock.mockReturnValue(
+      createMediaCollection([
+        { id: 'media_player.living_room_tv', name: 'Living Room TV', state: 'off' },
+      ])
+    );
+    const data = {
+      entityIds: ['media_player.living_room_tv'],
+      priorityOrder: ['media_player.living_room_tv'],
+      idleBehavior: 'compact' as const,
+    };
+    const onUpdate = vi.fn();
+    const { rerender } = renderWithProviders(
+      <MediaStackWidget data={data} onUpdate={onUpdate} openSettingsRequestKey={0} />
+    );
+
+    rerender(<MediaStackWidget data={data} onUpdate={onUpdate} openSettingsRequestKey={1} />);
+
+    expect(await screen.findByRole('dialog', { name: 'Stack settings' })).toBeInTheDocument();
+    await waitFor(() =>
+      expect(mediaDialogMock).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          isOpen: true,
+          mediaStackSettings: expect.objectContaining({
+            entityIds: ['media_player.living_room_tv'],
+          }),
+        })
+      )
+    );
+
+    useDeviceCollectionsByKeysMock.mockReturnValue(
+      createMediaCollection([
+        {
+          id: 'media_player.living_room_tv',
+          name: 'Living Room TV',
+          state: 'playing',
+        },
+      ])
+    );
+    rerender(<MediaStackWidget data={data} onUpdate={onUpdate} openSettingsRequestKey={1} />);
+
+    expect(screen.getByRole('dialog', { name: 'Stack settings' })).toBeInTheDocument();
   });
 
   it('hides the widget when idle behavior is hidden and nothing is active', () => {

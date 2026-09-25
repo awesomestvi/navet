@@ -2437,13 +2437,6 @@ export const plMessages = {
   'widgets.mediaStack.settings.priorityEmpty':
     'Wybierz co najmniej jeden odtwarzacz multimedialny, aby określić kolejność priorytetów.',
   'widgets.mediaStack.settings.priorityPosition': 'Priorytet {position}',
-  'widgets.mediaStack.settings.idleBehavior': 'Zachowanie w bezczynności',
-  'widgets.mediaStack.settings.idleBehaviorHelp':
-    'Wybierz, co widżet ma robić, gdy nic nie jest odtwarzane.',
-  'widgets.mediaStack.settings.idleBehavior.compact': 'Pokaż kompaktową kartę zastępczą',
-  'widgets.mediaStack.settings.idleBehavior.hidden': 'Ukryj widżet w stanie bezczynności',
-  'widgets.mediaStack.settings.idleBehavior.top-priority':
-    'Zawsze pokazuj odtwarzacz o najwyższym priorytecie',
   'widgets.mediaStack.settings.moveUp': 'Przesuń w górę',
   'widgets.mediaStack.settings.moveDown': 'Przesuń w dół',
   'widgets.mediaStack.badge': 'Stos',

@@ -2447,13 +2447,6 @@ export const esMessages = {
   'widgets.mediaStack.settings.priorityEmpty':
     'Seleccione al menos un reproductor multimedia para definir el orden de prioridad.',
   'widgets.mediaStack.settings.priorityPosition': 'Prioridad {position}',
-  'widgets.mediaStack.settings.idleBehavior': 'Comportamiento inactivo',
-  'widgets.mediaStack.settings.idleBehaviorHelp':
-    'Elija qué debe hacer este widget cuando no se esté reproduciendo nada activamente.',
-  'widgets.mediaStack.settings.idleBehavior.compact': 'Mostrar una tarjeta alternativa compacta',
-  'widgets.mediaStack.settings.idleBehavior.hidden': 'Ocultar el widget cuando esté inactivo',
-  'widgets.mediaStack.settings.idleBehavior.top-priority':
-    'Mostrar siempre el reproductor de mayor prioridad',
   'widgets.mediaStack.settings.moveUp': 'Subir',
   'widgets.mediaStack.settings.moveDown': 'Bajar',
   'widgets.mediaStack.badge': 'Pila',

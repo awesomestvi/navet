@@ -2453,14 +2453,6 @@ export const nlMessages = {
   'widgets.mediaStack.settings.priorityEmpty':
     'Selecteer ten minste één mediaspeler om de prioriteitsvolgorde te definiëren.',
   'widgets.mediaStack.settings.priorityPosition': 'Prioriteit {position}',
-  'widgets.mediaStack.settings.idleBehavior': 'Inactief gedrag',
-  'widgets.mediaStack.settings.idleBehaviorHelp':
-    'Kies wat deze widget moet doen als er niets actief wordt afgespeeld.',
-  'widgets.mediaStack.settings.idleBehavior.compact': 'Toon een compacte fallback-kaart',
-  'widgets.mediaStack.settings.idleBehavior.hidden':
-    'Verberg de widget wanneer deze niet actief is',
-  'widgets.mediaStack.settings.idleBehavior.top-priority':
-    'Laat altijd de speler met de hoogste prioriteit zien',
   'widgets.mediaStack.settings.moveUp': 'Ga omhoog',
   'widgets.mediaStack.settings.moveDown': 'Ga naar beneden',
   'widgets.mediaStack.badge': 'Stapel',

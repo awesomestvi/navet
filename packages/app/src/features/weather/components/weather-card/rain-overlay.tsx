@@ -124,6 +124,7 @@ interface RainOverlaySvgProps {
 }
 
 const HIGH_QUALITY_DENSITY_MULTIPLIER = 4;
+const MEDIUM_QUALITY_DENSITY_MULTIPLIER = 1.5;
 const LOW_QUALITY_DENSITY_RATIO = 0.1;
 
 function getRainBaseCounts(size: CardSize, intensity: RainOverlayIntensity) {
@@ -191,7 +192,9 @@ export function RainOverlaySvg({ size, intensity = 'rain', effectsQuality }: Rai
   const resolveCount = (baseCount: number) =>
     isLowQuality
       ? Math.max(6, Math.round(baseCount * LOW_QUALITY_DENSITY_RATIO))
-      : baseCount * HIGH_QUALITY_DENSITY_MULTIPLIER;
+      : effectsQuality === 'medium'
+        ? Math.round(baseCount * MEDIUM_QUALITY_DENSITY_MULTIPLIER)
+        : baseCount * HIGH_QUALITY_DENSITY_MULTIPLIER;
   const farCount = resolveCount(baseCounts.far);
   const midCount = resolveCount(baseCounts.mid);
   const nearCount = resolveCount(baseCounts.near);

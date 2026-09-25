@@ -2427,12 +2427,6 @@ export const enMessages = {
   'widgets.mediaStack.settings.priorityEmpty':
     'Select at least one media player to define the priority order.',
   'widgets.mediaStack.settings.priorityPosition': 'Priority {position}',
-  'widgets.mediaStack.settings.idleBehavior': 'Idle behavior',
-  'widgets.mediaStack.settings.idleBehaviorHelp':
-    'Choose what this widget should do when nothing is actively playing.',
-  'widgets.mediaStack.settings.idleBehavior.compact': 'Compact card',
-  'widgets.mediaStack.settings.idleBehavior.hidden': 'Hide stack',
-  'widgets.mediaStack.settings.idleBehavior.top-priority': 'First player',
   'widgets.mediaStack.settings.moveUp': 'Move up',
   'widgets.mediaStack.settings.moveDown': 'Move down',
   'widgets.mediaStack.badge': 'Stack',

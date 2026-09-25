@@ -2434,12 +2434,6 @@ export const fiMessages = {
   'widgets.mediaStack.settings.priorityEmpty':
     'Valitse vähintään yksi mediasoitin prioriteettijärjestyksen määrittämiseksi.',
   'widgets.mediaStack.settings.priorityPosition': 'Prioriteetti {position}',
-  'widgets.mediaStack.settings.idleBehavior': 'Tyhjä käytös',
-  'widgets.mediaStack.settings.idleBehaviorHelp':
-    'Valitse, mitä tämän widgetin tulee tehdä, kun mitään ei toisteta.',
-  'widgets.mediaStack.settings.idleBehavior.compact': 'Näytä kompakti varakortti',
-  'widgets.mediaStack.settings.idleBehavior.hidden': 'Piilota widget, kun se ei ole käytössä',
-  'widgets.mediaStack.settings.idleBehavior.top-priority': 'Näytä aina tärkein pelaaja',
   'widgets.mediaStack.settings.moveUp': 'Siirrä ylös',
   'widgets.mediaStack.settings.moveDown': 'Siirry alas',
   'widgets.mediaStack.badge': 'Pinoa',

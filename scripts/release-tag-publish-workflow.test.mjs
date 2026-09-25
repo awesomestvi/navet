@@ -147,6 +147,7 @@ describe('production release tag publisher', () => {
     expect(releaseWorkflow.jobs['publish-channels'].name).toBe('Verify Complete Release');
     const issueJob = releaseWorkflow.jobs['notify-included-issues'];
     expect(issueJob.needs).toEqual(['release-context', 'publish-channels']);
+    expect(issueJob['continue-on-error']).toBe(true);
     expect(issueJob.if).toContain("prerelease == 'false'");
     expect(issueJob.environment).toBe('production');
     expect(issueJob.permissions).toEqual({

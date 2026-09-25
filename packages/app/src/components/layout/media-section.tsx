@@ -279,9 +279,21 @@ export function MediaSection({ addEntityRequestKey = 0 }: { addEntityRequestKey?
   const [displayGroupSettingsRequests, setDisplayGroupSettingsRequests] = useState<
     Record<string, number>
   >({});
+  const [pendingStackSettingsAnchorId, setPendingStackSettingsAnchorId] = useState<string | null>(
+    null
+  );
   const displayGroups = useMemo(
     () => normalizeMediaDisplayGroups(storedDisplayGroups),
     [storedDisplayGroups]
+  );
+  const configuredStackAnchorEntityIds = useMemo(
+    () =>
+      new Set(
+        displayGroups
+          .map(getMediaDisplayGroupAnchorId)
+          .filter((entityId): entityId is string => Boolean(entityId))
+      ),
+    [displayGroups]
   );
   const { hiddenEntityIds, hideEntity, showEntity } = useDashboardEntitiesStore(
     useShallow((state) => ({
@@ -307,8 +319,13 @@ export function MediaSection({ addEntityRequestKey = 0 }: { addEntityRequestKey?
     [allMediaDevices, hiddenEntityIdSet]
   );
   const mediaDevices = useMemo(
-    () => allMediaDevices.filter((device) => !hiddenEntityIdSet.has(device.id)),
-    [allMediaDevices, hiddenEntityIdSet]
+    () =>
+      allMediaDevices.filter(
+        (device) =>
+          !hiddenEntityIdSet.has(device.id) ||
+          (isEditMode && configuredStackAnchorEntityIds.has(device.id))
+      ),
+    [allMediaDevices, configuredStackAnchorEntityIds, hiddenEntityIdSet, isEditMode]
   );
   const visibleMediaEntityIds = useMemo(
     () => mediaDevices.map((device) => device.id),
@@ -321,10 +338,6 @@ export function MediaSection({ addEntityRequestKey = 0 }: { addEntityRequestKey?
         : displayGroups.filter((group) => isMediaDisplayGroupVisible(group, mediaDevices)),
     [displayGroups, isEditMode, mediaDevices]
   );
-  const groupedMediaEntityIds = useMemo(
-    () => getMediaDisplayGroupMemberIds(visibleDisplayGroups),
-    [visibleDisplayGroups]
-  );
   const stackAnchorEntityIds = useMemo(
     () =>
       new Set(
@@ -333,11 +346,6 @@ export function MediaSection({ addEntityRequestKey = 0 }: { addEntityRequestKey?
           .filter((entityId): entityId is string => Boolean(entityId))
       ),
     [visibleDisplayGroups]
-  );
-  const stackedSecondaryEntityIds = useMemo(
-    () =>
-      new Set([...groupedMediaEntityIds].filter((entityId) => !stackAnchorEntityIds.has(entityId))),
-    [groupedMediaEntityIds, stackAnchorEntityIds]
   );
   const removeDisplayGroup = useCallback(
     (groupId: string) => {
@@ -363,6 +371,28 @@ export function MediaSection({ addEntityRequestKey = 0 }: { addEntityRequestKey?
       anchorDevice: MediaSectionDevice,
       next: Parameters<MediaDialogMediaStackSettings['onUpdate']>[0]
     ) => {
+      const existingDisplayGroup = displayGroups.find(
+        (group) => getMediaDisplayGroupAnchorId(group) === anchorDevice.id
+      );
+      const availableIds = new Set(
+        getAvailableMediaDisplayGroupEntityIds(
+          existingDisplayGroup?.id ?? '',
+          displayGroups,
+          visibleMediaEntityIds
+        )
+      );
+      availableIds.add(anchorDevice.id);
+      const nextEntityIds = [
+        anchorDevice.id,
+        ...next.entityIds.filter((entityId) => entityId !== anchorDevice.id),
+      ].filter(
+        (entityId, index, entityIds) =>
+          availableIds.has(entityId) && entityIds.indexOf(entityId) === index
+      );
+      if (!existingDisplayGroup && nextEntityIds.length >= 2) {
+        setPendingStackSettingsAnchorId(anchorDevice.id);
+      }
+
       setStoredDisplayGroups((current) => {
         const groups = normalizeMediaDisplayGroups(current);
         const existingGroup = groups.find(
@@ -412,8 +442,21 @@ export function MediaSection({ addEntityRequestKey = 0 }: { addEntityRequestKey?
         ];
       });
     },
-    [setStoredDisplayGroups, visibleMediaEntityIds]
+    [displayGroups, setStoredDisplayGroups, visibleMediaEntityIds]
   );
+  useEffect(() => {
+    if (!pendingStackSettingsAnchorId) return;
+    const group = displayGroups.find(
+      (candidate) => getMediaDisplayGroupAnchorId(candidate) === pendingStackSettingsAnchorId
+    );
+    if (!group) return;
+
+    setDisplayGroupSettingsRequests((current) => ({
+      ...current,
+      [group.id]: (current[group.id] ?? 0) + 1,
+    }));
+    setPendingStackSettingsAnchorId(null);
+  }, [displayGroups, pendingStackSettingsAnchorId]);
   const handleRemoveEntity = useCallback(
     (entityId: string) => {
       hideEntity(entityId);
@@ -457,6 +500,12 @@ export function MediaSection({ addEntityRequestKey = 0 }: { addEntityRequestKey?
       const group = displayGroups.find(
         (candidate) => getMediaDisplayGroupAnchorId(candidate) === device.id
       );
+      if (
+        !group &&
+        displayGroups.some((candidate) => candidate.data.entityIds?.includes(device.id))
+      ) {
+        continue;
+      }
       const availableIds = new Set(
         getAvailableMediaDisplayGroupEntityIds(
           group?.id ?? '',
@@ -524,14 +573,11 @@ export function MediaSection({ addEntityRequestKey = 0 }: { addEntityRequestKey?
     [featuredMediaDevice, promotedMediaEntityIds]
   );
 
-  const sectionDevices = useMemo(() => {
-    const availableCards = groupedMediaPresentation.devices.filter(
-      (device) => !stackedSecondaryEntityIds.has(device.id)
-    );
-    if (isEditMode) return availableCards;
+  const sectionCardCandidates = useMemo(() => {
+    if (isEditMode) return groupedMediaPresentation.devices;
 
     return excludePromotedMediaDevices(
-      availableCards.filter((device) => !isSpotifyAccountDevice(device)),
+      groupedMediaPresentation.devices.filter((device) => !isSpotifyAccountDevice(device)),
       promotedEntityIdsForSections.filter((entityId) => !stackAnchorEntityIds.has(entityId)),
       mediaDevices
     );
@@ -541,8 +587,42 @@ export function MediaSection({ addEntityRequestKey = 0 }: { addEntityRequestKey?
     mediaDevices,
     promotedEntityIdsForSections,
     stackAnchorEntityIds,
-    stackedSecondaryEntityIds,
   ]);
+  const sectionCardCandidateIds = useMemo(
+    () => new Set(sectionCardCandidates.map((device) => device.id)),
+    [sectionCardCandidates]
+  );
+  const renderableDisplayGroups = useMemo(
+    () =>
+      visibleDisplayGroups.filter((group) => {
+        const anchorEntityId = getMediaDisplayGroupAnchorId(group);
+        return (
+          Boolean(anchorEntityId) &&
+          allMediaDeviceMap.has(anchorEntityId as string) &&
+          sectionCardCandidateIds.has(anchorEntityId as string)
+        );
+      }),
+    [allMediaDeviceMap, sectionCardCandidateIds, visibleDisplayGroups]
+  );
+  const renderableStackAnchorEntityIds = useMemo(
+    () =>
+      new Set(
+        renderableDisplayGroups
+          .map(getMediaDisplayGroupAnchorId)
+          .filter((entityId): entityId is string => Boolean(entityId))
+      ),
+    [renderableDisplayGroups]
+  );
+  const stackedSecondaryEntityIds = useMemo(() => {
+    const groupedEntityIds = getMediaDisplayGroupMemberIds(renderableDisplayGroups);
+    return new Set(
+      [...groupedEntityIds].filter((entityId) => !renderableStackAnchorEntityIds.has(entityId))
+    );
+  }, [renderableDisplayGroups, renderableStackAnchorEntityIds]);
+  const sectionDevices = useMemo(
+    () => sectionCardCandidates.filter((device) => !stackedSecondaryEntityIds.has(device.id)),
+    [sectionCardCandidates, stackedSecondaryEntityIds]
+  );
   const typeSections = useMemo(
     () =>
       buildMediaSections(sectionDevices, {
@@ -585,7 +665,7 @@ export function MediaSection({ addEntityRequestKey = 0 }: { addEntityRequestKey?
     [groupingMode]
   );
   const stackCardReplacementById = new Map<string, { size: CardSize; node: ReactNode }>();
-  for (const group of visibleDisplayGroups) {
+  for (const group of renderableDisplayGroups) {
     const anchorEntityId = getMediaDisplayGroupAnchorId(group);
     const anchorDevice = anchorEntityId ? allMediaDeviceMap.get(anchorEntityId) : undefined;
     if (!anchorEntityId || !anchorDevice) continue;
@@ -680,7 +760,7 @@ export function MediaSection({ addEntityRequestKey = 0 }: { addEntityRequestKey?
         />
       ) : null}
 
-      {selectedSection || visibleDisplayGroups.length > 0 ? (
+      {selectedSection || renderableDisplayGroups.length > 0 ? (
         <div className="space-y-4">
           {selectedSection ? (
             <DashboardGroupingNavigation

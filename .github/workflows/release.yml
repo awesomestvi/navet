@@ -606,6 +606,7 @@ jobs:
   notify-included-issues:
     name: Notify issues in stable release
     runs-on: ubuntu-latest
+    continue-on-error: true
     needs: [release-context, publish-channels]
     if: needs.release-context.outputs.prerelease == 'false' && github.repository == 'awesomestvi/navet'
     environment: production

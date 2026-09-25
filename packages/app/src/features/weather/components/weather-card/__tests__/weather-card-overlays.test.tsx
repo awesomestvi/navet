@@ -20,6 +20,15 @@ describe('weather card overlays', () => {
     expect(container.querySelectorAll('path')).toHaveLength(0);
   });
 
+  it('reduces rain geometry at medium effects quality', () => {
+    const { container } = render(
+      <RainOverlaySvg size="large" intensity="rain" effectsQuality="medium" />
+    );
+
+    expect(container.querySelectorAll('line').length).toBeGreaterThan(0);
+    expect(container.querySelectorAll('line').length).toBeLessThan(1656);
+  });
+
   it('uses a small, path-batched rain overlay at low quality', () => {
     const { container } = render(
       <RainOverlaySvg size="large" intensity="storm" effectsQuality="low" />

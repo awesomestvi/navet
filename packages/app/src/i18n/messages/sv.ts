@@ -2419,13 +2419,6 @@ export const svMessages = {
   'widgets.mediaStack.settings.priorityEmpty':
     'Välj minst en mediaspelare för att ange prioritetsordningen.',
   'widgets.mediaStack.settings.priorityPosition': 'Prioritet {position}',
-  'widgets.mediaStack.settings.idleBehavior': 'Beteende vid inaktivitet',
-  'widgets.mediaStack.settings.idleBehaviorHelp':
-    'Välj vad widgeten ska göra när inget spelas aktivt.',
-  'widgets.mediaStack.settings.idleBehavior.compact': 'Visa ett kompakt reservkort',
-  'widgets.mediaStack.settings.idleBehavior.hidden': 'Dölj widgeten när den är inaktiv',
-  'widgets.mediaStack.settings.idleBehavior.top-priority':
-    'Visa alltid spelaren med högst prioritet',
   'widgets.mediaStack.settings.moveUp': 'Flytta upp',
   'widgets.mediaStack.settings.moveDown': 'Flytta ned',
   'widgets.mediaStack.badge': 'Stapel',
