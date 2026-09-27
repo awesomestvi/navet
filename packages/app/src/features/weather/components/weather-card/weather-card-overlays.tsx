@@ -1,3 +1,4 @@
+import './weather-motion.css';
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import type { ThemeType } from '@navet/app/hooks';
 import type { EffectsQuality } from '@navet/app/stores/settings-store';

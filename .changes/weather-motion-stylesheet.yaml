@@ -1,0 +1,3 @@
+type: internal
+audiences: []
+summary: Load weather animation styles with weather cards to keep the initial website stylesheet within its existing budget.
