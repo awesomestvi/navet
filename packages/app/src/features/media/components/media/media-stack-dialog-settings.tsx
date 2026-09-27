@@ -1,74 +1,83 @@
 import {
-  CardDialogChoicePill,
-  CardDialogSection,
-  SelectableCheckboxRow,
-} from '@navet/app/components/patterns';
+  DndContext,
+  type DragEndEvent,
+  KeyboardSensor,
+  MouseSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CardDialogSection, SelectableCheckboxList } from '@navet/app/components/patterns';
+import { Button } from '@navet/app/components/primitives';
 import { CompactRoomSelector } from '@navet/app/components/shared/device-editor/compact-room-selector';
-import { useI18n } from '@navet/app/hooks';
-import { ChevronDown, ChevronUp, GripVertical } from 'lucide-react';
-import type { CSSProperties, MouseEvent } from 'react';
+import { getDndTransformStyle } from '@navet/app/components/shared/dnd-transform-style';
+import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
+import { useI18n, useTheme } from '@navet/app/hooks';
+import { GripVertical, Minus, Plus } from 'lucide-react';
+import type { CSSProperties } from 'react';
 import { useMemo } from 'react';
 import type {
   MediaDialogMediaStackPlayer,
   MediaDialogMediaStackSettings,
-  MediaStackIdleBehavior,
 } from './media-dialog.types';
 
-const IDLE_BEHAVIORS: MediaStackIdleBehavior[] = ['compact', 'hidden', 'top-priority'];
-
-function getIdleBehaviorLabel(
-  idleBehavior: MediaStackIdleBehavior,
-  t: ReturnType<typeof useI18n>['t']
-) {
-  switch (idleBehavior) {
-    case 'compact':
-      return t('widgets.mediaStack.settings.idleBehavior.compact');
-    case 'hidden':
-      return t('widgets.mediaStack.settings.idleBehavior.hidden');
-    case 'top-priority':
-      return t('widgets.mediaStack.settings.idleBehavior.top-priority');
-    default:
-      return t('widgets.mediaStack.settings.idleBehavior.compact');
-  }
-}
+type MediaStackDialogController = {
+  isGlass: boolean;
+  readableForeground: {
+    titleStyle?: CSSProperties;
+    subtitleStyle?: CSSProperties;
+    subtitleColor: string;
+    titleColor: string;
+  };
+  surface: {
+    textPrimary: string;
+    textSecondary: string;
+  };
+};
 
 interface MediaStackDialogSettingsProps {
-  controller: {
-    isGlass: boolean;
-    readableForeground: {
-      titleStyle?: CSSProperties;
-      subtitleStyle?: CSSProperties;
-      subtitleColor: string;
-      titleColor: string;
-    };
-    surface: {
-      textPrimary: string;
-      textSecondary: string;
-    };
-  };
+  controller: MediaStackDialogController;
   settings: MediaDialogMediaStackSettings;
-}
-
-function getSelectedPlayers(
-  playerOptions: MediaDialogMediaStackPlayer[],
-  priorityOrder: string[]
-): MediaDialogMediaStackPlayer[] {
-  return priorityOrder
-    .map((entityId) => playerOptions.find((option) => option.id === entityId))
-    .filter((option): option is MediaDialogMediaStackPlayer => Boolean(option));
 }
 
 export function MediaStackDialogSettings({ controller, settings }: MediaStackDialogSettingsProps) {
   const { t } = useI18n();
+  const { theme } = useTheme();
+  const surface = getThemeSurfaceTokens(theme);
+  const addLabel = t('dashboard.roomNav.add');
+  const removeLabel = t('settings.customExtensions.remove');
   const selectedIds = useMemo(() => new Set(settings.entityIds), [settings.entityIds]);
-  const selectedPlayers = useMemo(
-    () => getSelectedPlayers(settings.playerOptions, settings.priorityOrder),
-    [settings.playerOptions, settings.priorityOrder]
+  const requiredIds = useMemo(
+    () => new Set(settings.requiredEntityIds ?? []),
+    [settings.requiredEntityIds]
   );
-  const cardStyle = {
-    backgroundColor: controller.isGlass ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.06)',
-    borderColor: controller.isGlass ? 'rgba(255,255,255,0.16)' : 'rgba(255,255,255,0.12)',
-  };
+  const orderedPlayers = useMemo(
+    () => [
+      ...settings.priorityOrder
+        .map((entityId) => settings.playerOptions.find((option) => option.id === entityId))
+        .filter((option): option is MediaDialogMediaStackPlayer => Boolean(option)),
+      ...settings.playerOptions.filter((option) => !selectedIds.has(option.id)),
+    ],
+    [selectedIds, settings.playerOptions, settings.priorityOrder]
+  );
+  const sensors = useSensors(
+    useSensor(MouseSensor, {
+      activationConstraint: { distance: 6 },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 180, tolerance: 10 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const updateSelection = (nextEntityIds: string[], nextPriorityOrder = nextEntityIds) => {
     settings.onUpdate({
@@ -79,6 +88,7 @@ export function MediaStackDialogSettings({ controller, settings }: MediaStackDia
   };
 
   const handleToggle = (entityId: string) => {
+    if (requiredIds.has(entityId)) return;
     if (selectedIds.has(entityId)) {
       const nextEntityIds = settings.entityIds.filter((currentId) => currentId !== entityId);
       const nextPriorityOrder = settings.priorityOrder.filter(
@@ -92,28 +102,22 @@ export function MediaStackDialogSettings({ controller, settings }: MediaStackDia
     updateSelection(nextEntityIds, [...settings.priorityOrder, entityId]);
   };
 
-  const moveSelected = (
-    event: MouseEvent<HTMLButtonElement>,
-    entityId: string,
-    direction: -1 | 1
-  ) => {
-    event.preventDefault();
-    event.stopPropagation();
-
-    const currentIndex = settings.priorityOrder.indexOf(entityId);
-    const nextIndex = currentIndex + direction;
-    if (currentIndex < 0 || nextIndex < 0 || nextIndex >= settings.priorityOrder.length) {
+  const handleDragEnd = ({ active, over }: DragEndEvent) => {
+    if (!over || active.id === over.id) {
       return;
     }
 
-    const nextPriorityOrder = [...settings.priorityOrder];
-    const [movedId] = nextPriorityOrder.splice(currentIndex, 1);
-    nextPriorityOrder.splice(nextIndex, 0, movedId);
-    updateSelection(settings.entityIds, nextPriorityOrder);
+    const oldIndex = settings.priorityOrder.indexOf(String(active.id));
+    const newIndex = settings.priorityOrder.indexOf(String(over.id));
+    if (oldIndex === -1 || newIndex === -1) {
+      return;
+    }
+
+    updateSelection(settings.entityIds, arrayMove(settings.priorityOrder, oldIndex, newIndex));
   };
 
   return (
-    <div className="space-y-5 pt-2 md:space-y-6 md:pt-3">
+    <div className="space-y-5 pt-2 pb-4 md:pt-3 md:pb-5">
       {settings.roomValue && settings.roomOptions && settings.onRoomChange ? (
         <div className="flex justify-start">
           <CompactRoomSelector
@@ -131,120 +135,123 @@ export function MediaStackDialogSettings({ controller, settings }: MediaStackDia
       >
         {settings.playerOptions.length === 0 ? (
           <p
-            className={`rounded-2xl border px-4 py-4 text-sm ${controller.surface.textSecondary}`}
-            style={cardStyle}
+            className={`rounded-2xl border px-4 py-4 text-sm ${surface.panelMuted} ${surface.border} ${controller.surface.textSecondary}`}
           >
             {t('widgets.mediaStack.settings.noneAvailable')}
           </p>
         ) : (
-          <ul className="max-h-72 space-y-1.5 overflow-y-auto pr-1">
-            {settings.playerOptions.map((player) => {
-              const isChecked = selectedIds.has(player.id);
-              const currentIndex = settings.priorityOrder.indexOf(player.id);
-              return (
-                <li key={player.id}>
-                  <SelectableCheckboxRow
-                    checked={isChecked}
-                    onCheckedChange={() => handleToggle(player.id)}
-                    label={<span className="block truncate">{player.name}</span>}
-                    description={`${player.room} · ${player.subtitle}`}
-                    trailing={
-                      isChecked ? (
-                        <div className="flex items-center gap-1">
-                          <span className={`text-xs ${controller.surface.textSecondary}`}>
-                            {currentIndex + 1}
-                          </span>
-                          <GripVertical className={`h-4 w-4 ${controller.surface.textSecondary}`} />
-                          <button
-                            type="button"
-                            aria-label={t('widgets.mediaStack.settings.moveUp')}
-                            className={`rounded-full p-1 ${controller.surface.textSecondary}`}
-                            onClick={(event) => moveSelected(event, player.id, -1)}
-                          >
-                            <ChevronUp className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            aria-label={t('widgets.mediaStack.settings.moveDown')}
-                            className={`rounded-full p-1 ${controller.surface.textSecondary}`}
-                            onClick={(event) => moveSelected(event, player.id, 1)}
-                          >
-                            <ChevronDown className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      ) : null
-                    }
-                    rowClassName={controller.surface.textPrimary}
-                    labelClassName="truncate"
-                    descriptionClassName={controller.surface.textSecondary}
-                    style={cardStyle}
-                    selectedStyle={cardStyle}
-                  />
-                </li>
-              );
-            })}
-          </ul>
+          <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+            <SortableContext items={settings.priorityOrder} strategy={verticalListSortingStrategy}>
+              <SelectableCheckboxList className="max-h-[40vh] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:max-h-[55vh]">
+                {orderedPlayers.map((player) => {
+                  const isSelected = selectedIds.has(player.id);
+
+                  return isSelected ? (
+                    <SortableMediaPlayerRow
+                      key={player.id}
+                      player={player}
+                      controller={controller}
+                      hoverClassName={surface.hoverBg}
+                      removeLabel={removeLabel}
+                      removeDisabled={requiredIds.has(player.id)}
+                      reorderLabel={t('widgets.mediaStack.settings.players')}
+                      onRemove={() => handleToggle(player.id)}
+                    />
+                  ) : (
+                    <li key={player.id} className="flex min-h-14 items-center gap-3 px-4 py-3">
+                      <span className="h-9 w-9 shrink-0" aria-hidden="true" />
+                      <MediaPlayerDetails player={player} controller={controller} />
+                      <Button
+                        variant="secondary"
+                        size="compact"
+                        aria-label={`${addLabel}: ${player.name}`}
+                        onClick={() => handleToggle(player.id)}
+                        leading={<Plus className="h-3.5 w-3.5" aria-hidden="true" />}
+                        className="h-[30px] shrink-0 rounded-full px-2.5 motion-reduce:transition-none md:h-8 md:px-3"
+                      >
+                        {addLabel}
+                      </Button>
+                    </li>
+                  );
+                })}
+              </SelectableCheckboxList>
+            </SortableContext>
+          </DndContext>
         )}
       </CardDialogSection>
+    </div>
+  );
+}
 
-      <CardDialogSection
-        label={t('widgets.mediaStack.settings.priority')}
-        helperText={t('widgets.mediaStack.settings.priorityHelp')}
-      >
-        {selectedPlayers.length === 0 ? (
-          <p
-            className={`rounded-2xl border px-4 py-4 text-sm ${controller.surface.textSecondary}`}
-            style={cardStyle}
-          >
-            {t('widgets.mediaStack.settings.priorityEmpty')}
-          </p>
-        ) : (
-          <div className="space-y-2">
-            {selectedPlayers.map((player, index) => (
-              <div
-                key={player.id}
-                className={`rounded-2xl border px-4 py-3 ${controller.surface.textPrimary}`}
-                style={cardStyle}
-              >
-                <div className="truncate text-sm font-medium">{player.name}</div>
-                <div className={`mt-0.5 text-xs ${controller.surface.textSecondary}`}>
-                  {t('widgets.mediaStack.settings.priorityPosition', {
-                    position: index + 1,
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </CardDialogSection>
+function SortableMediaPlayerRow({
+  controller,
+  hoverClassName,
+  onRemove,
+  player,
+  removeDisabled,
+  removeLabel,
+  reorderLabel,
+}: {
+  controller: MediaStackDialogController;
+  hoverClassName: string;
+  onRemove: () => void;
+  player: MediaDialogMediaStackPlayer;
+  removeDisabled: boolean;
+  removeLabel: string;
+  reorderLabel: string;
+}) {
+  const { attributes, isDragging, listeners, setNodeRef, transform, transition } = useSortable({
+    id: player.id,
+  });
 
-      <CardDialogSection
-        label={t('widgets.mediaStack.settings.idleBehavior')}
-        helperText={t('widgets.mediaStack.settings.idleBehaviorHelp')}
+  return (
+    <li
+      ref={setNodeRef}
+      style={getDndTransformStyle(transform, transition)}
+      className={`relative flex min-h-14 items-center gap-3 px-4 py-3 ${
+        isDragging ? 'z-10 opacity-80' : ''
+      }`}
+    >
+      <button
+        type="button"
+        aria-label={`${reorderLabel}: ${player.name}`}
+        className={`flex h-9 w-9 shrink-0 touch-none items-center justify-center rounded-md transition-colors motion-reduce:transition-none ${controller.surface.textSecondary} ${hoverClassName}`}
+        {...attributes}
+        {...listeners}
       >
-        <div className="space-y-2">
-          {IDLE_BEHAVIORS.map((idleBehavior) => {
-            const active = settings.idleBehavior === idleBehavior;
-            return (
-              <CardDialogChoicePill
-                key={idleBehavior}
-                active={active}
-                onClick={() =>
-                  settings.onUpdate({
-                    entityIds: settings.entityIds,
-                    priorityOrder: settings.priorityOrder,
-                    idleBehavior,
-                  })
-                }
-                className={`flex w-full items-start justify-start rounded-2xl border px-4 py-3 text-left ${controller.surface.textPrimary}`}
-                style={cardStyle}
-              >
-                <div className="text-sm font-medium">{getIdleBehaviorLabel(idleBehavior, t)}</div>
-              </CardDialogChoicePill>
-            );
-          })}
-        </div>
-      </CardDialogSection>
+        <GripVertical className="h-4 w-4" aria-hidden="true" />
+      </button>
+      <MediaPlayerDetails player={player} controller={controller} />
+      <Button
+        variant="secondary"
+        size="compact"
+        disabled={removeDisabled}
+        aria-label={`${removeLabel}: ${player.name}`}
+        onClick={onRemove}
+        leading={<Minus className="h-3.5 w-3.5" aria-hidden="true" />}
+        className="h-[30px] shrink-0 rounded-full px-2.5 motion-reduce:transition-none md:h-8 md:px-3"
+      >
+        {removeLabel}
+      </Button>
+    </li>
+  );
+}
+
+function MediaPlayerDetails({
+  controller,
+  player,
+}: {
+  controller: MediaStackDialogController;
+  player: MediaDialogMediaStackPlayer;
+}) {
+  return (
+    <div className="min-w-0 flex-1">
+      <div className={`truncate text-sm font-medium ${controller.surface.textPrimary}`}>
+        {player.name}
+      </div>
+      <div className={`mt-0.5 truncate text-xs ${controller.surface.textSecondary}`}>
+        {player.room}
+      </div>
     </div>
   );
 }

@@ -53,8 +53,11 @@ The current version above is source-line metadata, not the latest published rele
 - HACS follows beta/RC/stable releases and is not part of Navet Dev publishes
 - each version is packaged with its own embedded version/channel and tested by image digest;
   stable packages the same source commit as its tested beta/RC but is not a byte-identical retag
-- commit-only `sha-*` aliases are not advanced because one commit can produce multiple versioned
-  packages; exact version tags and recorded digests identify artifacts
+- exact version tags and recorded image digests identify published artifacts
+
+`pnpm release:check` validates source-line metadata and the published add-on version against their
+respective changelogs. The add-on version may advance independently through its release metadata PR.
+Use `pnpm release:check -- --tag vX.Y.Z` to also require matching source, add-on, and tag versions.
 
 ## Release Notes Rule
 

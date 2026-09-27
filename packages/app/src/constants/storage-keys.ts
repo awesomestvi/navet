@@ -2,6 +2,7 @@ export const STORAGE_KEYS = {
   cardSizes: 'navet-card-sizes',
   climateWeatherSource: 'navet-climate-weather-source',
   mediaSectionCardSizes: 'navet-media-section-card-sizes',
+  mediaDisplayGroups: 'navet-media-display-groups',
   mediaDefaultViews: 'navet-media-default-views',
   mediaBrowserExpandedViews: 'navet-media-browser-expanded-views',
   mediaNowPlayingSession: 'navet-media-now-playing-session',

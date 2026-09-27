@@ -106,6 +106,8 @@ second-stage reading.
 
 ## Documentation Policy
 
+- Documentation must describe the current state of the project, not its editing or implementation
+  history. Write for a new reader with no knowledge of previous versions.
 - Write product documentation for first-time users. Assume no knowledge of Navet's previous
   releases, removed features, or internal terminology. Explain unfamiliar terms when needed.
 - Describe the current workflow directly: what users need, what they do, and what happens next.
@@ -117,12 +119,25 @@ second-stage reading.
   architecture, setup, or supported workflows. A code change alone does not require a docs update.
 - Revise the existing explanation as a coherent whole. Remove obsolete instructions and verify
   affected steps, examples, and links against the current implementation.
+- When removing or replacing a feature, tool, workflow, dependency, or concept, treat removal as
+  semantic deletion, not negation. Delete obsolete references completely, including orphaned
+  examples, warnings, troubleshooting notes, and cross-references.
+- Do not preserve removed concepts as negative instructions such as "do not use X", "X is no
+  longer used", or "instead of X", unless the restriction itself is important to a new reader.
 - Document lasting behavior. Do not append patch-specific notes about individual bug fixes,
   temporary workarounds, or implementation details. Put release-specific changes in the changelog
   when requested.
 - Keep shared guidance provider-neutral. Explain provider or deployment differences in the
   appropriate guide when they affect users, and link to it instead of duplicating instructions.
-- Apply this policy to area guides as well as product documentation.
+- Apply this policy to all documentation, including area guides and agent instructions.
+
+Use this test when editing documentation:
+
+> If this documentation were written from scratch today, would this information still be included?
+
+If not, remove it. After documentation changes, perform a coherence pass over the affected and
+surrounding documentation: resolve contradictions and ensure the text reads as if obsolete
+concepts had never existed.
 
 ## Work Efficiently
 

@@ -1,0 +1,6 @@
+type: improved
+audiences:
+  - standalone
+  - home-assistant
+  - hacs
+summary: Lawn mower cards show a Navet-branded robot mower with animated grass and wheel treads, respecting reduced-motion settings.

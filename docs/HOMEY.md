@@ -110,8 +110,8 @@ to add it to an existing dashboard. Sign in with your Athom account.
   grouping are not available through this adapter.
 - Manually runnable Flows and Advanced Flows, along with Moods, are available as scene cards.
 - Insights can show the last 24 hours, 7 days, or 31 days. Device sensor history is available when
-  Homey exposes a matching Insights log. This does not provide Home Assistant-style energy
-  configuration or statistics.
+  Homey exposes a matching Insights log. See [Energy readings](#energy-readings) for dashboard
+  coverage.
 - Hiding a Homey notification in Navet leaves the notification in Homey. App updates and hub
   restarts remain managed in Homey.
 - Availability depends on your Homey version and the permissions granted to the OAuth client.
@@ -119,7 +119,6 @@ to add it to an existing dashboard. Sign in with your Athom account.
   administration services are not registered for Homey.
 - In a standalone installation, Homey can stay connected alongside Home Assistant or openHAB;
   selected providers are combined in shared dashboard collections.
-- You do not need to enter a separate Homey base URL.
 - If you sign out from Navet, the stored Homey session is cleared from the Navet side.
 
 ## Scenes and flows

@@ -84,6 +84,7 @@ export interface NavetClimateState extends NavetBaseDeviceState {
 }
 
 export interface NavetMediaState extends NavetBaseDeviceState {
+  isPoweredOn?: boolean;
   title?: string;
   artist?: string;
   album?: string;

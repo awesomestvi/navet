@@ -27,7 +27,65 @@ function parseRgbChannels(color: string) {
   return matches.slice(0, 3).map((value) => Number.parseFloat(value));
 }
 
+function luminance(color: string) {
+  const channels = color.startsWith('#')
+    ? [1, 3, 5].map((offset) => Number.parseInt(color.slice(offset, offset + 2), 16))
+    : parseRgbChannels(color);
+  const [r, g, b] = channels.map((channel) => {
+    const value = channel / 255;
+    return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+function contrast(foreground: string, background: string) {
+  const values = [luminance(foreground), luminance(background)];
+  return (Math.max(...values) + 0.05) / (Math.min(...values) + 0.05);
+}
+
 describe('useMediaDialogController', () => {
+  it.each(['dark', 'black', 'light'] as const)(
+    'keeps text readable on the %s dialog with bright placeholder artwork',
+    (theme) => {
+      useThemeMock.mockReturnValue({ theme });
+      useMediaArtworkColorsMock.mockReturnValue({
+        dominant: 'rgb(198, 206, 229)',
+        vibrant: 'rgb(198, 206, 229)',
+        darkMuted: 'rgb(198, 206, 229)',
+        highlight: 'rgb(255, 255, 255)',
+        gradientEnd: 'rgb(198, 206, 229)',
+      });
+
+      const { result } = renderHook(() =>
+        useMediaDialogController({
+          artwork: 'data:image/png;base64,placeholder',
+          artworkResource: null,
+          artist: 'Technohead',
+          durationSeconds: 213,
+          elapsedSeconds: 0,
+          entityId: 'media_player.kitchen',
+          title: 'I Wanna Be A Hippy',
+        })
+      );
+
+      // Sample the rendered top/bottom surface, including the artwork tint.
+      const backgrounds =
+        theme === 'light'
+          ? ['#ffffff']
+          : theme === 'black'
+            ? ['rgb(12, 12, 14)', '#000000']
+            : ['rgb(48, 49, 55)', 'rgb(24, 25, 28)'];
+      for (const background of backgrounds) {
+        expect(
+          contrast(result.current.readableForeground.titleColor, background)
+        ).toBeGreaterThanOrEqual(4.5);
+        expect(
+          contrast(result.current.readableForeground.subtitleColor, background)
+        ).toBeGreaterThanOrEqual(4.5);
+      }
+    }
+  );
+
   it('switches dialog text to a darker readable foreground for bright glass palettes', () => {
     useThemeMock.mockReturnValue({ theme: 'glass' });
     useMediaArtworkColorsMock.mockReturnValue({

@@ -17,8 +17,8 @@ Navet currently ships:
 - Homey support through the standalone OAuth flow
 - openHAB support through the standalone base-URL and username/password flow
 - simultaneous stored provider sessions and selected-provider aggregation in shared dashboards
-- dedicated `home`, `lights`, `media`, `energy`, `climate`, `security`, `tasks`, and `settings`
-  sections
+- Home, Lights, Media, Energy, Climate, Security, Household, and Settings sections
+- shared household chores with schedules, assignments, optional rewards, and backups
 - dashboard editing with card ordering, sizing, locking, visibility, import/export, undo/redo, and
   Home overview layout packs
 - addable widgets for info summaries, RSS, photos, notes, battery and UPS status, live energy,
@@ -37,7 +37,7 @@ Navet currently ships:
 Provider capabilities are not equal: Home Assistant currently supplies the advanced climate,
 media, camera, energy, calendar, weather, notification, task, Assist conversation, history,
 security, and administration services. Homey also supplies climate, speaker, security, Flows,
-Moods, presence, notification, Insights, favorite, and hub-resource capabilities. openHAB also
+Moods, presence, notifications, and Insights history. openHAB also
 supplies fans, climate setpoints, speaker controls, locks, covers, security sensors, batteries, and
 utility measurements.
 
@@ -92,7 +92,7 @@ utility measurements.
 
 ## Notes
 
-- Home Assistant is still the most mature provider experience.
+- Home Assistant supports the broadest set of Navet features.
 - Homey and openHAB are supported paths today, but not at the same maturity level as Home
   Assistant.
 - Navet Music Engine is planned work and is not included in current releases. Supported music

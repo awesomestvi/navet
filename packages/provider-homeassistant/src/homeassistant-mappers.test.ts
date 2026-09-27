@@ -815,8 +815,29 @@ describe('homeassistant-mappers', () => {
         primaryState: 'idle',
         attributes: expect.objectContaining({
           value: 'idle',
+          isPoweredOn: true,
           source: 'HDMI 1',
         }),
+      })
+    );
+  });
+
+  it('retains the powered state of a custom console media player', () => {
+    const entities = mapHomeAssistantEntitiesToNavetEntities({
+      entities: {
+        'media_player.playstation': makeEntity('media_player.playstation', 'on', {
+          friendly_name: 'PlayStation',
+        }),
+      },
+      areas: [],
+      deviceRegistry: [],
+      entityRegistry: [],
+    });
+
+    expect(entities.find((entity) => entity.externalId === 'media_player.playstation')).toEqual(
+      expect.objectContaining({
+        primaryState: 'idle',
+        attributes: expect.objectContaining({ isPoweredOn: true }),
       })
     );
   });

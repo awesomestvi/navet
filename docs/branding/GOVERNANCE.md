@@ -7,8 +7,7 @@ editUrl: https://github.com/awesomestvi/navet/edit/main/docs/branding/GOVERNANCE
 Brand governance keeps Navet recognizable as the product evolves. It protects established choices,
 makes routine work easy, and gives genuine changes an explicit review path.
 
-This is not a committee process. The repository maintainers own the brand system and use these
-rules to make decisions consistently.
+The repository maintainers own the brand system and use these rules to make decisions consistently.
 
 ## Sources of truth
 

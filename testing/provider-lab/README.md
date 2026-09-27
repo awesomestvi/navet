@@ -93,5 +93,5 @@ sensor describes room occupancy and is separate from the signed-in account's pre
 Additional openHAB coverage includes window and occupancy contacts, smoke/CO and freezer alarm
 states, low batteries, air quality, radiator readings, washing-machine power, utility meters,
 garden measurements, irrigation and water shutoff switches, and a second cover. Contact-based
-demo alarms use OPEN for active and CLOSED for inactive. Numeric radiator setpoints currently
-appear as sensors in Navet's openHAB adapter rather than writable thermostat controls.
+demo alarms use OPEN for active and CLOSED for inactive. Radiator setpoint items tagged `Setpoint`
+provide thermostat controls, with related temperature items supplying current readings.

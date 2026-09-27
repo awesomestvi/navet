@@ -22,6 +22,9 @@ export function StormLightningOverlaySvg({
         ? 'translate(0 -4)'
         : 'translate(0.4 -2.8) scale(0.9)';
   const useFullEffects = effectsQuality !== 'low';
+  const flashClassName = useFullEffects
+    ? 'motion-safe:animate-[navet-weather-lightning-flash_9.7s_linear_infinite] motion-safe:will-change-[opacity]'
+    : undefined;
 
   return (
     <svg
@@ -85,7 +88,7 @@ export function StormLightningOverlaySvg({
           />
         </mask>
       </defs>
-      <g transform={transform} mask={`url(#${clipMaskId})`}>
+      <g className={flashClassName} transform={transform} mask={`url(#${clipMaskId})`}>
         <ellipse
           cx="61"
           cy="12.8"

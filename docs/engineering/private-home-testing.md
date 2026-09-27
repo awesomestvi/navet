@@ -75,6 +75,4 @@ docker compose --env-file .env.private-preview -f compose.private-preview.yml do
 ## Agent Boundary
 
 Agents may prepare commands, inspect redacted logs, and respond to feedback. They must not receive
-VPN keys, Home Assistant credentials, cookies, or unrestricted access to the preview host. A future
-self-hosted runner for this lane should be environment-protected, accept only maintainer-approved
-commits, have no general repository-write token, and be torn down after each run.
+VPN keys, Home Assistant credentials, cookies, or unrestricted access to the preview host.

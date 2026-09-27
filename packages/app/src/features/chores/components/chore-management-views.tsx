@@ -18,6 +18,7 @@ import {
   Textarea,
 } from '@navet/app/components/primitives';
 import { EntityCardHeaderIcon } from '@navet/app/components/primitives/entity-card-header-icon';
+import { getReadableAccentForeground } from '@navet/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { navetIconSizeTokens, navetTypographyTokens } from '@navet/app/components/system/tokens';
 import { Avatar, AvatarFallback, AvatarImage } from '@navet/app/components/ui/avatar';
@@ -73,9 +74,11 @@ import {
 import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from 'react';
 import {
   getMissionProgressList,
+  getNextChores,
   getParticipantPointHistory,
   getRewardProgressList,
 } from '../chore-dashboard-selectors';
+import { useChoreClock } from '../use-chore-clock';
 import { ChoreBaseCard } from './chore-base-card';
 import { ChoreDashboardGrid } from './chore-dashboard-grid';
 import {
@@ -128,7 +131,10 @@ function ProgressParticipantAvatar({ participant }: { participant: ChoreParticip
       aria-hidden="true"
     >
       {participant.avatarUrl ? <AvatarImage src={participant.avatarUrl} alt="" /> : null}
-      <AvatarFallback className="bg-transparent text-xs font-semibold text-white">
+      <AvatarFallback
+        className="bg-transparent text-xs font-semibold"
+        style={{ color: getReadableAccentForeground(participant.color ?? accentColor) }}
+      >
         {AvatarIcon ? (
           <AvatarIcon className="h-3.5 w-3.5" aria-hidden="true" />
         ) : participant.avatarIcon && isEmojiLightIcon(participant.avatarIcon) ? (
@@ -156,7 +162,12 @@ function choreScheduleLabel(definition: ChoreDefinition, t: ReturnType<typeof us
     return t('household.schedule.weekly');
   }
   if (definition.schedule.frequency === 'monthly') return t('household.schedule.monthly');
-  return t('household.schedule.afterCompletion');
+  return t(
+    definition.schedule.intervalDays === 1
+      ? 'household.schedule.dayAfterCompletion'
+      : 'household.schedule.daysAfterCompletion',
+    { count: definition.schedule.intervalDays }
+  );
 }
 
 function LibraryAssignmentSummary({
@@ -305,7 +316,13 @@ export function AllChoresView({
   onDelete: (definition: ChoreDefinition) => void;
   onRestore: (definition: ChoreDefinition) => void;
 }) {
-  const { t } = useI18n();
+  const i18n = useI18n();
+  const { t } = i18n;
+  const now = useChoreClock();
+  const nextByDefinition = useMemo(
+    () => new Map(getNextChores(data, 'all', now).map((item) => [item.definitionId, item])),
+    [data, now]
+  );
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const [query, setQuery] = useState('');
@@ -446,23 +463,36 @@ export function AllChoresView({
           {definitions.map((definition) => {
             const presentation = experience.presentationByDefinitionId[definition.id];
             const ChoreIcon = resolveChoreIconComponent(presentation?.icon);
+            const next = nextByDefinition.get(definition.id);
             const scheduleLabel = choreScheduleLabel(definition, t);
             return (
               <ChoreBaseCard
                 key={definition.id}
                 title={definition.title}
                 eyebrow={
-                  <>
-                    {definition.roomRef?.label ? (
+                  <span className="flex min-w-0 items-center gap-1">
+                    <span className="min-w-0 truncate" title={scheduleLabel}>
+                      {definition.roomRef?.label ? (
+                        <>
+                          <span>{definition.roomRef.label}</span>
+                          <span aria-hidden="true"> · </span>
+                        </>
+                      ) : null}
+                      <span className={cn(!definition.enabled && 'text-amber-400')}>
+                        {definition.enabled ? scheduleLabel : t('household.chores.paused')}
+                      </span>
+                    </span>
+                    {next ? (
                       <>
-                        <span>{definition.roomRef.label}</span>
-                        <span aria-hidden="true"> · </span>
+                        <span aria-hidden="true">·</span>
+                        <time className="shrink-0 tabular-nums" dateTime={next.scheduledAt}>
+                          {t('household.chores.nextScheduled', {
+                            date: `${i18n.formatDate(new Date(next.scheduledAt), { month: 'short', day: 'numeric' })} · ${i18n.formatTime(new Date(next.scheduledAt))}`,
+                          })}
+                        </time>
                       </>
                     ) : null}
-                    <span className={cn(!definition.enabled && 'text-amber-400')}>
-                      {definition.enabled ? scheduleLabel : t('household.chores.paused')}
-                    </span>
-                  </>
+                  </span>
                 }
                 leading={
                   <EntityCardHeaderIcon

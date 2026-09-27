@@ -16,9 +16,6 @@ touch-friendly sheets on smaller screens.
    **Household**, or **Settings**.
 3. Recently used sections remain easy to reach.
 
-The mobile menu renders only the controls for the active screen size. Keyboard and screen-reader
-users should not encounter a second hidden copy of the desktop navigation.
-
 ## Choose a room
 
 Open the room selector in the header, then choose a room or **All rooms**. Room groups can be

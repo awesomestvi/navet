@@ -343,11 +343,6 @@ See the [product card grammar](https://docs.navet.app/brand/cards/) for the full
 - beautiful as a substitute for a product outcome
 - premium as a visual instruction
 
-Do not use **the hub for your smart home**, **everything in one place**, **beautiful, private, and
-open source**, or **your home, your way** as rotating taglines. Those older phrases can describe
-parts of the established idea, but the default public descriptor is **A smart home dashboard for
-every screen.** The Swedish hub meaning belongs in the origin story, not every campaign.
-
 ## Claims Discipline
 
 A Navet claim must be accurate, current, scoped, and supported by a primary source. Smooth wording

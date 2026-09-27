@@ -1,0 +1,6 @@
+type: fixed
+audiences:
+  - standalone
+  - home-assistant
+  - hacs
+summary: Chore participant initials and icons use readable text colours on orange and custom avatar backgrounds.

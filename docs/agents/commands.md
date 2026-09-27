@@ -118,8 +118,7 @@ Working rules:
 - scopes are optional but useful when they identify the affected area
 - breaking changes must use `!` or a `BREAKING CHANGE:` footer
 
-If a commit or hook is blocked by TypeScript errors, fix the type errors instead of relying on a
-baseline workaround.
+Fix TypeScript errors reported by commit hooks before retrying the commit.
 
 ## Related Guidance
 

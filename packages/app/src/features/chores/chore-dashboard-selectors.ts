@@ -142,7 +142,7 @@ export function getUpcomingChores(
       const scheduled = Date.parse(occurrence.scheduledAt);
       const definition = definitionFor(data, occurrence);
       return (
-        Boolean(definition) &&
+        Boolean(definition?.enabled) &&
         isVisibleWork(occurrence) &&
         !isFinal(occurrence) &&
         scheduled >= todayEnd &&
@@ -153,6 +153,36 @@ export function getUpcomingChores(
       );
     })
     .sort((left, right) => Date.parse(left.scheduledAt) - Date.parse(right.scheduledAt));
+}
+
+/** The next stored occurrence per chore, in schedule order. */
+export function getNextChores(
+  data: ChoreWorkspaceData,
+  participantId = 'all',
+  now = new Date(),
+  afterToday = false
+): ChoreOccurrence[] {
+  const boundary = afterToday ? offsetLocalDay(startOfLocalDay(now), 1) : now.getTime();
+  const seen = new Set<string>();
+  return Object.values(data.occurrencesById)
+    .filter((occurrence) => {
+      const definition = definitionFor(data, occurrence);
+      return (
+        definition?.enabled &&
+        isVisibleWork(occurrence) &&
+        !isFinal(occurrence) &&
+        Date.parse(occurrence.scheduledAt) >= boundary &&
+        (participantId === 'all' ||
+          occurrence.assigneeIds.includes(participantId) ||
+          definition.approval.approverIds.includes(participantId))
+      );
+    })
+    .sort((left, right) => Date.parse(left.scheduledAt) - Date.parse(right.scheduledAt))
+    .filter((occurrence) => {
+      if (seen.has(occurrence.definitionId)) return false;
+      seen.add(occurrence.definitionId);
+      return true;
+    });
 }
 
 export function getCompletedPoints(

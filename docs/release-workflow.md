@@ -7,6 +7,9 @@ releases. A product release does not redeploy or smoke-test the public sites.
 
 Every pull request adds a validated `.changes/*.yaml` fragment. Use `internal` and an empty
 audience list when there is no user-facing change.
+Use `pnpm release:status` to see the pending fragments against the last completed stable release;
+add `--all` to see released files as well. The command reads publication evidence and does not
+change repository files.
 
 CI always runs quality checks, type checking, release-fragment validation, and script tests
 (through the product test lanes for runtime changes, or a focused script lane otherwise).
@@ -33,16 +36,15 @@ Cloudflare Pages owns site deployment:
 
 Affected branch pushes produce previews. Affected pushes to `main` update production.
 CI build checks and Cloudflare builds are separate: CI verifies the change; Cloudflare owns
-the deployed artifact. The initial optimization scopes these builds rather than transferring
-production deployment credentials into PR jobs.
+the deployed artifact.
 
 `scripts/pages-policy.mjs` defines the shared conservative path policy. The merge gate checks
 successful Cloudflare check runs from the Cloudflare app for affected projects. It uses the exact
 PR head, or an ancestor only after proving every watched input is unchanged. This handles a
 fragment-only follow-up commit for which Cloudflare correctly skips a new preview. A current
 pending or failed check cannot be bypassed by an older success. Keep live build-watch configuration
-synchronized using the rollout procedure
-below. Public-site availability monitoring is separate from release publication.
+synchronized with `scripts/pages-policy.mjs`. Public-site availability monitoring is separate
+from release publication.
 
 ## Dev Builds
 
@@ -105,9 +107,8 @@ successfully published beta/RC of the same base version. Source and target tags 
 same commit already contained in protected `main`. The source release's evidence records the
 tested image digests and publication run; missing, incomplete, or changed evidence blocks promotion.
 
-The maintainer dispatch is the publication decision. There are no repeated per-job approval
-prompts. The `beta` and `production` environments hold release credentials and allow only trusted
-`main` workflows. Public-site checks do not gate this process.
+The maintainer dispatch is the publication decision. The `beta` and `production` environments
+hold release credentials and allow only trusted `main` workflows. Public-site checks do not gate this process.
 
 ### Artifact Identity
 
@@ -139,8 +140,7 @@ Standalone image tags:
 - Stable: exact `vX.Y.Z`, plus `X.Y` and `latest` after verification.
 
 Add-on images use `{arch}-navet-addon` repositories and exact versions without the leading `v`.
-Commit-only `sha-*` aliases are not updated: one commit can have different Dev, beta and stable
-packages. Use a version plus the recorded `sha256:` digest to identify an artifact.
+Use a version plus the recorded `sha256:` digest to identify an artifact.
 
 Release publication is serialized because HACS and moving aliases are shared resources.
 Moving channels are updated by verified digest only after artifacts and the metadata PR complete.
@@ -186,8 +186,7 @@ must match on recovery; conflicts stop the run rather than silently replacing pu
 
 The monorepo owns Home Assistant integration and add-on sources under `platform/home-assistant`.
 HACS receives the integration export in `awesomestvi/navet-home-assistant`. The Home Assistant App
-repository stays `awesomestvi/navet`, with root `repository.yaml`; subscribers do not need to
-change repository URLs.
+repository is `awesomestvi/navet`, with root `repository.yaml`.
 
 After artifact verification, automation opens the small App metadata PR and merges it through
 normal branch protection without bypass privileges. This PR gets quality/script checks and
@@ -202,12 +201,17 @@ updates succeed. Public-site availability does not gate installation releases; t
 the verified canonical release record. HACS and App metadata can become visible before the last
 step: distribution remains non-atomic, and the final successful workflow is the completion signal.
 
+For stable releases, Navet Nisse comments on issues linked as closed by PRs merged between the
+previous stable tag and the released commit. Each comment links to the stable GitHub release. This
+runs after channel verification and skips comments already made for that tag, so a recovery run can
+finish any missed replies. Notification failures remain visible in the job log but do not invalidate
+an otherwise verified and published stable release.
+
 ## Activating Scoped Deployments
 
-The repository change and hosted settings must be rolled out in this order:
+Configure hosted deployment settings from a checkout matching the reviewed workflows on `main`:
 
-1. Merge the workflow, tests and policy through the existing protected PR process. Keep all four
-   Cloudflare checks required until the new aggregate gate is installed.
+1. Require the GitHub Actions **Product review gate** in the active `main-published` ruleset.
 2. Configure local `CLOUDFLARE_ACCOUNT_ID` and a `CLOUDFLARE_API_TOKEN` scoped to edit these Pages
    projects. Authenticate `gh` with repository administration access. Never commit these values.
 3. Run `node scripts/pipeline-rollout.mjs` to inspect the dry-run policy.

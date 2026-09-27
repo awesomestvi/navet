@@ -8,8 +8,8 @@ Use this file for the shortest path from clone to productive work.
 
 ## Start Here
 
-Before changing code, read [`AGENTS.md`](AGENTS.md). Its task router points to the one focused
-guide needed for the area you are touching. Use [`docs/README.md`](docs/README.md) only when you
+Before changing code, read [`AGENTS.md`](https://github.com/awesomestvi/navet/blob/main/AGENTS.md). Its task router points to the one focused
+guide needed for the area you are touching. Use [`docs/README.md`](https://github.com/awesomestvi/navet/blob/main/docs/README.md) only when you
 need the complete documentation map.
 
 ## Prerequisites
@@ -33,7 +33,7 @@ Provider testing basics:
 
 - Home Assistant: enter the Home Assistant base URL and complete OAuth
 - Homey: set `NAVET_HOMEY_CLIENT_ID` and `NAVET_HOMEY_CLIENT_SECRET`, then use the Homey login option
-- openHAB: use the openHAB login option with a browser-reachable base URL plus username/password
+- openHAB: use the openHAB login option with a base URL reachable from the Navet runtime plus username/password
 
 ## Workflow
 
@@ -77,7 +77,7 @@ Important repo policy:
 - contributors and agents run the checks needed to prove their own changes
 - begin with focused checks and use `pnpm validate -- --dry-run` when the correct scope is unclear
 - release and packaging commands are maintainer workflows unless the task explicitly calls for them
-- use [`docs/agents/commands.md`](docs/agents/commands.md) as the source of truth for command restrictions
+- use [`docs/agents/commands.md`](https://github.com/awesomestvi/navet/blob/main/docs/agents/commands.md) as the source of truth for command restrictions
 
 ## Architecture Rules
 

@@ -44,6 +44,7 @@
     "docker:smoke": "node scripts/docker-smoke.mjs",
     "release:check": "node scripts/check-release-surfaces.mjs",
     "release:notes": "node scripts/extract-release-notes.mjs",
+    "release:status": "node scripts/release-status.mjs",
     "release:notes:generate": "node scripts/generate-release-notes.mjs",
     "release:fragments:check": "node scripts/check-release-fragments.mjs",
     "release:version-sync": "node scripts/sync-release-versions.mjs",

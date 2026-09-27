@@ -10,9 +10,8 @@ Navet runtime that exposes provider management.
 
 ## Overview
 
-Navet's same-origin server proxy connects to the openHAB server URL you provide. The current flow
-is URL-based and uses username and password authentication without returning the saved credentials
-to browser JavaScript.
+Enter your openHAB server address, username, and password in Navet. Navet stores the credentials
+on its server and uses them to connect to openHAB.
 
 ## When To Choose This Path
 
@@ -98,7 +97,6 @@ Open Navet and connect using your openHAB URL, username, and password.
 
 - Navet's server-side proxy connects to the openHAB URL you provide.
 - Your openHAB credentials authorize the connection.
-- There is no separate cloud redirect step.
 - Navet stores the username and password in that browser's server-side provider session and
   authenticates allowlisted REST and WebSocket requests with Basic auth.
 - Navet loads item state from the openHAB REST API and listens for updates over the openHAB
@@ -145,8 +143,6 @@ history, or provider-administration services.
   both REST and WebSocket access.
 - openHAB REST Basic auth must be enabled under `Settings -> API Security`
   (`org.openhab.restauth`) for username/password login to work.
-- If you have not enabled that setting yet, turn it on before trying to connect Navet.
-- API token login is not exposed in the UI today.
 - Keep openHAB's own authentication enabled and use upstream network or reverse-proxy access
   control when Navet is reachable outside a trusted LAN. Navet's bounded login throttle is
   defense-in-depth, not a replacement for provider access control.

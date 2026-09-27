@@ -47,8 +47,7 @@ remembers removed measurements for that card, including when a reading temporari
 
 ## Run a scene
 
-Choose a scene shortcut to ask the owning provider to activate it. Scene behavior comes from the
-provider; Navet does not rewrite the scene actions.
+Choose a scene shortcut to activate the scene configured in your smart-home provider.
 
 ## If a light is missing
 

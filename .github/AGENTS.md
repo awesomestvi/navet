@@ -11,8 +11,7 @@ These rules apply to workflows, issue forms, pull-request automation, and reposi
   do not add repeated per-job reviewer prompts. Stable publication requires installation-test confirmation.
 - Pull-request workflows may create preview artifacts and comments. They must not receive
   production, HACS, private-network, or Home Assistant credentials.
-- Do not let an implementing agent satisfy its own product, foundation, security, or production
-  approval gate.
-- New commits invalidate human approval of the previous PR head.
+- The maintainer reviews the current PR head and decides whether to merge after CI passes and
+  review conversations are resolved. Implementing agents must not merge their own work.
 - Prefer a small workflow with one responsibility over a single workflow that mutates issues,
   reviews code, deploys, and publishes.

@@ -1,6 +1,7 @@
 import {
   CardDialogSection,
   CardEmptyState,
+  SelectableCheckboxList,
   SelectableCheckboxRow,
 } from '@navet/app/components/patterns';
 import {
@@ -142,7 +143,6 @@ function UpsSettingsDialog({
   const tintColor = typeof data?.tintColor === 'string' ? data.tintColor : undefined;
   const surface = getThemeSurfaceTokens(theme);
   const accentHex = normalizeCustomCardTint(tintColor) ?? getThemeColorValue(primaryColor);
-  const baseSurface = getThemeSurfaceTokens(theme);
   const selectedDevice = getSelectedDevice(devices, data?.deviceId);
   const selectedMetricIds =
     getMetricEntityIds(data?.metricEntityIds) ?? selectedDevice?.defaultMetricEntityIds ?? [];
@@ -269,7 +269,7 @@ function UpsSettingsDialog({
               {t('widgets.ups.settings.noneAvailable')}
             </p>
           ) : (
-            <ul className="max-h-72 min-w-0 max-w-full space-y-1.5 overflow-x-hidden overflow-y-auto pr-1">
+            <SelectableCheckboxList className="max-h-72 overflow-y-auto">
               {metricOptions.map((metric) => (
                 <li key={metric.entityId} className="w-full min-w-0 max-w-full">
                   <SelectableCheckboxRow
@@ -287,19 +287,14 @@ function UpsSettingsDialog({
                         {metric.unit ? ` ${metric.unit}` : ''}
                       </div>
                     }
-                    rowClassName={`w-full min-w-0 max-w-full overflow-hidden ${surface.border} ${surface.textPrimary}`}
+                    rowClassName={`overflow-hidden ${surface.textPrimary}`}
                     labelClassName="truncate"
                     descriptionClassName={`whitespace-normal break-all ${surface.textMuted}`}
                     checkboxPaletteColor={accentHex}
-                    style={{ background: baseSurface.subtleBg }}
-                    selectedStyle={{
-                      background: baseSurface.subtleBg,
-                      borderColor: `${accentHex}4d`,
-                    }}
                   />
                 </li>
               ))}
-            </ul>
+            </SelectableCheckboxList>
           )}
         </div>
       </CardDialogSection>

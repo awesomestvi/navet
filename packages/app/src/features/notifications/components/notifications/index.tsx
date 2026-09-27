@@ -1,4 +1,7 @@
-import { SheetSurface, SheetSurfaceHeader } from '@navet/app/components/primitives';
+import { IconButton } from '@navet/app/components/primitives/icon-button';
+import { InteractivePill } from '@navet/app/components/primitives/interactive-pill';
+import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
+import { getUiKitGlassSurfaceFoundationStyle } from '@navet/app/components/system/tokens/ui-kit-surfaces';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -9,21 +12,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@navet/app/components/ui/alert-dialog';
-import {
-  type PrimaryColor,
-  type ThemeType,
-  useClickOutside,
-  useI18n,
-  useMediaQuery,
-  useTheme,
-} from '@navet/app/hooks';
-import { type RefObject, useEffect, useState } from 'react';
+import { type PrimaryColor, type ThemeType, useI18n, useTheme } from '@navet/app/hooks';
+import * as Dialog from '@radix-ui/react-dialog';
+import { X } from 'lucide-react';
+import { type RefObject, useEffect, useId, useState } from 'react';
 import { NotificationEmptyState } from './notification-empty-state';
 import { NotificationHeader } from './notification-header';
 import { NotificationItem } from './notification-item';
 import { getNotificationSurfaceTokens } from './notification-surface-tokens';
 import { formatTimestamp, getColorValue } from './notification-utils';
-import type { Notification } from './use-notifications';
+import type { Notification, PlatformNotificationsReturn } from './use-notifications';
 import { useProviderNotifications } from './use-provider-notifications';
 
 interface NotificationPanelProps {
@@ -32,53 +30,41 @@ interface NotificationPanelProps {
   triggerRefs?: Array<RefObject<HTMLElement | null>>;
 }
 
-export function NotificationPanel({ isOpen, onClose, triggerRefs = [] }: NotificationPanelProps) {
+export function NotificationPanel(props: NotificationPanelProps) {
+  const notifications = useProviderNotifications();
+  return <NotificationCenter {...props} {...notifications} />;
+}
+
+export function NotificationCenter({
+  isOpen,
+  onClose,
+  triggerRefs,
+  notifications,
+  unreadCount,
+  runPrimaryAction,
+  markAllAsRead,
+  deleteNotification,
+  clearAll,
+}: NotificationPanelProps & PlatformNotificationsReturn) {
   const [showClearAllConfirm, setShowClearAllConfirm] = useState(false);
   const [isClearingAll, setIsClearingAll] = useState(false);
-  const isMobile = useMediaQuery('(max-width: 767px)');
-  const panelRef = useClickOutside<HTMLDivElement>(
-    onClose,
-    isOpen && !showClearAllConfirm && !isClearingAll && !isMobile,
-    triggerRefs
-  );
+  const tabsId = useId();
+  const [section, setSection] = useState<'notifications' | 'updates'>('notifications');
   const { t } = useI18n();
   const { theme, primaryColor } = useTheme();
   const surface = getNotificationSurfaceTokens(theme);
-  const {
-    notifications,
-    unreadCount,
-    runPrimaryAction,
-    markAllAsRead,
-    deleteNotification,
-    clearAll,
-  } = useProviderNotifications();
-  const updateNotifications = notifications.filter(
-    (notification) => notification.source === 'update'
-  );
-  const regularNotifications = notifications.filter(
-    (notification) => notification.source !== 'update'
-  );
+  const sharedSurface = getThemeSurfaceTokens(theme);
+  const updates = notifications.filter((item) => item.source === 'update');
+  const messages = notifications.filter((item) => item.source !== 'update');
+  const visible = section === 'updates' ? updates : messages;
 
   useEffect(() => {
     if (!isOpen) {
       setShowClearAllConfirm(false);
-      setIsClearingAll(false);
+      setSection('notifications');
     }
   }, [isOpen]);
 
-  const handleConfirmClearAll = async () => {
-    setIsClearingAll(true);
-
-    try {
-      await clearAll();
-      setShowClearAllConfirm(false);
-      onClose();
-    } finally {
-      setIsClearingAll(false);
-    }
-  };
-
-  const desktopPanelClassName = `absolute right-0 top-0 z-auto flex w-96 max-h-[60vh] flex-col overflow-hidden rounded-2xl ${surface.panelClassName}`;
   const formatRelativeTimestamp = (date: Date) =>
     formatTimestamp(date, {
       daysAgo: t('notifications.time.daysAgo', { count: '{count}' }),
@@ -86,124 +72,137 @@ export function NotificationPanel({ isOpen, onClose, triggerRefs = [] }: Notific
       justNow: t('notifications.time.justNow'),
       minutesAgo: t('notifications.time.minutesAgo', { count: '{count}' }),
     });
-  const content = (
-    <>
-      {isMobile ? (
-        <>
-          <SheetSurfaceHeader
-            title={t('notifications.title')}
-            closeLabel={t('common.close')}
-            onClose={onClose}
-            className={`border-b max-sm:pt-2 ${surface.borderClassName}`}
-            titleAccessory={
-              unreadCount > 0 ? (
-                <span
-                  className="rounded-full px-2.5 py-1 text-xs font-medium text-white"
-                  style={{ backgroundColor: getColorValue(primaryColor) }}
-                >
-                  {unreadCount}
-                </span>
-              ) : undefined
-            }
-          />
-          <NotificationHeader
-            variant="actions"
-            onClose={onClose}
-            onMarkAllAsRead={unreadCount > 0 ? markAllAsRead : undefined}
-            onClearAll={() => setShowClearAllConfirm(true)}
-            unreadCount={unreadCount}
-            hasNotifications={notifications.length > 0}
-            theme={theme}
-            primaryColor={primaryColor}
-            getColorValue={getColorValue}
-          />
-        </>
-      ) : (
-        <NotificationHeader
-          onClose={onClose}
-          onMarkAllAsRead={unreadCount > 0 ? markAllAsRead : undefined}
-          onClearAll={() => setShowClearAllConfirm(true)}
-          unreadCount={unreadCount}
-          hasNotifications={notifications.length > 0}
-          theme={theme}
-          primaryColor={primaryColor}
-          getColorValue={getColorValue}
-        />
-      )}
-
-      <div
-        className={
-          isMobile
-            ? ''
-            : 'min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]'
-        }
-      >
-        {notifications.length === 0 ? (
-          <NotificationEmptyState />
-        ) : (
-          <div className="p-3">
-            {updateNotifications.length > 0 ? (
-              <NotificationSection
-                title={t('notifications.section.updates')}
-                notifications={updateNotifications}
-                dividerClassName={surface.dividerClassName}
-                onPrimaryAction={runPrimaryAction}
-                onDelete={deleteNotification}
-                theme={theme}
-                primaryColor={primaryColor}
-                formatTimestamp={formatRelativeTimestamp}
-              />
-            ) : null}
-
-            {regularNotifications.length > 0 ? (
-              <NotificationSection
-                title={t('notifications.section.notifications')}
-                notifications={regularNotifications}
-                dividerClassName={surface.dividerClassName}
-                onPrimaryAction={runPrimaryAction}
-                onDelete={deleteNotification}
-                theme={theme}
-                primaryColor={primaryColor}
-                formatTimestamp={formatRelativeTimestamp}
-                className={updateNotifications.length > 0 ? 'mt-4' : undefined}
-              />
-            ) : null}
-          </div>
-        )}
-      </div>
-    </>
-  );
-
-  if (!isOpen) return null;
 
   return (
     <>
-      {isMobile ? (
-        <SheetSurface
-          isOpen={isOpen}
-          onOpenChange={(open) => {
-            if (!open) onClose();
-          }}
-          title={t('notifications.title')}
-          description={t('notifications.section.notifications') || t('notifications.title')}
-          accentColor={getColorValue(primaryColor)}
-          overlayClassName={`animate-in fade-in bg-black/45 backdrop-blur-[2px] md:hidden ${surface.dialogBackdrop}`}
-          contentClassName={surface.sheetClassName}
-        >
-          {content}
-        </SheetSurface>
-      ) : (
-        <div className="fixed inset-0 z-50 md:absolute md:inset-auto md:right-0 md:top-full md:mt-2">
-          <div
-            ref={panelRef}
-            onPointerDown={(e) => e.stopPropagation()}
-            className={desktopPanelClassName}
+      <Dialog.Root
+        open={isOpen}
+        onOpenChange={(open) => {
+          if (!open) onClose();
+        }}
+      >
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-50 bg-black/30" />
+          <Dialog.Content
+            aria-describedby={undefined}
+            onCloseAutoFocus={(event) => {
+              const trigger = triggerRefs?.find(
+                (ref) => ref.current?.getClientRects().length
+              )?.current;
+              if (trigger) {
+                event.preventDefault();
+                trigger.focus();
+              }
+            }}
+            className={`fixed inset-0 z-50 flex min-h-0 flex-col overflow-hidden border shadow-2xl sm:inset-auto sm:right-6 sm:top-6 sm:h-[calc(100dvh-3rem)] sm:max-h-[860px] sm:w-[min(640px,calc(100vw-3rem))] sm:rounded-3xl ${sharedSurface.shellPanel} ${sharedSurface.border} ${sharedSurface.textPrimary}`}
+            style={getUiKitGlassSurfaceFoundationStyle(theme)}
           >
-            {content}
-          </div>
-        </div>
-      )}
-
+            <header className="flex shrink-0 items-center justify-between gap-3 px-5 pb-3 pt-5 sm:px-6">
+              <Dialog.Title className="text-lg font-semibold">
+                {t('notifications.title')}
+              </Dialog.Title>
+              <Dialog.Close asChild>
+                <IconButton
+                  variant="ghost"
+                  label={t('common.close')}
+                  icon={<X className="h-4 w-4" />}
+                />
+              </Dialog.Close>
+            </header>
+            <div className={`shrink-0 border-b px-4 pb-4 sm:px-6 ${surface.borderClassName}`}>
+              <div
+                role="tablist"
+                className="flex flex-wrap gap-2"
+                aria-label={t('notifications.title')}
+                onKeyDown={(event) => {
+                  if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+                  event.preventDefault();
+                  const next =
+                    event.key === 'Home'
+                      ? 'notifications'
+                      : event.key === 'End'
+                        ? 'updates'
+                        : section === 'updates'
+                          ? 'notifications'
+                          : 'updates';
+                  setSection(next);
+                  const tabs =
+                    event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]');
+                  tabs[next === 'updates' ? 1 : 0]?.focus();
+                }}
+              >
+                {(['notifications', 'updates'] as const).map((value) => (
+                  <InteractivePill
+                    key={value}
+                    active={section === value}
+                    size="small"
+                    role="tab"
+                    id={`${tabsId}-${value}-tab`}
+                    aria-controls={`${tabsId}-${value}-panel`}
+                    aria-selected={section === value}
+                    tabIndex={section === value ? 0 : -1}
+                    onClick={() => setSection(value)}
+                  >
+                    {t(
+                      value === 'updates'
+                        ? 'notifications.section.updates'
+                        : 'notifications.section.notifications'
+                    )}
+                    <span
+                      className={`rounded-full px-1.5 text-xs tabular-nums ${sharedSurface.subtleBg}`}
+                    >
+                      {value === 'updates' ? updates.length : messages.length}
+                    </span>
+                  </InteractivePill>
+                ))}
+              </div>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain" key={section}>
+              <div
+                role="tabpanel"
+                id={`${tabsId}-${section}-panel`}
+                aria-labelledby={`${tabsId}-${section}-tab`}
+                // biome-ignore lint/a11y/noNoninteractiveTabindex: Tab panels must be keyboard reachable for reading and scrolling.
+                tabIndex={0}
+                className="min-h-full outline-offset-[-2px]"
+              >
+                {visible.length === 0 ? (
+                  <NotificationEmptyState updates={section === 'updates'} />
+                ) : (
+                  <NotificationSection
+                    title={t(
+                      section === 'updates'
+                        ? 'notifications.section.updates'
+                        : 'notifications.section.notifications'
+                    )}
+                    notifications={visible}
+                    onPrimaryAction={runPrimaryAction}
+                    onDelete={deleteNotification}
+                    theme={theme}
+                    primaryColor={primaryColor}
+                    formatTimestamp={formatRelativeTimestamp}
+                  />
+                )}
+              </div>
+            </div>
+            <div
+              className={`shrink-0 border-t pb-[env(safe-area-inset-bottom)] ${surface.borderClassName}`}
+            >
+              <NotificationHeader
+                variant="actions"
+                onClose={onClose}
+                onMarkAllAsRead={unreadCount > 0 ? markAllAsRead : undefined}
+                onClearAll={() => setShowClearAllConfirm(true)}
+                unreadCount={unreadCount}
+                hasNotifications={notifications.length > 0}
+                theme={theme}
+                primaryColor={primaryColor}
+                getColorValue={getColorValue}
+              />
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
       <AlertDialog open={showClearAllConfirm} onOpenChange={setShowClearAllConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -215,10 +214,14 @@ export function NotificationPanel({ isOpen, onClose, triggerRefs = [] }: Notific
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isClearingAll}>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => {
-                void handleConfirmClearAll();
-              }}
               disabled={isClearingAll}
+              onClick={(event) => {
+                event.preventDefault();
+                setIsClearingAll(true);
+                void clearAll()
+                  .then(() => setShowClearAllConfirm(false))
+                  .finally(() => setIsClearingAll(false));
+              }}
             >
               {t('notifications.confirmClearAll.action')}
             </AlertDialogAction>
@@ -231,7 +234,6 @@ export function NotificationPanel({ isOpen, onClose, triggerRefs = [] }: Notific
 
 interface NotificationSectionProps {
   className?: string;
-  dividerClassName: string;
   formatTimestamp: (date: Date) => string;
   notifications: Notification[];
   onDelete: (id: string) => Promise<void>;
@@ -243,7 +245,6 @@ interface NotificationSectionProps {
 
 function NotificationSection({
   className,
-  dividerClassName,
   formatTimestamp,
   notifications,
   onDelete,
@@ -252,18 +253,11 @@ function NotificationSection({
   theme,
   title,
 }: NotificationSectionProps) {
-  const surface = getNotificationSurfaceTokens(theme);
-
+  const surface = getThemeSurfaceTokens(theme);
   return (
-    <section className={className}>
-      <div className="mb-2 px-1">
-        <h4 className={`text-xs font-semibold uppercase tracking-[0.18em] ${surface.textMuted}`}>
-          {title}
-        </h4>
-      </div>
-
+    <section className={className} aria-label={title}>
       <div
-        className={`overflow-hidden rounded-2xl border divide-y ${dividerClassName} ${surface.borderClassName}`}
+        className={`m-4 divide-y overflow-hidden rounded-[24px] border sm:mx-6 ${surface.border} ${surface.divider}`}
       >
         {notifications.map((notification) => (
           <NotificationItem

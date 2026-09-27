@@ -4,8 +4,8 @@ description: Check camera state, live-stream settings, direct URLs, and playback
 editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/troubleshooting/camera-playback.md
 ---
 
-Camera capability flags alone do not guarantee that a live offer or stream will succeed. Navet
-tries the supported playback plan and preserves a snapshot or error state when live playback fails.
+When live playback fails, Navet shows a snapshot or an error. Start by checking the camera in
+your smart-home provider, then review its playback settings in Navet.
 
 ![A camera card showing an unavailable live stream while retaining its snapshot.](/docs/how-to/troubleshooting/camera-error.webp)
 
@@ -28,8 +28,8 @@ Open the camera settings dialog and check:
 
 ## Understand fallback
 
-Depending on provider support, Navet can try WebRTC, MSE, HLS, or MJPEG paths. A failed direct
-WebRTC offer should fall back rather than pretending that live playback is active.
+Navet tries the live playback formats supported by your camera, such as WebRTC, MSE, HLS, or
+MJPEG. If one fails, it tries the next available format.
 
 ## Deployment checks
 

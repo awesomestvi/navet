@@ -5,7 +5,7 @@ editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/everyday-con
 ---
 
 The controls shown in Navet depend on the capabilities reported by the connected provider and
-device. An unavailable control is not replaced with a provider-specific command.
+device.
 
 ## Main sections
 

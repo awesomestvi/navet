@@ -1,9 +1,12 @@
 import { useAuthBaseUrl } from '@navet/app/auth/AuthProvider';
-import { InteractivePill } from '@navet/app/components/primitives/interactive-pill';
+import { Button } from '@navet/app/components/primitives/button';
+import { IconButton } from '@navet/app/components/primitives/icon-button';
 import { Link } from '@navet/app/components/primitives/link';
-import { getThemeColorValue } from '@navet/app/components/shared/theme/theme-colors';
+import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { type PrimaryColor, type ThemeType, useI18n } from '@navet/app/hooks';
 import { sanitizeExternalUrl } from '@navet/app/utils/url-security';
+import { ArrowRight, Check, ChevronDown, Download, RotateCw, X } from 'lucide-react';
+import { type ReactNode, useId, useState } from 'react';
 import { getNotificationSurfaceTokens } from './notification-surface-tokens';
 import {
   getNotificationColor,
@@ -21,6 +24,33 @@ interface NotificationItemProps {
   formatTimestamp: (date: Date) => string;
 }
 
+function NotificationItemHeading({
+  id,
+  title,
+  metadata,
+  theme,
+}: {
+  id: string;
+  title: string;
+  metadata: ReactNode;
+  theme: ThemeType;
+}) {
+  const surface = getNotificationSurfaceTokens(theme);
+  return (
+    <div className="min-w-0 pt-0.5">
+      <h3
+        id={id}
+        className={`text-sm font-medium leading-5 [overflow-wrap:anywhere] ${surface.textPrimary}`}
+      >
+        {title}
+      </h3>
+      <div className={`mt-0.5 text-xs leading-4 [overflow-wrap:anywhere] ${surface.textMuted}`}>
+        {metadata}
+      </div>
+    </div>
+  );
+}
+
 export function NotificationItem({
   notification,
   onPrimaryAction,
@@ -30,140 +60,290 @@ export function NotificationItem({
   formatTimestamp,
 }: NotificationItemProps) {
   const { t } = useI18n();
-  const hassUrl = useAuthBaseUrl();
+  const baseUrl = useAuthBaseUrl();
+  const titleId = useId();
+  const detailsId = useId();
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [failed, setFailed] = useState(false);
   const surface = getNotificationSurfaceTokens(theme);
-  const NotificationIcon = getNotificationIcon(notification.type);
-  const primaryActionLabel =
-    notification.source === 'update'
-      ? notification.requiresRestart
-        ? t('notifications.action.restart')
-        : t('notifications.action.update')
-      : t('notifications.action.markAsRead');
-  const secondaryActionLabel =
-    notification.source === 'update'
-      ? t('notifications.action.hide')
-      : t('notifications.action.delete');
-  const accentColor = getNotificationColor(notification.type, primaryColor);
-  const unreadIndicatorColor = getThemeColorValue(primaryColor);
+  const sharedSurface = getThemeSurfaceTokens(theme);
+  const isUpdate = notification.source === 'update';
+  const busy = Boolean(isUpdate && notification.isBusy && !notification.requiresRestart);
+  const Icon = isUpdate ? Download : getNotificationIcon(notification.type);
+  const accent = getNotificationColor(isUpdate ? 'info' : notification.type, primaryColor);
+  const actionLabel = isUpdate
+    ? notification.requiresRestart
+      ? t('notifications.action.restart')
+      : t('notifications.action.update')
+    : t('notifications.action.markAsRead');
+  const dismissLabel = isUpdate ? t('notifications.action.hide') : t('notifications.action.delete');
   const detailsUrl = notification.detailsUrl
-    ? sanitizeExternalUrl(notification.detailsUrl, hassUrl ?? undefined)
+    ? sanitizeExternalUrl(notification.detailsUrl, baseUrl ?? undefined)
     : null;
-  const iconToneClassName =
-    notification.type === 'success'
-      ? theme === 'light'
-        ? 'border-emerald-200 bg-emerald-50 text-emerald-600'
-        : theme === 'black'
-          ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-300'
-          : 'border-emerald-400/20 bg-emerald-500/10 text-emerald-300'
-      : notification.type === 'error'
-        ? theme === 'light'
-          ? 'border-red-200 bg-red-50 text-red-600'
-          : theme === 'black'
-            ? 'border-red-400/40 bg-red-400/10 text-red-300'
-            : 'border-red-400/20 bg-red-500/10 text-red-300'
-        : theme === 'light'
-          ? 'border-amber-200 bg-amber-50 text-amber-600'
-          : theme === 'black'
-            ? 'border-amber-400/40 bg-amber-400/10 text-amber-300'
-            : 'border-amber-400/20 bg-amber-500/10 text-amber-300';
+  const paragraphs = notification.message.split(/\n\s*\n/);
+  const expandable = paragraphs.length > 1 || notification.message.length > 220;
+  const summary =
+    isUpdate && notification.latestVersion
+      ? notification.installedVersion
+        ? t('notifications.update.availableFromTo', {
+            from: notification.installedVersion,
+            to: notification.latestVersion,
+          })
+        : t('notifications.update.availableTo', { version: notification.latestVersion })
+      : paragraphs[0];
+  const details =
+    isUpdate && paragraphs.length > 1 ? paragraphs.slice(1).join('\n\n') : notification.message;
+  const updateDetails = paragraphs.length > 1 ? paragraphs.slice(1).join('\n\n').trim() : '';
+  const longUpdateDetails =
+    updateDetails.length > 220 || updateDetails.split('\n').filter(Boolean).length > 3;
+  const updatePreview = longUpdateDetails
+    ? `${updateDetails.split('\n').slice(0, 3).join('\n').slice(0, 220).trimEnd()}…`
+    : updateDetails;
+  const perform = async (action: (id: string) => Promise<void>) => {
+    setPending(true);
+    setFailed(false);
+    try {
+      await action(notification.id);
+    } catch {
+      setFailed(true);
+    } finally {
+      setPending(false);
+    }
+  };
 
-  return (
-    <div
-      className={`group relative p-4 transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] ${surface.hoverClassName} ${!notification.read ? surface.unreadItemClassName : ''}`}
-    >
-      <div className="flex gap-4">
-        {/* Icon */}
-        <div
-          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl border ${iconToneClassName}`}
-        >
-          <NotificationIcon className="h-4 w-4" />
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 min-w-0">
-          <div className="mb-1.5 flex items-start justify-between gap-3">
-            <div className="flex min-w-0 items-center gap-2.5">
-              {!notification.read && (
-                <span
-                  className="h-1.5 w-1.5 shrink-0 rounded-full"
-                  style={{ backgroundColor: unreadIndicatorColor }}
-                />
-              )}
-              <h4 className={`min-w-0 text-sm font-medium ${surface.textPrimary}`}>
-                {notification.title}
-              </h4>
-            </div>
-            <span className={`shrink-0 text-xs ${surface.textMuted}`}>
-              {formatTimestamp(notification.timestamp)}
-            </span>
+  if (isUpdate) {
+    return (
+      <article aria-labelledby={titleId} className="min-h-14 px-4 py-3">
+        <div className="grid grid-cols-[36px_minmax(0,1fr)_36px] items-start gap-x-3 sm:grid-cols-[36px_minmax(0,1fr)_auto_36px]">
+          <span
+            aria-hidden="true"
+            className={`flex h-9 w-9 items-center justify-center rounded-2xl border ${sharedSurface.borderStrong} ${sharedSurface.iconBg}`}
+            style={{ color: accent }}
+          >
+            {notification.requiresRestart ? (
+              <RotateCw className="h-4 w-4" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
+          </span>
+          <div className="min-w-0">
+            <NotificationItemHeading
+              id={titleId}
+              title={notification.title}
+              theme={theme}
+              metadata={
+                notification.latestVersion ? (
+                  <span className="inline-flex min-w-0 flex-wrap items-center gap-1.5 tabular-nums [overflow-wrap:anywhere]">
+                    <span className="sr-only">{summary}</span>
+                    {notification.installedVersion && (
+                      <>
+                        <span aria-hidden="true" className={surface.textMuted}>
+                          {notification.installedVersion}
+                        </span>
+                        <ArrowRight aria-hidden="true" className="h-3 w-3 shrink-0" />
+                      </>
+                    )}
+                    <span aria-hidden="true" className="font-medium">
+                      {notification.latestVersion}
+                    </span>
+                  </span>
+                ) : (
+                  <span className="[overflow-wrap:anywhere]">{summary}</span>
+                )
+              }
+            />
           </div>
-          <div className={`mb-3 space-y-2.5 text-sm leading-relaxed ${surface.textSecondary}`}>
-            {renderNotificationMarkdown(
-              notification.message,
-              hassUrl ?? undefined,
-              t('notifications.imageAlt')
+          <Button
+            variant="secondary"
+            size="small"
+            className="col-start-2 row-start-2 mt-1 justify-self-start sm:col-start-3 sm:row-start-1 sm:mt-0 sm:self-start"
+            loading={pending || busy}
+            disabled={pending || busy}
+            onClick={() => void perform(onPrimaryAction)}
+          >
+            {busy ? t('notifications.update.installing') : actionLabel}
+          </Button>
+          <IconButton
+            variant="ghost"
+            size="small"
+            className="col-start-3 row-start-1 sm:col-start-4 sm:self-start"
+            label={`${dismissLabel}: ${notification.title}`}
+            title={dismissLabel}
+            disabled={pending || busy}
+            onClick={() => void perform(onDelete)}
+            icon={<X className="h-4 w-4" />}
+          />
+          <div className="col-start-2 col-end-[-1] row-start-3 min-w-0 sm:row-start-2">
+            {(busy || (notification.requiresRestart && notification.statusLabel)) && (
+              <div className="mt-2 space-y-1.5">
+                {notification.statusLabel && (
+                  <p role="status" className={`text-xs ${surface.textSecondary}`}>
+                    {notification.statusLabel}
+                  </p>
+                )}
+                {busy && (
+                  <progress
+                    aria-label={notification.statusLabel || t('notifications.update.installing')}
+                    max={100}
+                    value={notification.progress ?? undefined}
+                    className="block h-1 w-full"
+                    style={{ accentColor: accent }}
+                  />
+                )}
+              </div>
+            )}
+            {failed && (
+              <p role="alert" className="mt-2 text-sm text-red-500">
+                {t('notifications.action.failed')}
+              </p>
+            )}
+            {updateDetails && (
+              <div className="mt-2">
+                <div
+                  id={detailsId}
+                  className={`space-y-2 text-sm leading-relaxed [overflow-wrap:anywhere] ${surface.textSecondary}`}
+                >
+                  {renderNotificationMarkdown(
+                    detailsOpen ? updateDetails : updatePreview,
+                    baseUrl ?? undefined,
+                    t('notifications.imageAlt')
+                  )}
+                </div>
+                {longUpdateDetails && (
+                  <Button
+                    variant="ghost"
+                    size="small"
+                    className="mt-1 -ml-3"
+                    aria-expanded={detailsOpen}
+                    aria-controls={detailsId}
+                    onClick={() => setDetailsOpen((open) => !open)}
+                  >
+                    {t(
+                      detailsOpen
+                        ? 'notifications.action.showLess'
+                        : 'notifications.action.readMore'
+                    )}
+                  </Button>
+                )}
+              </div>
+            )}
+            {detailsUrl && (
+              <div className="mt-2">
+                <Link
+                  href={detailsUrl}
+                  target="_blank"
+                  size="small"
+                  appearance="subtle"
+                  showExternalIcon
+                >
+                  {t('notifications.action.viewChanges')}
+                </Link>
+              </div>
             )}
           </div>
-          {notification.source === 'update' &&
-          notification.isBusy &&
-          !notification.requiresRestart ? (
-            <div className="mt-3 space-y-2.5">
-              <div className={`text-sm font-medium ${surface.textSecondary}`}>
-                {notification.statusLabel}
-              </div>
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/8">
-                <div
-                  className="h-full rounded-full transition-[width,background-color] duration-300"
-                  style={{
-                    width: `${notification.progress ?? 12}%`,
-                    backgroundColor: accentColor,
-                  }}
+        </div>
+      </article>
+    );
+  }
+
+  return (
+    <article aria-labelledby={titleId} className="min-h-14 px-4 py-3">
+      <div className="grid grid-cols-[36px_minmax(0,1fr)] gap-x-3">
+        <span
+          aria-hidden="true"
+          className={`relative mt-0.5 flex h-9 w-9 items-center justify-center rounded-2xl border ${sharedSurface.borderStrong} ${sharedSurface.iconBg}`}
+          style={{ color: accent }}
+        >
+          <Icon className="h-4 w-4" />
+          {!notification.read && (
+            <span
+              className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full"
+              style={{ backgroundColor: accent }}
+            />
+          )}
+        </span>
+        <div className="min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <NotificationItemHeading
+              id={titleId}
+              title={notification.title}
+              theme={theme}
+              metadata={
+                <time dateTime={notification.timestamp.toISOString()}>
+                  {formatTimestamp(notification.timestamp)}
+                </time>
+              }
+            />
+            <div className="-mt-1 flex shrink-0">
+              {!notification.read && (
+                <IconButton
+                  variant="ghost"
+                  size="small"
+                  label={`${actionLabel}: ${notification.title}`}
+                  title={actionLabel}
+                  disabled={pending}
+                  onClick={() => void perform(onPrimaryAction)}
+                  icon={<Check className="h-4 w-4" />}
                 />
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-wrap items-center gap-2.5">
-              {(notification.source === 'update' || !notification.read) && (
-                <InteractivePill
-                  onClick={() => void onPrimaryAction(notification.id)}
-                  active={notification.source === 'update'}
-                  intent="action"
-                  size="compact"
-                  className="shrink-0 whitespace-nowrap font-medium"
-                >
-                  {primaryActionLabel}
-                </InteractivePill>
               )}
-              <InteractivePill
-                onClick={() => void onDelete(notification.id)}
-                intent="action"
-                size="compact"
-                className="shrink-0 whitespace-nowrap font-medium"
-              >
-                {secondaryActionLabel}
-              </InteractivePill>
-              {notification.source === 'update' && detailsUrl ? (
-                <>
-                  <span
-                    aria-hidden="true"
-                    className={`h-4 w-px shrink-0 ${theme === 'light' ? 'bg-gray-300/90' : 'bg-white/12'}`}
-                  />
-                  <Link
-                    href={detailsUrl}
-                    target="_blank"
-                    size="small"
-                    appearance="subtle"
-                    showExternalIcon
-                    className={surface.textSecondary}
-                  >
-                    {t('notifications.action.viewChanges')}
-                  </Link>
-                </>
-              ) : null}
+              <IconButton
+                variant="ghost"
+                size="small"
+                label={`${dismissLabel}: ${notification.title}`}
+                title={dismissLabel}
+                disabled={pending || busy}
+                onClick={() => void perform(onDelete)}
+                icon={<X className="h-4 w-4" />}
+              />
+            </div>
+          </div>
+          <div
+            className={`mt-2 text-sm leading-relaxed [overflow-wrap:anywhere] ${surface.textSecondary}`}
+          >
+            {expandable ? (
+              <p className="line-clamp-2">{summary}</p>
+            ) : (
+              renderNotificationMarkdown(summary, baseUrl ?? undefined, t('notifications.imageAlt'))
+            )}
+          </div>
+          {expandable && (
+            <Button
+              className="mt-3"
+              variant="ghost"
+              size="small"
+              aria-expanded={detailsOpen}
+              aria-controls={detailsId}
+              onClick={() => setDetailsOpen((open) => !open)}
+              leading={
+                <ChevronDown
+                  className={`h-3.5 w-3.5 transition-transform motion-reduce:transition-none ${detailsOpen ? 'rotate-180' : ''}`}
+                />
+              }
+            >
+              {t('notifications.action.details')}
+            </Button>
+          )}
+          {failed && (
+            <p role="alert" className="mt-2 text-sm text-red-500">
+              {t('notifications.action.failed')}
+            </p>
+          )}
+          {expandable && (
+            <div
+              id={detailsId}
+              hidden={!detailsOpen}
+              className={`mt-3 space-y-3 rounded-xl p-3 text-sm leading-relaxed [overflow-wrap:anywhere] ${surface.textSecondary} ${sharedSurface.subtleBg}`}
+            >
+              {renderNotificationMarkdown(
+                details,
+                baseUrl ?? undefined,
+                t('notifications.imageAlt')
+              )}
             </div>
           )}
         </div>
       </div>
-    </div>
+    </article>
   );
 }

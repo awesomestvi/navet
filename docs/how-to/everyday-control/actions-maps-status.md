@@ -10,13 +10,13 @@ These widgets turn selected household actions or summaries into focused dashboar
 
 ## Create an action
 
-1. Enter edit mode and open **Add card → Widgets**.
+1. Enter edit mode and open **Add Card → Custom cards**.
 2. Choose **Action**.
 3. Select the supported target and action.
 4. Give it a clear household label.
 5. Choose a compact supported size and save.
 
-Scene is a preset of the same action-widget model.
+Choose **Scene** to add a shortcut to a scene supplied by your provider.
 
 ## Add a map
 

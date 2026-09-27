@@ -1,5 +1,6 @@
 import { DashboardEmptyState } from '@navet/app/components/patterns';
 import { Badge, Button } from '@navet/app/components/primitives';
+import { getReadableAccentForeground } from '@navet/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import {
   getThemeFocusRingClassName,
@@ -26,7 +27,7 @@ import type {
   ChoreWorkspaceData,
 } from '@navet/core/chores';
 import { CalendarCheck, ChevronDown, Plus, Users } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { getChoreCardAction } from '../chore-card-action';
 import {
   getDefinition,
@@ -34,7 +35,9 @@ import {
   getMissionProgressList,
   getRewardProgressList,
   getTodayChoresForParticipant,
+  getUpcomingChores,
 } from '../chore-dashboard-selectors';
+import { useChoreClock } from '../use-chore-clock';
 import { ChoreFocusCard } from './chore-card';
 import { ChoreDashboardGrid } from './chore-dashboard-grid';
 import { HousePulse, MissionCard, RewardGoalCard } from './chore-support-cards';
@@ -88,7 +91,10 @@ function ParticipantAvatar({
       aria-hidden="true"
     >
       {participant?.avatarUrl ? <AvatarImage src={participant.avatarUrl} alt="" /> : null}
-      <AvatarFallback className="bg-transparent text-xs font-semibold text-white">
+      <AvatarFallback
+        className="bg-transparent text-xs font-semibold"
+        style={{ color: getReadableAccentForeground(participant?.color ?? accentColor) }}
+      >
         {participant ? (
           AvatarIcon ? (
             <AvatarIcon aria-hidden="true" className="h-4 w-4" />
@@ -190,23 +196,22 @@ export function ChoreTodayView({
   const [rewardsVisible, setRewardsVisible] = useState(false);
   const breakpointCols = useBreakpointCols();
   const cardsPerRow = Math.max(1, Math.floor(breakpointCols / 2));
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    const refresh = () => {
-      if (document.visibilityState === 'visible') setNow(new Date());
-    };
-    const interval = window.setInterval(refresh, 30_000);
-    document.addEventListener('visibilitychange', refresh);
-    return () => {
-      window.clearInterval(interval);
-      document.removeEventListener('visibilitychange', refresh);
-    };
-  }, []);
+  const now = useChoreClock();
   const experience = normalizeChoreExperienceState(data.experience);
   const occurrences = useMemo(
     () => getTodayChoresForParticipant(data, selectedParticipantId, now),
     [data, now, selectedParticipantId]
   );
+  const upcoming = useMemo(() => {
+    const seen = new Set<string>();
+    return getUpcomingChores(data, selectedParticipantId, now, 7)
+      .filter((item) => {
+        if (seen.has(item.definitionId)) return false;
+        seen.add(item.definitionId);
+        return true;
+      })
+      .slice(0, cardsPerRow);
+  }, [data, selectedParticipantId, now, cardsPerRow]);
   const active = occurrences.filter(
     (occurrence) => occurrence.status !== 'done' && occurrence.status !== 'skipped'
   );
@@ -224,7 +229,11 @@ export function ChoreTodayView({
   const hasRewardsSection = Boolean(activeMission || rewardGoal);
   const childMode = experience.gamificationMode === 'adventure';
 
-  const renderChore = (occurrence: ChoreOccurrence, size: 'small' | 'medium' = 'medium') => {
+  const renderChore = (
+    occurrence: ChoreOccurrence,
+    size: 'small' | 'medium' = 'medium',
+    preview = false
+  ) => {
     const definition = getDefinition(data, occurrence);
     if (!definition) return null;
     const action = getChoreCardAction(occurrence, definition, selectedParticipantId, execute, t);
@@ -241,7 +250,7 @@ export function ChoreTodayView({
         occurrence={occurrence}
         participantsById={data.participantsById}
         presentation={presentation}
-        action={action}
+        action={preview ? undefined : action}
         childMode={childMode}
         now={now}
       />
@@ -302,7 +311,7 @@ export function ChoreTodayView({
             variant="inline"
             icon={CalendarCheck}
             title={t('household.today.emptyTitle')}
-            description={t('household.today.emptyDescription')}
+            description={upcoming.length ? '' : t('household.today.emptyDescription')}
             actionLabel={
               Object.keys(data.definitionsById).length === 0 ? t('household.chores.add') : undefined
             }
@@ -330,6 +339,15 @@ export function ChoreTodayView({
               count={remaining.length}
             />
             <ChoreDashboardGrid>{remaining.map((item) => renderChore(item))}</ChoreDashboardGrid>
+          </section>
+        ) : null}
+
+        {upcoming.length > 0 ? (
+          <section aria-labelledby="chores-upcoming-title">
+            <SectionHeading id="chores-upcoming-title" title={t('household.today.nextSevenDays')} />
+            <ChoreDashboardGrid>
+              {upcoming.map((item) => renderChore(item, 'medium', true))}
+            </ChoreDashboardGrid>
           </section>
         ) : null}
 

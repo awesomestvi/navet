@@ -18,7 +18,7 @@ Navet currently runs in:
 - Homey is implemented through the cloud OAuth flow; standalone uses environment variables and the
   Home Assistant add-on exposes corresponding optional client settings
 - openHAB is implemented through the base-URL and username/password flow and can be added from
-  provider management when the browser can reach the server
+  provider management when the Navet runtime can reach the server
 - Hubitat and SmartThings are planned provider metadata only; they have no auth flow or runtime adapter
 - standalone auth state can retain multiple implemented provider sessions; selected provider
   collections may be aggregated while one provider remains active for single-provider operations
@@ -29,7 +29,7 @@ Navet currently runs in:
 - keep deployment-specific URL rewriting out of feature components
 - preserve same-origin session and proxy constraints for standalone and add-on flows
 - keep Home Assistant-specific runtime assumptions inside Home Assistant-owned seams
-- do not reintroduce manual token-entry login paths
+- use the Home Assistant sign-in flow for standalone and the host session for panel and Ingress
 - Home Assistant Ingress must reuse the parent `hass` runtime bridge instead of opening a second Home Assistant websocket
 
 ## Current Repo Areas

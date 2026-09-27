@@ -3,7 +3,7 @@ import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { SelectableCheckboxRow } from './selectable-checkbox-row';
+import { SelectableCheckboxList, SelectableCheckboxRow } from './selectable-checkbox-row';
 
 function SelectableCheckboxRowStory() {
   const [basicChecked, setBasicChecked] = useState(true);
@@ -13,79 +13,81 @@ function SelectableCheckboxRowStory() {
   const [longChecked, setLongChecked] = useState(true);
 
   return (
-    <div className="w-full max-w-xl space-y-4">
-      <SelectableCheckboxRow
-        checked={basicChecked}
-        onCheckedChange={setBasicChecked}
-        label="Front Door Sensor"
-        rowClassName="border-white/10 bg-white/6"
-        selectedClassName="border-white/18 bg-white/10"
-        labelClassName="text-white"
-        descriptionClassName="text-white/70"
-      />
+    <div className="w-full max-w-xl">
+      <SelectableCheckboxList>
+        <li>
+          <SelectableCheckboxRow
+            checked={basicChecked}
+            onCheckedChange={setBasicChecked}
+            label="Front Door Sensor"
+            labelClassName="text-white"
+            descriptionClassName="text-white/70"
+          />
+        </li>
 
-      <SelectableCheckboxRow
-        checked={leadingChecked}
-        onCheckedChange={setLeadingChecked}
-        label="Family Calendar"
-        description="Home"
-        leading={<div className="h-5 w-1 rounded-full bg-cyan-400" />}
-        rowClassName="border-white/10 bg-white/6"
-        selectedClassName="border-cyan-400/40 bg-cyan-400/12"
-        labelClassName="text-white"
-        descriptionClassName="text-white/70"
-        checkboxPaletteColor="#22d3ee"
-      />
+        <li>
+          <SelectableCheckboxRow
+            checked={leadingChecked}
+            onCheckedChange={setLeadingChecked}
+            label="Family Calendar"
+            description="Home"
+            leading={<div className="h-5 w-1 rounded-full bg-cyan-400" />}
+            labelClassName="text-white"
+            descriptionClassName="text-white/70"
+            checkboxPaletteColor="#22d3ee"
+          />
+        </li>
 
-      <SelectableCheckboxRow
-        checked={metricChecked}
-        onCheckedChange={setMetricChecked}
-        label="Kitchen humidity"
-        description="45% RH"
-        trailing={<span className="text-sm font-semibold text-white">Live</span>}
-        rowClassName="border-white/10 bg-white/6"
-        selectedClassName="border-emerald-400/40 bg-emerald-400/12"
-        labelClassName="text-white"
-        descriptionClassName="text-white/70"
-        checkboxPaletteColor="#34d399"
-      />
+        <li>
+          <SelectableCheckboxRow
+            checked={metricChecked}
+            onCheckedChange={setMetricChecked}
+            label="Kitchen humidity"
+            description="45% RH"
+            trailing={<span className="text-sm font-semibold text-white">Live</span>}
+            labelClassName="text-white"
+            descriptionClassName="text-white/70"
+            checkboxPaletteColor="#34d399"
+          />
+        </li>
 
-      <SelectableCheckboxRow
-        checked={actionChecked}
-        onCheckedChange={setActionChecked}
-        label="BBC World"
-        description="https://feeds.bbci.co.uk/news/world/rss.xml"
-        rowClassName="border-white/10 bg-white/6"
-        selectedClassName="border-sky-400/40 bg-sky-400/12"
-        labelClassName="text-white"
-        descriptionClassName="truncate text-white/70"
-        checkboxPaletteColor="#38bdf8"
-        action={
-          <Button
-            variant="subtle"
-            size="compact"
-            iconOnly
-            label="Remove RSS provider"
-            aria-label="Remove RSS provider"
-            className="border-sky-400/25 bg-sky-400/10 text-white/80 hover:bg-sky-400/16"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
-        }
-      />
+        <li>
+          <SelectableCheckboxRow
+            checked={actionChecked}
+            onCheckedChange={setActionChecked}
+            label="BBC World"
+            description="https://feeds.bbci.co.uk/news/world/rss.xml"
+            labelClassName="text-white"
+            descriptionClassName="truncate text-white/70"
+            checkboxPaletteColor="#38bdf8"
+            action={
+              <Button
+                variant="subtle"
+                size="compact"
+                iconOnly
+                label="Remove RSS provider"
+                aria-label="Remove RSS provider"
+                className="border-sky-400/25 bg-sky-400/10 text-white/80 hover:bg-sky-400/16"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            }
+          />
+        </li>
 
-      <SelectableCheckboxRow
-        checked={longChecked}
-        onCheckedChange={setLongChecked}
-        label="Hall thermostat battery with a very long name that should truncate cleanly"
-        description="sensor.hall_thermostat_battery_super_long_entity_id_that_needs_to_wrap"
-        trailing={<span className="text-sm font-semibold tabular-nums text-white">91%</span>}
-        rowClassName="border-white/10 bg-white/6"
-        selectedClassName="border-orange-400/40 bg-orange-400/12"
-        labelClassName="truncate text-white"
-        descriptionClassName="whitespace-normal break-all text-white/70"
-        checkboxPaletteColor="#fb923c"
-      />
+        <li>
+          <SelectableCheckboxRow
+            checked={longChecked}
+            onCheckedChange={setLongChecked}
+            label="Hall thermostat battery with a very long name that should truncate cleanly"
+            description="sensor.hall_thermostat_battery_super_long_entity_id_that_needs_to_wrap"
+            trailing={<span className="text-sm font-semibold tabular-nums text-white">91%</span>}
+            labelClassName="truncate text-white"
+            descriptionClassName="whitespace-normal break-all text-white/70"
+            checkboxPaletteColor="#fb923c"
+          />
+        </li>
+      </SelectableCheckboxList>
     </div>
   );
 }
@@ -99,7 +101,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Standard dialog selection-row pattern built from the shared checkbox primitive.',
+          'Grouped dialog selection list using the same compact rows, dividers, and rounded container as Add Entity.',
       },
     },
   },

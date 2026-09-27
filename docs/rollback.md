@@ -49,7 +49,7 @@ earlier release tag and its attached artifact, not the current `main` branch tip
 
 ## Demo, Storybook, Docs, Website
 
-These are continuous `main` surfaces, not versioned production artifacts in phase 1.
+These sites deploy from `main` through their own Cloudflare Pages projects.
 
 If a Cloudflare Pages deployment must be reverted, roll back the affected Pages project to its
 earlier known-good deployment. The marketing website, demo, Storybook, and docs are independent

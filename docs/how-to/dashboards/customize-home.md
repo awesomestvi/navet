@@ -12,8 +12,7 @@ unless a separate dialog explicitly describes a provider change.
 ## Watch the dashboard tutorial
 
 Build on the included **Home** dashboard: add cards, choose sizes, arrange sections with mouse
-drag and drop, and check the result on a phone. The walkthrough keeps both light cards Small and
-enters the Quick Note after leaving edit mode. The recording uses Home Assistant as its example
+drag and drop, and check the result on a phone. The recording uses Home Assistant as its example
 provider; the dashboard workflow itself is provider-neutral.
 
 <iframe class="navet-video" src="https://www.youtube-nocookie.com/embed/8xis2yjmul8" title="Navet Dashboard Guide: Add Cards and Arrange Home" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="fullscreen" allowfullscreen></iframe>
@@ -42,10 +41,7 @@ While editing, you can:
 - Hide an automatically added entity.
 - Delete a Navet widget or manually added card.
 
-Card sizes are intentional per card type. A size that is unavailable would not provide a useful
-version of that card. Saved or imported layouts that contain a compatible extra-wide card fall
-back to Extra-Large or Large on narrower screens so the dashboard remains usable on tablets and
-phones.
+Available sizes depend on the card type and screen width.
 
 ![The current phone card-size sheet with footprint choices and the selected size identified.](/docs/how-to/dashboards/card-size-selector.webp)
 

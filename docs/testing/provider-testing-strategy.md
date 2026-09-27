@@ -116,7 +116,7 @@ Validation should keep failing if:
 
 - shared code imports provider-specific code
 - provider packages use app-internal compatibility seams as a primary input model
-- shared UI starts depending on raw backend payload models again
+- shared UI depends on raw backend payload models
 
 ## Release Validation
 

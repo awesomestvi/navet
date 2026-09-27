@@ -12,9 +12,8 @@ section router owns only active dashboard composition. Feature-specific renderin
 feature module. For example, the lighting section owns its scenes, empty state, and restore dialog,
 so unrelated Home layout changes do not rerender or reshape its card composition.
 
-Do not add another field to every dashboard consumer for a feature-only need. Extend the narrowest
-model or create a feature-owned section component. The router must not regain a manual comparator;
-stable feature projections and normal React composition are the performance boundary.
+For feature-specific needs, extend the narrowest model or create a feature-owned section
+component. Stable feature projections and normal React composition are the performance boundary.
 
 ## Provider Runtime Queries
 
@@ -41,8 +40,7 @@ Room editing has two domain boundaries:
   provider capabilities and dependencies, executes each provider plan, applies local overrides,
   and returns only the operations that remain retryable after a partial result.
 
-The React controller adapts stores and view models to these boundaries. Provider mutation policy
-and persistence must not move back into event handlers.
+The React controller adapts stores and view models to these boundaries.
 
 ## Media Catalog
 

@@ -37,8 +37,8 @@ generic implementation word.
 
 ## Current Facts Worth Keeping In Context
 
-- Home Assistant has the advanced feature services.
-- Homey and openHAB currently cover rooms, realtime entities, lighting, switches, and sensors.
+- Each implemented provider declares its supported feature services; use the
+  [capability matrix](../docs/integrations.md#capability-matrix) for current coverage.
 - Hubitat and SmartThings are planned metadata, not packages or runtime adapters.
 - The app can retain multiple implemented provider sessions and aggregate selected providers.
 - `packages/app/src/components` and `packages/app/src/ui-kit` are current implementation seams;

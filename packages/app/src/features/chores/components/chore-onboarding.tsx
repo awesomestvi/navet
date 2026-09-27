@@ -13,7 +13,10 @@ import {
   Select,
   Switch,
 } from '@navet/app/components/primitives';
-import { themeColorValues } from '@navet/app/components/shared/theme/theme-colors';
+import {
+  getReadableAccentForeground,
+  themeColorValues,
+} from '@navet/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import {
   getUiKitGlassWorkspaceGlowClassName,
@@ -1211,7 +1214,14 @@ export function ChoreOnboardingDialog({
                                 {participant.avatarUrl ? (
                                   <AvatarImage src={participant.avatarUrl} alt="" />
                                 ) : null}
-                                <AvatarFallback className="bg-transparent text-xs font-semibold text-white">
+                                <AvatarFallback
+                                  className="bg-transparent text-xs font-semibold"
+                                  style={{
+                                    color: getReadableAccentForeground(
+                                      participant.color ?? accentColor
+                                    ),
+                                  }}
+                                >
                                   <AvatarFallbackIdentity
                                     avatarIcon={participant.avatarIcon}
                                     displayName={participant.displayName}
@@ -1394,7 +1404,14 @@ export function ChoreOnboardingDialog({
                               {participant.avatarUrl ? (
                                 <AvatarImage src={participant.avatarUrl} alt="" />
                               ) : null}
-                              <AvatarFallback className="bg-transparent text-xs font-semibold text-white">
+                              <AvatarFallback
+                                className="bg-transparent text-xs font-semibold"
+                                style={{
+                                  color: getReadableAccentForeground(
+                                    participant.color ?? accentColor
+                                  ),
+                                }}
+                              >
                                 <AvatarFallbackIdentity
                                   avatarIcon={participant.avatarIcon}
                                   displayName={participant.displayName}

@@ -21,6 +21,8 @@ export function AddEntityDialog({
   title,
   description,
   actionLabel,
+  onAddCard,
+  allowedTemplateIds,
 }: AddEntityDialogProps) {
   const { t, locale } = useI18n();
   const providerSessions = useIntegrationStore(integrationSelectors.providerSessions);
@@ -62,11 +64,12 @@ export function AddEntityDialog({
     <AddEntityDialogPrimitive
       open={open}
       onClose={onClose}
-      onAddCard={() => {}}
+      onAddCard={onAddCard ?? (() => {})}
       onAddLibraryCard={onAddEntity}
       currentRoom={currentRoom}
       libraryCards={libraryCards}
-      libraryOnly
+      libraryOnly={!onAddCard}
+      allowedTemplateIds={allowedTemplateIds}
       title={title ?? t('dashboard.addEntity.title')}
       description={
         description ??

@@ -30,7 +30,7 @@ Use the action menu beside a dashboard to:
 - **Duplicate** its current Home layout.
 - **Move up** or **Move down** in the switcher.
 - **Make default** for devices without a specific assignment.
-- **Assign devices**.
+- **Assign displays**.
 - **Delete** it.
 
 ## Delete a dashboard safely

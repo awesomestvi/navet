@@ -40,7 +40,7 @@ When choosing rooms, select the content you want:
 
 Under **Use on**, choose:
 
-- **This device** to make the new dashboard open by default on the current browser or display.
+- **This display** to make the new dashboard open by default on the current browser or display.
 - **Not yet** to create it without changing a device assignment.
 
 Choose **Create dashboard**.
@@ -55,7 +55,7 @@ dashboard remains available in the switcher.
 ## If you do not see New dashboard
 
 Navet limits the number of dashboards. Open **Manage dashboards** and remove an unused dashboard,
-or duplicate and repurpose an existing one.
+or repurpose an existing one.
 
 ## Next steps
 

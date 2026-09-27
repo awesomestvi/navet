@@ -15,6 +15,10 @@ import { getTvDpadLayout, TvDpad } from './tv-dpad';
 import { TvSourceSelector } from './tv-source-selector';
 import { TvTransportControls } from './tv-transport-controls';
 import { TvChannelControls, TvVolumeControls } from './tv-volume-controls';
+import {
+  type MediaDerivedColorsReporter,
+  useReportMediaDerivedColors,
+} from './use-report-media-derived-colors';
 
 interface MediaTvViewProps {
   size: CardSize;
@@ -26,6 +30,7 @@ interface MediaTvViewProps {
   volume: number;
   isMuted: boolean;
   theme: ThemeType;
+  onDerivedBackgroundChange?: MediaDerivedColorsReporter;
   remoteAvailable: boolean;
   canSetVolume: boolean;
   canMuteVolume: boolean;
@@ -50,6 +55,7 @@ export function MediaTvView({
   volume,
   isMuted,
   theme,
+  onDerivedBackgroundChange,
   remoteAvailable,
   canSetVolume,
   canMuteVolume,
@@ -71,6 +77,7 @@ export function MediaTvView({
     baseColor: tvSurface.tvBaseColor,
     backgroundColor: tvSurface.tvBackgroundColor,
   });
+  useReportMediaDerivedColors(onDerivedBackgroundChange, tvSurface.tvBackgroundColor);
   const isCompact = isCompactCardSize(size);
   const isSmallTvCard = size === 'small';
   const isMediumVerticalTv = size === 'medium-vertical';

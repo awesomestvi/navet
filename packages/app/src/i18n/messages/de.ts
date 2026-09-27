@@ -293,6 +293,7 @@ export const deMessages = {
   'household.today.emptyDescription': 'Anstehende Aufgaben erscheinen hier am jeweiligen Tag.',
   'household.today.overdue': 'Überfällig',
   'household.today.due': 'Jetzt fällig',
+  'household.chores.nextScheduled': 'Nächster Termin: {date}',
   'household.today.upcoming': 'Später',
   'household.today.awaitingApproval': 'Freigabe erforderlich',
   'household.today.done': 'Erledigt',
@@ -487,6 +488,8 @@ export const deMessages = {
   'household.schedule.monthly': 'Jeden Monat',
   'household.schedule.custom': 'Benutzerdefiniert',
   'household.schedule.afterCompletion': 'Nach Erledigung',
+  'household.schedule.dayAfterCompletion': '{count} Tag nach Erledigung',
+  'household.schedule.daysAfterCompletion': '{count} Tage nach Erledigung',
   'common.cancel': 'Abbrechen',
   'common.skipToMainContent': 'Zum Hauptinhalt springen',
   'common.save': 'Speichern',
@@ -2031,6 +2034,10 @@ export const deMessages = {
   'settings.preview.lightCardTitle': 'Lichtkarte',
   'settings.preview.ambientBleedEnabled': 'Ambient Bleed aktiviert',
   'settings.preview.containedInsideCard': 'Innerhalb der Karte begrenzt',
+  'notifications.action.failed': 'Die Aktion konnte nicht abgeschlossen werden. Erneut versuchen.',
+  'notifications.action.details': 'Details',
+  'notifications.action.readMore': 'Mehr lesen',
+  'notifications.action.showLess': 'Weniger anzeigen',
   'notifications.action.restart': 'Neu starten',
   'notifications.action.update': 'Aktualisieren',
   'notifications.action.markAsRead': 'Als gelesen markieren',
@@ -2326,6 +2333,7 @@ export const deMessages = {
   'tasks.automation.details.dependencies': 'Abhängigkeiten',
   'tasks.automation.details.noDescription':
     'Für diese Automation ist keine Beschreibung verfügbar.',
+  'common.entityId': 'Entity-ID',
   'tasks.automation.details.entityId': 'Entity-ID',
   'tasks.automation.details.room': 'Raum',
   'tasks.automation.details.state': 'Status',
@@ -2341,6 +2349,7 @@ export const deMessages = {
   'tasks.automation.noRecentRun': 'Kein aktueller Lauf',
   'person.home': 'Zuhause',
   'person.away': 'Abwesend',
+  'notifications.empty.updates': 'Keine Updates',
   'notifications.empty.title': 'Keine Benachrichtigungen',
   'notifications.empty.description': 'Alles erledigt!',
   'errorDisplay.title': 'Verbindungs- oder Ladeproblem',
@@ -2464,14 +2473,6 @@ export const deMessages = {
   'widgets.mediaStack.settings.priorityEmpty':
     'Wählen Sie mindestens einen Mediaplayer aus, um die Prioritätsreihenfolge festzulegen.',
   'widgets.mediaStack.settings.priorityPosition': 'Priorität {position}',
-  'widgets.mediaStack.settings.idleBehavior': 'Leerlaufverhalten',
-  'widgets.mediaStack.settings.idleBehaviorHelp':
-    'Wählen Sie, was dieses Widget tun soll, wenn nichts aktiv abgespielt wird.',
-  'widgets.mediaStack.settings.idleBehavior.compact': 'Kompakte Ersatzkarte anzeigen',
-  'widgets.mediaStack.settings.idleBehavior.hidden':
-    'Blenden Sie das Widget aus, wenn es inaktiv ist',
-  'widgets.mediaStack.settings.idleBehavior.top-priority':
-    'Immer den Player mit der höchsten Priorität anzeigen',
   'widgets.mediaStack.settings.moveUp': 'Nach oben',
   'widgets.mediaStack.settings.moveDown': 'Nach unten',
   'widgets.mediaStack.badge': 'Stapel',

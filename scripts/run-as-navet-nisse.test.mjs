@@ -50,7 +50,7 @@ describe('Navet Nisse GitHub App authentication', () => {
     ).toBe(true);
   });
 
-  it('limits the bot identity to comments and reactions', () => {
+  it('limits the bot identity to comments, reactions, and request-label cleanup', () => {
     expect(parseOperation(['comment', '181', '--body-file', '/tmp/reply.md'])).toEqual({
       method: 'POST',
       path: '/repos/awesomestvi/navet/issues/181/comments',
@@ -65,6 +65,15 @@ describe('Navet Nisse GitHub App authentication', () => {
       method: 'DELETE',
       path: '/repos/awesomestvi/navet/issues/comments/1234/reactions/5678',
     });
+    expect(parseOperation(['remove-request-label', '181', 'research'])).toEqual({
+      method: 'DELETE',
+      path: '/repos/awesomestvi/navet/issues/181/labels/navet%3A%20research',
+    });
+    expect(parseOperation(['remove-request-label', '181', 'implement'])).toEqual({
+      method: 'DELETE',
+      path: '/repos/awesomestvi/navet/issues/181/labels/navet%3A%20implement',
+    });
+    expect(() => parseOperation(['remove-request-label', '181', 'other'])).toThrow('Unsupported');
     expect(() => parseOperation(['git', 'push'])).toThrow('Usage:');
     expect(() => parseOperation(['pr', 'create'])).toThrow('Usage:');
     expect(() => parseOperation(['react', '1234', 'invalid'])).toThrow('Unsupported');

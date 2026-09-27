@@ -10,7 +10,7 @@ artifact model, recovery path and hosted rollout are in [Release Workflow](../re
 - Protected `main` is never advanced by a direct release commit or a bypass.
 - Keep root `repository.yaml` in the monorepo and Home Assistant sources under `platform/home-assistant`.
 - The annotated release tag identifies the source commit. GitHub Releases are the published changelog.
-- Website and docs clients read stable GitHub Releases; do not create per-release website metadata commits.
+- Website and docs clients read stable GitHub Releases.
 - Generated panel files remain build outputs, not tracked source.
 
 ## Development And Publication
@@ -23,8 +23,7 @@ actual published standalone and add-on image digests on both architectures befor
 Run **Promote Navet Release** from `main` with an exact successful source tag and a new target tag.
 Beta starts from Dev; stable starts from a successful beta/RC of the same base version. Install the
 candidate first, then enable `installation_tested` when dispatching stable. This dispatch authorizes
-publication; beta/production environment credentials are restricted to trusted `main` workflows
-without repeated reviewer prompts.
+publication; beta/production environment credentials are restricted to trusted `main` workflows.
 
 Each version receives correctly versioned packages and actual-image verification. Stable is a new
 package of the tested source, not a beta image with a different Docker tag. The panel is built once
@@ -47,9 +46,9 @@ requires every applicable lane and Cloudflare preview bound to the current site 
 Runtime changes retain all three test tiers and Docker checks. Shared and unknown inputs run broadly.
 
 Cloudflare builds previews and production only for watched inputs. Keep hosted filters and merge
-protection synchronized with `scripts/pipeline-rollout.mjs`; apply only after the new gate is on
-`main`. Do not remove required checks independently. See the operational guide for setup and
-verification. No release workflow rebuilds the public sites.
+protection synchronized with `scripts/pipeline-rollout.mjs` from a checkout matching the reviewed
+workflows on `main`. Do not remove required checks independently. See the operational guide for
+setup and verification.
 
 ## Release Notes
 
@@ -61,6 +60,12 @@ Source:
 4. CI validates the fragment; Dev notes use the merged PR fragment and beta/stable notes use the
    complete range since the previous stable tag.
 5. `internal` fragments prove the pull request was considered but are omitted from published notes.
+
+Run `pnpm release:status` to list fragments pending since the last completed stable release.
+Use `pnpm release:status --all` to list released fragments too. The command checks the published
+release evidence and successful workflow run before choosing its baseline; a tag alone is not
+proof of publication. `local` means the file has not been added to Git. If a released fragment is
+shown as `revised`, create a new fragment for the new change instead of reusing its filename.
 
 Writing style:
 

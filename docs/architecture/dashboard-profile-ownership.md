@@ -97,10 +97,8 @@ workspace.
 
 The profile workspace binds on first authenticated use. Home Assistant itself authenticates every
 standalone connection, so entering a new address proceeds directly to its OAuth login. A different
-installation receives an isolated tenant workspace. `NAVET_HASS_URL` remains an optional exact
-operator pin. A short-lived setup grant remains available for providers whose enrollment does
-not have an equivalent browser login boundary, including unknown openHAB targets and the first
-Homey account.
+installation receives an isolated tenant workspace. `NAVET_HASS_URL` optionally pins the upstream
+used for token exchange and API traffic.
 
 ## Reconciliation
 
@@ -195,20 +193,17 @@ still require the access controls described below.
 
 - Standalone Docker and development use a per-browser opaque `HttpOnly` cookie. The OAuth state,
   callback, refresh token, access token, and proxy requests are bound to that one server session.
-- Standalone Home Assistant enrollment proceeds through a fresh OAuth login for the entered URL.
-  An optional operator URL pin can restrict it to one exact address. Other provider enrollment may
-  additionally require a short-lived setup grant. The setup header is stripped from every
-  upstream HTTP and WebSocket proxy request.
+- Standalone Home Assistant enrollment uses OAuth. An optional `NAVET_HASS_URL` pin sets the
+  upstream for token exchange and API traffic; the browser authorization address must reach the
+  same installation. Homey uses OAuth, and openHAB uses its base URL and credentials.
 - Home Assistant add-on Ingress may use the official `X-Remote-User-*` identity headers only in the
-  explicit Ingress handler. This trusted, Ingress-only runtime bypasses standalone pairing.
+  explicit Ingress handler.
 - The Home Assistant custom panel has no Navet profile-store endpoint. Its dashboard collection and
   client assignment remain local-only until a provider-owned server persistence seam exists.
 
 The normal standalone profile route never trusts Ingress headers and never accepts anonymous
 profile access.
 
-Installation pairing protects providers that require an operator enrollment step. Home Assistant
-uses its own OAuth login and isolated tenant storage instead. Keep provider-native
-authentication enabled, preserve `/data`, use HTTPS, and place externally reachable standalone
-deployments behind appropriate network or reverse-proxy access control. openHAB credential
+Keep provider-native authentication enabled, preserve `/data`, use HTTPS, and place externally
+reachable standalone deployments behind appropriate network or reverse-proxy access control. openHAB credential
 verification is rate-limited per direct source, but that throttle remains defense-in-depth.

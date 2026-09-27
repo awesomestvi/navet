@@ -464,7 +464,7 @@ describe('VacuumCard', () => {
     expect(screen.queryByText('vacuum.status.charging')).not.toBeInTheDocument();
   });
 
-  it('does not render the lawn mower illustration on medium mower cards yet', () => {
+  it('renders a docked mower illustration on medium cards', () => {
     useProviderEntityModelMock.mockReturnValueOnce({
       id: 'home_assistant:lawn_mower.backyard',
       canonicalId: 'home_assistant:lawn_mower.backyard',
@@ -491,12 +491,12 @@ describe('VacuumCard', () => {
       />
     );
 
-    expect(screen.queryByTestId('lawn-mower-surface')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('lawn-mower-dock')).not.toBeInTheDocument();
+    expect(screen.getByTestId('lawn-mower-surface')).toBeInTheDocument();
+    expect(screen.getByTestId('lawn-mower-dock')).toBeInTheDocument();
     expect(screen.queryByTestId('vacuum-robot-surface')).not.toBeInTheDocument();
   });
 
-  it('keeps the lawn mower visual hidden while mowing', () => {
+  it('shows the mower without its dock while mowing', () => {
     useProviderEntityModelMock.mockReturnValueOnce({
       id: 'home_assistant:lawn_mower.backyard',
       canonicalId: 'home_assistant:lawn_mower.backyard',
@@ -523,8 +523,50 @@ describe('VacuumCard', () => {
       />
     );
 
-    expect(screen.queryByTestId('lawn-mower-motion-wrapper')).not.toBeInTheDocument();
+    expect(screen.getByTestId('lawn-mower-surface')).toBeInTheDocument();
+    expect(screen.queryByTestId('lawn-mower-dock')).not.toBeInTheDocument();
   });
+
+  it.each([
+    ['cleaning', false, false, undefined, true],
+    ['returning', false, false, undefined, true],
+    ['paused', false, false, undefined, false],
+    ['docked', false, false, undefined, false],
+    ['cleaning', true, false, undefined, false],
+    ['returning', false, true, undefined, false],
+    ['cleaning', false, false, 'unavailable', false],
+  ] as const)(
+    'gates mower wheel motion for %s, disabled=%s, lowPower=%s, availability=%s',
+    (status, disableAnimations, lowPowerMode, availability, moving) => {
+      useSettingsStoreMock.mockImplementation((selector) =>
+        selector({ use24HourTime: true, disableAnimations, lowPowerMode, effectsQuality: 'high' })
+      );
+      render(
+        <LawnMowerCard
+          id="lawn_mower.backyard"
+          name="Backyard Mower"
+          status={status}
+          availability={availability}
+          size="medium"
+          onSizeChange={vi.fn()}
+          isEditMode={false}
+        />
+      );
+      const grass = screen.queryByTestId('lawn-mower-grass-motion');
+      if (status === 'cleaning' && availability !== 'unavailable') {
+        expect(grass).toHaveStyle({
+          animation: moving ? 'navet-mower-grass-pass 1200ms linear infinite' : 'none',
+        });
+      } else {
+        expect(grass).not.toBeInTheDocument();
+      }
+      for (const wheel of screen.getAllByTestId('lawn-mower-wheel-treads')) {
+        expect(wheel).toHaveStyle({
+          animation: moving ? 'navet-mower-wheel-roll 600ms linear infinite' : 'none',
+        });
+      }
+    }
+  );
 
   it('renders charging vacuums with a monochrome illustration treatment', () => {
     useProviderEntityModelMock.mockReturnValueOnce({
@@ -935,7 +977,7 @@ describe('VacuumCard', () => {
     expect(screen.queryByTestId('vacuum-side-brush')).not.toBeInTheDocument();
   });
 
-  it('does not render mower illustration parts while the visual is hidden', () => {
+  it('keeps small mower cards focused on status and controls', () => {
     useProviderEntityModelMock.mockReturnValue({
       id: 'home_assistant:lawn_mower.backyard',
       canonicalId: 'home_assistant:lawn_mower.backyard',
@@ -957,13 +999,13 @@ describe('VacuumCard', () => {
         id="lawn_mower.backyard"
         name="Backyard Mower"
         status="cleaning"
-        size="medium"
+        size="small"
         onSizeChange={vi.fn()}
         isEditMode={false}
       />
     );
 
-    expect(screen.queryByTestId('lawn-mower-blades')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('lawn-mower-surface')).not.toBeInTheDocument();
   });
 
   it('does not infer Home Assistant from arbitrary dotted ids', () => {

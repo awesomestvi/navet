@@ -48,7 +48,7 @@ This is the recommended development installation for Home Assistant OS users.
 6. Enable `Show in sidebar`, or select `Open Web UI`.
 
 The App runs through Home Assistant Ingress and reuses the authenticated parent Home Assistant
-session. It does not need a Home Assistant URL or long-lived access token in normal Ingress use.
+session.
 
 The App uses Ingress by default. To test direct access, assign an available host port to the
 optional direct Navet web interface in **Network**, restart the App, and complete the separate
@@ -157,10 +157,10 @@ non-main branch publish, replace `dev` with an exact version from a `navet-dev-*
 for example:
 
 ```yaml
-image: ghcr.io/awesomestvi/navet:0.8.0-dev.YYYYMMDDHHMMSS
+image: ghcr.io/awesomestvi/navet:0.x.y-dev.YYYYMMDDHHMMSS
 ```
 
-Use a real published version in place of the example timestamp, then run:
+Use the full published version in place of `0.x.y-dev.YYYYMMDDHHMMSS`, then run:
 
 ```bash
 docker compose pull
@@ -185,9 +185,6 @@ For the supported stable installation:
 2. Install `Navet`.
 3. Restart Home Assistant.
 4. Add `Navet` from `Settings -> Devices & services`.
-
-Do not add the main `awesomestvi/navet` monorepo to HACS. Its root is a Home Assistant App repository, not a
-publishable HACS integration repository.
 
 ### Advanced: Build The Current Custom Panel Source
 
@@ -241,7 +238,7 @@ dashboard configuration before switching rather than assuming it will appear in 
 - Home Assistant authorization page does not open: confirm the address entered in Navet is
   reachable from the current browser, including through the intended VPN or external route.
 - Home Assistant accepts authorization but returning to Navet fails: confirm `NAVET_HASS_URL`, or
-  the previously paired upstream, is reachable from the Navet container; avoid `localhost` when
+  the address entered at sign-in, is reachable from the Navet container; avoid `localhost` when
   Home Assistant runs on another host.
 - OAuth loops after changing hostnames, TLS, reverse proxies, or ports: sign in again so Navet can
   create a session for the current Home Assistant URL.

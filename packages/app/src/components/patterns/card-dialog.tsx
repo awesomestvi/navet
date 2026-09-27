@@ -9,6 +9,7 @@ import type { ThemeType } from '@navet/app/hooks/use-theme';
 import { integrationAdminService } from '@navet/app/services/integration-admin.service';
 import { integrationSelectors } from '@navet/app/stores/selectors';
 import { getProviderEntityTypeLabel } from '@navet/app/utils/provider-entity-label';
+import { getProviderNativeId } from '@navet/app/utils/provider-ids';
 import * as Dialog from '@radix-ui/react-dialog';
 import { Check, type LucideIcon, X } from 'lucide-react';
 import {
@@ -321,6 +322,14 @@ export const CardDialogHeader = memo(function CardDialogHeader({
               ) : null}
             </div>
           </Dialog.Description>
+        ) : null}
+        {entityId ? (
+          <p className={cn('mt-1 text-xs', descriptionClassName)} style={descriptionStyle}>
+            <span>{t('common.entityId')}: </span>
+            <code className="select-text whitespace-normal [overflow-wrap:anywhere]">
+              {getProviderNativeId(entityId)}
+            </code>
+          </p>
         ) : null}
         {supportingContent ? <div className="mt-2 min-w-0">{supportingContent}</div> : null}
       </div>

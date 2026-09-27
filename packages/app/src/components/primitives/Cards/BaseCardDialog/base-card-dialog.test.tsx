@@ -6,6 +6,28 @@ import { describe, expect, it, vi } from 'vitest';
 import { BaseCardDialog } from '.';
 
 describe('BaseCardDialog', () => {
+  it.each([
+    ['home_assistant:sensor.office_temperature', 'sensor.office_temperature'],
+    ['sensor.office_temperature', 'sensor.office_temperature'],
+    ['homey:device-123#measure_temperature', 'device-123#measure_temperature'],
+    ['openhab:Office_Temperature', 'Office_Temperature'],
+  ])('shows the native provider ID for %s while editing', (entityId, nativeId) => {
+    renderWithProviders(
+      <BaseCardDialog
+        isOpen
+        onOpenChange={vi.fn()}
+        title="Temperature"
+        entityId={entityId}
+        theme="dark"
+        tabs={[{ key: 'controls', label: 'Controls', icon: Sliders, content: null }]}
+      />
+    );
+
+    expect(screen.getByText(nativeId, { selector: 'code' })).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'Edit Temperature' }));
+    expect(screen.getByText(nativeId, { selector: 'code' })).toBeVisible();
+  });
+
   it('uses one title ID when the visible content supplies the dialog title', () => {
     renderWithProviders(
       <BaseCardDialog
@@ -26,6 +48,7 @@ describe('BaseCardDialog', () => {
       </BaseCardDialog>
     );
 
+    expect(screen.queryByText('Entity id:')).not.toBeInTheDocument();
     const dialog = screen.getByRole('dialog', { name: 'Add card' });
     expect(within(dialog).getByRole('heading', { name: 'Add card' })).toBeInTheDocument();
     const titleId = dialog.getAttribute('aria-labelledby');

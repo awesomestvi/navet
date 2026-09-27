@@ -30,17 +30,16 @@ weather-card/
 
 ### Small
 
-- Matches the medium card styling exactly
-- Shows compact location header, temperature + H/L summary, condition icon, and a 4-day forecast strip
+- Shows compact location header, temperature + H/L summary, condition icon, and up to four forecast entries
 - Hides the detail metrics column and sunrise/sunset timeline
 
 ### Medium
 
-- Shows compact location header, temperature + H/L summary, condition icon, and a 7-day forecast strip
+- Shows compact location header, temperature + H/L summary, condition icon, and up to seven forecast entries
 - Hides the detail metrics column and sunrise/sunset timeline
 - Forecast strip can switch between hourly and weekly from the settings dialog
 
-### Large and Extra-Large
+### Large
 
 - Shows the detailed weather layout
 - Includes detail metrics, sunrise/sunset timeline, and forecast row
@@ -87,16 +86,24 @@ interface WeatherCardProps {
 - Uses the shared `CardWrapper`
 - Uses the same edit-mode size selector pattern as other dashboard cards
 - Opens a settings dialog on card tap outside edit mode
-- Keeps `large` / `extra-large` on the detailed layout path
+- Uses a detailed layout for `large`
 - Uses the same compact header + forecast strip layout for both `small` and `medium`
-- Uses Home Assistant source temperature units and converts display values through the shared
+- Uses provider-supplied temperature units and converts display values through the shared
   temperature utilities
 - Persists per-card tint color and shared weather settings through the controller/store layer
 - Includes handcrafted dynamic weather illustration variants for:
   sunny day, clear night, cloudy, rain, storm, fog, snow day, snow night, windy, and fallback states
-- The overlay atoms are split by weather effect; `weather-card-overlays.tsx` now only composes them
+- Tiles cloud bands into continuous horizontal loops with different parallax speeds; medium effects
+  quality slows all three bands, and low quality or reduced motion keeps the artwork static
+- Animates rainfall with one composited layer at medium quality and three depth layers at high
+  quality; sunny backgrounds breathe the sun at medium and high quality and add ring motion at high
+  quality
+- Adds condition-specific motion for clear-night moon halos, wind streaks, fog banks, and falling
+  snow so every weather background retains a subtle sense of live conditions
+- Flashes the existing storm lightning and halo intermittently with a short double pulse
+- The overlay atoms are split by weather effect; `weather-card-overlays.tsx` composes them
 
 ## Maintenance Notes
 
 - Update this README when card size behavior changes
-- If the component is split into subcomponents again, update the structure section to match the real folder contents
+- Keep the structure section aligned with the folder contents

@@ -29,7 +29,6 @@ Battery readings appear together in **Battery Overview**, with low batteries fir
 reports both its charge percentage and a low-battery status, they share one row. Devices that only
 report battery status show that status instead of a percentage. Grouping by room limits the list
 to batteries in the selected room.
-Battery warnings stay in **Battery Overview** and do not appear in **Needs attention**.
 
 ## Arrange quickview
 

@@ -290,6 +290,7 @@ export const nlMessages = {
   'household.today.emptyDescription': 'Komende klusjes verschijnen hier op de juiste dag.',
   'household.today.overdue': 'Te laat',
   'household.today.due': 'Nu doen',
+  'household.chores.nextScheduled': 'Volgende: {date}',
   'household.today.upcoming': 'Later',
   'household.today.awaitingApproval': 'Goedkeuring nodig',
   'household.today.done': 'Klaar',
@@ -484,6 +485,8 @@ export const nlMessages = {
   'household.schedule.monthly': 'Elke maand',
   'household.schedule.custom': 'Aangepast',
   'household.schedule.afterCompletion': 'Na voltooiing',
+  'household.schedule.dayAfterCompletion': '{count} dag na voltooiing',
+  'household.schedule.daysAfterCompletion': '{count} dagen na voltooiing',
   'common.cancel': 'Annuleer',
   'common.skipToMainContent': 'Ga naar de hoofdinhoud',
   'common.save': 'Opslaan',
@@ -2025,6 +2028,10 @@ export const nlMessages = {
   'settings.preview.lightCardTitle': 'Lichte kaart',
   'settings.preview.ambientBleedEnabled': 'Omgevingsbloeding ingeschakeld',
   'settings.preview.containedInsideCard': 'Bevat binnenkaart',
+  'notifications.action.failed': 'De actie kon niet worden voltooid. Probeer het opnieuw.',
+  'notifications.action.details': 'Details',
+  'notifications.action.readMore': 'Lees meer',
+  'notifications.action.showLess': 'Laat minder zien',
   'notifications.action.restart': 'Opnieuw opstarten',
   'notifications.action.update': 'Bijwerken',
   'notifications.action.markAsRead': 'Markeer als gelezen',
@@ -2318,6 +2325,7 @@ export const nlMessages = {
   'tasks.automation.details.dependencies': 'Afhankelijkheden',
   'tasks.automation.details.noDescription':
     'Er is geen beschrijving beschikbaar voor deze automatisering.',
+  'common.entityId': 'Entiteits-ID',
   'tasks.automation.details.entityId': 'Entiteits-ID',
   'tasks.automation.details.room': 'Kamer',
   'tasks.automation.details.state': 'Staat',
@@ -2333,6 +2341,7 @@ export const nlMessages = {
   'tasks.automation.noRecentRun': 'Geen recente run',
   'person.home': 'Thuis',
   'person.away': 'Weg',
+  'notifications.empty.updates': 'Geen updates',
   'notifications.empty.title': 'Geen meldingen',
   'notifications.empty.description': 'Jullie zijn allemaal ingehaald!',
   'errorDisplay.title': 'Verbindings- of laadprobleem',
@@ -2453,14 +2462,6 @@ export const nlMessages = {
   'widgets.mediaStack.settings.priorityEmpty':
     'Selecteer ten minste één mediaspeler om de prioriteitsvolgorde te definiëren.',
   'widgets.mediaStack.settings.priorityPosition': 'Prioriteit {position}',
-  'widgets.mediaStack.settings.idleBehavior': 'Inactief gedrag',
-  'widgets.mediaStack.settings.idleBehaviorHelp':
-    'Kies wat deze widget moet doen als er niets actief wordt afgespeeld.',
-  'widgets.mediaStack.settings.idleBehavior.compact': 'Toon een compacte fallback-kaart',
-  'widgets.mediaStack.settings.idleBehavior.hidden':
-    'Verberg de widget wanneer deze niet actief is',
-  'widgets.mediaStack.settings.idleBehavior.top-priority':
-    'Laat altijd de speler met de hoogste prioriteit zien',
   'widgets.mediaStack.settings.moveUp': 'Ga omhoog',
   'widgets.mediaStack.settings.moveDown': 'Ga naar beneden',
   'widgets.mediaStack.badge': 'Stapel',

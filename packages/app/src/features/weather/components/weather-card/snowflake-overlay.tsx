@@ -1,4 +1,6 @@
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
+import type { EffectsQuality } from '@navet/app/stores/settings-store';
+import { useId } from 'react';
 import { getWeatherSvgOverlayTransform } from './weather-card-utils';
 
 type SnowflakeDepth = 'far' | 'near';
@@ -85,7 +87,16 @@ function buildDeterministicSnowflakes(
   }));
 }
 
-export function SnowflakeOverlaySvg({ size, tone }: { size: CardSize; tone: SnowOverlayTone }) {
+export function SnowflakeOverlaySvg({
+  effectsQuality,
+  size,
+  tone,
+}: {
+  effectsQuality: EffectsQuality;
+  size: CardSize;
+  tone: SnowOverlayTone;
+}) {
+  const layerIdPrefix = useId();
   const canvas = getSnowflakeOverlayCanvas(size);
   const farCount = size === 'large' ? 24 : size === 'medium' ? 14 : 18;
   const nearCount = size === 'large' ? 12 : size === 'medium' ? 7 : 9;
@@ -103,6 +114,20 @@ export function SnowflakeOverlaySvg({ size, tone }: { size: CardSize; tone: Snow
   );
   const farStroke = tone === 'night' ? 'rgba(216,231,255,0.72)' : 'rgba(243,248,255,0.7)';
   const nearStroke = tone === 'night' ? 'rgba(247,250,255,0.92)' : 'rgba(255,255,255,0.9)';
+  const farLayerId = `${layerIdPrefix}-snow-far`;
+  const nearLayerId = `${layerIdPrefix}-snow-near`;
+  const mediumMotionClassName =
+    effectsQuality === 'medium'
+      ? 'motion-safe:animate-[navet-weather-rain-loop_18s_linear_infinite] motion-safe:will-change-transform [transform-box:view-box]'
+      : undefined;
+  const farMotionClassName =
+    effectsQuality === 'high'
+      ? 'motion-safe:animate-[navet-weather-rain-loop_24s_linear_infinite] motion-safe:will-change-transform [transform-box:view-box]'
+      : undefined;
+  const nearMotionClassName =
+    effectsQuality === 'high'
+      ? 'motion-safe:animate-[navet-weather-rain-loop_13s_linear_infinite] motion-safe:will-change-transform [transform-box:view-box]'
+      : undefined;
 
   return (
     <svg
@@ -112,40 +137,95 @@ export function SnowflakeOverlaySvg({ size, tone }: { size: CardSize; tone: Snow
       preserveAspectRatio="xMidYMid slice"
       style={{ transform: getWeatherSvgOverlayTransform(size), transformOrigin: 'center top' }}
     >
-      {farFlakes.map((flake, index) => (
-        <g
-          key={`snow-far-${index}`}
-          transform={`translate(${formatSvgValue(flake.x)} ${formatSvgValue(flake.y)}) rotate(${formatSvgValue(flake.rotation)})`}
-          opacity={flake.opacity}
-        >
-          <path
-            d={buildSnowflakePath(flake.radius, flake.branchRatio)}
-            fill="none"
-            stroke={farStroke}
-            strokeWidth={flake.strokeWidth}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            vectorEffect="non-scaling-stroke"
-          />
+      <defs>
+        <g id={farLayerId}>
+          {farFlakes.map((flake, index) => (
+            <g
+              key={`snow-far-${index}`}
+              transform={`translate(${formatSvgValue(flake.x)} ${formatSvgValue(flake.y)}) rotate(${formatSvgValue(flake.rotation)})`}
+              opacity={flake.opacity}
+            >
+              <path
+                d={buildSnowflakePath(flake.radius, flake.branchRatio)}
+                fill="none"
+                stroke={farStroke}
+                strokeWidth={flake.strokeWidth}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                vectorEffect="non-scaling-stroke"
+              />
+            </g>
+          ))}
         </g>
-      ))}
-      {nearFlakes.map((flake, index) => (
-        <g
-          key={`snow-near-${index}`}
-          transform={`translate(${formatSvgValue(flake.x)} ${formatSvgValue(flake.y)}) rotate(${formatSvgValue(flake.rotation)})`}
-          opacity={flake.opacity}
-        >
-          <path
-            d={buildSnowflakePath(flake.radius, flake.branchRatio)}
-            fill="none"
-            stroke={nearStroke}
-            strokeWidth={flake.strokeWidth}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            vectorEffect="non-scaling-stroke"
-          />
+        <g id={nearLayerId}>
+          {nearFlakes.map((flake, index) => (
+            <g
+              key={`snow-near-${index}`}
+              transform={`translate(${formatSvgValue(flake.x)} ${formatSvgValue(flake.y)}) rotate(${formatSvgValue(flake.rotation)})`}
+              opacity={flake.opacity}
+            >
+              <path
+                d={buildSnowflakePath(flake.radius, flake.branchRatio)}
+                fill="none"
+                stroke={nearStroke}
+                strokeWidth={flake.strokeWidth}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                vectorEffect="non-scaling-stroke"
+              />
+            </g>
+          ))}
         </g>
-      ))}
+      </defs>
+      {effectsQuality === 'low' ? (
+        <>
+          <use href={`#${farLayerId}`} />
+          <use href={`#${nearLayerId}`} />
+        </>
+      ) : effectsQuality === 'medium' ? (
+        <LoopedSnowLayer
+          hrefs={[`#${farLayerId}`, `#${nearLayerId}`]}
+          height={canvas.height}
+          className={mediumMotionClassName}
+          animationDelay="-8s"
+        />
+      ) : (
+        <>
+          <LoopedSnowLayer
+            hrefs={[`#${farLayerId}`]}
+            height={canvas.height}
+            className={farMotionClassName}
+            animationDelay="-11s"
+          />
+          <LoopedSnowLayer
+            hrefs={[`#${nearLayerId}`]}
+            height={canvas.height}
+            className={nearMotionClassName}
+            animationDelay="-5s"
+          />
+        </>
+      )}
     </svg>
+  );
+}
+
+function LoopedSnowLayer({
+  animationDelay,
+  className,
+  height,
+  hrefs,
+}: {
+  animationDelay: string;
+  className?: string;
+  height: number;
+  hrefs: string[];
+}) {
+  return (
+    <g className={className} style={className ? { animationDelay } : undefined}>
+      {hrefs.flatMap((href) => [
+        <use key={`${href}-current`} href={href} />,
+        <use key={`${href}-previous`} href={href} transform={`translate(0 -${height})`} />,
+      ])}
+    </g>
   );
 }

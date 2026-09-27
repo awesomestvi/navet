@@ -47,5 +47,4 @@ explains the limitation.
 ## If rooms already come from your provider
 
 Use provider-backed rooms as the starting point. Navet groups, favorites, visibility, and
-appearance can refine daily navigation without turning provider-specific room data into the shared
-UI model.
+appearance help you organize daily navigation.

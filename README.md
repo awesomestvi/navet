@@ -109,8 +109,8 @@ Prerequisites: Node.js `^20.19.0` or `>=22.12.0`, pnpm 11, and Git.
 <details>
 <summary><strong>Repository architecture</strong></summary>
 
-Navet is moving toward provider-neutral core and UI packages, provider-owned adapters, and an
-official app-composition layer:
+Navet organizes shared contracts, provider adapters, and application composition into workspace
+packages:
 
 ```text
 packages/
@@ -130,10 +130,9 @@ apps/
   storybook/                  shared UI review surface
 ```
 
-Much of the current shared UI implementation still lives in `packages/app/src/components/*` and
-`packages/app/src/ui-kit/*`; `@navet/ui` is the target shared boundary rather than a claim that the
-extraction is already complete. Read the [repository documentation map](docs/README.md) before
-making architecture changes.
+Shared UI is authored in `packages/app/src/components/*` and exposed through
+`packages/app/src/ui-kit/*`. `@navet/ui` is the target package for provider-neutral shared UI.
+Read the [repository documentation map](docs/README.md) before making architecture changes.
 
 </details>
 

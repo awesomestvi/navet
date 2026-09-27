@@ -27,4 +27,4 @@ document only to satisfy this section.
 
 - UI changes: review the demo and Storybook previews on relevant phone, tablet, and desktop sizes.
 - The maintainer's merge records acceptance after CI passes and review conversations are resolved.
-- Production publication remains protected by the `production` environment approval.
+- Production publication requires an explicit maintainer workflow dispatch and installation-test confirmation.

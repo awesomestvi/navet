@@ -57,6 +57,8 @@ export {
   type SectionCardProps,
 } from './section-card';
 export {
+  SelectableCheckboxList,
+  type SelectableCheckboxListProps,
   SelectableCheckboxRow,
   type SelectableCheckboxRowProps,
 } from './selectable-checkbox-row';

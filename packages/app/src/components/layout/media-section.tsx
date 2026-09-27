@@ -1,8 +1,16 @@
 import { DashboardEmptyState, DashboardGroupingNavigation } from '@navet/app/components/patterns';
-import { InteractivePill } from '@navet/app/components/primitives/interactive-pill';
-import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
+import { CardEditActionButton } from '@navet/app/components/shared/card-edit-action-button';
+import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import { ALL_ROOMS_ID } from '@navet/app/constants/rooms';
+import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
+import {
+  DashboardCardEditBackdrop,
+  DashboardCardEditDock,
+} from '@navet/app/features/dashboard/components/dashboard-card-item';
+import { DashboardResizeTrigger } from '@navet/app/features/dashboard/components/dashboard-edit-actions';
+import { MediaStackWidget } from '@navet/app/features/dashboard/components/widgets/media-stack-widget';
 import { useDashboardEntitiesStore } from '@navet/app/features/dashboard/stores/dashboard-entities-store';
+import type { MediaDialogMediaStackSettings } from '@navet/app/features/media/components/media/media-dialog.types';
 import {
   getMediaEntityTypeKey,
   type MediaEntityTypeKey,
@@ -12,17 +20,34 @@ import {
   useDeviceCollectionsByKeys,
   useEditMode,
   useI18n,
-  useMediaQuery,
+  usePersistedState,
   useTheme,
 } from '@navet/app/hooks';
 import type { MediaDevice } from '@navet/app/types/device.types';
 import { getDeviceRoomLabel } from '@navet/app/utils/device-location';
 import { getProviderNativeId } from '@navet/app/utils/provider-ids';
-import { Plus, Tv } from 'lucide-react';
-import { lazy, Suspense, useCallback, useMemo, useState } from 'react';
+import { Settings2, Tv, X } from 'lucide-react';
+import {
+  lazy,
+  type ReactNode,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { toast } from 'sonner';
 import { useShallow } from 'zustand/react/shallow';
 import { EntityGrid } from './entity-grid';
+import {
+  getAvailableMediaDisplayGroupEntityIds,
+  getMediaDisplayGroupAnchorId,
+  getMediaDisplayGroupMemberIds,
+  isMediaDisplayGroupVisible,
+  type MediaDisplayGroup,
+  normalizeMediaDisplayGroups,
+} from './media-display-groups';
 import { SectionCustomizeShell } from './section-customize-shell';
 
 const AddEntityDialog = lazy(async () => {
@@ -32,6 +57,10 @@ const AddEntityDialog = lazy(async () => {
 
 type MediaSectionDevice = MediaDevice & { type: 'media' };
 type MediaGroupingMode = 'type' | 'room';
+
+function getMediaStackCardSize(size: CardSize): CardSize {
+  return size === 'small' || size === 'large' ? size : 'medium';
+}
 
 type MediaSectionGroup = {
   key: string;
@@ -224,20 +253,48 @@ export function excludePromotedMediaDevices(
   );
 }
 
-export function MediaSection() {
+export function MediaSection({ addEntityRequestKey = 0 }: { addEntityRequestKey?: number }) {
   const { t } = useI18n();
   const { theme } = useTheme();
-  const isMobileViewport = useMediaQuery('(max-width: 767px)');
-  const surface = getThemeSurfaceTokens(theme);
   const devices = useDeviceCollectionsByKeys(['media']);
   const { isEditMode, toggleEditMode } = useEditMode();
   const [isAddEntityDialogOpen, setIsAddEntityDialogOpen] = useState(false);
+  const previousAddEntityRequestKey = useRef(addEntityRequestKey);
+  useEffect(() => {
+    if (addEntityRequestKey > previousAddEntityRequestKey.current && isEditMode) {
+      setIsAddEntityDialogOpen(true);
+    }
+    previousAddEntityRequestKey.current = addEntityRequestKey;
+  }, [addEntityRequestKey, isEditMode]);
   const [promotedMediaEntityIds, setPromotedMediaEntityIds] = useState<string[]>([]);
   const [groupingMode, setGroupingMode] = useState<MediaGroupingMode>('type');
   const [selectedGroupIds, setSelectedGroupIds] = useState<Record<MediaGroupingMode, string>>({
     type: '',
     room: '',
   });
+  const [storedDisplayGroups, setStoredDisplayGroups] = usePersistedState<MediaDisplayGroup[]>(
+    STORAGE_KEYS.mediaDisplayGroups,
+    []
+  );
+  const [displayGroupSettingsRequests, setDisplayGroupSettingsRequests] = useState<
+    Record<string, number>
+  >({});
+  const [pendingStackSettingsAnchorId, setPendingStackSettingsAnchorId] = useState<string | null>(
+    null
+  );
+  const displayGroups = useMemo(
+    () => normalizeMediaDisplayGroups(storedDisplayGroups),
+    [storedDisplayGroups]
+  );
+  const configuredStackAnchorEntityIds = useMemo(
+    () =>
+      new Set(
+        displayGroups
+          .map(getMediaDisplayGroupAnchorId)
+          .filter((entityId): entityId is string => Boolean(entityId))
+      ),
+    [displayGroups]
+  );
   const { hiddenEntityIds, hideEntity, showEntity } = useDashboardEntitiesStore(
     useShallow((state) => ({
       hiddenEntityIds: state.hiddenEntityIds,
@@ -262,9 +319,144 @@ export function MediaSection() {
     [allMediaDevices, hiddenEntityIdSet]
   );
   const mediaDevices = useMemo(
-    () => allMediaDevices.filter((device) => !hiddenEntityIdSet.has(device.id)),
-    [allMediaDevices, hiddenEntityIdSet]
+    () =>
+      allMediaDevices.filter(
+        (device) =>
+          !hiddenEntityIdSet.has(device.id) ||
+          (isEditMode && configuredStackAnchorEntityIds.has(device.id))
+      ),
+    [allMediaDevices, configuredStackAnchorEntityIds, hiddenEntityIdSet, isEditMode]
   );
+  const visibleMediaEntityIds = useMemo(
+    () => mediaDevices.map((device) => device.id),
+    [mediaDevices]
+  );
+  const visibleDisplayGroups = useMemo(
+    () =>
+      isEditMode
+        ? displayGroups
+        : displayGroups.filter((group) => isMediaDisplayGroupVisible(group, mediaDevices)),
+    [displayGroups, isEditMode, mediaDevices]
+  );
+  const stackAnchorEntityIds = useMemo(
+    () =>
+      new Set(
+        visibleDisplayGroups
+          .map(getMediaDisplayGroupAnchorId)
+          .filter((entityId): entityId is string => Boolean(entityId))
+      ),
+    [visibleDisplayGroups]
+  );
+  const removeDisplayGroup = useCallback(
+    (groupId: string) => {
+      if (!window.confirm(t('widgets.deleteConfirm'))) return;
+      setStoredDisplayGroups((current) =>
+        normalizeMediaDisplayGroups(current).filter((group) => group.id !== groupId)
+      );
+    },
+    [setStoredDisplayGroups, t]
+  );
+  const updateDisplayGroupSize = useCallback(
+    (groupId: string, size: CardSize) => {
+      setStoredDisplayGroups((current) =>
+        normalizeMediaDisplayGroups(current).map((group) =>
+          group.id === groupId ? { ...group, size } : group
+        )
+      );
+    },
+    [setStoredDisplayGroups]
+  );
+  const updateMediaCardStack = useCallback(
+    (
+      anchorDevice: MediaSectionDevice,
+      next: Parameters<MediaDialogMediaStackSettings['onUpdate']>[0]
+    ) => {
+      const existingDisplayGroup = displayGroups.find(
+        (group) => getMediaDisplayGroupAnchorId(group) === anchorDevice.id
+      );
+      const availableIds = new Set(
+        getAvailableMediaDisplayGroupEntityIds(
+          existingDisplayGroup?.id ?? '',
+          displayGroups,
+          visibleMediaEntityIds
+        )
+      );
+      availableIds.add(anchorDevice.id);
+      const nextEntityIds = [
+        anchorDevice.id,
+        ...next.entityIds.filter((entityId) => entityId !== anchorDevice.id),
+      ].filter(
+        (entityId, index, entityIds) =>
+          availableIds.has(entityId) && entityIds.indexOf(entityId) === index
+      );
+      if (!existingDisplayGroup && nextEntityIds.length >= 2) {
+        setPendingStackSettingsAnchorId(anchorDevice.id);
+      }
+
+      setStoredDisplayGroups((current) => {
+        const groups = normalizeMediaDisplayGroups(current);
+        const existingGroup = groups.find(
+          (group) => getMediaDisplayGroupAnchorId(group) === anchorDevice.id
+        );
+        const availableIds = new Set(
+          getAvailableMediaDisplayGroupEntityIds(
+            existingGroup?.id ?? '',
+            groups,
+            visibleMediaEntityIds
+          )
+        );
+        availableIds.add(anchorDevice.id);
+        const entityIds = [
+          anchorDevice.id,
+          ...next.entityIds.filter((entityId) => entityId !== anchorDevice.id),
+        ].filter(
+          (entityId, index, ids) => availableIds.has(entityId) && ids.indexOf(entityId) === index
+        );
+
+        if (entityIds.length < 2) {
+          return existingGroup ? groups.filter((group) => group.id !== existingGroup.id) : groups;
+        }
+
+        const priorityOrder = [
+          ...next.priorityOrder.filter((entityId) => entityIds.includes(entityId)),
+          ...entityIds.filter((entityId) => !next.priorityOrder.includes(entityId)),
+        ];
+        const data = { ...next, entityIds, priorityOrder };
+
+        if (existingGroup) {
+          return groups.map((group) =>
+            group.id === existingGroup.id
+              ? { ...group, anchorEntityId: anchorDevice.id, data }
+              : group
+          );
+        }
+
+        return [
+          ...groups,
+          {
+            id: `media-group-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+            anchorEntityId: anchorDevice.id,
+            size: getMediaStackCardSize(anchorDevice.size),
+            data,
+          },
+        ];
+      });
+    },
+    [displayGroups, setStoredDisplayGroups, visibleMediaEntityIds]
+  );
+  useEffect(() => {
+    if (!pendingStackSettingsAnchorId) return;
+    const group = displayGroups.find(
+      (candidate) => getMediaDisplayGroupAnchorId(candidate) === pendingStackSettingsAnchorId
+    );
+    if (!group) return;
+
+    setDisplayGroupSettingsRequests((current) => ({
+      ...current,
+      [group.id]: (current[group.id] ?? 0) + 1,
+    }));
+    setPendingStackSettingsAnchorId(null);
+  }, [displayGroups, pendingStackSettingsAnchorId]);
   const handleRemoveEntity = useCallback(
     (entityId: string) => {
       hideEntity(entityId);
@@ -281,7 +473,6 @@ export function MediaSection() {
     },
     [showEntity, t]
   );
-  const openAddEntityDialog = useCallback(() => setIsAddEntityDialogOpen(true), []);
   const closeAddEntityDialog = useCallback(() => setIsAddEntityDialogOpen(false), []);
 
   const audioTitle = t('sections.media.audio.title');
@@ -302,6 +493,55 @@ export function MediaSection() {
     }),
     [t]
   );
+  const mediaStackSettingsById = useMemo(() => {
+    const settings = new Map<string, MediaDialogMediaStackSettings>();
+
+    for (const device of mediaDevices) {
+      const group = displayGroups.find(
+        (candidate) => getMediaDisplayGroupAnchorId(candidate) === device.id
+      );
+      if (
+        !group &&
+        displayGroups.some((candidate) => candidate.data.entityIds?.includes(device.id))
+      ) {
+        continue;
+      }
+      const availableIds = new Set(
+        getAvailableMediaDisplayGroupEntityIds(
+          group?.id ?? '',
+          displayGroups,
+          visibleMediaEntityIds
+        )
+      );
+      availableIds.add(device.id);
+      const entityIds = group?.data.entityIds?.filter((entityId) => availableIds.has(entityId)) ?? [
+        device.id,
+      ];
+      const priorityOrder = group?.data.priorityOrder?.filter((entityId) =>
+        entityIds.includes(entityId)
+      ) ?? [device.id];
+
+      settings.set(device.id, {
+        entityIds: entityIds.includes(device.id) ? entityIds : [device.id, ...entityIds],
+        requiredEntityIds: [device.id],
+        priorityOrder: priorityOrder.includes(device.id)
+          ? priorityOrder
+          : [device.id, ...priorityOrder],
+        idleBehavior: group?.data.idleBehavior ?? 'compact',
+        playerOptions: mediaDevices
+          .filter((candidate) => availableIds.has(candidate.id))
+          .map((candidate) => ({
+            id: candidate.id,
+            name: candidate.name,
+            room: candidate.room,
+            subtitle: candidate.entityType ?? t('media.type.player'),
+          })),
+        onUpdate: (next) => updateMediaCardStack(device, next),
+      });
+    }
+
+    return settings;
+  }, [displayGroups, mediaDevices, t, updateMediaCardStack, visibleMediaEntityIds]);
 
   const groupedMediaPresentation = useMemo(
     () =>
@@ -333,16 +573,55 @@ export function MediaSection() {
     [featuredMediaDevice, promotedMediaEntityIds]
   );
 
-  const sectionDevices = useMemo(
+  const sectionCardCandidates = useMemo(() => {
+    if (isEditMode) return groupedMediaPresentation.devices;
+
+    return excludePromotedMediaDevices(
+      groupedMediaPresentation.devices.filter((device) => !isSpotifyAccountDevice(device)),
+      promotedEntityIdsForSections.filter((entityId) => !stackAnchorEntityIds.has(entityId)),
+      mediaDevices
+    );
+  }, [
+    groupedMediaPresentation.devices,
+    isEditMode,
+    mediaDevices,
+    promotedEntityIdsForSections,
+    stackAnchorEntityIds,
+  ]);
+  const sectionCardCandidateIds = useMemo(
+    () => new Set(sectionCardCandidates.map((device) => device.id)),
+    [sectionCardCandidates]
+  );
+  const renderableDisplayGroups = useMemo(
     () =>
-      isEditMode
-        ? groupedMediaPresentation.devices
-        : excludePromotedMediaDevices(
-            groupedMediaPresentation.devices.filter((device) => !isSpotifyAccountDevice(device)),
-            promotedEntityIdsForSections,
-            mediaDevices
-          ),
-    [groupedMediaPresentation.devices, isEditMode, mediaDevices, promotedEntityIdsForSections]
+      visibleDisplayGroups.filter((group) => {
+        const anchorEntityId = getMediaDisplayGroupAnchorId(group);
+        return (
+          Boolean(anchorEntityId) &&
+          allMediaDeviceMap.has(anchorEntityId as string) &&
+          sectionCardCandidateIds.has(anchorEntityId as string)
+        );
+      }),
+    [allMediaDeviceMap, sectionCardCandidateIds, visibleDisplayGroups]
+  );
+  const renderableStackAnchorEntityIds = useMemo(
+    () =>
+      new Set(
+        renderableDisplayGroups
+          .map(getMediaDisplayGroupAnchorId)
+          .filter((entityId): entityId is string => Boolean(entityId))
+      ),
+    [renderableDisplayGroups]
+  );
+  const stackedSecondaryEntityIds = useMemo(() => {
+    const groupedEntityIds = getMediaDisplayGroupMemberIds(renderableDisplayGroups);
+    return new Set(
+      [...groupedEntityIds].filter((entityId) => !renderableStackAnchorEntityIds.has(entityId))
+    );
+  }, [renderableDisplayGroups, renderableStackAnchorEntityIds]);
+  const sectionDevices = useMemo(
+    () => sectionCardCandidates.filter((device) => !stackedSecondaryEntityIds.has(device.id)),
+    [sectionCardCandidates, stackedSecondaryEntityIds]
   );
   const typeSections = useMemo(
     () =>
@@ -385,6 +664,73 @@ export function MediaSection() {
     },
     [groupingMode]
   );
+  const stackCardReplacementById = new Map<string, { size: CardSize; node: ReactNode }>();
+  for (const group of renderableDisplayGroups) {
+    const anchorEntityId = getMediaDisplayGroupAnchorId(group);
+    const anchorDevice = anchorEntityId ? allMediaDeviceMap.get(anchorEntityId) : undefined;
+    if (!anchorEntityId || !anchorDevice) continue;
+
+    stackCardReplacementById.set(anchorEntityId, {
+      size: group.size,
+      node: (
+        <div className="relative h-full min-w-0">
+          {isEditMode ? (
+            <>
+              <DashboardCardEditBackdrop size={group.size} />
+              <DashboardCardEditDock cardSize={group.size}>
+                <CardEditActionButton
+                  cardSize={group.size}
+                  Icon={X}
+                  inline
+                  theme={theme}
+                  variant="destructive"
+                  aria-label={t('widgets.delete')}
+                  onClick={() => removeDisplayGroup(group.id)}
+                />
+                <DashboardResizeTrigger
+                  cardSize={group.size}
+                  allowedSizes={['small', 'medium', 'large']}
+                  onSizeChange={(size) => updateDisplayGroupSize(group.id, size)}
+                  inline
+                />
+                <CardEditActionButton
+                  cardSize={group.size}
+                  Icon={Settings2}
+                  inline
+                  theme={theme}
+                  variant="accent"
+                  aria-label={t('widgets.mediaStack.settings.title')}
+                  onClick={() =>
+                    setDisplayGroupSettingsRequests((current) => ({
+                      ...current,
+                      [group.id]: (current[group.id] ?? 0) + 1,
+                    }))
+                  }
+                />
+              </DashboardCardEditDock>
+            </>
+          ) : null}
+          <div
+            inert={isEditMode || undefined}
+            className={isEditMode ? 'pointer-events-none h-full' : 'h-full'}
+          >
+            <MediaStackWidget
+              size={group.size}
+              data={group.data}
+              anchorEntityId={anchorEntityId}
+              openSettingsRequestKey={displayGroupSettingsRequests[group.id] ?? 0}
+              availableEntityIds={getAvailableMediaDisplayGroupEntityIds(
+                group.id,
+                displayGroups,
+                visibleMediaEntityIds
+              )}
+              onUpdate={(data) => updateMediaCardStack(anchorDevice, data)}
+            />
+          </div>
+        </div>
+      ),
+    });
+  }
   if (allMediaDevices.length === 0) {
     return (
       <div className="flex h-full items-center justify-center p-6">
@@ -398,27 +744,12 @@ export function MediaSection() {
     );
   }
 
-  const addHiddenEntityAction =
-    isEditMode && hiddenMediaEntityIds.length > 0 ? (
-      <InteractivePill
-        intent="action"
-        size="small"
-        onClick={openAddEntityDialog}
-        className={`${surface.subtleBg} ${surface.hoverBg}`}
-      >
-        <Plus className={`h-4 w-4 ${surface.textSecondary}`} />
-        <span className={`hidden text-sm font-medium md:inline ${surface.textSecondary}`}>
-          {t('dashboard.addEntity.title')}
-        </span>
-      </InteractivePill>
-    ) : null;
-
   return (
     <SectionCustomizeShell
       isEditMode={isEditMode}
       onToggle={toggleEditMode}
       className="relative space-y-6 md:space-y-7"
-      actions={isMobileViewport ? null : addHiddenEntityAction}
+      actions={null}
       showCustomizeButton={false}
     >
       {!isEditMode ? (
@@ -429,42 +760,46 @@ export function MediaSection() {
         />
       ) : null}
 
-      {selectedSection ? (
+      {selectedSection || renderableDisplayGroups.length > 0 ? (
         <div className="space-y-4">
-          <DashboardGroupingNavigation
-            ariaLabel={t('sections.media.title')}
-            groupingLabel={t('dashboard.roomNav.grouping.label')}
-            idPrefix="media-group"
-            items={sections.map((section) => ({ id: section.key, label: section.title }))}
-            modes={[
-              { id: 'type', label: t('dashboard.roomNav.grouping.type') },
-              { id: 'room', label: t('dashboard.roomNav.grouping.room') },
-            ]}
-            selectedItemId={selectedSection.key}
-            selectedModeId={groupingMode}
-            onModeChange={(modeId) => {
-              if (modeId === 'type' || modeId === 'room') setGroupingMode(modeId);
-            }}
-            onItemChange={handleGroupChange}
-          />
+          {selectedSection ? (
+            <DashboardGroupingNavigation
+              ariaLabel={t('sections.media.title')}
+              groupingLabel={t('dashboard.roomNav.grouping.label')}
+              idPrefix="media-group"
+              items={sections.map((section) => ({ id: section.key, label: section.title }))}
+              modes={[
+                { id: 'type', label: t('dashboard.roomNav.grouping.type') },
+                { id: 'room', label: t('dashboard.roomNav.grouping.room') },
+              ]}
+              selectedItemId={selectedSection.key}
+              selectedModeId={groupingMode}
+              onModeChange={(modeId) => {
+                if (modeId === 'type' || modeId === 'room') setGroupingMode(modeId);
+              }}
+              onItemChange={handleGroupChange}
+            />
+          ) : null}
           <div
             role="tabpanel"
-            id={`media-group-panel-${selectedSection.key}`}
-            aria-labelledby={`media-group-tab-${selectedSection.key}`}
+            id={`media-group-panel-${selectedSection?.key ?? 'stacks'}`}
+            aria-labelledby={selectedSection ? `media-group-tab-${selectedSection.key}` : undefined}
           >
             <EntityGrid
-              devices={selectedSection.devices}
+              devices={selectedSection?.devices ?? []}
               rawDevices={devices}
-              title={selectedSection.title}
-              singularLabel={selectedSection.singularLabel}
-              pluralLabel={selectedSection.pluralLabel}
+              title={selectedSection?.title ?? t('dashboard.addCard.templates.mediaStack.name')}
+              singularLabel={selectedSection?.singularLabel ?? t('sections.media.singular')}
+              pluralLabel={selectedSection?.pluralLabel ?? t('sections.media.plural')}
               isEditMode={isEditMode}
               cardSizeStorageKey="mediaSectionCardSizes"
               onRemoveEntity={handleRemoveEntity}
               allowEntityRemoval
               usesHideAction
               cardVariantById={groupedMediaPresentation.cardVariantById}
-              sectionId={selectedSection.key}
+              cardReplacementById={stackCardReplacementById}
+              mediaStackSettingsById={mediaStackSettingsById}
+              sectionId={selectedSection?.key ?? 'stacks'}
               showHeader={false}
             />
           </div>
@@ -475,9 +810,6 @@ export function MediaSection() {
             icon={Tv}
             title={t('sections.media.emptyTitle')}
             description={t('dashboard.addEntity.descriptionWithHidden')}
-            actionIcon={Plus}
-            actionLabel={t('dashboard.addEntity.title')}
-            onAction={openAddEntityDialog}
             className="w-full max-w-md"
           />
         </div>

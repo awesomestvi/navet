@@ -4,11 +4,13 @@ import { describe, expect, it } from 'vitest';
 import {
   getHousePulse,
   getMissionProgressList,
+  getNextChores,
   getParticipantPointHistory,
   getRewardProgressList,
   getRoomChoreSummaries,
   getRoomTodayChores,
   getTodayChoresForParticipant,
+  getUpcomingChores,
 } from './chore-dashboard-selectors';
 
 const now = new Date('2026-08-15T10:00:00.000Z');
@@ -260,5 +262,82 @@ describe('chore dashboard selectors', () => {
     expect(
       getRoomChoreSummaries(data, now).some((room) => room.canonicalId === 'room:Hallway')
     ).toBe(false);
+  });
+});
+
+describe('next scheduled chores', () => {
+  it('orders and deduplicates future work, including dates beyond the next week', () => {
+    const data = workspace();
+    const localNow = new Date(2026, 7, 15, 10);
+    const future = (id: string, definitionId: string, date: string) => ({
+      ...occurrence(id, definitionId, 'available'),
+      scheduledAt: date,
+    });
+    data.occurrencesById = {
+      later: future('later', 'dishes', new Date(2026, 8, 10, 9).toISOString()),
+      next: future('next', 'dishes', new Date(2026, 7, 20, 9).toISOString()),
+      toys: future('toys', 'toys', new Date(2026, 7, 18, 9).toISOString()),
+      today: future('today', 'shoes', new Date(2026, 7, 15, 15).toISOString()),
+    };
+    expect(getNextChores(data, 'all', localNow).map((item) => item.id)).toEqual([
+      'today',
+      'toys',
+      'next',
+    ]);
+    expect(getNextChores(data, 'all', localNow, true).map((item) => item.id)).toEqual([
+      'toys',
+      'next',
+    ]);
+    delete data.occurrencesById.next;
+    expect(getNextChores(data, 'all', localNow, true).at(-1)?.id).toBe('later');
+  });
+
+  it('excludes paused, archived, finished, skipped and unrelated work', () => {
+    const data = workspace();
+    data.definitionsById.dishes.enabled = false;
+    data.definitionsById.toys.archivedAt = createdAt;
+    data.occurrencesById = Object.fromEntries(
+      ['dishes', 'toys', 'shoes'].map((id) => [
+        id,
+        {
+          ...occurrence(id, id, 'available'),
+          scheduledAt: '2026-08-20T09:00:00Z',
+        },
+      ])
+    );
+    expect(getNextChores(data, 'all', now).map((item) => item.id)).toEqual(['shoes']);
+    expect(getNextChores(data, 'other', now)).toEqual([]);
+    data.definitionsById.shoes.approval.approverIds = ['other'];
+    expect(getNextChores(data, 'other', now)).toHaveLength(1);
+    data.occurrencesById.shoes.status = 'done';
+    expect(getNextChores(data, 'all', now)).toEqual([]);
+    data.occurrencesById.shoes.status = 'skipped';
+    expect(getNextChores(data, 'all', now)).toEqual([]);
+  });
+});
+
+// Keep the library preview broader than the compact Today window.
+describe('upcoming week', () => {
+  it('includes tomorrow through day seven, excluding today, later dates and paused work', () => {
+    const data = workspace();
+    const localNow = new Date(2026, 7, 15, 10);
+    data.occurrencesById = Object.fromEntries(
+      [0, 1, 7, 8, 12].map((offset) => {
+        const id = `day-${offset}`;
+        return [
+          id,
+          {
+            ...occurrence(id, 'dishes', 'available'),
+            scheduledAt: new Date(2026, 7, 15 + offset, 16, 30).toISOString(),
+          },
+        ];
+      })
+    );
+    expect(getUpcomingChores(data, 'all', localNow).map((item) => item.id)).toEqual([
+      'day-1',
+      'day-7',
+    ]);
+    data.definitionsById.dishes.enabled = false;
+    expect(getUpcomingChores(data, 'all', localNow)).toEqual([]);
   });
 });

@@ -22,6 +22,10 @@ import {
   withAlpha,
 } from './use-media-artwork-colors';
 import { useMediaVolumeMode } from './use-media-volume-mode';
+import {
+  type MediaDerivedColorsReporter,
+  useReportMediaDerivedColors,
+} from './use-report-media-derived-colors';
 import { useStableMediaArtwork } from './use-stable-media-artwork';
 
 interface MediaSmallViewProps {
@@ -40,6 +44,7 @@ interface MediaSmallViewProps {
   elapsedSeconds: number;
   durationSeconds: number;
   theme: ThemeType;
+  onDerivedBackgroundChange?: MediaDerivedColorsReporter;
   hideTransportControls?: boolean;
   onToggleMute: () => void;
   onPrevious: () => void;
@@ -72,6 +77,7 @@ export function MediaSmallView({
   elapsedSeconds,
   durationSeconds,
   theme,
+  onDerivedBackgroundChange,
   hideTransportControls = false,
   onToggleMute,
   onPrevious,
@@ -134,6 +140,7 @@ export function MediaSmallView({
       }
     : readableForeground;
   const resolvedTitleColor = foreground.titleColor;
+  useReportMediaDerivedColors(onDerivedBackgroundChange, palette.gradientEnd);
   const resolvedSubtitleColor = foreground.subtitleColor;
   const controlIconStyle = { color: resolvedTitleColor };
   const activeUtilityButtonStyle = {

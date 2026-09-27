@@ -6,7 +6,7 @@
 
 **One-liner:** Navet is a polished, local-first smart-home dashboard for Home Assistant, Homey, and openHAB across wall panels, tablets, desktops, and phones.
 
-**What it does:** Navet turns supported smart-home platforms into one room-first interface for everyday control. It gives households glanceable dashboards for lights, climate, media, energy, security, tasks, and settings while keeping provider-specific connection and command behavior behind the shared experience.
+**What it does:** Navet turns supported smart-home platforms into one room-first interface for everyday control. It gives households glanceable dashboards for lights, climate, media, energy, security, household chores, routines, and settings while keeping provider-specific connection and command behavior behind the shared experience.
 
 **Product category:** Self-hosted smart-home dashboard.
 
@@ -80,7 +80,7 @@
 
 | Objection | Response |
 |---|---|
-| Is every feature available on every provider? | No. Home Assistant is the most mature integration. Homey and openHAB currently cover rooms, realtime entities, lighting, switches, and sensors. The public capability matrix documents the difference. |
+| Is every feature available on every provider? | No. Home Assistant is the most mature integration. Homey and openHAB support everyday controls and measurements, with additional services depending on the adapter. Check the public capability matrix for the features your setup needs. |
 | Will this replace my provider? | No. Navet is the daily control surface; the connected provider remains the source of truth for devices and services. |
 | Does Navet send my smart-home data to its own cloud? | Navet is local-first and self-hosted. Provider data, dashboard state, and credentials remain on the user's device or server rather than Navet servers. |
 

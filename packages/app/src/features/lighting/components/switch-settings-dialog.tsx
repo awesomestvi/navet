@@ -1,5 +1,9 @@
 import { dispatchEntityCommand } from '@navet/app/commands';
-import { CardDialogSection, SelectableCheckboxRow } from '@navet/app/components/patterns';
+import {
+  CardDialogSection,
+  SelectableCheckboxList,
+  SelectableCheckboxRow,
+} from '@navet/app/components/patterns';
 import { BaseCardDialog, type BaseCardDialogTab } from '@navet/app/components/primitives';
 import {
   CustomCardTintPicker,
@@ -7,7 +11,6 @@ import {
   IconPicker,
 } from '@navet/app/components/shared/device-editor';
 import {
-  getInheritedDialogSectionStyle,
   NEUTRAL_DIALOG_CONTROL_ACCENT,
   normalizeCustomCardTint,
 } from '@navet/app/components/shared/theme/custom-card-tint-surface';
@@ -89,7 +92,6 @@ export const SwitchSettingsDialog = memo(function SwitchSettingsDialog({
     normalizeCustomCardTint(tintColor) ??
     normalizeCustomCardTint(dialogTintColor) ??
     getThemeColorValue(primaryColor);
-  const sectionStyle = getInheritedDialogSectionStyle(theme, tintColor, activeAccentColor);
   const dialogSurface = isOn
     ? {
         panel: `bg-linear-to-br ${activeDialogColors.from} ${activeDialogColors.to}`,
@@ -150,35 +152,31 @@ export const SwitchSettingsDialog = memo(function SwitchSettingsDialog({
             content: (
               <div className="space-y-6">
                 <CardDialogSection label={metricSectionTitle}>
-                  <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
+                  <SelectableCheckboxList className="max-h-72 overflow-y-auto">
                     {availableMetrics.map((metric) => {
                       const isSelected = selectedMetricLabels.includes(metric.label);
                       const isDisabled = !isSelected && selectedMetricLabels.length >= metricLimit;
 
                       return (
-                        <SelectableCheckboxRow
-                          key={`dialog-${metric.label}`}
-                          checked={isSelected}
-                          disabled={isDisabled}
-                          onCheckedChange={(nextChecked) => {
-                            if (nextChecked === isSelected) return;
-                            onMetricToggle(metric.label);
-                          }}
-                          label={getMetricLabel(metric)}
-                          description={isDisabled ? metricSectionDescription : undefined}
-                          checkboxAppearance="secondary"
-                          checkboxPaletteColor={activeAccentColor}
-                          rowClassName="border-white/10 text-white hover:bg-white/5"
-                          descriptionClassName="text-white/58"
-                          selectedStyle={{
-                            ...sectionStyle,
-                            borderColor: `${activeAccentColor}80`,
-                          }}
-                          unselectedStyle={sectionStyle}
-                        />
+                        <li key={`dialog-${metric.label}`}>
+                          <SelectableCheckboxRow
+                            checked={isSelected}
+                            disabled={isDisabled}
+                            onCheckedChange={(nextChecked) => {
+                              if (nextChecked === isSelected) return;
+                              onMetricToggle(metric.label);
+                            }}
+                            label={getMetricLabel(metric)}
+                            description={isDisabled ? metricSectionDescription : undefined}
+                            checkboxAppearance="secondary"
+                            checkboxPaletteColor={activeAccentColor}
+                            rowClassName="text-white hover:bg-white/5"
+                            descriptionClassName="text-white/58"
+                          />
+                        </li>
                       );
                     })}
-                  </div>
+                  </SelectableCheckboxList>
                 </CardDialogSection>
               </div>
             ),

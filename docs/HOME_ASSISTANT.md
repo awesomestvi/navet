@@ -8,14 +8,6 @@ This guide helps you install Navet for Home Assistant.
 
 You only need to choose **one** installation method.
 
-## Connect another standalone screen
-
-On the new standalone screen, choose **Connect with another device** to display a one-time
-code. On your primary device, open your signed-in Navet app or PWA →
-**Settings → System → Authorized devices**, enter the code, then review and approve access.
-The new screen connects automatically with its own revocable session. This works on HTTP
-installations without camera access or a separate browser sign-in.
-
 ## Pick an installation method
 
 | Choose this | Use it when |
@@ -52,18 +44,7 @@ use the **Home Assistant App**.
 9. Choose **Add integration**, search for **Navet**, and add it.
 10. Open **Navet** from the Home Assistant sidebar.
 
-That is all. Navet uses your current Home Assistant session. You do not need a separate Navet
-account, Home Assistant address, or access token.
-
-## Already Installed From `navet-hacs`?
-
-No action is required. The repository was renamed from `awesomestvi/navet-hacs` to
-`awesomestvi/navet-home-assistant`, and GitHub redirects the old address.
-
-If HACS cannot fetch an update, remove only the old custom repository entry, add
-`https://github.com/awesomestvi/navet-home-assistant` as an `Integration` repository, then
-redownload Navet and restart Home Assistant. Keep the Navet integration installed; you do not need
-to clear your dashboard configuration.
+Navet uses your current Home Assistant session.
 
 ## Option 2: Install the Home Assistant App
 
@@ -88,18 +69,13 @@ to clear your dashboard configuration.
 8. Wait until the App says **Running**.
 9. Choose **Open Web UI**.
 
-Your rooms and devices should appear automatically. You do not need to enter a Home Assistant
-address or access token.
+Your rooms and devices should appear automatically.
 
 The App opens inside Home Assistant through Ingress by default. If you also need a separate
 dashboard URL, open the App's **Network** settings and assign any available host port to the
-optional direct Navet web interface. Direct access uses its own Home Assistant sign-in and does
-not weaken the authenticated Ingress/sidebar route.
+optional direct Navet web interface. Direct access uses its own Home Assistant sign-in.
 
 ## Option 3: Install with Docker
-
-RSS cards load public HTTPS feeds through Navet's authenticated endpoint. Local-network feed
-addresses are rejected, including public hostnames that resolve to private addresses.
 
 Choose this option only if you are comfortable using Docker.
 
@@ -151,38 +127,32 @@ container is updated or recreated.
 ### Sign in at home or through a VPN
 
 Open **Settings → System → Home Assistant** and choose **Edit URL** when moving between a LAN,
-VPN, Tailscale, or external address. Navet starts a fresh Home Assistant login at the new address;
-an address change never inherits the previous access token.
+VPN, Tailscale, or external address, then complete the Home Assistant sign-in. Navet keeps your
+dashboard workspace when it can verify that both addresses reach the same installation. Otherwise,
+it opens a separate workspace for the new address. Returning to a saved address restores its
+associated workspace.
 
-After login, Navet presents only the newly issued token to the old trusted route. If the old route
-accepts it, Navet has proved that both addresses reach the same Home Assistant and keeps the same
-dashboard workspace. If the old route rejects the token or cannot be reached, Navet isolates the
-new address in its own workspace. This prevents an unverified server from reading the existing
-home's dashboard data. Returning to an address used before restores the workspace associated with
-that address.
-
-A camera **direct-stream URL** that you explicitly configure in Navet is the exception: that custom
-URL is intentionally opened by the browser and must be reachable from the browser's current
-network. Home Assistant-provided snapshots, HLS, and fallback paths remain behind Navet's proxy.
+A camera **direct-stream URL** configured in Navet must be reachable from the browser's current
+network. Home Assistant-provided snapshots, HLS, and fallback paths use Navet's proxy.
 Native WebRTC can still negotiate a separate media path supplied by Home Assistant; when that path
 is not usable across the current network, Navet falls back to another provider-supported transport.
 
-### Optional: fix Navet to one Home Assistant address
+### Optional: configure a Home Assistant upstream address
 
-`NAVET_HASS_URL` is **not required**. Without it, each browser can enter a Home Assistant address
-and complete Home Assistant's normal login. Use this setting only when the operator intentionally
-wants to prevent users from choosing another address.
+Set `NAVET_HASS_URL` when Navet should use a fixed address to reach Home Assistant from the
+container. Browsers can sign in through another address that reaches the same installation, such
+as a VPN address.
 
-To fix Navet to one address, add these lines under `restart: unless-stopped`:
+Add these lines under `restart: unless-stopped`:
 
 ```yaml
 environment:
   NAVET_HASS_URL: "http://homeassistant.local:8123"
 ```
 
-Replace the example with an address that works from the Navet container. When the setting is
-present, users must sign in through that exact normalized address. Update the value and recreate
-the container when the address changes.
+Replace the example with an address that works from the Navet container. Navet uses it for the
+sign-in token exchange and subsequent API traffic. To connect to a different Home Assistant
+installation, update the value and recreate the container.
 
 ### Update the Docker installation
 
@@ -195,9 +165,14 @@ docker compose up -d
 
 Do not add `-v` when stopping the Compose project. That option deletes the saved Navet data.
 
-## Optional: let Navet hide the Home Assistant bars
+## Connect another standalone screen
 
-Skip this section during your first install. Navet works without it.
+On the new standalone screen, choose **Connect with another device** to display a one-time
+code. On your primary device, open your signed-in Navet app or PWA →
+**Settings → System → Authorized devices**, enter the code, then review and approve access.
+The new screen connects automatically with its own revocable session.
+
+## Optional: let Navet hide the Home Assistant bars
 
 The HACS integration includes a small Home Assistant module that lets Navet hide the Home Assistant
 header and sidebar in kiosk mode.

@@ -4,7 +4,7 @@ description: Apply Navet's established logo, color, typography, imagery, and mot
 editUrl: https://github.com/awesomestvi/navet/edit/main/docs/branding/VISUAL_IDENTITY.md
 ---
 
-This document codifies Navet's established visual identity. It does not redesign the brand.
+This document defines Navet’s visual identity.
 
 The primary references are:
 

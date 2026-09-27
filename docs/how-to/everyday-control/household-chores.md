@@ -16,18 +16,19 @@ that shared storage is unavailable.
 ## Complete the guided setup
 
 1. Open **Household**.
-2. Choose **Set up chores**.
-3. In **Profile**, add everyone who will be assigned work. At least one person must have the
+2. Choose **Create your chore list**.
+3. In **People**, add everyone who will be assigned work. At least one person must have the
    **Manager** role.
-4. In **Customize**, choose each person's colour, icon or photo, reminder destination, and optional
-   quiet hours. Device notifications use the connected provider's notification service and require
+4. In **Profiles & reminders**, choose each person's colour, icon or photo, reminder destination,
+   and optional quiet hours. Device notifications use the connected provider's notification service and require
    that provider's app and notification permission on the person's device.
 5. In **Chores**, add one or more recurring jobs.
-6. In **Rewards**, choose a motivation style. **Off** keeps the experience focused only on work
-   and completion.
-7. In **Access**, optionally create a management PIN, review the setup, and choose **Finish setup**.
+6. In **Motivation (optional)**, choose a motivation style. **Off** keeps the experience focused
+   on work and completion.
+7. In **Protection (optional)**, create a management PIN if you want to protect planning changes.
+8. In **Ready**, review the setup and choose **Open Today**. Enter your PIN if prompted.
 
-![The Profile step of guided setup with the add-person form and the six setup destinations.](/docs/how-to/everyday-control/household-setup-people.webp)
+![The People step of guided setup with the add-person form and the six setup destinations.](/docs/how-to/everyday-control/household-setup-people.webp)
 
 These are lightweight household profiles used for assignment and attribution. Choosing a profile
 on a shared screen is not an account sign-in. The optional management PIN protects planning and
@@ -41,8 +42,8 @@ recovery actions without turning profiles into user accounts.
    Lucide icon or enter another icon name. Navet previews the icon. The **More options** section
    below the main fields holds instructions, estimated time, points, and a child-friendly title.
    Enter a chore name before continuing; Navet shows a message beside any field that needs fixing.
-4. Leave the colour swatch in the chore preview automatic to use the stable colour assigned from
-   the chore ID, or choose a custom colour. Overdue and completed state colours still take priority.
+4. Leave the colour swatch in the chore preview automatic to use a consistent colour for that
+   chore, or choose a custom colour. Overdue and completed state colours take priority.
 5. Choose **Next** or **Who does it** in the sidebar, then choose who owns the work:
    - **One person** assigns every occurrence to the selected person.
    - **Anyone can do it** creates one shared occurrence.
@@ -65,13 +66,17 @@ Use **Using this screen** to choose the person currently completing or approving
 list shows **Needs attention** first, followed by remaining work. Completed chores stay
 visible as smaller cards, without a time tag, and show the points that were earned.
 
+**Next 7 days** previews the next occurrences during the coming week, earliest first, even when
+nothing is due today. Each card includes its date and time. The row fits the screen width and
+follows the selected person. Open **Chores** to see the next scheduled date and time on each
+chore's card, including later dates from the schedule prepared up to 45 days ahead.
+
 - Choose **Mark done** to complete assigned work.
 - Choose **Claim** first when a shared chore requires someone to take ownership.
 - Choose **Approve** to finish a chore that requires approval.
 - Choose **Send back** when the chore needs to be done again.
 
-Completed work remains in shared activity history. Changes use revision checks, so a screen refreshes
-and retries against the newest household list when another screen saves first.
+Completed work appears in the shared activity history and synchronizes across connected screens.
 
 ## Read Chores today and rewards
 
@@ -96,5 +101,4 @@ same restrained red alert treatment used by Security.
 
 ## Find automations and scripts
 
-Open the **Routines** tab. Provider automations, scenes, and scripts still live here; native chores
-do not replace them.
+Open **Household → Routines** to use provider automations, scenes, and scripts.

@@ -82,12 +82,12 @@ build metadata use `scripts/vite-host-conventions.ts`. Build-time modules use re
 paths when importing core policy because app aliases do not exist while Vite loads its config.
 
 RSS requires an authenticated provider session. The Ingress handler trusts forwarded identity
-only behind the existing Supervisor-only nginx listener. Development and production share a Node
-requester that validates all DNS answers and pins connections while retaining hostname verification.
+only behind the Supervisor-only nginx listener. The development requester and production Go
+transport validate all DNS answers and pin connections while retaining hostname verification.
 Production nginx uses an internal subrequest to a private Unix socket owned by nginx. Credentials
-and forwarded identity are stripped at that boundary; the shared transport applies public-host
-filtering, verified HTTPS, bounded responses and redirect rejection. The container supervises nginx
-and the transport together. See [RSS transport ownership](rss-transport.md).
+and forwarded identity are stripped at that boundary. Both transports apply public-host filtering,
+verified HTTPS, bounded responses, and redirect rejection. The container supervises nginx and the
+transport together. See [RSS transport ownership](rss-transport.md).
 
 ## Runtime Flow
 
@@ -108,7 +108,7 @@ inside the app assembly layer are documented in
 
 | Provider | Status | Notes |
 |---|---|---|
-| Home Assistant | implemented | first stable provider |
+| Home Assistant | implemented | reference adapter |
 | Homey | implemented | standalone OAuth flow |
 | openHAB | implemented | standalone base-URL and username/password flow |
 | Hubitat | planned | catalog metadata only; no adapter package |

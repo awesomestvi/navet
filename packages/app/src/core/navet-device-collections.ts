@@ -606,6 +606,7 @@ export function mapNavetEntitiesToDeviceCollection(entities: NavetEntity[]): Dev
           sourceList: readStringArray(state.sourceList),
           entityPicture: typeof state.entityPicture === 'string' ? state.entityPicture : undefined,
           state: value === 'playing' || value === 'paused' || value === 'idle' ? value : 'off',
+          isPoweredOn: state.isPoweredOn === true,
           volume: readNumber(state.volume, 0),
           isMuted: state.isMuted === true,
           elapsedSeconds:

@@ -1,0 +1,6 @@
+type: improved
+audiences:
+  - standalone
+  - home-assistant
+  - hacs
+summary: Entity dialogs show the provider entity ID to help distinguish entities with similar names.

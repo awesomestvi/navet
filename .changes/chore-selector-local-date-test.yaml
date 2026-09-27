@@ -1,0 +1,3 @@
+type: internal
+audiences: []
+summary: Make the next scheduled chores boundary test independent of the host timezone.

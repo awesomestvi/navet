@@ -23,6 +23,10 @@ import {
   withAlpha,
 } from './use-media-artwork-colors';
 import { useMediaVolumeMode } from './use-media-volume-mode';
+import {
+  type MediaDerivedColorsReporter,
+  useReportMediaDerivedColors,
+} from './use-report-media-derived-colors';
 import { useStableMediaArtwork } from './use-stable-media-artwork';
 
 interface MediaMediumVerticalViewProps {
@@ -41,6 +45,7 @@ interface MediaMediumVerticalViewProps {
   elapsedSeconds: number;
   durationSeconds: number;
   theme: ThemeType;
+  onDerivedBackgroundChange?: MediaDerivedColorsReporter;
   hideTransportControls?: boolean;
   onOpenDialog?: () => void;
   onToggleMute: () => void;
@@ -73,6 +78,7 @@ export function MediaMediumVerticalView({
   elapsedSeconds,
   durationSeconds,
   theme,
+  onDerivedBackgroundChange,
   hideTransportControls = false,
   onOpenDialog,
   onToggleMute,
@@ -126,6 +132,7 @@ export function MediaMediumVerticalView({
     backgroundColorOverride: textSideBackgroundColor,
   });
   const resolvedTitleColor = readableForeground.titleColor;
+  useReportMediaDerivedColors(onDerivedBackgroundChange, textSideBackgroundColor);
   const resolvedSubtitleColor = readableForeground.subtitleColor;
   const controlIconStyle = { color: resolvedTitleColor };
   const activeUtilityButtonStyle = {

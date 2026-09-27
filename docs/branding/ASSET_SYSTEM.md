@@ -5,8 +5,7 @@ editUrl: https://github.com/awesomestvi/navet/edit/main/docs/branding/ASSET_SYST
 ---
 
 This document defines how Navet's established logo, install icons, social artwork, and
-Home Assistant brand exports move from an approved source into product distributions. It is an
-asset-governance document, not permission to redraw or restyle the brand.
+Home Assistant brand exports move from an approved source into product distributions.
 
 Use these machine-readable files with this guide:
 
@@ -202,9 +201,9 @@ merely to make raster generation platform-independent.
 5. Validate JSON, output existence, exact pixel dimensions, SVG intrinsic dimensions, approved
    raster checksums, and declared PWA sizes and purposes.
 6. Compare generated files visually on their actual product surface.
-7. Build or export only the affected distributions. A Home Assistant panel build can replace the
-   entire committed frontend directory, while a HACS export writes to a separate repository; use
-   those workflows deliberately.
+7. Build or export only the affected distributions. A Home Assistant panel build writes generated
+   assets to `apps/ha-panel/dist/`; a HACS export writes the integration and frontend to the
+   separate distribution repository.
 8. Commit source and generated outputs together, with any intentional exception documented here.
 
 ## Licensing and trademark requirements

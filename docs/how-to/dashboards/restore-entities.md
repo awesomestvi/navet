@@ -35,9 +35,6 @@ Navet YAML configuration directly. See
 ![The confirmation for restoring entities or restarting onboarding.](/docs/how-to/dashboards/entity-visibility-confirmation.webp)
 
 Restarting alone reopens setup; it does not reset provider credentials or clear your layout.
-It also does not change the installation's trusted Home Assistant server or recreate a fresh
-installation. See [Connection or sign-in fails](/guide/troubleshooting/connection/) for connection
-or installation-pairing problems.
 Finishing the **blank** route clears the Home layout and custom cards and hides the loaded entities.
 Importing can replace current configuration. [Export a backup](/guide/dashboards/backup-and-restore/)
 first if you want to preserve an existing setup.

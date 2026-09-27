@@ -35,10 +35,20 @@ export function useMediaDialogController({
   const isGlass = theme === 'glass';
   const paletteArtwork = getMediaArtworkPaletteSource(artwork, artworkResource);
   const palette = useMediaArtworkColors(paletteArtwork, theme, entityId, `${title}::${artist}`);
+  // Solid themes only tint the dialog with artwork. Use the brightest possible
+  // tinted surface for contrast; glass retains its artwork-derived surface.
+  const foregroundBackground =
+    theme === 'light'
+      ? '#ffffff'
+      : theme === 'dark'
+        ? '#38383b'
+        : theme === 'black'
+          ? '#101010'
+          : undefined;
   const textTokens = getCardReadableTextTokens({
     theme,
     baseColor: palette.highlight,
-    backgroundColor: palette.gradientEnd,
+    backgroundColor: foregroundBackground ?? palette.gradientEnd,
   });
   const subduedFallback = !artwork;
   const fallbackTitleColor =
@@ -51,6 +61,7 @@ export function useMediaDialogController({
     titleColor: fallbackTitleColor,
     subtitleColor: fallbackSubtitleColor,
     hasArtwork: Boolean(artwork),
+    backgroundColorOverride: foregroundBackground,
   });
   const resolvedTitleColor = readableForeground.titleColor;
   const resolvedSubtitleColor = readableForeground.subtitleColor;

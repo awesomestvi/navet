@@ -51,6 +51,26 @@ describe('media-stack-widget-data', () => {
     expect(result?.isFallback).toBe(false);
   });
 
+  it('surfaces a powered console above idle players, while playback still wins', () => {
+    const console = mediaDevice({
+      id: 'media_player.console',
+      name: 'PlayStation',
+      state: 'idle',
+      isPoweredOn: true,
+    });
+    const speaker = mediaDevice({ id: 'media_player.speaker', name: 'Speaker', state: 'idle' });
+    const data = {
+      entityIds: [speaker.id, console.id],
+      priorityOrder: [speaker.id, console.id],
+      idleBehavior: 'hidden' as const,
+    };
+
+    expect(selectMediaStackDevice([speaker, console], data)?.device.id).toBe(console.id);
+    expect(
+      selectMediaStackDevice([{ ...speaker, state: 'playing' }, console], data)?.device.id
+    ).toBe(speaker.id);
+  });
+
   it('uses manual order to break ties between active players', () => {
     const result = selectMediaStackDevice(
       [

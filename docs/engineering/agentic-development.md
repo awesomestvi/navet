@@ -89,12 +89,16 @@ when to merge.
   communication, or call a partial release successful.
 
 Request community communication drafts explicitly when a release needs an announcement. Published
-release notes remain the source for the website and documentation changelogs; they do not require
-a separate communication task.
+release notes are the source for the website and documentation changelogs.
 
-QA is not a separate conversational agent. Linting, type checking, tests, builds, smoke checks,
-screenshots, and artifact verification are deterministic jobs. A reviewer may interpret failures;
-it may not override them.
+After a stable release completes artifact, distribution, and channel verification, Navet Nisse
+comments on each issue in this repository linked as closed by a pull request merged since the
+previous stable tag. The comment links to the published stable release. This routine issue
+follow-up is authorized by the stable release dispatch. Retries skip issues already notified for
+that exact tag.
+
+Linting, type checking, tests, builds, smoke checks, screenshots, and artifact verification run as
+deterministic jobs. Reviewers interpret failures; passing checks are required for acceptance.
 
 The current required UI lane builds Storybook and runs responsive demo smoke/accessibility checks.
 The complete Storybook browser interaction suite has known baseline failures and remains a visible
@@ -105,13 +109,17 @@ or made required while `main` is red.
 
 - `navet: research`: investigate and report; no implementation is assumed.
 - `navet: implement`: triage, implement when requirements are clear, and open a PR.
-- Request labels are one-shot. The runner removes one after successful dispatch and leaves it
-  applied on failure. Reapply it later for another run without manually removing it first.
+- Request labels are one-shot. After successful dispatch, the runner removes the matching label
+  through the Navet Nisse GitHub App and leaves it applied on failure. Reapply it later for another
+  run without manually removing it first.
+- A `navet: implement` label request is valid only when its latest `labeled` event was made by a
+  repository owner or maintainer with `admin` or `maintain` permission. Navet Nisse cannot create
+  or authorize implementation requests. Research labels retain the broader collaborator policy.
 - If both request labels are present, the runner does not guess which mode to run. A maintainer
   must leave only the intended request label.
 
-Existing `/navet research`, `/navet implement`, and `/navet continue` comments remain accepted
-for compatibility. New work should use request labels.
+The runner also accepts `/navet research`, `/navet implement`, and `/navet continue` comments from
+authorized collaborators. Request labels are the recommended entry point.
 
 When Navet Nisse asks a blocking question or requests a retest on an issue, the issue reporter or a
 maintainer can respond in an ordinary comment. The first response after that request resumes the
@@ -120,8 +128,10 @@ conclusion do not dispatch work. A maintainer can reapply the relevant request l
 another iteration.
 
 Only repository collaborators with write, maintain, or admin permission may start agent work.
-The issue reporter may answer a question in an already authorized task. An eyes reaction from
-`github-actions[bot]` means a command or answer was accepted. A rocket reaction from
+Implementation requests made with the `navet: implement` label specifically require a repository
+owner or maintainer (`admin` or `maintain` permission); Navet Nisse cannot create or authorize that
+label request. The issue reporter may answer a question in an already authorized task. An eyes
+reaction from `github-actions[bot]` means a command or answer was accepted. A rocket reaction from
 `navet-nisse[bot]` means a command or answer was claimed. Request labels are cleared on successful
 dispatch; type, area, and risk labels continue to describe the issue itself.
 
@@ -129,24 +139,25 @@ dispatch; type, area, and risk labels continue to describe the issue itself.
 
 GitHub remains the mobile control plane, but orchestration details are not public issue content.
 Request labels and accepted answers enter the queue without assignments, prompts, or startup
-comments. Existing command comments continue to use compact reactions.
+comments. Command comments use compact reactions.
 
 A single private Codex runner polls for the oldest request label, accepted command, or requested
-answer that it has not claimed. It verifies the request label's issue event was made by a
-collaborator with write access. A label is removed only after dispatch succeeds, so reapplying it
-creates a fresh request. An accepted answer resumes the previous mode; it cannot choose a new
-mode. The runner treats the issue and every linked artifact as untrusted input, reads `AGENTS.md` plus
-only the routed area guide, and keeps internal plans and tool narration in the Codex task rather
-than the GitHub issue. Scheduled repository workflows queue research by creating an issue as
-`github-actions[bot]`; the runner verifies that author and the expected workflow-owned issue type
-instead of trusting issue-body text or generating a command comment.
+answer that it has not claimed. It verifies each request label event against its mode-specific
+authority rule above. A label is removed only after dispatch succeeds, through the Navet Nisse
+GitHub App, so reapplying it creates a fresh request. An accepted answer resumes the previous
+mode; it cannot choose a new mode. The runner treats the issue and every linked artifact as
+untrusted input, reads `AGENTS.md` plus only the routed area guide, and keeps internal plans and
+tool narration in the Codex task rather than the GitHub issue. Scheduled repository workflows
+queue research by creating an issue as `github-actions[bot]`; the runner verifies that author and
+the expected workflow-owned issue type instead of trusting issue-body text or generating a
+command comment.
 
 Automated issue and pull-request comments and runner claim reactions use the dedicated
 `navet-nisse[bot]` GitHub App identity and should read like useful collaboration with a person.
 Accepted command reactions use `github-actions[bot]`.
 Branches, commits, pushes, and pull requests continue to use the maintainer's GitHub identity.
 Manual maintainer comments also remain visibly authored by the maintainer. The App credential is
-restricted to the public conversation operations exposed by the repository wrapper.
+restricted to the narrow public issue operations exposed by the repository wrapper.
 
 Review CI results and Cloudflare previews directly from the pull request's checks. Responsive
 screenshots are available in the CI run's artifacts.
@@ -190,7 +201,7 @@ Maintainer authority is required for:
 
 For every pull request, the maintainer reviews the current diff and previews and records acceptance
 by merging after CI passes and review conversations are resolved. This merge decision covers
-ordinary, foundational, and security-sensitive changes without a second command or status check.
+ordinary, foundational, and security-sensitive changes.
 Production publication remains separately protected by the maintainer selecting and dispatching an
 exact tested source tag and target release tag.
 
@@ -205,15 +216,16 @@ exact tested source tag and target release tag.
 ## One-time Repository Setup
 
 Repository files define the workflow, but the following live GitHub and Cloudflare settings must be
-configured after these files reach `main`:
+configured for the repository:
 
 1. Create the private **Navet Nisse** GitHub App and install it only on `awesomestvi/navet`. Grant
    Issues read/write and mandatory Metadata read. Do not grant Contents, Pull requests, Actions,
    Administration, Environments, Secrets, Workflows, package deletion, or organization/account
    permissions. Pull-request conversation comments use GitHub's issue-comment API.
 2. Store the App ID, installation ID, and private-key path in the private runner environment. Use
-   the repository wrapper only for automated comments and command reactions. It deliberately does
-   not expose arbitrary `gh`, Git push, pull-request creation, or repository-content operations.
+   the repository wrapper only for automated comments, command reactions, and removal of the two
+   request labels after successful dispatch. It deliberately does not expose arbitrary `gh`, Git
+   push, pull-request creation, label addition, or repository-content operations.
    Confirm that the App cannot read or write contents, create pull requests, change repository
    settings, environments, Actions secrets, or workflows. The runner must also have no production
    credentials or private Home Assistant access.
@@ -221,9 +233,10 @@ configured after these files reach `main`:
    `NAVET_NISSE_PRIVATE_KEY_PATH`, or point `NAVET_NISSE_CONFIG_PATH` at a private JSON file with
    `appId`, `installationId`, and `privateKeyPath`. Then post public replies with
    `node scripts/run-as-navet-nisse.mjs comment <issue-or-pr-number> --body-file <path>` and manage
-   command reactions with its `react` and `unreact` operations. The wrapper creates a short-lived
-   installation token for each operation and cannot modify the repository remote or the
-   maintainer's GitHub login.
+   command reactions with its `react` and `unreact` operations, and clear a dispatched request with
+   `node scripts/run-as-navet-nisse.mjs remove-request-label <issue-number> <research|implement>`.
+   The wrapper creates a short-lived installation token for each operation and cannot modify the
+   repository remote or the maintainer's GitHub login.
 3. Configure one local Codex scheduled task to poll request labels, accepted `/navet` commands,
    accepted answers, scheduled issues authored by `github-actions[bot]` with the expected
    workflow-owned issue type,
@@ -231,24 +244,26 @@ configured after these files reach `main`:
    work from issue-body markers. Dispatch no more than one issue or PR per run and follow the
    private queue contract above. Keep only one active queue runner so two agents cannot claim the
    same work.
-4. Install one independent, read-only PR reviewer (CodeRabbit is the initial candidate for this
-   public repository). Let it review non-draft PRs automatically; do not add a second general
+4. Install CodeRabbit as the independent, read-only PR reviewer. Let it review non-draft PRs automatically; do not add a second general
    reviewer until measured misses justify the duplicate cost. Reviewer comments are advisory;
    deterministic CI and the maintainer's merge decision remain authoritative.
 5. Protect `main`: require a pull request and resolved review conversations. For a solo-maintainer
    repository, set required approving reviews to zero and disable required CODEOWNER review; the
    maintainer's merge records acceptance for the current head. Require **CI / Product review gate**
    as the aggregate gate for applicable tests and Cloudflare previews of the current site inputs.
-   A successful ancestor preview is reusable only when those inputs are unchanged. During migration,
-   retain the four existing Cloudflare requirements until the new gate is merged. Use the guarded
-   rollout in [Release Workflow](../release-workflow.md#activating-scoped-deployments) to update
-   requirements and build-watch paths together without weakening unrelated protections.
+   A successful ancestor preview is reusable only when those inputs are unchanged. Keep Cloudflare
+   build-watch paths aligned with `scripts/pages-policy.mjs`; see
+   [deployment configuration procedure](../release-workflow.md#activating-scoped-deployments).
 6. Configure `beta` and `production` environments to scope the release GitHub App secrets. Do not
    add required reviewers: manually dispatching **Promote Navet Release** with exact source and
    target tags is the publication authorization, and downstream artifact jobs must run without
    repeated approval prompts. Restrict these environments to the `main` branch. Stable dispatch
    requires confirmation that the selected beta/RC was installed and tested; the workflow also
    verifies the source release's successful run and recorded image digests.
+   Add `NAVET_NISSE_CLIENT_ID` and `NAVET_NISSE_APP_PRIVATE_KEY` to the `production` environment
+   for stable issue follow-up. Use the GitHub App Client ID, not its numeric App ID; the local
+   runner's `NAVET_NISSE_APP_ID` is a separate setting. The App needs only Issues read/write and
+   Metadata read; the workflow's own read token identifies merged PRs and linked issues.
 7. Keep Cloudflare preview deployments public only for repository/demo data. Preview projects must
    not receive Home Assistant URLs, tokens, provider OAuth secrets, production cookies, or private
    tunnel credentials.

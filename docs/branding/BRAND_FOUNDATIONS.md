@@ -4,8 +4,7 @@ description: Navet's established purpose, promise, positioning, principles, and 
 editUrl: https://github.com/awesomestvi/navet/edit/main/docs/branding/BRAND_FOUNDATIONS.md
 ---
 
-This document defines the durable strategic foundation of the established Navet brand. It is not
-a list of current features and it does not introduce a new tagline or positioning.
+This document defines Navet’s purpose, promise, positioning, principles, and audiences.
 
 For current provider support, feature depth, counts, and installation paths, use the
 [integration capability matrix](https://docs.navet.app/integrations/), current product, and release documentation.
@@ -22,9 +21,8 @@ For current provider support, feature depth, counts, and installation paths, use
 | Character | Calm, deliberate, warm, clear, open, and practical |
 | Enduring ideas | Room-first control, local ownership, screen adaptability, honest provider support, and open-source participation |
 
-The public descriptor is established copy, not a prompt to generate alternate taglines. Use it when
-a headline-level descriptor is needed; use a factual product description when more context is
-required.
+Use the public descriptor when a headline-level description is needed; use a factual product
+description when more context is required.
 
 ## Name and Meaning
 

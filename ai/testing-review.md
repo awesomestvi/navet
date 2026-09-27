@@ -1,7 +1,6 @@
 # Navet Test Review
 
-This file is the audit baseline for test quality. It now follows Navet's tier model so the quality
-review and the workflow reality stay aligned.
+This file identifies test-quality exceptions using Navet's tier model.
 
 Use [../docs/testing/test-tier-inventory.md](../docs/testing/test-tier-inventory.md) for the full
 grouped inventory. Use this file for high-signal exceptions and rewrite/delete guidance.
@@ -25,14 +24,14 @@ These tests protect release-critical behavior and should stay blocking.
 - `packages/provider-homeassistant/src/homeassistant-contract.test.ts`
 - `packages/provider-homey/src/homey-contract.test.ts`
 - `packages/provider-openhab/src/openhab-contract.test.ts`
+- `packages/app/src/stores/__tests__/integration-store.test.ts`
+- `packages/app/src/services/__tests__/integration-registry.service.test.ts`
+- `packages/app/src/commands.test.ts`
 
 ## Tier 2: Keep
 
 These tests protect important app contracts and should stay blocking in main CI.
 
-- `packages/app/src/stores/__tests__/integration-store.test.ts`
-- `packages/app/src/services/__tests__/integration-registry.service.test.ts`
-- `packages/app/src/commands.test.ts`
 - `packages/app/src/services/__tests__/ha-entity-service.test.ts`
 - `packages/app/src/platform/__tests__/provider-room-management.test.ts`
 - the rest of the curated Tier 2 service/store/platform suites in
@@ -53,13 +52,6 @@ against stronger fixtures or documentation-backed behavior.
 - `packages/app/src/features/tasks/components/__tests__/tasks-section.test.tsx`
 - `packages/app/src/features/calendar/components/calendar/__tests__/calendar-event-visibility.test.ts`
 - `packages/app/src/hooks/__tests__/ha-entity-utils.test.ts`
-
-## Tier 4: Delete Or Replace
-
-Current baseline:
-
-- no required deletes in this pass
-- future implementation-shaped smoke tests should be deleted instead of grandfathered into Tier 3
 
 ## Ongoing Gaps
 

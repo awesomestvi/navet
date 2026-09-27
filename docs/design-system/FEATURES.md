@@ -14,6 +14,7 @@ Current feature folders under `packages/app/src/features/`:
 
 - `auth`
 - `calendar`
+- `chores`
 - `climate`
 - `dashboard`
 - `energy`
@@ -55,7 +56,7 @@ Current primary top-level sections:
 - `security`
 - `lights`
 - `media`
-- `tasks`
+- `tasks` (Household, including chores and provider routines)
 - `settings`
 
 Section routing is coordinated by
@@ -99,6 +100,7 @@ Current widget templates:
 - ups
 - energy-now
 - button
+- assist
 - map
 - entity
 
@@ -116,8 +118,8 @@ provider-neutral card when the entity type has meaningful controls or domain-spe
 
 The chores feature owns provider-neutral participants, definitions, occurrences, scheduling,
 workflow, activity, and the Today and Chores surfaces. Household participants are attribution and
-workflow profiles, not authenticated accounts. Shared chores use revisioned installation storage and
-are unavailable in the Home Assistant custom panel.
+workflow profiles, not authenticated accounts. Shared chores use revisioned installation storage
+provided by standalone Docker, the add-on, or the Navet custom integration for the custom panel.
 
 The tasks feature continues to own provider automation and script presentation under Household's
 Routines tab. Automation detail rows can summarize triggers, conditions, actions, diagnostics, and
@@ -174,13 +176,7 @@ Ownership rule of thumb:
 - if the work is staying in app-owned shared UI for now, document it as a current implementation
   seam rather than as the final architecture
 
-Current feature-service baseline:
-
-| Capability group | Home Assistant | Homey | openHAB |
-|---|---:|---:|---:|
-| rooms, realtime state, lighting, switches, sensors | Yes | Yes | Yes |
-| climate, media, cameras, energy, calendar, weather | Yes | No | No |
-| notifications, tasks, history, security, administration | Yes | No | No |
+For the current provider feature coverage, see the [integration capability matrix](../integrations.md#capability-matrix).
 
 ## Testing And Stories
 
