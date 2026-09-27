@@ -1,7 +1,6 @@
 # Navet Test Review
 
-This file is the audit baseline for test quality. It now follows Navet's tier model so the quality
-review and the workflow reality stay aligned.
+This file identifies test-quality exceptions using Navet's tier model.
 
 Use [../docs/testing/test-tier-inventory.md](../docs/testing/test-tier-inventory.md) for the full
 grouped inventory. Use this file for high-signal exceptions and rewrite/delete guidance.
@@ -53,13 +52,6 @@ against stronger fixtures or documentation-backed behavior.
 - `packages/app/src/features/tasks/components/__tests__/tasks-section.test.tsx`
 - `packages/app/src/features/calendar/components/calendar/__tests__/calendar-event-visibility.test.ts`
 - `packages/app/src/hooks/__tests__/ha-entity-utils.test.ts`
-
-## Tier 4: Delete Or Replace
-
-Current baseline:
-
-- no required deletes in this pass
-- future implementation-shaped smoke tests should be deleted instead of grandfathered into Tier 3
 
 ## Ongoing Gaps
 

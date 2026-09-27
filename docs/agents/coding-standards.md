@@ -74,12 +74,11 @@ These rules apply to all code written for Navet.
 ## Documentation Rules
 
 - When moving or renaming files referenced by docs, update the active docs in the same change.
-- Keep these current when affected: `README.md`, `docs/README.md`, `design-system/README.md`, `design-system/FEATURES.md`, `design-system/UI-GUIDELINES.md`.
+- Keep these current when affected: `README.md`, `docs/README.md`, `docs/design-system/README.md`, `docs/design-system/FEATURES.md`, `docs/design-system/UI-GUIDELINES.md`.
 - When writing architecture or design docs, distinguish:
   current implementation locations,
   stable import surfaces,
   target package ownership.
-- Treat `docs/archive/*` as historical snapshots. Do not rewrite them.
 
 ## Related Guidance
 

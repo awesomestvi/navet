@@ -291,6 +291,7 @@ export const daMessages = {
   'household.today.emptyDescription': 'Kommende pligter vises her, når dagen kommer.',
   'household.today.overdue': 'Forsinket',
   'household.today.due': 'Skal gøres nu',
+  'household.chores.nextScheduled': 'Næste: {date}',
   'household.today.upcoming': 'Senere',
   'household.today.awaitingApproval': 'Skal godkendes',
   'household.today.done': 'Færdig',

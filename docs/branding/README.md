@@ -28,7 +28,7 @@ rebrand.
   deprecation.
 - [Brand and trademark policy](https://docs.navet.app/brand/trademark/) defines permitted use of the Navet name and marks.
 
-[The legacy brand reference](https://github.com/awesomestvi/navet/blob/main/docs/branding/BRANDING.md) and [asset quick reference](https://github.com/awesomestvi/navet/blob/main/docs/branding/BRANDING_ASSETS.md) remain useful quick
+[Brand quick reference](https://github.com/awesomestvi/navet/blob/main/docs/branding/BRANDING.md) and [asset quick reference](https://github.com/awesomestvi/navet/blob/main/docs/branding/BRANDING_ASSETS.md) remain useful quick
 references for the name, logo, and existing files. When a quick reference and a specialized
 document differ, use the specialized document for that concern.
 

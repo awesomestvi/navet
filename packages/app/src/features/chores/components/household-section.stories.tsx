@@ -9,6 +9,8 @@ import { applyChoreWorkspaceAction } from '@navet/core/chores';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { act, useEffect, useState } from 'react';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
+import { AllChoresView } from './chore-management-views';
+import { ChoreTodayView } from './chore-today-view';
 import { HouseholdSection } from './household-section';
 
 const DEMO_COPY = {
@@ -1095,5 +1097,92 @@ export const ManagementPinSettings: Story = {
     await waitFor(() =>
       expect(within(dialog).getByLabelText('Confirm new management PIN')).toBeVisible()
     );
+  },
+};
+
+function UpcomingChoresStory({ library = false, days = 3 }: { library?: boolean; days?: number }) {
+  const data = createChoreDemoWorkspace({ copy: DEMO_COPY, mode: 'off' });
+  const next = new Date();
+  next.setDate(next.getDate() + days);
+  next.setHours(16, 30, 0, 0);
+  const occurrence = data.occurrencesById['today-dishwasher'];
+  data.participantsById.maya.color = '#f97316';
+  data.definitionsById.dishwasher.description = 'Put the clean dishes back in their cupboards.';
+  data.occurrencesById = {
+    future: {
+      ...occurrence,
+      id: 'future',
+      scheduledAt: next.toISOString(),
+      dueAt: next.toISOString(),
+      status: 'available',
+    },
+  };
+  if (library)
+    return (
+      <AllChoresView
+        data={data}
+        onAdd={() => {}}
+        onEdit={() => {}}
+        onDuplicate={() => {}}
+        onToggleEnabled={() => {}}
+        onArchive={() => {}}
+        onDelete={() => {}}
+        onRestore={() => {}}
+      />
+    );
+  return (
+    <ChoreTodayView
+      data={data}
+      participants={Object.values(data.participantsById)}
+      selectedParticipantId="all"
+      onSelectedParticipantChange={() => {}}
+      execute={async () => true}
+      onAddChore={() => {}}
+    />
+  );
+}
+
+export const EmptyTodayWithUpcomingChore: Story = {
+  render: () => <UpcomingChoresStory />,
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText('Next 7 days')).toBeVisible();
+    const upcoming = within(canvas.getByRole('region', { name: 'Next 7 days' }));
+    await expect(upcoming.getByText('Unload dishwasher')).toBeVisible();
+    const next = new Date();
+    next.setDate(next.getDate() + 3);
+    await expect(
+      upcoming.getByText(
+        new RegExp(
+          next.toLocaleDateString('en', {
+            month: 'short',
+            day: 'numeric',
+          })
+        )
+      )
+    ).toBeVisible();
+    await expect(upcoming.queryByRole('button', { name: 'Mark done' })).not.toBeInTheDocument();
+  },
+};
+
+export const UpcomingChoreMobile: Story = {
+  ...EmptyTodayWithUpcomingChore,
+  globals: { viewport: { value: 'mobile1', isRotated: false } },
+};
+
+export const LibraryNextScheduledDate: Story = {
+  render: () => <UpcomingChoresStory library days={12} />,
+  play: async ({ canvas }) => {
+    const next = canvas.getByText(/^Next: /);
+    await expect(next).toBeVisible();
+    await expect(next.closest('[data-chore-header]')).toBeInTheDocument();
+  },
+};
+
+export const LaterChoresStayOutOfToday: Story = {
+  render: () => <UpcomingChoresStory days={12} />,
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText('Nothing needs doing today')).toBeVisible();
+    await expect(canvas.queryByText('Next 7 days')).not.toBeInTheDocument();
+    await expect(canvas.queryByText('Unload dishwasher')).not.toBeInTheDocument();
   },
 };

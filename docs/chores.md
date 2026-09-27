@@ -28,8 +28,8 @@ entities are available. See the [integration reference](/integrations/) for prov
 
 ## The Household workspace
 
-- **Today** puts overdue and due work before later chores. The one-row **Chores today** shows earned
-  points, streak, completion, and a **See rewards** action without another progress bar.
+- **Today** puts overdue and due work before later chores. **Chores today** shows earned points,
+  streak, completion, and a **See rewards** action.
 - **Chores** is the searchable library for creating, editing, pausing, duplicating, and archiving
   recurring work.
 - **Missions** and **Rewards** manage optional shared goals without changing the underlying chore
@@ -48,9 +48,8 @@ at the top right; optional instructions use the middle; the assignee and the sma
 **Mark done** action stay in the footer. Overdue work uses a red border and status treatment.
 Completed work remains visible in a smaller card with a green earned-points badge and no time tag.
 
-Active chores receive one of twelve stable automatic colour palettes from the chore ID, so a chore
-keeps its colour without tying it to the dashboard accent. Choose **Edit → Card color** to override
-the automatic colour. Completed and overdue state colours always take priority over that override.
+Each active chore has a consistent automatic colour. Choose **Edit → Card color** to override it.
+Completed and overdue state colours always take priority over that override.
 
 ## People and shared screens
 

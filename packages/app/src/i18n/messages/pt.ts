@@ -291,6 +291,7 @@ export const ptMessages = {
   'household.today.emptyDescription': 'As próximas tarefas aparecerão aqui no dia certo.',
   'household.today.overdue': 'Atrasada',
   'household.today.due': 'Para agora',
+  'household.chores.nextScheduled': 'Próxima: {date}',
   'household.today.upcoming': 'Mais tarde',
   'household.today.awaitingApproval': 'Precisa de aprovação',
   'household.today.done': 'Concluída',

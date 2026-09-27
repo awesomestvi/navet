@@ -36,16 +36,15 @@ Cloudflare Pages owns site deployment:
 
 Affected branch pushes produce previews. Affected pushes to `main` update production.
 CI build checks and Cloudflare builds are separate: CI verifies the change; Cloudflare owns
-the deployed artifact. The initial optimization scopes these builds rather than transferring
-production deployment credentials into PR jobs.
+the deployed artifact.
 
 `scripts/pages-policy.mjs` defines the shared conservative path policy. The merge gate checks
 successful Cloudflare check runs from the Cloudflare app for affected projects. It uses the exact
 PR head, or an ancestor only after proving every watched input is unchanged. This handles a
 fragment-only follow-up commit for which Cloudflare correctly skips a new preview. A current
 pending or failed check cannot be bypassed by an older success. Keep live build-watch configuration
-synchronized using the rollout procedure
-below. Public-site availability monitoring is separate from release publication.
+synchronized with `scripts/pages-policy.mjs`. Public-site availability monitoring is separate
+from release publication.
 
 ## Dev Builds
 

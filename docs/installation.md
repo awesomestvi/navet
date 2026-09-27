@@ -19,10 +19,6 @@ The guide gives you three choices:
 2. **Home Assistant App** if you use Home Assistant OS and want Home Assistant to run Navet.
 3. **Standalone Docker** if you already manage Docker yourself.
 
-With standalone Docker, browsers can use a LAN address at home or a VPN, Tailscale, or external
-address while away. After the first trusted Home Assistant server is approved, you do not need to
-configure or pair each address separately.
-
 ## I use Homey
 
 Open the [Homey installation guide](/install/homey/).

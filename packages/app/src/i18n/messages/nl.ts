@@ -290,6 +290,7 @@ export const nlMessages = {
   'household.today.emptyDescription': 'Komende klusjes verschijnen hier op de juiste dag.',
   'household.today.overdue': 'Te laat',
   'household.today.due': 'Nu doen',
+  'household.chores.nextScheduled': 'Volgende: {date}',
   'household.today.upcoming': 'Later',
   'household.today.awaitingApproval': 'Goedkeuring nodig',
   'household.today.done': 'Klaar',

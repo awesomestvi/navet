@@ -1,7 +1,10 @@
 import { Button } from '@navet/app/components/primitives';
 import { EntityCardHeaderIcon } from '@navet/app/components/primitives/entity-card-header-icon';
 import { getCardReadableTextTokens } from '@navet/app/components/shared/theme/card-readable-text-tokens';
-import { themeColorValues } from '@navet/app/components/shared/theme/theme-colors';
+import {
+  getReadableAccentForeground,
+  themeColorValues,
+} from '@navet/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { Avatar, AvatarFallback, AvatarImage } from '@navet/app/components/ui/avatar';
 import {
@@ -128,8 +131,14 @@ function occurrenceScheduleLabel(
     : daysAway === -1
       ? new Intl.RelativeTimeFormat(i18n.locale, { numeric: 'auto' }).format(-1, 'day')
       : daysAway > 0 && daysAway < 7
-        ? i18n.formatDate(scheduledAt, { weekday: 'short' })
-        : i18n.formatDate(scheduledAt, { month: 'short', day: 'numeric' });
+        ? i18n.formatDate(scheduledAt, { weekday: 'short', month: 'short', day: 'numeric' })
+        : i18n.formatDate(scheduledAt, {
+            month: 'short',
+            day: 'numeric',
+            ...(scheduledAt.getFullYear() !== now.getFullYear()
+              ? { year: 'numeric' as const }
+              : {}),
+          });
 
   return `${day} · ${i18n.formatTime(scheduledAt)}`;
 }
@@ -203,7 +212,10 @@ function ChoreAssigneeAvatar({ participant }: { participant?: ChoreParticipant }
       aria-hidden="true"
     >
       {participant?.avatarUrl ? <AvatarImage src={participant.avatarUrl} alt="" /> : null}
-      <AvatarFallback className="bg-transparent text-xs font-semibold text-white">
+      <AvatarFallback
+        className="bg-transparent text-xs font-semibold"
+        style={{ color: getReadableAccentForeground(participant?.color ?? accentColor) }}
+      >
         {participant ? (
           AvatarIcon ? (
             <AvatarIcon className="h-3.5 w-3.5" aria-hidden="true" />

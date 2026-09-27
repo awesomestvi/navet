@@ -292,6 +292,7 @@ export const esMessages = {
   'household.today.emptyDescription': 'Las próximas tareas aparecerán aquí cuando llegue su día.',
   'household.today.overdue': 'Atrasada',
   'household.today.due': 'Para ahora',
+  'household.chores.nextScheduled': 'Próxima: {date}',
   'household.today.upcoming': 'Más tarde',
   'household.today.awaitingApproval': 'Necesita aprobación',
   'household.today.done': 'Hecha',

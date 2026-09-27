@@ -1,0 +1,4 @@
+type: improved
+audiences:
+  - docs
+summary: Setup and reference guides describe current workflows with clearer authentication, provider, and storage guidance.

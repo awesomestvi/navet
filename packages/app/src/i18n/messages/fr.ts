@@ -293,6 +293,7 @@ export const frMessages = {
   'household.today.emptyDescription': 'Les prochaines tâches apparaîtront ici le jour venu.',
   'household.today.overdue': 'En retard',
   'household.today.due': 'À faire maintenant',
+  'household.chores.nextScheduled': 'Prochaine : {date}',
   'household.today.upcoming': 'Plus tard',
   'household.today.awaitingApproval': 'Approbation requise',
   'household.today.done': 'Terminée',

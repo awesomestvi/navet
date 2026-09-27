@@ -1,0 +1,6 @@
+type: improved
+audiences:
+  - standalone
+  - home-assistant
+  - hacs
+summary: Robot vacuum cards have a refreshed illustration with a defined bumper, lidar sensor, and subtle Navet branding.

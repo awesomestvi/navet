@@ -4,8 +4,7 @@ description: Distinguish provider limitations, missing services, entity capabili
 editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/troubleshooting/unavailable-features.md
 ---
 
-Navet keeps one interaction model across providers without pretending that every provider supplies
-the same services.
+Feature availability depends on your connected providers and devices.
 
 ![Provider cards showing different registered feature capabilities.](/docs/how-to/troubleshooting/provider-capabilities.webp)
 
@@ -39,5 +38,4 @@ must be connected and support the requested capability. Review connections in
 ## Treat connection errors separately
 
 If a normally supported feature disappeared after a connection problem, follow
-[Connection or sign-in fails](/guide/troubleshooting/connection/) rather than assuming the provider
-never supported it.
+[Connection or sign-in fails](/guide/troubleshooting/connection/).

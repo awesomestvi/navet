@@ -119,7 +119,6 @@ to add it to an existing dashboard. Sign in with your Athom account.
   administration services are not registered for Homey.
 - In a standalone installation, Homey can stay connected alongside Home Assistant or openHAB;
   selected providers are combined in shared dashboard collections.
-- You do not need to enter a separate Homey base URL.
 - If you sign out from Navet, the stored Homey session is cleared from the Navet side.
 
 ## Scenes and flows

@@ -27,7 +27,7 @@ display and that the browser can reach.
 1. Choose **RSS**.
 2. Enter the feed address.
 3. Choose how many items to show where available.
-4. Save and wait for Navet's same-origin proxy to load the feed.
+4. Save and wait for the feed to load.
 
 Live feeds require a public HTTPS address and a signed-in Navet session. The Home Assistant add-on
 uses your authenticated Ingress session. If feed loading stops after signing out, reconnect your
@@ -37,9 +37,8 @@ provider or reopen Navet through Home Assistant.
 
 ## If an external source fails
 
-- Confirm that the address uses `http` or `https`.
-- Check that the source is reachable from the Navet server.
+- For a photo, use an `http` or `https` address reachable from the browser.
+- For an RSS feed, use a public HTTPS address reachable from the Navet installation. Local-network
+  feed addresses are unsupported, including public hostnames that resolve to private addresses.
 - Authenticated or expiring image links may not be suitable for a persistent photo frame.
 - A feed can reject server requests or return invalid RSS.
-
-Use the card's fallback state instead of repeatedly adding duplicate widgets.

@@ -1,0 +1,6 @@
+type: fixed
+audiences:
+  - standalone
+  - home-assistant
+  - hacs
+summary: Media dialog text and controls stay readable when album artwork has a bright palette.

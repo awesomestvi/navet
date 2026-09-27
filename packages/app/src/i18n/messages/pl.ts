@@ -290,6 +290,7 @@ export const plMessages = {
   'household.today.emptyDescription': 'Nadchodzące obowiązki pojawią się tutaj we właściwym dniu.',
   'household.today.overdue': 'Zaległe',
   'household.today.due': 'Do zrobienia teraz',
+  'household.chores.nextScheduled': 'Następny termin: {date}',
   'household.today.upcoming': 'Później',
   'household.today.awaitingApproval': 'Wymaga zatwierdzenia',
   'household.today.done': 'Gotowe',

@@ -4,7 +4,7 @@ description: Read the climate overview and adjust thermostats, humidity, fans, a
 editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/everyday-control/climate.md
 ---
 
-The Climate section collects normalized climate devices, summarizes current conditions, and shows
+The Climate section collects your climate devices, summarizes current conditions, and shows
 only the controls reported by each device.
 
 ![The current Climate dashboard grouped into room controls and environmental details.](/docs/how-to/everyday-control/climate-dashboard.webp)
@@ -40,5 +40,5 @@ power capability remains a simple control.
 
 ## If a control is absent
 
-Navet does not manufacture provider commands. Check the provider's entity capabilities and the
-[integration matrix](/integrations/), because advanced climate coverage varies by provider.
+Check the device's supported controls and the [integration matrix](/integrations/), because
+climate coverage varies by provider.

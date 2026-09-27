@@ -42,8 +42,7 @@ While editing, you can:
 - Hide an automatically added entity.
 - Delete a Navet widget or manually added card.
 
-Card sizes are intentional per card type. A size that is unavailable would not provide a useful
-version of that card. Saved or imported layouts that contain a compatible extra-wide card fall
+Available sizes depend on the card type. Saved or imported layouts with an extra-wide card fall
 back to Extra-Large or Large on narrower screens so the dashboard remains usable on tablets and
 phones.
 

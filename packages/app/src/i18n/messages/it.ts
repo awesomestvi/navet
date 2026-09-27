@@ -295,6 +295,7 @@ export const itMessages = {
   'household.today.emptyDescription': 'Le prossime faccende appariranno qui nel giorno previsto.',
   'household.today.overdue': 'In ritardo',
   'household.today.due': 'Da fare ora',
+  'household.chores.nextScheduled': 'Prossima: {date}',
   'household.today.upcoming': 'Più tardi',
   'household.today.awaitingApproval': 'Da approvare',
   'household.today.done': 'Completata',

@@ -213,11 +213,10 @@ reason.
 
 ## Runtime Limits
 
-The Home Assistant custom panel cannot use the native file store, so the native chores workspace is
-unavailable inside panel-only mode. The authority is available to the add-on and to standalone Navet
-when the installation has an authenticated Home Assistant principal. Provider-only Homey or openHAB
-installations do not yet own a chores workspace authority. Home Assistant may still receive the
-optional summary projection from an active standalone/add-on runtime.
+Standalone Docker and the add-on provide a native chore workspace for authenticated Home Assistant,
+Homey, and openHAB sessions. The Home Assistant custom panel uses the Navet custom integration
+authority. Each runtime stores chores at installation scope; optional provider projections expose
+a summary without owning the workspace.
 
 Completed and skipped occurrences older than 90 days are pruned during materialization. Activity is
 capped at 5,000 entries in the client document, immutable event history uses the manager-selected

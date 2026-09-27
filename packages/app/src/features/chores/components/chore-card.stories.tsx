@@ -169,7 +169,7 @@ export const ScheduledOnAnotherDay: Story = {
   },
   play: async ({ canvasElement }) => {
     const status = canvasElement.querySelector('[data-chore-status]');
-    await expect(status).toHaveTextContent(/^Wed · /);
+    await expect(status).toHaveTextContent(/^Wed, Aug 19 · /);
     await expect(status).not.toHaveTextContent('Later');
   },
 };
@@ -329,5 +329,34 @@ export const CompactListStates: Story = {
   },
   play: async ({ canvasElement }) => {
     await expect(canvasElement.querySelectorAll('[data-chore-base-card]')).toHaveLength(3);
+  },
+};
+
+export const OrangeAssigneeContrast: Story = {
+  args: {
+    participantsById: {
+      ...workspace.participantsById,
+      maya: { ...workspace.participantsById.maya, color: '#f97316' },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const initials = canvasElement.querySelector('[data-slot="avatar-fallback"]');
+    await expect(initials).toBeVisible();
+    await expect(initials).toHaveStyle({ color: '#000000' });
+  },
+};
+
+export const DarkAssigneeContrast: Story = {
+  ...OrangeAssigneeContrast,
+  args: {
+    participantsById: {
+      ...workspace.participantsById,
+      maya: { ...workspace.participantsById.maya, color: '#1e3a8a' },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const initials = canvasElement.querySelector('[data-slot="avatar-fallback"]');
+    await expect(initials).toBeVisible();
+    await expect(initials).toHaveStyle({ color: '#ffffff' });
   },
 };

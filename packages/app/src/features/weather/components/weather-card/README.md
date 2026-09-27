@@ -102,9 +102,9 @@ interface WeatherCardProps {
 - Adds condition-specific motion for clear-night moon halos, wind streaks, fog banks, and falling
   snow so every weather background retains a subtle sense of live conditions
 - Flashes the existing storm lightning and halo intermittently with a short double pulse
-- The overlay atoms are split by weather effect; `weather-card-overlays.tsx` now only composes them
+- The overlay atoms are split by weather effect; `weather-card-overlays.tsx` composes them
 
 ## Maintenance Notes
 
 - Update this README when card size behavior changes
-- If the component is split into subcomponents again, update the structure section to match the real folder contents
+- Keep the structure section aligned with the folder contents

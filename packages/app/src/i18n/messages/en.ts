@@ -1926,6 +1926,7 @@ export const enMessages = {
   'household.today.emptyDescription': 'Upcoming chores will appear here when their day arrives.',
   'household.today.overdue': 'Overdue',
   'household.today.due': 'Due now',
+  'household.chores.nextScheduled': 'Next: {date}',
   'household.today.upcoming': 'Later',
   'household.today.awaitingApproval': 'Needs approval',
   'household.today.done': 'Done',

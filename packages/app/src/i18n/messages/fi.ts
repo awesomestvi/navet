@@ -291,6 +291,7 @@ export const fiMessages = {
   'household.today.emptyDescription': 'Tulevat kotityöt näkyvät täällä oikeana päivänä.',
   'household.today.overdue': 'Myöhässä',
   'household.today.due': 'Tehtävä nyt',
+  'household.chores.nextScheduled': 'Seuraava: {date}',
   'household.today.upcoming': 'Myöhemmin',
   'household.today.awaitingApproval': 'Odottaa hyväksyntää',
   'household.today.done': 'Valmis',

@@ -1,22 +1,10 @@
 # Shared Components
 
-`shared/` now has one primary job:
-
-- Intentional shared app UI
-  Reused cross-feature pieces that are still too app-specific, stateful, or composition-heavy to
-  be honest primitives or patterns.
-
-## Compatibility Shims
-
-There are currently no active compatibility-shim files in this folder.
-
-If we ever need a temporary migration shim again, keep it thin, document it here, and remove it
-once production imports have been updated.
+`shared/` contains cross-feature app UI with app-specific state, behavior, or composition.
 
 ## Intentional Shared Residents
 
-These still belong in `shared/` for now because their reuse comes with app-specific structure or
-behavior.
+These components share app-specific structure or behavior across features.
 
 - `card-settings-action-button.tsx`
   Card-specific wrapper around `RoundControlButton` with dashboard/card-edit semantics.
@@ -79,8 +67,7 @@ behavior.
 
 ## Rule of Thumb
 
-- If a temporary compatibility shim is introduced, prefer updating imports instead of extending the shim.
 - If a file depends on app stores, service calls, release metadata, dashboard edit semantics, or
   app-owned compatibility seams, it can stay in `shared/`.
 - If a file becomes a stable source of reusable structure with a clear single responsibility, move
-  it to `primitives/` or `patterns/` and leave a compatibility shim behind only when there is a real migration need.
+  it to `primitives/` or `patterns/` and update its imports.

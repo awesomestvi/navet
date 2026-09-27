@@ -1,9 +1,11 @@
 import { cn } from '@navet/app/components/ui/utils';
 import { useI18n, type useTheme } from '@navet/app/hooks';
+import { getPublicAssetUrl } from '@navet/app/utils/public-assets';
 import { subscribeVisibilityAwareTask } from '@navet/app/utils/visibility-aware-scheduler';
 import { type CSSProperties, memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   getCompactVisualClassName,
+  isMonochromeVacuumIllustrationState,
   type MotionLevel,
   resolveVacuumIllustrationSurface,
   SharedVacuumCardShell,
@@ -73,6 +75,56 @@ function VacuumSideBrush({
         style={{ borderColor: subtitleColor, opacity: 0.9 }}
       />
     </div>
+  );
+}
+
+/** Top-down hardware details share the card's state palette and moving chassis. */
+function VacuumRobotDetails({
+  titleColor,
+  subtitleColor,
+}: {
+  titleColor: string;
+  subtitleColor: string;
+}) {
+  return (
+    <svg
+      aria-hidden="true"
+      focusable="false"
+      viewBox="0 0 80 80"
+      className="absolute inset-0 h-full w-full"
+      fill="none"
+    >
+      {/* A recessed bumper and interrupted front sensor distinguish the chassis. */}
+      <circle cx="40" cy="40" r="36" stroke={subtitleColor} strokeOpacity="0.3" />
+      <path
+        d="M 7 41 A 33 33 0 0 1 73 41"
+        stroke={titleColor}
+        strokeOpacity="0.55"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
+      <rect x="32" y="5" width="16" height="4" rx="2" fill={subtitleColor} />
+      <path d="M 12 49 H 68" stroke={subtitleColor} strokeOpacity="0.2" />
+      {/* Offset concentric rings give the lidar turret a small, crisp raised edge. */}
+      <circle cx="40" cy="31" r="13" fill={subtitleColor} fillOpacity="0.1" />
+      <circle cx="40" cy="29" r="12" stroke={titleColor} strokeOpacity="0.6" />
+      <circle cx="40" cy="29" r="8.5" fill={subtitleColor} fillOpacity="0.14" />
+      <path
+        d="M 32 27 A 8.5 8.5 0 0 1 44 21.5"
+        stroke={titleColor}
+        strokeOpacity="0.7"
+        strokeLinecap="round"
+      />
+      <circle cx="40" cy="29" r="2" fill={titleColor} fillOpacity="0.8" />
+      <image href={getPublicAssetUrl('logo.svg')} x="33" y="51" width="14" height="14" />
+      <path
+        d="M 27 69 H 53"
+        stroke={subtitleColor}
+        strokeOpacity="0.45"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
   );
 }
 
@@ -186,6 +238,9 @@ function VacuumRobotVisual({
     displayState,
     titleColor,
   });
+  // Active chassis stay dark in every theme, so use light hardware ink in light mode.
+  const useLightHardwareInk =
+    theme === 'light' && !isMonochromeVacuumIllustrationState(displayState);
   const dockStrokeColor = theme === 'light' ? titleColor : subtitleColor;
   const dockStrokeOpacity = theme === 'light' ? 0.9 : 0.72;
   const dockRailOpacity = theme === 'light' ? 0.35 : 0.15;
@@ -407,23 +462,10 @@ function VacuumRobotVisual({
             }}
             data-testid="vacuum-robot-surface"
           >
-            <div
-              className="absolute top-[0.88rem] h-[0.5rem] w-[0.5rem] rounded-full border"
-              style={{
-                borderColor: subtitleColor,
-                backgroundColor: theme === 'light' ? 'rgba(15,23,42,0.08)' : 'rgba(0,0,0,0.15)',
-              }}
+            <VacuumRobotDetails
+              titleColor={useLightHardwareInk ? '#d4d4d8' : titleColor}
+              subtitleColor={useLightHardwareInk ? '#a1a1aa' : subtitleColor}
             />
-            <div
-              className="absolute bottom-[0.72rem] left-1/2 h-[0.28rem] w-[2.6rem] -translate-x-1/2 rounded-full"
-              style={{ backgroundColor: subtitleColor, opacity: 0.55 }}
-            />
-            <div
-              className="flex h-5 w-5 items-center justify-center rounded-full border text-[9px] font-semibold"
-              style={{ borderColor: subtitleColor, color: titleColor }}
-            >
-              N
-            </div>
           </div>
         </div>
       ) : null}
@@ -453,23 +495,10 @@ function VacuumRobotVisual({
                 }}
               />
             ) : null}
-            <div
-              className="absolute top-[0.88rem] h-[0.5rem] w-[0.5rem] rounded-full border"
-              style={{
-                borderColor: subtitleColor,
-                backgroundColor: theme === 'light' ? 'rgba(15,23,42,0.08)' : 'rgba(0,0,0,0.15)',
-              }}
+            <VacuumRobotDetails
+              titleColor={useLightHardwareInk ? '#d4d4d8' : titleColor}
+              subtitleColor={useLightHardwareInk ? '#a1a1aa' : subtitleColor}
             />
-            <div
-              className="absolute bottom-[0.72rem] left-1/2 h-[0.28rem] w-[2.6rem] -translate-x-1/2 rounded-full"
-              style={{ backgroundColor: subtitleColor, opacity: 0.55 }}
-            />
-            <div
-              className="flex h-5 w-5 items-center justify-center rounded-full border text-[9px] font-semibold"
-              style={{ borderColor: subtitleColor, color: titleColor }}
-            >
-              N
-            </div>
             {isPaused ? (
               <div
                 className="absolute inset-x-0 -bottom-5 text-center text-[10px]"

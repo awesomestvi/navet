@@ -24,7 +24,7 @@ The export contains dashboard configuration. It is not a backup of your smart-ho
 2. Choose **Import config**.
 3. Select a Navet `.yaml` or `.yml` configuration export.
 4. A valid file is applied immediately after selection. Wait for the success message and dashboard
-   refresh; there is no separate review confirmation.
+   refresh.
 
 Import can replace current local configuration. Export the current state first if you may want it
 back.

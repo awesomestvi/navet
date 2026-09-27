@@ -28,8 +28,6 @@ Common causes include:
 3. Confirm the provider address.
 4. Choose **Connect** or repeat the supported sign-in flow.
 
-Do not use a manual long-lived-token flow for Home Assistant.
-
 ## Sign in at home or through a VPN
 
 Standalone Navet keeps the browser-facing Home Assistant address separate from its trusted
@@ -58,8 +56,8 @@ must reach that same Home Assistant installation.
 
 ### Change the Home Assistant address
 
-Enter the replacement address in Navet and sign in with Home Assistant. If `NAVET_HASS_URL` is set in Compose, update that configuration and recreate the container
-when the upstream address changes. Remembered addresses do not override the login form.
+Enter the replacement address in Navet and sign in with Home Assistant. If `NAVET_HASS_URL` is set
+in Compose, update that configuration and recreate the container when the upstream address changes.
 
 ## Stuck on Starting your dashboard
 

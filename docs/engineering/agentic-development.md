@@ -254,10 +254,9 @@ configured after these files reach `main`:
    repository, set required approving reviews to zero and disable required CODEOWNER review; the
    maintainer's merge records acceptance for the current head. Require **CI / Product review gate**
    as the aggregate gate for applicable tests and Cloudflare previews of the current site inputs.
-   A successful ancestor preview is reusable only when those inputs are unchanged. During migration,
-   retain the four existing Cloudflare requirements until the new gate is merged. Use the guarded
-   rollout in [Release Workflow](../release-workflow.md#activating-scoped-deployments) to update
-   requirements and build-watch paths together without weakening unrelated protections.
+   A successful ancestor preview is reusable only when those inputs are unchanged. Keep Cloudflare
+   build-watch paths aligned with `scripts/pages-policy.mjs`; see
+   [deployment configuration procedure](../release-workflow.md#activating-scoped-deployments).
 6. Configure `beta` and `production` environments to scope the release GitHub App secrets. Do not
    add required reviewers: manually dispatching **Promote Navet Release** with exact source and
    target tags is the publication authorization, and downstream artifact jobs must run without

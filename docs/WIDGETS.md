@@ -64,12 +64,8 @@ Widgets can be placed in:
 - the Energy section, where the chooser is limited to `energy-now` and the energy-metric preset of
   `info`
 
-There are internal room IDs for special overview areas, but users do not need to manage those
-directly.
-
 ## Limits And Notes
 
-- Widgets are part of Navet itself, not provider-native card definitions.
 - The Widgets tab offers twelve choices when Home Assistant is connected. Ten create the base
   `info`, `rss`, `photo`, `note`, `battery`, `ups`, `energy-now`, `button`, `assist`, and `map`
   types; scene and energy-metric are presets of `button` and `info`. The `assist` choice is hidden
@@ -78,7 +74,7 @@ directly.
   tab. `media-stack` remains runtime-supported
   for compatible saved and imported dashboard profiles, but is intentionally hidden from the
   custom-widget chooser.
-- RSS uses Navet's same-origin proxy instead of direct browser fetches.
+- RSS feeds require public HTTPS addresses and a signed-in Navet session.
 - The `entity` widget is a fallback for entities without a richer dedicated Navet card.
 - Assist conversations and microphone audio remain in memory for the open dialog only. Dashboard
   persistence stores the Home Assistant provider binding and selected voice-pipeline ID, never the

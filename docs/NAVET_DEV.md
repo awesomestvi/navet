@@ -48,7 +48,7 @@ This is the recommended development installation for Home Assistant OS users.
 6. Enable `Show in sidebar`, or select `Open Web UI`.
 
 The App runs through Home Assistant Ingress and reuses the authenticated parent Home Assistant
-session. It does not need a Home Assistant URL or long-lived access token in normal Ingress use.
+session.
 
 The App uses Ingress by default. To test direct access, assign an available host port to the
 optional direct Navet web interface in **Network**, restart the App, and complete the separate
@@ -241,7 +241,7 @@ dashboard configuration before switching rather than assuming it will appear in 
 - Home Assistant authorization page does not open: confirm the address entered in Navet is
   reachable from the current browser, including through the intended VPN or external route.
 - Home Assistant accepts authorization but returning to Navet fails: confirm `NAVET_HASS_URL`, or
-  the previously paired upstream, is reachable from the Navet container; avoid `localhost` when
+  the address entered at sign-in, is reachable from the Navet container; avoid `localhost` when
   Home Assistant runs on another host.
 - OAuth loops after changing hostnames, TLS, reverse proxies, or ports: sign in again so Navet can
   create a session for the current Home Assistant URL.

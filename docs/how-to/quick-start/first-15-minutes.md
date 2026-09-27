@@ -26,7 +26,7 @@ When Navet has loaded provider entities and dashboard onboarding is incomplete, 
 - **Start with a blank dashboard** hides the loaded entities and clears the Home layout and
   custom cards. Add the controls you want afterward through **Customize → Add card**.
 - **Import a config file** opens a file chooser for a previously exported Navet `.yaml` or `.yml`
-  configuration. A valid file is applied when selected; there is no separate review confirmation.
+  configuration. A valid file is applied immediately when selected.
   This route restores the saved configuration directly rather than taking you through the language
   and appearance steps. Back up any current configuration before importing over it.
 
@@ -44,7 +44,6 @@ The startup appearance step offers manual themes and built-in wallpapers. After 
 wallpaper removal. Change language and formats later under **Settings → Localization**.
 
 If you are trying the public demo, it opens a prepared dashboard instead of this startup wizard.
-The demo's preset card layout does not exercise all editing and persistence workflows.
 Use a connected installation for the complete setup and editing steps in this guide.
 
 ![The current Navet Home dashboard with section navigation, room navigation, status summary, and responsive cards.](/docs/how-to/quick-start/first-15-minutes-overview.webp)
@@ -86,7 +85,7 @@ size, or other card-specific options.
 1. Return to **Home**.
 2. Choose **Customize**.
 3. If Home is empty, choose **Add Card**, find a familiar entity, and choose its **Add** button.
-   Close the library to return to the layout. Adding a device card does not operate that device.
+   Close the library to return to the layout.
 4. Move a card or change its size. Use **Undo** if the result is not useful.
 5. Choose **Done** to leave edit mode.
 

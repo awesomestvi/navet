@@ -103,6 +103,27 @@ export const SpeakerDialog: Story = {
   },
 };
 
+export const SpeakerBrightArtworkDialog: Story = {
+  ...SpeakerDialog,
+  args: {
+    ...SpeakerDialog.args,
+    id: 'media_player.bright_artwork',
+    title: 'Bright artwork contrast preview',
+    artist: 'Example artist',
+    entityPicture: `data:image/svg+xml,${encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="320" height="320"><rect width="320" height="320" fill="#c6cee5"/><text x="160" y="235" text-anchor="middle" font-size="240" fill="white">♪</text></svg>'
+    )}`,
+  },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole('button', { name: /open media details/i }));
+    const dialog = await within(document.body).findByRole('dialog', {}, { timeout: 5000 });
+    await expect(within(dialog).getByRole('img')).toBeInTheDocument();
+    await expect(
+      within(dialog).getByRole('button', { name: /pause playback/i })
+    ).toBeInTheDocument();
+  },
+};
+
 export const SpeakerCompact: Story = {
   args: {
     size: 'small',

@@ -324,7 +324,7 @@ export const CardDialogHeader = memo(function CardDialogHeader({
           </Dialog.Description>
         ) : null}
         {entityId ? (
-          <p className={cn('mt-1 text-xs', descriptionClassName)}>
+          <p className={cn('mt-1 text-xs', descriptionClassName)} style={descriptionStyle}>
             <span>{t('common.entityId')}: </span>
             <code className="select-text whitespace-normal [overflow-wrap:anywhere]">
               {getProviderNativeId(entityId)}

@@ -100,11 +100,6 @@ payloads directly.
   account on an unintended personal device.
 - Providers may expose `canBrowseMedia` without useful children for a given entity state. The
   dashboard keeps an empty browser state until real browse results arrive.
-- Home Assistant owns Spotify artist expansion inside its Spotify integration. If its bundled
-  Spotify client cannot parse the current artist-albums response, both Spotify and Sonos browse
-  entities fail before Navet receives album children. Navet must not invent playable album or track
-  identifiers; recovery requires a fixed Home Assistant Spotify client or a separate authenticated
-  Navet music-source adapter.
 - TV remotes still use existing TV-specific media card/dialog controls. The dashboard prioritizes
   audio players and does not duplicate the D-pad remote surface.
 

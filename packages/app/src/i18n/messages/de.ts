@@ -293,6 +293,7 @@ export const deMessages = {
   'household.today.emptyDescription': 'Anstehende Aufgaben erscheinen hier am jeweiligen Tag.',
   'household.today.overdue': 'Überfällig',
   'household.today.due': 'Jetzt fällig',
+  'household.chores.nextScheduled': 'Nächster Termin: {date}',
   'household.today.upcoming': 'Später',
   'household.today.awaitingApproval': 'Freigabe erforderlich',
   'household.today.done': 'Erledigt',

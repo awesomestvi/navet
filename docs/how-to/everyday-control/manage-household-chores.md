@@ -22,9 +22,8 @@ setup and recovery controls do not compete with work that needs attention.
    preview.
 5. On **When it repeats**, choose **Save changes**.
 
-The card colour is automatic unless someone overrides it. Automatic colours are stable from the
-chore ID and are not based on the selected dashboard accent. Overdue red and completed green remain
-semantic and cannot be replaced by the custom colour.
+Each chore has a consistent automatic colour unless someone overrides it. Overdue red and
+completed green take priority over the custom colour.
 
 Open the card's **More actions** menu, then choose **Pause** to stop creating new occurrences while
 keeping the chore and its history. Choose **Archive** when the definition should leave the active
@@ -43,9 +42,8 @@ An uneven-workload note is a suggestion. Navet does not silently reassign future
 
 ## Manage missions and rewards
 
-Open **Missions** or **Rewards** to create and edit supporting goals. Their cards follow the same
-chore card geometry, but they do not appear in Today by default. From Today, choose **See rewards**
-in Chores today when you want to reveal the current mission and reward cards for that visit.
+Open **Missions** or **Rewards** to create and edit supporting goals. From Today, choose
+**See rewards** in Chores today to reveal the current mission and reward cards for that visit.
 
 ## Hide household chores
 
@@ -82,8 +80,7 @@ Restarting or updating the add-on does not remove the saved chore workspace in `
 
 ## Restore a backup during first setup
 
-If this is a new Navet installation and you already have a Navet chores backup, you do not need to
-repeat the guided setup.
+You can restore a Navet chores backup from the welcome screen of a new installation.
 
 1. Open **Household**.
 2. On the welcome screen, choose **Import backup**.

@@ -116,8 +116,8 @@ provider-neutral card when the entity type has meaningful controls or domain-spe
 
 The chores feature owns provider-neutral participants, definitions, occurrences, scheduling,
 workflow, activity, and the Today and Chores surfaces. Household participants are attribution and
-workflow profiles, not authenticated accounts. Shared chores use revisioned installation storage and
-are unavailable in the Home Assistant custom panel.
+workflow profiles, not authenticated accounts. Shared chores use revisioned installation storage
+provided by standalone Docker, the add-on, or the Navet custom integration for the custom panel.
 
 The tasks feature continues to own provider automation and script presentation under Household's
 Routines tab. Automation detail rows can summarize triggers, conditions, actions, diagnostics, and

@@ -20,9 +20,6 @@ its provider identity, so controls and data requests reach the correct smart-hom
    - Homey uses its OAuth connection.
    - openHAB uses a reachable base URL and credentials.
 
-Do not paste a long-lived Home Assistant token into a manual token field; Navet does not use that
-as its connection model.
-
 Provider cards show **Connected** when Navet can reach the provider. A Homey account can remain
 signed in while its hub is unavailable. If Homey shows **Offline**, check that the hub is powered
 on and reachable from Navet's network. If this happens during sign-in, choose the Homey again
@@ -36,8 +33,8 @@ any weather entity exposed by a connected provider. Calendars combine selected s
 Energy metric picker includes energy-related sensors from connected providers.
 
 Available choices depend on each adapter's capabilities. Home Assistant currently supplies weather
-forecasts, calendar events, and the detailed energy history dashboard. Homey and openHAB supply
-supported devices and sensors; connecting them does not add forecast, calendar, or statistics APIs.
+forecasts, calendar events, and the detailed energy history dashboard. Homey supplies Insights
+history for individual entities. See the [capability matrix](/integrations/) for provider coverage.
 
 ## Disconnect
 

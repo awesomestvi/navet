@@ -290,6 +290,7 @@ export const svMessages = {
   'household.today.emptyDescription': 'Kommande sysslor visas här när deras dag kommer.',
   'household.today.overdue': 'Försenad',
   'household.today.due': 'Ska göras nu',
+  'household.chores.nextScheduled': 'Nästa: {date}',
   'household.today.upcoming': 'Senare',
   'household.today.awaitingApproval': 'Behöver godkännas',
   'household.today.done': 'Klar',

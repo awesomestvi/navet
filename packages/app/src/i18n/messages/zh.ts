@@ -278,6 +278,7 @@ export const zhMessages = {
   'household.today.emptyDescription': '即将到来的家务会在对应日期显示在这里。',
   'household.today.overdue': '已逾期',
   'household.today.due': '现在到期',
+  'household.chores.nextScheduled': '下次：{date}',
   'household.today.upcoming': '稍后',
   'household.today.awaitingApproval': '需要确认',
   'household.today.done': '已完成',

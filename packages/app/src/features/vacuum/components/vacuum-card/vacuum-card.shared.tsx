@@ -94,7 +94,7 @@ function normalizeVacuumDisplayName(value: string): string {
   return trimmed;
 }
 
-function isMonochromeVacuumIllustrationState(displayState: VacuumDisplayState): boolean {
+export function isMonochromeVacuumIllustrationState(displayState: VacuumDisplayState): boolean {
   return (
     displayState === 'idle' ||
     displayState === 'docked' ||

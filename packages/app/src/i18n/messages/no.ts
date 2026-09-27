@@ -290,6 +290,7 @@ export const noMessages = {
   'household.today.emptyDescription': 'Kommende oppgaver vises her når dagen kommer.',
   'household.today.overdue': 'Forsinket',
   'household.today.due': 'Må gjøres nå',
+  'household.chores.nextScheduled': 'Neste: {date}',
   'household.today.upcoming': 'Senere',
   'household.today.awaitingApproval': 'Må godkjennes',
   'household.today.done': 'Ferdig',

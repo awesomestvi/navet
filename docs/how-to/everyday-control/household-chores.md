@@ -65,6 +65,11 @@ Use **Using this screen** to choose the person currently completing or approving
 list shows **Needs attention** first, followed by remaining work. Completed chores stay
 visible as smaller cards, without a time tag, and show the points that were earned.
 
+**Next 7 days** previews the next occurrences during the coming week, earliest first, even when
+nothing is due today. Each card includes its date and time. The row fits the screen width and
+follows the selected person. Open **Chores** to see the next scheduled date and time on each
+chore's card, including later dates from the schedule prepared up to 45 days ahead.
+
 - Choose **Mark done** to complete assigned work.
 - Choose **Claim** first when a shared chore requires someone to take ownership.
 - Choose **Approve** to finish a chore that requires approval.
@@ -96,5 +101,4 @@ same restrained red alert treatment used by Security.
 
 ## Find automations and scripts
 
-Open the **Routines** tab. Provider automations, scenes, and scripts still live here; native chores
-do not replace them.
+Open **Household → Routines** to use provider automations, scenes, and scripts.

@@ -1,0 +1,6 @@
+type: improved
+audiences:
+  - standalone
+  - home-assistant
+  - hacs
+summary: See upcoming chores for the next seven days in Today and the next scheduled date and time on chore cards.
