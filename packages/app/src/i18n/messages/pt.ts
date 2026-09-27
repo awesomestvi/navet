@@ -2295,6 +2295,7 @@ export const ptMessages = {
   'tasks.automation.details.diagnostics': 'Diagnóstico',
   'tasks.automation.details.dependencies': 'Dependências',
   'tasks.automation.details.noDescription': 'Nenhuma descrição disponível para esta automação.',
+  'common.entityId': 'ID da entidade',
   'tasks.automation.details.entityId': 'ID da entidade',
   'tasks.automation.details.room': 'Cômodo',
   'tasks.automation.details.state': 'Estado',

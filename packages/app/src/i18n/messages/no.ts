@@ -2296,6 +2296,7 @@ export const noMessages = {
   'tasks.automation.details.dependencies': 'Avhengigheter',
   'tasks.automation.details.noDescription':
     'Ingen beskrivelse er tilgjengelig for denne automatiseringen.',
+  'common.entityId': 'Enhets-ID',
   'tasks.automation.details.entityId': 'Enhets-ID',
   'tasks.automation.details.room': 'Rom',
   'tasks.automation.details.state': 'stat',

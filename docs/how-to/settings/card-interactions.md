@@ -18,6 +18,13 @@ Open **Settings → Interaction**, then choose:
 
 Settings buttons and secondary card actions remain available in both modes.
 
+## Identify an entity
+
+Open an entity card’s controls or settings dialog to see its **Entity id** beneath the name and
+type. This is the ID used by the connected provider, such as `sensor.office_temperature` in
+Home Assistant. Use it to distinguish entities with similar names before renaming or moving
+them. You can select the ID text to copy it.
+
 ## Choose a safe household default
 
 Control-first is useful on shared screens where accidental actions are more costly. Toggle-first

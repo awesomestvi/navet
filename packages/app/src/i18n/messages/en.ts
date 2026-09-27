@@ -2297,6 +2297,7 @@ export const enMessages = {
   'tasks.automation.details.diagnostics': 'Diagnostics',
   'tasks.automation.details.dependencies': 'Dependencies',
   'tasks.automation.details.noDescription': 'No description is available for this automation.',
+  'common.entityId': 'Entity id',
   'tasks.automation.details.entityId': 'Entity id',
   'tasks.automation.details.room': 'Room',
   'tasks.automation.details.state': 'State',

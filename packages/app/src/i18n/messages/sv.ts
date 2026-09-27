@@ -2287,6 +2287,7 @@ export const svMessages = {
   'tasks.automation.details.dependencies': 'Beroenden',
   'tasks.automation.details.noDescription':
     'Ingen beskrivning är tillgänglig för denna automation.',
+  'common.entityId': 'Enhets-id',
   'tasks.automation.details.entityId': 'Enhets-id',
   'tasks.automation.details.room': 'Rum',
   'tasks.automation.details.state': 'Status',

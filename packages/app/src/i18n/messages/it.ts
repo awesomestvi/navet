@@ -1664,6 +1664,7 @@ export const itMessages = {
   'tasks.automation.details.dependencies': 'Dipendenze',
   'tasks.automation.details.noDescription':
     'Nessuna descrizione disponibile per questa automazione.',
+  'common.entityId': 'ID entità',
   'tasks.automation.details.entityId': 'ID entità',
   'tasks.automation.details.room': 'Stanza',
   'tasks.automation.details.state': 'Stato',

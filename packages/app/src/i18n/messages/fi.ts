@@ -2300,6 +2300,7 @@ export const fiMessages = {
   'tasks.automation.details.diagnostics': 'Diagnostiikka',
   'tasks.automation.details.dependencies': 'Riippuvuudet',
   'tasks.automation.details.noDescription': 'Tälle automaatiolle ei ole saatavilla kuvausta.',
+  'common.entityId': 'Entiteetin tunnus',
   'tasks.automation.details.entityId': 'Entiteetin tunnus',
   'tasks.automation.details.room': 'Huone',
   'tasks.automation.details.state': 'osavaltio',

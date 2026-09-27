@@ -2296,6 +2296,7 @@ export const daMessages = {
   'tasks.automation.details.dependencies': 'Afhængigheder',
   'tasks.automation.details.noDescription':
     'Ingen beskrivelse er tilgængelig for denne automatisering.',
+  'common.entityId': 'Enheds-id',
   'tasks.automation.details.entityId': 'Enheds-id',
   'tasks.automation.details.room': 'Værelse',
   'tasks.automation.details.state': 'stat',

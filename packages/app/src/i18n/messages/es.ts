@@ -2310,6 +2310,7 @@ export const esMessages = {
   'tasks.automation.details.dependencies': 'Dependencias',
   'tasks.automation.details.noDescription':
     'No hay descripción disponible para esta automatización.',
+  'common.entityId': 'Id de entidad',
   'tasks.automation.details.entityId': 'Id de entidad',
   'tasks.automation.details.room': 'Habitación',
   'tasks.automation.details.state': 'Estado',

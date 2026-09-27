@@ -2325,6 +2325,7 @@ export const frMessages = {
   'tasks.automation.details.dependencies': 'Dépendances',
   'tasks.automation.details.noDescription':
     'Aucune description n est disponible pour cette automatisation.',
+  'common.entityId': 'ID entite',
   'tasks.automation.details.entityId': 'ID entite',
   'tasks.automation.details.room': 'Piece',
   'tasks.automation.details.state': 'Etat',

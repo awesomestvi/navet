@@ -2326,6 +2326,7 @@ export const deMessages = {
   'tasks.automation.details.dependencies': 'Abhängigkeiten',
   'tasks.automation.details.noDescription':
     'Für diese Automation ist keine Beschreibung verfügbar.',
+  'common.entityId': 'Entity-ID',
   'tasks.automation.details.entityId': 'Entity-ID',
   'tasks.automation.details.room': 'Raum',
   'tasks.automation.details.state': 'Status',

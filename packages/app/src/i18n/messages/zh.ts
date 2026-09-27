@@ -2154,6 +2154,7 @@ export const zhMessages = {
   'tasks.automation.details.diagnostics': '诊断',
   'tasks.automation.details.dependencies': '依赖项',
   'tasks.automation.details.noDescription': '任务详情说明',
+  'common.entityId': '实体 ID',
   'tasks.automation.details.entityId': '实体 ID',
   'tasks.automation.details.room': '房间',
   'tasks.automation.details.state': '状态',

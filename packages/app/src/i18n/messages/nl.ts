@@ -2318,6 +2318,7 @@ export const nlMessages = {
   'tasks.automation.details.dependencies': 'Afhankelijkheden',
   'tasks.automation.details.noDescription':
     'Er is geen beschrijving beschikbaar voor deze automatisering.',
+  'common.entityId': 'Entiteits-ID',
   'tasks.automation.details.entityId': 'Entiteits-ID',
   'tasks.automation.details.room': 'Kamer',
   'tasks.automation.details.state': 'Staat',

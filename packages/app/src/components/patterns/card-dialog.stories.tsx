@@ -38,7 +38,7 @@ export default meta;
 
 type Story = StoryObj<typeof CardDialogHeader>;
 
-function CardDialogPatternStory() {
+function CardDialogPatternStory({ entityId = 'light.living_room' }: { entityId?: string }) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'controls' | 'customize'>('controls');
   const { theme } = useTheme();
@@ -62,7 +62,8 @@ function CardDialogPatternStory() {
               <CardDialogHeader
                 title="Light settings"
                 description="Pattern primitives for entity settings layouts"
-                entityId="light.living_room"
+                entityId={entityId}
+                theme={theme}
               />
               <CardDialogTabList>
                 <CardDialogTabTrigger
@@ -100,4 +101,10 @@ function CardDialogPatternStory() {
 
 export const Default: Story = {
   render: () => <CardDialogPatternStory />,
+};
+
+export const LongProviderEntityId: Story = {
+  render: () => (
+    <CardDialogPatternStory entityId="home_assistant:sensor.upstairs_hallway_temperature_sensor_beside_the_window_current_temperature" />
+  ),
 };

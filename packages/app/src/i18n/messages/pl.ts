@@ -2298,6 +2298,7 @@ export const plMessages = {
   'tasks.automation.details.diagnostics': 'Diagnostyka',
   'tasks.automation.details.dependencies': 'Zależności',
   'tasks.automation.details.noDescription': 'Brak opisu tej automatyzacji.',
+  'common.entityId': 'Identyfikator encji',
   'tasks.automation.details.entityId': 'Identyfikator encji',
   'tasks.automation.details.room': 'Pomieszczenie',
   'tasks.automation.details.state': 'Stan',
