@@ -1,0 +1,3 @@
+type: internal
+audiences: []
+summary: Verify upcoming chores move into today's actionable section at midnight without remounting.

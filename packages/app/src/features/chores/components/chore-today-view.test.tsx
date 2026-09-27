@@ -1,13 +1,13 @@
 import { renderWithProviders } from '@navet/app/test/render';
 import type { ChoreParticipant, ChoreWorkspaceData } from '@navet/core/chores';
-import { act, screen } from '@testing-library/react';
+import { act, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ChoreTodayView } from './chore-today-view';
 
 afterEach(() => vi.useRealTimers());
 
 describe('chore Today view', () => {
-  it('shows a new-day chore without remounting when the clock passes midnight', () => {
+  it('moves an upcoming chore into today without remounting when the clock passes midnight', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 8, 14, 23, 59, 45));
     const scheduledAt = new Date(2026, 8, 15, 0, 10).toISOString();
@@ -65,9 +65,15 @@ describe('chore Today view', () => {
         onAddChore={vi.fn()}
       />
     );
-    expect(screen.queryByText('Take out recycling')).not.toBeInTheDocument();
+    const upcoming = within(screen.getByRole('region', { name: 'Next 7 days' }));
+    expect(upcoming.getByText('Take out recycling')).toBeInTheDocument();
+    expect(upcoming.queryByRole('button', { name: 'Mark done' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Needs attention' })).not.toBeInTheDocument();
 
     act(() => vi.advanceTimersByTime(30_000));
-    expect(screen.getByText('Take out recycling')).toBeInTheDocument();
+    const today = within(screen.getByRole('region', { name: 'Needs attention' }));
+    expect(today.getByText('Take out recycling')).toBeInTheDocument();
+    expect(today.getByRole('button', { name: 'Mark done' })).toBeEnabled();
+    expect(screen.queryByRole('region', { name: 'Next 7 days' })).not.toBeInTheDocument();
   });
 });
