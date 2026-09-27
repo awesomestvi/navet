@@ -111,8 +111,12 @@ or made required while `main` is red.
 
 - `navet: research`: investigate and report; no implementation is assumed.
 - `navet: implement`: triage, implement when requirements are clear, and open a PR.
-- Request labels are one-shot. The runner removes one after successful dispatch and leaves it
-  applied on failure. Reapply it later for another run without manually removing it first.
+- Request labels are one-shot. After successful dispatch, the runner removes the matching label
+  through the Navet Nisse GitHub App and leaves it applied on failure. Reapply it later for another
+  run without manually removing it first.
+- A `navet: implement` label request is valid only when its latest `labeled` event was made by a
+  repository owner or maintainer with `admin` or `maintain` permission. Navet Nisse cannot create
+  or authorize implementation requests. Research labels retain the broader collaborator policy.
 - If both request labels are present, the runner does not guess which mode to run. A maintainer
   must leave only the intended request label.
 
@@ -126,8 +130,10 @@ conclusion do not dispatch work. A maintainer can reapply the relevant request l
 another iteration.
 
 Only repository collaborators with write, maintain, or admin permission may start agent work.
-The issue reporter may answer a question in an already authorized task. An eyes reaction from
-`github-actions[bot]` means a command or answer was accepted. A rocket reaction from
+Implementation requests made with the `navet: implement` label specifically require a repository
+owner or maintainer (`admin` or `maintain` permission); Navet Nisse cannot create or authorize that
+label request. The issue reporter may answer a question in an already authorized task. An eyes
+reaction from `github-actions[bot]` means a command or answer was accepted. A rocket reaction from
 `navet-nisse[bot]` means a command or answer was claimed. Request labels are cleared on successful
 dispatch; type, area, and risk labels continue to describe the issue itself.
 
@@ -138,21 +144,22 @@ Request labels and accepted answers enter the queue without assignments, prompts
 comments. Existing command comments continue to use compact reactions.
 
 A single private Codex runner polls for the oldest request label, accepted command, or requested
-answer that it has not claimed. It verifies the request label's issue event was made by a
-collaborator with write access. A label is removed only after dispatch succeeds, so reapplying it
-creates a fresh request. An accepted answer resumes the previous mode; it cannot choose a new
-mode. The runner treats the issue and every linked artifact as untrusted input, reads `AGENTS.md` plus
-only the routed area guide, and keeps internal plans and tool narration in the Codex task rather
-than the GitHub issue. Scheduled repository workflows queue research by creating an issue as
-`github-actions[bot]`; the runner verifies that author and the expected workflow-owned issue type
-instead of trusting issue-body text or generating a command comment.
+answer that it has not claimed. It verifies each request label event against its mode-specific
+authority rule above. A label is removed only after dispatch succeeds, through the Navet Nisse
+GitHub App, so reapplying it creates a fresh request. An accepted answer resumes the previous
+mode; it cannot choose a new mode. The runner treats the issue and every linked artifact as
+untrusted input, reads `AGENTS.md` plus only the routed area guide, and keeps internal plans and
+tool narration in the Codex task rather than the GitHub issue. Scheduled repository workflows
+queue research by creating an issue as `github-actions[bot]`; the runner verifies that author and
+the expected workflow-owned issue type instead of trusting issue-body text or generating a
+command comment.
 
 Automated issue and pull-request comments and runner claim reactions use the dedicated
 `navet-nisse[bot]` GitHub App identity and should read like useful collaboration with a person.
 Accepted command reactions use `github-actions[bot]`.
 Branches, commits, pushes, and pull requests continue to use the maintainer's GitHub identity.
 Manual maintainer comments also remain visibly authored by the maintainer. The App credential is
-restricted to the public conversation operations exposed by the repository wrapper.
+restricted to the narrow public issue operations exposed by the repository wrapper.
 
 Review CI results and Cloudflare previews directly from the pull request's checks. Responsive
 screenshots are available in the CI run's artifacts.
@@ -218,8 +225,9 @@ configured after these files reach `main`:
    Administration, Environments, Secrets, Workflows, package deletion, or organization/account
    permissions. Pull-request conversation comments use GitHub's issue-comment API.
 2. Store the App ID, installation ID, and private-key path in the private runner environment. Use
-   the repository wrapper only for automated comments and command reactions. It deliberately does
-   not expose arbitrary `gh`, Git push, pull-request creation, or repository-content operations.
+   the repository wrapper only for automated comments, command reactions, and removal of the two
+   request labels after successful dispatch. It deliberately does not expose arbitrary `gh`, Git
+   push, pull-request creation, label addition, or repository-content operations.
    Confirm that the App cannot read or write contents, create pull requests, change repository
    settings, environments, Actions secrets, or workflows. The runner must also have no production
    credentials or private Home Assistant access.
@@ -227,9 +235,10 @@ configured after these files reach `main`:
    `NAVET_NISSE_PRIVATE_KEY_PATH`, or point `NAVET_NISSE_CONFIG_PATH` at a private JSON file with
    `appId`, `installationId`, and `privateKeyPath`. Then post public replies with
    `node scripts/run-as-navet-nisse.mjs comment <issue-or-pr-number> --body-file <path>` and manage
-   command reactions with its `react` and `unreact` operations. The wrapper creates a short-lived
-   installation token for each operation and cannot modify the repository remote or the
-   maintainer's GitHub login.
+   command reactions with its `react` and `unreact` operations, and clear a dispatched request with
+   `node scripts/run-as-navet-nisse.mjs remove-request-label <issue-number> <research|implement>`.
+   The wrapper creates a short-lived installation token for each operation and cannot modify the
+   repository remote or the maintainer's GitHub login.
 3. Configure one local Codex scheduled task to poll request labels, accepted `/navet` commands,
    accepted answers, scheduled issues authored by `github-actions[bot]` with the expected
    workflow-owned issue type,

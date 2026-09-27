@@ -6,6 +6,10 @@ import { pathToFileURL } from 'node:url';
 const API_ROOT = 'https://api.github.com';
 const DEFAULT_REPOSITORY = 'awesomestvi/navet';
 const REACTIONS = new Set(['+1', '-1', 'laugh', 'confused', 'heart', 'hooray', 'rocket', 'eyes']);
+const REQUEST_LABELS = new Map([
+  ['research', 'navet: research'],
+  ['implement', 'navet: implement'],
+]);
 
 function base64url(value) {
   return Buffer.from(value).toString('base64url');
@@ -92,8 +96,17 @@ export function parseOperation(args, repository = DEFAULT_REPOSITORY) {
       path: `/repos/${repository}/issues/comments/${commentId}/reactions/${reactionId}`,
     };
   }
+  if (operation === 'remove-request-label' && args.length === 3) {
+    const number = numeric(first, 'Issue number');
+    const label = REQUEST_LABELS.get(second);
+    if (!label) throw new Error(`Unsupported request mode: ${second}.`);
+    return {
+      method: 'DELETE',
+      path: `/repos/${repository}/issues/${number}/labels/${encodeURIComponent(label)}`,
+    };
+  }
   throw new Error(
-    'Usage: run-as-navet-nisse.mjs comment <number> --body-file <path> | react <comment-id> <reaction> | unreact <comment-id> <reaction-id>'
+    'Usage: run-as-navet-nisse.mjs comment <number> --body-file <path> | react <comment-id> <reaction> | unreact <comment-id> <reaction-id> | remove-request-label <number> <research|implement>'
   );
 }
 
