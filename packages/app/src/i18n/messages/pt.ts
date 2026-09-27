@@ -2050,7 +2050,7 @@ export const ptMessages = {
   'notifications.update.availableTo': 'Atualização disponível para {version}',
   'notifications.update.restartToFinish': 'Reinicie o Home Assistant para concluir a atualização',
   'notifications.update.installingProgress': 'Instalando {progress}%',
-  'notifications.update.installing': 'Instalando atualização...',
+  'notifications.update.installing': 'Instalando',
   'notifications.update.readyToInstall': 'Pronto para instalar {version}',
   'media.readyToPlay': 'Pronto para tocar',
   'weather.today': 'Hoje',

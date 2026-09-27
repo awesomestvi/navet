@@ -1,3 +1,4 @@
+import { Button } from '@navet/app/components/primitives/button';
 import { IconButton } from '@navet/app/components/primitives/icon-button';
 import { InteractivePill } from '@navet/app/components/primitives/interactive-pill';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
@@ -97,15 +98,21 @@ export function NotificationCenter({
             className={`fixed inset-0 z-50 flex min-h-0 flex-col overflow-hidden border shadow-2xl sm:inset-auto sm:right-6 sm:top-6 sm:h-[calc(100dvh-3rem)] sm:max-h-[860px] sm:w-[min(640px,calc(100vw-3rem))] sm:rounded-3xl ${sharedSurface.shellPanel} ${sharedSurface.border} ${sharedSurface.textPrimary}`}
             style={getUiKitGlassSurfaceFoundationStyle(theme)}
           >
-            <header className="flex shrink-0 items-center justify-between gap-3 px-5 pb-3 pt-5 sm:px-6">
+            <header className="safe-area-pt-5 flex shrink-0 items-center justify-between gap-3 px-5 pb-3 sm:px-6 sm:pt-5">
               <Dialog.Title className="text-lg font-semibold">
                 {t('notifications.title')}
               </Dialog.Title>
+              <Dialog.Close asChild>
+                <Button variant="secondary" size="small" className="sm:hidden">
+                  {t('common.done')}
+                </Button>
+              </Dialog.Close>
               <Dialog.Close asChild>
                 <IconButton
                   variant="ghost"
                   label={t('common.close')}
                   icon={<X className="h-4 w-4" />}
+                  className="hidden sm:inline-flex"
                 />
               </Dialog.Close>
             </header>

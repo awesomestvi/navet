@@ -1,0 +1,5 @@
+type: fixed
+audiences:
+  - standalone
+  - home-assistant
+summary: Mobile notifications now clear the safe area, show Done, and keep Update or Restart above View changes and Hide.

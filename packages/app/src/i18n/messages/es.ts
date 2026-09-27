@@ -2059,7 +2059,7 @@ export const esMessages = {
   'notifications.update.availableTo': 'Actualizacion disponible a {version}',
   'notifications.update.restartToFinish': 'Reinicia Home Assistant para terminar la actualizacion',
   'notifications.update.installingProgress': 'Instalando {progress}%',
-  'notifications.update.installing': 'Instalando actualizacion...',
+  'notifications.update.installing': 'Instalando',
   'notifications.update.readyToInstall': 'Listo para instalar {version}',
   'media.readyToPlay': 'Listo para reproducir',
   'weather.today': 'Hoy',

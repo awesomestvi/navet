@@ -2353,7 +2353,7 @@ export const itMessages = {
   'notifications.update.availableTo': 'Aggiornamento disponibile a {version}',
   'notifications.update.restartToFinish': 'Riavvia Home Assistant per completare l’aggiornamento',
   'notifications.update.installingProgress': 'Installazione {progress}%',
-  'notifications.update.installing': 'Installazione aggiornamento...',
+  'notifications.update.installing': 'Installazione',
   'notifications.update.readyToInstall': 'Pronto per installare {version}',
   'media.readyToPlay': 'Pronto per la riproduzione',
   'calendar.fallbackEvent': 'Evento {count}',

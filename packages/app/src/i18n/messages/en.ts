@@ -1555,7 +1555,7 @@ export const enMessages = {
   'notifications.update.availableTo': 'Update available to {version}',
   'notifications.update.restartToFinish': 'Restart Home Assistant to finish update',
   'notifications.update.installingProgress': 'Installing {progress}%',
-  'notifications.update.installing': 'Installing update...',
+  'notifications.update.installing': 'Installing',
   'notifications.update.readyToInstall': 'Ready to install {version}',
   'media.readyToPlay': 'Ready to play',
   'weather.today': 'Today',

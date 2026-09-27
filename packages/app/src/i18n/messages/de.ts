@@ -2072,7 +2072,7 @@ export const deMessages = {
   'notifications.update.restartToFinish':
     'Home Assistant neu starten, um das Update abzuschliessen',
   'notifications.update.installingProgress': 'Installiere {progress}%',
-  'notifications.update.installing': 'Update wird installiert...',
+  'notifications.update.installing': 'Installation',
   'notifications.update.readyToInstall': 'Bereit zur Installation von {version}',
   'media.readyToPlay': 'Bereit zum Abspielen',
   'weather.today': 'Heute',
