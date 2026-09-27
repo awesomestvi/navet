@@ -268,24 +268,28 @@ describe('chore dashboard selectors', () => {
 describe('next scheduled chores', () => {
   it('orders and deduplicates future work, including dates beyond the next week', () => {
     const data = workspace();
+    const localNow = new Date(2026, 7, 15, 10);
     const future = (id: string, definitionId: string, date: string) => ({
       ...occurrence(id, definitionId, 'available'),
       scheduledAt: date,
     });
     data.occurrencesById = {
-      later: future('later', 'dishes', '2026-09-10T09:00:00Z'),
-      next: future('next', 'dishes', '2026-08-20T09:00:00Z'),
-      toys: future('toys', 'toys', '2026-08-18T09:00:00Z'),
-      today: future('today', 'shoes', '2026-08-15T15:00:00Z'),
+      later: future('later', 'dishes', new Date(2026, 8, 10, 9).toISOString()),
+      next: future('next', 'dishes', new Date(2026, 7, 20, 9).toISOString()),
+      toys: future('toys', 'toys', new Date(2026, 7, 18, 9).toISOString()),
+      today: future('today', 'shoes', new Date(2026, 7, 15, 15).toISOString()),
     };
-    expect(getNextChores(data, 'all', now).map((item) => item.id)).toEqual([
+    expect(getNextChores(data, 'all', localNow).map((item) => item.id)).toEqual([
       'today',
       'toys',
       'next',
     ]);
-    expect(getNextChores(data, 'all', now, true).map((item) => item.id)).toEqual(['toys', 'next']);
+    expect(getNextChores(data, 'all', localNow, true).map((item) => item.id)).toEqual([
+      'toys',
+      'next',
+    ]);
     delete data.occurrencesById.next;
-    expect(getNextChores(data, 'all', now, true).at(-1)?.id).toBe('later');
+    expect(getNextChores(data, 'all', localNow, true).at(-1)?.id).toBe('later');
   });
 
   it('excludes paused, archived, finished, skipped and unrelated work', () => {
