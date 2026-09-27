@@ -381,6 +381,7 @@ class ChoreAuthorityTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_rotation_edits_replace_unstarted_work_and_preserve_history(self):
         timestamp = "2026-09-28T08:00:00.000Z"
+        edit_timestamp = "2026-10-05T08:00:00.000Z"
         for change in [{"rotationCadence": "weekly"}, {"rotationDayOfWeek": 0}]:
             with self.subTest(change=change):
                 data = chores._empty_data()
@@ -402,20 +403,21 @@ class ChoreAuthorityTests(unittest.IsolatedAsyncioTestCase):
                     preserved[occurrence["id"]] = copy.deepcopy(occurrence)
                 values[5]["carriedForwardFrom"] = "earlier"
                 preserved[values[5]["id"]] = copy.deepcopy(values[5])
+                preserved[values[6]["id"]] = copy.deepcopy(values[6])
                 stale_id = values[-1]["id"]
                 data["outbox"] = [{"occurrenceId": stale_id, "status": "pending"}, {"occurrenceId": stale_id, "status": "delivered"}]
                 updated = {**definition, "assignment": {**definition["assignment"], **change}}
                 data, _ = self.authority._apply_workspace_action(data, {
                     "type": "definition_update", "actorParticipantId": "manager", "definition": updated,
-                }, timestamp, "edit")
+                }, edit_timestamp, "edit")
                 self.assertEqual(data["occurrencesById"], preserved)
                 self.assertEqual(data["outbox"], [{"occurrenceId": stale_id, "status": "delivered"}])
-                data, _ = chores._materialize(data, "2026-10-04T00:00:00.000Z", "2026-10-07T00:00:00.000Z", timestamp, "second")
+                data, _ = chores._materialize(data, "2026-10-04T00:00:00.000Z", "2026-10-07T00:00:00.000Z", edit_timestamp, "second")
                 for occurrence_id, occurrence in preserved.items():
                     self.assertEqual(data["occurrencesById"][occurrence_id], occurrence)
                 future = [item for key, item in data["occurrencesById"].items() if key not in preserved]
-                self.assertEqual(len(future), 3)
-                self.assertEqual(len({item["scheduledAt"] for item in future}), 3)
+                self.assertEqual(len(future), 2)
+                self.assertEqual(len({item["scheduledAt"] for item in future}), 2)
 
     async def test_invalid_rotation_cursor_is_repaired_without_losing_workspace(self):
         data = chores._empty_data()

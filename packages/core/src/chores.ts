@@ -1704,6 +1704,7 @@ export function applyChoreWorkspaceAction(
           Object.entries(workspace.occurrencesById).filter(([id, occurrence]) => {
             const shouldRemove =
               occurrence.definitionId === action.definition.id &&
+              Date.parse(occurrence.scheduledAt) > Date.parse(timestamp) &&
               canDiscardForRematerialization(occurrence);
             if (shouldRemove) removedOccurrenceIds.add(id);
             return !shouldRemove;
@@ -2066,6 +2067,16 @@ export function applyChoreWorkspaceAction(
     }
     for (const occurrence of materialized) {
       if (!occurrencesById[occurrence.id]) {
+        if (
+          Date.parse(occurrence.scheduledAt) <= Date.parse(timestamp) &&
+          Object.values(workspace.occurrencesById).some(
+            (existing) =>
+              existing.definitionId === occurrence.definitionId &&
+              existing.scheduledAt === occurrence.scheduledAt
+          )
+        ) {
+          continue;
+        }
         occurrencesById[occurrence.id] = occurrence;
         occurrenceCreatedActivities.push({
           id: `activity:${commandId}:created:${occurrence.id}`,
@@ -2111,6 +2122,7 @@ export function applyChoreWorkspaceAction(
       scheduledIds &&
       scheduledAt >= rangeStart &&
       scheduledAt <= rangeEnd &&
+      scheduledAt > Date.parse(timestamp) &&
       !scheduledIds.has(id) &&
       canDiscardForRematerialization(occurrence)
     ) {

@@ -1670,7 +1670,7 @@ function applyWorkspaceAction(data, commandId, action, timestamp) {
       for (const id in data.occurrencesById) {
         if (!Object.prototype.hasOwnProperty.call(data.occurrencesById, id)) continue;
         const occurrence = data.occurrencesById[id];
-        if (occurrence.definitionId === definition.id && occurrence.status === 'available' && occurrence.carriedForwardFrom === undefined) {
+        if (occurrence.definitionId === definition.id && Date.parse(occurrence.scheduledAt) > Date.parse(timestamp) && occurrence.status === 'available' && occurrence.carriedForwardFrom === undefined) {
           removedIds[id] = true;
         } else {
           occurrencesById[id] = occurrence;
@@ -2000,6 +2000,9 @@ function applyWorkspaceAction(data, commandId, action, timestamp) {
     for (let index = 0; index < materialized.length; index += 1) {
       if (!occurrencesById[materialized[index].id]) {
         const occurrence = materialized[index];
+        if (Date.parse(occurrence.scheduledAt) <= Date.parse(timestamp) && Object.values(data.occurrencesById).some(function (existing) {
+          return existing.definitionId === occurrence.definitionId && existing.scheduledAt === occurrence.scheduledAt;
+        })) continue;
         occurrencesById[occurrence.id] = occurrence;
         occurrenceCreatedActivities.push({
           id: 'activity:' + commandId + ':created:' + occurrence.id,

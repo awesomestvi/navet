@@ -236,8 +236,13 @@ describe('NJS chore workspace store', () => {
       choreStore.setChoreStorePrincipalResolverForTests(() => PRINCIPAL);
       let revision = 0;
       const send = (action: Record<string, unknown>) => {
-        const request = createActionRequest(`command-${revision}`, revision, action);
+        let request = createActionRequest(`command-${revision}`, revision, action);
         choreStore.handle(request);
+        if (request.return.mock.calls.at(-1)?.[0] === 412) {
+          revision = parseResponse(request).revision;
+          request = createActionRequest(`command-${revision}`, revision, action);
+          choreStore.handle(request);
+        }
         expect(request.return).toHaveBeenCalledWith(200, expect.any(String));
         const result = parseResponse(request);
         revision = result.revision;
@@ -275,6 +280,8 @@ describe('NJS chore workspace store', () => {
       });
       occurrences[5].carriedForwardFrom = 'earlier';
       preserved[String(occurrences[5].id)] = { ...occurrences[5] };
+      preserved[String(occurrences[6].id)] = { ...occurrences[6] };
+      vi.setSystemTime(new Date('2026-10-05T08:00:00.000Z'));
       const staleId = occurrences.at(-1)?.id;
       stored.data.outbox = ['pending', 'delivered'].map((status) => ({
         id: `reminder-${status}`,
@@ -306,11 +313,11 @@ describe('NJS chore workspace store', () => {
       });
       expect(result.occurrencesById).toMatchObject(preserved);
       const future = Object.entries(result.occurrencesById).filter(([id]) => !preserved[id]);
-      expect(future).toHaveLength(3);
+      expect(future).toHaveLength(2);
       expect(
         new Set(future.map(([, occurrence]) => (occurrence as { scheduledAt: string }).scheduledAt))
           .size
-      ).toBe(3);
+      ).toBe(2);
     }
   );
 

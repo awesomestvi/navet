@@ -637,6 +637,7 @@ def _materialize(data: dict[str, Any], range_start: str, range_end: str, timesta
     if end < start or end - start > timedelta(days=180):
         raise ChoreAuthorityError("Chore materialization range is invalid")
     occurrences = dict(data["occurrencesById"])
+    past_occurrences = list(occurrences.values())
     additions: list[dict[str, Any]] = []
     for definition in data["definitionsById"].values():
         if not definition.get("enabled") or definition.get("archivedAt"):
@@ -695,6 +696,12 @@ def _materialize(data: dict[str, Any], range_start: str, range_end: str, timesta
                     scheduled_iso = _iso(scheduled)
                     occurrence_id = _occurrence_id(str(definition["id"]), scheduled_iso, slot)
                     if occurrence_id in occurrences:
+                        continue
+                    if scheduled <= _parse_iso(timestamp) and any(
+                        item.get("definitionId") == definition["id"]
+                        and item.get("scheduledAt") == scheduled_iso
+                        for item in past_occurrences
+                    ):
                         continue
                     due = scheduled + timedelta(minutes=max(0, int(definition.get("dueWindowMinutes", 0))))
                     occurrences[occurrence_id] = {
@@ -1186,6 +1193,7 @@ class ChoreAuthority:
                 removed_ids = {
                     key for key, occurrence in data["occurrencesById"].items()
                     if occurrence.get("definitionId") == definition_id
+                    and _parse_iso(occurrence["scheduledAt"]) > _parse_iso(timestamp)
                     and occurrence.get("status") == "available"
                     and "carriedForwardFrom" not in occurrence
                 }

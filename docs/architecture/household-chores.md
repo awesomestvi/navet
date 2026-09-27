@@ -30,10 +30,10 @@ or excluded weeks, and ignores `rotationReset`.
 Occurrence IDs are deterministic from definition, scheduled instant, and assignment slot so repeated
 materialization preserves completed state.
 
-Editing a schedule, assignment, or due window discards unstarted available occurrences and their
-undelivered reminders before the next materialization. Claimed work, approval requests, completed
-history, and carried-forward work remain intact. Restored definitions validate rotation cadence
-and handover weekdays before the workspace is persisted.
+Editing a schedule, assignment, or due window discards future unstarted available occurrences and
+their undelivered reminders before the next materialization. Past work, claimed work, approval
+requests, completed history, and carried-forward work remain intact. Restored definitions validate
+rotation cadence and handover weekdays before the workspace is persisted.
 
 Assignment modes are:
 
