@@ -155,6 +155,17 @@ def _repair_rotation_cursor(definition: Mapping[str, Any]) -> None:
             assignment.pop("rotationCursor", None)
 
 
+def _validate_rotation_fields(definition: Mapping[str, Any]) -> None:
+    assignment = definition.get("assignment", {})
+    if not isinstance(assignment, Mapping):
+        raise ChoreAuthorityError("Chore assignment is invalid")
+    if assignment.get("rotationCadence", "scheduled_day") not in ("scheduled_day", "weekly"):
+        raise ChoreAuthorityError("Chore rotation cadence is invalid")
+    rotation_day = assignment.get("rotationDayOfWeek", 1)
+    if type(rotation_day) is not int or not 0 <= rotation_day <= 6:
+        raise ChoreAuthorityError("Chore rotation weekday is invalid")
+
+
 def _normalize_data(value: Any) -> dict[str, Any]:
     if not isinstance(value, Mapping):
         raise ChoreStorageError("Chore workspace data is invalid")
@@ -183,6 +194,10 @@ def _normalize_data(value: Any) -> dict[str, Any]:
     for definition in data["definitionsById"].values():
         if isinstance(definition, Mapping):
             _repair_rotation_cursor(definition)
+            try:
+                _validate_rotation_fields(definition)
+            except ChoreAuthorityError as err:
+                raise ChoreStorageError(str(err)) from err
     data.setdefault("historyRetention", dict(DEFAULT_RETENTION))
     data.setdefault("experience", _empty_data()["experience"])
     retention = data["historyRetention"]
@@ -465,9 +480,16 @@ def _assignment_slots(definition: Mapping[str, Any], data: Mapping[str, Any], in
 
 
 def _rotation_index_for_date(
-    dates: list[date], index: int, reset: str | None
+    dates: list[date], index: int, reset: str | None,
+    cadence: str | None = None, start_date: str | None = None,
+    day_of_week: int = 1,
 ) -> int:
-    """Match the core/NJS weekly and monthly rotation reset semantics."""
+    """Match the core/NJS calendar rotation and reset semantics."""
+    if cadence == "weekly":
+        anchor = date.fromisoformat(start_date) if start_date else dates[0]
+        anchor -= timedelta(days=(anchor.weekday() + 1 - day_of_week) % 7)
+        current = dates[index] - timedelta(days=(dates[index].weekday() + 1 - day_of_week) % 7)
+        return max(0, (current - anchor).days // 7)
     if reset not in {"weekly", "monthly"}:
         return index
 
@@ -615,6 +637,7 @@ def _materialize(data: dict[str, Any], range_start: str, range_end: str, timesta
     if end < start or end - start > timedelta(days=180):
         raise ChoreAuthorityError("Chore materialization range is invalid")
     occurrences = dict(data["occurrencesById"])
+    past_occurrences = list(occurrences.values())
     additions: list[dict[str, Any]] = []
     for definition in data["definitionsById"].values():
         if not definition.get("enabled") or definition.get("archivedAt"):
@@ -652,6 +675,9 @@ def _materialize(data: dict[str, Any], range_start: str, range_end: str, timesta
                 dates,
                 index,
                 definition.get("assignment", {}).get("rotationReset"),
+                definition.get("assignment", {}).get("rotationCadence"),
+                schedule.get("startDate") or schedule.get("date"),
+                definition.get("assignment", {}).get("rotationDayOfWeek", 1),
             )
             for slot, assignees in _assignment_slots(
                 definition, data, rotation_index
@@ -670,6 +696,16 @@ def _materialize(data: dict[str, Any], range_start: str, range_end: str, timesta
                     scheduled_iso = _iso(scheduled)
                     occurrence_id = _occurrence_id(str(definition["id"]), scheduled_iso, slot)
                     if occurrence_id in occurrences:
+                        continue
+                    if scheduled <= _parse_iso(timestamp) and any(
+                        item.get("definitionId") == definition["id"]
+                        and item.get("scheduledAt") == scheduled_iso
+                        and (
+                            definition.get("assignment", {}).get("mode") != "everyone"
+                            or item.get("assignmentSlot") == slot
+                        )
+                        for item in past_occurrences
+                    ):
                         continue
                     due = scheduled + timedelta(minutes=max(0, int(definition.get("dueWindowMinutes", 0))))
                     occurrences[occurrence_id] = {
@@ -1148,6 +1184,7 @@ class ChoreAuthority:
             _require_manager(data, actor)
             definition = dict(action.get("definition", {}))
             _repair_rotation_cursor(definition)
+            _validate_rotation_fields(definition)
             definition_id = str(definition.get("id", ""))
             if not definition_id or (action_type == "definition_create" and definition_id in data["definitionsById"]) or (action_type == "definition_update" and definition_id not in data["definitionsById"]):
                 raise ChoreAuthorityError("Chore is no longer available")
@@ -1155,6 +1192,17 @@ class ChoreAuthority:
                 _require_capability(data, str(participant_id), "complete")
             for participant_id in definition.get("approval", {}).get("approverIds", []):
                 _require_capability(data, str(participant_id), "approve")
+            current = data["definitionsById"].get(definition_id)
+            if current and any(current.get(key) != definition.get(key) for key in ("schedule", "assignment", "dueWindowMinutes")):
+                removed_ids = {
+                    key for key, occurrence in data["occurrencesById"].items()
+                    if occurrence.get("definitionId") == definition_id
+                    and _parse_iso(occurrence["scheduledAt"]) > _parse_iso(timestamp)
+                    and occurrence.get("status") == "available"
+                    and "carriedForwardFrom" not in occurrence
+                }
+                data["occurrencesById"] = {key: value for key, value in data["occurrencesById"].items() if key not in removed_ids}
+                data["outbox"] = [item for item in data["outbox"] if item.get("status") == "delivered" or item.get("occurrenceId") not in removed_ids]
             data["definitionsById"] = {**data["definitionsById"], definition_id: definition}
             return data, _activity(command_id, timestamp, "definition_created" if action_type == "definition_create" else "definition_updated", definitionId=definition_id, actorParticipantId=actor)
         if action_type in {"definition_archive", "definition_restore"}:

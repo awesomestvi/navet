@@ -184,11 +184,10 @@ describe('InfoCard', () => {
     );
 
     expect(container.querySelector('.navet-card-header-control-dense')).not.toBeNull();
-    expect(screen.getByRole('heading', { name: 'Kitchen Temperature' })).toHaveClass(
-      'text-[11px]',
-      'leading-[13px]'
-    );
-    expect(screen.getByText('Temperature')).toHaveClass('text-[10px]', 'leading-[12px]');
+    const heading = screen.getByRole('heading', { name: 'Kitchen Temperature' });
+    expect(heading).toHaveClass('text-[11px]');
+    expect(heading.previousElementSibling).toHaveTextContent('Temperature');
+    expect(screen.getByText('Temperature')).toHaveClass('text-[10px]');
   });
 
   it('uses a radar icon for motion sensors and migrates the legacy person icon', () => {

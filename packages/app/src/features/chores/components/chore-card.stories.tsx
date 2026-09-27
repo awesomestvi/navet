@@ -85,7 +85,13 @@ export const DueNow: Story = {
     const canvas = within(canvasElement);
     await expect(canvasElement.querySelector('[data-chore-base-card]')).toBeVisible();
     const title = canvas.getByRole('heading', { name: 'Unload dishwasher' });
-    await expect(title).toHaveClass('text-[12px]', 'leading-[18px]');
+    const eyebrow = title.previousElementSibling as HTMLElement;
+    await expect(Number.parseFloat(getComputedStyle(title).fontSize)).toBeGreaterThan(
+      Number.parseFloat(getComputedStyle(eyebrow).fontSize)
+    );
+    await expect(title.getBoundingClientRect().top).toBeGreaterThan(
+      eyebrow.getBoundingClientRect().bottom
+    );
     await expect(title.previousElementSibling).toHaveTextContent('Kitchen · Overdue');
     await expect(canvasElement.querySelector('[data-chore-status]')).toHaveStyle({
       color: glassDangerTextColor,
@@ -96,9 +102,13 @@ export const DueNow: Story = {
     await expect(assignment?.closest('footer')).toBeInTheDocument();
     await expect(canvas.getByText('Maya')).toHaveClass('text-xs', 'font-normal');
     await expect(canvas.getByText('Maya')).not.toHaveClass('font-semibold');
-    await expect(canvas.getByText('4 min').closest('[data-chore-header]')).toBeInTheDocument();
+    await expect(
+      canvas.getByText('4 min').closest('.navet-entity-card-header')
+    ).toBeInTheDocument();
     await expect(canvas.getByTitle('About 4 min')).toHaveClass('h-6', 'rounded-full');
-    await expect(canvas.getByTitle('15 points').closest('[data-chore-header]')).toBeInTheDocument();
+    await expect(
+      canvas.getByTitle('15 points').closest('.navet-entity-card-header')
+    ).toBeInTheDocument();
     await expect(canvasElement.querySelector('[data-chore-focus-card]')).toHaveStyle({
       borderColor: '#ef4444',
     });
@@ -119,6 +129,70 @@ export const Overdue: Story = {
       scheduledAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
       dueAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
     },
+  },
+};
+
+export const LongTitles: Story = {
+  args: {
+    definition: {
+      ...definition,
+      title: 'Unload the dishwasher and put the clean dishes back in the kitchen cupboards',
+    },
+  },
+  render: (args) => (
+    <div className="grid gap-4" style={{ width: 280 }}>
+      <ChoreFocusCard {...args} size="small" />
+      <ChoreFocusCard {...args} size="medium" />
+    </div>
+  ),
+  play: async ({ canvasElement, args }) => {
+    for (const title of within(canvasElement).getAllByRole('heading', {
+      name: args.definition.title,
+    })) {
+      await expect(getComputedStyle(title).whiteSpace).toBe('normal');
+      await expect(title.getBoundingClientRect().height).toBeGreaterThan(
+        parseFloat(getComputedStyle(title).lineHeight)
+      );
+      await expect(title.scrollWidth).toBeLessThanOrEqual(title.clientWidth);
+      await expect(title.scrollHeight).toBeLessThanOrEqual(title.clientHeight);
+      const footer = title.closest('[data-chore-base-card]')?.querySelector('footer');
+      await expect(footer).toBeVisible();
+      await expect(footer?.getBoundingClientRect().top).toBeGreaterThanOrEqual(
+        title.getBoundingClientRect().bottom
+      );
+    }
+  },
+};
+
+export const EnlargedHeaderText: Story = {
+  render: (args) => (
+    <div className="grid w-[min(40rem,90vw)] gap-4">
+      <ChoreFocusCard {...args} size="small" />
+      <ChoreFocusCard {...args} size="medium" />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    for (const title of within(canvasElement).getAllByRole('heading', {
+      name: 'Unload dishwasher',
+    })) {
+      const eyebrow = title.previousElementSibling as HTMLElement;
+      // Model a browser font-size floor that enlarges both header lines equally.
+      title.style.fontSize = '20px';
+      eyebrow.style.fontSize = '20px';
+      await expect(title.getBoundingClientRect().top).toBeGreaterThan(
+        eyebrow.getBoundingClientRect().bottom
+      );
+      await expect(eyebrow.getBoundingClientRect().height).toBeGreaterThanOrEqual(20);
+      await expect(title.getBoundingClientRect().height).toBeGreaterThanOrEqual(20);
+      await expect(Number.parseFloat(getComputedStyle(title).fontWeight)).toBeGreaterThan(
+        Number.parseFloat(getComputedStyle(eyebrow).fontWeight)
+      );
+      const footer = title.closest('[data-chore-base-card]')?.querySelector('footer');
+      await expect(footer).toBeVisible();
+      await expect(footer?.getBoundingClientRect().top).toBeGreaterThanOrEqual(
+        title.getBoundingClientRect().bottom
+      );
+    }
   },
 };
 

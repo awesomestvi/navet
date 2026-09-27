@@ -59,6 +59,9 @@ export type ChoreAssignmentMode = 'person' | 'anyone' | 'everyone' | 'rotation';
 export interface ChoreAssignment {
   mode: ChoreAssignmentMode;
   participantIds: string[];
+  rotationCadence?: 'scheduled_day' | 'weekly';
+  /** Local weekday for weekly handover, Sunday = 0. Defaults to Monday. */
+  rotationDayOfWeek?: number;
   rotationCursor?: number;
   rotationReset?: 'never' | 'weekly' | 'monthly';
   participantScheduleOverrides?: Record<
@@ -698,6 +701,12 @@ function isChoreDefinition(value: unknown, expectedId: string) {
     (value.assignment.rotationCursor === undefined ||
       (Number.isSafeInteger(value.assignment.rotationCursor) &&
         Number(value.assignment.rotationCursor) >= 0)) &&
+    (value.assignment.rotationCadence === undefined ||
+      ['scheduled_day', 'weekly'].includes(String(value.assignment.rotationCadence))) &&
+    (value.assignment.rotationDayOfWeek === undefined ||
+      (Number.isInteger(value.assignment.rotationDayOfWeek) &&
+        Number(value.assignment.rotationDayOfWeek) >= 0 &&
+        Number(value.assignment.rotationDayOfWeek) <= 6)) &&
     (value.assignment.rotationReset === undefined ||
       ['never', 'weekly', 'monthly'].includes(String(value.assignment.rotationReset))) &&
     (value.assignment.participantScheduleOverrides === undefined ||
@@ -1097,7 +1106,10 @@ export function materializeChoreOccurrences({
     const rotationIndex = rotationIndexForDate(
       scheduledDates,
       scheduledIndex,
-      definition.assignment.rotationReset
+      definition.assignment.rotationReset,
+      definition.assignment.rotationCadence,
+      scheduleStartDate(schedule),
+      definition.assignment.rotationDayOfWeek
     );
     const slots = resolveAssignmentSlots(definition.assignment, participantsById, rotationIndex);
     for (const slot of slots) {
@@ -1692,6 +1704,7 @@ export function applyChoreWorkspaceAction(
           Object.entries(workspace.occurrencesById).filter(([id, occurrence]) => {
             const shouldRemove =
               occurrence.definitionId === action.definition.id &&
+              Date.parse(occurrence.scheduledAt) > Date.parse(timestamp) &&
               canDiscardForRematerialization(occurrence);
             if (shouldRemove) removedOccurrenceIds.add(id);
             return !shouldRemove;
@@ -2054,6 +2067,18 @@ export function applyChoreWorkspaceAction(
     }
     for (const occurrence of materialized) {
       if (!occurrencesById[occurrence.id]) {
+        if (
+          Date.parse(occurrence.scheduledAt) <= Date.parse(timestamp) &&
+          Object.values(workspace.occurrencesById).some(
+            (existing) =>
+              existing.definitionId === occurrence.definitionId &&
+              existing.scheduledAt === occurrence.scheduledAt &&
+              (definition.assignment.mode !== 'everyone' ||
+                existing.assignmentSlot === occurrence.assignmentSlot)
+          )
+        ) {
+          continue;
+        }
         occurrencesById[occurrence.id] = occurrence;
         occurrenceCreatedActivities.push({
           id: `activity:${commandId}:created:${occurrence.id}`,
@@ -2099,6 +2124,7 @@ export function applyChoreWorkspaceAction(
       scheduledIds &&
       scheduledAt >= rangeStart &&
       scheduledAt <= rangeEnd &&
+      scheduledAt > Date.parse(timestamp) &&
       !scheduledIds.has(id) &&
       canDiscardForRematerialization(occurrence)
     ) {

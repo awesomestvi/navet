@@ -273,6 +273,359 @@
           "assigneeIds": ["alice"]
         }
       ]
+    },
+    {
+      "name": "daily chores hold child ownership until Monday across DST and partial query ranges",
+      "participants": [
+        {
+          "id": "alice",
+          "displayName": "Alice",
+          "capabilities": ["complete", "approve", "manage"],
+          "createdAt": "2026-10-01T08:00:00.000Z",
+          "updatedAt": "2026-10-01T08:00:00.000Z"
+        },
+        {
+          "id": "bob",
+          "displayName": "Bob",
+          "capabilities": ["complete"],
+          "createdAt": "2026-10-01T08:00:00.000Z",
+          "updatedAt": "2026-10-01T08:00:00.000Z"
+        },
+        {
+          "id": "sam",
+          "displayName": "Sam",
+          "capabilities": ["complete"],
+          "createdAt": "2026-10-01T08:00:00.000Z",
+          "updatedAt": "2026-10-01T08:00:00.000Z"
+        }
+      ],
+      "definition": {
+        "id": "recycling",
+        "title": "Take out recycling",
+        "enabled": true,
+        "assignment": {
+          "mode": "rotation",
+          "participantIds": ["bob", "sam"],
+          "rotationCadence": "weekly",
+          "rotationReset": "weekly"
+        },
+        "schedule": {
+          "frequency": "daily",
+          "startDate": "2026-10-21",
+          "time": "18:00",
+          "timeZone": "Europe/Stockholm",
+          "excludedDates": ["2026-10-23"]
+        },
+        "dueWindowMinutes": 120,
+        "approval": {
+          "required": true,
+          "approverIds": ["alice"]
+        },
+        "createdAt": "2026-10-01T08:00:00.000Z",
+        "updatedAt": "2026-10-01T08:00:00.000Z"
+      },
+      "rangeStart": "2026-10-24T00:00:00.000Z",
+      "rangeEnd": "2026-10-28T00:00:00.000Z",
+      "expected": [
+        {
+          "scheduledAt": "2026-10-24T16:00:00.000Z",
+          "assigneeIds": ["bob"]
+        },
+        {
+          "scheduledAt": "2026-10-25T17:00:00.000Z",
+          "assigneeIds": ["bob"]
+        },
+        {
+          "scheduledAt": "2026-10-26T17:00:00.000Z",
+          "assigneeIds": ["sam"]
+        },
+        {
+          "scheduledAt": "2026-10-27T17:00:00.000Z",
+          "assigneeIds": ["sam"]
+        }
+      ]
+    },
+    {
+      "name": "weekly rotation counts empty weeks from start week and applies starting offset",
+      "participants": [
+        {
+          "id": "alice",
+          "displayName": "Alice",
+          "capabilities": ["complete", "approve", "manage"],
+          "createdAt": "2026-10-01T08:00:00.000Z",
+          "updatedAt": "2026-10-01T08:00:00.000Z"
+        },
+        {
+          "id": "bob",
+          "displayName": "Bob",
+          "capabilities": ["complete"],
+          "createdAt": "2026-10-01T08:00:00.000Z",
+          "updatedAt": "2026-10-01T08:00:00.000Z"
+        },
+        {
+          "id": "sam",
+          "displayName": "Sam",
+          "capabilities": ["complete"],
+          "createdAt": "2026-10-01T08:00:00.000Z",
+          "updatedAt": "2026-10-01T08:00:00.000Z"
+        }
+      ],
+      "definition": {
+        "id": "recycling",
+        "title": "Take out recycling",
+        "enabled": true,
+        "assignment": {
+          "mode": "rotation",
+          "participantIds": ["bob", "sam"],
+          "rotationCadence": "weekly",
+          "rotationReset": "weekly",
+          "rotationCursor": 1
+        },
+        "schedule": {
+          "frequency": "daily",
+          "startDate": "2026-10-21",
+          "time": "18:00",
+          "timeZone": "Europe/Stockholm",
+          "excludedDates": [
+            "2026-10-21",
+            "2026-10-22",
+            "2026-10-23",
+            "2026-10-24",
+            "2026-10-25",
+            "2026-10-26",
+            "2026-10-27",
+            "2026-10-28",
+            "2026-10-29",
+            "2026-10-30",
+            "2026-10-31",
+            "2026-11-01"
+          ]
+        },
+        "dueWindowMinutes": 120,
+        "approval": {
+          "required": true,
+          "approverIds": ["alice"]
+        },
+        "createdAt": "2026-10-01T08:00:00.000Z",
+        "updatedAt": "2026-10-01T08:00:00.000Z"
+      },
+      "rangeStart": "2026-11-02T00:00:00.000Z",
+      "rangeEnd": "2026-11-04T00:00:00.000Z",
+      "expected": [
+        {
+          "scheduledAt": "2026-11-02T17:00:00.000Z",
+          "assigneeIds": ["sam"]
+        },
+        {
+          "scheduledAt": "2026-11-03T17:00:00.000Z",
+          "assigneeIds": ["sam"]
+        }
+      ]
+    },
+    {
+      "name": "everyone creates child occurrences while parent remains approver",
+      "participants": [
+        {
+          "id": "alice",
+          "displayName": "Alice",
+          "capabilities": ["complete", "approve", "manage"],
+          "createdAt": "2026-10-01T08:00:00.000Z",
+          "updatedAt": "2026-10-01T08:00:00.000Z"
+        },
+        {
+          "id": "bob",
+          "displayName": "Bob",
+          "capabilities": ["complete"],
+          "createdAt": "2026-10-01T08:00:00.000Z",
+          "updatedAt": "2026-10-01T08:00:00.000Z"
+        },
+        {
+          "id": "sam",
+          "displayName": "Sam",
+          "capabilities": ["complete"],
+          "createdAt": "2026-10-01T08:00:00.000Z",
+          "updatedAt": "2026-10-01T08:00:00.000Z"
+        }
+      ],
+      "definition": {
+        "id": "recycling",
+        "title": "Take out recycling",
+        "enabled": true,
+        "assignment": {
+          "mode": "everyone",
+          "participantIds": ["bob", "sam"]
+        },
+        "schedule": {
+          "frequency": "daily",
+          "startDate": "2026-10-21",
+          "time": "18:00",
+          "timeZone": "Europe/Stockholm",
+          "excludedDates": ["2026-10-23"]
+        },
+        "dueWindowMinutes": 120,
+        "approval": {
+          "required": true,
+          "approverIds": ["alice"]
+        },
+        "createdAt": "2026-10-01T08:00:00.000Z",
+        "updatedAt": "2026-10-01T08:00:00.000Z"
+      },
+      "rangeStart": "2026-10-24T00:00:00.000Z",
+      "rangeEnd": "2026-10-25T00:00:00.000Z",
+      "expected": [
+        {
+          "scheduledAt": "2026-10-24T16:00:00.000Z",
+          "assigneeIds": ["bob"]
+        },
+        {
+          "scheduledAt": "2026-10-24T16:00:00.000Z",
+          "assigneeIds": ["sam"]
+        }
+      ]
+    },
+    {
+      "name": "Sunday handover across DST from a partial first week",
+      "participants": [
+        {
+          "id": "alice",
+          "displayName": "Alice",
+          "capabilities": ["complete", "approve", "manage"],
+          "createdAt": "2026-10-01T08:00:00.000Z",
+          "updatedAt": "2026-10-01T08:00:00.000Z"
+        },
+        {
+          "id": "bob",
+          "displayName": "Bob",
+          "capabilities": ["complete"],
+          "createdAt": "2026-10-01T08:00:00.000Z",
+          "updatedAt": "2026-10-01T08:00:00.000Z"
+        },
+        {
+          "id": "sam",
+          "displayName": "Sam",
+          "capabilities": ["complete"],
+          "createdAt": "2026-10-01T08:00:00.000Z",
+          "updatedAt": "2026-10-01T08:00:00.000Z"
+        }
+      ],
+      "definition": {
+        "id": "recycling",
+        "title": "Take out recycling",
+        "enabled": true,
+        "assignment": {
+          "mode": "rotation",
+          "participantIds": ["bob", "sam"],
+          "rotationCadence": "weekly",
+          "rotationReset": "weekly",
+          "rotationDayOfWeek": 0
+        },
+        "schedule": {
+          "frequency": "daily",
+          "startDate": "2026-10-21",
+          "time": "18:00",
+          "timeZone": "Europe/Stockholm",
+          "excludedDates": ["2026-10-23"]
+        },
+        "dueWindowMinutes": 120,
+        "approval": {
+          "required": true,
+          "approverIds": ["alice"]
+        },
+        "createdAt": "2026-10-01T08:00:00.000Z",
+        "updatedAt": "2026-10-01T08:00:00.000Z"
+      },
+      "rangeStart": "2026-10-24T00:00:00.000Z",
+      "rangeEnd": "2026-10-28T00:00:00.000Z",
+      "expected": [
+        {
+          "scheduledAt": "2026-10-24T16:00:00.000Z",
+          "assigneeIds": ["bob"]
+        },
+        {
+          "scheduledAt": "2026-10-25T17:00:00.000Z",
+          "assigneeIds": ["sam"]
+        },
+        {
+          "scheduledAt": "2026-10-26T17:00:00.000Z",
+          "assigneeIds": ["sam"]
+        },
+        {
+          "scheduledAt": "2026-10-27T17:00:00.000Z",
+          "assigneeIds": ["sam"]
+        }
+      ]
+    },
+    {
+      "name": "Friday handover advances even when handover date is excluded",
+      "participants": [
+        {
+          "id": "alice",
+          "displayName": "Alice",
+          "capabilities": ["complete", "approve", "manage"],
+          "createdAt": "2026-10-01T08:00:00.000Z",
+          "updatedAt": "2026-10-01T08:00:00.000Z"
+        },
+        {
+          "id": "bob",
+          "displayName": "Bob",
+          "capabilities": ["complete"],
+          "createdAt": "2026-10-01T08:00:00.000Z",
+          "updatedAt": "2026-10-01T08:00:00.000Z"
+        },
+        {
+          "id": "sam",
+          "displayName": "Sam",
+          "capabilities": ["complete"],
+          "createdAt": "2026-10-01T08:00:00.000Z",
+          "updatedAt": "2026-10-01T08:00:00.000Z"
+        }
+      ],
+      "definition": {
+        "id": "recycling",
+        "title": "Take out recycling",
+        "enabled": true,
+        "assignment": {
+          "mode": "rotation",
+          "participantIds": ["bob", "sam"],
+          "rotationCadence": "weekly",
+          "rotationReset": "weekly",
+          "rotationDayOfWeek": 5
+        },
+        "schedule": {
+          "frequency": "daily",
+          "startDate": "2026-10-21",
+          "time": "18:00",
+          "timeZone": "Europe/Stockholm",
+          "excludedDates": ["2026-10-23"]
+        },
+        "dueWindowMinutes": 120,
+        "approval": {
+          "required": true,
+          "approverIds": ["alice"]
+        },
+        "createdAt": "2026-10-01T08:00:00.000Z",
+        "updatedAt": "2026-10-01T08:00:00.000Z"
+      },
+      "rangeStart": "2026-10-24T00:00:00.000Z",
+      "rangeEnd": "2026-10-28T00:00:00.000Z",
+      "expected": [
+        {
+          "scheduledAt": "2026-10-24T16:00:00.000Z",
+          "assigneeIds": ["sam"]
+        },
+        {
+          "scheduledAt": "2026-10-25T17:00:00.000Z",
+          "assigneeIds": ["sam"]
+        },
+        {
+          "scheduledAt": "2026-10-26T17:00:00.000Z",
+          "assigneeIds": ["sam"]
+        },
+        {
+          "scheduledAt": "2026-10-27T17:00:00.000Z",
+          "assigneeIds": ["sam"]
+        }
+      ]
     }
   ],
   "occurrenceFixture": {

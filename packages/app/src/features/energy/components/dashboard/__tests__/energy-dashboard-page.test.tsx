@@ -273,14 +273,10 @@ describe('EnergyDashboardPage', () => {
 
     expect(await screen.findByText('Energy usage')).toBeInTheDocument();
     const usageCard = screen.getByTestId('energy-usage-card');
-    expect(within(usageCard).getByRole('heading', { name: 'Energy usage' })).toHaveClass(
-      'text-[12px]',
-      'leading-[18px]'
-    );
-    expect(within(usageCard).getByText('Live power demand')).toHaveClass(
-      'text-[11px]',
-      'leading-[14px]'
-    );
+    const usageHeading = within(usageCard).getByRole('heading', { name: 'Energy usage' });
+    expect(usageHeading).toHaveClass('text-[12px]');
+    expect(usageHeading.nextElementSibling).toHaveTextContent('Live power demand');
+    expect(within(usageCard).getByText('Live power demand')).toHaveClass('text-[11px]');
     expect(screen.getByTestId('energy-usage-metric-grid')).toBeInTheDocument();
     expect(within(usageCard).queryByText('Average')).not.toBeInTheDocument();
     expect(screen.queryByTestId('energy-history-bars')).not.toBeInTheDocument();

@@ -283,7 +283,7 @@ export const MobileStepperEditor: Story = {
     await expect(within(dialog).getByLabelText('Assignment')).toBeInTheDocument();
     await expect(within(dialog).queryByLabelText('Chore name')).toBeNull();
     await userEvent.selectOptions(within(dialog).getByLabelText('Assignment'), 'everyone');
-    await expect(within(dialog).getByLabelText('Person')).toBeDisabled();
+    await expect(within(dialog).getByRole('group', { name: 'Participants' })).toBeVisible();
     await expect(within(dialog).getByLabelText('Require approval')).toBeVisible();
     await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
     await expect(within(dialog).getByLabelText('Repeat')).toBeInTheDocument();
@@ -378,7 +378,7 @@ export const DesktopStepperCreation: Story = {
   },
 };
 
-export const RotationOffsetValidation: Story = {
+export const RotationStartsWithSelectedPerson: Story = {
   play: async ({ canvasElement }) => {
     saveChore.mockClear();
     const dialog = within(canvasElement.ownerDocument.body).getByRole('dialog', {
@@ -388,30 +388,23 @@ export const RotationOffsetValidation: Story = {
     await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
     await userEvent.selectOptions(within(dialog).getByLabelText('Assignment'), 'rotation');
 
-    const offset = within(dialog).getByLabelText('Rotation starting offset');
-    fireEvent.change(offset, { target: { value: '99' } });
-    await expect(offset).toHaveAttribute('aria-invalid', 'true');
-    await expect(within(dialog).getByRole('alert')).toHaveTextContent(
-      'Enter a whole number from 0 to 2.'
-    );
-    await expect(within(dialog).getByRole('button', { name: 'Next' })).toBeDisabled();
-    await expect(
-      within(dialog.querySelector('aside') as HTMLElement).getByRole('button', {
-        name: /When it repeats/,
-      })
-    ).toBeDisabled();
-    await expect(saveChore).not.toHaveBeenCalled();
-
-    fireEvent.change(offset, { target: { value: '1' } });
-    await expect(offset).not.toHaveAttribute('aria-invalid');
-    await expect(within(dialog).queryByRole('alert')).toBeNull();
+    const startsWith = within(dialog).getByLabelText('Starts with');
+    await expect(within(startsWith).getAllByRole('option')).toHaveLength(3);
+    await userEvent.selectOptions(startsWith, 'maya');
+    await expect(within(dialog).getByText(/Turn order: Maya → Sam → Alex/)).toBeVisible();
+    // Removing an earlier person preserves the selected starting person.
+    await userEvent.click(within(dialog).getByRole('checkbox', { name: 'Alex' }));
+    await expect(startsWith).toHaveValue('maya');
+    await userEvent.click(within(dialog).getByRole('checkbox', { name: 'Alex' }));
+    await expect(startsWith).toHaveValue('maya');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
     await userEvent.click(within(dialog).getByRole('button', { name: 'Add chore' }));
     await expect(saveChore).toHaveBeenCalledWith(
       expect.objectContaining({
         assignment: expect.objectContaining({
           mode: 'rotation',
-          rotationCursor: 1,
+          participantIds: ['maya', 'sam', 'alex'],
+          rotationCursor: 0,
         }),
       }),
       expect.any(Object)
@@ -822,5 +815,147 @@ export const ManagementPinEditor: Story = {
     await userEvent.type(within(dialog).getByLabelText('Confirm new management PIN'), '2468');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
     await expect(saveManagementPin).toHaveBeenCalledWith('2468');
+  },
+};
+
+export const ChildrenRotateWeeklyWithParentApproval: Story = {
+  play: async ({ canvasElement }) => {
+    saveChore.mockClear();
+    const dialog = within(
+      within(canvasElement.ownerDocument.body).getByRole('dialog', { name: 'Add a chore' })
+    );
+    await userEvent.type(dialog.getByLabelText('Chore name'), 'Walk the dog');
+    await userEvent.click(dialog.getByRole('button', { name: 'Next' }));
+    await userEvent.selectOptions(dialog.getByLabelText('Assignment'), 'rotation');
+    await userEvent.click(dialog.getByRole('checkbox', { name: 'Alex' }));
+    await userEvent.click(dialog.getByRole('checkbox', { name: 'Maya' }));
+    await userEvent.click(dialog.getByRole('checkbox', { name: 'Sam' }));
+    await expect(dialog.getByRole('button', { name: 'Next' })).toBeDisabled();
+    await userEvent.click(dialog.getByRole('checkbox', { name: 'Maya' }));
+    await userEvent.click(dialog.getByRole('checkbox', { name: 'Sam' }));
+    await userEvent.selectOptions(dialog.getByLabelText('Change person'), 'weekly');
+    await expect(dialog.queryByLabelText('Restart rotation')).toBeNull();
+    await userEvent.selectOptions(dialog.getByLabelText('Change on'), '0');
+    await userEvent.selectOptions(dialog.getByLabelText('Starts with'), 'sam');
+    await expect(
+      dialog.getByText('Turn order: Sam → Maya. Responsibility changes every Sunday.')
+    ).toBeVisible();
+    await userEvent.click(dialog.getByRole('switch', { name: 'Require approval' }));
+    await userEvent.click(dialog.getByRole('button', { name: 'Next' }));
+    await userEvent.click(dialog.getByRole('button', { name: 'Back' }));
+    await expect(dialog.getByRole('checkbox', { name: 'Alex' })).not.toBeChecked();
+    await expect(dialog.getByLabelText('Change person')).toHaveValue('weekly');
+    await expect(dialog.getByLabelText('Change on')).toHaveValue('0');
+    await expect(dialog.getByLabelText('Starts with')).toHaveValue('sam');
+    await userEvent.click(dialog.getByRole('button', { name: 'Next' }));
+    await userEvent.click(dialog.getByRole('button', { name: 'Add chore' }));
+    await expect(saveChore).toHaveBeenCalledWith(
+      expect.objectContaining({
+        assignment: expect.objectContaining({
+          mode: 'rotation',
+          participantIds: ['maya', 'sam'],
+          rotationCadence: 'weekly',
+          rotationDayOfWeek: 0,
+          rotationCursor: 1,
+        }),
+        approval: { required: true, approverIds: ['alex'] },
+        schedule: expect.objectContaining({ frequency: 'daily' }),
+      }),
+      expect.any(Object)
+    );
+  },
+};
+
+export const EditWeeklyRotationKeepsOrderAndOffset: Story = {
+  render: () => (
+    <AddChoreDialog
+      isOpen
+      onOpenChange={fn()}
+      onSave={saveEditedChore}
+      participants={Object.values(workspace.participantsById)}
+      definition={{
+        ...workspace.definitionsById.dishwasher,
+        assignment: {
+          mode: 'rotation',
+          participantIds: ['sam', 'maya'],
+          rotationCadence: 'weekly',
+          rotationCursor: 1,
+          rotationReset: 'monthly',
+        },
+      }}
+    />
+  ),
+  play: async ({ canvasElement }) => {
+    saveEditedChore.mockClear();
+    const dialog = within(
+      within(canvasElement.ownerDocument.body).getByRole('dialog', { name: 'Edit chore' })
+    );
+    await userEvent.click(dialog.getByRole('button', { name: 'Next' }));
+    await expect(dialog.getByRole('checkbox', { name: 'Alex' })).not.toBeChecked();
+    await expect(dialog.getByRole('checkbox', { name: 'Sam' })).toBeChecked();
+    await expect(dialog.getByRole('checkbox', { name: 'Maya' })).toBeChecked();
+    await expect(dialog.getByLabelText('Change person')).toHaveValue('weekly');
+    await expect(dialog.getByLabelText('Starts with')).toHaveValue('maya');
+    await expect(dialog.getByLabelText('Change on')).toHaveValue('1');
+    await expect(dialog.getByText(/Turn order: Maya → Sam/)).toBeVisible();
+    await userEvent.click(dialog.getByRole('button', { name: 'Next' }));
+    await userEvent.click(dialog.getByRole('button', { name: 'Save changes' }));
+    await expect(saveEditedChore).toHaveBeenCalledWith(
+      expect.objectContaining({
+        assignment: expect.objectContaining({
+          participantIds: ['sam', 'maya'],
+          rotationCadence: 'weekly',
+          rotationCursor: 1,
+          rotationReset: 'monthly',
+        }),
+      }),
+      expect.any(Object)
+    );
+  },
+};
+
+export const UnavailableRotationParticipantCanBeRemoved: Story = {
+  render: () => (
+    <AddChoreDialog
+      isOpen
+      onOpenChange={fn()}
+      onSave={saveEditedChore}
+      participants={Object.values(workspace.participantsById)}
+      definition={{
+        ...workspace.definitionsById.dishwasher,
+        assignment: {
+          mode: 'rotation',
+          participantIds: ['missing-person', 'maya'],
+        },
+      }}
+    />
+  ),
+  play: async ({ canvasElement }) => {
+    saveEditedChore.mockClear();
+    const dialog = within(
+      within(canvasElement.ownerDocument.body).getByRole('dialog', { name: 'Edit chore' })
+    );
+    await userEvent.click(dialog.getByRole('button', { name: 'Next' }));
+    await expect(dialog.getByRole('alert')).toHaveTextContent('Choose a person to continue.');
+    await expect(dialog.getByLabelText('Starts with')).toHaveValue('');
+    await expect(dialog.getByRole('option', { name: 'Unavailable' })).toHaveProperty(
+      'selected',
+      true
+    );
+    await expect(dialog.getByText(/Turn order: Unavailable → Maya/)).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'Next' })).toBeDisabled();
+    await userEvent.click(dialog.getByRole('checkbox', { name: 'Sam' }));
+    await expect(dialog.queryByRole('alert')).toBeNull();
+    await userEvent.click(dialog.getByRole('button', { name: 'Next' }));
+    await userEvent.click(dialog.getByRole('button', { name: 'Save changes' }));
+    await expect(saveEditedChore).toHaveBeenCalledWith(
+      expect.objectContaining({
+        assignment: expect.objectContaining({
+          participantIds: ['maya', 'sam'],
+          rotationCadence: undefined,
+        }),
+      }),
+      expect.any(Object)
+    );
   },
 };

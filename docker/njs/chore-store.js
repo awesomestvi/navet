@@ -1137,7 +1137,7 @@ function materializeDefinition(definition, participantsById, rangeStart, rangeEn
     const slots = choreCalendarPolicy.resolveAssignmentSlots(
       definition.assignment,
       participantsById,
-      choreCalendarPolicy.rotationIndexForDate(dates, dateIndex, definition.assignment.rotationReset)
+      choreCalendarPolicy.rotationIndexForDate(dates, dateIndex, definition.assignment.rotationReset, definition.assignment.rotationCadence, choreCalendarPolicy.scheduleStartDate(schedule), definition.assignment.rotationDayOfWeek)
     );
     for (let slotIndex = 0; slotIndex < slots.length; slotIndex += 1) {
       const slot = slots[slotIndex];
@@ -1481,6 +1481,11 @@ function isValidDefinitionInput(definition) {
     typeof definition.enabled === 'boolean' &&
     isRecord(definition.assignment) &&
     ['person', 'anyone', 'everyone', 'rotation'].indexOf(definition.assignment.mode) !== -1 &&
+    (definition.assignment.rotationDayOfWeek === undefined ||
+      (Number.isInteger(definition.assignment.rotationDayOfWeek) &&
+        definition.assignment.rotationDayOfWeek >= 0 && definition.assignment.rotationDayOfWeek <= 6)) &&
+    (definition.assignment.rotationCadence === undefined ||
+      ['scheduled_day', 'weekly'].indexOf(definition.assignment.rotationCadence) !== -1) &&
     Array.isArray(definition.assignment.participantIds) &&
     definition.assignment.participantIds.length > 0 &&
     isRecord(definition.schedule) &&
@@ -1653,8 +1658,28 @@ function applyWorkspaceAction(data, commandId, action, timestamp) {
     assertDefinitionReferences(data, definition);
     const definitionsById = Object.assign({}, data.definitionsById);
     definitionsById[definition.id] = definition;
+    let occurrencesById = data.occurrencesById;
+    let outbox = data.outbox;
+    if (currentDefinition && (
+      JSON.stringify(currentDefinition.schedule) !== JSON.stringify(definition.schedule) ||
+      JSON.stringify(currentDefinition.assignment) !== JSON.stringify(definition.assignment) ||
+      currentDefinition.dueWindowMinutes !== definition.dueWindowMinutes
+    )) {
+      occurrencesById = {};
+      const removedIds = {};
+      for (const id in data.occurrencesById) {
+        if (!Object.prototype.hasOwnProperty.call(data.occurrencesById, id)) continue;
+        const occurrence = data.occurrencesById[id];
+        if (occurrence.definitionId === definition.id && Date.parse(occurrence.scheduledAt) > Date.parse(timestamp) && occurrence.status === 'available' && occurrence.carriedForwardFrom === undefined) {
+          removedIds[id] = true;
+        } else {
+          occurrencesById[id] = occurrence;
+        }
+      }
+      outbox = data.outbox.filter((item) => item.status === 'delivered' || !item.occurrenceId || !removedIds[item.occurrenceId]);
+    }
     return appendWorkspaceActivity(
-      Object.assign({}, data, { definitionsById }),
+      Object.assign({}, data, { definitionsById, occurrencesById, outbox }),
       buildWorkspaceActivity(
         commandId,
         timestamp,
@@ -1975,6 +2000,11 @@ function applyWorkspaceAction(data, commandId, action, timestamp) {
     for (let index = 0; index < materialized.length; index += 1) {
       if (!occurrencesById[materialized[index].id]) {
         const occurrence = materialized[index];
+        if (Date.parse(occurrence.scheduledAt) <= Date.parse(timestamp) && Object.values(data.occurrencesById).some(function (existing) {
+          return existing.definitionId === occurrence.definitionId &&
+            existing.scheduledAt === occurrence.scheduledAt &&
+            (definition.assignment.mode !== 'everyone' || existing.assignmentSlot === occurrence.assignmentSlot);
+        })) continue;
         occurrencesById[occurrence.id] = occurrence;
         occurrenceCreatedActivities.push({
           id: 'activity:' + commandId + ':created:' + occurrence.id,

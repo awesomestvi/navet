@@ -4,6 +4,24 @@ import { describe, expect, it } from 'vitest';
 import { EntityCardTitleBlock } from '../entity-card-title-block';
 
 describe('EntityCardTitleBlock', () => {
+  it('preserves structured context above the title', () => {
+    renderWithProviders(
+      <EntityCardTitleBlock
+        title="Unload dishwasher"
+        subtitle={
+          <span>
+            Kitchen · <time dateTime="2026-09-28">Today</time>
+          </span>
+        }
+        layout="eyebrow-first"
+      />
+    );
+
+    const title = screen.getByRole('heading', { name: 'Unload dishwasher' });
+    expect(title.previousElementSibling).toHaveTextContent('Kitchen · Today');
+    expect(screen.getByText('Today')).toHaveAttribute('datetime', '2026-09-28');
+  });
+
   it('capitalizes lowercase eyebrow subtitles for entity type labels', () => {
     renderWithProviders(
       <EntityCardTitleBlock title="Desk Power" subtitle="switch" layout="eyebrow-first" />

@@ -71,6 +71,40 @@ function makeOccurrence(overrides: Partial<ChoreOccurrence> = {}): ChoreOccurren
 }
 
 describe('chores domain', () => {
+  it('accepts legacy and weekly rotation backups and rejects unknown cadence values', () => {
+    const data = createEmptyChoreWorkspace();
+    const definition = makeDefinition();
+    data.participantsById = { alice, bob };
+    data.definitionsById = { [definition.id]: definition };
+    expect(isChoreWorkspaceData(data)).toBe(true);
+    definition.assignment.rotationCadence = 'weekly';
+    expect(isChoreWorkspaceData(data)).toBe(true);
+    expect(
+      isChoreWorkspaceData({
+        ...data,
+        definitionsById: {
+          [definition.id]: {
+            ...definition,
+            assignment: { ...definition.assignment, rotationCadence: 'yearly' },
+          },
+        },
+      })
+    ).toBe(false);
+  });
+
+  it('validates weekly handover weekdays while allowing legacy defaults', () => {
+    for (const rotationDayOfWeek of [undefined, 0, 1, 6, -1, 7, 1.5, '1', null, true]) {
+      const data = createEmptyChoreWorkspace();
+      const definition = makeDefinition();
+      data.participantsById = { alice, bob };
+      data.definitionsById = { [definition.id]: definition };
+      Object.assign(definition.assignment, { rotationCadence: 'weekly', rotationDayOfWeek });
+      expect(isChoreWorkspaceData(data)).toBe(
+        rotationDayOfWeek === undefined || [0, 1, 6].includes(rotationDayOfWeek as number)
+      );
+    }
+  });
+
   it('creates an empty versioned workspace', () => {
     expect(createEmptyChoreWorkspace()).toEqual({
       schemaVersion: 2,
@@ -513,6 +547,125 @@ describe('chores domain', () => {
     expect(
       Object.values(result.data.occurrencesById).map((occurrence) => occurrence.scheduledAt)
     ).toEqual(['2026-08-27T09:00:00.000Z', '2026-09-10T09:00:00.000Z', '2026-09-24T09:00:00.000Z']);
+  });
+
+  it('keeps overdue assignments when rotation changes and rematerializes the past', () => {
+    const definition = makeDefinition({
+      schedule: { frequency: 'daily', startDate: '2026-09-28', time: '18:00', timeZone: 'UTC' },
+    });
+    const original = materializeChoreOccurrences({
+      definition,
+      participantsById: { alice, bob },
+      rangeStart: '2026-10-04T00:00:00.000Z',
+      rangeEnd: '2026-10-07T00:00:00.000Z',
+    });
+    const overdue = original.find((item) => item.scheduledAt === '2026-10-04T18:00:00.000Z');
+    if (!overdue) throw new Error('Expected an overdue chore occurrence');
+    const workspace = {
+      ...createEmptyChoreWorkspace(),
+      participantsById: { alice, bob },
+      definitionsById: { [definition.id]: definition },
+      occurrencesById: Object.fromEntries(original.map((item) => [item.id, item])),
+    };
+    const updated = applyChoreWorkspaceAction({
+      commandId: 'change-rotation',
+      action: {
+        type: 'definition_update',
+        actorParticipantId: 'alice',
+        definition: {
+          ...definition,
+          assignment: { ...definition.assignment, rotationCadence: 'weekly' },
+        },
+      },
+      timestamp: '2026-10-05T08:00:00.000Z',
+      workspace,
+    });
+    expect(updated.data.occurrencesById[overdue.id]).toEqual(overdue);
+    expect(Object.keys(updated.data.occurrencesById)).toHaveLength(1);
+    const materialized = applyChoreWorkspaceAction({
+      commandId: 'rematerialize',
+      action: {
+        type: 'materialize_occurrences',
+        rangeStart: '2026-10-04T00:00:00.000Z',
+        rangeEnd: '2026-10-07T00:00:00.000Z',
+      },
+      timestamp: '2026-10-05T08:00:00.000Z',
+      workspace: updated.data,
+    });
+    const values = Object.values(materialized.data.occurrencesById);
+    expect(values.filter((item) => item.scheduledAt === overdue.scheduledAt)).toEqual([overdue]);
+    expect(values).toHaveLength(3);
+    expect(
+      materialized.additionalActivities?.filter((item) => item.occurrenceId === overdue.id)
+    ).toEqual([]);
+  });
+
+  it('still materializes every participant when a past scheduled time is new', () => {
+    const definition = makeDefinition({
+      assignment: { mode: 'everyone', participantIds: ['alice', 'bob'] },
+      schedule: { frequency: 'once', date: '2026-09-28', time: '18:00', timeZone: 'UTC' },
+    });
+    const result = applyChoreWorkspaceAction({
+      commandId: 'first-materialization',
+      action: {
+        type: 'materialize_occurrences',
+        rangeStart: '2026-09-28T00:00:00.000Z',
+        rangeEnd: '2026-09-29T00:00:00.000Z',
+      },
+      timestamp: '2026-09-29T08:00:00.000Z',
+      workspace: {
+        ...createEmptyChoreWorkspace(),
+        participantsById: { alice, bob },
+        definitionsById: { [definition.id]: definition },
+      },
+    });
+    expect(
+      Object.values(result.data.occurrencesById)
+        .map((item) => item.assignmentSlot)
+        .sort()
+    ).toEqual(['alice', 'bob']);
+  });
+
+  it('adds a missing everyone assignment for a past scheduled time without duplicating the existing one', () => {
+    const definition = makeDefinition({
+      assignment: { mode: 'everyone', participantIds: ['alice', 'bob'] },
+      schedule: { frequency: 'once', date: '2026-09-28', time: '18:00', timeZone: 'UTC' },
+    });
+    const existing = makeOccurrence({
+      id: `${definition.id}:2026-09-28T18:00:00.000Z:alice`,
+      scheduledAt: '2026-09-28T18:00:00.000Z',
+      dueAt: '2026-09-28T21:00:00.000Z',
+    });
+    const action = {
+      type: 'materialize_occurrences' as const,
+      rangeStart: '2026-09-28T00:00:00.000Z',
+      rangeEnd: '2026-09-29T00:00:00.000Z',
+    };
+    const result = applyChoreWorkspaceAction({
+      commandId: 'add-bob',
+      action,
+      timestamp: '2026-09-29T08:00:00.000Z',
+      workspace: {
+        ...createEmptyChoreWorkspace(),
+        participantsById: { alice, bob },
+        definitionsById: { [definition.id]: definition },
+        occurrencesById: { [existing.id]: existing },
+      },
+    });
+    expect(result.data.occurrencesById[existing.id]).toEqual(existing);
+    expect(
+      Object.values(result.data.occurrencesById)
+        .map((item) => item.assignmentSlot)
+        .sort()
+    ).toEqual(['alice', 'bob']);
+    const repeated = applyChoreWorkspaceAction({
+      commandId: 'repeat',
+      action,
+      timestamp: '2026-09-29T08:00:00.000Z',
+      workspace: result.data,
+    });
+    expect(repeated.data.occurrencesById).toEqual(result.data.occurrencesById);
+    expect(repeated.additionalActivities).toEqual([]);
   });
 
   it('preserves an existing occurrence when a range is materialized again', () => {

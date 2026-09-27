@@ -1,0 +1,6 @@
+type: fixed
+audiences:
+  - standalone
+  - home-assistant
+  - hacs
+summary: Choose shared chore participants, rotation starting person, and weekly handover day while keeping managers available for approval.
