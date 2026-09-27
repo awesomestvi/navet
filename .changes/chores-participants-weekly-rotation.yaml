@@ -3,4 +3,4 @@ audiences:
   - standalone
   - home-assistant
   - hacs
-summary: Choose who participates in shared chores and choose the starting person and weekly handover day for rotating daily chores while keeping managers available for approval.
+summary: Choose shared chore participants, rotation starting person, and weekly handover day while keeping managers available for approval.
