@@ -1,4 +1,8 @@
-import { CardDialogSection } from '@navet/app/components/patterns';
+import {
+  CardDialogSection,
+  SelectableCheckboxList,
+  SelectableCheckboxRow,
+} from '@navet/app/components/patterns';
 import { Input, Select } from '@navet/app/components/primitives';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { navetIconSizeTokens, navetTypographyTokens } from '@navet/app/components/system/tokens';
@@ -44,6 +48,14 @@ interface ChoreCreationFormGroupsProps {
   rooms: Array<{ canonicalId: string; label: string }>;
   assignmentMode: ChoreAssignmentMode;
   participantId: string;
+  participantIds: string[];
+  onParticipantsChange: (ids: string[]) => void;
+  rotationDayOfWeek: number;
+  onRotationDayOfWeekChange: (value: number) => void;
+  rotationCursor: number;
+  onRotationCursorChange: (value: number) => void;
+  rotationCadence: 'scheduled_day' | 'weekly';
+  onRotationCadenceChange: (value: 'scheduled_day' | 'weekly') => void;
   participants: ChoreParticipant[];
   repeat: ChoreCreationRepeat;
   dueTime: string;
@@ -160,6 +172,14 @@ export function ChoreCreationFormGroups({
   rooms,
   assignmentMode,
   participantId,
+  participantIds,
+  onParticipantsChange,
+  rotationCadence,
+  onRotationCadenceChange,
+  rotationDayOfWeek,
+  onRotationDayOfWeekChange,
+  rotationCursor,
+  onRotationCursorChange,
   participants,
   repeat,
   dueTime,
@@ -183,7 +203,20 @@ export function ChoreCreationFormGroups({
   onIntervalChange,
   onExcludedDatesChange,
 }: ChoreCreationFormGroupsProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const rotationPeople = participantIds
+    .map((id) => participants.find((person) => person.id === id))
+    .filter((person): person is ChoreParticipant => Boolean(person));
+  const rotationOrder = [
+    ...rotationPeople.slice(rotationCursor),
+    ...rotationPeople.slice(0, rotationCursor),
+  ]
+    .map((person) => person.displayName)
+    .join(' → ');
+  const weekdayLabel = (day: number) =>
+    new Intl.DateTimeFormat(locale, { weekday: 'long', timeZone: 'UTC' }).format(
+      new Date(Date.UTC(2026, 0, 4 + day))
+    );
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const templates = [
@@ -322,25 +355,125 @@ export function ChoreCreationFormGroups({
               <option value="rotation">{t('household.assignment.rotation')}</option>
             </Select>
           </CardDialogSection>
-          <CardDialogSection className="mb-0" label={t('household.choreDialog.person')}>
-            <Select
-              aria-describedby={participantError ? 'chore-participant-error' : undefined}
-              aria-label={t('household.choreDialog.person')}
-              value={participantId}
-              disabled={assignmentMode !== 'person' || participants.length === 0}
-              invalid={!personSelectionValid}
-              onChange={(event) => onParticipantChange(event.target.value)}
-            >
-              {participants.map((participant) => (
-                <option key={participant.id} value={participant.id}>
-                  {participant.displayName}
+          {assignmentMode === 'person' ? (
+            <CardDialogSection className="mb-0" label={t('household.choreDialog.person')}>
+              <Select
+                aria-describedby={participantError ? 'chore-participant-error' : undefined}
+                aria-label={t('household.choreDialog.person')}
+                value={participantId}
+                disabled={assignmentMode !== 'person' || participants.length === 0}
+                invalid={!personSelectionValid}
+                onChange={(event) => onParticipantChange(event.target.value)}
+              >
+                {participants.map((participant) => (
+                  <option key={participant.id} value={participant.id}>
+                    {participant.displayName}
+                  </option>
+                ))}
+              </Select>
+              {participantError ? (
+                <ChoreFieldError id="chore-participant-error">{participantError}</ChoreFieldError>
+              ) : null}
+            </CardDialogSection>
+          ) : (
+            <fieldset className={cn('min-w-0 sm:col-span-2', surface.textPrimary)}>
+              <legend className="mb-2 text-sm font-medium">
+                {t('household.choreDialog.participants')}
+              </legend>
+              <SelectableCheckboxList>
+                {participants.map((participant) => (
+                  <li key={participant.id}>
+                    <SelectableCheckboxRow
+                      label={participant.displayName}
+                      labelClassName="break-words"
+                      checked={participantIds.includes(participant.id)}
+                      onCheckedChange={(checked) =>
+                        onParticipantsChange(
+                          (checked
+                            ? [...participantIds, participant.id]
+                            : participantIds.filter((id) => id !== participant.id)
+                          ).filter((id) => participants.some((person) => person.id === id))
+                        )
+                      }
+                    />
+                  </li>
+                ))}
+              </SelectableCheckboxList>
+              {participantIds.length === 0 ||
+              participantIds.some((id) => !participants.some((person) => person.id === id)) ? (
+                <ChoreFieldError id="chore-participants-error">
+                  {t('household.validation.choosePerson')}
+                </ChoreFieldError>
+              ) : null}
+            </fieldset>
+          )}
+          {assignmentMode === 'rotation' ? (
+            <CardDialogSection className="mb-0" label={t('household.choreDialog.rotationCadence')}>
+              <Select
+                aria-label={t('household.choreDialog.rotationCadence')}
+                value={rotationCadence}
+                onChange={(event) =>
+                  onRotationCadenceChange(event.target.value as 'scheduled_day' | 'weekly')
+                }
+              >
+                <option value="scheduled_day">
+                  {t('household.choreDialog.rotationScheduledDay')}
                 </option>
-              ))}
-            </Select>
-            {participantError ? (
-              <ChoreFieldError id="chore-participant-error">{participantError}</ChoreFieldError>
-            ) : null}
-          </CardDialogSection>
+                <option value="weekly">{t('household.choreDialog.rotationWeekly')}</option>
+              </Select>
+            </CardDialogSection>
+          ) : null}
+          {assignmentMode === 'rotation' && rotationCadence === 'weekly' ? (
+            <CardDialogSection className="mb-0" label={t('household.choreDialog.rotationDay')}>
+              <Select
+                aria-label={t('household.choreDialog.rotationDay')}
+                value={rotationDayOfWeek}
+                onChange={(event) => onRotationDayOfWeekChange(Number(event.target.value))}
+              >
+                {[1, 2, 3, 4, 5, 6, 0].map((day) => (
+                  <option key={day} value={day}>
+                    {weekdayLabel(day)}
+                  </option>
+                ))}
+              </Select>
+            </CardDialogSection>
+          ) : null}
+          {assignmentMode === 'rotation' ? (
+            <>
+              <CardDialogSection
+                className="mb-0"
+                label={t('household.choreDialog.rotationStartsWith')}
+              >
+                <Select
+                  aria-label={t('household.choreDialog.rotationStartsWith')}
+                  value={participantIds[rotationCursor] ?? ''}
+                  disabled={rotationPeople.length === 0}
+                  onChange={(event) =>
+                    onRotationCursorChange(participantIds.indexOf(event.target.value))
+                  }
+                >
+                  {rotationPeople.map((person) => (
+                    <option key={person.id} value={person.id}>
+                      {person.displayName}
+                    </option>
+                  ))}
+                </Select>
+              </CardDialogSection>
+              {rotationPeople.length > 0 ? (
+                <p className={cn('text-sm sm:col-span-2 break-words', surface.textSecondary)}>
+                  {t(
+                    rotationCadence === 'weekly'
+                      ? 'household.choreDialog.rotationPreviewWeekly'
+                      : 'household.choreDialog.rotationPreviewScheduled',
+                    {
+                      order: rotationOrder,
+                      day: weekdayLabel(rotationDayOfWeek),
+                    }
+                  )}
+                </p>
+              ) : null}
+            </>
+          ) : null}
         </ChoreFormGroup>
       )}
 

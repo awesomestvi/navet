@@ -552,6 +552,12 @@ export function ChoreOnboardingDialog({
   const [addingChore, setAddingChore] = useState(false);
   const [choreAssignmentMode, setChoreAssignmentMode] = useState<ChoreAssignmentMode>('person');
   const [choreParticipantId, setChoreParticipantId] = useState('');
+  const [choreParticipantIds, setChoreParticipantIds] = useState<string[] | null>(null);
+  const [rotationDayOfWeek, setRotationDayOfWeek] = useState(1);
+  const [rotationCursor, setRotationCursor] = useState(0);
+  const [rotationCadence, setRotationCadence] = useState<'scheduled_day' | 'weekly'>(
+    'scheduled_day'
+  );
   const [repeat, setRepeat] = useState<SetupRepeat>('daily');
   const [dueTime, setDueTime] = useState('18:00');
   const [scheduleStartDate, setScheduleStartDate] = useState(localDateKey());
@@ -584,7 +590,17 @@ export function ChoreOnboardingDialog({
     (repeat === 'once' || isValidDateList(excludedDates)) &&
     scheduleIntervalValid;
   const chorePointsValid = isBoundedInteger(points, 0, 10_000);
-  const choreFormValid = Boolean(choreTitle.trim()) && choreScheduleValid && chorePointsValid;
+  const eligibleChorePeople = setupRoster.filter((person) =>
+    person.capabilities.includes('complete')
+  );
+  const selectedChorePeople = choreParticipantIds ?? eligibleChorePeople.map((person) => person.id);
+  const chorePeopleValid =
+    choreAssignmentMode === 'person'
+      ? eligibleChorePeople.some((person) => person.id === choreParticipantId)
+      : selectedChorePeople.length > 0 &&
+        selectedChorePeople.every((id) => eligibleChorePeople.some((person) => person.id === id));
+  const choreFormValid =
+    Boolean(choreTitle.trim()) && choreScheduleValid && chorePointsValid && chorePeopleValid;
   const rewardTargetValid = isBoundedInteger(rewardTarget, 1, 1_000_000);
   const normalizedReminderTarget = reminderTarget.trim();
   const providerNotificationTargets = useProviderNotificationTargets(
@@ -629,6 +645,10 @@ export function ChoreOnboardingDialog({
     setReminderTarget(firstManager?.reminderPreferences?.destination?.target ?? '');
     setChoreParticipantId(firstManager?.id ?? '');
     setChoreAssignmentMode('person');
+    setChoreParticipantIds(null);
+    setRotationCadence('scheduled_day');
+    setRotationDayOfWeek(1);
+    setRotationCursor(0);
     setRepeat('daily');
     setDueTime('18:00');
     setScheduleStartDate(localDateKey());
@@ -841,6 +861,10 @@ export function ChoreOnboardingDialog({
     setChoreTitle('');
     setChoreIcon('ListChecks');
     setChoreAssignmentMode('person');
+    setChoreParticipantIds(null);
+    setRotationCadence('scheduled_day');
+    setRotationDayOfWeek(1);
+    setRotationCursor(0);
     setRepeat('daily');
     setDueTime('18:00');
     setScheduleStartDate(localDateKey());
@@ -975,9 +999,14 @@ export function ChoreOnboardingDialog({
           participantIds:
             selectedParticipant && choreAssignmentMode === 'person'
               ? [selectedParticipant.id]
-              : completers.map((participant) => participant.id),
+              : selectedChorePeople,
+          rotationCadence: choreAssignmentMode === 'rotation' ? rotationCadence : undefined,
           rotationReset: choreAssignmentMode === 'rotation' ? 'never' : undefined,
-          rotationCursor: choreAssignmentMode === 'rotation' ? 0 : undefined,
+          rotationCursor: choreAssignmentMode === 'rotation' ? rotationCursor : undefined,
+          rotationDayOfWeek:
+            choreAssignmentMode === 'rotation' && rotationCadence === 'weekly'
+              ? rotationDayOfWeek
+              : undefined,
         },
         schedule,
         dueWindowMinutes: 120,
@@ -1718,7 +1747,19 @@ export function ChoreOnboardingDialog({
                             rooms={rooms}
                             assignmentMode={choreAssignmentMode}
                             participantId={choreParticipantId}
-                            participants={setupRoster}
+                            participantIds={selectedChorePeople}
+                            onParticipantsChange={(ids) => {
+                              const startingId = selectedChorePeople[rotationCursor];
+                              setChoreParticipantIds(ids);
+                              setRotationCursor(Math.max(0, ids.indexOf(startingId)));
+                            }}
+                            rotationDayOfWeek={rotationDayOfWeek}
+                            onRotationDayOfWeekChange={setRotationDayOfWeek}
+                            rotationCursor={rotationCursor}
+                            onRotationCursorChange={setRotationCursor}
+                            rotationCadence={rotationCadence}
+                            onRotationCadenceChange={setRotationCadence}
+                            participants={eligibleChorePeople}
                             repeat={repeat}
                             dueTime={dueTime}
                             startDate={scheduleStartDate}

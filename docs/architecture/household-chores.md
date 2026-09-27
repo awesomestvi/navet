@@ -20,7 +20,13 @@ Definitions support once, daily, weekly, monthly, and after-completion schedules
 tri-weekly choices are weekly schedules with an interval of two or three. A schedule stores an
 IANA time zone and local due time. Date ranges, exclusions, every-N-day or every-N-week intervals,
 multiple due times, nth-weekday monthly rules, and per-participant weekday/time variants deepen that
-same model. Rotation can preserve its cursor indefinitely or reset within a week or month.
+same model. Assignment stores an explicit ordered participant list independently of manager and
+approver capabilities. Optional `rotationCadence` selects `scheduled_day` (the default for saved
+chores without the field) or `weekly`. Scheduled-day rotation can preserve its cursor indefinitely
+or reset within a week or month. Weekly rotation advances on the local `rotationDayOfWeek`
+(0 = Sunday, default 1 = Monday) from the week containing the schedule start date, including empty
+or excluded weeks, and ignores `rotationReset`.
+`rotationCursor` offsets the first participant in either cadence.
 Occurrence IDs are deterministic from definition, scheduled instant, and assignment slot so repeated
 materialization preserves completed state.
 
@@ -28,8 +34,8 @@ Assignment modes are:
 
 - `person`: one selected active participant
 - `anyone`: one shared occurrence claimable or completable by an eligible participant
-- `everyone`: one occurrence for every active participant
-- `rotation`: one occurrence assigned by deterministic schedule index
+- `everyone`: one occurrence for every selected active participant
+- `rotation`: one occurrence assigned by deterministic schedule-day or calendar-week index
 
 Workflow status (`available`, `claimed`, `awaiting_approval`, `done`, `skipped`, or `missed`) stays separate
 from timing (`upcoming`, `due`, or `overdue`). Definitions may require an explicit claim, allow an

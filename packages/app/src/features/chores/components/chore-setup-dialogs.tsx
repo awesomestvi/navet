@@ -949,6 +949,10 @@ export function AddChoreDialog({
   const [description, setDescription] = useState('');
   const [assignmentMode, setAssignmentMode] = useState<ChoreAssignmentMode>('person');
   const [participantId, setParticipantId] = useState('');
+  const [selectedParticipantIds, setSelectedParticipantIds] = useState<string[]>([]);
+  const [rotationCadence, setRotationCadence] = useState<'scheduled_day' | 'weekly'>(
+    'scheduled_day'
+  );
   const [frequency, setFrequency] = useState<ChoreSchedule['frequency']>('daily');
   const [repeatOverride, setRepeatOverride] = useState<ChoreCreationRepeat | null>(null);
   const [time, setTime] = useState('18:00');
@@ -961,6 +965,7 @@ export function AddChoreDialog({
   const [excludedDates, setExcludedDates] = useState('');
   const [rotationReset, setRotationReset] = useState<'never' | 'weekly' | 'monthly'>('never');
   const [rotationOffset, setRotationOffset] = useState('0');
+  const [rotationDayOfWeek, setRotationDayOfWeek] = useState(1);
   const [participantTimes, setParticipantTimes] = useState<Record<string, string>>({});
   const [approvalRequired, setApprovalRequired] = useState(false);
   const [dueWindowMinutes, setDueWindowMinutes] = useState<NumericDraft>(120);
@@ -1011,6 +1016,11 @@ export function AddChoreDialog({
       setDescription(definition?.description ?? '');
       setAssignmentMode(definition?.assignment.mode ?? 'person');
       setParticipantId(definition?.assignment.participantIds[0] ?? completers[0]?.id ?? '');
+      setSelectedParticipantIds(
+        definition?.assignment.participantIds ?? completers.map((person) => person.id)
+      );
+      setRotationCadence(definition?.assignment.rotationCadence ?? 'scheduled_day');
+      setRotationDayOfWeek(definition?.assignment.rotationDayOfWeek ?? 1);
       setFrequency(definition?.schedule.frequency ?? 'daily');
       setRepeatOverride(null);
       setTime(definition?.schedule.time ?? '18:00');
@@ -1106,10 +1116,15 @@ export function AddChoreDialog({
     }
   }, [completers, definition, isOpen, presentation]);
 
-  const rotationParticipantCount =
-    definition?.assignment.mode === 'rotation' && assignmentMode === 'rotation'
-      ? definition.assignment.participantIds.length
-      : completers.length;
+  const selectedCompleters = selectedParticipantIds
+    .map((id) => completers.find((person) => person.id === id))
+    .filter((person): person is ChoreParticipant => Boolean(person));
+  const participantSelectionValid =
+    assignmentMode === 'person'
+      ? completers.some((person) => person.id === participantId)
+      : selectedCompleters.length > 0 &&
+        selectedCompleters.length === selectedParticipantIds.length;
+  const rotationParticipantCount = selectedParticipantIds.length;
   const maximumRotationOffset = Math.max(0, rotationParticipantCount - 1);
   const parsedRotationOffset = parseRotationOffset(rotationOffset, maximumRotationOffset);
   const scheduleIntervalMinimum = frequency === 'daily' ? 2 : 1;
@@ -1126,7 +1141,9 @@ export function AddChoreDialog({
   const excludedDatesValid = frequency === 'once' || isValidDateList(excludedDates);
   const participantTimesValid =
     (assignmentMode !== 'rotation' && assignmentMode !== 'everyone') ||
-    completers.every((participant) => isValidTimeList(participantTimes[participant.id] ?? ''));
+    selectedCompleters.every((participant) =>
+      isValidTimeList(participantTimes[participant.id] ?? '')
+    );
   const estimatedMinutesValid = isBoundedInteger(estimatedMinutes, 0, 1440);
   const pointsValid = isBoundedInteger(points, 0, 10_000);
   const dueWindowValid = isBoundedInteger(dueWindowMinutes, 0, 525_600);
@@ -1152,7 +1169,7 @@ export function AddChoreDialog({
 
   const saveChore = async () => {
     const normalizedTitle = title.trim();
-    if (!normalizedTitle || completers.length === 0) return;
+    if (!normalizedTitle || !participantSelectionValid) return;
     if (
       assignmentMode === 'person' &&
       !completers.some((participant) => participant.id === participantId)
@@ -1246,11 +1263,7 @@ export function AddChoreDialog({
                   ...scheduleOptions,
                 };
     const participantIds =
-      assignmentMode === 'person'
-        ? [participantId || completers[0].id]
-        : definition?.assignment.mode === assignmentMode
-          ? definition.assignment.participantIds
-          : completers.map((participant) => participant.id);
+      assignmentMode === 'person' ? [participantId || completers[0].id] : selectedParticipantIds;
     const participantScheduleOverrides = Object.fromEntries(
       participantIds.flatMap((id) => {
         const existing = definition?.assignment.participantScheduleOverrides?.[id];
@@ -1283,6 +1296,18 @@ export function AddChoreDialog({
           ...(definition?.assignment.mode === assignmentMode ? definition.assignment : {}),
           mode: assignmentMode,
           participantIds,
+          rotationCadence:
+            assignmentMode === 'rotation'
+              ? rotationCadence === 'weekly' || definition?.assignment.rotationCadence
+                ? rotationCadence
+                : undefined
+              : undefined,
+          rotationDayOfWeek:
+            assignmentMode === 'rotation' && rotationCadence === 'weekly'
+              ? rotationDayOfWeek !== 1 || definition?.assignment.rotationDayOfWeek !== undefined
+                ? rotationDayOfWeek
+                : undefined
+              : undefined,
           rotationReset: assignmentMode === 'rotation' ? rotationReset : undefined,
           rotationCursor:
             assignmentMode === 'rotation' ? (parsedRotationOffset ?? undefined) : undefined,
@@ -1345,9 +1370,7 @@ export function AddChoreDialog({
   const stepValidity: Record<ChoreCreationSection, boolean> = {
     details: title.trim().length > 0 && estimatedMinutesValid && pointsValid,
     assignment:
-      completers.length > 0 &&
-      (assignmentMode !== 'person' ||
-        completers.some((participant) => participant.id === participantId)) &&
+      participantSelectionValid &&
       (assignmentMode !== 'rotation' || parsedRotationOffset !== null) &&
       participantTimesValid &&
       claimExpiryValid,
@@ -1642,6 +1665,18 @@ export function AddChoreDialog({
                     rooms={roomChoices}
                     assignmentMode={assignmentMode}
                     participantId={participantId}
+                    participantIds={selectedParticipantIds}
+                    onParticipantsChange={(ids) => {
+                      const startingId = selectedParticipantIds[Number(rotationOffset)];
+                      setSelectedParticipantIds(ids);
+                      setRotationOffset(String(Math.max(0, ids.indexOf(startingId))));
+                    }}
+                    rotationDayOfWeek={rotationDayOfWeek}
+                    onRotationDayOfWeekChange={setRotationDayOfWeek}
+                    rotationCursor={parsedRotationOffset ?? 0}
+                    onRotationCursorChange={(value) => setRotationOffset(String(value))}
+                    rotationCadence={rotationCadence}
+                    onRotationCadenceChange={setRotationCadence}
                     participants={completers}
                     repeat={repeatValue}
                     dueTime={time}
@@ -1750,60 +1785,28 @@ export function AddChoreDialog({
                           onCheckedChange={setApprovalRequired}
                         />
                       </div>
-                      {assignmentMode === 'rotation' ? (
-                        <>
-                          <CardDialogSection
-                            className="mb-0"
-                            label={t('household.choreDialog.rotationReset')}
+                      {assignmentMode === 'rotation' && rotationCadence === 'scheduled_day' ? (
+                        <CardDialogSection
+                          className="mb-0"
+                          label={t('household.choreDialog.rotationReset')}
+                        >
+                          <Select
+                            aria-label={t('household.choreDialog.rotationReset')}
+                            value={rotationReset}
+                            onChange={(event) =>
+                              setRotationReset(event.target.value as 'never' | 'weekly' | 'monthly')
+                            }
                           >
-                            <Select
-                              aria-label={t('household.choreDialog.rotationReset')}
-                              value={rotationReset}
-                              onChange={(event) =>
-                                setRotationReset(
-                                  event.target.value as 'never' | 'weekly' | 'monthly'
-                                )
-                              }
-                            >
-                              <option value="never">
-                                {t('household.choreDialog.rotationNever')}
-                              </option>
-                              <option value="weekly">{t('household.schedule.weekly')}</option>
-                              <option value="monthly">{t('household.schedule.monthly')}</option>
-                            </Select>
-                          </CardDialogSection>
-                          <CardDialogSection
-                            className="mb-0"
-                            label={t('household.choreDialog.rotationOffset')}
-                          >
-                            <Input
-                              aria-describedby="chore-rotation-offset-error"
-                              aria-label={t('household.choreDialog.rotationOffset')}
-                              invalid={parsedRotationOffset === null}
-                              min={0}
-                              max={maximumRotationOffset}
-                              required
-                              step={1}
-                              type="number"
-                              value={rotationOffset}
-                              onChange={(event) => setRotationOffset(event.target.value)}
-                            />
-                            {parsedRotationOffset === null ? (
-                              <p
-                                id="chore-rotation-offset-error"
-                                className="mt-2 text-xs text-red-500"
-                                role="alert"
-                              >
-                                {t('household.choreDialog.rotationOffsetError', {
-                                  max: maximumRotationOffset,
-                                })}
-                              </p>
-                            ) : null}
-                          </CardDialogSection>
-                        </>
+                            <option value="never">
+                              {t('household.choreDialog.rotationNever')}
+                            </option>
+                            <option value="weekly">{t('household.schedule.weekly')}</option>
+                            <option value="monthly">{t('household.schedule.monthly')}</option>
+                          </Select>
+                        </CardDialogSection>
                       ) : null}
                       {assignmentMode === 'rotation' || assignmentMode === 'everyone'
-                        ? completers.map((participant) => (
+                        ? selectedCompleters.map((participant) => (
                             <CardDialogSection
                               key={participant.id}
                               className="mb-0"

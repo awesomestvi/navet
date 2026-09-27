@@ -465,9 +465,16 @@ def _assignment_slots(definition: Mapping[str, Any], data: Mapping[str, Any], in
 
 
 def _rotation_index_for_date(
-    dates: list[date], index: int, reset: str | None
+    dates: list[date], index: int, reset: str | None,
+    cadence: str | None = None, start_date: str | None = None,
+    day_of_week: int = 1,
 ) -> int:
-    """Match the core/NJS weekly and monthly rotation reset semantics."""
+    """Match the core/NJS calendar rotation and reset semantics."""
+    if cadence == "weekly":
+        anchor = date.fromisoformat(start_date) if start_date else dates[0]
+        anchor -= timedelta(days=(anchor.weekday() + 1 - day_of_week) % 7)
+        current = dates[index] - timedelta(days=(dates[index].weekday() + 1 - day_of_week) % 7)
+        return max(0, (current - anchor).days // 7)
     if reset not in {"weekly", "monthly"}:
         return index
 
@@ -652,6 +659,9 @@ def _materialize(data: dict[str, Any], range_start: str, range_end: str, timesta
                 dates,
                 index,
                 definition.get("assignment", {}).get("rotationReset"),
+                definition.get("assignment", {}).get("rotationCadence"),
+                schedule.get("startDate") or schedule.get("date"),
+                definition.get("assignment", {}).get("rotationDayOfWeek", 1),
             )
             for slot, assignees in _assignment_slots(
                 definition, data, rotation_index
@@ -1148,6 +1158,11 @@ class ChoreAuthority:
             _require_manager(data, actor)
             definition = dict(action.get("definition", {}))
             _repair_rotation_cursor(definition)
+            if definition.get("assignment", {}).get("rotationCadence", "scheduled_day") not in {"scheduled_day", "weekly"}:
+                raise ChoreAuthorityError("Chore rotation cadence is invalid")
+            rotation_day = definition.get("assignment", {}).get("rotationDayOfWeek", 1)
+            if type(rotation_day) is not int or not 0 <= rotation_day <= 6:
+                raise ChoreAuthorityError("Chore rotation weekday is invalid")
             definition_id = str(definition.get("id", ""))
             if not definition_id or (action_type == "definition_create" and definition_id in data["definitionsById"]) or (action_type == "definition_update" and definition_id not in data["definitionsById"]):
                 raise ChoreAuthorityError("Chore is no longer available")

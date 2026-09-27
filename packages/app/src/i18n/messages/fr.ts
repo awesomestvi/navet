@@ -446,11 +446,18 @@ export const frMessages = {
   'household.choreDialog.dayOfMonth': 'Jour du mois',
   'household.choreDialog.extraTimes': 'Heures supplémentaires',
   'household.choreDialog.excludedDates': 'Dates à ignorer',
+  'household.choreDialog.participants': 'Personnes participantes',
+  'household.choreDialog.rotationCadence': 'Changer de personne',
+  'household.choreDialog.rotationScheduledDay': 'Chaque jour prévu',
+  'household.choreDialog.rotationWeekly': 'Chaque semaine',
+  'household.choreDialog.rotationDay': 'Jour de changement',
+  'household.choreDialog.rotationStartsWith': 'Commence par',
+  'household.choreDialog.rotationPreviewWeekly':
+    'Ordre des tours : {order}. La responsabilité change chaque {day}.',
+  'household.choreDialog.rotationPreviewScheduled':
+    'Ordre des tours : {order}. La responsabilité change chaque jour prévu.',
   'household.choreDialog.rotationReset': 'Recommencer la rotation',
   'household.choreDialog.rotationNever': 'Jamais',
-  'household.choreDialog.rotationOffset': 'Position de départ de la rotation',
-  'household.choreDialog.rotationOffsetError':
-    'Saisissez un nombre entier compris entre 0 et {max}.',
   'household.validation.nameRequired': 'Saisissez un nom pour continuer.',
   'household.validation.choosePerson': 'Choisissez une personne pour continuer.',
   'household.validation.wholeNumberRange':

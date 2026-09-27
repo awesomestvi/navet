@@ -74,7 +74,7 @@ export interface BaseCardProps extends HTMLAttributes<HTMLDivElement> {
   backgroundClassName?: string;
   header?: ReactNode;
   title?: string;
-  subtitle?: string;
+  subtitle?: ReactNode;
   headerLeading?: ReactNode;
   headerTrailing?: ReactNode;
   headerCompact?: boolean;

@@ -1,10 +1,10 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 export type EntityCardTitleLayout = 'title-first' | 'eyebrow-first';
 
 interface EntityCardTitleBlockProps {
   title: string;
-  subtitle?: string;
+  subtitle?: ReactNode;
   layout?: EntityCardTitleLayout;
   titleClassName?: string;
   subtitleClassName?: string;
@@ -38,7 +38,8 @@ export function EntityCardTitleBlock({
   titleStyle,
   subtitleStyle,
 }: EntityCardTitleBlockProps) {
-  const formattedSubtitle = formatEyebrowSubtitle(subtitle);
+  const formattedSubtitle =
+    typeof subtitle === 'string' ? formatEyebrowSubtitle(subtitle) : subtitle;
 
   if (layout === 'eyebrow-first') {
     return (

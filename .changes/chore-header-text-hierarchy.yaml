@@ -1,0 +1,6 @@
+type: fixed
+audiences:
+  - standalone
+  - home-assistant
+  - hacs
+summary: Align chore cards with the shared card header and let card headers grow with enlarged text.

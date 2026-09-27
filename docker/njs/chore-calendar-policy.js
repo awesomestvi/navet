@@ -92,7 +92,13 @@ function scheduleGroupKey(dateKey, reset) {
 	}
 	return "";
 }
-function rotationIndexForDate(scheduledDates, scheduledIndex, reset) {
+function rotationIndexForDate(scheduledDates, scheduledIndex, reset, cadence, startDate, dayOfWeek = 1) {
+	if (cadence === "weekly") {
+		const weekStart = (date) => addCalendarDays(date, -((getDayOfWeek(date) - dayOfWeek + 7) % 7));
+		const anchor = weekStart(startDate !== null && startDate !== void 0 ? startDate : scheduledDates[0]);
+		const current = weekStart(scheduledDates[scheduledIndex]);
+		return Math.max(0, differenceInCalendarDays(current, anchor) / 7);
+	}
 	if (!reset || reset === "never") return scheduledIndex;
 	const group = scheduleGroupKey(scheduledDates[scheduledIndex], reset);
 	let firstIndex = scheduledIndex;

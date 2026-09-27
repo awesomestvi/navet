@@ -1201,7 +1201,7 @@ export const LibraryNextScheduledDate: Story = {
   play: async ({ canvas }) => {
     const next = canvas.getByText(/^Next: /);
     await expect(next).toBeVisible();
-    await expect(next.closest('[data-chore-header]')).toBeInTheDocument();
+    await expect(next.closest('.navet-entity-card-header')).toBeInTheDocument();
   },
 };
 

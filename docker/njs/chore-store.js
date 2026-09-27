@@ -1137,7 +1137,7 @@ function materializeDefinition(definition, participantsById, rangeStart, rangeEn
     const slots = choreCalendarPolicy.resolveAssignmentSlots(
       definition.assignment,
       participantsById,
-      choreCalendarPolicy.rotationIndexForDate(dates, dateIndex, definition.assignment.rotationReset)
+      choreCalendarPolicy.rotationIndexForDate(dates, dateIndex, definition.assignment.rotationReset, definition.assignment.rotationCadence, choreCalendarPolicy.scheduleStartDate(schedule), definition.assignment.rotationDayOfWeek)
     );
     for (let slotIndex = 0; slotIndex < slots.length; slotIndex += 1) {
       const slot = slots[slotIndex];
@@ -1481,6 +1481,11 @@ function isValidDefinitionInput(definition) {
     typeof definition.enabled === 'boolean' &&
     isRecord(definition.assignment) &&
     ['person', 'anyone', 'everyone', 'rotation'].indexOf(definition.assignment.mode) !== -1 &&
+    (definition.assignment.rotationDayOfWeek === undefined ||
+      (Number.isInteger(definition.assignment.rotationDayOfWeek) &&
+        definition.assignment.rotationDayOfWeek >= 0 && definition.assignment.rotationDayOfWeek <= 6)) &&
+    (definition.assignment.rotationCadence === undefined ||
+      ['scheduled_day', 'weekly'].indexOf(definition.assignment.rotationCadence) !== -1) &&
     Array.isArray(definition.assignment.participantIds) &&
     definition.assignment.participantIds.length > 0 &&
     isRecord(definition.schedule) &&

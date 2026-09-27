@@ -46,9 +46,15 @@ recovery actions without turning profiles into user accounts.
    chore, or choose a custom colour. Overdue and completed state colours take priority.
 5. Choose **Next** or **Who does it** in the sidebar, then choose who owns the work:
    - **One person** assigns every occurrence to the selected person.
-   - **Anyone can do it** creates one shared occurrence.
-   - **Everyone does it** creates one occurrence per person.
-   - **Rotate between people** moves through the active participant list in order.
+   - **Anyone can do it** creates one shared occurrence for the selected participants.
+   - **Everyone does it** creates one occurrence per selected participant.
+   - **Rotate between people** moves through the selected participants in order. Choose
+     **Change person → Every week** and a **Change on** weekday to keep the same person responsible throughout each week,
+     or **Each scheduled day** to change person on each day the chore is due.
+   Select the people who will do shared or rotating chores. A manager can approve work without
+   being selected as a participant. In the edit form, **More options → Require approval** enables
+   approval. **Starts with** chooses the first person; the preview shows the turn order and when
+   responsibility changes.
 6. Choose **Next** or **When it repeats** in the sidebar, then choose how often the chore
    returns and set **Start date** and **Due time**.
    For weekly and every 2, 3, or 4 weeks, the start date sets the first due date and weekday.
@@ -102,3 +108,17 @@ same restrained red alert treatment used by Security.
 ## Find automations and scripts
 
 Open **Household → Routines** to use provider automations, scenes, and scripts.
+
+## Give children daily chores that switch weekly
+
+For a daily chore each child completes separately, such as cleaning their own room, choose
+**Everyone does it**, select only the children, and set the schedule to **Every day**.
+
+For daily work that switches between children each week, choose **Rotate between people**, select
+only the children, choose **Every week**, and set **Change on** to the handover weekday. Set the
+schedule to **Every day**. **Starts with** chooses the child responsible from the start date until
+the next handover day. Responsibility changes on that weekday even during weeks with no scheduled
+work. Use the same start date and handover weekday for related chores, and choose a different
+child in **Starts with** for chores that should begin with the other child.
+
+Managers remain available to approve completed work even when excluded from assignments.

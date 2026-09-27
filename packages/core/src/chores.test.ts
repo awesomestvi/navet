@@ -71,6 +71,40 @@ function makeOccurrence(overrides: Partial<ChoreOccurrence> = {}): ChoreOccurren
 }
 
 describe('chores domain', () => {
+  it('accepts legacy and weekly rotation backups and rejects unknown cadence values', () => {
+    const data = createEmptyChoreWorkspace();
+    const definition = makeDefinition();
+    data.participantsById = { alice, bob };
+    data.definitionsById = { [definition.id]: definition };
+    expect(isChoreWorkspaceData(data)).toBe(true);
+    definition.assignment.rotationCadence = 'weekly';
+    expect(isChoreWorkspaceData(data)).toBe(true);
+    expect(
+      isChoreWorkspaceData({
+        ...data,
+        definitionsById: {
+          [definition.id]: {
+            ...definition,
+            assignment: { ...definition.assignment, rotationCadence: 'yearly' },
+          },
+        },
+      })
+    ).toBe(false);
+  });
+
+  it('validates weekly handover weekdays while allowing legacy defaults', () => {
+    for (const rotationDayOfWeek of [undefined, 0, 1, 6, -1, 7, 1.5, '1', null, true]) {
+      const data = createEmptyChoreWorkspace();
+      const definition = makeDefinition();
+      data.participantsById = { alice, bob };
+      data.definitionsById = { [definition.id]: definition };
+      Object.assign(definition.assignment, { rotationCadence: 'weekly', rotationDayOfWeek });
+      expect(isChoreWorkspaceData(data)).toBe(
+        rotationDayOfWeek === undefined || [0, 1, 6].includes(rotationDayOfWeek as number)
+      );
+    }
+  });
+
   it('creates an empty versioned workspace', () => {
     expect(createEmptyChoreWorkspace()).toEqual({
       schemaVersion: 2,
