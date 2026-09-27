@@ -4,8 +4,7 @@ description: Give each room a recognizable symbol and optional image without cha
 editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/rooms/room-appearance.md
 ---
 
-Room appearance is presentation owned by Navet. It does not change the devices assigned to the
-room.
+Choose an icon and optional image to make each room easy to recognize in Navet.
 
 ![The Room appearance dialog with symbol and room image controls.](/docs/how-to/rooms/room-appearance-dialog.webp)
 

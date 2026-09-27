@@ -77,6 +77,5 @@ current media dashboard boundary, provider behavior, resource handling, and know
 
 ## Compatibility Note
 
-The repo still contains compatibility hooks and derived device snapshots inside `@navet/app`. They
-exist to support the current product shell during ongoing cleanup. They are not the preferred API
-for new shared UI work.
+Compatibility hooks and derived device snapshots inside `@navet/app` support the product shell.
+New shared UI uses the normalized inputs and command boundary described above.

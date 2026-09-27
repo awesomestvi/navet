@@ -107,9 +107,8 @@ successfully published beta/RC of the same base version. Source and target tags 
 same commit already contained in protected `main`. The source release's evidence records the
 tested image digests and publication run; missing, incomplete, or changed evidence blocks promotion.
 
-The maintainer dispatch is the publication decision. There are no repeated per-job approval
-prompts. The `beta` and `production` environments hold release credentials and allow only trusted
-`main` workflows. Public-site checks do not gate this process.
+The maintainer dispatch is the publication decision. The `beta` and `production` environments
+hold release credentials and allow only trusted `main` workflows. Public-site checks do not gate this process.
 
 ### Artifact Identity
 
@@ -141,8 +140,7 @@ Standalone image tags:
 - Stable: exact `vX.Y.Z`, plus `X.Y` and `latest` after verification.
 
 Add-on images use `{arch}-navet-addon` repositories and exact versions without the leading `v`.
-Commit-only `sha-*` aliases are not updated: one commit can have different Dev, beta and stable
-packages. Use a version plus the recorded `sha256:` digest to identify an artifact.
+Use a version plus the recorded `sha256:` digest to identify an artifact.
 
 Release publication is serialized because HACS and moving aliases are shared resources.
 Moving channels are updated by verified digest only after artifacts and the metadata PR complete.
@@ -188,8 +186,7 @@ must match on recovery; conflicts stop the run rather than silently replacing pu
 
 The monorepo owns Home Assistant integration and add-on sources under `platform/home-assistant`.
 HACS receives the integration export in `awesomestvi/navet-home-assistant`. The Home Assistant App
-repository stays `awesomestvi/navet`, with root `repository.yaml`; subscribers do not need to
-change repository URLs.
+repository is `awesomestvi/navet`, with root `repository.yaml`.
 
 After artifact verification, automation opens the small App metadata PR and merges it through
 normal branch protection without bypass privileges. This PR gets quality/script checks and
@@ -212,10 +209,9 @@ an otherwise verified and published stable release.
 
 ## Activating Scoped Deployments
 
-The repository change and hosted settings must be rolled out in this order:
+Configure hosted deployment settings from a checkout matching the reviewed workflows on `main`:
 
-1. Merge the workflow, tests and policy through the existing protected PR process. Keep all four
-   Cloudflare checks required until the new aggregate gate is installed.
+1. Require the GitHub Actions **Product review gate** in the active `main-published` ruleset.
 2. Configure local `CLOUDFLARE_ACCOUNT_ID` and a `CLOUDFLARE_API_TOKEN` scoped to edit these Pages
    projects. Authenticate `gh` with repository administration access. Never commit these values.
 3. Run `node scripts/pipeline-rollout.mjs` to inspect the dry-run policy.

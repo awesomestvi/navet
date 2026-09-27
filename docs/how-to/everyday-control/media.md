@@ -4,8 +4,8 @@ description: Browse sources, search, choose speakers, group playback, and use TV
 editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/everyday-control/media.md
 ---
 
-Media features vary significantly by provider and player. Navet shows the controls registered by
-the active media feature service.
+Media features vary by provider and player. Navet shows the controls supported by your connected
+provider and selected player.
 
 ![The current Media dashboard with active now playing, Media Library, player destinations, and TVs.](/docs/how-to/everyday-control/media-dashboard.webp)
 
@@ -19,8 +19,7 @@ the action.
 1. Open **Media Library** or the available browse surface.
 2. Choose a source or media category.
 3. Search when the provider supports it.
-4. Choose an item.
-5. Choose an item to play it on the selected destination.
+4. Choose an item to play it on the selected destination.
 
 ## Manage playback
 

@@ -24,14 +24,14 @@ These tests protect release-critical behavior and should stay blocking.
 - `packages/provider-homeassistant/src/homeassistant-contract.test.ts`
 - `packages/provider-homey/src/homey-contract.test.ts`
 - `packages/provider-openhab/src/openhab-contract.test.ts`
+- `packages/app/src/stores/__tests__/integration-store.test.ts`
+- `packages/app/src/services/__tests__/integration-registry.service.test.ts`
+- `packages/app/src/commands.test.ts`
 
 ## Tier 2: Keep
 
 These tests protect important app contracts and should stay blocking in main CI.
 
-- `packages/app/src/stores/__tests__/integration-store.test.ts`
-- `packages/app/src/services/__tests__/integration-registry.service.test.ts`
-- `packages/app/src/commands.test.ts`
 - `packages/app/src/services/__tests__/ha-entity-service.test.ts`
 - `packages/app/src/platform/__tests__/provider-room-management.test.ts`
 - the rest of the curated Tier 2 service/store/platform suites in

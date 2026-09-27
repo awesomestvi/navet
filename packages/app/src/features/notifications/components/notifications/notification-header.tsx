@@ -30,14 +30,14 @@ export function NotificationHeader({
   const surface = getNotificationSurfaceTokens(theme);
 
   const actions = hasNotifications ? (
-    <div className={`flex items-center gap-2.5 border-b px-3 py-2.5 ${surface.borderClassName}`}>
+    <div className={`flex flex-wrap items-center gap-2.5 px-4 py-3 ${surface.borderClassName}`}>
       {unreadCount > 0 && onMarkAllAsRead && (
         <Button
           onClick={onMarkAllAsRead}
           variant="secondary"
           size="small"
           leading={<Check className="h-3 w-3" />}
-          className="min-h-7 justify-start rounded-full px-2.5 text-[11px]"
+          className="min-h-9 justify-start rounded-full px-3 text-xs"
         >
           {t('notifications.header.markAllRead')}
         </Button>
@@ -47,7 +47,7 @@ export function NotificationHeader({
         variant="secondary"
         size="small"
         leading={<Trash2 className="h-3 w-3" />}
-        className="min-h-7 justify-start rounded-full px-2.5 text-[11px]"
+        className="min-h-9 justify-start rounded-full px-3 text-xs"
       >
         {t('notifications.header.clearAll')}
       </Button>
@@ -79,7 +79,8 @@ export function NotificationHeader({
         <button
           type="button"
           onClick={onClose}
-          className={`rounded-lg p-1.5 transition-colors ${surface.hoverClassName}`}
+          aria-label={t('common.close')}
+          className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${surface.hoverClassName}`}
         >
           <X className={`h-4 w-4 ${surface.textSecondary}`} />
         </button>

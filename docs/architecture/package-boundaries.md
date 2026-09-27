@@ -108,7 +108,7 @@ inside the app assembly layer are documented in
 
 | Provider | Status | Notes |
 |---|---|---|
-| Home Assistant | implemented | first stable provider |
+| Home Assistant | implemented | reference adapter |
 | Homey | implemented | standalone OAuth flow |
 | openHAB | implemented | standalone base-URL and username/password flow |
 | Hubitat | planned | catalog metadata only; no adapter package |

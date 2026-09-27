@@ -3,8 +3,7 @@
 > **Development channel:** Navet Dev contains unreleased changes and may be less stable than Navet.
 > Use it to test upcoming features, not as the only dashboard your household depends on.
 
-Navet Dev runs through Home Assistant Ingress and reuses your Home Assistant session. There is no
-separate Home Assistant URL or access token to enter.
+Navet Dev runs through Home Assistant Ingress and reuses your Home Assistant session.
 
 ## Start Testing
 

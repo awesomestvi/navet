@@ -10,7 +10,7 @@ requests.
 
 ## Shared Shape
 
-At a high level, a provider package provides two related layers:
+At a high level, a provider package provides three related layers:
 
 - A small state/resource contract used by app/runtime wiring.
 - A command adapter (`SmartHomeProviderAdapter`) used by UI interactions to execute commands.
@@ -112,7 +112,7 @@ Owns:
 
 ## Current Providers
 
-- Home Assistant: implemented (first stable provider)
+- Home Assistant: implemented (reference adapter)
 - Homey: implemented
 - openHAB: implemented
 - Hubitat: planned metadata only; no adapter package

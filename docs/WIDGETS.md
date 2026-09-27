@@ -4,79 +4,65 @@ description: Available widget types, supported sizes, placement, and current lim
 editUrl: https://github.com/awesomestvi/navet/edit/main/docs/WIDGETS.md
 ---
 
-Widgets are Navet-owned dashboard blocks. Most are separate from provider-backed entity cards such
-as weather, calendar, lights, or cameras; the generic `entity` widget is the intentional bridge for
-a normalized provider entity that has no richer dedicated card.
+Widgets add notes, photos, feeds, actions, and summaries to your dashboard. Open
+**Add Card → Custom cards** to choose one. Widgets are saved with your dashboard and included in
+configuration export and import.
 
 ## Overview
 
-Use widgets when you want dashboard content that belongs to Navet itself rather than to a provider
-entity type.
-
-Widgets are included in dashboard export and import.
+Add widgets to Home or a room, then use edit mode to move, resize, rename, lock, or delete them.
+See [Add cards, devices, and widgets](/guide/dashboards/add-cards/) for the steps.
 
 ## Current Widget Types
 
 | Widget | Purpose |
 |---|---|
-| `info` | compact summary cards for grouped information |
-| `rss` | RSS headlines shown through Navet's proxy |
-| `photo` | rotating image frame |
-| `note` | freeform text note |
-| `battery` | low-battery overview |
-| `ups` | UPS status overview |
-| `energy-now` | live energy snapshot |
-| `media-stack` | responsive media summary retained in saved and imported dashboard profiles |
-| `button` | custom action button |
-| `assist` | text and microphone access to a Home Assistant Assist pipeline |
-| `map` | people and tracker locations |
-| `entity` | generic fallback card for a normalized provider entity |
+| Info | Summary of selected measurements |
+| RSS Feed | Headlines from a public HTTPS feed |
+| Photo | Rotating image frame |
+| Quick Note | Freeform text note |
+| Battery Overview | Battery readings and low-battery state |
+| UPS Monitor | Power-backup status |
+| Energy Now | Live energy snapshot |
+| Energy Metric | Selected energy measurements |
+| Action | Custom action button |
+| Scene | Shortcut to a provider scene |
+| Assist | Text and microphone access to a Home Assistant Assist pipeline |
+| Map | People and tracker locations |
 
 ## What You Can Do With Widgets
 
-Widgets support the normal dashboard editing flow:
-
-- add them to a room or the Home overview
-- move them
-- resize them
-- rename them
-- lock them
-- delete them
+- Add them to a room or Home.
+- Move and resize them in edit mode.
+- Change their name, content, source, or action in card settings.
+- Lock a card to disable its input outside edit mode.
+- Delete a widget when it is no longer useful.
 
 ## Sizes
 
-Widget sizing is per widget type, not global.
+When adding a widget, the library offers these sizes:
 
-| Widget | Supported sizes |
+| Widget | Sizes in Add Card |
 |---|---|
-| `button`, `assist` | `tiny`, `extra-small`, `small` |
-| `photo`, `note` | `small`, `medium`, `large`, `extra-large` |
-| `info`, `entity` | `extra-small`, `small`, `medium`, `large` |
-| `battery`, `ups`, `energy-now`, `media-stack`, `map` | `small`, `medium`, `large` |
-| `rss` | `medium`, `large` in the Add card flow |
+| Action, Scene, Assist | Tiny, Extra-small, Small |
+| Photo, Quick Note | Small, Medium, Large, Extra-large |
+| Info | Extra-small, Small, Medium, Large |
+| Battery Overview, UPS Monitor, Energy Now, Energy Metric, Map | Small, Medium, Large |
+| RSS Feed | Medium, Large |
 
 ## Placement
 
-Widgets can be placed in:
-
-- a room
-- the Home overview
-- the Energy section, where the chooser is limited to `energy-now` and the energy-metric preset of
-  `info`
+Widgets can be placed on Home or in a room. The Energy section offers **Energy Now** and
+**Energy Metric**.
 
 ## Limits And Notes
 
-- The Widgets tab offers twelve choices when Home Assistant is connected. Ten create the base
-  `info`, `rss`, `photo`, `note`, `battery`, `ups`, `energy-now`, `button`, `assist`, and `map`
-  types; scene and energy-metric are presets of `button` and `info`. The `assist` choice is hidden
-  when no Home Assistant session is configured. Generic `entity` cards come from the Cards library
-  rather than the Widgets
-  tab. `media-stack` remains runtime-supported
-  for compatible saved and imported dashboard profiles, but is intentionally hidden from the
-  custom-widget chooser.
+- Available sources and actions depend on the connected provider and devices.
+- Assist is offered when a Home Assistant session is configured. Conversations and microphone
+  recordings last only while the dialog is open; the selected pipeline is saved with the card.
 - RSS feeds require public HTTPS addresses and a signed-in Navet session.
-- The `entity` widget is a fallback for entities without a richer dedicated Navet card.
-- Assist conversations and microphone audio remain in memory for the open dialog only. Dashboard
-  persistence stores the Home Assistant provider binding and selected voice-pipeline ID, never the
-  transcript or recorded audio.
-- Supported sizes and placement depend on widget type.
+- Provider devices are listed under **All cards**. Navet offers a generic entity card when a
+  device has no dedicated card.
+
+To show several media players in one card, follow
+[Show several players in one card](/guide/everyday-control/media/#show-several-players-in-one-card).

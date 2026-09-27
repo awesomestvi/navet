@@ -30,10 +30,11 @@ available, Energy shows a setup state instead of an empty chart.
 
 ## Customize Energy
 
-Choose **Customize** while Energy is open to apply the **Essentials** or **Balanced** overview
-layout. Open **KPIs** to keep automatic metric selection or manually choose and order the four
-metrics shown above Energy usage. These choices change Navet's presentation; they do not change
-the provider's source configuration.
+Choose **Customize** while Energy is open to arrange the usage chart, metric cards, and device
+cards. Use a metric card's edit button to choose a replacement from **Energy KPIs**.
+
+Choose **Hide KPIs** to hide the summary metrics, or **Show KPIs** to restore your selected metrics.
+The usage chart stays visible. Choose **Done** when you finish arranging the dashboard.
 
 ## Manage source selection
 
@@ -47,6 +48,6 @@ Follow [Configure Home Assistant Energy sources](/guide/everyday-control/manual-
 ## Provider availability
 
 Homey and openHAB can contribute live power and energy device readings when their devices expose
-them. The detailed statistics history dashboard still requires Home Assistant's Energy and history
+them. The detailed statistics history dashboard requires Home Assistant's Energy and history
 services. If only Homey or openHAB is connected, an unavailable detailed view reflects that
 capability difference.

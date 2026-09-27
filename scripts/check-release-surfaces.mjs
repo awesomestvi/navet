@@ -23,6 +23,9 @@ const tagArgIndex = args.findIndex((arg) => arg === '--tag');
 const tagValue = tagArgIndex === -1 ? null : args[tagArgIndex + 1];
 
 try {
+  if (tagArgIndex !== -1 && !tagValue?.trim()) {
+    throw new Error('Missing value for --tag.');
+  }
   const packageVersion = getPackageVersion();
   assertValidVersion(packageVersion, 'package version');
   assertMainRepositoryMetadata();
@@ -37,7 +40,8 @@ try {
     );
   }
 
-  if (addonVersion !== packageVersion) {
+  assertValidVersion(addonVersion, 'add-on version');
+  if (tagValue && addonVersion !== packageVersion) {
     throw new Error(
       `platform/home-assistant/addons/navet/config.yaml version ${addonVersion} does not match package.json ${packageVersion}.`
     );
@@ -53,9 +57,9 @@ try {
     throw new Error(`CHANGELOG.md does not contain a section for ${packageVersion}.`);
   }
 
-  if (!hasChangelogVersion(packageVersion, addonChangelogPath)) {
+  if (!hasChangelogVersion(addonVersion, addonChangelogPath)) {
     throw new Error(
-      `platform/home-assistant/addons/navet/CHANGELOG.md does not contain a section for ${packageVersion}.`
+      `platform/home-assistant/addons/navet/CHANGELOG.md does not contain a section for ${addonVersion}.`
     );
   }
 
@@ -74,7 +78,7 @@ try {
     }
   }
 
-  console.log(`Release surfaces are aligned for ${getPackageVersion()}.`);
+  console.log(`Release metadata is valid: source line ${packageVersion}, add-on ${addonVersion}.`);
 } catch (error) {
   fail(error instanceof Error ? error.message : String(error));
 }

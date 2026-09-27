@@ -89,8 +89,7 @@ when to merge.
   communication, or call a partial release successful.
 
 Request community communication drafts explicitly when a release needs an announcement. Published
-release notes remain the source for the website and documentation changelogs; they do not require
-a separate communication task.
+release notes are the source for the website and documentation changelogs.
 
 After a stable release completes artifact, distribution, and channel verification, Navet Nisse
 comments on each issue in this repository linked as closed by a pull request merged since the
@@ -98,9 +97,8 @@ previous stable tag. The comment links to the published stable release. This rou
 follow-up is authorized by the stable release dispatch. Retries skip issues already notified for
 that exact tag.
 
-QA is not a separate conversational agent. Linting, type checking, tests, builds, smoke checks,
-screenshots, and artifact verification are deterministic jobs. A reviewer may interpret failures;
-it may not override them.
+Linting, type checking, tests, builds, smoke checks, screenshots, and artifact verification run as
+deterministic jobs. Reviewers interpret failures; passing checks are required for acceptance.
 
 The current required UI lane builds Storybook and runs responsive demo smoke/accessibility checks.
 The complete Storybook browser interaction suite has known baseline failures and remains a visible
@@ -120,8 +118,8 @@ or made required while `main` is red.
 - If both request labels are present, the runner does not guess which mode to run. A maintainer
   must leave only the intended request label.
 
-Existing `/navet research`, `/navet implement`, and `/navet continue` comments remain accepted
-for compatibility. New work should use request labels.
+The runner also accepts `/navet research`, `/navet implement`, and `/navet continue` comments from
+authorized collaborators. Request labels are the recommended entry point.
 
 When Navet Nisse asks a blocking question or requests a retest on an issue, the issue reporter or a
 maintainer can respond in an ordinary comment. The first response after that request resumes the
@@ -141,7 +139,7 @@ dispatch; type, area, and risk labels continue to describe the issue itself.
 
 GitHub remains the mobile control plane, but orchestration details are not public issue content.
 Request labels and accepted answers enter the queue without assignments, prompts, or startup
-comments. Existing command comments continue to use compact reactions.
+comments. Command comments use compact reactions.
 
 A single private Codex runner polls for the oldest request label, accepted command, or requested
 answer that it has not claimed. It verifies each request label event against its mode-specific
@@ -203,7 +201,7 @@ Maintainer authority is required for:
 
 For every pull request, the maintainer reviews the current diff and previews and records acceptance
 by merging after CI passes and review conversations are resolved. This merge decision covers
-ordinary, foundational, and security-sensitive changes without a second command or status check.
+ordinary, foundational, and security-sensitive changes.
 Production publication remains separately protected by the maintainer selecting and dispatching an
 exact tested source tag and target release tag.
 
@@ -218,7 +216,7 @@ exact tested source tag and target release tag.
 ## One-time Repository Setup
 
 Repository files define the workflow, but the following live GitHub and Cloudflare settings must be
-configured after these files reach `main`:
+configured for the repository:
 
 1. Create the private **Navet Nisse** GitHub App and install it only on `awesomestvi/navet`. Grant
    Issues read/write and mandatory Metadata read. Do not grant Contents, Pull requests, Actions,
@@ -246,8 +244,7 @@ configured after these files reach `main`:
    work from issue-body markers. Dispatch no more than one issue or PR per run and follow the
    private queue contract above. Keep only one active queue runner so two agents cannot claim the
    same work.
-4. Install one independent, read-only PR reviewer (CodeRabbit is the initial candidate for this
-   public repository). Let it review non-draft PRs automatically; do not add a second general
+4. Install CodeRabbit as the independent, read-only PR reviewer. Let it review non-draft PRs automatically; do not add a second general
    reviewer until measured misses justify the duplicate cost. Reviewer comments are advisory;
    deterministic CI and the maintainer's merge decision remain authoritative.
 5. Protect `main`: require a pull request and resolved review conversations. For a solo-maintainer

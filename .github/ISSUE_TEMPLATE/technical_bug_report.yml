@@ -37,7 +37,7 @@ body:
     attributes:
       label: Navet version
       description: Use the release version, image tag, commit SHA, or "main" if that is what you are running.
-      placeholder: "0.1.0-beta.1, dev, sha-..., or commit SHA"
+      placeholder: "Release version, exact image tag, or commit SHA"
     validations:
       required: true
   - type: input

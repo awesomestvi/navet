@@ -11,8 +11,8 @@ included in configuration export.
 
 ## Add a note
 
-1. Enter Home edit mode and choose **Add card → Widgets**.
-2. Choose **Note**.
+1. Enter Home edit mode and choose **Add Card → Custom cards**.
+2. Choose **Quick Note**.
 3. Enter a title and concise household text.
 4. Choose a supported size and placement.
 5. Save.
@@ -24,7 +24,7 @@ display and that the browser can reach.
 
 ## Add an RSS feed
 
-1. Choose **RSS**.
+1. Choose **RSS Feed**.
 2. Enter the feed address.
 3. Choose how many items to show where available.
 4. Save and wait for the feed to load.

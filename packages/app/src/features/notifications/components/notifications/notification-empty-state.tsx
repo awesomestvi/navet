@@ -1,9 +1,9 @@
 import { DashboardEmptyState } from '@navet/app/components/patterns';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@navet/app/hooks';
-import { Bell } from 'lucide-react';
+import { Bell, Download } from 'lucide-react';
 
-export function NotificationEmptyState() {
+export function NotificationEmptyState({ updates = false }: { updates?: boolean }) {
   const { t } = useI18n();
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
@@ -11,15 +11,15 @@ export function NotificationEmptyState() {
   return (
     <div className="p-6">
       <DashboardEmptyState
-        title={t('notifications.empty.title')}
-        description={t('notifications.empty.description')}
+        title={t(updates ? 'notifications.empty.updates' : 'notifications.empty.title')}
+        description=""
         surface={{
           ...surface,
           cardShadow: '',
           panelMuted: surface.panel,
         }}
         variant="inline"
-        icon={Bell}
+        icon={updates ? Download : Bell}
         className="mx-auto max-w-sm"
       />
     </div>

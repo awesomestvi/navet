@@ -157,10 +157,10 @@ non-main branch publish, replace `dev` with an exact version from a `navet-dev-*
 for example:
 
 ```yaml
-image: ghcr.io/awesomestvi/navet:0.8.0-dev.YYYYMMDDHHMMSS
+image: ghcr.io/awesomestvi/navet:0.x.y-dev.YYYYMMDDHHMMSS
 ```
 
-Use a real published version in place of the example timestamp, then run:
+Use the full published version in place of `0.x.y-dev.YYYYMMDDHHMMSS`, then run:
 
 ```bash
 docker compose pull
@@ -185,9 +185,6 @@ For the supported stable installation:
 2. Install `Navet`.
 3. Restart Home Assistant.
 4. Add `Navet` from `Settings -> Devices & services`.
-
-Do not add the main `awesomestvi/navet` monorepo to HACS. Its root is a Home Assistant App repository, not a
-publishable HACS integration repository.
 
 ### Advanced: Build The Current Custom Panel Source
 

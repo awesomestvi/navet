@@ -77,10 +77,9 @@ payloads directly.
 
 ## Known Limits
 
-- Queue data is not exposed in the current provider-neutral media feature model, so the dashboard
-  does not render an invented queue.
-- Favorites/likes are not exposed in the current provider-neutral command model, so no favorite
-  action is rendered. The bookmark action belongs to browser default-view persistence.
+- The provider-neutral media feature model does not expose queue data.
+- The provider-neutral command model does not support favorites or likes. The bookmark action
+  saves the browser's default view.
 - Spotify-backed Home Assistant media players may be idle until a source/output is selected. When
   source selection is supported and sources are present, the dashboard surfaces the selector as the
   first recovery path.
@@ -100,8 +99,7 @@ payloads directly.
   account on an unintended personal device.
 - Providers may expose `canBrowseMedia` without useful children for a given entity state. The
   dashboard keeps an empty browser state until real browse results arrive.
-- TV remotes still use existing TV-specific media card/dialog controls. The dashboard prioritizes
-  audio players and does not duplicate the D-pad remote surface.
+- TV remote controls are available in the TV's media card and dialog.
 
 ## Follow-Up Opportunities
 

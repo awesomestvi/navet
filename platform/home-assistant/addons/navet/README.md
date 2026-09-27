@@ -3,15 +3,10 @@
 Navet gives your household a calm, room-first dashboard for everyday control across wall panels,
 tablets, desktops, and phones.
 
-It runs locally alongside Home Assistant and uses your existing Home Assistant session. There is
-no separate Home Assistant URL or access token to enter.
+It runs locally alongside Home Assistant and uses your existing Home Assistant session through
+Ingress.
 
 ## Open Your Dashboard
-
-To connect another standalone screen, choose **Connect with another device** on that
-screen. Enter its one-time code on your primary device in your signed-in Navet app or PWA
-under **Settings → System → Authorized devices**, then review and approve access.
-The screen connects automatically. No camera or separate browser sign-in is needed.
 
 1. Select **Start** and wait for the add-on to finish starting.
 2. Select **Open Web UI** to open Navet inside Home Assistant.
@@ -37,6 +32,13 @@ example, assigning `8234` makes Navet available at `http://homeassistant.local:8
 The direct interface uses its own Home Assistant sign-in. **Open Web UI** and the sidebar continue
 to use Home Assistant Ingress and do not require a separate login. Remove the Network port to
 disable direct access again.
+
+### Connect another screen at the direct address
+
+To connect another standalone screen, choose **Connect with another device** on that
+screen. Enter its one-time code on your primary device in your signed-in Navet app or PWA
+under **Settings → System → Authorized devices**, then review and approve access.
+The screen connects automatically.
 
 Still stuck? Read the [Home Assistant guide](https://docs.navet.app/install/home-assistant/) or
 [open a GitHub issue](https://github.com/awesomestvi/navet/issues). Include your Navet and Home

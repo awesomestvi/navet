@@ -24,7 +24,7 @@ body:
     id: navet-version
     attributes:
       label: Navet version
-      placeholder: "0.1.0-beta.1, dev, sha-..., or commit SHA"
+      placeholder: "Release version, exact image tag, or commit SHA"
     validations:
       required: true
   - type: input

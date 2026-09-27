@@ -46,7 +46,8 @@ You can connect the provider again later. Disconnecting does not delete devices 
 ## Availability
 
 Home Assistant supplies Navet's broadest advanced feature set. Homey also supplies runnable Flows
-and Moods, people, notifications, and Insights history. openHAB supplies rooms, live entities,
-lighting, switches, and sensors. Hubitat and SmartThings are planned, not implemented runtimes.
+and Moods, people, notifications, and Insights history. openHAB supplies rooms, lights, switches,
+fans, climate setpoints, speaker controls, locks, covers, security sensors, and utility readings.
+Hubitat and SmartThings are planned.
 
 See [A feature is unavailable](/guide/troubleshooting/unavailable-features/).

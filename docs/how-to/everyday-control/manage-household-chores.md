@@ -4,8 +4,8 @@ description: Edit recurring work, review progress, protect management, and back 
 editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/everyday-control/manage-household-chores.md
 ---
 
-Use the management views when the household plan changes. Daily completion stays in **Today** so
-setup and recovery controls do not compete with work that needs attention.
+Use **Chores** to manage recurring work and **Progress** to review activity. Open
+**Household → Settings** to protect or back up your household. Use **Today** to complete daily work.
 
 ![The Chore library with search, filters, assignments, schedules, and actions for each chore.](/docs/how-to/everyday-control/household-chore-library.webp)
 
@@ -30,15 +30,13 @@ keeping the chore and its history. Choose **Archive** when the definition should
 library; archived chores can be restored later. Deleting a chore stops future reminders but
 preserves completed history.
 
-## Review progress without ranking people
+## Review progress
 
 1. Open **Progress**.
 2. Choose the last 7 or 30 days.
 3. Filter to one person when you need their activity only.
 4. Review completed and missed work, the upcoming week, and the workload note.
 5. Export CSV or JSON when you need a copy of the filtered history.
-
-An uneven-workload note is a suggestion. Navet does not silently reassign future chores.
 
 ## Manage missions and rewards
 
@@ -60,23 +58,6 @@ reset actions. It is a household-screen boundary, not an account password, and i
 in chores backups. To replace it later, open **Household → Settings → Management PIN**, choose
 **Change PIN**, and confirm the new 4–8 digit PIN. Navet asks for the current PIN first whenever
 management is locked.
-
-## Finish setup after a management PIN error
-
-If **Open Today** reports **Unlock chore management to continue**, the PIN was saved but the
-temporary management session was lost before setup finished. The people, chores, and rewards
-already entered are still saved.
-
-1. Keep the setup window open. If it was closed, return to **Household**, choose
-   **Create your chore list**, and advance to the final review.
-2. Choose **Open Today**. Navet opens **Unlock chore management** when the saved PIN is locked.
-3. Enter the management PIN created during setup and choose **Unlock**.
-4. Navet retries the final setup step automatically and opens **Today** when it succeeds.
-
-If the PIN is rejected, check the digits and wait 30 seconds after five unsuccessful attempts. If
-the correct PIN unlocks the dialog but the same prompt immediately returns, update Navet to the
-latest add-on version, restart the add-on once, reopen its **Web UI**, and repeat the steps above.
-Restarting or updating the add-on does not remove the saved chore workspace in `/data`.
 
 ## Restore a backup during first setup
 

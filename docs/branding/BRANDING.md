@@ -1,7 +1,6 @@
 # Navet brand quick reference
 
-The canonical brand system starts in [README.md](README.md). This page keeps the former brand-guide
-path useful for contributors and external links.
+The canonical brand system starts in [README.md](README.md).
 
 ## Established identity
 
@@ -10,11 +9,9 @@ path useful for contributors and external links.
 - **Public descriptor:** **A smart home dashboard for every screen.**
 - **Mark:** the existing central hub with eight connected nodes
 - **Logo gradient:** `#f97316` to `#ea580c`
-- **Typography:** the established system UI stack
+- **Typography:** self-hosted Inter with native system fallbacks
 - **Product signature:** calm, rounded, state-led cards with compact household language and direct
   controls
-
-These are preservation rules, not prompts for new slogans, logo variants, fonts, or palettes.
 
 ## Use the complete system
 

@@ -5,7 +5,7 @@ Starlight.
 
 ## Content model
 
-Public pages stay in their canonical repository locations instead of being copied into the app.
+Public pages are loaded from their canonical repository locations.
 `src/content.config.ts` contains the explicit allowlist and public route for each Markdown file.
 Files under `ai/` and internal maintainer, release, testing, and audit paths are not published unless
 they are deliberately added to that map.
@@ -17,7 +17,7 @@ an exact GitHub `editUrl`.
 
 - `/changelog/` loads current stable entries directly from the GitHub Releases API and follows them
   with the historical `CHANGELOG.md` archive through `src/components/ChangelogFeed.astro`. GitHub
-  Releases remain canonical; no release-specific documentation update is required.
+  Releases are the canonical source for published release notes.
 - `/resources/` is curated in `src/components/ResourcesHub.astro`. Add real showcases, guides, and
   videos there as they are published. Planned walkthroughs may appear as non-interactive entries
   clearly marked **Planned**, without invented dates, durations, or placeholder links. Do not

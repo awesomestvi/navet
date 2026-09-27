@@ -162,7 +162,12 @@ function choreScheduleLabel(definition: ChoreDefinition, t: ReturnType<typeof us
     return t('household.schedule.weekly');
   }
   if (definition.schedule.frequency === 'monthly') return t('household.schedule.monthly');
-  return t('household.schedule.afterCompletion');
+  return t(
+    definition.schedule.intervalDays === 1
+      ? 'household.schedule.dayAfterCompletion'
+      : 'household.schedule.daysAfterCompletion',
+    { count: definition.schedule.intervalDays }
+  );
 }
 
 function LibraryAssignmentSummary({

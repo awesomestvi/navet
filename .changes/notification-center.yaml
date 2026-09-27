@@ -1,0 +1,6 @@
+type: fixed
+audiences:
+  - standalone
+  - home-assistant
+  - hacs
+summary: Fixed individual notification dismissal and redesigned the center with separate update views, clearer rows, and expandable details.

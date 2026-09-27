@@ -50,7 +50,6 @@ dashboard data, and external feeds as sensitive.
 ### Authentication
 
 - standalone runtime stores session state behind same-origin endpoints, not in bundled config
-- do not reintroduce manual token-entry login flows
 - do not put access or refresh tokens into dashboard exports
 - do not expose provider secrets in public files or logs
 
@@ -65,11 +64,10 @@ Important same-origin endpoints include:
 - `/__navet_openhab__/session` and `/__navet_openhab_proxy__/`
 - `/__navet_rss_proxy__/`
 - `/__navet_spotify_metadata__/`
-- `/__navet_music__/spotify/callback`
 
-Home Assistant discovery and provider OAuth/session callbacks are also security-sensitive even when
-they do not proxy arbitrary provider data. Keep Homey client secrets and music-service credentials
-server-side; never expose them through public Vite variables or dashboard exports.
+Home Assistant discovery and provider OAuth/session callbacks also require security review. Keep
+Homey client secrets server-side; never expose them through public Vite variables or dashboard
+exports.
 
 Keep them tightly scoped:
 
@@ -103,7 +101,7 @@ Before a public release:
 
 - run the provider validation flow
 - run Docker validation with `pnpm check:docker`
-- keep `pnpm typecheck` and `pnpm check` as user-run gates per repo policy
+- run `pnpm typecheck` and `pnpm check` as required by the repository validation policy
 
 If a deployment change might weaken auth, proxying, or resource handling, treat that as a release
 blocker until reviewed.

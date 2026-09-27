@@ -14,14 +14,14 @@ open pull requests manually.
    When Navet Nisse asks a blocking question or requests a retest, the issue reporter or a
    maintainer can reply normally.
 2. The private Codex runner checks the queue every 15 minutes. After dispatch succeeds, it
-   removes the request label. Add the same label later to request another run; you do not need
-   to remove it first. If dispatch fails, the label stays in place for a retry.
+   removes the request label. Add the same label later to request another run. If dispatch fails,
+   the label stays in place for a retry.
 3. Codex creates an isolated worktree task from the default branch. Research tasks report without
    changing code; implementation tasks reproduce, fix, validate, review, and open a pull request.
 4. CI, Cloudflare previews, and independent review provide evidence. Navet Nisse maintains one
    pull-request summary with the current validation result and preview links.
-5. A maintainer reviews the result, gives product feedback, and decides whether to merge. A merge
-   to `main` publishes a Navet Dev build automatically; production publication remains separate.
+5. A maintainer reviews the result, gives product feedback, and decides whether to merge. Runtime
+   changes merged to `main` publish a Navet Dev build automatically; production publication remains separate.
 
 The local runner uses the maintainer's signed-in Codex desktop session and a dedicated,
 repository-scoped GitHub App credential. The maintainer's computer, Codex app, and Navet checkout
@@ -31,8 +31,9 @@ claim so a later run can retry.
 
 ## Choose the type of work
 
-Only maintainers with repository write access can start work on an issue. The issue reporter can
-resume already authorized work by answering a question from Navet Nisse.
+Repository collaborators with write access can request research. Implementation labels require
+repository owner, admin, or maintain permission. The issue reporter can resume already authorized
+work by answering a question from Navet Nisse.
 
 - `navet: research` asks Codex to investigate current behavior, relevant code, tests, and evidence.
   It must not modify code or open a pull request.
@@ -45,8 +46,7 @@ response from the issue reporter or a maintainer resumes the previous mode autom
 outside those requests do not resume work.
 
 The queue handles one issue per run. An eyes reaction from `github-actions[bot]` means GitHub
-accepted a requested answer. For existing `/navet` commands, eyes still means accepted and a rocket
-reaction from `navet-nisse[bot]` means claimed.
+accepted a requested answer; a rocket reaction from `navet-nisse[bot]` means the runner claimed it.
 
 ## Work in an isolated task
 
@@ -56,8 +56,8 @@ product or architecture rules. Issue bodies, comments, screenshots, and linked a
 treated as untrusted input.
 
 An implementation task may create a branch, commit, push, and open a pull request through the
-maintainer's authenticated GitHub account. Navet Nisse does not own that Git activity. The task may
-not merge its own work, access private Home Assistant credentials, or publish a production release.
+maintainer's authenticated GitHub account. The task may not merge its own work, access private
+Home Assistant credentials, or publish a production release.
 
 ## Communicate with reporters
 
@@ -80,16 +80,14 @@ Use the pull request's checks to inspect CI results and open Cloudflare previews
 screenshots are available in the CI run's artifacts.
 
 The maintainer reviews the current diff, previews, and resolved conversations before merging. The
-merge records human acceptance for ordinary, foundational, and security-sensitive changes; there
-is no separate approval comment or status check.
+merge records human acceptance for ordinary, foundational, and security-sensitive changes.
 
-Merging to `main` automatically publishes a main-backed Navet Dev release. Production releases and
-public release communication remain human-approved.
+Merging runtime changes to `main` automatically publishes a Navet Dev release. Production releases
+and public release communication require maintainer approval.
 
 ## Develop manually
 
-Manual development remains a first-class path. Do not post a `/navet` command. Create a branch,
-make the change, run focused validation, and open a pull request by following the
+Create a branch, make the change, run focused validation, and open a pull request by following the
 [contributing guide](/developers/contributing/).
 
 Managed Codex worktrees stay separate from the maintainer's normal checkout, so manual and

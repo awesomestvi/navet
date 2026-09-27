@@ -49,6 +49,23 @@ function HouseholdCustomIntervalStory() {
   useEffect(() => {
     const data = createChoreDemoWorkspace({ copy: DEMO_COPY });
     const plants = data.definitionsById.plants;
+    for (const [id, intervalDays] of [
+      ['toys', 1],
+      ['bins', 10],
+    ] as const) {
+      const definition = data.definitionsById[id];
+      if (!definition) throw new Error(`Missing chore fixture: ${id}`);
+      definition.schedule = {
+        frequency: 'after_completion',
+        startDate:
+          definition.schedule.frequency === 'once'
+            ? definition.schedule.date
+            : definition.schedule.startDate,
+        time: definition.schedule.time,
+        timeZone: definition.schedule.timeZone,
+        intervalDays,
+      };
+    }
     useChoreWorkspaceStore.getState().setPreviewDocument({
       data: plants
         ? {
@@ -741,6 +758,16 @@ export const ChoreLibrary: Story = {
       .closest('[data-chore-base-card]');
     await expect(plantsCard).not.toBeNull();
     await expect(within(plantsCard as HTMLElement).getByText('Every 10 days')).toBeVisible();
+    for (const [title, label] of [
+      ['Toys back home', '1 day after completion'],
+      ['Take out recycling', '10 days after completion'],
+    ]) {
+      const heading = panel.getByRole('heading', { name: title });
+      await expect(heading.previousElementSibling).toHaveTextContent(label);
+      await expect(
+        within(heading.closest('[data-chore-base-card]') as HTMLElement).getByText(label)
+      ).toBeVisible();
+    }
     const moreActions = within(dishwasherCard as HTMLElement).getByRole('button', {
       name: 'More actions',
     });

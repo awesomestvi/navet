@@ -4,8 +4,7 @@ description: Set Navet's interface language and household display formats.
 editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/settings/localization.md
 ---
 
-Localization changes Navet's presentation. It does not rewrite names or values stored in the
-connected provider.
+Choose the language and display formats you want to use in Navet.
 
 ![Localization settings with language, time format, and temperature unit.](/docs/how-to/settings/localization.webp)
 

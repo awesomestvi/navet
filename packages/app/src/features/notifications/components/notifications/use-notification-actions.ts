@@ -42,7 +42,12 @@ export function useNotificationActions({
           return;
         }
         setPendingUpdateInstalls((current) => (current.includes(id) ? current : [...current, id]));
-        await integrationNotificationFeatureService.installUpdate(notification.id);
+        try {
+          await integrationNotificationFeatureService.installUpdate(notification.id);
+        } catch (error) {
+          setPendingUpdateInstalls((current) => current.filter((entityId) => entityId !== id));
+          throw error;
+        }
       }
 
       markAsRead(id);

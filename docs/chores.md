@@ -14,9 +14,6 @@ Chores belong to your Navet installation, not the connected smart-home provider.
 people, assignments, schedules, and history in a shared household workspace. Changing a provider
 connection does not create a new household, and separate Navet installations keep separate data.
 
-Provider adapters may optionally project a compact summary and accept action requests for
-automations without becoming the source of truth for chores.
-
 ## Where chores are available
 
 Chores require shared storage supplied by the Navet runtime. Standalone Docker supplies this
@@ -34,7 +31,7 @@ entities are available. See the [integration reference](/integrations/) for prov
   recurring work.
 - **Missions** and **Rewards** manage optional shared goals without changing the underlying chore
   workflow. Their supporting cards stay out of Today until **See rewards** is opened.
-- **Progress** shows contributions and a weekly review without ranking the household.
+- **Progress** shows contributions and a weekly review.
 - **Settings** manages people, motivation style, backups, restore, and recovery.
 - **Routines** keeps provider automations, scenes, and scripts available beside native chores.
 

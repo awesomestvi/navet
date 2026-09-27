@@ -30,7 +30,7 @@ When Navet has loaded provider entities and dashboard onboarding is incomplete, 
   This route restores the saved configuration directly rather than taking you through the language
   and appearance steps. Back up any current configuration before importing over it.
 
-For **all entities** or **blank**, continue through two more steps:
+For **all entities** or **blank**, complete setup:
 
 1. Choose the interface language, **12-hour** or **24-hour** time, and **Celsius** or **Fahrenheit**.
    These preferences update as you select them. Choose **Next**.

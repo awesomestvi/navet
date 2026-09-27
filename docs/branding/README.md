@@ -4,12 +4,8 @@ description: Apply Navet's established identity consistently without redesigning
 editUrl: https://github.com/awesomestvi/navet/edit/main/docs/branding/README.md
 ---
 
-Navet already has an identity. This system documents it so that product UI, documentation,
-marketing, releases, community material, and official assets continue to feel like the same
-product as Navet grows.
-
-Use these documents to preserve and apply the established brand. They are not a brief for a
-rebrand.
+This system defines Navet’s identity across product UI, documentation, marketing, releases,
+community material, and official assets.
 
 ## Start Here
 
@@ -41,7 +37,8 @@ explicitly commission a rebrand:
 - the existing hub mark, wordmark, geometry, proportions, and orange gradient
 - orange as the identifying brand accent, supported by neutral canvases and restrained warm and
   cool atmosphere
-- system UI typography and the current theme families: `glass`, `dark`, `light`, and `black`
+- self-hosted Inter with native system fallbacks and the theme families: `glass`, `dark`, `light`,
+  and `black`
 - the room-first, local-first, self-hosted, open-source product character
 - calm, direct, concise language focused on what a person can understand or do
 - product cards as an essential expression of the brand, with live state, semantic color, tactile
@@ -49,10 +46,6 @@ explicitly commission a rebrand:
 - the visual and behavioral continuity already present across
   [navet.app](https://navet.app/), [docs.navet.app](https://docs.navet.app/), and
   [demo.navet.app](https://demo.navet.app/)
-
-Do not add a new logo, tagline, typeface, palette, radius system, shadow language, personality, or
-positioning simply to make the system feel more complete. Completeness comes from documenting and
-operating the identity Navet already has.
 
 ## One Brand, Three Reference Surfaces
 

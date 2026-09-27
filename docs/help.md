@@ -6,7 +6,7 @@ editUrl: https://github.com/awesomestvi/navet/edit/main/docs/help.md
 
 ## Start with the installation guide
 
-Recheck the guide for your active provider and deployment route. Authentication, URLs, and update
+Recheck the guide for the affected provider and deployment route. Authentication, URLs, and update
 behavior differ between the custom panel, add-on, and standalone applications.
 
 ## Before reporting a problem

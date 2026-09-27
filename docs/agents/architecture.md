@@ -23,7 +23,7 @@ packages/
 - `@navet/app`
   Product shell, runtime selection, provider registration, settings, persistence, and boot wiring.
 
-Home Assistant is the first implemented provider, not the application architecture.
+Home Assistant is the reference adapter for Navet’s provider contracts.
 
 The app runtime is multi-provider: it can retain multiple implemented provider sessions, maintain
 provider-scoped state for each, and merge selected provider collections for shared dashboard use.

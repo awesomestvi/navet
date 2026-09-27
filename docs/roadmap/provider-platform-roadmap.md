@@ -8,7 +8,7 @@ Navet uses:
 
 - `@navet/core` for shared contracts and IDs
 - `@navet/ui` as the target provider-neutral shared UI package boundary
-- `@navet/provider-homeassistant` as the first implemented provider
+- `@navet/provider-homeassistant` as the reference adapter
 - `@navet/provider-homey` as a working standalone provider
 - `@navet/provider-openhab` as a working standalone provider
 - `@navet/app` for product wiring, runtime selection, settings, and persistence

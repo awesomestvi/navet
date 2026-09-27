@@ -13,8 +13,7 @@ Use the [contributing guide](/developers/contributing/) for prerequisites, local
 validation expectations.
 
 Maintainers can also send selected issues through Navet's
-[agentic development workflow](/developers/agentic-development/). Manual contributions remain a
-first-class path and do not require using the agent queue.
+[agentic development workflow](/developers/agentic-development/).
 
 ## Architecture direction
 
@@ -27,10 +26,8 @@ Home Assistant is the reference adapter, not the application architecture. New s
 depend on Navet-owned contracts rather than raw provider payloads.
 
 The app can retain multiple implemented provider sessions and aggregate selected provider
-collections. Home Assistant currently owns the advanced feature-service set; Homey and openHAB
-currently cover rooms, realtime entities, lighting, switches, and sensors. Keep implementation
-status separate from feature parity in code, tests, and docs.
+collections. Each adapter declares the services and controls it supports; see the
+[capability matrix](/integrations/) when implementing or documenting a shared feature.
 
 Detailed maintainer, architecture, testing, release, and AI-agent documents remain available in the
-[repository documentation](https://github.com/awesomestvi/navet/tree/main/docs) without being added
-to the public navigation automatically.
+[repository documentation](https://github.com/awesomestvi/navet/tree/main/docs).

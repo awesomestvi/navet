@@ -39,9 +39,6 @@ Representative libraries used by the current app and public surfaces include:
 - **Apple Human Interface Guidelines** - Interaction, hierarchy, and touch-oriented reference
 - **Frosted glass interfaces** - One influence on Navet's optional `glass` theme
 
-These are influences, not the product architecture. Navet uses its own room-first dashboard model,
-shared component system, and Liquid Glass (`glass`), `dark`, `light`, and `black` theme families.
-
 ## Project Inspiration
 
 - [`ha-fusion`](https://github.com/matt8707/ha-fusion) inspired me to build Navet, and I just want to say: tack så mycket, Mattias.

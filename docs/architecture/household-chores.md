@@ -90,8 +90,7 @@ document.
 
 Schema version 2 adds the delivery outbox. Both storage authorities migrate a valid schema version 1
 document before serving it, increment the revision, and persist the migrated representation. The
-outbox decouples a committed household action from future webhook, notification, and provider-event
-delivery.
+outbox records delivery work separately from committed household actions.
 
 The same authority schedules before-due, due, overdue, and approval reminders. Reminder IDs encode
 the occurrence, reminder slot, and recipient, so a restart can recover elapsed reminder slots
@@ -120,9 +119,9 @@ Setup and delivery bookkeeping remain available only through the audit history. 
 events use deterministic IDs and the authority reconciles them against immutable history, so a
 restart does not duplicate them after the capped workspace projection rolls forward.
 
-The workspace is bound to the trusted Home Assistant installation used by Navet's existing shared
-dashboard profile. Normal routes require an authenticated HttpOnly browser session. Add-on Ingress
-uses its explicit trusted-headers handler. Mutations require strict same-origin requests.
+The workspace is bound to the persistent Navet installation and workspace identity. Normal routes
+require an authenticated HttpOnly browser session for a supported provider. Add-on Ingress uses its
+explicit trusted-headers handler. Mutations require strict same-origin requests.
 
 The optional household management PIN is installation-owned security state stored separately from
 the public chores document, immutable history, and backups. The authority stores only a salted PIN
@@ -177,15 +176,15 @@ re-completing work cannot duplicate the household reward.
 
 Each participant has a provider-neutral point-history projection built from automatic completion
 and reopen deltas plus manager-authored manual adjustments. Manual adjustments require a non-zero
-whole-number delta within 10,000 points and a reason, allow balances to become negative, and remain
-in activity history without entering the public automation event feed. When a stored balance
+whole-number delta within 10,000 points and accept an optional reason. They can leave balances
+negative and remain in activity history without entering the public automation event feed. When a stored balance
 predates detailed point activities, the projection exposes the difference as one synthetic earlier
 balance instead of inventing chore-level history.
 
 The richer motivation contract remains a provider-neutral extension boundary for reward claims,
 manager adjustments, badges, and time-boxed challenges. Its ledger prevents repeated completion
-awards and defines audited reversal/refund behavior. Those deeper workflows are not required by the
-calm Today experience, and no public leaderboard is defined.
+awards and defines audited reversal/refund behavior. Today uses the completion and balance portions
+of this contract.
 
 ## Identity Boundary
 

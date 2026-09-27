@@ -17,7 +17,7 @@ Homey SDK definitions and the [Homey capability documentation](https://apps.deve
 openHAB uses its documented [Item types](https://www.openhab.org/docs/concepts/items.html).
 Navet's current mapper and device-profile implementations determine what each fixture exposes.
 
-## Added everyday examples
+## Everyday examples
 
 | Example | Homey fixture | openHAB coverage | Useful initial check |
 | --- | --- | --- | --- |
@@ -51,7 +51,7 @@ the [permission checklist](README.md#homey-permission-coverage).
 | Robot vacuums and mowers | A normalized robot state and commands beyond generic power control. |
 | Remotes, buttons, and doorbell presses | Momentary events and Flow triggers; a persistent on/off fixture does not exercise those events. |
 | EV charging, solar, and battery management | Basic power readings are covered, but charging schedules, battery control, and energy flow contracts require dedicated support. |
-| Full openHAB climate and media | Current Navet openHAB support exposes the basic items, not dedicated thermostat or speaker services. |
+| Advanced openHAB climate and media | Coverage beyond target-temperature, playback, and volume controls, such as HVAC modes, media browsing, and speaker grouping. |
 | Multiple people's presence | A second real Homey test account; room occupancy cannot substitute for account identity. |
 
 The audit deliberately leaves these gaps visible instead of claiming full support from a

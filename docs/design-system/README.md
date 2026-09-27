@@ -2,8 +2,7 @@
 
 This folder documents Navet's shared UI layers, stable export surfaces, and Storybook review model.
 
-Navet does not publish a separate design-system package. The design system is an in-repo set of
-authoring layers and curated export surfaces.
+The design system consists of repository authoring layers and curated export surfaces.
 
 ## Guidance Ownership
 
