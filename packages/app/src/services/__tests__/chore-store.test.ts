@@ -226,6 +226,94 @@ describe('NJS chore workspace store', () => {
     });
   }
 
+  it.each([{ rotationCadence: 'weekly' }, { rotationDayOfWeek: 0 }])(
+    'reconciles unstarted occurrences after a rotation edit: %j',
+    (change) => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-09-28T08:00:00.000Z'));
+      const mockFs = createMockFs();
+      choreStore.setChoreStoreFsForTests(mockFs);
+      choreStore.setChoreStorePrincipalResolverForTests(() => PRINCIPAL);
+      let revision = 0;
+      const send = (action: Record<string, unknown>) => {
+        const request = createActionRequest(`command-${revision}`, revision, action);
+        choreStore.handle(request);
+        expect(request.return).toHaveBeenCalledWith(200, expect.any(String));
+        const result = parseResponse(request);
+        revision = result.revision;
+        return result.data;
+      };
+      send({ type: 'participant_create', participant: managerParticipant() });
+      send({
+        type: 'participant_create',
+        actorParticipantId: 'maya',
+        participant: managerParticipant('sofia'),
+      });
+      const definition = {
+        ...seededData('fixture').definitionsById.dishes,
+        assignment: {
+          mode: 'rotation',
+          participantIds: ['maya', 'sofia'],
+          ...('rotationDayOfWeek' in change ? { rotationCadence: 'weekly' } : {}),
+        },
+        schedule: { frequency: 'daily', startDate: '2026-09-28', time: '18:00', timeZone: 'UTC' },
+      };
+      send({ type: 'definition_create', actorParticipantId: 'maya', definition });
+      send({
+        type: 'materialize_occurrences',
+        rangeStart: '2026-09-28T00:00:00.000Z',
+        rangeEnd: '2026-10-07T00:00:00.000Z',
+      });
+      const stored = JSON.parse(mockFs.getFile(CHORE_PATH) ?? '{}');
+      const occurrences = Object.values(stored.data.occurrencesById) as Array<
+        Record<string, unknown>
+      >;
+      const preserved: Record<string, unknown> = {};
+      ['done', 'claimed', 'awaiting_approval', 'skipped', 'missed'].forEach((status, index) => {
+        occurrences[index].status = status;
+        preserved[String(occurrences[index].id)] = { ...occurrences[index] };
+      });
+      occurrences[5].carriedForwardFrom = 'earlier';
+      preserved[String(occurrences[5].id)] = { ...occurrences[5] };
+      const staleId = occurrences.at(-1)?.id;
+      stored.data.outbox = ['pending', 'delivered'].map((status) => ({
+        id: `reminder-${status}`,
+        activityId: 'reminder',
+        eventType: 'reminder_due',
+        occurrenceId: staleId,
+        status,
+        attempts: 0,
+        createdAt: '2026-09-28T08:00:00.000Z',
+        nextAttemptAt: '2026-09-28T08:00:00.000Z',
+      }));
+      mockFs.writeFileSync(CHORE_PATH, JSON.stringify(stored));
+      const updated = send({
+        type: 'definition_update',
+        actorParticipantId: 'maya',
+        definition: {
+          ...definition,
+          assignment: { ...definition.assignment, ...change },
+        },
+      });
+      expect(updated.occurrencesById).toEqual(preserved);
+      expect(
+        updated.outbox.filter((item: { occurrenceId?: string }) => item.occurrenceId === staleId)
+      ).toEqual([expect.objectContaining({ status: 'delivered' })]);
+      const result = send({
+        type: 'materialize_occurrences',
+        rangeStart: '2026-10-04T00:00:00.000Z',
+        rangeEnd: '2026-10-07T00:00:00.000Z',
+      });
+      expect(result.occurrencesById).toMatchObject(preserved);
+      const future = Object.entries(result.occurrencesById).filter(([id]) => !preserved[id]);
+      expect(future).toHaveLength(3);
+      expect(
+        new Set(future.map(([, occurrence]) => (occurrence as { scheduledAt: string }).scheduledAt))
+          .size
+      ).toBe(3);
+    }
+  );
+
   it('reports runtime capabilities without enabling browser background work in standalone mode', () => {
     choreStore.setChoreStoreFsForTests(createMockFs());
     choreStore.setChoreStorePrincipalResolverForTests(() => PRINCIPAL);

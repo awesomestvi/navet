@@ -348,6 +348,75 @@ class ChoreAuthorityTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(chores.ChoreStorageError):
             chores._normalize_data(malformed)
 
+    async def test_restore_rejects_invalid_rotation_fields_before_persisting(self):
+        await self._create_manager()
+        before = copy.deepcopy(_Store.values)
+        for field, values in {
+            "rotationDayOfWeek": [None, -1, 7, 1.5, "1", True],
+            "rotationCadence": [None, "yearly", [], {}],
+        }.items():
+            for value in values:
+                with self.subTest(field=field, value=value):
+                    imported = chores._empty_data()
+                    imported["definitionsById"]["dishes"] = {
+                        "assignment": {"mode": "rotation", "rotationCadence": "weekly", field: value}
+                    }
+                    with self.assertRaises(chores.ChoreStorageError):
+                        await self.authority.async_restore({
+                            "commandId": "invalid-restore",
+                            "baseRevision": self.authority.revision,
+                            "actorParticipantId": "manager",
+                            "mode": "replace",
+                            "document": {
+                                "contract": "navet.chores", "version": 1,
+                                "exportedAt": "2026-09-28T08:00:00.000Z",
+                                "workspace": imported, "events": [],
+                            },
+                        }, "ha-user-1")
+                    self.assertEqual(_Store.values, before)
+        for assignment in [{}, {"rotationCadence": "weekly"}, {"rotationDayOfWeek": 0}, {"rotationDayOfWeek": 6}]:
+            data = chores._empty_data()
+            data["definitionsById"]["dishes"] = {"assignment": assignment}
+            self.assertEqual(chores._normalize_data(data), data)
+
+    async def test_rotation_edits_replace_unstarted_work_and_preserve_history(self):
+        timestamp = "2026-09-28T08:00:00.000Z"
+        for change in [{"rotationCadence": "weekly"}, {"rotationDayOfWeek": 0}]:
+            with self.subTest(change=change):
+                data = chores._empty_data()
+                data["participantsById"] = {key: _participant(key) for key in ["manager", "child"]}
+                definition = {
+                    "id": "dishes", "enabled": True,
+                    "assignment": {"mode": "rotation", "participantIds": ["manager", "child"]},
+                    "schedule": {"frequency": "daily", "startDate": "2026-09-28", "time": "18:00", "timeZone": "UTC"},
+                    "dueWindowMinutes": 60,
+                }
+                if "rotationDayOfWeek" in change:
+                    definition["assignment"]["rotationCadence"] = "weekly"
+                data["definitionsById"]["dishes"] = definition
+                data, _ = chores._materialize(data, "2026-09-28T00:00:00.000Z", "2026-10-07T00:00:00.000Z", timestamp, "first")
+                values = list(data["occurrencesById"].values())
+                preserved = {}
+                for occurrence, status in zip(values, ["done", "claimed", "awaiting_approval", "skipped", "missed"]):
+                    occurrence["status"] = status
+                    preserved[occurrence["id"]] = copy.deepcopy(occurrence)
+                values[5]["carriedForwardFrom"] = "earlier"
+                preserved[values[5]["id"]] = copy.deepcopy(values[5])
+                stale_id = values[-1]["id"]
+                data["outbox"] = [{"occurrenceId": stale_id, "status": "pending"}, {"occurrenceId": stale_id, "status": "delivered"}]
+                updated = {**definition, "assignment": {**definition["assignment"], **change}}
+                data, _ = self.authority._apply_workspace_action(data, {
+                    "type": "definition_update", "actorParticipantId": "manager", "definition": updated,
+                }, timestamp, "edit")
+                self.assertEqual(data["occurrencesById"], preserved)
+                self.assertEqual(data["outbox"], [{"occurrenceId": stale_id, "status": "delivered"}])
+                data, _ = chores._materialize(data, "2026-10-04T00:00:00.000Z", "2026-10-07T00:00:00.000Z", timestamp, "second")
+                for occurrence_id, occurrence in preserved.items():
+                    self.assertEqual(data["occurrencesById"][occurrence_id], occurrence)
+                future = [item for key, item in data["occurrencesById"].items() if key not in preserved]
+                self.assertEqual(len(future), 3)
+                self.assertEqual(len({item["scheduledAt"] for item in future}), 3)
+
     async def test_invalid_rotation_cursor_is_repaired_without_losing_workspace(self):
         data = chores._empty_data()
         data["definitionsById"] = {

@@ -132,6 +132,38 @@ export const Overdue: Story = {
   },
 };
 
+export const LongTitles: Story = {
+  args: {
+    definition: {
+      ...definition,
+      title: 'Unload the dishwasher and put the clean dishes back in the kitchen cupboards',
+    },
+  },
+  render: (args) => (
+    <div className="grid gap-4" style={{ width: 280 }}>
+      <ChoreFocusCard {...args} size="small" />
+      <ChoreFocusCard {...args} size="medium" />
+    </div>
+  ),
+  play: async ({ canvasElement, args }) => {
+    for (const title of within(canvasElement).getAllByRole('heading', {
+      name: args.definition.title,
+    })) {
+      await expect(getComputedStyle(title).whiteSpace).toBe('normal');
+      await expect(title.getBoundingClientRect().height).toBeGreaterThan(
+        parseFloat(getComputedStyle(title).lineHeight)
+      );
+      await expect(title.scrollWidth).toBeLessThanOrEqual(title.clientWidth);
+      await expect(title.scrollHeight).toBeLessThanOrEqual(title.clientHeight);
+      const footer = title.closest('[data-chore-base-card]')?.querySelector('footer');
+      await expect(footer).toBeVisible();
+      await expect(footer?.getBoundingClientRect().top).toBeGreaterThanOrEqual(
+        title.getBoundingClientRect().bottom
+      );
+    }
+  },
+};
+
 export const EnlargedHeaderText: Story = {
   render: (args) => (
     <div className="grid w-[min(40rem,90vw)] gap-4">

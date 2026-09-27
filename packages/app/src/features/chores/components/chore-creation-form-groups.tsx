@@ -207,11 +207,17 @@ export function ChoreCreationFormGroups({
   const rotationPeople = participantIds
     .map((id) => participants.find((person) => person.id === id))
     .filter((person): person is ChoreParticipant => Boolean(person));
+  const startingId = participantIds[rotationCursor];
+  const startingPerson = rotationPeople.find((person) => person.id === startingId);
   const rotationOrder = [
-    ...rotationPeople.slice(rotationCursor),
-    ...rotationPeople.slice(0, rotationCursor),
+    ...participantIds.slice(rotationCursor),
+    ...participantIds.slice(0, rotationCursor),
   ]
-    .map((person) => person.displayName)
+    .map(
+      (id) =>
+        participants.find((person) => person.id === id)?.displayName ??
+        t('dashboard.roomsWorkspace.unavailable')
+    )
     .join(' → ');
   const weekdayLabel = (day: number) =>
     new Intl.DateTimeFormat(locale, { weekday: 'long', timeZone: 'UTC' }).format(
@@ -446,12 +452,17 @@ export function ChoreCreationFormGroups({
               >
                 <Select
                   aria-label={t('household.choreDialog.rotationStartsWith')}
-                  value={participantIds[rotationCursor] ?? ''}
+                  value={startingPerson?.id ?? ''}
                   disabled={rotationPeople.length === 0}
                   onChange={(event) =>
                     onRotationCursorChange(participantIds.indexOf(event.target.value))
                   }
                 >
+                  {!startingPerson ? (
+                    <option value="" disabled>
+                      {t('dashboard.roomsWorkspace.unavailable')}
+                    </option>
+                  ) : null}
                   {rotationPeople.map((person) => (
                     <option key={person.id} value={person.id}>
                       {person.displayName}

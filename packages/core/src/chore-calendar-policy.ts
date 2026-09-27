@@ -128,11 +128,12 @@ export function rotationIndexForDate(
   reset: ChoreAssignment['rotationReset'],
   cadence?: ChoreAssignment['rotationCadence'],
   startDate?: string,
-  dayOfWeek = 1
+  dayOfWeek?: number
 ) {
   if (cadence === 'weekly') {
+    const handoverDay = dayOfWeek ?? 1;
     const weekStart = (date: string) =>
-      addCalendarDays(date, -((getDayOfWeek(date) - dayOfWeek + 7) % 7));
+      addCalendarDays(date, -((getDayOfWeek(date) - handoverDay + 7) % 7));
     const anchor = weekStart(startDate ?? scheduledDates[0]);
     const current = weekStart(scheduledDates[scheduledIndex]);
     return Math.max(0, differenceInCalendarDays(current, anchor) / 7);

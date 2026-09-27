@@ -448,7 +448,7 @@ export const plMessages = {
   'household.choreDialog.rotationScheduledDay': 'Każdego zaplanowanego dnia',
   'household.choreDialog.rotationWeekly': 'Co tydzień',
   'household.choreDialog.rotationDay': 'Dzień zmiany',
-  'household.choreDialog.rotationStartsWith': 'Zaczyna',
+  'household.choreDialog.rotationStartsWith': 'Osoba rozpoczynająca',
   'household.choreDialog.rotationPreviewWeekly':
     'Kolejność: {order}. Dzień cotygodniowej zmiany: {day}.',
   'household.choreDialog.rotationPreviewScheduled':

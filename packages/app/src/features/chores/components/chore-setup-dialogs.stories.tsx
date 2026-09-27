@@ -937,6 +937,12 @@ export const UnavailableRotationParticipantCanBeRemoved: Story = {
     );
     await userEvent.click(dialog.getByRole('button', { name: 'Next' }));
     await expect(dialog.getByRole('alert')).toHaveTextContent('Choose a person to continue.');
+    await expect(dialog.getByLabelText('Starts with')).toHaveValue('');
+    await expect(dialog.getByRole('option', { name: 'Unavailable' })).toHaveProperty(
+      'selected',
+      true
+    );
+    await expect(dialog.getByText(/Turn order: Unavailable → Maya/)).toBeVisible();
     await expect(dialog.getByRole('button', { name: 'Next' })).toBeDisabled();
     await userEvent.click(dialog.getByRole('checkbox', { name: 'Sam' }));
     await expect(dialog.queryByRole('alert')).toBeNull();

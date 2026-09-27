@@ -1658,8 +1658,28 @@ function applyWorkspaceAction(data, commandId, action, timestamp) {
     assertDefinitionReferences(data, definition);
     const definitionsById = Object.assign({}, data.definitionsById);
     definitionsById[definition.id] = definition;
+    let occurrencesById = data.occurrencesById;
+    let outbox = data.outbox;
+    if (currentDefinition && (
+      JSON.stringify(currentDefinition.schedule) !== JSON.stringify(definition.schedule) ||
+      JSON.stringify(currentDefinition.assignment) !== JSON.stringify(definition.assignment) ||
+      currentDefinition.dueWindowMinutes !== definition.dueWindowMinutes
+    )) {
+      occurrencesById = {};
+      const removedIds = {};
+      for (const id in data.occurrencesById) {
+        if (!Object.prototype.hasOwnProperty.call(data.occurrencesById, id)) continue;
+        const occurrence = data.occurrencesById[id];
+        if (occurrence.definitionId === definition.id && occurrence.status === 'available' && occurrence.carriedForwardFrom === undefined) {
+          removedIds[id] = true;
+        } else {
+          occurrencesById[id] = occurrence;
+        }
+      }
+      outbox = data.outbox.filter((item) => item.status === 'delivered' || !item.occurrenceId || !removedIds[item.occurrenceId]);
+    }
     return appendWorkspaceActivity(
-      Object.assign({}, data, { definitionsById }),
+      Object.assign({}, data, { definitionsById, occurrencesById, outbox }),
       buildWorkspaceActivity(
         commandId,
         timestamp,

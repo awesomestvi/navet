@@ -58,6 +58,12 @@ export function ChoreBaseCard({
       style={style}
       overlay={overlay}
       title={title}
+      headerTitleOverflow="wrap"
+      headerClassName={
+        metrics && size === 'medium'
+          ? 'flex-wrap [&>div:nth-child(2)]:min-w-32 [&>div:last-child]:ml-auto'
+          : undefined
+      }
       subtitle={eyebrow}
       headerLeading={leading}
       headerTrailing={
