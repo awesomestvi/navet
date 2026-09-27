@@ -626,6 +626,48 @@ describe('chores domain', () => {
     ).toEqual(['alice', 'bob']);
   });
 
+  it('adds a missing everyone assignment for a past scheduled time without duplicating the existing one', () => {
+    const definition = makeDefinition({
+      assignment: { mode: 'everyone', participantIds: ['alice', 'bob'] },
+      schedule: { frequency: 'once', date: '2026-09-28', time: '18:00', timeZone: 'UTC' },
+    });
+    const existing = makeOccurrence({
+      id: `${definition.id}:2026-09-28T18:00:00.000Z:alice`,
+      scheduledAt: '2026-09-28T18:00:00.000Z',
+      dueAt: '2026-09-28T21:00:00.000Z',
+    });
+    const action = {
+      type: 'materialize_occurrences' as const,
+      rangeStart: '2026-09-28T00:00:00.000Z',
+      rangeEnd: '2026-09-29T00:00:00.000Z',
+    };
+    const result = applyChoreWorkspaceAction({
+      commandId: 'add-bob',
+      action,
+      timestamp: '2026-09-29T08:00:00.000Z',
+      workspace: {
+        ...createEmptyChoreWorkspace(),
+        participantsById: { alice, bob },
+        definitionsById: { [definition.id]: definition },
+        occurrencesById: { [existing.id]: existing },
+      },
+    });
+    expect(result.data.occurrencesById[existing.id]).toEqual(existing);
+    expect(
+      Object.values(result.data.occurrencesById)
+        .map((item) => item.assignmentSlot)
+        .sort()
+    ).toEqual(['alice', 'bob']);
+    const repeated = applyChoreWorkspaceAction({
+      commandId: 'repeat',
+      action,
+      timestamp: '2026-09-29T08:00:00.000Z',
+      workspace: result.data,
+    });
+    expect(repeated.data.occurrencesById).toEqual(result.data.occurrencesById);
+    expect(repeated.additionalActivities).toEqual([]);
+  });
+
   it('preserves an existing occurrence when a range is materialized again', () => {
     const existing = makeOccurrence({ status: 'done', completedBy: 'alice' });
     const occurrences = materializeChoreOccurrences({

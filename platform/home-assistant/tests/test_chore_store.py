@@ -419,6 +419,35 @@ class ChoreAuthorityTests(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(len(future), 2)
                 self.assertEqual(len({item["scheduledAt"] for item in future}), 2)
 
+    async def test_past_everyone_assignment_adds_only_the_missing_participant(self):
+        scheduled_at = "2026-09-28T18:00:00.000Z"
+        existing_id = f"dishes:{scheduled_at}:manager"
+        data = chores._empty_data()
+        data["participantsById"] = {key: _participant(key) for key in ["manager", "child"]}
+        data["definitionsById"]["dishes"] = {
+            "id": "dishes", "enabled": True,
+            "assignment": {"mode": "everyone", "participantIds": ["manager", "child"]},
+            "schedule": {"frequency": "once", "date": "2026-09-28", "time": "18:00", "timeZone": "UTC"},
+            "dueWindowMinutes": 60,
+        }
+        existing = {
+            "id": existing_id, "definitionId": "dishes", "scheduledAt": scheduled_at,
+            "dueAt": "2026-09-28T19:00:00.000Z", "assigneeIds": ["manager"],
+            "assignmentSlot": "manager", "status": "available", "updatedAt": scheduled_at,
+        }
+        data["occurrencesById"][existing_id] = existing
+        args = ("2026-09-28T00:00:00.000Z", "2026-09-29T00:00:00.000Z", "2026-09-29T08:00:00.000Z")
+        data, additions = chores._materialize(data, *args, "add-child")
+        self.assertEqual(data["occurrencesById"][existing_id], existing)
+        self.assertEqual(
+            {item["assignmentSlot"] for item in data["occurrencesById"].values()},
+            {"manager", "child"},
+        )
+        self.assertEqual(len(additions), 1)
+        repeated, additions = chores._materialize(data, *args, "repeat")
+        self.assertEqual(repeated["occurrencesById"], data["occurrencesById"])
+        self.assertEqual(additions, [])
+
     async def test_invalid_rotation_cursor_is_repaired_without_losing_workspace(self):
         data = chores._empty_data()
         data["definitionsById"] = {

@@ -2001,7 +2001,9 @@ function applyWorkspaceAction(data, commandId, action, timestamp) {
       if (!occurrencesById[materialized[index].id]) {
         const occurrence = materialized[index];
         if (Date.parse(occurrence.scheduledAt) <= Date.parse(timestamp) && Object.values(data.occurrencesById).some(function (existing) {
-          return existing.definitionId === occurrence.definitionId && existing.scheduledAt === occurrence.scheduledAt;
+          return existing.definitionId === occurrence.definitionId &&
+            existing.scheduledAt === occurrence.scheduledAt &&
+            (definition.assignment.mode !== 'everyone' || existing.assignmentSlot === occurrence.assignmentSlot);
         })) continue;
         occurrencesById[occurrence.id] = occurrence;
         occurrenceCreatedActivities.push({

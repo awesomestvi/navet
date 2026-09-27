@@ -2072,7 +2072,9 @@ export function applyChoreWorkspaceAction(
           Object.values(workspace.occurrencesById).some(
             (existing) =>
               existing.definitionId === occurrence.definitionId &&
-              existing.scheduledAt === occurrence.scheduledAt
+              existing.scheduledAt === occurrence.scheduledAt &&
+              (definition.assignment.mode !== 'everyone' ||
+                existing.assignmentSlot === occurrence.assignmentSlot)
           )
         ) {
           continue;

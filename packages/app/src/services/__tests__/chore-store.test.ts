@@ -321,6 +321,62 @@ describe('NJS chore workspace store', () => {
     }
   );
 
+  it('adds an everyone participant for a past time without duplicating existing work', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-10T08:00:00.000Z'));
+    choreStore.setChoreStoreFsForTests(createMockFs());
+    choreStore.setChoreStorePrincipalResolverForTests(() => PRINCIPAL);
+    let revision = 0;
+    const send = (action: Record<string, unknown>) => {
+      let request = createActionRequest(`command-${revision}`, revision, action);
+      choreStore.handle(request);
+      if (request.return.mock.calls.at(-1)?.[0] === 412) {
+        revision = parseResponse(request).revision;
+        request = createActionRequest(`command-${revision}`, revision, action);
+        choreStore.handle(request);
+      }
+      expect(request.return).toHaveBeenCalledWith(200, expect.any(String));
+      const result = parseResponse(request);
+      revision = result.revision;
+      return result.data;
+    };
+    send({ type: 'participant_create', participant: managerParticipant() });
+    send({
+      type: 'participant_create',
+      actorParticipantId: 'maya',
+      participant: managerParticipant('sofia'),
+    });
+    const definition = {
+      ...seededData('fixture').definitionsById.dishes,
+      assignment: { mode: 'everyone', participantIds: ['maya'] },
+    };
+    send({ type: 'definition_create', actorParticipantId: 'maya', definition });
+    const materialize = {
+      type: 'materialize_occurrences',
+      rangeStart: '2026-08-10T00:00:00.000Z',
+      rangeEnd: '2026-08-11T00:00:00.000Z',
+    };
+    const first = send(materialize);
+    const existing = Object.values(first.occurrencesById)[0] as { id: string };
+    vi.setSystemTime(new Date('2026-08-11T08:00:00.000Z'));
+    send({
+      type: 'definition_update',
+      actorParticipantId: 'maya',
+      definition: {
+        ...definition,
+        assignment: { mode: 'everyone', participantIds: ['maya', 'sofia'] },
+      },
+    });
+    const updated = send(materialize);
+    expect(updated.occurrencesById[existing.id]).toEqual(first.occurrencesById[existing.id]);
+    expect(
+      Object.values(updated.occurrencesById)
+        .map((item) => (item as { assignmentSlot: string }).assignmentSlot)
+        .sort()
+    ).toEqual(['maya', 'sofia']);
+    expect(send(materialize).occurrencesById).toEqual(updated.occurrencesById);
+  });
+
   it('reports runtime capabilities without enabling browser background work in standalone mode', () => {
     choreStore.setChoreStoreFsForTests(createMockFs());
     choreStore.setChoreStorePrincipalResolverForTests(() => PRINCIPAL);

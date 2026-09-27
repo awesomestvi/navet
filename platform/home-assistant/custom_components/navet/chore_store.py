@@ -700,6 +700,10 @@ def _materialize(data: dict[str, Any], range_start: str, range_end: str, timesta
                     if scheduled <= _parse_iso(timestamp) and any(
                         item.get("definitionId") == definition["id"]
                         and item.get("scheduledAt") == scheduled_iso
+                        and (
+                            definition.get("assignment", {}).get("mode") != "everyone"
+                            or item.get("assignmentSlot") == slot
+                        )
                         for item in past_occurrences
                     ):
                         continue
