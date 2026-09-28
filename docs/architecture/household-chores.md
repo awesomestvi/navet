@@ -186,16 +186,20 @@ once when its final required chore completes; the awarded mission ID is retained
 re-completing work cannot duplicate the household reward.
 
 Each participant has a provider-neutral point-history projection built from automatic completion
-and reopen deltas plus manager-authored manual adjustments. Manual adjustments require a non-zero
+and reopen deltas, manager-authored manual adjustments, and reward decisions. The experience state
+holds an immutable point transaction for every balance change and reward decision. Manual adjustments require a non-zero
 whole-number delta within 10,000 points and accept an optional reason. They can leave balances
 negative and remain in activity history without entering the public automation event feed. When a stored balance
 predates detailed point activities, the projection exposes the difference as one synthetic earlier
 balance instead of inventing chore-level history.
 
-The richer motivation contract remains a provider-neutral extension boundary for reward claims,
-manager adjustments, badges, and time-boxed challenges. Its ledger prevents repeated completion
-awards and defines audited reversal/refund behavior. Today uses the completion and balance portions
-of this contract.
+Reward goals show savings progress. A participant can request an enabled reward when they have its
+cost in points; requesting does not spend points. The request records the reward title and cost at
+that moment, so editing or deleting the goal does not alter an existing request. A manager approves
+or declines it. Approval spends the saved cost once, fulfillment records delivery, and a refund
+returns the spent points once. Decisions use the same revisioned and idempotent command path as
+other household actions. Badges and achievements share the versioned experience document; their
+durable awards are distinct from reward requests.
 
 ## Identity Boundary
 

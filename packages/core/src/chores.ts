@@ -17,6 +17,7 @@ import {
   type ChoreMission,
   createChoreExperienceState,
   isChoreExperienceState,
+  normalizeChoreExperienceState,
 } from './chore-experience.ts';
 
 export const CHORE_WORKSPACE_SCHEMA_VERSION = 2 as const;
@@ -216,6 +217,11 @@ export type ChoreActivityType =
   | 'retention_updated'
   | 'experience_updated'
   | 'points_adjusted'
+  | 'reward_requested'
+  | 'reward_approved'
+  | 'reward_declined'
+  | 'reward_fulfilled'
+  | 'reward_refunded'
   | 'occurrence_created'
   | 'due'
   | 'overdue'
@@ -389,6 +395,21 @@ export interface ChoreWorkspaceExperiencePointsAdjustAction {
   reason?: string;
 }
 
+export interface ChoreWorkspaceRewardRequestAction {
+  type: 'reward_request';
+  requestId: string;
+  rewardId: string;
+  participantId: string;
+}
+
+export interface ChoreWorkspaceRewardDecisionAction {
+  type: 'reward_decision';
+  requestId: string;
+  actorParticipantId: string;
+  decision: 'approve' | 'decline' | 'fulfill' | 'refund';
+  reason?: string;
+}
+
 export type ChoreWorkspaceAction =
   | ChoreWorkspaceOccurrenceAction
   | ChoreWorkspaceParticipantCreateAction
@@ -403,7 +424,9 @@ export type ChoreWorkspaceAction =
   | ChoreWorkspaceOutboxDeliveryAction
   | ChoreWorkspaceRetentionUpdateAction
   | ChoreWorkspaceExperienceUpdateAction
-  | ChoreWorkspaceExperiencePointsAdjustAction;
+  | ChoreWorkspaceExperiencePointsAdjustAction
+  | ChoreWorkspaceRewardRequestAction
+  | ChoreWorkspaceRewardDecisionAction;
 
 export interface ApplyChoreCommandInput {
   commandId: string;
@@ -815,6 +838,11 @@ function isChoreActivity(value: unknown) {
       'retention_updated',
       'experience_updated',
       'points_adjusted',
+      'reward_requested',
+      'reward_approved',
+      'reward_declined',
+      'reward_fulfilled',
+      'reward_refunded',
       'occurrence_created',
       'due',
       'overdue',
@@ -867,6 +895,11 @@ function isChoreOutboxItem(value: unknown) {
       'retention_updated',
       'experience_updated',
       'points_adjusted',
+      'reward_requested',
+      'reward_approved',
+      'reward_declined',
+      'reward_fulfilled',
+      'reward_refunded',
       'occurrence_created',
       'due',
       'overdue',
@@ -952,6 +985,52 @@ export function isChoreWorkspaceData(value: unknown): value is ChoreWorkspaceDat
 }
 
 export function migrateChoreWorkspaceData(value: unknown): ChoreWorkspaceData {
+  if (
+    isRecord(value) &&
+    value.schemaVersion === CHORE_WORKSPACE_SCHEMA_VERSION &&
+    isRecord(value.experience) &&
+    value.experience.version === 1
+  ) {
+    if (
+      !isChoreExperienceState({
+        ...createChoreExperienceState(),
+        ...value.experience,
+        version: 2,
+      })
+    ) {
+      throw new Error('Unsupported or invalid chore workspace schema');
+    }
+    const experience = normalizeChoreExperienceState(value.experience);
+    const balances = { ...(experience.earnedPointsByParticipant ?? {}) };
+    if (
+      experience.gamificationMode !== 'off' &&
+      Object.keys(balances).length === 0 &&
+      isRecord(value.occurrencesById)
+    ) {
+      for (const occurrence of Object.values(value.occurrencesById)) {
+        if (
+          !isRecord(occurrence) ||
+          occurrence.status !== 'done' ||
+          typeof occurrence.completedBy !== 'string' ||
+          typeof occurrence.definitionId !== 'string'
+        )
+          continue;
+        balances[occurrence.completedBy] =
+          (balances[occurrence.completedBy] ?? 0) +
+          (experience.presentationByDefinitionId[occurrence.definitionId]?.points ?? 0);
+      }
+    }
+    experience.earnedPointsByParticipant = balances;
+    experience.pointTransactions = Object.entries(balances).map(([participantId, pointsDelta]) => ({
+      id: `opening:${participantId}`,
+      participantId,
+      pointsDelta,
+      kind: 'opening_balance',
+      timestamp: '1970-01-01T00:00:00.000Z',
+    }));
+    const migrated = { ...value, experience };
+    if (isChoreWorkspaceData(migrated)) return migrated;
+  }
   if (isChoreWorkspaceData(value)) {
     return value.experience ? value : { ...value, experience: createChoreExperienceState() };
   }
@@ -1577,7 +1656,22 @@ export function applyChoreWorkspaceAction(
     if (points && participantId && (becameFinal || stoppedBeingFinal)) {
       const balances = getChoreExperiencePointBalances(workspace);
       balances[participantId] = (balances[participantId] ?? 0) + pointsDelta;
-      nextExperience = { ...nextExperience, earnedPointsByParticipant: balances };
+      nextExperience = {
+        ...nextExperience,
+        earnedPointsByParticipant: balances,
+        pointTransactions: [
+          ...nextExperience.pointTransactions,
+          {
+            id: `points:${commandId}`,
+            participantId,
+            pointsDelta,
+            kind: becameFinal ? 'completion' : 'reopen',
+            timestamp,
+            commandId,
+            occurrenceId: previousOccurrence.id,
+          },
+        ],
+      };
     }
     const awardedMissionIds = [...(experience.awardedMissionIds ?? [])];
     let householdBonusPoints = experience.householdBonusPoints ?? 0;
@@ -1871,6 +1965,19 @@ export function applyChoreWorkspaceAction(
     if (!isChoreExperienceState(action.experience)) {
       throw new Error('Chore experience data is invalid');
     }
+    const currentExperience = workspace.experience ?? createChoreExperienceState();
+    if (
+      JSON.stringify(action.experience.rewardRequestsById) !==
+        JSON.stringify(currentExperience.rewardRequestsById) ||
+      JSON.stringify(action.experience.pointTransactions) !==
+        JSON.stringify(currentExperience.pointTransactions) ||
+      JSON.stringify(action.experience.progressAwards) !==
+        JSON.stringify(currentExperience.progressAwards) ||
+      JSON.stringify(action.experience.earnedPointsByParticipant) !==
+        JSON.stringify(currentExperience.earnedPointsByParticipant)
+    ) {
+      throw new Error('Reward and point history can only change through household actions');
+    }
     for (const definitionId of Object.keys(action.experience.presentationByDefinitionId)) {
       if (!workspace.definitionsById[definitionId]) {
         throw new Error('Chore experience references an unavailable chore');
@@ -1934,7 +2041,155 @@ export function applyChoreWorkspaceAction(
       }),
       data: {
         ...workspace,
-        experience: { ...experience, earnedPointsByParticipant: balances },
+        experience: {
+          ...experience,
+          earnedPointsByParticipant: balances,
+          pointTransactions: [
+            ...experience.pointTransactions,
+            {
+              id: `points:${commandId}`,
+              participantId: action.participantId,
+              pointsDelta: action.pointsDelta,
+              kind: 'adjustment',
+              timestamp,
+              commandId,
+            },
+          ],
+        },
+      },
+    };
+  }
+
+  if (action.type === 'reward_request') {
+    if (!action.requestId.trim()) throw new Error('Reward request ID is required');
+    const participant = workspace.participantsById[action.participantId];
+    if (!participant || participant.pausedAt || !participant.capabilities.includes('complete')) {
+      throw new Error('Chore participant is not active');
+    }
+    const experience = workspace.experience ?? createChoreExperienceState();
+    if (experience.gamificationMode === 'off') throw new Error('Rewards are unavailable');
+    if (experience.rewardRequestsById[action.requestId])
+      throw new Error('Reward request already exists');
+    const reward = experience.rewardGoalsById[action.rewardId];
+    if (
+      !reward?.enabled ||
+      (reward.participantId && reward.participantId !== action.participantId)
+    ) {
+      throw new Error('Reward is unavailable');
+    }
+    if (
+      (getChoreExperiencePointBalances(workspace)[action.participantId] ?? 0) < reward.targetPoints
+    ) {
+      throw new Error('Not enough points for this reward');
+    }
+    return {
+      activity: buildWorkspaceActivity({
+        commandId,
+        timestamp,
+        type: 'reward_requested',
+        actorParticipantId: action.participantId,
+        participantId: action.participantId,
+      }),
+      data: {
+        ...workspace,
+        experience: {
+          ...experience,
+          rewardRequestsById: {
+            ...experience.rewardRequestsById,
+            [action.requestId]: {
+              id: action.requestId,
+              rewardId: reward.id,
+              rewardTitle: reward.title,
+              cost: reward.targetPoints,
+              participantId: action.participantId,
+              status: 'requested',
+              requestedAt: timestamp,
+              updatedAt: timestamp,
+            },
+          },
+        },
+      },
+    };
+  }
+
+  if (action.type === 'reward_decision') {
+    assertWorkspaceManager(workspace, action.actorParticipantId);
+    const experience = workspace.experience ?? createChoreExperienceState();
+    const request = experience.rewardRequestsById[action.requestId];
+    if (!request) throw new Error('Reward request is no longer available');
+    const status =
+      action.decision === 'approve'
+        ? 'approved'
+        : action.decision === 'decline'
+          ? 'declined'
+          : action.decision === 'fulfill'
+            ? 'fulfilled'
+            : 'refunded';
+    if (
+      ((action.decision === 'approve' || action.decision === 'decline') &&
+        request.status !== 'requested') ||
+      (action.decision === 'fulfill' && request.status !== 'approved') ||
+      (action.decision === 'refund' && !['approved', 'fulfilled'].includes(request.status))
+    ) {
+      throw new Error('Reward request has already changed');
+    }
+    const pointsDelta =
+      action.decision === 'approve'
+        ? -request.cost
+        : action.decision === 'refund'
+          ? request.cost
+          : 0;
+    const balances = getChoreExperiencePointBalances(workspace);
+    if (pointsDelta < 0 && (balances[request.participantId] ?? 0) < request.cost) {
+      throw new Error('Not enough points for this reward');
+    }
+    if (pointsDelta)
+      balances[request.participantId] = (balances[request.participantId] ?? 0) + pointsDelta;
+    const pointTransactions = [
+      ...experience.pointTransactions,
+      {
+        id: `points:reward:${request.id}:${action.decision}`,
+        participantId: request.participantId,
+        pointsDelta,
+        kind:
+          action.decision === 'approve'
+            ? ('reward' as const)
+            : action.decision === 'refund'
+              ? ('refund' as const)
+              : ('reward_decision' as const),
+        timestamp,
+        commandId,
+        rewardRequestId: request.id,
+      },
+    ];
+    const activity = buildWorkspaceActivity({
+      commandId,
+      timestamp,
+      type: `reward_${status}` as ChoreActivityType,
+      actorParticipantId: action.actorParticipantId,
+      participantId: request.participantId,
+      reason: action.reason?.trim() || undefined,
+      pointsDelta: pointsDelta || undefined,
+    });
+    return {
+      activity,
+      data: {
+        ...workspace,
+        experience: {
+          ...experience,
+          rewardRequestsById: {
+            ...experience.rewardRequestsById,
+            [request.id]: {
+              ...request,
+              status,
+              updatedAt: timestamp,
+              managerParticipantId: action.actorParticipantId,
+              reason: action.reason?.trim() || undefined,
+            },
+          },
+          earnedPointsByParticipant: balances,
+          pointTransactions,
+        },
       },
     };
   }
@@ -2165,7 +2420,7 @@ export function getChoreExperiencePointBalances(
 ): Record<string, number> {
   const experience = workspace.experience ?? createChoreExperienceState();
   const persisted = experience.earnedPointsByParticipant;
-  if (persisted && Object.keys(persisted).length > 0) return { ...persisted };
+  if (persisted) return { ...persisted };
   const balances: Record<string, number> = {};
   for (const occurrence of Object.values(workspace.occurrencesById)) {
     if (occurrence.status !== 'done' || !occurrence.completedBy) continue;

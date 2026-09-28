@@ -8,7 +8,7 @@ import {
 describe('chore experience state', () => {
   it('defaults to a calm, non-gamified household experience', () => {
     expect(createChoreExperienceState()).toEqual({
-      version: 1,
+      version: 2,
       gamificationMode: 'off',
       presentationByDefinitionId: {},
       missionsById: {},
@@ -16,6 +16,11 @@ describe('chore experience state', () => {
       earnedPointsByParticipant: {},
       householdBonusPoints: 0,
       awardedMissionIds: [],
+      rewardRequestsById: {},
+      pointTransactions: [],
+      badgesById: {},
+      achievementsById: {},
+      progressAwards: [],
     });
   });
 
@@ -88,6 +93,10 @@ describe('chore experience state', () => {
       missionsById: {},
       rewardGoalsById: {},
     };
-    expect(normalizeChoreExperienceState(previousVersionOneShape)).toEqual(previousVersionOneShape);
+    expect(normalizeChoreExperienceState(previousVersionOneShape)).toEqual({
+      ...createChoreExperienceState(),
+      ...previousVersionOneShape,
+      version: 2,
+    });
   });
 });

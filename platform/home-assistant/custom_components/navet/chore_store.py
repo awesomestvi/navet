@@ -131,7 +131,7 @@ def _empty_data() -> dict[str, Any]:
         "outbox": [],
         "historyRetention": dict(DEFAULT_RETENTION),
         "experience": {
-            "version": 1,
+            "version": 2,
             "gamificationMode": "off",
             "presentationByDefinitionId": {},
             "missionsById": {},
@@ -139,6 +139,11 @@ def _empty_data() -> dict[str, Any]:
             "earnedPointsByParticipant": {},
             "householdBonusPoints": 0,
             "awardedMissionIds": [],
+            "rewardRequestsById": {},
+            "pointTransactions": [],
+            "badgesById": {},
+            "achievementsById": {},
+            "progressAwards": [],
         },
     }
 
@@ -200,6 +205,30 @@ def _normalize_data(value: Any) -> dict[str, Any]:
                 raise ChoreStorageError(str(err)) from err
     data.setdefault("historyRetention", dict(DEFAULT_RETENTION))
     data.setdefault("experience", _empty_data()["experience"])
+    experience = data["experience"]
+    if not isinstance(experience, Mapping):
+        raise ChoreStorageError("Chore experience data is invalid")
+    if experience.get("version") == 1:
+        previous_balances = experience.get("earnedPointsByParticipant") or {}
+        if not isinstance(previous_balances, Mapping):
+            raise ChoreStorageError("Chore experience data is invalid")
+        balances = dict(previous_balances)
+        if experience.get("gamificationMode") != "off" and not balances:
+            for occurrence in data["occurrencesById"].values():
+                if not isinstance(occurrence, Mapping) or occurrence.get("status") != "done" or not occurrence.get("completedBy"):
+                    continue
+                metadata = experience.get("presentationByDefinitionId", {}).get(occurrence.get("definitionId"), {})
+                points = metadata.get("points", 0) if isinstance(metadata, Mapping) else 0
+                if type(points) is int:
+                    participant_id = str(occurrence["completedBy"])
+                    balances[participant_id] = balances.get(participant_id, 0) + points
+        data["experience"] = {**_empty_data()["experience"], **experience, "version": 2,
+            "earnedPointsByParticipant": balances,
+            "pointTransactions": [{"id": f"opening:{participant_id}", "participantId": participant_id,
+                "pointsDelta": points, "kind": "opening_balance",
+                "timestamp": "1970-01-01T00:00:00.000Z"} for participant_id, points in balances.items()]}
+    elif experience.get("version") != 2:
+        raise ChoreStorageError("Chore experience data is invalid")
     retention = data["historyRetention"]
     if (
         not isinstance(retention, Mapping)
@@ -730,7 +759,7 @@ def _materialize(data: dict[str, Any], range_start: str, range_end: str, timesta
 
 def _experience_point_balances(data: Mapping[str, Any], experience: Mapping[str, Any]) -> dict[str, int]:
     persisted = experience.get("earnedPointsByParticipant")
-    if isinstance(persisted, Mapping) and persisted:
+    if isinstance(persisted, Mapping):
         return {
             str(key): int(value)
             for key, value in persisted.items()
@@ -753,6 +782,8 @@ def _update_experience_points(
     data: Mapping[str, Any],
     previous: Mapping[str, Any],
     current: Mapping[str, Any],
+    command_id: str,
+    timestamp: str,
 ) -> tuple[dict[str, Any], str | None, int]:
     experience = dict(data.get("experience") or _empty_data()["experience"])
     if experience.get("gamificationMode") == "off":
@@ -773,6 +804,11 @@ def _update_experience_points(
     balances = _experience_point_balances(data, experience)
     balances[participant_id] = balances.get(participant_id, 0) + points_delta
     experience["earnedPointsByParticipant"] = balances
+    experience["pointTransactions"] = [*experience.get("pointTransactions", []), {
+        "id": f"points:{command_id}", "participantId": participant_id,
+        "pointsDelta": points_delta, "kind": "completion" if became_final else "reopen",
+        "timestamp": timestamp, "commandId": command_id, "occurrenceId": previous.get("id"),
+    }]
     return experience, participant_id, points_delta
 
 
@@ -851,7 +887,7 @@ def _apply_occurrence(data: dict[str, Any], occurrence_id: str, command: Mapping
         raise ChoreAuthorityError("Unsupported chore action")
     next_occurrence["updatedAt"] = timestamp
     experience, point_participant_id, points_delta = _update_experience_points(
-        data, occurrence, next_occurrence
+        data, occurrence, next_occurrence, command_id, timestamp
     )
     data = {
         **data,
@@ -1153,7 +1189,7 @@ class ChoreAuthority:
 
     @staticmethod
     def _requires_management(action: Mapping[str, Any]) -> bool:
-        return str(action.get("type")) in {"participant_create", "participant_update", "definition_create", "definition_update", "definition_archive", "definition_restore", "definition_delete", "retention_update", "experience_update", "experience_points_adjust"}
+        return str(action.get("type")) in {"participant_create", "participant_update", "definition_create", "definition_update", "definition_archive", "definition_restore", "definition_delete", "retention_update", "experience_update", "experience_points_adjust", "reward_decision"}
 
     def _apply_workspace_action(self, data: dict[str, Any], action: Mapping[str, Any], timestamp: str, command_id: str) -> tuple[dict[str, Any], dict[str, Any]]:
         action_type = str(action.get("type"))
@@ -1268,7 +1304,14 @@ class ChoreAuthority:
             return data, _activity(command_id, timestamp, "retention_updated", actorParticipantId=actor)
         if action_type == "experience_update":
             _require_manager(data, actor)
-            data["experience"] = dict(action.get("experience", {}))
+            updated = action.get("experience")
+            current = data.get("experience") or _empty_data()["experience"]
+            if not isinstance(updated, Mapping) or updated.get("version") != 2:
+                raise ChoreAuthorityError("Chore experience data is invalid")
+            for key in ("rewardRequestsById", "pointTransactions", "progressAwards", "earnedPointsByParticipant"):
+                if updated.get(key) != current.get(key):
+                    raise ChoreAuthorityError("Reward and point history can only change through household actions")
+            data["experience"] = dict(updated)
             return data, _activity(command_id, timestamp, "experience_updated", actorParticipantId=actor)
         if action_type == "experience_points_adjust":
             _require_manager(data, actor)
@@ -1294,6 +1337,11 @@ class ChoreAuthority:
                 raise ChoreAuthorityError("Point balance must stay between -1000000000 and 1000000000")
             balances[participant_id] = next_balance
             experience["earnedPointsByParticipant"] = balances
+            experience["pointTransactions"] = [*experience.get("pointTransactions", []), {
+                "id": f"points:{command_id}", "participantId": participant_id,
+                "pointsDelta": points_delta, "kind": "adjustment",
+                "timestamp": timestamp, "commandId": command_id,
+            }]
             data["experience"] = experience
             return data, _activity(
                 command_id,
@@ -1304,6 +1352,65 @@ class ChoreAuthority:
                 pointsDelta=points_delta,
                 reason=reason or None,
             )
+        if action_type == "reward_request":
+            participant_id = str(action.get("participantId", ""))
+            participant = data["participantsById"].get(participant_id)
+            if not isinstance(participant, Mapping) or participant.get("pausedAt") or "complete" not in participant.get("capabilities", []):
+                raise ChoreAuthorityError("Chore participant is not active")
+            experience = dict(data.get("experience") or _empty_data()["experience"])
+            if experience.get("gamificationMode") == "off":
+                raise ChoreAuthorityError("Rewards are unavailable")
+            request_id = str(action.get("requestId", ""))
+            requests = dict(experience.get("rewardRequestsById", {}))
+            if not request_id or request_id in requests:
+                raise ChoreAuthorityError("Reward request already exists")
+            reward = experience.get("rewardGoalsById", {}).get(action.get("rewardId"))
+            if not isinstance(reward, Mapping) or not reward.get("enabled") or reward.get("participantId") not in (None, participant_id):
+                raise ChoreAuthorityError("Reward is unavailable")
+            cost = reward.get("targetPoints")
+            if type(cost) is not int or cost < 1 or _experience_point_balances(data, experience).get(participant_id, 0) < cost:
+                raise ChoreAuthorityError("Not enough points for this reward")
+            requests[request_id] = {"id": request_id, "rewardId": reward["id"], "rewardTitle": reward["title"],
+                "cost": cost, "participantId": participant_id, "status": "requested",
+                "requestedAt": timestamp, "updatedAt": timestamp}
+            experience["rewardRequestsById"] = requests
+            data["experience"] = experience
+            return data, _activity(command_id, timestamp, "reward_requested", actorParticipantId=participant_id, participantId=participant_id)
+        if action_type == "reward_decision":
+            _require_manager(data, actor)
+            experience = dict(data.get("experience") or _empty_data()["experience"])
+            requests = dict(experience.get("rewardRequestsById", {}))
+            request = requests.get(action.get("requestId"))
+            if not isinstance(request, Mapping):
+                raise ChoreAuthorityError("Reward request is no longer available")
+            decision = action.get("decision")
+            if decision not in ("approve", "decline", "fulfill", "refund"):
+                raise ChoreAuthorityError("Reward decision is invalid")
+            if ((decision in ("approve", "decline") and request["status"] != "requested")
+                or (decision == "fulfill" and request["status"] != "approved")
+                or (decision == "refund" and request["status"] not in ("approved", "fulfilled"))):
+                raise ChoreAuthorityError("Reward request has already changed")
+            status = {"approve": "approved", "decline": "declined", "fulfill": "fulfilled", "refund": "refunded"}[decision]
+            points_delta = -request["cost"] if decision == "approve" else request["cost"] if decision == "refund" else 0
+            balances = _experience_point_balances(data, experience)
+            participant_id = request["participantId"]
+            if points_delta < 0 and balances.get(participant_id, 0) < request["cost"]:
+                raise ChoreAuthorityError("Not enough points for this reward")
+            if points_delta:
+                balances[participant_id] = balances.get(participant_id, 0) + points_delta
+            experience["pointTransactions"] = [*experience.get("pointTransactions", []), {
+                "id": f"points:reward:{request['id']}:{decision}", "participantId": participant_id,
+                "pointsDelta": points_delta, "kind": "reward" if decision == "approve" else "refund" if decision == "refund" else "reward_decision",
+                "timestamp": timestamp, "commandId": command_id, "rewardRequestId": request["id"],
+            }]
+            requests[request["id"]] = {**request, "status": status, "updatedAt": timestamp,
+                "managerParticipantId": actor, "reason": str(action.get("reason") or "").strip()}
+            experience["rewardRequestsById"] = requests
+            experience["earnedPointsByParticipant"] = balances
+            data["experience"] = experience
+            return data, _activity(command_id, timestamp, f"reward_{status}", actorParticipantId=actor,
+                participantId=participant_id, reason=str(action.get("reason") or "").strip() or None,
+                pointsDelta=points_delta or None)
         if action_type == "reminder_acknowledge":
             actor_record = _require_capability(data, actor, "complete")
             outbox_id = str(action.get("outboxId", ""))

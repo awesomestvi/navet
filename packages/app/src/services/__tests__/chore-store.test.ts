@@ -1,6 +1,7 @@
 import choreOccurrencePolicy from '@docker/njs/chore-occurrence-policy.js';
 import choreStore from '@docker/njs/chore-store.js';
 import conformanceVectors from '@navet/core/chore-conformance-vectors.json';
+import { createChoreExperienceState } from '@navet/core/chore-experience';
 import type { ApplyChoreCommandInput } from '@navet/core/chores';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -650,7 +651,7 @@ describe('NJS chore workspace store', () => {
       type: 'experience_update',
       actorParticipantId: 'maya',
       experience: {
-        version: 1,
+        ...createChoreExperienceState(),
         gamificationMode: 'light',
         presentationByDefinitionId: { dishes: { points: 15 } },
         missionsById: {},
@@ -1183,7 +1184,7 @@ describe('NJS chore workspace store', () => {
       type: 'experience_update',
       actorParticipantId: 'maya',
       experience: {
-        version: 1,
+        ...createChoreExperienceState(),
         setupStartedAt: '2026-08-15T08:00:00.000Z',
         setupCompletedAt: '2026-08-15T08:10:00.000Z',
         gamificationMode: 'off',
@@ -1203,6 +1204,75 @@ describe('NJS chore workspace store', () => {
       setupCompletedAt: '2026-08-15T08:10:00.000Z',
       presentationByDefinitionId: { dishes: { color: '#2563eb' } },
     });
+  });
+
+  it('keeps reward request, approval, refund, and replay accounting durable', () => {
+    const mockFs = createMockFs();
+    choreStore.setChoreStoreFsForTests(mockFs);
+    choreStore.setChoreStorePrincipalResolverForTests(() => PRINCIPAL);
+    const created = createActionRequest('create-manager', 0, {
+      type: 'participant_create',
+      participant: managerParticipant(),
+    });
+    choreStore.handle(created);
+    const experience = createChoreExperienceState();
+    experience.gamificationMode = 'family';
+    experience.rewardGoalsById.movie = {
+      id: 'movie',
+      title: 'Movie',
+      type: 'instant',
+      targetPoints: 40,
+      enabled: true,
+      createdAt: '2026-08-10T08:00:00.000Z',
+      updatedAt: '2026-08-10T08:00:00.000Z',
+    };
+    const setup = createActionRequest('setup', 1, {
+      type: 'experience_update',
+      actorParticipantId: 'maya',
+      experience,
+    });
+    choreStore.handle(setup);
+    expect(setup.return).toHaveBeenCalledWith(200, expect.any(String));
+    const points = createActionRequest('points', 2, {
+      type: 'experience_points_adjust',
+      actorParticipantId: 'maya',
+      participantId: 'maya',
+      pointsDelta: 100,
+    });
+    choreStore.handle(points);
+    expect(points.return).toHaveBeenCalledWith(200, expect.any(String));
+    const request = createActionRequest('request', 3, {
+      type: 'reward_request',
+      requestId: 'r1',
+      rewardId: 'movie',
+      participantId: 'maya',
+    });
+    choreStore.handle(request);
+    expect(parseResponse(request).data.experience.earnedPointsByParticipant.maya).toBe(100);
+    const approve = createActionRequest('approve', 4, {
+      type: 'reward_decision',
+      requestId: 'r1',
+      actorParticipantId: 'maya',
+      decision: 'approve',
+    });
+    choreStore.handle(approve);
+    expect(parseResponse(approve).data.experience.earnedPointsByParticipant.maya).toBe(60);
+    const replay = createActionRequest('approve', 5, {
+      type: 'reward_decision',
+      requestId: 'r1',
+      actorParticipantId: 'maya',
+      decision: 'approve',
+    });
+    choreStore.handle(replay);
+    expect(parseResponse(replay).data.experience.pointTransactions).toHaveLength(2);
+    const refund = createActionRequest('refund', 5, {
+      type: 'reward_decision',
+      requestId: 'r1',
+      actorParticipantId: 'maya',
+      decision: 'refund',
+    });
+    choreStore.handle(refund);
+    expect(parseResponse(refund).data.experience.earnedPointsByParticipant.maya).toBe(100);
   });
 
   it('persists signed point adjustments and their immutable audit details', () => {

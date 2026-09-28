@@ -895,6 +895,43 @@ class ChoreAuthorityTests(unittest.IsolatedAsyncioTestCase):
             {"manager": -20},
         )
 
+    async def test_reward_request_approval_refund_and_replay(self):
+        await self._create_manager()
+
+        async def command(command_id, action):
+            return await self.authority.async_command({
+                "commandId": command_id,
+                "baseRevision": self.authority.revision,
+                "action": action,
+            }, "ha-user-1")
+
+        experience = copy.deepcopy(self.authority.data["experience"])
+        experience["gamificationMode"] = "family"
+        experience["rewardGoalsById"] = {
+            "movie": {"id": "movie", "title": "Movie", "type": "instant",
+                "targetPoints": 40, "enabled": True,
+                "createdAt": "2026-08-10T08:00:00.000Z",
+                "updatedAt": "2026-08-10T08:00:00.000Z"}
+        }
+        await command("setup-reward", {"type": "experience_update",
+            "actorParticipantId": "manager", "experience": experience})
+        await command("earn-points", {"type": "experience_points_adjust",
+            "actorParticipantId": "manager", "participantId": "manager", "pointsDelta": 100})
+        requested = await command("request-reward", {"type": "reward_request",
+            "requestId": "r1", "rewardId": "movie", "participantId": "manager"})
+        self.assertEqual(requested["data"]["experience"]["earnedPointsByParticipant"]["manager"], 100)
+        approved = await command("approve-reward", {"type": "reward_decision",
+            "requestId": "r1", "actorParticipantId": "manager", "decision": "approve"})
+        self.assertEqual(approved["data"]["experience"]["earnedPointsByParticipant"]["manager"], 60)
+        replay = await self.authority.async_command({"commandId": "approve-reward",
+            "baseRevision": approved["revision"], "action": {"type": "reward_decision",
+                "requestId": "r1", "actorParticipantId": "manager", "decision": "approve"}}, "ha-user-1")
+        self.assertEqual(replay["revision"], approved["revision"])
+        refunded = await command("refund-reward", {"type": "reward_decision",
+            "requestId": "r1", "actorParticipantId": "manager", "decision": "refund"})
+        self.assertEqual(refunded["data"]["experience"]["earnedPointsByParticipant"]["manager"], 100)
+        self.assertEqual(len(refunded["data"]["experience"]["pointTransactions"]), 3)
+
     async def test_management_pin_can_be_removed_by_an_unlocked_manager(self):
         await self._create_manager()
         session = await self.authority.async_configure_pin(

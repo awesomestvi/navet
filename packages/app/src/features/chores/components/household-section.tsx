@@ -34,12 +34,7 @@ import {
   type ChoreRewardGoal,
   normalizeChoreExperienceState,
 } from '@navet/core/chore-experience';
-import {
-  type ChoreDefinition,
-  type ChoreParticipant,
-  type ChoreWorkspaceAction,
-  getChoreExperiencePointBalances,
-} from '@navet/core/chores';
+import type { ChoreDefinition, ChoreParticipant, ChoreWorkspaceAction } from '@navet/core/chores';
 import {
   AlertTriangle,
   ClipboardList,
@@ -455,19 +450,10 @@ export function HouseholdSection({ syncEnabled = true }: { syncEnabled?: boolean
     if (!current || !managerActorId) return false;
     const experience = normalizeChoreExperienceState(current.experience);
     const changed = change(experience);
-    const persistedBalances = experience.earnedPointsByParticipant;
-    const earnedPointsByParticipant =
-      persistedBalances && Object.keys(persistedBalances).length > 0
-        ? persistedBalances
-        : experience.gamificationMode === 'off' && changed.gamificationMode !== 'off'
-          ? Object.fromEntries(Object.keys(current.participantsById).map((id) => [id, 0]))
-          : experience.gamificationMode !== 'off'
-            ? getChoreExperiencePointBalances(current)
-            : persistedBalances;
     return execute({
       type: 'experience_update',
       actorParticipantId: managerActorId,
-      experience: { ...changed, earnedPointsByParticipant },
+      experience: changed,
     });
   };
 
@@ -896,6 +882,26 @@ export function HouseholdSection({ syncEnabled = true }: { syncEnabled?: boolean
               data ? (
                 <RewardsView
                   data={data}
+                  selectedParticipantId={selectedParticipantId}
+                  onRequest={(rewardId, participantId) =>
+                    void execute({
+                      type: 'reward_request',
+                      requestId: createId('reward-request'),
+                      rewardId,
+                      participantId,
+                    })
+                  }
+                  onDecision={(request, decision) =>
+                    withManagementAccess(() => {
+                      if (!managerActorId) return;
+                      void execute({
+                        type: 'reward_decision',
+                        requestId: request.id,
+                        actorParticipantId: managerActorId,
+                        decision,
+                      });
+                    })
+                  }
                   onAdd={() => {
                     setRewardToEdit(null);
                     setRewardDialogOpen(true);

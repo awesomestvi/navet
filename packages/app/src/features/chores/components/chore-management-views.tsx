@@ -41,6 +41,7 @@ import { useI18n, useMediaQuery, useTheme } from '@navet/app/hooks';
 import {
   type ChoreMission,
   type ChoreRewardGoal,
+  type ChoreRewardRequest,
   normalizeChoreExperienceState,
 } from '@navet/core/chore-experience';
 import {
@@ -802,11 +803,20 @@ export function RewardsView({
   onAdd,
   onEdit,
   onDelete,
+  selectedParticipantId,
+  onRequest,
+  onDecision,
 }: {
   data: ChoreWorkspaceData;
   onAdd: () => void;
   onEdit: (reward: ChoreRewardGoal) => void;
   onDelete: (reward: ChoreRewardGoal) => void;
+  selectedParticipantId: string;
+  onRequest: (rewardId: string, participantId: string) => void;
+  onDecision: (
+    request: ChoreRewardRequest,
+    decision: 'approve' | 'decline' | 'fulfill' | 'refund'
+  ) => void;
 }) {
   const { t } = useI18n();
   const { theme } = useTheme();
@@ -819,6 +829,30 @@ export function RewardsView({
       ({ goal }) => !normalizedQuery || goal.title.toLocaleLowerCase().includes(normalizedQuery)
     )
     .filter(({ goal }) => typeFilter === 'all' || goal.type === typeFilter);
+  const eligibleParticipants = Object.values(data.participantsById).filter(
+    (participant) => !participant.pausedAt && participant.capabilities.includes('complete')
+  );
+  const [requestParticipantId, setRequestParticipantId] = useState('');
+  const balances = getChoreExperiencePointBalances(data);
+  const suggestedParticipantId =
+    eligibleParticipants.find((participant) => (balances[participant.id] ?? 0) > 0)?.id ??
+    eligibleParticipants[0]?.id;
+  const activeParticipantId =
+    selectedParticipantId !== 'all' &&
+    eligibleParticipants.some((participant) => participant.id === selectedParticipantId)
+      ? selectedParticipantId
+      : requestParticipantId || suggestedParticipantId;
+  const manager = Object.values(data.participantsById).some(
+    (participant) => !participant.pausedAt && participant.capabilities.includes('manage')
+  );
+  const requests = Object.values(data.experience?.rewardRequestsById ?? {})
+    .filter(
+      (request) =>
+        selectedParticipantId === 'all' ||
+        manager ||
+        request.participantId === selectedParticipantId
+    )
+    .sort((a, b) => b.requestedAt.localeCompare(a.requestedAt));
   return (
     <div>
       <section
@@ -891,6 +925,26 @@ export function RewardsView({
           {t('household.rewards.add')}
         </Button>
       </section>
+      {selectedParticipantId === 'all' && eligibleParticipants.length > 0 ? (
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <span className={cn('text-xs', theme === 'light' ? 'text-zinc-600' : 'text-white/70')}>
+            {t('household.rewards.requestFor')}
+          </span>
+          <Select
+            size="small"
+            containerClassName="min-w-44 flex-1 sm:max-w-xs"
+            aria-label={t('household.rewards.requestFor')}
+            value={activeParticipantId}
+            onChange={(event) => setRequestParticipantId(event.target.value)}
+          >
+            {eligibleParticipants.map((participant) => (
+              <option key={participant.id} value={participant.id}>
+                {participant.displayName}
+              </option>
+            ))}
+          </Select>
+        </div>
+      ) : null}
       {rewards.length === 0 ? (
         <DashboardEmptyState
           compact
@@ -914,6 +968,18 @@ export function RewardsView({
               progress={progress}
               footer={
                 <div className="flex items-center gap-1.5">
+                  {activeParticipantId &&
+                  progress.goal.enabled &&
+                  (!progress.goal.participantId ||
+                    progress.goal.participantId === activeParticipantId) ? (
+                    <Button
+                      size="compact"
+                      disabled={(balances[activeParticipantId] ?? 0) < progress.goal.targetPoints}
+                      onClick={() => onRequest(progress.goal.id, activeParticipantId)}
+                    >
+                      {t('household.rewards.request')}
+                    </Button>
+                  ) : null}
                   <Button
                     size="compact"
                     variant="secondary"
@@ -951,6 +1017,60 @@ export function RewardsView({
           ))}
         </ChoreDashboardGrid>
       )}
+      {requests.length > 0 ? (
+        <section
+          aria-label={t('household.rewards.requests')}
+          className={cn('mt-5 space-y-2', theme === 'light' ? 'text-zinc-900' : 'text-white')}
+        >
+          <h3 className="text-sm font-semibold">{t('household.rewards.requests')}</h3>
+          {requests.map((request) => (
+            <div
+              key={request.id}
+              className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-current/10 p-3"
+            >
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium">{request.rewardTitle}</p>
+                <p className="text-xs opacity-70">
+                  {data.participantsById[request.participantId]?.displayName} · {request.cost} ·{' '}
+                  {t(`household.rewards.status.${request.status}`)}
+                </p>
+              </div>
+              {manager ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {request.status === 'requested' ? (
+                    <>
+                      <Button size="compact" onClick={() => onDecision(request, 'approve')}>
+                        {t('household.rewards.approve')}
+                      </Button>
+                      <Button
+                        size="compact"
+                        variant="secondary"
+                        onClick={() => onDecision(request, 'decline')}
+                      >
+                        {t('household.rewards.decline')}
+                      </Button>
+                    </>
+                  ) : null}
+                  {request.status === 'approved' ? (
+                    <Button size="compact" onClick={() => onDecision(request, 'fulfill')}>
+                      {t('household.rewards.fulfill')}
+                    </Button>
+                  ) : null}
+                  {request.status === 'approved' || request.status === 'fulfilled' ? (
+                    <Button
+                      size="compact"
+                      variant="secondary"
+                      onClick={() => onDecision(request, 'refund')}
+                    >
+                      {t('household.rewards.refund')}
+                    </Button>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          ))}
+        </section>
+      ) : null}
     </div>
   );
 }

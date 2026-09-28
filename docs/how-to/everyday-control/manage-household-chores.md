@@ -43,6 +43,15 @@ preserves completed history.
 Open **Missions** or **Rewards** to create and edit supporting goals. From Today, choose
 **See rewards** in Chores today to reveal the current mission and reward cards for that visit.
 
+To use a reward, open **Rewards**, choose the person under **Request reward for**, and select
+**Request reward** on a goal. The person needs enough points for its cost. The request holds the
+reward's current name and cost, while their point balance stays available until review.
+
+A household manager reviews requests in **Rewards**. **Approve** spends the points once;
+**Decline** leaves the balance alone. After approval, **Mark fulfilled** records that the reward
+was delivered. **Refund points** returns the approved cost if the reward cannot be given. The
+request status and point decisions stay in the household record even if the goal is edited.
+
 ## Hide household chores
 
 Chores are enabled by default. To hide the feature, open **Settings → Dashboard**, find

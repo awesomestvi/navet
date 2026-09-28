@@ -45,6 +45,40 @@ function HouseholdStory({ mode = 'default' }: { mode?: ChoreDemoFixtureMode }) {
   return <HouseholdSection syncEnabled={false} />;
 }
 
+function HouseholdRewardRequestsStory() {
+  useEffect(() => {
+    const data = createChoreDemoWorkspace({ copy: DEMO_COPY });
+    const experience = normalizeChoreExperienceState(data.experience);
+    experience.earnedPointsByParticipant = { maya: 250 };
+    experience.rewardRequestsById = {
+      'request-1': {
+        id: 'request-1',
+        rewardId: 'maya-saving-goal',
+        rewardTitle: 'Build a new LEGO set',
+        cost: 200,
+        participantId: 'maya',
+        status: 'requested',
+        requestedAt: '2026-08-15T08:00:00.000Z',
+        updatedAt: '2026-08-15T08:00:00.000Z',
+      },
+      'request-2': {
+        id: 'request-2',
+        rewardId: 'family-outing',
+        rewardTitle: 'Choose our next family outing',
+        cost: 120,
+        participantId: 'maya',
+        status: 'fulfilled',
+        requestedAt: '2026-08-14T08:00:00.000Z',
+        updatedAt: '2026-08-15T08:00:00.000Z',
+        managerParticipantId: 'alex',
+      },
+    };
+    useChoreWorkspaceStore.getState().setPreviewDocument({ data: { ...data, experience } });
+    return () => useChoreWorkspaceStore.getState().reset();
+  }, []);
+  return <HouseholdSection syncEnabled={false} />;
+}
+
 function HouseholdCustomIntervalStory() {
   useEffect(() => {
     const data = createChoreDemoWorkspace({ copy: DEMO_COPY });
@@ -858,6 +892,20 @@ export const RewardManagement: Story = {
       panel.queryByRole('heading', { name: 'Choose our next family outing' })
     ).not.toBeInTheDocument();
     await expect(toolbar.getByText('1')).toHaveAttribute('data-active-filter-count', 'true');
+  },
+};
+
+export const RewardRequests: Story = {
+  render: () => <HouseholdRewardRequestsStory />,
+  globals: { viewport: { value: 'mobile1' } },
+  play: async ({ canvas, userEvent }) => {
+    await canvas.findByRole('region', { name: 'Today' });
+    await userEvent.click(canvas.getByRole('button', { name: 'Rewards' }));
+    const panel = within(canvas.getByRole('region', { name: 'Rewards' }));
+    await expect(panel.getByRole('heading', { name: 'Reward requests' })).toBeVisible();
+    await expect(panel.getByText(/Awaiting review/)).toBeVisible();
+    await expect(panel.getByText(/Fulfilled/)).toBeVisible();
+    await expect(panel.getByRole('button', { name: 'Approve' })).toBeVisible();
   },
 };
 

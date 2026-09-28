@@ -7,6 +7,7 @@ import {
   type ChoreDefinition,
   type ChoreOccurrence,
   type ChoreParticipant,
+  type ChoreWorkspaceData,
   createChoreOutboxItem,
   createEmptyChoreWorkspace,
   getChoreTiming,
@@ -114,16 +115,7 @@ describe('chores domain', () => {
       activity: [],
       outbox: [],
       historyRetention: { maxAgeDays: 730, maxEvents: 50_000 },
-      experience: {
-        version: 1,
-        gamificationMode: 'off',
-        presentationByDefinitionId: {},
-        missionsById: {},
-        rewardGoalsById: {},
-        earnedPointsByParticipant: {},
-        householdBonusPoints: 0,
-        awardedMissionIds: [],
-      },
+      experience: createChoreExperienceState(),
     });
   });
 
@@ -382,18 +374,32 @@ describe('chores domain', () => {
       schemaVersion: 2,
       outbox: [],
       historyRetention: { maxAgeDays: 730, maxEvents: 50_000 },
+      experience: createChoreExperienceState(),
+    });
+    expect(() => migrateChoreWorkspaceData({ schemaVersion: 0 })).toThrow('Unsupported');
+  });
+
+  it('migrates saved experience balances into the reward transaction model', () => {
+    const current = createEmptyChoreWorkspace();
+    const legacy = {
+      ...current,
+      participantsById: { alice, bob },
       experience: {
         version: 1,
-        gamificationMode: 'off',
+        gamificationMode: 'family',
         presentationByDefinitionId: {},
         missionsById: {},
         rewardGoalsById: {},
-        earnedPointsByParticipant: {},
-        householdBonusPoints: 0,
-        awardedMissionIds: [],
+        earnedPointsByParticipant: { bob: 35 },
       },
+    };
+    const migrated = migrateChoreWorkspaceData(legacy);
+    expect(migrated.experience).toMatchObject({
+      version: 2,
+      earnedPointsByParticipant: { bob: 35 },
+      pointTransactions: [{ id: 'opening:bob', participantId: 'bob', pointsDelta: 35 }],
     });
-    expect(() => migrateChoreWorkspaceData({ schemaVersion: 0 })).toThrow('Unsupported');
+    expect(migrateChoreWorkspaceData(migrated)).toEqual(migrated);
   });
 
   it('repairs a corrupted rotation cursor without discarding the workspace', () => {
@@ -1326,7 +1332,7 @@ describe('chores domain', () => {
       definitionsById: { [definition.id]: definition },
     };
     const experience = {
-      version: 1 as const,
+      ...createChoreExperienceState(),
       gamificationMode: 'family' as const,
       presentationByDefinitionId: {
         [definition.id]: { estimatedMinutes: 5, points: 10 },
@@ -1379,6 +1385,91 @@ describe('chores domain', () => {
         workspace,
       })
     ).toThrow('unavailable chore');
+  });
+
+  it('requests rewards without spending and records one spend or refund per reviewed request', () => {
+    const experience = createChoreExperienceState();
+    experience.gamificationMode = 'family';
+    experience.earnedPointsByParticipant = { bob: 100 };
+    experience.rewardGoalsById.movie = {
+      id: 'movie',
+      title: 'Movie',
+      type: 'instant',
+      targetPoints: 40,
+      enabled: true,
+      createdAt: '2026-08-01T08:00:00.000Z',
+      updatedAt: '2026-08-01T08:00:00.000Z',
+    };
+    const initial = {
+      ...createEmptyChoreWorkspace(),
+      participantsById: { alice, bob },
+      experience,
+    };
+    const apply = (
+      workspace: ChoreWorkspaceData,
+      commandId: string,
+      action: Parameters<typeof applyChoreWorkspaceAction>[0]['action']
+    ) =>
+      applyChoreWorkspaceAction({
+        workspace,
+        commandId,
+        action,
+        timestamp: '2026-08-01T09:00:00.000Z',
+      }).data;
+    const requested = apply(initial, 'request-1', {
+      type: 'reward_request',
+      requestId: 'r1',
+      rewardId: 'movie',
+      participantId: 'bob',
+    });
+    expect(requested.experience?.earnedPointsByParticipant?.bob).toBe(100);
+    expect(requested.experience?.pointTransactions).toEqual([]);
+    const approved = apply(requested, 'approve-1', {
+      type: 'reward_decision',
+      requestId: 'r1',
+      actorParticipantId: 'alice',
+      decision: 'approve',
+    });
+    expect(approved.experience?.earnedPointsByParticipant?.bob).toBe(60);
+    expect(approved.experience?.pointTransactions).toMatchObject([
+      { id: 'points:reward:r1:approve', pointsDelta: -40, kind: 'reward' },
+    ]);
+    expect(() =>
+      apply(approved, 'approve-again', {
+        type: 'reward_decision',
+        requestId: 'r1',
+        actorParticipantId: 'alice',
+        decision: 'approve',
+      })
+    ).toThrow('already changed');
+    const fulfilled = apply(approved, 'fulfill-1', {
+      type: 'reward_decision',
+      requestId: 'r1',
+      actorParticipantId: 'alice',
+      decision: 'fulfill',
+    });
+    const refunded = apply(fulfilled, 'refund-1', {
+      type: 'reward_decision',
+      requestId: 'r1',
+      actorParticipantId: 'alice',
+      decision: 'refund',
+    });
+    expect(refunded.experience?.earnedPointsByParticipant?.bob).toBe(100);
+    expect(refunded.experience?.pointTransactions).toHaveLength(3);
+    const second = apply(refunded, 'request-2', {
+      type: 'reward_request',
+      requestId: 'r2',
+      rewardId: 'movie',
+      participantId: 'bob',
+    });
+    const declined = apply(second, 'decline-2', {
+      type: 'reward_decision',
+      requestId: 'r2',
+      actorParticipantId: 'alice',
+      decision: 'decline',
+    });
+    expect(declined.experience?.earnedPointsByParticipant?.bob).toBe(100);
+    expect(declined.experience?.pointTransactions).toHaveLength(4);
   });
 
   it('persists earned points across occurrence retention and reverses reopened work', () => {

@@ -81,6 +81,12 @@ Balances may be negative when points have been reversed or removed. Household ma
 remove points with an optional note after unlocking management; every adjustment remains in the
 person's immutable history.
 
+In **Rewards**, a person can request an enabled reward once they have enough points. A request
+leaves the balance unchanged. A household manager reviews requests there: **Approve** spends the
+points, **Decline** keeps the balance, **Mark fulfilled** records delivery, and **Refund points**
+returns the approved cost. Each request remains visible with its status, including after the reward
+goal is edited or removed.
+
 ## Data, history, and recovery
 
 Chore changes are shared across authenticated Navet screens connected to the same installation.

@@ -2,6 +2,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'no
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { createChoreExperienceState } from '@navet/core/chore-experience';
 import { createViteChoreStoreRequestHandler } from '@scripts/vite-chore-store';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -115,7 +116,7 @@ function experienceActionBody(commandId: string, baseRevision: number) {
       type: 'experience_update',
       actorParticipantId: 'maya',
       experience: {
-        version: 1,
+        ...createChoreExperienceState(),
         setupStartedAt: fixtureTimestamp,
         gamificationMode: 'off',
         presentationByDefinitionId: {},
@@ -674,12 +675,21 @@ describe('Vite chore workspace store', () => {
     expect(JSON.parse(remove.body)).toEqual({ pinConfigured: false });
 
     const unprotected = createResponse();
+    const currentExperience = JSON.parse(allowed.body).data.experience;
     await handler(
       createRequest(
         'POST',
         '/commands',
         { 'x-navet-base-revision': '2' },
-        experienceActionBody('unprotected-experience', 2)
+        JSON.stringify({
+          commandId: 'unprotected-experience',
+          baseRevision: 2,
+          action: {
+            type: 'experience_update',
+            actorParticipantId: 'maya',
+            experience: { ...currentExperience, setupStartedAt: fixtureTimestamp },
+          },
+        })
       ),
       unprotected.response
     );

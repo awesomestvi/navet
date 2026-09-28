@@ -318,6 +318,29 @@ function isValidChoreWorkspaceData(value) {
 }
 
 function migrateChoreWorkspaceData(value) {
+  if (isRecord(value) && value.schemaVersion === SCHEMA_VERSION &&
+      isRecord(value.experience) && value.experience.version === 1) {
+    const oldExperience = value.experience;
+    const balances = Object.assign({}, oldExperience.earnedPointsByParticipant || {});
+    if (oldExperience.gamificationMode !== 'off' && Object.keys(balances).length === 0 &&
+      isRecord(value.occurrencesById)) {
+      Object.keys(value.occurrencesById).forEach(function (occurrenceId) {
+        const occurrence = value.occurrencesById[occurrenceId];
+        if (!isRecord(occurrence) || occurrence.status !== 'done' ||
+          typeof occurrence.completedBy !== 'string') return;
+        const metadata = oldExperience.presentationByDefinitionId[occurrence.definitionId];
+        balances[occurrence.completedBy] = (balances[occurrence.completedBy] || 0) +
+          (isRecord(metadata) && Number.isSafeInteger(metadata.points) ? metadata.points : 0);
+      });
+    }
+    const pointTransactions = Object.keys(balances).map(function (participantId) {
+      return { id: 'opening:' + participantId, participantId,
+        pointsDelta: balances[participantId], kind: 'opening_balance',
+        timestamp: '1970-01-01T00:00:00.000Z' };
+    });
+    value = Object.assign({}, value, { experience: Object.assign({}, createEmptyChoreExperience(),
+      oldExperience, { version: 2, earnedPointsByParticipant: balances, pointTransactions }) });
+  }
   if (isValidChoreWorkspaceData(value)) {
     if (value.historyRetention && value.experience) return value;
     return Object.assign({}, value, {
@@ -350,7 +373,7 @@ function isValidHistoryRetention(value) {
 
 function createEmptyChoreExperience() {
   return {
-    version: 1,
+    version: 2,
     gamificationMode: 'off',
     presentationByDefinitionId: {},
     missionsById: {},
@@ -358,6 +381,11 @@ function createEmptyChoreExperience() {
     earnedPointsByParticipant: {},
     householdBonusPoints: 0,
     awardedMissionIds: [],
+    rewardRequestsById: {},
+    pointTransactions: [],
+    badgesById: {},
+    achievementsById: {},
+    progressAwards: [],
   };
 }
 
@@ -372,7 +400,7 @@ function isOptionalSignedBoundedInteger(value, maximum) {
 function isValidChoreExperience(value) {
   if (
     !isRecord(value) ||
-    value.version !== 1 ||
+    value.version !== 2 ||
     (value.setupStartedAt !== undefined &&
       (typeof value.setupStartedAt !== 'string' || !Number.isFinite(Date.parse(value.setupStartedAt)))) ||
     (value.setupCompletedAt !== undefined &&
@@ -381,6 +409,11 @@ function isValidChoreExperience(value) {
     !isRecord(value.presentationByDefinitionId) ||
     !isRecord(value.missionsById) ||
     !isRecord(value.rewardGoalsById) ||
+    !isRecord(value.rewardRequestsById) ||
+    !Array.isArray(value.pointTransactions) ||
+    !isRecord(value.badgesById) ||
+    !isRecord(value.achievementsById) ||
+    !Array.isArray(value.progressAwards) ||
     (value.earnedPointsByParticipant !== undefined && !isRecord(value.earnedPointsByParticipant)) ||
     !isOptionalBoundedInteger(value.householdBonusPoints, 1000000000) ||
     (value.awardedMissionIds !== undefined &&
@@ -445,6 +478,22 @@ function isValidChoreExperience(value) {
         return false;
       }
     }
+  }
+  for (const requestId in value.rewardRequestsById) {
+    const request = value.rewardRequestsById[requestId];
+    if (!isRecord(request) || request.id !== requestId ||
+      typeof request.rewardId !== 'string' || typeof request.rewardTitle !== 'string' ||
+      typeof request.participantId !== 'string' || !Number.isSafeInteger(request.cost) ||
+      request.cost < 1 || request.cost > 1000000 ||
+      ['requested', 'approved', 'declined', 'fulfilled', 'refunded'].indexOf(request.status) === -1 ||
+      !Number.isFinite(Date.parse(request.requestedAt)) ||
+      !Number.isFinite(Date.parse(request.updatedAt))) return false;
+  }
+  for (let index = 0; index < value.pointTransactions.length; index += 1) {
+    const transaction = value.pointTransactions[index];
+    if (!isRecord(transaction) || typeof transaction.id !== 'string' ||
+      typeof transaction.participantId !== 'string' || !Number.isSafeInteger(transaction.pointsDelta) ||
+      !Number.isFinite(Date.parse(transaction.timestamp))) return false;
   }
   return true;
 }
@@ -1250,6 +1299,15 @@ function isValidWorkspaceAction(value) {
       (value.reason === undefined || typeof value.reason === 'string')
     );
   }
+  if (value.type === 'reward_request') {
+    return typeof value.requestId === 'string' && value.requestId.length > 0 &&
+      typeof value.rewardId === 'string' && typeof value.participantId === 'string';
+  }
+  if (value.type === 'reward_decision') {
+    return typeof value.requestId === 'string' && typeof value.actorParticipantId === 'string' &&
+      ['approve', 'decline', 'fulfill', 'refund'].indexOf(value.decision) !== -1 &&
+      (value.reason === undefined || typeof value.reason === 'string');
+  }
   if (value.type === 'reminder_acknowledge') {
     return typeof value.outboxId === 'string' && typeof value.actorParticipantId === 'string';
   }
@@ -1281,7 +1339,7 @@ function compareStrings(left, right) {
 
 function getExperiencePointBalances(data, experience) {
   const persisted = experience.earnedPointsByParticipant;
-  if (isRecord(persisted) && Object.keys(persisted).length > 0) {
+  if (isRecord(persisted)) {
     return Object.assign({}, persisted);
   }
   const balances = {};
@@ -1313,7 +1371,7 @@ function isWorkspaceMissionComplete(data, mission) {
   });
 }
 
-function updateExperiencePoints(data, previousOccurrence, nextOccurrence) {
+function updateExperiencePoints(data, previousOccurrence, nextOccurrence, commandId, timestamp) {
   const experience = isValidChoreExperience(data.experience)
     ? data.experience
     : createEmptyChoreExperience();
@@ -1332,7 +1390,13 @@ function updateExperiencePoints(data, previousOccurrence, nextOccurrence) {
     const balances = getExperiencePointBalances(data, experience);
     balances[participantId] =
       (balances[participantId] || 0) + (becameFinal ? points : -points);
-    nextExperience = Object.assign({}, nextExperience, { earnedPointsByParticipant: balances });
+    nextExperience = Object.assign({}, nextExperience, { earnedPointsByParticipant: balances,
+      pointTransactions: experience.pointTransactions.concat([{
+        id: 'points:' + commandId, participantId,
+        pointsDelta: becameFinal ? points : -points,
+        kind: becameFinal ? 'completion' : 'reopen', timestamp, commandId,
+        occurrenceId: previousOccurrence.id,
+      }]) });
   }
   const awardedMissionIds = (experience.awardedMissionIds || []).slice();
   let householdBonusPoints = experience.householdBonusPoints || 0;
@@ -1416,7 +1480,7 @@ function applyOccurrenceAction(data, commandId, workspaceAction, timestamp) {
   });
   const nextOccurrence = result.occurrence;
   const activity = result.activity;
-  const experience = updateExperiencePoints(data, occurrence, nextOccurrence);
+  const experience = updateExperiencePoints(data, occurrence, nextOccurrence, commandId, timestamp);
   const pointRecipientId =
     occurrence.status !== 'done' && nextOccurrence.status === 'done'
       ? nextOccurrence.completedBy
@@ -1815,6 +1879,13 @@ function applyWorkspaceAction(data, commandId, action, timestamp) {
     if (!isValidChoreExperience(action.experience)) {
       throw new Error('Chore experience data is invalid');
     }
+    const currentExperience = data.experience || createEmptyChoreExperience();
+    if (JSON.stringify(action.experience.rewardRequestsById) !== JSON.stringify(currentExperience.rewardRequestsById) ||
+      JSON.stringify(action.experience.pointTransactions) !== JSON.stringify(currentExperience.pointTransactions) ||
+      JSON.stringify(action.experience.progressAwards) !== JSON.stringify(currentExperience.progressAwards) ||
+      JSON.stringify(action.experience.earnedPointsByParticipant) !== JSON.stringify(currentExperience.earnedPointsByParticipant)) {
+      throw new Error('Reward and point history can only change through household actions');
+    }
     for (const definitionId in action.experience.presentationByDefinitionId) {
       if (!data.definitionsById[definitionId]) {
         throw new Error('Chore experience references an unavailable chore');
@@ -1871,7 +1942,11 @@ function applyWorkspaceAction(data, commandId, action, timestamp) {
     balances[action.participantId] = nextBalance;
     return appendWorkspaceActivity(
       Object.assign({}, data, {
-        experience: Object.assign({}, experience, { earnedPointsByParticipant: balances }),
+        experience: Object.assign({}, experience, { earnedPointsByParticipant: balances,
+          pointTransactions: experience.pointTransactions.concat([{
+            id: 'points:' + commandId, participantId: action.participantId,
+            pointsDelta: action.pointsDelta, kind: 'adjustment', timestamp, commandId,
+          }]) }),
       }),
       buildWorkspaceActivity(commandId, timestamp, 'points_adjusted', {
         actorParticipantId: action.actorParticipantId,
@@ -1883,6 +1958,62 @@ function applyWorkspaceAction(data, commandId, action, timestamp) {
     );
   }
 
+  if (action.type === 'reward_request') {
+    const participant = data.participantsById[action.participantId];
+    if (!isRecord(participant) || participant.pausedAt ||
+      !includesValue(participant.capabilities, 'complete')) throw new Error('Chore participant is not active');
+    const experience = data.experience || createEmptyChoreExperience();
+    if (experience.gamificationMode === 'off') throw new Error('Rewards are unavailable');
+    if (experience.rewardRequestsById[action.requestId]) throw new Error('Reward request already exists');
+    const reward = experience.rewardGoalsById[action.rewardId];
+    if (!reward || !reward.enabled ||
+      (reward.participantId && reward.participantId !== action.participantId)) throw new Error('Reward is unavailable');
+    if ((getExperiencePointBalances(data, experience)[action.participantId] || 0) < reward.targetPoints) {
+      throw new Error('Not enough points for this reward');
+    }
+    const requests = Object.assign({}, experience.rewardRequestsById);
+    requests[action.requestId] = { id: action.requestId, rewardId: reward.id,
+      rewardTitle: reward.title, cost: reward.targetPoints, participantId: action.participantId,
+      status: 'requested', requestedAt: timestamp, updatedAt: timestamp };
+    return appendWorkspaceActivity(Object.assign({}, data, { experience: Object.assign({}, experience,
+      { rewardRequestsById: requests }) }), buildWorkspaceActivity(commandId, timestamp,
+      'reward_requested', { actorParticipantId: action.participantId, participantId: action.participantId }));
+  }
+  if (action.type === 'reward_decision') {
+    assertManager(data, action.actorParticipantId);
+    const experience = data.experience || createEmptyChoreExperience();
+    const request = experience.rewardRequestsById[action.requestId];
+    if (!request) throw new Error('Reward request is no longer available');
+    const decision = action.decision;
+    if ((decision === 'approve' || decision === 'decline') && request.status !== 'requested' ||
+      decision === 'fulfill' && request.status !== 'approved' ||
+      decision === 'refund' && ['approved', 'fulfilled'].indexOf(request.status) === -1) {
+      throw new Error('Reward request has already changed');
+    }
+    const status = decision === 'approve' ? 'approved' : decision === 'decline' ? 'declined' :
+      decision === 'fulfill' ? 'fulfilled' : 'refunded';
+    const pointsDelta = decision === 'approve' ? -request.cost : decision === 'refund' ? request.cost : 0;
+    const balances = getExperiencePointBalances(data, experience);
+    if (pointsDelta < 0 && (balances[request.participantId] || 0) < request.cost) {
+      throw new Error('Not enough points for this reward');
+    }
+    if (pointsDelta) balances[request.participantId] = (balances[request.participantId] || 0) + pointsDelta;
+    const requests = Object.assign({}, experience.rewardRequestsById);
+    requests[request.id] = Object.assign({}, request, { status, updatedAt: timestamp,
+      managerParticipantId: action.actorParticipantId, reason: action.reason && action.reason.trim() });
+    const transactions = experience.pointTransactions.concat([{
+      id: 'points:reward:' + request.id + ':' + decision,
+      participantId: request.participantId, pointsDelta,
+      kind: decision === 'approve' ? 'reward' : decision === 'refund' ? 'refund' : 'reward_decision', timestamp, commandId,
+      rewardRequestId: request.id,
+    }]);
+    return appendWorkspaceActivity(Object.assign({}, data, { experience: Object.assign({}, experience,
+      { rewardRequestsById: requests, earnedPointsByParticipant: balances, pointTransactions: transactions }) }),
+      buildWorkspaceActivity(commandId, timestamp, 'reward_' + status, {
+        actorParticipantId: action.actorParticipantId, participantId: request.participantId,
+        reason: action.reason && action.reason.trim(), pointsDelta: pointsDelta || undefined,
+      }));
+  }
   if (action.type === 'reminder_acknowledge') {
     let reminder = null;
     for (let index = 0; index < data.outbox.length; index += 1) {
@@ -2418,6 +2549,7 @@ function requiresManagementSession(action) {
     'retention_update',
     'experience_update',
     'experience_points_adjust',
+    'reward_decision',
   ].indexOf(action.type) !== -1;
 }
 
