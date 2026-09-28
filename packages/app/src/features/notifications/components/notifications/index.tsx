@@ -103,16 +103,10 @@ export function NotificationCenter({
                 {t('notifications.title')}
               </Dialog.Title>
               <Dialog.Close asChild>
-                <Button variant="secondary" size="small" className="sm:hidden">
-                  {t('common.done')}
-                </Button>
-              </Dialog.Close>
-              <Dialog.Close asChild>
                 <IconButton
-                  variant="ghost"
+                  variant="subtle"
                   label={t('common.close')}
                   icon={<X className="h-4 w-4" />}
-                  className="hidden sm:inline-flex"
                 />
               </Dialog.Close>
             </header>
@@ -192,7 +186,7 @@ export function NotificationCenter({
                 )}
               </div>
             </div>
-            <div
+            <footer
               className={`shrink-0 border-t pb-[env(safe-area-inset-bottom)] ${surface.borderClassName}`}
             >
               <NotificationHeader
@@ -206,7 +200,12 @@ export function NotificationCenter({
                 primaryColor={primaryColor}
                 getColorValue={getColorValue}
               />
-            </div>
+              <div className="flex justify-end px-4 pb-3 sm:hidden">
+                <Dialog.Close asChild>
+                  <Button variant="soft">{t('common.done')}</Button>
+                </Dialog.Close>
+              </div>
+            </footer>
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>

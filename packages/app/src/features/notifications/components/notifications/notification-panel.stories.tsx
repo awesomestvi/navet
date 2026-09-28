@@ -184,13 +184,31 @@ export const MobileDoneCloses: Story = {
     const page = within(canvasElement.ownerDocument.body);
     const dialog = await page.findByRole('dialog', { name: 'Notifications' });
     const header = dialog.querySelector('header');
+    const footer = dialog.querySelector('footer');
     await expect(header).toHaveClass('safe-area-pt-5');
     if (!header) throw new Error('Notification header is missing');
+    if (!footer) throw new Error('Notification footer is missing');
     dialog.style.setProperty('--navet-safe-area-top-offset', '59px');
     await expect(Number.parseFloat(getComputedStyle(header).paddingTop)).toBeGreaterThan(59);
-    const done = within(dialog).getByRole('button', { name: 'Done' });
-    await expect(done.getBoundingClientRect().top).toBeGreaterThanOrEqual(59);
+    const dismiss = within(header).getByRole('button', { name: 'Close' });
+    const done = within(footer).getByRole('button', { name: 'Done' });
+    await expect(dismiss.getBoundingClientRect().top).toBeGreaterThanOrEqual(59);
+    await expect(done.getBoundingClientRect().top).toBeGreaterThan(
+      header.getBoundingClientRect().bottom
+    );
     await userEvent.click(done);
+    await expect(page.queryByRole('dialog', { name: 'Notifications' })).not.toBeInTheDocument();
+  },
+};
+
+export const MobileDismissCloses: Story = {
+  ...MobileOpen,
+  play: async ({ canvasElement, userEvent }) => {
+    const page = within(canvasElement.ownerDocument.body);
+    const dialog = await page.findByRole('dialog', { name: 'Notifications' });
+    const header = dialog.querySelector('header');
+    if (!header) throw new Error('Notification header is missing');
+    await userEvent.click(within(header).getByRole('button', { name: 'Close' }));
     await expect(page.queryByRole('dialog', { name: 'Notifications' })).not.toBeInTheDocument();
   },
 };
@@ -401,6 +419,14 @@ export const MobileUpdateActions: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const page = within(canvasElement.ownerDocument.body);
     await userEvent.click(await page.findByRole('tab', { name: 'Updates 3' }));
+    const dialog = page.getByRole('dialog', { name: 'Notifications' });
+    const footer = dialog.querySelector('footer');
+    if (!footer) throw new Error('Notification footer is missing');
+    const done = within(footer).getByRole('button', { name: 'Done' });
+    const clearAll = within(footer).getByRole('button', { name: 'Clear all' });
+    await expect(done.getBoundingClientRect().top).toBeGreaterThan(
+      clearAll.getBoundingClientRect().bottom
+    );
     for (const [title, action] of [
       ['Upstairs heating controller firmware update', 'Update'],
       ['Navet Update', 'Restart'],
