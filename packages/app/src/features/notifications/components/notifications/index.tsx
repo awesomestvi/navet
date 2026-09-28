@@ -200,7 +200,7 @@ export function NotificationCenter({
                 primaryColor={primaryColor}
                 getColorValue={getColorValue}
               />
-              <div className="flex justify-end px-4 pb-3 sm:hidden">
+              <div className="flex justify-end px-4 py-3 sm:hidden">
                 <Dialog.Close asChild>
                   <Button variant="soft">{t('common.done')}</Button>
                 </Dialog.Close>
