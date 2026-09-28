@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.17.4
+
+## New features
+
+- Group media players into one swipeable card that surfaces the active player and supports drag ordering.
+- Add quality-aware ambient motion to weather cards for clouds, rain, snow, sun, wind, fog, and storms.
+
+## Improvements and bug fixes
+
+- Chore participant initials and icons use readable text colours on orange and custom avatar backgrounds.
+- Chore cards show the number of days between completions for after-completion schedules.
+- Align chore cards with the shared card header and let card headers grow with enlarged text.
+- Choose shared chore participants, rotation starting person, and weekly handover day while keeping managers available for approval.
+- Entity dialogs show the provider entity ID to help distinguish entities with similar names.
+- Lawn mower cards show a Navet-branded robot mower with animated grass and wheel treads, respecting reduced-motion settings.
+- Media dialog text and controls stay readable when album artwork has a bright palette.
+- Mobile notifications now clear the safe area, show Done, and keep Update or Restart above View changes and Hide.
+- Fixed individual notification dismissal and redesigned the center with separate update views, clearer rows, and expandable details.
+- See upcoming chores for the next seven days in Today and the next scheduled date and time on chore cards.
+- Robot vacuum cards have a refreshed illustration with a defined bumper, lidar sensor, and subtle Navet branding.
+
 ## 0.17.3
 
 ## Improvements and bug fixes
