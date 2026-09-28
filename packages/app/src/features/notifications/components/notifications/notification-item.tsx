@@ -115,7 +115,7 @@ export function NotificationItem({
   if (isUpdate) {
     return (
       <article aria-labelledby={titleId} className="min-h-14 px-4 py-3">
-        <div className="grid grid-cols-[36px_minmax(0,1fr)_36px] items-start gap-x-3 sm:grid-cols-[36px_minmax(0,1fr)_auto_36px]">
+        <div className="grid grid-cols-[36px_minmax(0,1fr)_auto] items-start gap-x-3">
           <span
             aria-hidden="true"
             className={`flex h-9 w-9 items-center justify-center rounded-2xl border ${sharedSurface.borderStrong} ${sharedSurface.iconBg}`}
@@ -157,24 +157,14 @@ export function NotificationItem({
           <Button
             variant="secondary"
             size="small"
-            className="col-start-2 row-start-2 mt-1 justify-self-start sm:col-start-3 sm:row-start-1 sm:mt-0 sm:self-start"
+            className="col-start-3 row-start-1 shrink-0 whitespace-nowrap"
             loading={pending || busy}
             disabled={pending || busy}
             onClick={() => void perform(onPrimaryAction)}
           >
             {busy ? t('notifications.update.installing') : actionLabel}
           </Button>
-          <IconButton
-            variant="ghost"
-            size="small"
-            className="col-start-3 row-start-1 sm:col-start-4 sm:self-start"
-            label={`${dismissLabel}: ${notification.title}`}
-            title={dismissLabel}
-            disabled={pending || busy}
-            onClick={() => void perform(onDelete)}
-            icon={<X className="h-4 w-4" />}
-          />
-          <div className="col-start-2 col-end-[-1] row-start-3 min-w-0 sm:row-start-2">
+          <div className="col-start-2 col-end-[-1] row-start-2 min-w-0">
             {(busy || (notification.requiresRestart && notification.statusLabel)) && (
               <div className="mt-2 space-y-1.5">
                 {notification.statusLabel && (
@@ -228,8 +218,8 @@ export function NotificationItem({
                 )}
               </div>
             )}
-            {detailsUrl && (
-              <div className="mt-2">
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              {detailsUrl && (
                 <Link
                   href={detailsUrl}
                   target="_blank"
@@ -239,8 +229,18 @@ export function NotificationItem({
                 >
                   {t('notifications.action.viewChanges')}
                 </Link>
-              </div>
-            )}
+              )}
+              <Button
+                variant="ghost"
+                size="small"
+                className="px-2"
+                aria-label={`${dismissLabel}: ${notification.title}`}
+                disabled={pending || busy}
+                onClick={() => void perform(onDelete)}
+              >
+                {dismissLabel}
+              </Button>
+            </div>
           </div>
         </div>
       </article>

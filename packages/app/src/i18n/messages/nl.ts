@@ -2065,7 +2065,7 @@ export const nlMessages = {
   'notifications.update.availableTo': 'Update beschikbaar voor {version}',
   'notifications.update.restartToFinish': 'Start Home Assistant opnieuw om de update te voltooien',
   'notifications.update.installingProgress': '{progress}% installeren',
-  'notifications.update.installing': 'Update installeren...',
+  'notifications.update.installing': 'Installeren',
   'notifications.update.readyToInstall': 'Klaar om {version} te installeren',
   'media.readyToPlay': 'Klaar om te spelen',
   'weather.today': 'Vandaag',

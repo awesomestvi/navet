@@ -2052,7 +2052,7 @@ export const fiMessages = {
   'notifications.update.restartToFinish':
     'Viimeistele päivitys käynnistämällä Home Assistant uudelleen',
   'notifications.update.installingProgress': 'Asennetaan {progress}%',
-  'notifications.update.installing': 'Asennetaan päivitystä...',
+  'notifications.update.installing': 'Asennetaan',
   'notifications.update.readyToInstall': 'Valmis asentamaan {version}',
   'media.readyToPlay': 'Valmiina pelaamaan',
   'weather.today': 'Tänään',

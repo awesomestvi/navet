@@ -2053,7 +2053,7 @@ export const plMessages = {
   'notifications.update.restartToFinish':
     'Uruchom ponownie Home Assistant, aby zakończyć aktualizację',
   'notifications.update.installingProgress': 'Instalowanie {progress}%',
-  'notifications.update.installing': 'Instalowanie aktualizacji...',
+  'notifications.update.installing': 'Instalowanie',
   'notifications.update.readyToInstall': 'Wersja {version} gotowa do instalacji',
   'media.readyToPlay': 'Gotowe do odtworzenia',
   'weather.today': 'Dzisiaj',

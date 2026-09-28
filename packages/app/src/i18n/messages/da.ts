@@ -2051,7 +2051,7 @@ export const daMessages = {
   'notifications.update.availableTo': 'Opdatering tilgængelig for {version}',
   'notifications.update.restartToFinish': 'Genstart Home Assistant for at afslutte opdateringen',
   'notifications.update.installingProgress': 'Installerer {progress} %',
-  'notifications.update.installing': 'Installerer opdatering...',
+  'notifications.update.installing': 'Installerer',
   'notifications.update.readyToInstall': 'Klar til at installere {version}',
   'media.readyToPlay': 'Klar til at spille',
   'weather.today': 'I dag',

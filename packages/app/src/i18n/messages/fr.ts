@@ -2071,7 +2071,7 @@ export const frMessages = {
   'notifications.update.availableTo': 'Mise a jour disponible vers {version}',
   'notifications.update.restartToFinish': 'Redemarrez Home Assistant pour terminer la mise a jour',
   'notifications.update.installingProgress': 'Installation {progress}%',
-  'notifications.update.installing': 'Installation de la mise a jour...',
+  'notifications.update.installing': 'Installation',
   'notifications.update.readyToInstall': 'Pret a installer {version}',
   'media.readyToPlay': 'Pret a lire',
   'weather.today': 'Aujourd’hui',

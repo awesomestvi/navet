@@ -2043,7 +2043,7 @@ export const svMessages = {
   'notifications.update.availableTo': 'Uppdatering tillganglig till {version}',
   'notifications.update.restartToFinish': 'Starta om Home Assistant for att slutfora uppdateringen',
   'notifications.update.installingProgress': 'Installerar {progress}%',
-  'notifications.update.installing': 'Installerar uppdatering...',
+  'notifications.update.installing': 'Installerar',
   'notifications.update.readyToInstall': 'Redo att installera {version}',
   'media.readyToPlay': 'Redo att spela',
   'weather.today': 'I dag',

@@ -2048,7 +2048,7 @@ export const noMessages = {
   'notifications.update.restartToFinish':
     'Start Home Assistant på nytt for å fullføre oppdateringen',
   'notifications.update.installingProgress': 'Installerer {progress}%',
-  'notifications.update.installing': 'Installerer oppdatering...',
+  'notifications.update.installing': 'Installerer',
   'notifications.update.readyToInstall': 'Klar til å installere {version}',
   'media.readyToPlay': 'Klar til å spille',
   'weather.today': 'I dag',

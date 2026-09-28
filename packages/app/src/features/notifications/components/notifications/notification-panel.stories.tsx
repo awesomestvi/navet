@@ -80,10 +80,15 @@ function NotificationPanelStory({ isOpen = true }: { isOpen?: boolean }) {
 
 function NotificationPanelMobileStory({ isOpen = true }: { isOpen?: boolean }) {
   const notificationButtonRef = useRef<HTMLButtonElement | null>(null);
+  const [open, setOpen] = useState(isOpen);
 
   return (
     <NotificationPanelMobilePreview triggerRef={notificationButtonRef}>
-      <NotificationPanel isOpen={isOpen} onClose={() => {}} triggerRefs={[notificationButtonRef]} />
+      <NotificationPanel
+        isOpen={open}
+        onClose={() => setOpen(false)}
+        triggerRefs={[notificationButtonRef]}
+      />
     </NotificationPanelMobilePreview>
   );
 }
@@ -157,7 +162,6 @@ export const Open: Story = {};
 
 export const MobileOpen: Story = {
   render: () => <NotificationPanelMobileStory />,
-
   parameters: {
     docs: {
       story: {
@@ -171,6 +175,41 @@ export const MobileOpen: Story = {
       value: 'mobile1',
       isRotated: false,
     },
+  },
+};
+
+export const MobileDoneCloses: Story = {
+  ...MobileOpen,
+  play: async ({ canvasElement, userEvent }) => {
+    const page = within(canvasElement.ownerDocument.body);
+    const dialog = await page.findByRole('dialog', { name: 'Notifications' });
+    const header = dialog.querySelector('header');
+    const footer = dialog.querySelector('footer');
+    await expect(header).toHaveClass('safe-area-pt-5');
+    if (!header) throw new Error('Notification header is missing');
+    if (!footer) throw new Error('Notification footer is missing');
+    dialog.style.setProperty('--navet-safe-area-top-offset', '59px');
+    await expect(Number.parseFloat(getComputedStyle(header).paddingTop)).toBeGreaterThan(59);
+    const dismiss = within(header).getByRole('button', { name: 'Close' });
+    const done = within(footer).getByRole('button', { name: 'Done' });
+    await expect(dismiss.getBoundingClientRect().top).toBeGreaterThanOrEqual(59);
+    await expect(done.getBoundingClientRect().top).toBeGreaterThan(
+      header.getBoundingClientRect().bottom
+    );
+    await userEvent.click(done);
+    await expect(page.queryByRole('dialog', { name: 'Notifications' })).not.toBeInTheDocument();
+  },
+};
+
+export const MobileDismissCloses: Story = {
+  ...MobileOpen,
+  play: async ({ canvasElement, userEvent }) => {
+    const page = within(canvasElement.ownerDocument.body);
+    const dialog = await page.findByRole('dialog', { name: 'Notifications' });
+    const header = dialog.querySelector('header');
+    if (!header) throw new Error('Notification header is missing');
+    await userEvent.click(within(header).getByRole('button', { name: 'Close' }));
+    await expect(page.queryByRole('dialog', { name: 'Notifications' })).not.toBeInTheDocument();
   },
 };
 
@@ -295,7 +334,7 @@ export const Interactions: Story = {
         'Refined header stories'
       )
     ).toBeVisible();
-    await userEvent.click(page.getByRole('button', { name: 'Hide: Living room lights 1' }));
+    await userEvent.click(firstUpdate.getByRole('button', { name: 'Hide: Living room lights 1' }));
     await expect(page.getAllByRole('article')).toHaveLength(17);
     await userEvent.click(page.getByRole('button', { name: 'Clear all' }));
     await userEvent.click(page.getByRole('button', { name: 'Cancel' }));
@@ -339,5 +378,78 @@ export const Updates: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const page = within(canvasElement.ownerDocument.body);
     await userEvent.click(await page.findByRole('tab', { name: 'Updates 18' }));
+  },
+};
+
+export const MobileUpdateActions: Story = {
+  render: () => (
+    <BusyCenter
+      initialNotifications={[
+        {
+          ...updateNotification,
+          id: 'long-update-title',
+          title: 'Upstairs heating controller firmware update',
+          detailsUrl: 'https://example.com/updates',
+        },
+        {
+          ...updateNotification,
+          id: 'restart-required',
+          title: 'Navet Update',
+          requiresRestart: true,
+          detailsUrl: 'https://example.com/releases',
+        },
+        {
+          ...updateNotification,
+          id: 'installing',
+          title: 'Bathroom thermostat update',
+          isBusy: true,
+          progress: 42,
+          statusLabel: 'Installing · 42%',
+          detailsUrl: 'https://example.com/thermostat',
+        },
+      ]}
+    />
+  ),
+  globals: {
+    viewport: {
+      value: 'mobile1',
+      isRotated: false,
+    },
+  },
+  play: async ({ canvasElement, userEvent }) => {
+    const page = within(canvasElement.ownerDocument.body);
+    await userEvent.click(await page.findByRole('tab', { name: 'Updates 3' }));
+    const dialog = page.getByRole('dialog', { name: 'Notifications' });
+    const footer = dialog.querySelector('footer');
+    if (!footer) throw new Error('Notification footer is missing');
+    const done = within(footer).getByRole('button', { name: 'Done' });
+    const clearAll = within(footer).getByRole('button', { name: 'Clear all' });
+    await expect(done.getBoundingClientRect().top).toBeGreaterThan(
+      clearAll.getBoundingClientRect().bottom
+    );
+    for (const [title, action] of [
+      ['Upstairs heating controller firmware update', 'Update'],
+      ['Navet Update', 'Restart'],
+      ['Bathroom thermostat update', 'Installing'],
+    ]) {
+      const article = page.getByRole('article', { name: title });
+      const row = within(article);
+      const heading = row.getByRole('heading', { name: title });
+      const primary = row.getByRole('button', { name: action });
+      const changes = row.getByRole('link', { name: 'View changes' });
+      const hide = row.getByRole('button', { name: `Hide: ${title}` });
+      await expect(primary.getBoundingClientRect().top).toBeLessThan(
+        changes.getBoundingClientRect().top
+      );
+      await expect(primary.getBoundingClientRect().left).toBeGreaterThanOrEqual(
+        heading.getBoundingClientRect().right
+      );
+      await expect(hide.getBoundingClientRect().left).toBeGreaterThanOrEqual(
+        changes.getBoundingClientRect().right
+      );
+      await expect(primary.getBoundingClientRect().right).toBeLessThanOrEqual(
+        article.getBoundingClientRect().right
+      );
+    }
   },
 };

@@ -1288,7 +1288,7 @@ export const zhMessages = {
   'notifications.update.availableTo': '可更新到 {version}',
   'notifications.update.restartToFinish': '重启 Home Assistant 以完成更新',
   'notifications.update.installingProgress': '正在安装 {progress}%',
-  'notifications.update.installing': '正在安装更新...',
+  'notifications.update.installing': '正在安装',
   'notifications.update.readyToInstall': '准备安装 {version}',
   'power.title': '能耗',
   'power.subtitle': '功率',
