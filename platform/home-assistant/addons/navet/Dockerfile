@@ -67,6 +67,7 @@ COPY docker/shared /etc/nginx/shared
 COPY docker/njs/chore-store.js /etc/nginx/njs/chore-store.js
 COPY docker/njs/chore-occurrence-policy.js /etc/nginx/njs/chore-occurrence-policy.js
 COPY docker/njs/chore-calendar-policy.js /etc/nginx/njs/chore-calendar-policy.js
+COPY docker/njs/chore-progress-policy.js /etc/nginx/njs/chore-progress-policy.js
 COPY docker/njs/auth-store.js /etc/nginx/njs/auth-store.js
 COPY docker/njs/provider-session-store.js /etc/nginx/njs/provider-session-store.js
 COPY docker/njs/installation-authority.js /etc/nginx/njs/installation-authority.js

@@ -61,13 +61,22 @@ completion actions remain available on a shared screen after a PIN is configured
 ## Assignment and schedules
 
 A chore can belong to one person, be open to anyone, create one occurrence for everyone, or rotate
-between selected people. Schedules support one-time, daily, weekly, bi-weekly, tri-weekly,
-monthly, and after-completion recurrence. Navet stores the local due time and time zone so the
-schedule remains stable through daylight-saving changes.
+between selected people. A person's chore can name a standby who covers scheduled work while
+the primary person is away. Rotation can follow a fixed order or choose the person with the fewest
+completed turns. Schedules support one-time, daily, weekly, bi-weekly, tri-weekly, monthly,
+hourly-interval, and after-completion recurrence. Calendar schedules and completion-date repeats
+keep the chosen local time; hourly intervals count elapsed hours through daylight-saving changes.
+Each person can have a later due date for their turn.
 
 Optional approval separates “marked done” from final completion. Missed-work rules can skip an
 occurrence, carry it forward, or leave it visible for review. Pausing a chore stops new occurrences
 without deleting completed history.
+
+A claim can open only near the scheduled start, wait for an earlier turn's approval, and stay with
+the claimant when work is sent back. A paused person can have a return date. Work scheduled during
+their absence stays out of overdue and reminder processing. In **Settings → People**, managers can
+review unfinished due dates from that absence and move selected work to consecutive days after
+the return. Claimed work stays available for review.
 
 ## Motivation is optional
 
@@ -79,7 +88,12 @@ using Today.
 Progress cards open an individual points view with the person's current balance and point history.
 Balances may be negative when points have been reversed or removed. Household managers can add or
 remove points with an optional note after unlocking management; every adjustment remains in the
-person's immutable history.
+person’s immutable history.
+
+In **Progress**, managers can add recurring badges for the household or a personal achievement for
+one person. A target can count selected chore completions, all completions, points earned, days with
+completed work, or a streak of completed due days. Targets can run once, weekly, or monthly and may
+award points. Awards appear beside each person's progress and remain in point history.
 
 In **Rewards**, a person can request an enabled reward once they have enough points. A request
 leaves the balance unchanged. A household manager reviews requests there: **Approve** spends the
@@ -92,6 +106,9 @@ goal is edited or removed.
 Chore changes are shared across authenticated Navet screens connected to the same installation.
 Revision checks prevent one screen from silently overwriting a newer household change. Activity
 history supports weekly review and JSON or CSV export.
+Progress offers a shareable weekly report in Markdown or HTML. In the Home Assistant panel,
+automations can request the report, act on reward requests, adjust points with a stable command
+ID, and use the Navet chores calendar to see upcoming due work.
 
 Access to the installation and chore management are separate: screens must be authenticated,
 while household roles and the optional management PIN govern planning and recovery actions.

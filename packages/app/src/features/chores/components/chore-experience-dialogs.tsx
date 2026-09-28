@@ -15,7 +15,12 @@ import {
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { cn } from '@navet/app/components/ui/utils';
 import { useI18n, useTheme } from '@navet/app/hooks';
-import type { ChoreMission, ChoreRewardGoal, ChoreRewardType } from '@navet/core/chore-experience';
+import type {
+  ChoreMission,
+  ChoreProgressTarget,
+  ChoreRewardGoal,
+  ChoreRewardType,
+} from '@navet/core/chore-experience';
 import type { ChoreDefinition, ChoreParticipant } from '@navet/core/chores';
 import { type FormEvent, useEffect, useState } from 'react';
 import {
@@ -30,6 +35,212 @@ function createId(prefix: string) {
     return `${prefix}:${crypto.randomUUID()}`;
   }
   return `${prefix}:${Date.now().toString(36)}`;
+}
+
+export function ProgressTargetDialog({
+  isOpen,
+  kind,
+  target,
+  definitions,
+  participants,
+  onOpenChange,
+  onSave,
+}: {
+  isOpen: boolean;
+  kind: 'badge' | 'achievement';
+  target?: ChoreProgressTarget | null;
+  definitions: ChoreDefinition[];
+  participants: ChoreParticipant[];
+  onOpenChange: (open: boolean) => void;
+  onSave: (target: ChoreProgressTarget) => Promise<boolean>;
+}) {
+  const { t } = useI18n();
+  const { theme } = useTheme();
+  const surface = getThemeSurfaceTokens(theme);
+  const [title, setTitle] = useState('');
+  const [metric, setMetric] = useState<ChoreProgressTarget['metric']>('count');
+  const [targetCount, setTargetCount] = useState<NumericDraft>(1);
+  const [cycle, setCycle] = useState<NonNullable<ChoreProgressTarget['cycle']>>('once');
+  const [awardPoints, setAwardPoints] = useState<NumericDraft>(0);
+  const [participantId, setParticipantId] = useState('');
+  const [definitionIds, setDefinitionIds] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
+  useEffect(() => {
+    if (!isOpen) return;
+    setTitle(target?.title ?? '');
+    setMetric(target?.metric ?? 'count');
+    setTargetCount(target?.target ?? 1);
+    setCycle(target?.cycle ?? 'once');
+    setAwardPoints(target?.awardPoints ?? 0);
+    setParticipantId(target?.participantId ?? '');
+    setDefinitionIds(target?.definitionIds ?? []);
+  }, [isOpen, target]);
+  const valid =
+    title.trim().length > 0 &&
+    isBoundedInteger(targetCount, 1, 100_000) &&
+    isBoundedInteger(awardPoints, 0, 100_000) &&
+    (metric !== 'selected_chore' || definitionIds.length > 0) &&
+    (kind !== 'achievement' || Boolean(participantId));
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!valid) return;
+    setSaving(true);
+    const saved = await onSave({
+      id: target?.id ?? createId(kind),
+      title: title.trim(),
+      metric,
+      target: Number(targetCount),
+      cycle,
+      participantId: kind === 'achievement' ? participantId : undefined,
+      definitionIds: definitionIds.length ? definitionIds : undefined,
+      awardPoints: Number(awardPoints) || undefined,
+    });
+    setSaving(false);
+    if (saved) onOpenChange(false);
+  };
+  return (
+    <BaseCardDialog
+      variant="modal"
+      titleInContent
+      isOpen={isOpen}
+      onOpenChange={onOpenChange}
+      title={t(
+        kind === 'badge'
+          ? 'household.progression.badgeTitle'
+          : 'household.progression.achievementTitle'
+      )}
+      description={t('household.progression.description')}
+      theme={theme}
+      maxWidth="md"
+      height="capped"
+      bodyPadding={false}
+    >
+      <form onSubmit={submit}>
+        <CardDialogBody>
+          <CardDialogHeader
+            title={t(
+              kind === 'badge'
+                ? 'household.progression.badgeTitle'
+                : 'household.progression.achievementTitle'
+            )}
+            description={t('household.progression.description')}
+            showRoomSelector={false}
+          />
+          <CardDialogSection label={t('household.missionDialog.name')}>
+            <Input
+              autoFocus
+              required
+              maxLength={200}
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+            />
+          </CardDialogSection>
+          {kind === 'achievement' ? (
+            <CardDialogSection label={t('household.progression.person')}>
+              <Select
+                value={participantId}
+                onChange={(event) => setParticipantId(event.target.value)}
+              >
+                <option value="">{t('household.progression.choosePerson')}</option>
+                {participants.map((person) => (
+                  <option key={person.id} value={person.id}>
+                    {person.displayName}
+                  </option>
+                ))}
+              </Select>
+            </CardDialogSection>
+          ) : null}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <CardDialogSection label={t('household.progression.metric')}>
+              <Select
+                value={metric}
+                onChange={(event) => setMetric(event.target.value as ChoreProgressTarget['metric'])}
+              >
+                {(['selected_chore', 'count', 'points', 'days', 'streak'] as const).map((value) => (
+                  <option key={value} value={value}>
+                    {t(`household.progression.metric.${value}`)}
+                  </option>
+                ))}
+              </Select>
+            </CardDialogSection>
+            <CardDialogSection label={t('household.progression.target')}>
+              <Input
+                type="number"
+                min={1}
+                max={100000}
+                step={1}
+                required
+                invalid={!isBoundedInteger(targetCount, 1, 100000)}
+                value={targetCount}
+                onChange={(event) => setTargetCount(numericDraft(event.target.value))}
+              />
+            </CardDialogSection>
+          </div>
+          <CardDialogSection label={t('household.missionDialog.chores')}>
+            <p className={cn('mb-2 text-xs', surface.textSecondary)}>
+              {t('household.progression.choresHint')}
+            </p>
+            <div className="grid gap-1">
+              {definitions.map((definition) => (
+                <label
+                  key={definition.id}
+                  htmlFor={`progress-chore-${definition.id}`}
+                  className={cn(
+                    'flex min-h-11 items-center gap-3 rounded-xl px-2 text-sm',
+                    surface.textPrimary
+                  )}
+                >
+                  <Checkbox
+                    id={`progress-chore-${definition.id}`}
+                    checked={definitionIds.includes(definition.id)}
+                    onCheckedChange={(checked) =>
+                      setDefinitionIds((current) =>
+                        checked
+                          ? [...new Set([...current, definition.id])]
+                          : current.filter((id) => id !== definition.id)
+                      )
+                    }
+                  />
+                  <span>{definition.title}</span>
+                </label>
+              ))}
+            </div>
+          </CardDialogSection>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <CardDialogSection label={t('household.progression.cycle')}>
+              <Select
+                value={cycle}
+                onChange={(event) =>
+                  setCycle(event.target.value as NonNullable<ChoreProgressTarget['cycle']>)
+                }
+              >
+                <option value="once">{t('household.progression.once')}</option>
+                <option value="weekly">{t('household.progression.weekly')}</option>
+                <option value="monthly">{t('household.progression.monthly')}</option>
+              </Select>
+            </CardDialogSection>
+            <CardDialogSection label={t('household.progression.awardPoints')}>
+              <Input
+                type="number"
+                min={0}
+                max={100000}
+                step={1}
+                required
+                invalid={!isBoundedInteger(awardPoints, 0, 100000)}
+                value={awardPoints}
+                onChange={(event) => setAwardPoints(numericDraft(event.target.value))}
+              />
+            </CardDialogSection>
+          </div>
+          <CardDialogFooter>
+            <Button type="submit" loading={saving} disabled={!valid}>
+              {t('household.missionDialog.save')}
+            </Button>
+          </CardDialogFooter>
+        </CardDialogBody>
+      </form>
+    </BaseCardDialog>
+  );
 }
 
 export function MissionDialog({

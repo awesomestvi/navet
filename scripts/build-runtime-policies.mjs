@@ -6,6 +6,7 @@ import { transformWithOxc } from 'vite';
 const entries = [
   ['chore-occurrence-policy', 'njs'],
   ['chore-calendar-policy', 'njs'],
+  ['chore-progress-policy', 'njs'],
   ['resource-host-policy', 'njs'],
   ['credential-policy', 'shared'],
 ];

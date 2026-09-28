@@ -14,6 +14,9 @@ CHORE_ACTIONS = (
     "skip",
     "reopen",
     "reassign",
+    "reward_decision",
+    "adjust_points",
+    "weekly_report",
 )
 
 PANEL_COMPONENT_NAME = "navet-panel"

@@ -1,0 +1,6 @@
+type: new
+audiences:
+  - standalone
+  - home-assistant
+  - hacs
+summary: Add actionable chore alerts, shareable weekly reports, and Home Assistant calendar and automation actions.

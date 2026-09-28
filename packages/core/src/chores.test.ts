@@ -143,6 +143,188 @@ describe('chores domain', () => {
     expect(laterOccurrence[0]?.assigneeIds).toEqual(['alice']);
   });
 
+  it('uses standby coverage and completed history for fair rotation', () => {
+    const person = makeDefinition({
+      assignment: { mode: 'person', participantIds: ['alice'], standbyParticipantIds: ['bob'] },
+    });
+    const standby = materializeChoreOccurrences({
+      definition: person,
+      participantsById: { alice: { ...alice, pausedAt: '2026-08-01T08:00:00.000Z' }, bob },
+      rangeStart: '2026-08-01T00:00:00.000Z',
+      rangeEnd: '2026-08-11T00:00:00.000Z',
+    });
+    expect(standby[0]).toMatchObject({ assignmentSlot: 'standby', assigneeIds: ['bob'] });
+
+    const fair = makeDefinition({
+      assignment: { mode: 'rotation', participantIds: ['alice', 'bob'], rotationStrategy: 'fair' },
+    });
+    const completed = makeOccurrence({ status: 'done', completedBy: 'alice' });
+    const next = materializeChoreOccurrences({
+      definition: fair,
+      participantsById: { alice, bob },
+      existingOccurrences: { [completed.id]: completed },
+      rangeStart: '2026-08-17T00:00:00.000Z',
+      rangeEnd: '2026-08-18T00:00:00.000Z',
+    });
+    expect(next[0]?.assigneeIds).toEqual(['bob']);
+  });
+
+  it('enforces claim windows and retains a claim when review sends work back', () => {
+    const definition = makeDefinition({
+      claimPolicy: { required: true, allowSteal: false, opensBeforeMinutes: 30 },
+      approval: { required: true, approverIds: ['alice'], resetClaimOnReject: false },
+    });
+    const occurrence = makeOccurrence({
+      scheduledAt: '2026-08-10T16:00:00.000Z',
+      assigneeIds: ['bob'],
+    });
+    expect(() =>
+      applyChoreOccurrenceCommand({
+        definition,
+        occurrence,
+        command: { type: 'claim', participantId: 'bob' },
+        commandId: 'early',
+        timestamp: '2026-08-10T15:29:00.000Z',
+      })
+    ).toThrow('cannot be claimed yet');
+    const claimed = applyChoreOccurrenceCommand({
+      definition,
+      occurrence,
+      command: { type: 'claim', participantId: 'bob' },
+      commandId: 'claim',
+      timestamp: '2026-08-10T15:30:00.000Z',
+    }).occurrence;
+    const pending = applyChoreOccurrenceCommand({
+      definition,
+      occurrence: claimed,
+      command: { type: 'complete', participantId: 'bob' },
+      commandId: 'complete',
+      timestamp: '2026-08-10T16:10:00.000Z',
+    }).occurrence;
+    const sentBack = applyChoreOccurrenceCommand({
+      definition,
+      occurrence: pending,
+      command: { type: 'reject', participantId: 'alice' },
+      commandId: 'reject',
+      timestamp: '2026-08-10T16:20:00.000Z',
+    }).occurrence;
+    expect(sentBack).toMatchObject({ status: 'claimed', claimedBy: 'bob' });
+    expect(sentBack.completedBy).toBeUndefined();
+  });
+
+  it('keeps elapsed hourly intervals through DST and applies personal due offsets', () => {
+    const hourly = makeDefinition({
+      assignment: { mode: 'person', participantIds: ['alice'] },
+      schedule: {
+        frequency: 'hourly',
+        startDate: '2026-10-25',
+        time: '01:00',
+        timeZone: 'Europe/Stockholm',
+        intervalHours: 2,
+      },
+    });
+    const hourlyOccurrences = materializeChoreOccurrences({
+      definition: hourly,
+      participantsById: { alice },
+      rangeStart: '2026-10-24T22:00:00.000Z',
+      rangeEnd: '2026-10-25T06:00:00.000Z',
+    });
+    expect(hourlyOccurrences.map((occurrence) => occurrence.scheduledAt)).toEqual([
+      '2026-10-24T23:00:00.000Z',
+      '2026-10-25T01:00:00.000Z',
+      '2026-10-25T03:00:00.000Z',
+      '2026-10-25T05:00:00.000Z',
+    ]);
+
+    const personal = makeDefinition({
+      assignment: {
+        mode: 'everyone',
+        participantIds: ['alice', 'bob'],
+        participantScheduleOverrides: { bob: { dueDateOffsetDays: 1 } },
+      },
+    });
+    const occurrences = materializeChoreOccurrences({
+      definition: personal,
+      participantsById: { alice, bob },
+      rangeStart: '2026-08-01T00:00:00.000Z',
+      rangeEnd: '2026-08-11T00:00:00.000Z',
+    });
+    expect(occurrences.find((occurrence) => occurrence.assigneeIds[0] === 'bob')?.scheduledAt).toBe(
+      '2026-08-04T16:00:00.000Z'
+    );
+  });
+
+  it('keeps the chosen wall clock time for completion-date recurrence', () => {
+    const definition = makeDefinition({
+      assignment: { mode: 'person', participantIds: ['alice'] },
+      schedule: {
+        frequency: 'after_completion',
+        startDate: '2026-10-24',
+        time: '18:00',
+        timeZone: 'Europe/Stockholm',
+        intervalDays: 2,
+      },
+    });
+    const occurrences = materializeChoreOccurrences({
+      definition,
+      participantsById: { alice },
+      latestCompletedAt: '2026-10-24T18:00:00.000Z',
+      rangeStart: '2026-10-25T00:00:00.000Z',
+      rangeEnd: '2026-10-27T00:00:00.000Z',
+    });
+    expect(occurrences[0]?.scheduledAt).toBe('2026-10-26T17:00:00.000Z');
+  });
+
+  it('moves only reviewed vacation work and preserves claimed work', () => {
+    const definition = makeDefinition({ assignment: { mode: 'person', participantIds: ['bob'] } });
+    const pausedBob = {
+      ...bob,
+      pausedAt: '2026-08-01T00:00:00.000Z',
+      resumeAt: '2026-08-12T00:00:00.000Z',
+    };
+    const eligible = makeOccurrence({
+      id: 'vacation-work',
+      assigneeIds: ['bob'],
+      scheduledAt: '2026-08-10T16:00:00.000Z',
+    });
+    const claimed = makeOccurrence({
+      id: 'claimed-work',
+      assigneeIds: ['bob'],
+      status: 'claimed',
+      claimedBy: 'bob',
+      claimedAt: '2026-08-10T16:00:00.000Z',
+    });
+    const workspace = createEmptyChoreWorkspace();
+    workspace.participantsById = { alice, bob: pausedBob };
+    workspace.definitionsById = { [definition.id]: definition };
+    workspace.occurrencesById = { [eligible.id]: eligible, [claimed.id]: claimed };
+    const result = applyChoreWorkspaceAction({
+      workspace,
+      action: {
+        type: 'vacation_reschedule',
+        actorParticipantId: 'alice',
+        participantId: 'bob',
+        occurrenceIds: [eligible.id],
+        startDate: '2026-08-13',
+      },
+      commandId: 'move-vacation',
+      timestamp: '2026-08-12T08:00:00.000Z',
+    });
+    expect(result.data.occurrencesById[eligible.id]).toMatchObject({ status: 'skipped' });
+    expect(result.data.occurrencesById[claimed.id]).toMatchObject({ status: 'claimed' });
+    const moved = Object.values(result.data.occurrencesById).find(
+      (item) => item.carriedForwardFrom === eligible.id
+    );
+    expect(moved).toMatchObject({ status: 'available', scheduledAt: '2026-08-13T16:00:00.000Z' });
+    const afterReturn = runChoreWorkspaceScheduler(workspace, '2026-08-13T09:00:00.000Z');
+    expect(
+      afterReturn.activities.some(
+        (activity) => activity.type === 'overdue' || activity.type === 'missed'
+      )
+    ).toBe(false);
+    expect(afterReturn.outboxItems).toHaveLength(0);
+  });
+
   it.each([
     [2, ['2026-08-03T09:00:00.000Z', '2026-08-17T09:00:00.000Z']],
     [3, ['2026-08-03T09:00:00.000Z', '2026-08-24T09:00:00.000Z']],

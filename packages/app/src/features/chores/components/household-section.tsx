@@ -31,10 +31,16 @@ import {
   type ChoreGamificationMode,
   type ChoreMission,
   type ChorePresentationMetadata,
+  type ChoreProgressTarget,
   type ChoreRewardGoal,
   normalizeChoreExperienceState,
 } from '@navet/core/chore-experience';
-import type { ChoreDefinition, ChoreParticipant, ChoreWorkspaceAction } from '@navet/core/chores';
+import {
+  type ChoreDefinition,
+  type ChoreParticipant,
+  type ChoreWorkspaceAction,
+  isChoreParticipantPausedAt,
+} from '@navet/core/chores';
 import {
   AlertTriangle,
   ClipboardList,
@@ -47,6 +53,7 @@ import {
 import { type ReactNode, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { getChoreMaterializationRange, materializeChoreWorkspace } from '../chore-workspace-model';
 import { useChoreWorkspaceStore } from '../chore-workspace-store';
+import { useChoreClock } from '../use-chore-clock';
 import { useChoreReminderDelivery } from '../use-chore-reminder-delivery';
 import { useChoreWorkspaceSync } from '../use-chore-workspace-sync';
 import { ChoreDataRecovery } from './chore-data-recovery';
@@ -247,6 +254,7 @@ function HouseholdUnavailable({
 
 export function HouseholdSection({ syncEnabled = true }: { syncEnabled?: boolean }) {
   const { t } = useI18n();
+  const now = useChoreClock();
   const [view, setView] = useState<HouseholdView>('today');
   const [selectedParticipantId, setSelectedParticipantId] = useState('all');
   const [personDialogOpen, setPersonDialogOpen] = useState(false);
@@ -364,8 +372,11 @@ export function HouseholdSection({ syncEnabled = true }: { syncEnabled?: boolean
 
   const allParticipants = useMemo(() => (data ? Object.values(data.participantsById) : []), [data]);
   const participants = useMemo(
-    () => allParticipants.filter((participant) => !participant.pausedAt),
-    [allParticipants]
+    () =>
+      allParticipants.filter(
+        (participant) => !isChoreParticipantPausedAt(participant, now.toISOString())
+      ),
+    [allParticipants, now]
   );
 
   useEffect(() => {
@@ -430,7 +441,9 @@ export function HouseholdSection({ syncEnabled = true }: { syncEnabled?: boolean
     const currentExperience = normalizeChoreExperienceState(current.experience);
     if (currentExperience.setupStartedAt) return true;
     const setupManager = Object.values(current.participantsById).find(
-      (candidate) => candidate.capabilities.includes('manage') && !candidate.pausedAt
+      (candidate) =>
+        candidate.capabilities.includes('manage') &&
+        !isChoreParticipantPausedAt(candidate, now.toISOString())
     );
     if (!setupManager) return false;
     return execute({
@@ -929,6 +942,23 @@ export function HouseholdSection({ syncEnabled = true }: { syncEnabled?: boolean
             <ProgressView
               data={data}
               onAdjustPoints={adjustParticipantPoints}
+              onSaveTarget={(kind: 'badge' | 'achievement', target: ChoreProgressTarget) =>
+                updateExperience((current) => ({
+                  ...current,
+                  [kind === 'badge' ? 'badgesById' : 'achievementsById']: {
+                    ...(kind === 'badge' ? current.badgesById : current.achievementsById),
+                    [target.id]: target,
+                  },
+                }))
+              }
+              onDeleteTarget={(kind: 'badge' | 'achievement', target: ChoreProgressTarget) =>
+                void updateExperience((current) => {
+                  const key = kind === 'badge' ? 'badgesById' : 'achievementsById';
+                  const targets = { ...current[key] };
+                  delete targets[target.id];
+                  return { ...current, [key]: targets };
+                })
+              }
               requestManagementAccess={withManagementAccess}
             />
           ) : null
@@ -950,6 +980,17 @@ export function HouseholdSection({ syncEnabled = true }: { syncEnabled?: boolean
                 setParticipantToEdit(participant);
                 setPersonDialogOpen(true);
               }}
+              onRescheduleVacation={(participantId, occurrenceIds, startDate) =>
+                managerActorId
+                  ? execute({
+                      type: 'vacation_reschedule',
+                      actorParticipantId: managerActorId,
+                      participantId,
+                      occurrenceIds,
+                      startDate,
+                    })
+                  : Promise.resolve(false)
+              }
               managementPinConfigured={managementPinConfigured}
               onManagePin={() => withManagementAccess(() => setManagementPinEditorOpen(true))}
               onRemovePin={() => withManagementAccess(() => setManagementPinRemovalOpen(true))}

@@ -64,7 +64,7 @@ export function scheduleStartDate(schedule: ChoreSchedule) {
 }
 
 export function isScheduledOnDate(
-  schedule: Exclude<ChoreSchedule, { frequency: 'after_completion' }>,
+  schedule: Exclude<ChoreSchedule, { frequency: 'after_completion' | 'hourly' }>,
   dateKey: string
 ) {
   const startDate = scheduleStartDate(schedule);
@@ -148,22 +148,41 @@ export function rotationIndexForDate(
 }
 
 function activeParticipantIds(
-  assignment: ChoreAssignment,
-  participantsById: Record<string, ChoreParticipant>
+  participantIds: string[],
+  participantsById: Record<string, ChoreParticipant>,
+  at?: string
 ) {
-  return assignment.participantIds.filter((participantId) => {
+  return participantIds.filter((participantId) => {
     const participant = participantsById[participantId];
-    return participant && !participant.pausedAt && participant.capabilities.includes('complete');
+    const paused =
+      participant?.pausedAt &&
+      (!at ||
+        (Date.parse(at) >= Date.parse(participant.pausedAt) &&
+          (!participant.resumeAt || Date.parse(at) < Date.parse(participant.resumeAt))));
+    return participant && !paused && participant.capabilities.includes('complete');
   });
 }
 
 export function resolveAssignmentSlots(
   assignment: ChoreAssignment,
   participantsById: Record<string, ChoreParticipant>,
-  scheduledIndex: number
+  scheduledIndex: number,
+  completionCountsByParticipant?: Record<string, number>,
+  at?: string
 ) {
-  const participantIds = activeParticipantIds(assignment, participantsById);
+  completionCountsByParticipant = completionCountsByParticipant ?? {};
+  const participantIds = activeParticipantIds(assignment.participantIds, participantsById, at);
   if (participantIds.length === 0) {
+    if (assignment.mode === 'person') {
+      const standbyIds = activeParticipantIds(
+        assignment.standbyParticipantIds ?? [],
+        participantsById,
+        at
+      );
+      if (standbyIds.length > 0) {
+        return [{ assignmentSlot: 'standby', assigneeIds: [standbyIds[0]] }];
+      }
+    }
     return [];
   }
 
@@ -176,7 +195,16 @@ export function resolveAssignmentSlots(
 
   if (assignment.mode === 'rotation') {
     const cursor = Math.max(0, assignment.rotationCursor ?? 0);
-    const participantId = participantIds[(cursor + scheduledIndex) % participantIds.length];
+    const orderedIds = participantIds.slice(cursor).concat(participantIds.slice(0, cursor));
+    const participantId =
+      assignment.rotationStrategy === 'fair'
+        ? orderedIds.reduce((best, candidate) =>
+            (completionCountsByParticipant[candidate] ?? 0) <
+            (completionCountsByParticipant[best] ?? 0)
+              ? candidate
+              : best
+          )
+        : participantIds[(cursor + scheduledIndex) % participantIds.length];
     return [{ assignmentSlot: participantId, assigneeIds: [participantId] }];
   }
 

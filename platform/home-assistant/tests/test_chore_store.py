@@ -15,6 +15,7 @@ import sys
 import types
 import unittest
 from datetime import datetime, timezone
+from unittest.mock import AsyncMock
 
 _TRACKED_INTERVALS = []
 
@@ -43,9 +44,14 @@ class _Store:
 class _Bus:
     def __init__(self):
         self.events = []
+        self.listeners = {}
 
     def async_fire(self, event_type, data):
         self.events.append((event_type, copy.deepcopy(data)))
+
+    def async_listen(self, event_type, callback):
+        self.listeners[event_type] = callback
+        return lambda: self.listeners.pop(event_type, None)
 
 
 class _Services:
@@ -120,6 +126,9 @@ def _install_host_fakes() -> None:
     components.websocket_api = websocket_api
     sensor_component = types.ModuleType("homeassistant.components.sensor")
     sensor_component.SensorEntity = _SensorEntity
+    calendar_component = types.ModuleType("homeassistant.components.calendar")
+    calendar_component.CalendarEntity = _SensorEntity
+    calendar_component.CalendarEvent = lambda **kwargs: types.SimpleNamespace(**kwargs)
     core = types.ModuleType("homeassistant.core")
     core.HomeAssistant = object
     core.Event = object
@@ -150,6 +159,7 @@ def _install_host_fakes() -> None:
     util = types.ModuleType("homeassistant.util")
     dt = types.ModuleType("homeassistant.util.dt")
     dt.utcnow = lambda: datetime.now(timezone.utc)
+    dt.now = lambda: datetime.now(timezone.utc)
     util.dt = dt
 
     sys.modules.update(
@@ -157,6 +167,7 @@ def _install_host_fakes() -> None:
             "homeassistant": homeassistant,
             "homeassistant.components": components,
             "homeassistant.components.sensor": sensor_component,
+            "homeassistant.components.calendar": calendar_component,
             "homeassistant.components.websocket_api": websocket_api,
             "homeassistant.config_entries": config_entries,
             "homeassistant.core": core,
@@ -209,8 +220,19 @@ def _load_sensor_module():
     return module
 
 
+def _load_calendar_module():
+    path = pathlib.Path(__file__).parents[1] / "custom_components" / "navet" / "calendar.py"
+    spec = importlib.util.spec_from_file_location("navet.calendar", path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
+
+
 chores = _load_module()
 sensors = _load_sensor_module()
+calendars = _load_calendar_module()
 
 
 def _participant(participant_id="manager", *, destination=None):
@@ -347,6 +369,93 @@ class ChoreAuthorityTests(unittest.IsolatedAsyncioTestCase):
         malformed["activity"] = [{"commandId": "bad", "type": "done"}]
         with self.assertRaises(chores.ChoreStorageError):
             chores._normalize_data(malformed)
+
+    async def test_standby_and_fair_rotation_assignment(self):
+        data = chores._empty_data()
+        data["participantsById"] = {
+            "alice": {"capabilities": ["complete"], "pausedAt": "2026-08-01T00:00:00.000Z"},
+            "bob": {"capabilities": ["complete"]},
+        }
+        self.assertEqual(
+            chores._assignment_slots({"id": "dishes", "assignment": {
+                "mode": "person", "participantIds": ["alice"], "standbyParticipantIds": ["bob"]
+            }}, data, 0),
+            [("standby", ["bob"])],
+        )
+        data["participantsById"]["alice"].pop("pausedAt")
+        data["occurrencesById"] = {"one": {
+            "definitionId": "dishes", "status": "done", "completedBy": "alice"
+        }}
+        self.assertEqual(
+            chores._assignment_slots({"id": "dishes", "assignment": {
+                "mode": "rotation", "participantIds": ["alice", "bob"], "rotationStrategy": "fair"
+            }}, data, 0),
+            [("bob", ["bob"])],
+        )
+
+    async def test_hourly_materialization_keeps_elapsed_interval_through_dst(self):
+        data = chores._empty_data()
+        data["participantsById"] = {"manager": _participant()}
+        data["definitionsById"] = {"dishes": {
+            "id": "dishes", "title": "Dishes", "enabled": True,
+            "assignment": {"mode": "person", "participantIds": ["manager"]},
+            "schedule": {"frequency": "hourly", "startDate": "2026-10-25",
+                "time": "01:00", "timeZone": "Europe/Stockholm", "intervalHours": 2},
+            "dueWindowMinutes": 60, "approval": {"required": False, "approverIds": []},
+        }}
+        materialized, _events = chores._materialize(data,
+            "2026-10-24T22:00:00.000Z", "2026-10-25T06:00:00.000Z",
+            "2026-10-24T22:00:00.000Z", "hourly-test")
+        self.assertEqual(sorted(item["scheduledAt"] for item in materialized["occurrencesById"].values()), [
+            "2026-10-24T23:00:00.000Z", "2026-10-25T01:00:00.000Z",
+            "2026-10-25T03:00:00.000Z", "2026-10-25T05:00:00.000Z",
+        ])
+
+    async def test_vacation_reschedule_keeps_claimed_work(self):
+        data = chores._empty_data()
+        data["participantsById"] = {"manager": _participant(),
+            "child": {**_participant("child"), "pausedAt": "2026-08-01T00:00:00.000Z",
+                "resumeAt": "2026-08-12T00:00:00.000Z"}}
+        data["definitionsById"] = {"dishes": {"id": "dishes", "schedule": {
+            "timeZone": "Europe/Stockholm"}}}
+        data["occurrencesById"] = {
+            "available": {"id": "available", "definitionId": "dishes",
+                "scheduledAt": "2026-08-10T16:00:00.000Z",
+                "dueAt": "2026-08-10T18:00:00.000Z", "assigneeIds": ["child"],
+                "assignmentSlot": "child", "status": "available"},
+            "claimed": {"id": "claimed", "definitionId": "dishes",
+                "scheduledAt": "2026-08-11T16:00:00.000Z",
+                "dueAt": "2026-08-11T18:00:00.000Z", "assigneeIds": ["child"],
+                "assignmentSlot": "child", "status": "claimed", "claimedBy": "child"},
+        }
+        moved, activities = chores._vacation_reschedule(data, {
+            "actorParticipantId": "manager", "participantId": "child",
+            "occurrenceIds": ["available"], "startDate": "2026-08-13",
+        }, "2026-08-12T08:00:00.000Z", "vacation-test")
+        self.assertEqual(moved["occurrencesById"]["available"]["status"], "skipped")
+        self.assertEqual(moved["occurrencesById"]["claimed"]["status"], "claimed")
+        self.assertEqual([item["status"] for item in moved["occurrencesById"].values()].count("available"), 1)
+        self.assertEqual(activities[-1]["type"], "vacation_rescheduled")
+
+    async def test_progress_award_is_once_per_person_and_week(self):
+        data = chores._empty_data()
+        data["participantsById"] = {"maya": _participant("maya")}
+        data["experience"]["gamificationMode"] = "family"
+        data["experience"]["badgesById"] = {"weekly": {
+            "id": "weekly", "title": "Dishes", "metric": "selected_chore",
+            "target": 1, "definitionIds": ["dishes"], "cycle": "weekly", "awardPoints": 5,
+        }}
+        data["occurrencesById"] = {"monday": {
+            "id": "monday", "definitionId": "dishes", "status": "done",
+            "scheduledAt": "2026-09-28T10:00:00.000Z", "completedAt": "2026-09-28T10:00:00.000Z",
+            "completedBy": "maya", "assigneeIds": ["maya"],
+        }}
+        first = chores._award_progress(data, "2026-09-28T11:00:00.000Z")
+        self.assertEqual(len(first["experience"]["progressAwards"]), 1)
+        self.assertEqual(first["experience"]["earnedPointsByParticipant"]["maya"], 5)
+        again = chores._award_progress(first, "2026-09-28T12:00:00.000Z")
+        self.assertEqual(len(again["experience"]["pointTransactions"]), 1)
+        self.assertEqual(again["experience"]["earnedPointsByParticipant"]["maya"], 5)
 
     async def test_restore_rejects_invalid_rotation_fields_before_persisting(self):
         await self._create_manager()
@@ -920,17 +1029,90 @@ class ChoreAuthorityTests(unittest.IsolatedAsyncioTestCase):
         requested = await command("request-reward", {"type": "reward_request",
             "requestId": "r1", "rewardId": "movie", "participantId": "manager"})
         self.assertEqual(requested["data"]["experience"]["earnedPointsByParticipant"]["manager"], 100)
-        approved = await command("approve-reward", {"type": "reward_decision",
-            "requestId": "r1", "actorParticipantId": "manager", "decision": "approve"})
+        approved = await self.authority.async_service_action("reward_decision",
+            {"request_id": "r1", "manager_participant_id": "manager", "decision": "approve"},
+            "approve-reward")
         self.assertEqual(approved["data"]["experience"]["earnedPointsByParticipant"]["manager"], 60)
-        replay = await self.authority.async_command({"commandId": "approve-reward",
-            "baseRevision": approved["revision"], "action": {"type": "reward_decision",
-                "requestId": "r1", "actorParticipantId": "manager", "decision": "approve"}}, "ha-user-1")
+        replay = await self.authority.async_service_action("reward_decision",
+            {"request_id": "r1", "manager_participant_id": "manager", "decision": "approve"},
+            "approve-reward")
         self.assertEqual(replay["revision"], approved["revision"])
         refunded = await command("refund-reward", {"type": "reward_decision",
             "requestId": "r1", "actorParticipantId": "manager", "decision": "refund"})
         self.assertEqual(refunded["data"]["experience"]["earnedPointsByParticipant"]["manager"], 100)
         self.assertEqual(len(refunded["data"]["experience"]["pointTransactions"]), 3)
+
+    async def test_typed_home_assistant_point_action_and_weekly_report(self):
+        await self._create_manager()
+        await self.authority.async_configure_pin("manager", "2468", None, "ha-user-1")
+        fields = {"command_id": "automation-bonus-2026-w40", "manager_participant_id": "manager",
+            "participant_id": "manager", "points_delta": 7, "reason": "Weekly bonus"}
+        first = await self.authority.async_service_action("adjust_points", fields, "context-one")
+        self.assertEqual(first["data"]["experience"]["earnedPointsByParticipant"]["manager"], 7)
+        replay = await self.authority.async_service_action("adjust_points", fields, "context-two")
+        self.assertEqual(replay["revision"], first["revision"])
+        report = await self.authority.async_service_action("weekly_report", {"format": "html"}, "context-report")
+        self.assertEqual(report["format"], "html")
+        self.assertIn("<h1>Chores:", report["content"])
+
+    async def test_mobile_alert_action_is_signed_and_rejects_stale_occurrences(self):
+        await self._create_manager()
+        occurrence = {"id": "due", "definitionId": "dishes", "status": "available",
+            "assigneeIds": ["manager"], "updatedAt": "2026-09-28T10:00:00.000Z"}
+        item = {"id": "outbox:alert:due", "occurrenceId": "due", "participantId": "manager",
+            "occurrenceUpdatedAt": occurrence["updatedAt"], "status": "delivered"}
+        data = self.authority.data
+        data["definitionsById"]["dishes"] = {"id": "dishes", "approval": {"approverIds": []}}
+        data["occurrencesById"]["due"] = occurrence
+        data["outbox"].append(item)
+        self.authority.async_command = AsyncMock(return_value={})
+        action = self.authority.alert_actions(item)[0]["action"]
+        await self.authority.async_handle_alert_action(types.SimpleNamespace(data={"action": action}))
+        self.authority.async_command.assert_awaited_once()
+        request = self.authority.async_command.await_args.args[0]
+        self.assertEqual(request["action"]["expectedOccurrenceUpdatedAt"], occurrence["updatedAt"])
+        self.assertTrue(self.authority.async_command.await_args.kwargs["trusted_service"])
+        self.authority.async_command.reset_mock()
+        forged = action[:-1] + ("0" if action[-1] != "0" else "1")
+        await self.authority.async_handle_alert_action(types.SimpleNamespace(data={"action": forged}))
+        self.authority.async_command.assert_not_awaited()
+        occurrence["updatedAt"] = "2026-09-28T10:01:00.000Z"
+        await self.authority.async_handle_alert_action(types.SimpleNamespace(data={"action": action}))
+        self.authority.async_command.assert_not_awaited()
+
+    async def test_changed_occurrence_clears_delivered_mobile_alert(self):
+        await self._create_manager()
+        data = self.authority.data
+        data["occurrencesById"]["due"] = {"id": "due", "updatedAt": "2026-09-28T10:00:00.000Z"}
+        data["outbox"].append({"id": "outbox:alert:due", "status": "delivered",
+            "occurrenceId": "due", "occurrenceUpdatedAt": "2026-09-28T10:00:00.000Z",
+            "destinationTarget": "notify.mobile_app_test"})
+        next_data = copy.deepcopy(data)
+        next_data["occurrencesById"]["due"]["updatedAt"] = "2026-09-28T10:01:00.000Z"
+        await self.authority._commit_locked(next_data, [], "change-due", "2026-09-28T10:01:00.000Z")
+        self.assertIn(("notify", "mobile_app_test", {"message": "clear_notification",
+            "data": {"tag": "navet_chore_outbox:alert:due"}}, {"blocking": True}),
+            self.hass.services.calls)
+
+    async def test_calendar_projects_bounded_due_events(self):
+        data = chores._empty_data()
+        data["definitionsById"] = {"dishes": {"id": "dishes", "title": "Do <dishes>"}}
+        data["occurrencesById"] = {
+            "due": {"id": "due", "definitionId": "dishes", "status": "available",
+                "scheduledAt": "2026-09-28T10:00:00.000Z", "dueAt": "2026-09-28T10:00:00.000Z"},
+            "skipped": {"id": "skipped", "definitionId": "dishes", "status": "skipped",
+                "scheduledAt": "2026-09-28T11:00:00.000Z", "dueAt": "2026-09-28T12:00:00.000Z"},
+            "done": {"id": "done", "definitionId": "dishes", "status": "done",
+                "scheduledAt": "2026-09-28T11:00:00.000Z", "dueAt": "2026-09-28T12:00:00.000Z"},
+        }
+        calendar = calendars.NavetChoresCalendar("entry")
+        calendar._authority = types.SimpleNamespace(data=data)
+        events = await calendar.async_get_events(_Hass(),
+            datetime.fromisoformat("2026-09-28T09:00:00+00:00"),
+            datetime.fromisoformat("2026-09-28T12:00:00+00:00"))
+        self.assertEqual([event.uid for event in events], ["due"])
+        self.assertEqual(events[0].summary, "Do <dishes>")
+        self.assertGreater(events[0].end, events[0].start)
 
     async def test_management_pin_can_be_removed_by_an_unlocked_manager(self):
         await self._create_manager()

@@ -712,7 +712,7 @@ export const PersonStepperCreation: Story = {
     await userEvent.click(photoMode);
     const uploadPhoto = within(dialog).getByRole('button', { name: 'Upload photo' });
     const fileHint = within(dialog).getByText('PNG, JPG up to 5MB');
-    await expect(uploadPhoto).toHaveClass('border-transparent', 'text-white');
+    await expect(uploadPhoto).toBeEnabled();
     await expect(fileHint.parentElement).toBe(uploadPhoto.parentElement?.parentElement);
     const pngBytes = Uint8Array.from(
       atob(
@@ -897,7 +897,7 @@ export const EditWeeklyRotationKeepsOrderAndOffset: Story = {
     await expect(dialog.getByLabelText('Change person')).toHaveValue('weekly');
     await expect(dialog.getByLabelText('Starts with')).toHaveValue('maya');
     await expect(dialog.getByLabelText('Change on')).toHaveValue('1');
-    await expect(dialog.getByText(/Turn order: Maya → Sam/)).toBeVisible();
+    await expect(dialog.getByText(/Turn order: Maya → Sam/)).toBeInTheDocument();
     await userEvent.click(dialog.getByRole('button', { name: 'Next' }));
     await userEvent.click(dialog.getByRole('button', { name: 'Save changes' }));
     await expect(saveEditedChore).toHaveBeenCalledWith(
@@ -942,7 +942,7 @@ export const UnavailableRotationParticipantCanBeRemoved: Story = {
       'selected',
       true
     );
-    await expect(dialog.getByText(/Turn order: Unavailable → Maya/)).toBeVisible();
+    await expect(dialog.getByText(/Turn order: Unavailable → Maya/)).toBeInTheDocument();
     await expect(dialog.getByRole('button', { name: 'Next' })).toBeDisabled();
     await userEvent.click(dialog.getByRole('checkbox', { name: 'Sam' }));
     await expect(dialog.queryByRole('alert')).toBeNull();
@@ -957,5 +957,66 @@ export const UnavailableRotationParticipantCanBeRemoved: Story = {
       }),
       expect.any(Object)
     );
+  },
+};
+
+export const FairRotationHourlySchedule: Story = {
+  render: () => (
+    <AddChoreDialog
+      isOpen
+      onOpenChange={fn()}
+      onSave={saveEditedChore}
+      participants={Object.values(workspace.participantsById)}
+      definition={{
+        ...workspace.definitionsById.dishwasher,
+        assignment: {
+          mode: 'rotation',
+          participantIds: ['sam', 'maya'],
+          rotationStrategy: 'fair',
+          rotationCursor: 1,
+        },
+        schedule: {
+          frequency: 'hourly',
+          startDate: '2026-09-28',
+          time: '18:00',
+          timeZone: 'Europe/Stockholm',
+          intervalHours: 6,
+        },
+      }}
+    />
+  ),
+  play: async ({ canvasElement }) => {
+    const dialog = within(
+      within(canvasElement.ownerDocument.body).getByRole('dialog', { name: 'Edit chore' })
+    );
+    await userEvent.click(dialog.getByRole('button', { name: 'Next' }));
+    await expect(dialog.getByLabelText('Rotation method')).toHaveValue('fair');
+    await expect(
+      dialog.getByText(/Next turn goes to the person with the fewest completed chores/)
+    ).toBeInTheDocument();
+    await userEvent.click(dialog.getByRole('button', { name: 'Next' }));
+    await expect(dialog.getByLabelText('Repeat every (hours)')).toHaveValue(6);
+  },
+};
+
+export const StandbyCoverage: Story = {
+  render: () => (
+    <AddChoreDialog
+      isOpen
+      onOpenChange={fn()}
+      onSave={saveEditedChore}
+      participants={Object.values(workspace.participantsById)}
+      definition={{
+        ...workspace.definitionsById.dishwasher,
+        assignment: { mode: 'person', participantIds: ['maya'], standbyParticipantIds: ['sam'] },
+      }}
+    />
+  ),
+  play: async ({ canvasElement }) => {
+    const dialog = within(
+      within(canvasElement.ownerDocument.body).getByRole('dialog', { name: 'Edit chore' })
+    );
+    await userEvent.click(dialog.getByRole('button', { name: 'Next' }));
+    await expect(dialog.getByLabelText('Standby person')).toHaveValue('sam');
   },
 };

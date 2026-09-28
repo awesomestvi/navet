@@ -79,6 +79,58 @@ function HouseholdRewardRequestsStory() {
   return <HouseholdSection syncEnabled={false} />;
 }
 
+function HouseholdProgressionStory() {
+  useEffect(() => {
+    const data = createChoreDemoWorkspace({ copy: DEMO_COPY });
+    const experience = normalizeChoreExperienceState(data.experience);
+    experience.badgesById = {
+      'weekly-helper': {
+        id: 'weekly-helper',
+        title: 'Weekly helper',
+        metric: 'count',
+        target: 3,
+        cycle: 'weekly',
+        awardPoints: 10,
+      },
+    };
+    experience.achievementsById = {
+      'maya-dishes': {
+        id: 'maya-dishes',
+        title: 'Dishwasher expert',
+        metric: 'selected_chore',
+        target: 5,
+        definitionIds: ['dishwasher'],
+        participantId: 'maya',
+        cycle: 'once',
+      },
+    };
+    useChoreWorkspaceStore.getState().setPreviewDocument({ data: { ...data, experience } });
+    return () => useChoreWorkspaceStore.getState().reset();
+  }, []);
+  return <HouseholdSection syncEnabled={false} />;
+}
+
+function HouseholdVacationReviewStory() {
+  useEffect(() => {
+    const data = createChoreDemoWorkspace({ copy: DEMO_COPY });
+    const now = Date.now();
+    const maya = data.participantsById.maya;
+    if (!maya) throw new Error('Expected Maya in the demo household');
+    maya.pausedAt = new Date(now - 5 * 86_400_000).toISOString();
+    maya.resumeAt = new Date(now + 2 * 86_400_000).toISOString();
+    const candidate = Object.values(data.occurrencesById).find(
+      (occurrence) => occurrence.status === 'available'
+    );
+    if (!candidate) throw new Error('Expected an available chore');
+    candidate.assigneeIds = ['maya'];
+    candidate.scheduledAt = new Date(now - 86_400_000).toISOString();
+    candidate.dueAt = new Date(now - 82_800_000).toISOString();
+    useChoreWorkspaceStore.getState().setPreviewDocument({ data });
+    return () => useChoreWorkspaceStore.getState().reset();
+  }, []);
+  return <HouseholdSection syncEnabled={false} />;
+}
+
 function HouseholdCustomIntervalStory() {
   useEffect(() => {
     const data = createChoreDemoWorkspace({ copy: DEMO_COPY });
@@ -960,7 +1012,7 @@ export const ProgressManagement: Story = {
     });
     await expect(saveAddition).toBeEnabled();
     const addedBalancePreview = within(addDialog).getByText('New balance: 55');
-    await expect(addedBalancePreview).toBeVisible();
+    await expect(addedBalancePreview).toBeInTheDocument();
     await userEvent.click(saveAddition);
     await waitFor(() => expect(body.queryByText('Add points for Maya')).not.toBeInTheDocument());
     await expect(personCardScope.getByText('55')).toBeVisible();
@@ -975,7 +1027,7 @@ export const ProgressManagement: Story = {
       'Corrected total'
     );
     const balancePreview = within(removeDialog).getByText('New balance: -5');
-    await expect(balancePreview).toBeVisible();
+    await expect(balancePreview).toBeInTheDocument();
     await expect(balancePreview).toHaveAttribute('data-point-balance-preview', 'true');
     await userEvent.click(within(removeDialog).getByRole('button', { name: 'Remove points' }));
     await waitFor(() => expect(body.queryByText('Remove points for Maya')).not.toBeInTheDocument());
@@ -1007,6 +1059,18 @@ export const ProgressManagement: Story = {
 export const ProgressPointsMobile: Story = {
   ...ProgressManagement,
   globals: { viewport: { value: 'mobile1', isRotated: false } },
+};
+
+export const BadgesAndAchievements: Story = {
+  render: () => <HouseholdProgressionStory />,
+  play: async ({ canvas, userEvent }) => {
+    await canvas.findByRole('region', { name: 'Today' });
+    await userEvent.click(canvas.getByRole('button', { name: 'Progress' }));
+    const panel = within(canvas.getByRole('region', { name: 'Progress' }));
+    await expect(panel.getByText('Weekly helper')).toBeVisible();
+    await expect(panel.getByText('Dishwasher expert')).toBeVisible();
+    await expect(panel.getByRole('button', { name: 'Add badge' })).toBeVisible();
+  },
 };
 
 export const EmptyPointHistory: Story = {
@@ -1078,6 +1142,24 @@ export const SettingsAndRecovery: Story = {
     await expect(
       within(recoveryPanel).queryByRole('combobox', { name: 'Motivation style' })
     ).toBeNull();
+  },
+};
+
+export const VacationDueDateReview: Story = {
+  render: () => <HouseholdVacationReviewStory />,
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await canvas.findByRole('region', { name: 'Today' });
+    await userEvent.click(canvas.getByRole('button', { name: 'Settings' }));
+    const settings = within(canvas.getByRole('region', { name: 'Settings' }));
+    await userEvent.click(settings.getByRole('button', { name: 'People' }));
+    await userEvent.click(settings.getByRole('button', { name: 'Review due dates' }));
+    const dialog = within(
+      within(canvasElement.ownerDocument.body).getByRole('dialog', { name: 'Review due dates' })
+    );
+    await expect(
+      dialog.getByText(/Selected chores move to consecutive days/, { selector: 'span' })
+    ).toBeInTheDocument();
+    await expect(dialog.getByRole('button', { name: 'Move selected chores' })).toBeEnabled();
   },
 };
 

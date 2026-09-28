@@ -40,15 +40,19 @@ import { getSettingsSectionStyles } from '@navet/app/features/settings/hooks/set
 import { useI18n, useMediaQuery, useTheme } from '@navet/app/hooks';
 import {
   type ChoreMission,
+  type ChoreProgressTarget,
   type ChoreRewardGoal,
   type ChoreRewardRequest,
   normalizeChoreExperienceState,
 } from '@navet/core/chore-experience';
+import { buildChoreWeeklyReport, formatChoreWeeklyReport } from '@navet/core/chore-insights';
+import { choreTargetProgress, progressCycleKey } from '@navet/core/chore-progress-policy';
 import {
   type ChoreDefinition,
   type ChoreParticipant,
   type ChoreWorkspaceData,
   getChoreExperiencePointBalances,
+  isChoreParticipantPausedAt,
 } from '@navet/core/chores';
 import {
   Archive,
@@ -82,6 +86,7 @@ import {
 import { useChoreClock } from '../use-chore-clock';
 import { ChoreBaseCard } from './chore-base-card';
 import { ChoreDashboardGrid } from './chore-dashboard-grid';
+import { ProgressTargetDialog } from './chore-experience-dialogs';
 import {
   ChoreFieldError,
   isBoundedInteger,
@@ -163,6 +168,9 @@ function choreScheduleLabel(definition: ChoreDefinition, t: ReturnType<typeof us
     return t('household.schedule.weekly');
   }
   if (definition.schedule.frequency === 'monthly') return t('household.schedule.monthly');
+  if (definition.schedule.frequency === 'hourly') {
+    return t('household.schedule.everyHours', { count: definition.schedule.intervalHours });
+  }
   return t(
     definition.schedule.intervalDays === 1
       ? 'household.schedule.dayAfterCompletion'
@@ -819,6 +827,7 @@ export function RewardsView({
   ) => void;
 }) {
   const { t } = useI18n();
+  const now = useChoreClock();
   const { theme } = useTheme();
   const [query, setQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | ChoreRewardGoal['type']>('all');
@@ -830,7 +839,9 @@ export function RewardsView({
     )
     .filter(({ goal }) => typeFilter === 'all' || goal.type === typeFilter);
   const eligibleParticipants = Object.values(data.participantsById).filter(
-    (participant) => !participant.pausedAt && participant.capabilities.includes('complete')
+    (participant) =>
+      !isChoreParticipantPausedAt(participant, now.toISOString()) &&
+      participant.capabilities.includes('complete')
   );
   const [requestParticipantId, setRequestParticipantId] = useState('');
   const balances = getChoreExperiencePointBalances(data);
@@ -843,7 +854,9 @@ export function RewardsView({
       ? selectedParticipantId
       : requestParticipantId || suggestedParticipantId;
   const manager = Object.values(data.participantsById).some(
-    (participant) => !participant.pausedAt && participant.capabilities.includes('manage')
+    (participant) =>
+      !isChoreParticipantPausedAt(participant, now.toISOString()) &&
+      participant.capabilities.includes('manage')
   );
   const requests = Object.values(data.experience?.rewardRequestsById ?? {})
     .filter(
@@ -1078,6 +1091,8 @@ export function RewardsView({
 export function ProgressView({
   data,
   onAdjustPoints,
+  onSaveTarget,
+  onDeleteTarget,
   requestManagementAccess,
 }: {
   data: ChoreWorkspaceData;
@@ -1086,16 +1101,41 @@ export function ProgressView({
     pointsDelta: number,
     reason: string
   ) => Promise<boolean>;
+  onSaveTarget: (kind: 'badge' | 'achievement', target: ChoreProgressTarget) => Promise<boolean>;
+  onDeleteTarget: (kind: 'badge' | 'achievement', target: ChoreProgressTarget) => void;
   requestManagementAccess: (action: () => void) => void;
 }) {
   const { t } = useI18n();
+  const now = useChoreClock();
+  const { theme } = useTheme();
+  const surface = getThemeSurfaceTokens(theme);
   const [selectedParticipantId, setSelectedParticipantId] = useState<string | null>(null);
+  const [progressTarget, setProgressTarget] = useState<{
+    kind: 'badge' | 'achievement';
+    target?: ChoreProgressTarget;
+  } | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportFormat, setReportFormat] = useState<'markdown' | 'html'>('markdown');
   const [pointAdjustment, setPointAdjustment] = useState<{
     participantId: string;
     direction: 'add' | 'remove';
   } | null>(null);
   const gamificationEnabled =
     normalizeChoreExperienceState(data.experience).gamificationMode !== 'off';
+  const experience = normalizeChoreExperienceState(data.experience);
+  const progressTargets = [
+    ...Object.values(experience.badgesById).map((target) => ({ kind: 'badge' as const, target })),
+    ...Object.values(experience.achievementsById).map((target) => ({
+      kind: 'achievement' as const,
+      target,
+    })),
+  ];
+  const weeklyReport = buildChoreWeeklyReport({
+    workspace: data,
+    events: data.activity,
+    now: now.toISOString(),
+  });
+  const reportText = formatChoreWeeklyReport(weeklyReport, data.definitionsById, reportFormat);
   const completed = Object.values(data.occurrencesById).filter(
     (occurrence) => occurrence.status === 'done'
   );
@@ -1177,6 +1217,170 @@ export function ProgressView({
           />
         ))}
       </ChoreDashboardGrid>
+      {gamificationEnabled ? (
+        <section
+          className={cn('mt-6 space-y-3', surface.textPrimary)}
+          aria-label={t('household.progression.title')}
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-base font-semibold">{t('household.progression.title')}</h3>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                size="compact"
+                variant="secondary"
+                onClick={() => requestManagementAccess(() => setProgressTarget({ kind: 'badge' }))}
+              >
+                {t('household.progression.addBadge')}
+              </Button>
+              <Button
+                size="compact"
+                variant="secondary"
+                onClick={() =>
+                  requestManagementAccess(() => setProgressTarget({ kind: 'achievement' }))
+                }
+              >
+                {t('household.progression.addAchievement')}
+              </Button>
+            </div>
+          </div>
+          {progressTargets.length === 0 ? (
+            <p className="text-sm opacity-70">{t('household.progression.empty')}</p>
+          ) : null}
+          <div className="grid gap-3 sm:grid-cols-2">
+            {progressTargets.map(({ kind, target }) => {
+              const people = target.participantId
+                ? [data.participantsById[target.participantId]].filter(Boolean)
+                : Object.values(data.participantsById);
+              const cycleKey = progressCycleKey(target.cycle, now.toISOString());
+              return (
+                <Panel key={`${kind}:${target.id}`} className="min-w-0 p-4">
+                  <div className="flex min-w-0 items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-semibold">{target.title}</p>
+                      <p className="text-xs opacity-70">
+                        {t(`household.progression.metric.${target.metric}`)} ·{' '}
+                        {t(`household.progression.${target.cycle ?? 'once'}`)} · {target.target}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 gap-1">
+                      <Button
+                        iconOnly
+                        size="compact"
+                        variant="secondary"
+                        label={t('household.progression.edit')}
+                        onClick={() =>
+                          requestManagementAccess(() => setProgressTarget({ kind, target }))
+                        }
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        iconOnly
+                        size="compact"
+                        variant="secondary"
+                        label={t('household.progression.delete')}
+                        onClick={() => requestManagementAccess(() => onDeleteTarget(kind, target))}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="mt-3 space-y-2">
+                    {people.map((person) => {
+                      const achieved = experience.progressAwards.some(
+                        (award) =>
+                          award.targetId === target.id &&
+                          award.participantId === person.id &&
+                          award.cycleKey === cycleKey
+                      );
+                      const current = choreTargetProgress(
+                        target,
+                        person.id,
+                        Object.values(data.occurrencesById),
+                        experience.pointTransactions,
+                        now.toISOString()
+                      );
+                      return (
+                        <div
+                          key={person.id}
+                          className="flex items-center justify-between gap-2 text-sm"
+                        >
+                          <span className="min-w-0 truncate">{person.displayName}</span>
+                          <span className="shrink-0 tabular-nums">
+                            {achieved
+                              ? t('household.progression.earned')
+                              : `${Math.min(current, target.target)}/${target.target}`}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </Panel>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
+      {progressTarget ? (
+        <ProgressTargetDialog
+          isOpen
+          kind={progressTarget.kind}
+          target={progressTarget.target}
+          definitions={Object.values(data.definitionsById).filter(
+            (definition) => !definition.archivedAt
+          )}
+          participants={Object.values(data.participantsById)}
+          onOpenChange={(open) => {
+            if (!open) setProgressTarget(null);
+          }}
+          onSave={(target) => onSaveTarget(progressTarget.kind, target)}
+        />
+      ) : null}
+      <div className="mt-6">
+        <Button variant="secondary" onClick={() => setReportOpen(true)}>
+          {t('household.progression.weeklyReport')}
+        </Button>
+      </div>
+      <BaseCardDialog
+        variant="modal"
+        titleInContent
+        isOpen={reportOpen}
+        onOpenChange={setReportOpen}
+        title={t('household.progression.weeklyReport')}
+        description={t('household.progression.reportDescription')}
+        theme={theme}
+        maxWidth="md"
+        height="capped"
+        bodyPadding={false}
+      >
+        <CardDialogBody>
+          <CardDialogHeader
+            title={t('household.progression.weeklyReport')}
+            description={t('household.progression.reportDescription')}
+            showRoomSelector={false}
+          />
+          <CardDialogSection label={t('household.progression.format')}>
+            <Select
+              value={reportFormat}
+              onChange={(event) => setReportFormat(event.target.value as 'markdown' | 'html')}
+            >
+              <option value="markdown">{'Markdown'}</option>
+              <option value="html">{'HTML'}</option>
+            </Select>
+          </CardDialogSection>
+          <Textarea
+            readOnly
+            value={reportText}
+            rows={12}
+            aria-label={t('household.progression.weeklyReport')}
+          />
+          <CardDialogFooter>
+            <Button type="button" onClick={() => void navigator.clipboard.writeText(reportText)}>
+              {t('household.progression.copyReport')}
+            </Button>
+          </CardDialogFooter>
+        </CardDialogBody>
+      </BaseCardDialog>
       {selectedParticipant ? (
         <ParticipantPointsSheet
           data={data}
@@ -1480,6 +1684,7 @@ export function ChoreSettingsView({
   onModeChange,
   onAddPerson,
   onEditPerson,
+  onRescheduleVacation,
   managementPinConfigured,
   onManagePin,
   onRemovePin,
@@ -1489,6 +1694,11 @@ export function ChoreSettingsView({
   onModeChange: (mode: 'off' | 'light' | 'family' | 'adventure') => void;
   onAddPerson: () => void;
   onEditPerson: (participant: ChoreParticipant) => void;
+  onRescheduleVacation: (
+    participantId: string,
+    occurrenceIds: string[],
+    startDate: string
+  ) => Promise<boolean>;
   managementPinConfigured: boolean;
   onManagePin: () => void;
   onRemovePin: () => void;
@@ -1502,6 +1712,56 @@ export function ChoreSettingsView({
   const [activeSection, setActiveSection] = useState<
     'motivation' | 'people' | 'protection' | 'recovery'
   >('motivation');
+  const [vacationParticipantId, setVacationParticipantId] = useState<string | null>(null);
+  const [vacationOccurrenceIds, setVacationOccurrenceIds] = useState<string[]>([]);
+  const [vacationStartDate, setVacationStartDate] = useState('');
+  const [vacationSaving, setVacationSaving] = useState(false);
+  const vacationParticipant = vacationParticipantId
+    ? data.participantsById[vacationParticipantId]
+    : undefined;
+  const vacationCandidates =
+    vacationParticipant?.pausedAt && vacationParticipant.resumeAt
+      ? Object.values(data.occurrencesById)
+          .filter(
+            (occurrence) =>
+              occurrence.status === 'available' &&
+              !occurrence.claimedAt &&
+              !occurrence.carriedForwardTo &&
+              occurrence.assigneeIds.includes(vacationParticipant.id) &&
+              Date.parse(occurrence.scheduledAt) >=
+                Date.parse(vacationParticipant.pausedAt as string) &&
+              Date.parse(occurrence.scheduledAt) <
+                Date.parse(vacationParticipant.resumeAt as string)
+          )
+          .sort((left, right) => left.scheduledAt.localeCompare(right.scheduledAt))
+      : [];
+  const openVacationReview = (participant: ChoreParticipant) => {
+    const candidates = Object.values(data.occurrencesById).filter(
+      (occurrence) =>
+        occurrence.status === 'available' &&
+        !occurrence.claimedAt &&
+        !occurrence.carriedForwardTo &&
+        occurrence.assigneeIds.includes(participant.id) &&
+        !!participant.pausedAt &&
+        !!participant.resumeAt &&
+        Date.parse(occurrence.scheduledAt) >= Date.parse(participant.pausedAt) &&
+        Date.parse(occurrence.scheduledAt) < Date.parse(participant.resumeAt)
+    );
+    setVacationParticipantId(participant.id);
+    setVacationOccurrenceIds(
+      candidates
+        .filter((occurrence) => {
+          const frequency = data.definitionsById[occurrence.definitionId]?.schedule.frequency;
+          return frequency === 'daily' || frequency === 'hourly';
+        })
+        .slice(0, 100)
+        .map((occurrence) => occurrence.id)
+    );
+    const firstDay = new Date(
+      Math.max(Date.now(), Date.parse(participant.resumeAt ?? '')) + 86_400_000
+    );
+    setVacationStartDate(firstDay.toISOString().slice(0, 10));
+  };
   const sections = [
     {
       id: 'motivation' as const,
@@ -1602,6 +1862,16 @@ export function ChoreSettingsView({
                 >
                   {t('household.actions.edit')}
                 </Button>
+                {participant.pausedAt && participant.resumeAt ? (
+                  <Button
+                    size="compact"
+                    variant="secondary"
+                    className="min-h-10 shrink-0"
+                    onClick={() => openVacationReview(participant)}
+                  >
+                    {t('household.vacation.review')}
+                  </Button>
+                ) : null}
               </div>
             ))}
           </div>
@@ -1666,71 +1936,164 @@ export function ChoreSettingsView({
     );
 
   return (
-    <NavigationWorkspace.Frame
-      aria-label={t('household.settings.title')}
-      className="mx-auto h-[min(72dvh,46rem)] min-h-[34rem] max-w-6xl"
-      data-chore-settings-workspace
-    >
-      <NavigationWorkspace.Header className="px-5 py-4 md:px-6">
-        <h1 className={cn(navetTypographyTokens.pageHeading, styles.textColor)}>
-          {t('household.settings.title')}
-        </h1>
-      </NavigationWorkspace.Header>
+    <>
+      <NavigationWorkspace.Frame
+        aria-label={t('household.settings.title')}
+        className="mx-auto h-[min(72dvh,46rem)] min-h-[34rem] max-w-6xl"
+        data-chore-settings-workspace
+      >
+        <NavigationWorkspace.Header className="px-5 py-4 md:px-6">
+          <h1 className={cn(navetTypographyTokens.pageHeading, styles.textColor)}>
+            {t('household.settings.title')}
+          </h1>
+        </NavigationWorkspace.Header>
 
-      <NavigationWorkspace.Body className={isMobile ? '' : 'grid-cols-[16rem_minmax(0,1fr)]'}>
-        {!isMobile ? (
-          <NavigationWorkspace.Sidebar>
-            <nav aria-label={t('household.settings.title')} className="grid gap-1 px-3 py-4">
-              {sections.map((section) => {
-                const Icon = section.icon;
-                return (
-                  <NavigationWorkspace.Item
-                    key={section.id}
-                    active={activeSection === section.id}
-                    accentColor={styles.accentColor}
-                  >
-                    <NavigationWorkspace.ItemButton
-                      aria-current={activeSection === section.id ? 'page' : undefined}
+        <NavigationWorkspace.Body className={isMobile ? '' : 'grid-cols-[16rem_minmax(0,1fr)]'}>
+          {!isMobile ? (
+            <NavigationWorkspace.Sidebar>
+              <nav aria-label={t('household.settings.title')} className="grid gap-1 px-3 py-4">
+                {sections.map((section) => {
+                  const Icon = section.icon;
+                  return (
+                    <NavigationWorkspace.Item
+                      key={section.id}
+                      active={activeSection === section.id}
+                      accentColor={styles.accentColor}
+                    >
+                      <NavigationWorkspace.ItemButton
+                        aria-current={activeSection === section.id ? 'page' : undefined}
+                        onClick={() => setActiveSection(section.id)}
+                      >
+                        <NavigationWorkspace.ItemIcon>
+                          <Icon className={navetIconSizeTokens.sm} />
+                        </NavigationWorkspace.ItemIcon>
+                        <NavigationWorkspace.ItemText title={section.label} />
+                      </NavigationWorkspace.ItemButton>
+                    </NavigationWorkspace.Item>
+                  );
+                })}
+              </nav>
+            </NavigationWorkspace.Sidebar>
+          ) : null}
+
+          <NavigationWorkspace.Content aria-label={activeSectionMeta.label}>
+            {isMobile ? (
+              <nav
+                aria-label={t('household.settings.title')}
+                className={cn('flex gap-2 overflow-x-auto border-b px-3 py-3', styles.borderColor)}
+              >
+                {sections.map((section) => {
+                  const Icon = section.icon;
+                  return (
+                    <Button
+                      key={section.id}
+                      size="compact"
+                      variant={activeSection === section.id ? 'primary' : 'secondary'}
+                      className="min-h-10 shrink-0"
+                      leading={<Icon className={navetIconSizeTokens.sm} />}
                       onClick={() => setActiveSection(section.id)}
                     >
-                      <NavigationWorkspace.ItemIcon>
-                        <Icon className={navetIconSizeTokens.sm} />
-                      </NavigationWorkspace.ItemIcon>
-                      <NavigationWorkspace.ItemText title={section.label} />
-                    </NavigationWorkspace.ItemButton>
-                  </NavigationWorkspace.Item>
+                      {section.label}
+                    </Button>
+                  );
+                })}
+              </nav>
+            ) : null}
+            <NavigationWorkspace.ScrollArea>{sectionContent}</NavigationWorkspace.ScrollArea>
+          </NavigationWorkspace.Content>
+        </NavigationWorkspace.Body>
+      </NavigationWorkspace.Frame>
+      <BaseCardDialog
+        isOpen={Boolean(vacationParticipant)}
+        variant="modal"
+        onOpenChange={(open) => {
+          if (!open) setVacationParticipantId(null);
+        }}
+        title={t('household.vacation.review')}
+        description={t('household.vacation.description')}
+        theme={theme}
+        maxWidth="sm"
+        height="capped"
+        bodyPadding={false}
+      >
+        <CardDialogBody>
+          <CardDialogHeader
+            title={t('household.vacation.review')}
+            description={t('household.vacation.description')}
+            showRoomSelector={false}
+          />
+          <div className="grid max-h-[50dvh] gap-2 overflow-y-auto py-3">
+            {vacationCandidates.length === 0 ? (
+              <p className={styles.subtleColor}>{t('household.vacation.empty')}</p>
+            ) : (
+              vacationCandidates.map((occurrence) => (
+                <label
+                  key={occurrence.id}
+                  className={cn(
+                    'flex min-w-0 items-center gap-3 rounded-xl border px-3 py-2',
+                    styles.borderColor,
+                    styles.textColor
+                  )}
+                >
+                  <input
+                    type="checkbox"
+                    checked={vacationOccurrenceIds.includes(occurrence.id)}
+                    onChange={(event) =>
+                      setVacationOccurrenceIds((current) =>
+                        event.target.checked
+                          ? [...current, occurrence.id].slice(0, 100)
+                          : current.filter((id) => id !== occurrence.id)
+                      )
+                    }
+                  />
+                  <span className="min-w-0 flex-1 truncate">
+                    {data.definitionsById[occurrence.definitionId]?.title ??
+                      occurrence.definitionId}
+                  </span>
+                  <span className={cn('shrink-0 text-xs', styles.subtleColor)}>
+                    {new Date(occurrence.scheduledAt).toLocaleDateString()}
+                  </span>
+                </label>
+              ))
+            )}
+          </div>
+          <CardDialogSection className="mb-0" label={t('household.vacation.startDate')}>
+            <Input
+              aria-label={t('household.vacation.startDate')}
+              type="date"
+              value={vacationStartDate}
+              onChange={(event) => setVacationStartDate(event.target.value)}
+            />
+          </CardDialogSection>
+          <p className={cn('mt-2 text-sm', styles.subtleColor)}>
+            {t('household.vacation.preview', { count: vacationOccurrenceIds.length })}
+          </p>
+          <CardDialogFooter>
+            <Button variant="secondary" onClick={() => setVacationParticipantId(null)}>
+              {t('common.cancel')}
+            </Button>
+            <Button
+              loading={vacationSaving}
+              disabled={
+                !vacationParticipant || vacationOccurrenceIds.length === 0 || !vacationStartDate
+              }
+              onClick={async () => {
+                if (!vacationParticipant) return;
+                setVacationSaving(true);
+                const saved = await onRescheduleVacation(
+                  vacationParticipant.id,
+                  vacationOccurrenceIds,
+                  vacationStartDate
                 );
-              })}
-            </nav>
-          </NavigationWorkspace.Sidebar>
-        ) : null}
-
-        <NavigationWorkspace.Content aria-label={activeSectionMeta.label}>
-          {isMobile ? (
-            <nav
-              aria-label={t('household.settings.title')}
-              className={cn('flex gap-2 overflow-x-auto border-b px-3 py-3', styles.borderColor)}
+                setVacationSaving(false);
+                if (saved) setVacationParticipantId(null);
+              }}
             >
-              {sections.map((section) => {
-                const Icon = section.icon;
-                return (
-                  <Button
-                    key={section.id}
-                    size="compact"
-                    variant={activeSection === section.id ? 'primary' : 'secondary'}
-                    className="min-h-10 shrink-0"
-                    leading={<Icon className={navetIconSizeTokens.sm} />}
-                    onClick={() => setActiveSection(section.id)}
-                  >
-                    {section.label}
-                  </Button>
-                );
-              })}
-            </nav>
-          ) : null}
-          <NavigationWorkspace.ScrollArea>{sectionContent}</NavigationWorkspace.ScrollArea>
-        </NavigationWorkspace.Content>
-      </NavigationWorkspace.Body>
-    </NavigationWorkspace.Frame>
+              {t('household.vacation.move')}
+            </Button>
+          </CardDialogFooter>
+        </CardDialogBody>
+      </BaseCardDialog>
+    </>
   );
 }

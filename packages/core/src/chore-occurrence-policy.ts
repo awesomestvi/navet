@@ -47,6 +47,13 @@ export function applyChoreOccurrenceCommand(
   switch (command.type) {
     case 'claim': {
       assertAssigned(occurrence, participantId);
+      if (
+        definition.claimPolicy?.opensBeforeMinutes !== undefined &&
+        Date.parse(timestamp) <
+          Date.parse(occurrence.scheduledAt) - definition.claimPolicy.opensBeforeMinutes * 60_000
+      ) {
+        throw new Error('This chore cannot be claimed yet');
+      }
       const canStealExpiredClaim =
         occurrence.status === 'claimed' &&
         definition.claimPolicy?.allowSteal === true &&
@@ -131,10 +138,11 @@ export function applyChoreOccurrenceCommand(
       if (occurrence.status !== 'awaiting_approval') {
         throw new Error('Only completed chores awaiting approval can be rejected');
       }
+      const keepClaim = definition.approval.resetClaimOnReject === false && !!occurrence.claimedBy;
       nextOccurrence = Object.assign({}, occurrence, {
-        status: 'available',
-        claimedBy: undefined,
-        claimedAt: undefined,
+        status: keepClaim ? 'claimed' : 'available',
+        claimedBy: keepClaim ? occurrence.claimedBy : undefined,
+        claimedAt: keepClaim ? occurrence.claimedAt : undefined,
         completedBy: undefined,
         completedAt: undefined,
         approvedBy: undefined,

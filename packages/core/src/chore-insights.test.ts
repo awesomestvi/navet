@@ -5,6 +5,7 @@ import {
   calculateChoreInsights,
   exportChoreHistory,
   filterChoreHistory,
+  formatChoreWeeklyReport,
   suggestChoreWorkloadBalance,
 } from './chore-insights';
 import type { ChoreActivity, ChoreWorkspaceData } from './chores';
@@ -147,13 +148,22 @@ describe('chore insights', () => {
       activity: [],
       outbox: [],
     } satisfies ChoreWorkspaceData;
-    expect(
-      buildChoreWeeklyReport({ workspace, events, now: '2026-08-12T12:00:00.000Z' })
-    ).toMatchObject({
+    const report = buildChoreWeeklyReport({ workspace, events, now: '2026-08-12T12:00:00.000Z' });
+    expect(report).toMatchObject({
       completed: 2,
       pendingApproval: 1,
       nextWeek: 1,
     });
+    expect(formatChoreWeeklyReport(report, workspace.definitionsById, 'markdown')).toContain(
+      '- Completed: 2'
+    );
+    expect(
+      formatChoreWeeklyReport(
+        report,
+        { dishes: { title: '<Dishes>' } } as unknown as ChoreWorkspaceData['definitionsById'],
+        'html'
+      )
+    ).toContain('&lt;Dishes&gt;');
   });
 
   it('filters, exports, deduplicates, and bounds retained history', () => {

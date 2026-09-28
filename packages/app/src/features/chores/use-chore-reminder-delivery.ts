@@ -16,7 +16,6 @@ export function useChoreReminderDelivery(enabled = true) {
     const reconciledData = materializeChoreWorkspace(data, new Date(now)).data;
     const item = reconciledData.outbox.find(
       (candidate) =>
-        candidate.eventType.startsWith('reminder_') &&
         (candidate.destination === 'provider' || candidate.destination === 'home_assistant') &&
         (candidate.status === 'pending' || candidate.status === 'failed') &&
         Date.parse(candidate.nextAttemptAt) <= now &&
@@ -27,7 +26,12 @@ export function useChoreReminderDelivery(enabled = true) {
     const definition = occurrence
       ? reconciledData.definitionsById[occurrence.definitionId]
       : undefined;
-    if (!occurrence || !definition) return;
+    if (
+      !occurrence ||
+      !definition ||
+      (item.occurrenceUpdatedAt && item.occurrenceUpdatedAt !== occurrence.updatedAt)
+    )
+      return;
 
     const attemptKey = `${item.id}:${item.attempts}`;
     attempts.current.add(attemptKey);
@@ -40,12 +44,19 @@ export function useChoreReminderDelivery(enabled = true) {
             ? 'household.reminder.overdue'
             : 'household.reminder.approval';
 
+    const message = item.eventType.startsWith('reminder_')
+      ? t(messageKey, { name: definition.title })
+      : `${definition.title}: ${item.eventType}`;
     void integrationNotificationFeatureService
       .sendNotification({
         title: definition.title,
-        message: t(messageKey, { name: definition.title }),
+        message,
         target: item.destinationTarget,
-        data: { choreOccurrenceId: occurrence.id, choreDefinitionId: definition.id },
+        data: {
+          choreOccurrenceId: occurrence.id,
+          choreDefinitionId: definition.id,
+          choreOccurrenceUpdatedAt: item.occurrenceUpdatedAt,
+        },
       })
       .then(() =>
         execute({ type: 'outbox_delivery_update', outboxId: item.id, status: 'delivered' })

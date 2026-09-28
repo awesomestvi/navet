@@ -54,6 +54,7 @@ import type {
   ChoreReminderDestinationType,
   ChoreSchedule,
 } from '@navet/core/chores';
+import { isChoreParticipantPausedAt } from '@navet/core/chores';
 import {
   ArrowLeft,
   ArrowRight,
@@ -246,7 +247,9 @@ export function ChoreOnboardingWelcome({
     try {
       const document = parseChoreInterchangeDocument(JSON.parse(await file.text()) as unknown);
       const manager = Object.values(document.workspace.participantsById).find(
-        (participant) => !participant.pausedAt && participant.capabilities.includes('manage')
+        (participant) =>
+          !isChoreParticipantPausedAt(participant, new Date().toISOString()) &&
+          participant.capabilities.includes('manage')
       );
       if (!manager) throw new Error('Backup does not contain an active household manager');
       setPendingBackup({ actorParticipantId: manager.id, document });

@@ -108,15 +108,28 @@ function rotationIndexForDate(scheduledDates, scheduledIndex, reset, cadence, st
 	}
 	return scheduledIndex - firstIndex;
 }
-function activeParticipantIds(assignment, participantsById) {
-	return assignment.participantIds.filter((participantId) => {
+function activeParticipantIds(participantIds, participantsById, at) {
+	return participantIds.filter((participantId) => {
 		const participant = participantsById[participantId];
-		return participant && !participant.pausedAt && participant.capabilities.includes("complete");
+		const paused = (participant === null || participant === void 0 ? void 0 : participant.pausedAt) && (!at || Date.parse(at) >= Date.parse(participant.pausedAt) && (!participant.resumeAt || Date.parse(at) < Date.parse(participant.resumeAt)));
+		return participant && !paused && participant.capabilities.includes("complete");
 	});
 }
-function resolveAssignmentSlots(assignment, participantsById, scheduledIndex) {
-	const participantIds = activeParticipantIds(assignment, participantsById);
+function resolveAssignmentSlots(assignment, participantsById, scheduledIndex, completionCountsByParticipant, at) {
+	var _completionCountsByPa;
+	completionCountsByParticipant = (_completionCountsByPa = completionCountsByParticipant) !== null && _completionCountsByPa !== void 0 ? _completionCountsByPa : {};
+	const participantIds = activeParticipantIds(assignment.participantIds, participantsById, at);
 	if (participantIds.length === 0) {
+		if (assignment.mode === "person") {
+			var _assignment$standbyPa;
+			const standbyIds = activeParticipantIds((_assignment$standbyPa = assignment.standbyParticipantIds) !== null && _assignment$standbyPa !== void 0 ? _assignment$standbyPa : [], participantsById, at);
+			if (standbyIds.length > 0) {
+				return [{
+					assignmentSlot: "standby",
+					assigneeIds: [standbyIds[0]]
+				}];
+			}
+		}
 		return [];
 	}
 	if (assignment.mode === "everyone") {
@@ -128,7 +141,11 @@ function resolveAssignmentSlots(assignment, participantsById, scheduledIndex) {
 	if (assignment.mode === "rotation") {
 		var _assignment$rotationC;
 		const cursor = Math.max(0, (_assignment$rotationC = assignment.rotationCursor) !== null && _assignment$rotationC !== void 0 ? _assignment$rotationC : 0);
-		const participantId = participantIds[(cursor + scheduledIndex) % participantIds.length];
+		const orderedIds = participantIds.slice(cursor).concat(participantIds.slice(0, cursor));
+		const participantId = assignment.rotationStrategy === "fair" ? orderedIds.reduce((best, candidate) => {
+			var _completionCountsByPa2, _completionCountsByPa3;
+			return ((_completionCountsByPa2 = completionCountsByParticipant[candidate]) !== null && _completionCountsByPa2 !== void 0 ? _completionCountsByPa2 : 0) < ((_completionCountsByPa3 = completionCountsByParticipant[best]) !== null && _completionCountsByPa3 !== void 0 ? _completionCountsByPa3 : 0) ? candidate : best;
+		}) : participantIds[(cursor + scheduledIndex) % participantIds.length];
 		return [{
 			assignmentSlot: participantId,
 			assigneeIds: [participantId]

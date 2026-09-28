@@ -71,7 +71,8 @@ export interface ChorePointTransaction {
     | 'adjustment'
     | 'reward'
     | 'refund'
-    | 'reward_decision';
+    | 'reward_decision'
+    | 'progress_award';
   timestamp: string;
   commandId?: string;
   rewardRequestId?: string;
@@ -83,6 +84,7 @@ export interface ChoreProgressTarget {
   title: string;
   metric: 'selected_chore' | 'count' | 'points' | 'days' | 'streak';
   target: number;
+  participantId?: string;
   definitionIds?: string[];
   cycle?: 'once' | 'weekly' | 'monthly';
   awardPoints?: number;
@@ -224,6 +226,7 @@ function isPointTransaction(value: unknown): value is ChorePointTransaction {
       'reward',
       'refund',
       'reward_decision',
+      'progress_award',
     ].includes(String(value.kind)) &&
     typeof value.timestamp === 'string' &&
     isOptionalTimestamp(value.timestamp) &&
@@ -242,6 +245,7 @@ function isProgressTarget(value: unknown, id: string): value is ChoreProgressTar
     ['selected_chore', 'count', 'points', 'days', 'streak'].includes(String(value.metric)) &&
     Number.isSafeInteger(value.target) &&
     Number(value.target) > 0 &&
+    (value.participantId === undefined || typeof value.participantId === 'string') &&
     (value.definitionIds === undefined ||
       (Array.isArray(value.definitionIds) &&
         value.definitionIds.every((item) => typeof item === 'string'))) &&

@@ -1,3 +1,4 @@
+import choreCalendarPolicy from '@docker/njs/chore-calendar-policy.js';
 import choreOccurrencePolicy from '@docker/njs/chore-occurrence-policy.js';
 import choreStore from '@docker/njs/chore-store.js';
 import conformanceVectors from '@navet/core/chore-conformance-vectors.json';
@@ -205,6 +206,74 @@ afterEach(() => {
 });
 
 describe('NJS chore workspace store', () => {
+  it('matches standby and fair rotation assignment in the packaged policy', () => {
+    const timestamp = '2026-08-01T00:00:00.000Z';
+    const alice = {
+      id: 'alice',
+      displayName: 'Alice',
+      capabilities: ['complete' as const],
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    };
+    const participants = {
+      alice: { ...alice, pausedAt: timestamp },
+      bob: {
+        id: 'bob',
+        displayName: 'Bob',
+        capabilities: ['complete' as const],
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      },
+    };
+    expect(
+      choreCalendarPolicy.resolveAssignmentSlots(
+        { mode: 'person', participantIds: ['alice'], standbyParticipantIds: ['bob'] },
+        participants,
+        0
+      )
+    ).toEqual([{ assignmentSlot: 'standby', assigneeIds: ['bob'] }]);
+    expect(
+      choreCalendarPolicy.resolveAssignmentSlots(
+        { mode: 'rotation', participantIds: ['alice', 'bob'], rotationStrategy: 'fair' },
+        { ...participants, alice },
+        0,
+        { alice: 2, bob: 1 }
+      )
+    ).toEqual([{ assignmentSlot: 'bob', assigneeIds: ['bob'] }]);
+  });
+
+  it('materializes hourly chores across DST in the Docker policy', () => {
+    const definition = {
+      id: 'dishes',
+      title: 'Dishes',
+      enabled: true,
+      assignment: { mode: 'person', participantIds: ['maya'] },
+      schedule: {
+        frequency: 'hourly',
+        startDate: '2026-10-25',
+        time: '01:00',
+        timeZone: 'Europe/Stockholm',
+        intervalHours: 2,
+      },
+      dueWindowMinutes: 60,
+    };
+    const occurrences = choreStore.materializeDefinitionForTests(
+      definition,
+      { maya: { capabilities: ['complete'] } },
+      '2026-10-24T22:00:00.000Z',
+      '2026-10-25T06:00:00.000Z',
+      {},
+      undefined
+    );
+    expect(
+      occurrences.map((occurrence: { scheduledAt: string }) => occurrence.scheduledAt)
+    ).toEqual([
+      '2026-10-24T23:00:00.000Z',
+      '2026-10-25T01:00:00.000Z',
+      '2026-10-25T03:00:00.000Z',
+      '2026-10-25T05:00:00.000Z',
+    ]);
+  });
   for (const vector of conformanceVectors.materialization) {
     it(`matches shared conformance: ${vector.name}`, () => {
       const participantsById = Object.fromEntries(

@@ -9,6 +9,7 @@ import {
 import {
   BaseCardDialog,
   Button,
+  Checkbox,
   ColorInputSwatch,
   coverSheetHeaderClassName,
   IconButton,
@@ -136,6 +137,7 @@ export function AddPersonDialog({
   const [name, setName] = useState('');
   const [manager, setManager] = useState(false);
   const [paused, setPaused] = useState(false);
+  const [resumeDate, setResumeDate] = useState('');
   const [color, setColor] = useState(themeColorValues.orange);
   const [avatarUrl, setAvatarUrl] = useState('');
   const [avatarIcon, setAvatarIcon] = useState('');
@@ -187,13 +189,25 @@ export function AddPersonDialog({
     reminderDestination !== 'provider' ||
     (normalizedReminderTarget.length > 0 && normalizedReminderTarget.length <= 128);
   const personFormValid = Boolean(name.trim()) && quietHoursValid && reminderTargetValid;
+  const resumeDateValid =
+    !paused ||
+    !resumeDate ||
+    (isValidDate(resumeDate) &&
+      Date.parse(new Date(`${resumeDate}T00:00:00`).toISOString()) >
+        Date.parse(participant?.pausedAt ?? new Date().toISOString()));
 
   useEffect(() => {
     if (isOpen) {
       setDraftParticipantId(participant?.id ?? createEntityId('participant', 'person'));
       setName(participant?.displayName ?? '');
       setManager(managerRequired || participant?.capabilities.includes('manage') === true);
-      setPaused(Boolean(participant?.pausedAt));
+      setPaused(
+        Boolean(
+          participant?.pausedAt &&
+            (!participant.resumeAt || Date.parse(participant.resumeAt) > Date.now())
+        )
+      );
+      setResumeDate(participant?.resumeAt ? localDateKey(new Date(participant.resumeAt)) : '');
       setColor(participant?.color ?? themeColorValues.orange);
       setAvatarUrl(participant?.avatarUrl ?? '');
       setAvatarIcon(participant?.avatarIcon ?? '');
@@ -215,6 +229,7 @@ export function AddPersonDialog({
       setName('');
       setManager(managerRequired);
       setPaused(false);
+      setResumeDate('');
       setColor(themeColorValues.orange);
       setAvatarUrl('');
       setAvatarIcon('');
@@ -266,7 +281,7 @@ export function AddPersonDialog({
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     const displayName = name.trim();
-    if (!displayName || !personFormValid) return;
+    if (!displayName || !personFormValid || !resumeDateValid) return;
     if (currentStep < personSteps.length - 1) {
       setCurrentStep((step) => step + 1);
       return;
@@ -286,6 +301,7 @@ export function AddPersonDialog({
       avatarIcon: avatarIcon.trim() || undefined,
       capabilities: manager || managerRequired ? ['complete', 'approve', 'manage'] : ['complete'],
       pausedAt: paused ? (participant?.pausedAt ?? timestamp) : undefined,
+      resumeAt: paused && resumeDate ? new Date(`${resumeDate}T00:00:00`).toISOString() : undefined,
       linkedAccountId: inferredAccountId,
       linkedPersonEntityId: linkedPersonEntityId.trim() || undefined,
       reminderPreferences: {
@@ -420,6 +436,21 @@ export function AddPersonDialog({
                       onCheckedChange={setPaused}
                     />
                   </div>
+                ) : null}
+                {participant && paused ? (
+                  <CardDialogSection
+                    className="mb-0"
+                    label={t('household.personDialog.resumeDate')}
+                  >
+                    <Input
+                      aria-label={t('household.personDialog.resumeDate')}
+                      invalid={!resumeDateValid}
+                      min={localDateKey(new Date(Date.now() + 86_400_000))}
+                      type="date"
+                      value={resumeDate}
+                      onChange={(event) => setResumeDate(event.target.value)}
+                    />
+                  </CardDialogSection>
                 ) : null}
                 {providerPersons.length > 0 || linkedPersonEntityId ? (
                   <details
@@ -668,7 +699,11 @@ export function AddPersonDialog({
                 {t('dashboard.multiple.create.next')}
               </Button>
             ) : (
-              <Button type="submit" loading={saving} disabled={!personFormValid}>
+              <Button
+                type="submit"
+                loading={saving}
+                disabled={!personFormValid || !resumeDateValid}
+              >
                 {participant
                   ? t('household.personDialog.saveChanges')
                   : t('household.personDialog.save')}
@@ -953,6 +988,8 @@ export function AddChoreDialog({
   const [rotationCadence, setRotationCadence] = useState<'scheduled_day' | 'weekly'>(
     'scheduled_day'
   );
+  const [rotationStrategy, setRotationStrategy] = useState<'ordered' | 'fair'>('ordered');
+  const [standbyParticipantId, setStandbyParticipantId] = useState('');
   const [frequency, setFrequency] = useState<ChoreSchedule['frequency']>('daily');
   const [repeatOverride, setRepeatOverride] = useState<ChoreCreationRepeat | null>(null);
   const [time, setTime] = useState('18:00');
@@ -967,6 +1004,9 @@ export function AddChoreDialog({
   const [rotationOffset, setRotationOffset] = useState('0');
   const [rotationDayOfWeek, setRotationDayOfWeek] = useState(1);
   const [participantTimes, setParticipantTimes] = useState<Record<string, string>>({});
+  const [participantDueOffsets, setParticipantDueOffsets] = useState<Record<string, NumericDraft>>(
+    {}
+  );
   const [approvalRequired, setApprovalRequired] = useState(false);
   const [dueWindowMinutes, setDueWindowMinutes] = useState<NumericDraft>(120);
   const [roomLabel, setRoomLabel] = useState('');
@@ -975,9 +1015,15 @@ export function AddChoreDialog({
   const [childTitle, setChildTitle] = useState('');
   const [claimRequired, setClaimRequired] = useState(false);
   const [claimExpiryMinutes, setClaimExpiryMinutes] = useState<NumericDraft>(60);
+  const [claimOpensBeforeMinutes, setClaimOpensBeforeMinutes] = useState<NumericDraft>('');
+  const [pendingApproval, setPendingApproval] = useState<'allow' | 'block'>('allow');
+  const [resetClaimOnReject, setResetClaimOnReject] = useState(true);
   const [missedGraceMinutes, setMissedGraceMinutes] = useState<NumericDraft>(60);
   const [missedAction, setMissedAction] = useState<'none' | 'skip' | 'carry_forward'>('none');
   const [remindersEnabled, setRemindersEnabled] = useState(false);
+  const [notificationEvents, setNotificationEvents] = useState<
+    Array<'claimed' | 'completed' | 'approved' | 'rejected' | 'skipped'>
+  >([]);
   const [remindBeforeMinutes, setRemindBeforeMinutes] = useState<NumericDraft>(30);
   const [overdueEveryMinutes, setOverdueEveryMinutes] = useState<NumericDraft>(60);
   const [saving, setSaving] = useState(false);
@@ -1020,6 +1066,8 @@ export function AddChoreDialog({
         definition?.assignment.participantIds ?? completers.map((person) => person.id)
       );
       setRotationCadence(definition?.assignment.rotationCadence ?? 'scheduled_day');
+      setRotationStrategy(definition?.assignment.rotationStrategy ?? 'ordered');
+      setStandbyParticipantId(definition?.assignment.standbyParticipantIds?.[0] ?? '');
       setRotationDayOfWeek(definition?.assignment.rotationDayOfWeek ?? 1);
       setFrequency(definition?.schedule.frequency ?? 'daily');
       setRepeatOverride(null);
@@ -1034,9 +1082,11 @@ export function AddChoreDialog({
         definition?.schedule.frequency === 'daily' ||
           definition?.schedule.frequency === 'after_completion'
           ? (definition.schedule.intervalDays ?? 1)
-          : definition?.schedule.frequency === 'weekly'
-            ? (definition.schedule.intervalWeeks ?? 1)
-            : 1
+          : definition?.schedule.frequency === 'hourly'
+            ? definition.schedule.intervalHours
+            : definition?.schedule.frequency === 'weekly'
+              ? (definition.schedule.intervalWeeks ?? 1)
+              : 1
       );
       setWeeklyDays(
         definition?.schedule.frequency === 'daily'
@@ -1065,6 +1115,13 @@ export function AddChoreDialog({
           )
         )
       );
+      setParticipantDueOffsets(
+        Object.fromEntries(
+          Object.entries(definition?.assignment.participantScheduleOverrides ?? {}).map(
+            ([id, override]) => [id, override.dueDateOffsetDays ?? 0]
+          )
+        )
+      );
       setApprovalRequired(definition?.approval.required ?? false);
       setDueWindowMinutes(definition?.dueWindowMinutes ?? 120);
       setRoomLabel(definition?.roomRef?.canonicalId ?? '');
@@ -1073,9 +1130,13 @@ export function AddChoreDialog({
       setChildTitle(presentation?.childTitle ?? '');
       setClaimRequired(definition?.claimPolicy?.required ?? false);
       setClaimExpiryMinutes(definition?.claimPolicy?.expiresAfterMinutes ?? 60);
+      setClaimOpensBeforeMinutes(definition?.claimPolicy?.opensBeforeMinutes ?? '');
+      setPendingApproval(definition?.claimPolicy?.pendingApproval ?? 'allow');
+      setResetClaimOnReject(definition?.approval.resetClaimOnReject ?? true);
       setMissedGraceMinutes(definition?.missedPolicy?.graceMinutes ?? 60);
       setMissedAction(definition?.missedPolicy?.action ?? 'none');
       setRemindersEnabled(definition?.reminderPolicy?.enabled ?? false);
+      setNotificationEvents(definition?.reminderPolicy?.notifyOn ?? []);
       setRemindBeforeMinutes(definition?.reminderPolicy?.beforeDueMinutes[0] ?? 30);
       setOverdueEveryMinutes(definition?.reminderPolicy?.overdueEveryMinutes ?? 60);
     }
@@ -1129,8 +1190,14 @@ export function AddChoreDialog({
   const parsedRotationOffset = parseRotationOffset(rotationOffset, maximumRotationOffset);
   const scheduleIntervalMinimum = frequency === 'daily' ? 2 : 1;
   const scheduleIntervalValid =
-    (frequency !== 'after_completion' && !(frequency === 'daily' && scheduleInterval !== 1)) ||
-    isBoundedInteger(scheduleInterval, scheduleIntervalMinimum, 3650);
+    (frequency !== 'after_completion' &&
+      frequency !== 'hourly' &&
+      !(frequency === 'daily' && scheduleInterval !== 1)) ||
+    isBoundedInteger(
+      scheduleInterval,
+      scheduleIntervalMinimum,
+      frequency === 'hourly' ? 8760 : 3650
+    );
   const dueTimeValid = isValidTime(time);
   const startDateValid = isValidDate(scheduleStartDate);
   const endDateValid =
@@ -1144,10 +1211,15 @@ export function AddChoreDialog({
     selectedCompleters.every((participant) =>
       isValidTimeList(participantTimes[participant.id] ?? '')
     );
+  const participantDueOffsetsValid = selectedCompleters.every((participant) =>
+    isBoundedInteger(participantDueOffsets[participant.id] ?? 0, 0, 365)
+  );
   const estimatedMinutesValid = isBoundedInteger(estimatedMinutes, 0, 1440);
   const pointsValid = isBoundedInteger(points, 0, 10_000);
   const dueWindowValid = isBoundedInteger(dueWindowMinutes, 0, 525_600);
   const claimExpiryValid = !claimRequired || isBoundedInteger(claimExpiryMinutes, 1, 525_600);
+  const claimOpensValid =
+    claimOpensBeforeMinutes === '' || isBoundedInteger(claimOpensBeforeMinutes, 0, 525_600);
   const missedGraceValid = isBoundedInteger(missedGraceMinutes, 0, 525_600);
   const remindBeforeValid = !remindersEnabled || isBoundedInteger(remindBeforeMinutes, 1, 525_600);
   const overdueEveryValid = !remindersEnabled || isBoundedInteger(overdueEveryMinutes, 1, 525_600);
@@ -1159,10 +1231,12 @@ export function AddChoreDialog({
     extraTimesValid &&
     excludedDatesValid &&
     participantTimesValid &&
+    participantDueOffsetsValid &&
     estimatedMinutesValid &&
     pointsValid &&
     dueWindowValid &&
     claimExpiryValid &&
+    claimOpensValid &&
     missedGraceValid &&
     remindBeforeValid &&
     overdueEveryValid;
@@ -1243,25 +1317,34 @@ export function AddChoreDialog({
                   intervalDays: Math.max(1, scheduleIntervalValue),
                   ...scheduleOptions,
                 }
-              : {
-                  frequency: 'daily',
-                  startDate,
-                  time,
-                  timeZone,
-                  daysOfWeek:
-                    selectedRepeat === 'weekdays'
-                      ? WEEKDAYS
-                      : selectedRepeat === 'weekends'
-                        ? WEEKENDS
-                        : selectedRepeat === 'custom' || weeklyDays.length === 7
-                          ? undefined
-                          : weeklyDays,
-                  intervalDays:
-                    selectedRepeat === 'custom'
-                      ? Math.max(2, scheduleIntervalValue)
-                      : Math.max(1, scheduleIntervalValue),
-                  ...scheduleOptions,
-                };
+              : frequency === 'hourly'
+                ? {
+                    frequency,
+                    startDate,
+                    time,
+                    timeZone,
+                    intervalHours: Math.max(1, scheduleIntervalValue),
+                    ...scheduleOptions,
+                  }
+                : {
+                    frequency: 'daily',
+                    startDate,
+                    time,
+                    timeZone,
+                    daysOfWeek:
+                      selectedRepeat === 'weekdays'
+                        ? WEEKDAYS
+                        : selectedRepeat === 'weekends'
+                          ? WEEKENDS
+                          : selectedRepeat === 'custom' || weeklyDays.length === 7
+                            ? undefined
+                            : weeklyDays,
+                    intervalDays:
+                      selectedRepeat === 'custom'
+                        ? Math.max(2, scheduleIntervalValue)
+                        : Math.max(1, scheduleIntervalValue),
+                    ...scheduleOptions,
+                  };
     const participantIds =
       assignmentMode === 'person' ? [participantId || completers[0].id] : selectedParticipantIds;
     const participantScheduleOverrides = Object.fromEntries(
@@ -1274,8 +1357,11 @@ export function AddChoreDialog({
         const override = {
           ...existing,
           times: times.length > 0 ? times : undefined,
+          dueDateOffsetDays: Number(participantDueOffsets[id] ?? 0) || undefined,
         };
-        return override.daysOfWeek || override.times ? [[id, override] as const] : [];
+        return override.daysOfWeek || override.times || override.dueDateOffsetDays
+          ? [[id, override] as const]
+          : [];
       })
     );
     setSaving(true);
@@ -1296,6 +1382,13 @@ export function AddChoreDialog({
           ...(definition?.assignment.mode === assignmentMode ? definition.assignment : {}),
           mode: assignmentMode,
           participantIds,
+          standbyParticipantIds:
+            assignmentMode === 'person' &&
+            standbyParticipantId &&
+            standbyParticipantId !== participantIds[0]
+              ? [standbyParticipantId]
+              : undefined,
+          rotationStrategy: assignmentMode === 'rotation' ? rotationStrategy : undefined,
           rotationCadence:
             assignmentMode === 'rotation'
               ? rotationCadence === 'weekly' || definition?.assignment.rotationCadence
@@ -1321,12 +1414,16 @@ export function AddChoreDialog({
         approval: {
           required: approvalRequired && approverIds.length > 0,
           approverIds,
+          resetClaimOnReject: approvalRequired && !resetClaimOnReject ? false : undefined,
         },
         claimPolicy: claimRequired
           ? {
               required: true,
               allowSteal: true,
               expiresAfterMinutes: Number(claimExpiryMinutes),
+              opensBeforeMinutes:
+                claimOpensBeforeMinutes === '' ? undefined : Number(claimOpensBeforeMinutes),
+              pendingApproval: pendingApproval === 'block' ? 'block' : undefined,
             }
           : undefined,
         missedPolicy: {
@@ -1341,6 +1438,7 @@ export function AddChoreDialog({
           overdueEveryMinutes: Number(overdueEveryMinutes),
           maxOverdueReminders: 3,
           approvalAfterMinutes: 30,
+          notifyOn: notificationEvents,
         },
         createdAt: definition?.createdAt ?? timestamp,
         updatedAt: timestamp,
@@ -1481,7 +1579,9 @@ export function AddChoreDialog({
                       ? t('household.schedule.monthly')
                       : repeatValue === 'custom'
                         ? t('household.schedule.custom')
-                        : t('household.schedule.afterCompletion');
+                        : repeatValue === 'hourly'
+                          ? t('household.schedule.hourly')
+                          : t('household.schedule.afterCompletion');
   const steps = [
     {
       id: 'details',
@@ -1677,6 +1777,10 @@ export function AddChoreDialog({
                     onRotationCursorChange={(value) => setRotationOffset(String(value))}
                     rotationCadence={rotationCadence}
                     onRotationCadenceChange={setRotationCadence}
+                    rotationStrategy={rotationStrategy}
+                    onRotationStrategyChange={setRotationStrategy}
+                    standbyParticipantId={standbyParticipantId}
+                    onStandbyParticipantChange={setStandbyParticipantId}
                     participants={completers}
                     repeat={repeatValue}
                     dueTime={time}
@@ -1785,6 +1889,25 @@ export function AddChoreDialog({
                           onCheckedChange={setApprovalRequired}
                         />
                       </div>
+                      {approvalRequired ? (
+                        <div
+                          className={cn(
+                            'flex min-h-12 items-center justify-between gap-4 rounded-2xl border px-4 sm:col-span-2',
+                            surface.borderStrong,
+                            surface.panelMuted,
+                            surface.textPrimary
+                          )}
+                        >
+                          <span className="text-sm font-medium">
+                            {t('household.choreDialog.resetClaimOnReject')}
+                          </span>
+                          <Switch
+                            aria-label={t('household.choreDialog.resetClaimOnReject')}
+                            checked={resetClaimOnReject}
+                            onCheckedChange={setResetClaimOnReject}
+                          />
+                        </div>
+                      ) : null}
                       {assignmentMode === 'rotation' && rotationCadence === 'scheduled_day' ? (
                         <CardDialogSection
                           className="mb-0"
@@ -1841,6 +1964,35 @@ export function AddChoreDialog({
                             </CardDialogSection>
                           ))
                         : null}
+                      {selectedCompleters.map((participant) => (
+                        <CardDialogSection
+                          key={`due-${participant.id}`}
+                          className="mb-0"
+                          label={t('household.choreDialog.personDueOffset', {
+                            name: participant.displayName,
+                          })}
+                        >
+                          <Input
+                            aria-label={t('household.choreDialog.personDueOffset', {
+                              name: participant.displayName,
+                            })}
+                            invalid={
+                              !isBoundedInteger(participantDueOffsets[participant.id] ?? 0, 0, 365)
+                            }
+                            min={0}
+                            max={365}
+                            step={1}
+                            type="number"
+                            value={participantDueOffsets[participant.id] ?? 0}
+                            onChange={(event) =>
+                              setParticipantDueOffsets((current) => ({
+                                ...current,
+                                [participant.id]: numericDraft(event.target.value),
+                              }))
+                            }
+                          />
+                        </CardDialogSection>
+                      ))}
                       <div
                         className={cn(
                           'flex min-h-12 items-center justify-between gap-4 rounded-2xl border px-4 sm:col-span-2',
@@ -1885,6 +2037,46 @@ export function AddChoreDialog({
                             </ChoreFieldError>
                           ) : null}
                         </CardDialogSection>
+                      ) : null}
+                      {claimRequired ? (
+                        <>
+                          <CardDialogSection
+                            className="mb-0"
+                            label={t('household.choreDialog.claimOpensBefore')}
+                          >
+                            <Input
+                              aria-label={t('household.choreDialog.claimOpensBefore')}
+                              invalid={!claimOpensValid}
+                              min={0}
+                              max={525600}
+                              step={1}
+                              type="number"
+                              value={claimOpensBeforeMinutes}
+                              onChange={(event) =>
+                                setClaimOpensBeforeMinutes(numericDraft(event.target.value))
+                              }
+                            />
+                          </CardDialogSection>
+                          <CardDialogSection
+                            className="mb-0"
+                            label={t('household.choreDialog.pendingApproval')}
+                          >
+                            <Select
+                              aria-label={t('household.choreDialog.pendingApproval')}
+                              value={pendingApproval}
+                              onChange={(event) =>
+                                setPendingApproval(event.target.value as 'allow' | 'block')
+                              }
+                            >
+                              <option value="allow">
+                                {t('household.choreDialog.pendingAllow')}
+                              </option>
+                              <option value="block">
+                                {t('household.choreDialog.pendingBlock')}
+                              </option>
+                            </Select>
+                          </CardDialogSection>
+                        </>
                       ) : null}
                     </ChoreCreationSectionOptions>
                     <ChoreCreationSectionOptions section="schedule">
@@ -1975,6 +2167,35 @@ export function AddChoreDialog({
                       </div>
                       {remindersEnabled ? (
                         <>
+                          <CardDialogSection
+                            className="mb-0 sm:col-span-2"
+                            label={t('household.choreDialog.notificationEvents')}
+                          >
+                            <div className="grid gap-2 sm:grid-cols-2">
+                              {(
+                                ['claimed', 'completed', 'approved', 'rejected', 'skipped'] as const
+                              ).map((event) => (
+                                <label
+                                  key={event}
+                                  htmlFor={`notify-${event}`}
+                                  className="flex min-h-11 items-center gap-2 text-sm"
+                                >
+                                  <Checkbox
+                                    id={`notify-${event}`}
+                                    checked={notificationEvents.includes(event)}
+                                    onCheckedChange={(checked) =>
+                                      setNotificationEvents((current) =>
+                                        checked
+                                          ? [...current, event]
+                                          : current.filter((item) => item !== event)
+                                      )
+                                    }
+                                  />
+                                  <span>{t(`household.choreDialog.notify.${event}`)}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </CardDialogSection>
                           <CardDialogSection
                             className="mb-0"
                             label={t('household.choreDialog.remindBefore')}
