@@ -316,7 +316,7 @@ export const Interactions: Story = {
         'Refined header stories'
       )
     ).toBeVisible();
-    await userEvent.click(firstUpdate.getByRole('button', { name: 'Hide' }));
+    await userEvent.click(firstUpdate.getByRole('button', { name: 'Hide: Living room lights 1' }));
     await expect(page.getAllByRole('article')).toHaveLength(17);
     await userEvent.click(page.getByRole('button', { name: 'Clear all' }));
     await userEvent.click(page.getByRole('button', { name: 'Cancel' }));
@@ -411,7 +411,7 @@ export const MobileUpdateActions: Story = {
       const heading = row.getByRole('heading', { name: title });
       const primary = row.getByRole('button', { name: action });
       const changes = row.getByRole('link', { name: 'View changes' });
-      const hide = row.getByRole('button', { name: 'Hide' });
+      const hide = row.getByRole('button', { name: `Hide: ${title}` });
       await expect(primary.getBoundingClientRect().top).toBeLessThan(
         changes.getBoundingClientRect().top
       );

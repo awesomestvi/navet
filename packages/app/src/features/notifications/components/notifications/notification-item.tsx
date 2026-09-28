@@ -234,6 +234,7 @@ export function NotificationItem({
                 variant="ghost"
                 size="small"
                 className="px-2"
+                aria-label={`${dismissLabel}: ${notification.title}`}
                 disabled={pending || busy}
                 onClick={() => void perform(onDelete)}
               >
