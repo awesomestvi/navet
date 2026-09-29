@@ -324,7 +324,7 @@ describe('DashboardSectionRouter home controls', () => {
     expect(screen.queryByText(/1 remaining/)).not.toBeInTheDocument();
   });
 
-  it('opens only the active room chores and preserves the grid after completion', async () => {
+  it('navigates room chores to Household and preserves the grid after completion', () => {
     const data = createChoreDemoWorkspace({ copy: choreCopy });
     useChoreWorkspaceStore.getState().setPreviewDocument({ data });
     const controller = createController();
@@ -335,9 +335,8 @@ describe('DashboardSectionRouter home controls', () => {
     const gridProps = deviceGridPropsMock.mock.calls.at(-1)?.[0];
     fireEvent.click(screen.getByRole('button', { name: 'Open Chores' }));
 
-    expect(await screen.findByRole('dialog')).toBeInTheDocument();
-    expect(screen.getByText('Unload dishwasher')).toBeInTheDocument();
-    expect(screen.queryByText('Fold clean laundry')).not.toBeInTheDocument();
+    expect(controller.setActiveSection).toHaveBeenCalledWith('tasks');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     act(() => {
       useChoreWorkspaceStore.getState().setPreviewDocument({
         data: {
@@ -349,12 +348,9 @@ describe('DashboardSectionRouter home controls', () => {
         },
       });
     });
-    expect(screen.getByText('Nothing needs doing today')).toBeInTheDocument();
     expect(screen.getByText('All done today')).toBeInTheDocument();
     expect(deviceGridPropsMock.mock.calls.at(-1)?.[0]).toEqual(gridProps);
     expect(deviceGridMountCount).toBe(1);
-    fireEvent.click(screen.getAllByRole('button', { name: 'Close' })[0]);
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
   it('keeps the chore control available with no room chores and summaries hidden', () => {

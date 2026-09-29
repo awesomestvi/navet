@@ -99,7 +99,7 @@ request status and point decisions stay in the household record even if the goal
 
 Chores are enabled by default. To hide the feature, open **Settings → Dashboard**, find
 **Household chores**, and choose **Off**. Navet removes the Household chores workspace, Home and
-room chore pills and their sheets. Your chore definitions and history stay saved, so choosing
+room chore pills. Your chore definitions and history stay saved, so choosing
 **On** later restores the feature with its existing data.
 
 ## Protect management changes

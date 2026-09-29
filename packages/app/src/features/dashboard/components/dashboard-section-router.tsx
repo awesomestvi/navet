@@ -52,9 +52,6 @@ const TasksSection = lazy(async () => {
   const module = await import('@navet/app/features/tasks/components/tasks-section');
   return { default: module.TasksSection };
 });
-const RoomChoresSheet = lazy(
-  () => import('@navet/app/features/chores/components/room-chores-sheet')
-);
 const MediaSection = lazy(async () => {
   const module = await import('@navet/app/components/layout/media-section');
   return { default: module.MediaSection };
@@ -131,7 +128,6 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
   );
   const [isAddClimateEntityDialogOpen, setIsAddClimateEntityDialogOpen] = useState(false);
   const [isRoomManagementOpen, setIsRoomManagementOpen] = useState(false);
-  const [choreSheetRoom, setChoreSheetRoom] = useState<string | null>(null);
   const [securityAddEntityRequestKey, setSecurityAddEntityRequestKey] = useState(0);
   const [mediaAddEntityRequestKey, setMediaAddEntityRequestKey] = useState(0);
   const {
@@ -161,9 +157,6 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
     updateCardSize,
   } = controller;
   useChoreWorkspaceSync(choresEnabled && activeSection === 'home' && !isAllRooms(activeRoom));
-  useEffect(() => {
-    setChoreSheetRoom(null);
-  }, [activeRoom, activeSection]);
   const activeRoomWorkspace = useMemo(
     () => roomWorkspace?.rooms.find((room) => roomNamesMatch(room.displayName, activeRoom)),
     [activeRoom, roomWorkspace]
@@ -307,7 +300,6 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
                       ? t('household.error.title')
                       : t('common.loading'),
               iconColor: choreWorkspace ? item.iconColor : '#cbd5e1',
-              onSelect: () => setChoreSheetRoom(activeRoom),
             }
           : item
       );
@@ -628,19 +620,6 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
                 optimizeOffscreenPaint={controller.optimizeOffscreenPaint}
               />
             </SummaryBarStack>
-            {choresEnabled && choreSheetRoom === activeRoom ? (
-              <Suspense fallback={null}>
-                <RoomChoresSheet
-                  room={activeRoom}
-                  data={choreWorkspace}
-                  occurrences={pendingRoomChores}
-                  now={roomChoreNow}
-                  onOpenChange={(open) => {
-                    if (!open) setChoreSheetRoom(null);
-                  }}
-                />
-              </Suspense>
-            ) : null}
           </RenderProfiler>
         )}
       </div>

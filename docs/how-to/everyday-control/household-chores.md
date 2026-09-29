@@ -94,8 +94,8 @@ hidden from Today until requested, while **Missions** and **Rewards** remain ava
 management destinations.
 
 Home shows a Chores summary pill when work remains. Each room has a **Chores** pill showing
-remaining or overdue work, or **All done today**. Choose it to open the room’s pending chores and
-complete them in a sheet. The room summary stays in one scrollable row, keeping device controls in
+remaining or overdue work, or **All done today**. Choose the Chores pill on Home or in a room to open the
+Household dashboard and complete chores. The room summary stays in one scrollable row, keeping device controls in
 their chosen positions as chores change. The Chores pill is available even when the dashboard
 summary is hidden. An overdue chore uses the same red alert treatment as Security.
 

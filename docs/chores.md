@@ -38,8 +38,8 @@ entities are available. See the [integration reference](/integrations/) for prov
 Chores are enabled by default. **Settings → Dashboard → Household chores** can hide or restore the
 feature, its Home summary, and room chore surfaces without deleting chore definitions or history.
 
-Room dashboards show a Chores summary pill in a single scrollable row. Open it to see and complete
-pending chores for that room in a sheet. The pill remains available with the dashboard summary
+Room dashboards show a Chores summary pill in a single scrollable row. Choose the Chores pill on
+Home or in a room to open the Household dashboard and complete chores. The pill remains available with the dashboard summary
 hidden and keeps the same row height as chores are assigned or completed. Device cards retain their
 chosen order.
 

@@ -3,4 +3,4 @@ audiences:
   - standalone
   - home-assistant
   - hacs
-summary: Room chores open from a compact summary into a sheet, keeping device controls in predictable positions.
+summary: Room chore summaries open the Household dashboard, keeping device controls in predictable positions.
