@@ -16,6 +16,7 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.service import async_register_admin_service
 import homeassistant.helpers.config_validation as cv
 
 from .chore_store import (
@@ -274,13 +275,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 }
             if action == "weekly_report":
                 fields = {vol.Optional("format", default="markdown"): vol.In(("markdown", "html"))}
-            hass.services.async_register(
-                DOMAIN,
-                action,
-                async_handle_chore_action,
-                schema=vol.Schema(fields),
-                **({"supports_response": SupportsResponse.ONLY} if action == "weekly_report" else {}),
-            )
+            if action in ("reward_decision", "adjust_points"):
+                async_register_admin_service(hass, DOMAIN, action, async_handle_chore_action, vol.Schema(fields))
+            else:
+                hass.services.async_register(
+                    DOMAIN,
+                    action,
+                    async_handle_chore_action,
+                    schema=vol.Schema(fields),
+                    **({"supports_response": SupportsResponse.ONLY} if action == "weekly_report" else {}),
+                )
         domain_data["chore_services_registered"] = True
 
     await hass.config_entries.async_forward_entry_setups(entry, [Platform.SENSOR, Platform.CALENDAR])

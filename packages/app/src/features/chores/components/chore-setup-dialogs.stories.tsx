@@ -1254,7 +1254,7 @@ export const FairRotationHourlySchedule: Story = {
     await userEvent.click(dialog.getByRole('button', { name: 'Next' }));
     await expect(dialog.getByLabelText('Rotation method')).toHaveValue('fair');
     await expect(
-      dialog.getByText(/Next turn goes to the person with the fewest completed chores/)
+      dialog.getByText(/Next turn goes to the person with the fewest assigned or completed chores/)
     ).toBeInTheDocument();
     await userEvent.click(dialog.getByRole('button', { name: 'Next' }));
     await expect(dialog.getByLabelText('Repeat every (hours)')).toHaveValue(6);

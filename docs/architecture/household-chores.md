@@ -27,7 +27,7 @@ or reset within a week or month. Weekly rotation advances on the local `rotation
 (0 = Sunday, default 1 = Monday) from the week containing the schedule start date, including empty
 or excluded weeks, and ignores `rotationReset`.
 `rotationCursor` offsets the first participant in either cadence.
-Fair rotation chooses the active participant with the fewest retained final completions; ties use
+Fair rotation chooses the active participant with the fewest assigned or completed turns; ties use
 the ordered list from `rotationCursor`. A person assignment may name active standby participants
 for dates when the primary person is paused. Hourly schedules advance by elapsed hours from the
 first local start time, while completion-date repeats retain the configured local clock time.
@@ -180,7 +180,8 @@ Home Assistant publishes a bounded chores calendar beside the summary sensor. Ac
 `navet.claim`, `navet.complete`, `navet.approve`, `navet.reject`, `navet.skip`, `navet.reopen`,
 `navet.reassign`, `navet.reward_decision`, and `navet.adjust_points` route to the same authority
 used by the UI. The authority verifies revision, participant, assignment, capability, manager
-policy, and stable command identity. `navet.weekly_report` returns Markdown or HTML for an
+policy, and stable command identity. Reward decisions and point adjustments use Home Assistant
+admin services, permitting administrator accounts and system automation contexts. `navet.weekly_report` returns Markdown or HTML for an
 automation to deliver on its own schedule. The authenticated Navet HTTP action API provides the
 corresponding unattended boundary for standalone deployments.
 

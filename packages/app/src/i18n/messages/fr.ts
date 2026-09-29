@@ -498,9 +498,9 @@ export const frMessages = {
   'household.choreDialog.noStandby': 'Aucun remplacement',
   'household.choreDialog.rotationStrategy': 'Méthode de rotation',
   'household.choreDialog.rotationOrdered': 'Dans l’ordre',
-  'household.choreDialog.rotationFair': 'Moins de tâches terminées',
+  'household.choreDialog.rotationFair': 'Moins de tâches attribuées ou terminées',
   'household.choreDialog.rotationPreviewFair':
-    'Le prochain tour revient à la personne ayant terminé le moins de tâches. En cas d’égalité, cet ordre s’applique : {order}.',
+    'Le prochain tour revient à la personne ayant le moins de tâches attribuées ou terminées. En cas d’égalité, cet ordre s’applique : {order}.',
   'household.choreDialog.resetClaimOnReject': 'Libérer la réservation lors du renvoi',
   'household.choreDialog.claimOpensBefore':
     'Ouvrir la réservation ce nombre de minutes avant le début (vide : à tout moment)',

@@ -88,5 +88,42 @@ function earnChoreProgressAwards(input) {
 		transactions
 	};
 }
+function isRecord(value) {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+function isOptionalTimestamp(value) {
+	return value === undefined || typeof value === "string" && Number.isFinite(Date.parse(value));
+}
+function isOptionalBoundedInteger(value, maximum) {
+	return value === undefined || Number.isSafeInteger(value) && Number(value) >= 0 && Number(value) <= maximum;
+}
+function isPointTransaction(value) {
+	return isRecord(value) && typeof value.id === "string" && value.id.length > 0 && typeof value.participantId === "string" && value.participantId.length > 0 && Number.isSafeInteger(value.pointsDelta) && Math.abs(Number(value.pointsDelta)) <= 1e9 && [
+		"opening_balance",
+		"completion",
+		"reopen",
+		"adjustment",
+		"reward",
+		"refund",
+		"reward_decision",
+		"progress_award"
+	].includes(String(value.kind)) && typeof value.timestamp === "string" && isOptionalTimestamp(value.timestamp) && (value.commandId === undefined || typeof value.commandId === "string") && (value.rewardRequestId === undefined || typeof value.rewardRequestId === "string") && (value.occurrenceId === undefined || typeof value.occurrenceId === "string");
+}
+function isProgressTarget(value, id) {
+	return isRecord(value) && value.id === id && typeof value.title === "string" && value.title.trim().length > 0 && [
+		"selected_chore",
+		"count",
+		"points",
+		"days",
+		"streak"
+	].includes(String(value.metric)) && Number.isSafeInteger(value.target) && Number(value.target) > 0 && (value.participantId === undefined || typeof value.participantId === "string") && (value.definitionIds === undefined || Array.isArray(value.definitionIds) && value.definitionIds.every((item) => typeof item === "string")) && (value.cycle === undefined || [
+		"once",
+		"weekly",
+		"monthly"
+	].includes(String(value.cycle))) && isOptionalBoundedInteger(value.awardPoints, 1e5);
+}
+function isProgressAward(value) {
+	return isRecord(value) && typeof value.id === "string" && typeof value.targetId === "string" && typeof value.participantId === "string" && typeof value.cycleKey === "string" && typeof value.awardedAt === "string" && isOptionalTimestamp(value.awardedAt);
+}
 
-export default { progressCycleKey, choreTargetProgress, earnChoreProgressAwards };
+export default { progressCycleKey, choreTargetProgress, earnChoreProgressAwards, isPointTransaction, isProgressTarget, isProgressAward };

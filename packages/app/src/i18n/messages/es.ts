@@ -497,9 +497,9 @@ export const esMessages = {
   'household.choreDialog.noStandby': 'Sin suplente',
   'household.choreDialog.rotationStrategy': 'Método de rotación',
   'household.choreDialog.rotationOrdered': 'En orden',
-  'household.choreDialog.rotationFair': 'Menos tareas completadas',
+  'household.choreDialog.rotationFair': 'Menos tareas asignadas o completadas',
   'household.choreDialog.rotationPreviewFair':
-    'El siguiente turno es para quien haya completado menos tareas. Los empates siguen este orden: {order}.',
+    'El siguiente turno es para quien tenga menos tareas asignadas o completadas. Los empates siguen este orden: {order}.',
   'household.choreDialog.resetClaimOnReject': 'Liberar la reserva al devolver',
   'household.choreDialog.claimOpensBefore':
     'Abrir la reserva estos minutos antes del inicio (vacío para cualquier momento)',

@@ -2,6 +2,7 @@
 import fs from 'fs';
 import occurrence from '../docker/njs/chore-occurrence-policy.js';
 import calendar from '../docker/njs/chore-calendar-policy.js';
+import progress from '../docker/njs/chore-progress-policy.js';
 import resource from '../docker/njs/resource-host-policy.js';
 import credential from '../docker/shared/credential-policy.js';
 import profile from '../docker/shared/dashboard-profile-policy.js';
@@ -36,6 +37,10 @@ vectors.occurrenceTransitions.forEach(function (vector) {
     });
   }
 });
+equal(progress.isProgressTarget({id:'badge',title:'Badge',metric:'count',target:1,awardPoints:5}, 'badge'), true, 'valid progress target');
+equal(progress.isProgressTarget({id:'badge',title:'Badge',metric:'count',target:1,awardPoints:'50'}, 'badge'), false, 'reject string award points');
+equal(progress.isPointTransaction({id:'points',participantId:'alice',pointsDelta:5,kind:'completion',timestamp:'2026-09-29T10:00:00.000Z'}), true, 'valid point transaction');
+equal(progress.isPointTransaction({id:'points',participantId:'alice',pointsDelta:5,kind:'unknown',timestamp:'2026-09-29T10:00:00.000Z'}), false, 'reject transaction kind');
 equal(calendar.addCalendarDays('2028-02-28', 1), '2028-02-29', 'leap date');
 equal(calendar.rotationIndexForDate(['2026-08-03','2026-08-04','2026-08-10'], 2, 'weekly'), 0, 'weekly rotation reset');
 equal(calendar.isScheduledOnDate({frequency:'monthly',startDate:'2028-01-01',dayOfMonth:31},'2028-02-29'), true, 'clamp day');

@@ -242,7 +242,7 @@ export function ChoreCreationFormGroups({
   const intervalValid =
     repeat !== 'custom' && repeat !== 'after_completion' && repeat !== 'hourly'
       ? true
-      : isBoundedInteger(interval, intervalMinimum, 3650);
+      : isBoundedInteger(interval, intervalMinimum, repeat === 'hourly' ? 8760 : 3650);
   const dueTimeValid = isValidTime(dueTime);
   const titleValid = title.trim().length > 0;
   const personSelectionValid =

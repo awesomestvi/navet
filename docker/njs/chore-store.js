@@ -503,11 +503,19 @@ function isValidChoreExperience(value) {
       !Number.isFinite(Date.parse(request.requestedAt)) ||
       !Number.isFinite(Date.parse(request.updatedAt))) return false;
   }
+  for (const targetId in value.badgesById) {
+    if (!choreProgressPolicy.isProgressTarget(value.badgesById[targetId], targetId)) return false;
+  }
+  for (const targetId in value.achievementsById) {
+    if (!choreProgressPolicy.isProgressTarget(value.achievementsById[targetId], targetId)) return false;
+  }
+  if (!value.progressAwards.every(choreProgressPolicy.isProgressAward)) return false;
+  const transactionIds = [];
   for (let index = 0; index < value.pointTransactions.length; index += 1) {
     const transaction = value.pointTransactions[index];
-    if (!isRecord(transaction) || typeof transaction.id !== 'string' ||
-      typeof transaction.participantId !== 'string' || !Number.isSafeInteger(transaction.pointsDelta) ||
-      !Number.isFinite(Date.parse(transaction.timestamp))) return false;
+    if (!choreProgressPolicy.isPointTransaction(transaction) ||
+      transactionIds.indexOf(transaction.id) !== -1) return false;
+    transactionIds.push(transaction.id);
   }
   return true;
 }
@@ -1184,6 +1192,36 @@ function materializeDefinition(definition, participantsById, rangeStart, rangeEn
   if (!definition.enabled || definition.archivedAt !== undefined) return [];
   const startTime = Date.parse(rangeStart);
   const endTime = Date.parse(rangeEnd);
+  const completionCountsByParticipant = {};
+  if (definition.assignment.rotationStrategy === 'fair') {
+    for (const occurrenceId in existing) {
+      if (!Object.prototype.hasOwnProperty.call(existing, occurrenceId)) continue;
+      const occurrence = existing[occurrenceId];
+      if (occurrence.definitionId !== definition.id || includesValue(['skipped', 'missed'], occurrence.status)) continue;
+      const ids = occurrence.status === 'done' && occurrence.completedBy ? [occurrence.completedBy] : occurrence.assigneeIds;
+      for (let index = 0; index < ids.length; index += 1) completionCountsByParticipant[ids[index]] = (completionCountsByParticipant[ids[index]] || 0) + 1;
+    }
+  }
+  function assignmentSlotsAt(at, index) {
+    if (definition.assignment.rotationStrategy === 'fair') {
+      const saved = Object.values(existing).filter(function (item) {
+        if (item.definitionId !== definition.id) return false;
+        if (definition.schedule.frequency === 'hourly') return item.scheduledAt === at;
+        const participantId = item.assigneeIds[0];
+        const override = (definition.assignment.participantScheduleOverrides || {})[participantId] || {};
+        return choreCalendarPolicy.addCalendarDays(getZonedDateKey(item.scheduledAt, definition.schedule.timeZone), -(override.dueDateOffsetDays || 0)) === getZonedDateKey(at, definition.schedule.timeZone);
+      }).filter(function (item, index, items) {
+        return items.findIndex(function (candidate) { return candidate.assignmentSlot === item.assignmentSlot; }) === index;
+      });
+      if (saved.length) return saved.map(function (item) { return { assignmentSlot: item.assignmentSlot, assigneeIds: item.assigneeIds }; });
+    }
+    return choreCalendarPolicy.resolveAssignmentSlots(definition.assignment, participantsById, index, completionCountsByParticipant, at);
+  }
+  function countAssignment(id, assigneeIds) {
+    if (!existing[id] && definition.assignment.rotationStrategy === 'fair') {
+      for (let index = 0; index < assigneeIds.length; index += 1) completionCountsByParticipant[assigneeIds[index]] = (completionCountsByParticipant[assigneeIds[index]] || 0) + 1;
+    }
+  }
   const schedule = definition.schedule;
   if (schedule.frequency === 'hourly') {
     const anchor = Date.parse(localDateTimeToIso(schedule.startDate, schedule.time, schedule.timeZone));
@@ -1194,10 +1232,11 @@ function materializeDefinition(definition, participantsById, rangeStart, rangeEn
       const scheduledAt = new Date(anchor + index * interval).toISOString();
       const localDate = getZonedDateKey(scheduledAt, schedule.timeZone);
       if ((schedule.endDate && localDate > schedule.endDate) || includesValue(schedule.excludedDates, localDate)) continue;
-      const slots = choreCalendarPolicy.resolveAssignmentSlots(definition.assignment, participantsById, index, {}, scheduledAt);
+      const slots = assignmentSlotsAt(scheduledAt, index);
       for (let slotIndex = 0; slotIndex < slots.length; slotIndex += 1) {
         const slot = slots[slotIndex];
         const id = definition.id + ':' + scheduledAt + ':' + slot.assignmentSlot;
+        countAssignment(id, slot.assigneeIds);
         hourlyResults.push(existing[id] || {
           id, definitionId: definition.id, scheduledAt,
           dueAt: new Date(Date.parse(scheduledAt) + Math.max(0, definition.dueWindowMinutes) * 60000).toISOString(),
@@ -1228,23 +1267,10 @@ function materializeDefinition(definition, participantsById, rangeStart, rangeEn
     }
   }
   const results = [];
-  const completionCountsByParticipant = {};
-  if (definition.assignment.rotationStrategy === 'fair') {
-    for (const occurrenceId in existing) {
-      if (!Object.prototype.hasOwnProperty.call(existing, occurrenceId)) continue;
-      const occurrence = existing[occurrenceId];
-      if (occurrence.definitionId !== definition.id || occurrence.status !== 'done' || !occurrence.completedBy) continue;
-      completionCountsByParticipant[occurrence.completedBy] =
-        (completionCountsByParticipant[occurrence.completedBy] || 0) + 1;
-    }
-  }
   for (let dateIndex = 0; dateIndex < dates.length; dateIndex += 1) {
-    const slots = choreCalendarPolicy.resolveAssignmentSlots(
-      definition.assignment,
-      participantsById,
-      choreCalendarPolicy.rotationIndexForDate(dates, dateIndex, definition.assignment.rotationReset, definition.assignment.rotationCadence, choreCalendarPolicy.scheduleStartDate(schedule), definition.assignment.rotationDayOfWeek),
-      completionCountsByParticipant,
-      localDateTimeToIso(dates[dateIndex], schedule.time, schedule.timeZone)
+    const slots = assignmentSlotsAt(
+      localDateTimeToIso(dates[dateIndex], schedule.time, schedule.timeZone),
+      choreCalendarPolicy.rotationIndexForDate(dates, dateIndex, definition.assignment.rotationReset, definition.assignment.rotationCadence, choreCalendarPolicy.scheduleStartDate(schedule), definition.assignment.rotationDayOfWeek)
     );
     for (let slotIndex = 0; slotIndex < slots.length; slotIndex += 1) {
       const slot = slots[slotIndex];
@@ -1268,6 +1294,7 @@ function materializeDefinition(definition, participantsById, rangeStart, rangeEn
         const scheduledTime = Date.parse(scheduledAt);
         if (scheduledTime < startTime || scheduledTime > endTime) continue;
         const id = definition.id + ':' + scheduledAt + ':' + slot.assignmentSlot;
+        countAssignment(id, slot.assigneeIds);
         results.push(
           existing[id] || {
             id,
@@ -1879,6 +1906,7 @@ function applyWorkspaceAction(data, commandId, action, timestamp) {
         const definition = data.definitionsById[occurrence.definitionId];
         const assignment = definition && definition.assignment;
         if (occurrence.status === 'available' && !occurrence.carriedForwardFrom &&
+          !(includesValue(occurrence.assigneeIds, participant.id) && isParticipantPausedAt(participant, occurrence.scheduledAt)) &&
           Date.parse(occurrence.scheduledAt) > Date.parse(timestamp) && assignment &&
           (includesValue(assignment.participantIds || [], participant.id) ||
             includesValue(assignment.standbyParticipantIds || [], participant.id))) {
@@ -2206,7 +2234,7 @@ function applyWorkspaceAction(data, commandId, action, timestamp) {
       { rewardRequestsById: requests, earnedPointsByParticipant: balances, pointTransactions: transactions }) }),
       buildWorkspaceActivity(commandId, timestamp, 'reward_' + status, {
         actorParticipantId: action.actorParticipantId, participantId: request.participantId,
-        reason: action.reason && action.reason.trim(), pointsDelta: pointsDelta || undefined,
+        reason: action.reason && action.reason.trim(), pointsDelta: Math.abs(pointsDelta) <= 10000 ? pointsDelta || undefined : undefined,
       }));
   }
   if (action.type === 'reminder_acknowledge') {
@@ -2391,7 +2419,7 @@ function applyWorkspaceAction(data, commandId, action, timestamp) {
       occurrencesById,
       completed.length > 0 ? completed[completed.length - 1] : undefined
     );
-    if (Object.keys(occurrencesById).length + materialized.length > 5000) {
+    if (Object.keys(occurrencesById).length + materialized.filter(function (item) { return !occurrencesById[item.id]; }).length > 5000) {
       throw new Error('Too many chore occurrences');
     }
     for (let index = 0; index < materialized.length; index += 1) {

@@ -300,6 +300,8 @@ export const OnboardingRepeatOptionsSaveTheirCadence: Story = {
     await expect(within(dialog).getByRole('button', { name: 'Add this chore' })).toBeDisabled();
     fireEvent.change(interval, { target: { value: '8761' } });
     await expect(within(dialog).getByRole('button', { name: 'Add this chore' })).toBeDisabled();
+    fireEvent.change(interval, { target: { value: '5000' } });
+    await expect(within(dialog).getByRole('button', { name: 'Add this chore' })).toBeEnabled();
     fireEvent.change(interval, {
       target: { value: '6' },
     });

@@ -85,18 +85,21 @@ export function ProgressTargetDialog({
     event.preventDefault();
     if (!valid) return;
     setSaving(true);
-    const saved = await onSave({
-      id: target?.id ?? createId(kind),
-      title: title.trim(),
-      metric,
-      target: Number(targetCount),
-      cycle,
-      participantId: kind === 'achievement' ? participantId : undefined,
-      definitionIds: definitionIds.length ? definitionIds : undefined,
-      awardPoints: Number(awardPoints) || undefined,
-    });
-    setSaving(false);
-    if (saved) onOpenChange(false);
+    try {
+      const saved = await onSave({
+        id: target?.id ?? createId(kind),
+        title: title.trim(),
+        metric,
+        target: Number(targetCount),
+        cycle,
+        participantId: kind === 'achievement' ? participantId : undefined,
+        definitionIds: definitionIds.length ? definitionIds : undefined,
+        awardPoints: Number(awardPoints) || undefined,
+      });
+      if (saved) onOpenChange(false);
+    } finally {
+      setSaving(false);
+    }
   };
   return (
     <BaseCardDialog

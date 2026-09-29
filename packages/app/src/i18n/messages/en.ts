@@ -2131,9 +2131,9 @@ export const enMessages = {
   'household.choreDialog.noStandby': 'No standby',
   'household.choreDialog.rotationStrategy': 'Rotation method',
   'household.choreDialog.rotationOrdered': 'In order',
-  'household.choreDialog.rotationFair': 'Fewest completed chores',
+  'household.choreDialog.rotationFair': 'Fewest assigned or completed chores',
   'household.choreDialog.rotationPreviewFair':
-    'Next turn goes to the person with the fewest completed chores. Ties follow this order: {order}.',
+    'Next turn goes to the person with the fewest assigned or completed chores. Ties follow this order: {order}.',
   'household.choreDialog.resetClaimOnReject': 'Release claim when sent back',
   'household.choreDialog.claimOpensBefore':
     'Claim opens this many minutes before start (blank for anytime)',

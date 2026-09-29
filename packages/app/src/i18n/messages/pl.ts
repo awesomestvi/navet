@@ -494,9 +494,9 @@ export const plMessages = {
   'household.choreDialog.noStandby': 'Brak zastępstwa',
   'household.choreDialog.rotationStrategy': 'Metoda rotacji',
   'household.choreDialog.rotationOrdered': 'Po kolei',
-  'household.choreDialog.rotationFair': 'Najmniej ukończonych zadań',
+  'household.choreDialog.rotationFair': 'Najmniej przydzielonych lub ukończonych zadań',
   'household.choreDialog.rotationPreviewFair':
-    'Następna kolej przypada osobie z najmniejszą liczbą ukończonych zadań. Przy remisie obowiązuje ta kolejność: {order}.',
+    'Następna kolej przypada osobie z najmniejszą liczbą przydzielonych lub ukończonych zadań. Przy remisie obowiązuje ta kolejność: {order}.',
   'household.choreDialog.resetClaimOnReject': 'Zwolnij rezerwację po odesłaniu',
   'household.choreDialog.claimOpensBefore':
     'Otwórz rezerwację tyle minut przed startem (puste: w dowolnym czasie)',

@@ -1,6 +1,68 @@
 {
   "materialization": [
     {
+      "name": "fair rotation balances future assignments across a materialization window",
+      "participants": [
+        {
+          "id": "alice",
+          "displayName": "Alice",
+          "capabilities": ["complete", "approve", "manage"],
+          "createdAt": "2026-09-01T08:00:00.000Z",
+          "updatedAt": "2026-09-01T08:00:00.000Z"
+        },
+        {
+          "id": "bob",
+          "displayName": "Bob",
+          "capabilities": ["complete", "approve", "manage"],
+          "createdAt": "2026-09-01T08:00:00.000Z",
+          "updatedAt": "2026-09-01T08:00:00.000Z"
+        }
+      ],
+      "definition": {
+        "id": "recycling",
+        "title": "Take out recycling",
+        "enabled": true,
+        "assignment": {
+          "mode": "rotation",
+          "participantIds": ["alice", "bob"],
+          "rotationStrategy": "fair"
+        },
+        "schedule": {
+          "frequency": "daily",
+          "startDate": "2026-09-14",
+          "time": "18:00",
+          "timeZone": "UTC"
+        },
+        "dueWindowMinutes": 120,
+        "approval": {
+          "required": false,
+          "approverIds": []
+        },
+        "createdAt": "2026-09-01T08:00:00.000Z",
+        "updatedAt": "2026-09-14T08:00:00.000Z"
+      },
+      "rangeStart": "2026-09-14T00:00:00.000Z",
+      "rangeEnd": "2026-09-18T00:00:00.000Z",
+      "expected": [
+        {
+          "scheduledAt": "2026-09-14T18:00:00.000Z",
+          "assigneeIds": ["alice"]
+        },
+        {
+          "scheduledAt": "2026-09-15T18:00:00.000Z",
+          "assigneeIds": ["bob"]
+        },
+        {
+          "scheduledAt": "2026-09-16T18:00:00.000Z",
+          "assigneeIds": ["alice"]
+        },
+        {
+          "scheduledAt": "2026-09-17T18:00:00.000Z",
+          "assigneeIds": ["bob"]
+        }
+      ]
+    },
+    {
       "name": "every two weeks from September 14 stays on Monday across Stockholm DST",
       "participants": [
         {

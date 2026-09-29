@@ -1474,7 +1474,9 @@ export function AddChoreDialog({
       participantSelectionValid &&
       (assignmentMode !== 'rotation' || parsedRotationOffset !== null) &&
       participantTimesValid &&
-      claimExpiryValid,
+      claimExpiryValid &&
+      participantDueOffsetsValid &&
+      claimOpensValid,
     schedule:
       scheduleIntervalValid &&
       dueTimeValid &&

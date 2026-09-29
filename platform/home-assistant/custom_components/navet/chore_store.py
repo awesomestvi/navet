@@ -8,6 +8,7 @@ panel data in Home Assistant's private storage area.
 from __future__ import annotations
 
 import asyncio
+import copy
 import hashlib
 import hmac
 import html
@@ -567,10 +568,11 @@ def _assignment_slots(definition: Mapping[str, Any], data: Mapping[str, Any], in
         if assignment.get("rotationStrategy") == "fair":
             counts: dict[str, int] = {item: 0 for item in ids}
             for occurrence in data["occurrencesById"].values():
-                if (occurrence.get("definitionId") == definition.get("id") and occurrence.get("status") == "done"):
-                    completed_by = occurrence.get("completedBy")
-                    if completed_by in counts:
-                        counts[completed_by] += 1
+                if occurrence.get("definitionId") == definition.get("id") and occurrence.get("status") not in {"skipped", "missed"}:
+                    assignees = [occurrence["completedBy"]] if occurrence.get("status") == "done" and occurrence.get("completedBy") else occurrence.get("assigneeIds", [])
+                    for participant_id in assignees:
+                        if participant_id in counts:
+                            counts[participant_id] += 1
             ordered = ids[cursor:] + ids[:cursor]
             item = min(ordered, key=lambda participant_id: counts[participant_id])
         else:
@@ -814,6 +816,7 @@ def _materialize(data: dict[str, Any], range_start: str, range_end: str, timesta
             continue
         schedule = definition.get("schedule", {})
         hourly_instants: list[datetime] = []
+        hourly_indices: list[int] = []
         if schedule.get("frequency") == "hourly":
             time_zone = str(schedule.get("timeZone") or "UTC")
             anchor = _scheduled_at(date.fromisoformat(str(schedule["startDate"])),
@@ -825,6 +828,7 @@ def _materialize(data: dict[str, Any], range_start: str, range_end: str, timesta
                 local_date = instant.astimezone(_zone(time_zone)).date()
                 if (not schedule.get("endDate") or local_date.isoformat() <= schedule["endDate"]) and local_date.isoformat() not in schedule.get("excludedDates", []):
                     hourly_instants.append(instant)
+                    hourly_indices.append(index)
                 index += 1
             dates = [instant.astimezone(_zone(time_zone)).date() for instant in hourly_instants]
         elif schedule.get("frequency") == "after_completion":
@@ -855,7 +859,7 @@ def _materialize(data: dict[str, Any], range_start: str, range_end: str, timesta
             dates = _date_keys(definition, start, end)
         times = schedule.get("times") or [schedule.get("time", "00:00")]
         for index, local_date in enumerate(dates):
-            rotation_index = index if hourly_instants else _rotation_index_for_date(
+            rotation_index = hourly_indices[index] if hourly_instants else _rotation_index_for_date(
                 dates,
                 index,
                 definition.get("assignment", {}).get("rotationReset"),
@@ -863,11 +867,21 @@ def _materialize(data: dict[str, Any], range_start: str, range_end: str, timesta
                 schedule.get("startDate") or schedule.get("date"),
                 definition.get("assignment", {}).get("rotationDayOfWeek", 1),
             )
-            for slot, assignees in _assignment_slots(
-                definition, data, rotation_index,
-                hourly_instants[index] if hourly_instants else _scheduled_at(local_date,
-                    str(schedule.get("time") or "00:00"), str(schedule.get("timeZone") or "UTC"))
-            ):
+            assignment_at = hourly_instants[index] if hourly_instants else _scheduled_at(local_date,
+                str(schedule.get("time") or "00:00"), str(schedule.get("timeZone") or "UTC"))
+            saved_by_slot = {}
+            if definition.get("assignment", {}).get("rotationStrategy") == "fair":
+                for item in occurrences.values():
+                    if item.get("definitionId") != definition["id"]:
+                        continue
+                    override = definition.get("assignment", {}).get("participantScheduleOverrides", {}).get((item.get("assigneeIds") or [""])[0], {})
+                    base_date = _parse_iso(item["scheduledAt"]).astimezone(_zone(str(schedule.get("timeZone") or "UTC"))).date() - timedelta(days=override.get("dueDateOffsetDays", 0))
+                    if (hourly_instants and item.get("scheduledAt") == _iso(assignment_at)) or (not hourly_instants and base_date == local_date):
+                        saved_by_slot[item["assignmentSlot"]] = item
+            saved = list(saved_by_slot.values())
+            slots = [(item["assignmentSlot"], item["assigneeIds"]) for item in saved] if saved and definition.get("assignment", {}).get("rotationStrategy") == "fair" else _assignment_slots(
+                definition, {**data, "occurrencesById": occurrences}, rotation_index, assignment_at)
+            for slot, assignees in slots:
                 override = definition.get("assignment", {}).get("participantScheduleOverrides", {}).get(assignees[0]) if len(assignees) == 1 else None
                 if isinstance(override, Mapping):
                     if override.get("daysOfWeek") and ((local_date.weekday() + 1) % 7) not in override["daysOfWeek"]:
@@ -1015,12 +1029,54 @@ def _progress_value(target: Mapping[str, Any], participant_id: str, data: Mappin
     return streak
 
 
+def _without_stale_alerts(data: Mapping[str, Any]) -> list[dict[str, Any]]:
+    return [item for item in data.get("outbox", []) if item.get("status") == "delivered"
+        or not item.get("occurrenceUpdatedAt")
+        or item["occurrenceUpdatedAt"] == data.get("occurrencesById", {}).get(item.get("occurrenceId"), {}).get("updatedAt")]
+
+
+def _valid_progress_target(value: Any, expected_id: str) -> bool:
+    return (
+        isinstance(value, Mapping) and isinstance(value.get("id"), str) and value["id"] == expected_id
+        and isinstance(value.get("title"), str) and bool(value["title"].strip())
+        and isinstance(value.get("metric"), str) and value["metric"] in {"selected_chore", "count", "points", "days", "streak"}
+        and type(value.get("target")) is int and 0 < value["target"] <= 9007199254740991
+        and ("participantId" not in value or isinstance(value["participantId"], str))
+        and ("definitionIds" not in value or (isinstance(value["definitionIds"], list)
+            and all(isinstance(item, str) for item in value["definitionIds"])))
+        and ("cycle" not in value or (isinstance(value["cycle"], str) and value["cycle"] in {"once", "weekly", "monthly"}))
+        and ("awardPoints" not in value or (type(value["awardPoints"]) is int and 0 <= value["awardPoints"] <= 100000))
+    )
+
+
+def _validate_progress_targets(experience: Mapping[str, Any]) -> None:
+    for key in ("badgesById", "achievementsById"):
+        targets = experience.get(key)
+        if not isinstance(targets, Mapping) or any(not _valid_progress_target(value, key) for key, value in targets.items()):
+            raise ChoreAuthorityError("Chore progress target is invalid")
+
+
+def _validate_participant_pause(participant: Mapping[str, Any]) -> None:
+    if "pausedAt" in participant and not _valid_timestamp(participant["pausedAt"]):
+        raise ChoreAuthorityError("Chore pause date is invalid")
+    if "resumeAt" in participant and (not _valid_timestamp(participant["resumeAt"])
+        or not participant.get("pausedAt") or _parse_iso(participant["resumeAt"]) <= _parse_iso(participant["pausedAt"])):
+        raise ChoreAuthorityError("Chore resume date is invalid")
+
+
 def _award_progress(data: dict[str, Any], timestamp: str) -> dict[str, Any]:
     experience = dict(data["experience"])
     awards = list(experience.get("progressAwards", []))
     transactions = list(experience.get("pointTransactions", []))
     balances = _experience_point_balances(data, experience)
-    for target in [*experience.get("badgesById", {}).values(), *experience.get("achievementsById", {}).values()]:
+    targets = []
+    for key in ("badgesById", "achievementsById"):
+        collection = experience.get(key)
+        if isinstance(collection, Mapping):
+            targets.extend(collection.values())
+    for target in targets:
+        if not isinstance(target, Mapping) or not _valid_progress_target(target, target.get("id")):
+            continue
         cycle_key = _progress_cycle_key(target.get("cycle"), timestamp)
         for participant_id in data["participantsById"]:
             if target.get("participantId") and target["participantId"] != participant_id:
@@ -1394,6 +1450,7 @@ class ChoreAuthority:
         return unsubscribe
 
     async def _save(self, next_document: dict[str, Any], previous: dict[str, Any]) -> None:
+        next_document["data"]["outbox"] = _without_stale_alerts(next_document["data"])
         retention = next_document["data"].get("historyRetention") or DEFAULT_RETENTION
         boundary = _now() - timedelta(days=int(retention["maxAgeDays"]))
         self._history = [
@@ -1464,7 +1521,7 @@ class ChoreAuthority:
                 continue
             try:
                 await self.hass.services.async_call("notify", target,
-                    {"message": "clear_notification", "data": {"tag": f"navet_chore_{item['id']}"}}, blocking=True)
+                    {"message": "clear_notification", "data": {"tag": f"navet_chore_{item['id']}"}}, blocking=False)
             except Exception:  # noqa: BLE001
                 continue
         return self._public_document()
@@ -1537,6 +1594,7 @@ class ChoreAuthority:
         actor = str(action.get("actorParticipantId", ""))
         if action_type == "participant_create":
             participant = dict(action.get("participant", {}))
+            _validate_participant_pause(participant)
             participant_id = str(participant.get("id", ""))
             if not participant_id or participant_id in data["participantsById"]:
                 raise ChoreAuthorityError("Household profile already exists")
@@ -1549,6 +1607,7 @@ class ChoreAuthority:
         if action_type == "participant_update":
             _require_manager(data, actor)
             participant = dict(action.get("participant", {}))
+            _validate_participant_pause(participant)
             current = data["participantsById"].get(participant.get("id"))
             if not current or participant.get("createdAt") != current.get("createdAt"):
                 raise ChoreAuthorityError("Household profile update is invalid")
@@ -1561,6 +1620,7 @@ class ChoreAuthority:
                     key for key, occurrence in data["occurrencesById"].items()
                     if occurrence.get("status") == "available"
                     and "carriedForwardFrom" not in occurrence
+                    and not (participant["id"] in occurrence.get("assigneeIds", []) and _participant_paused(participant, _parse_iso(occurrence["scheduledAt"])))
                     and _parse_iso(occurrence["scheduledAt"]) > _parse_iso(timestamp)
                     and (
                         participant["id"] in data["definitionsById"].get(occurrence.get("definitionId"), {}).get("assignment", {}).get("participantIds", [])
@@ -1669,6 +1729,7 @@ class ChoreAuthority:
             current = data.get("experience") or _empty_data()["experience"]
             if not isinstance(updated, Mapping) or updated.get("version") != 2:
                 raise ChoreAuthorityError("Chore experience data is invalid")
+            _validate_progress_targets(updated)
             for key in ("rewardRequestsById", "pointTransactions", "progressAwards", "earnedPointsByParticipant"):
                 if updated.get(key) != current.get(key):
                     raise ChoreAuthorityError("Reward and point history can only change through household actions")
@@ -1716,7 +1777,7 @@ class ChoreAuthority:
         if action_type == "reward_request":
             participant_id = str(action.get("participantId", ""))
             participant = data["participantsById"].get(participant_id)
-            if not isinstance(participant, Mapping) or participant.get("pausedAt") or "complete" not in participant.get("capabilities", []):
+            if not isinstance(participant, Mapping) or _participant_paused(participant, _parse_iso(timestamp)) or "complete" not in participant.get("capabilities", []):
                 raise ChoreAuthorityError("Chore participant is not active")
             experience = dict(data.get("experience") or _empty_data()["experience"])
             if experience.get("gamificationMode") == "off":
@@ -1771,7 +1832,7 @@ class ChoreAuthority:
             data["experience"] = experience
             return data, _activity(command_id, timestamp, f"reward_{status}", actorParticipantId=actor,
                 participantId=participant_id, reason=str(action.get("reason") or "").strip() or None,
-                pointsDelta=points_delta or None)
+                pointsDelta=points_delta if points_delta and abs(points_delta) <= 10000 else None)
         if action_type == "reminder_acknowledge":
             actor_record = _require_capability(data, actor, "complete")
             outbox_id = str(action.get("outboxId", ""))
@@ -2092,6 +2153,15 @@ class ChoreAuthority:
         await self._deliver_pending()
 
     async def _deliver_pending(self) -> None:
+        async with self._lock:
+            outbox = _without_stale_alerts(self.data)
+            if len(outbox) != len(self.data.get("outbox", [])):
+                previous = copy.deepcopy(self._document)
+                next_document = copy.deepcopy(self._document)
+                next_document["data"]["outbox"] = outbox
+                next_document["revision"] += 1
+                next_document["updatedAt"] = _iso(_now())
+                await self._save(next_document, previous)
         pending = [item for item in self.data.get("outbox", []) if item.get("destination") in {"provider", "home_assistant"} and item.get("status") in {"pending", "failed"} and _parse_iso(item.get("nextAttemptAt", _iso(_now()))) <= _now()][:10]
         for item in pending:
             occurrence = self.data.get("occurrencesById", {}).get(item.get("occurrenceId"), {})

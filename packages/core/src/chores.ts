@@ -1226,6 +1226,57 @@ export function materializeChoreOccurrences({
     throw new Error('Invalid chore occurrence range');
   }
 
+  const completionCountsByParticipant: Record<string, number> = {};
+  if (definition.assignment.rotationStrategy === 'fair') {
+    for (const occurrence of Object.values(existingOccurrences)) {
+      if (
+        occurrence.definitionId !== definition.id ||
+        ['skipped', 'missed'].includes(occurrence.status)
+      )
+        continue;
+      for (const id of occurrence.status === 'done' && occurrence.completedBy
+        ? [occurrence.completedBy]
+        : occurrence.assigneeIds) {
+        completionCountsByParticipant[id] = (completionCountsByParticipant[id] ?? 0) + 1;
+      }
+    }
+  }
+  const assignmentSlotsAt = (at: string, index: number) => {
+    if (definition.assignment.rotationStrategy === 'fair') {
+      const saved = Object.values(existingOccurrences)
+        .filter((item) => {
+          if (item.definitionId !== definition.id) return false;
+          if (definition.schedule.frequency === 'hourly') return item.scheduledAt === at;
+          const participantId = item.assigneeIds[0];
+          const offset =
+            definition.assignment.participantScheduleOverrides?.[participantId]
+              ?.dueDateOffsetDays ?? 0;
+          return (
+            addCalendarDays(
+              getZonedDateKey(item.scheduledAt, definition.schedule.timeZone),
+              -offset
+            ) === getZonedDateKey(at, definition.schedule.timeZone)
+          );
+        })
+        .filter(
+          (item, index, items) =>
+            items.findIndex((candidate) => candidate.assignmentSlot === item.assignmentSlot) ===
+            index
+        );
+      if (saved.length)
+        return saved.map((item) => ({
+          assignmentSlot: item.assignmentSlot,
+          assigneeIds: item.assigneeIds,
+        }));
+    }
+    return resolveAssignmentSlots(
+      definition.assignment,
+      participantsById,
+      index,
+      completionCountsByParticipant,
+      at
+    );
+  };
   const schedule = definition.schedule;
   if (schedule.frequency === 'hourly') {
     const anchor = Date.parse(
@@ -1242,15 +1293,14 @@ export function materializeChoreOccurrences({
         schedule.excludedDates?.includes(localDate)
       )
         continue;
-      const slots = resolveAssignmentSlots(
-        definition.assignment,
-        participantsById,
-        index,
-        {},
-        scheduledAt
-      );
+      const slots = assignmentSlotsAt(scheduledAt, index);
       for (const slot of slots) {
         const id = buildOccurrenceId(definition.id, scheduledAt, slot.assignmentSlot);
+        if (!existingOccurrences[id] && definition.assignment.rotationStrategy === 'fair') {
+          for (const participantId of slot.assigneeIds)
+            completionCountsByParticipant[participantId] =
+              (completionCountsByParticipant[participantId] ?? 0) + 1;
+        }
         hourlyOccurrences.push(
           existingOccurrences[id] ??
             createOccurrence(definition, scheduledAt, slot.assignmentSlot, slot.assigneeIds)
@@ -1287,19 +1337,6 @@ export function materializeChoreOccurrences({
   }
 
   const occurrences: ChoreOccurrence[] = [];
-  const completionCountsByParticipant: Record<string, number> = {};
-  if (definition.assignment.rotationStrategy === 'fair') {
-    for (const occurrence of Object.values(existingOccurrences)) {
-      if (
-        occurrence.definitionId !== definition.id ||
-        occurrence.status !== 'done' ||
-        !occurrence.completedBy
-      )
-        continue;
-      completionCountsByParticipant[occurrence.completedBy] =
-        (completionCountsByParticipant[occurrence.completedBy] ?? 0) + 1;
-    }
-  }
   for (const [scheduledIndex, scheduledDate] of scheduledDates.entries()) {
     const rotationIndex = rotationIndexForDate(
       scheduledDates,
@@ -1310,13 +1347,7 @@ export function materializeChoreOccurrences({
       definition.assignment.rotationDayOfWeek
     );
     const assignmentAt = localDateTimeToIso(scheduledDate, schedule.time, schedule.timeZone);
-    const slots = resolveAssignmentSlots(
-      definition.assignment,
-      participantsById,
-      rotationIndex,
-      completionCountsByParticipant,
-      assignmentAt
-    );
+    const slots = assignmentSlotsAt(assignmentAt, rotationIndex);
     for (const slot of slots) {
       const override =
         slot.assigneeIds.length === 1
@@ -1333,6 +1364,11 @@ export function materializeChoreOccurrences({
         const scheduledTime = new Date(scheduledAt).getTime();
         if (scheduledTime < rangeStartTime || scheduledTime > rangeEndTime) continue;
         const id = buildOccurrenceId(definition.id, scheduledAt, slot.assignmentSlot);
+        if (!existingOccurrences[id] && definition.assignment.rotationStrategy === 'fair') {
+          for (const participantId of slot.assigneeIds)
+            completionCountsByParticipant[participantId] =
+              (completionCountsByParticipant[participantId] ?? 0) + 1;
+        }
         occurrences.push(
           existingOccurrences[id] ??
             createOccurrence(definition, scheduledAt, slot.assignmentSlot, slot.assigneeIds)
@@ -2039,6 +2075,10 @@ export function applyChoreWorkspaceAction(
         if (
           occurrence.status === 'available' &&
           !occurrence.carriedForwardFrom &&
+          !(
+            occurrence.assigneeIds.includes(action.participant.id) &&
+            isChoreParticipantPausedAt(action.participant, occurrence.scheduledAt)
+          ) &&
           Date.parse(occurrence.scheduledAt) > Date.parse(timestamp) &&
           (assignment?.participantIds.includes(action.participant.id) ||
             assignment?.standbyParticipantIds?.includes(action.participant.id))
@@ -2473,7 +2513,7 @@ export function applyChoreWorkspaceAction(
       actorParticipantId: action.actorParticipantId,
       participantId: request.participantId,
       reason: action.reason?.trim() || undefined,
-      pointsDelta: pointsDelta || undefined,
+      pointsDelta: Math.abs(pointsDelta) <= 10_000 ? pointsDelta || undefined : undefined,
     });
     return {
       activity,
@@ -2730,7 +2770,11 @@ export function applyChoreWorkspaceAction(
       definition.id,
       new Set(materialized.map((occurrence) => occurrence.id))
     );
-    if (Object.keys(occurrencesById).length + materialized.length > 5000) {
+    if (
+      Object.keys(occurrencesById).length +
+        materialized.filter((item) => !occurrencesById[item.id]).length >
+      5000
+    ) {
       throw new Error('Too many chore occurrences');
     }
     for (const occurrence of materialized) {
@@ -2794,6 +2838,10 @@ export function applyChoreWorkspaceAction(
       scheduledAt <= rangeEnd &&
       scheduledAt > Date.parse(timestamp) &&
       !scheduledIds.has(id) &&
+      !occurrence.assigneeIds.some((participantId) => {
+        const participant = workspace.participantsById[participantId];
+        return participant && isChoreParticipantPausedAt(participant, occurrence.scheduledAt);
+      }) &&
       canDiscardForRematerialization(occurrence)
     ) {
       delete occurrencesById[id];

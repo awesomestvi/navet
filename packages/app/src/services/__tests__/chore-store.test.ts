@@ -242,6 +242,155 @@ describe('NJS chore workspace store', () => {
     ).toEqual([{ assignmentSlot: 'bob', assigneeIds: ['bob'] }]);
   });
 
+  it('rejects malformed progress and ledger values at the Docker storage boundary', () => {
+    const mutations = [
+      (experience: ReturnType<typeof createChoreExperienceState>) => {
+        experience.badgesById.bad = { id: 'bad', title: 'Bad', metric: 'count', target: 0 };
+      },
+      (experience: ReturnType<typeof createChoreExperienceState>) => {
+        experience.achievementsById.bad = {
+          id: 'bad',
+          title: 'Bad',
+          metric: 'count',
+          target: 1,
+          awardPoints: '50' as unknown as number,
+        };
+      },
+      (experience: ReturnType<typeof createChoreExperienceState>) => {
+        experience.progressAwards.push({ id: 'bad' } as never);
+      },
+      (experience: ReturnType<typeof createChoreExperienceState>) => {
+        experience.pointTransactions.push({
+          id: 'bad',
+          participantId: 'maya',
+          pointsDelta: 1,
+          timestamp: '2026-08-10T08:00:00.000Z',
+          kind: 'invalid' as never,
+        });
+      },
+      (experience: ReturnType<typeof createChoreExperienceState>) => {
+        const item = {
+          id: 'same',
+          participantId: 'maya',
+          pointsDelta: 1,
+          timestamp: '2026-08-10T08:00:00.000Z',
+          kind: 'completion' as const,
+        };
+        experience.pointTransactions.push(item, item);
+      },
+    ];
+    for (const mutate of mutations) {
+      const data = { ...seededData('validation'), experience: createChoreExperienceState() };
+      expect(choreStore.isValidChoreWorkspaceData(data)).toBe(true);
+      mutate(data.experience);
+      expect(choreStore.isValidChoreWorkspaceData(data)).toBe(false);
+    }
+  });
+
+  it('keeps fair rotation stable with personal date and time overrides in Docker', () => {
+    const vector = conformanceVectors.materialization.find((item) =>
+      item.name.startsWith('fair rotation')
+    );
+    if (!vector) throw new Error('Expected fair rotation vector');
+    const definition = {
+      ...vector.definition,
+      assignment: {
+        ...vector.definition.assignment,
+        participantScheduleOverrides: {
+          alice: { dueDateOffsetDays: 1, times: ['19:00'] },
+          bob: { times: ['20:00'] },
+        },
+      },
+    };
+    const participants = Object.fromEntries(vector.participants.map((item) => [item.id, item]));
+    const first = choreStore.materializeDefinitionForTests(
+      definition,
+      participants,
+      vector.rangeStart,
+      vector.rangeEnd,
+      {},
+      undefined
+    );
+    const existing = Object.fromEntries(first.map((item: { id: string }) => [item.id, item]));
+    expect(
+      choreStore.materializeDefinitionForTests(
+        definition,
+        participants,
+        vector.rangeStart,
+        vector.rangeEnd,
+        existing,
+        undefined
+      )
+    ).toEqual(first);
+  });
+
+  it('keeps paused future work available for reviewed vacation rescheduling in Docker', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-01T08:00:00.000Z'));
+    const mockFs = createMockFs();
+    choreStore.setChoreStoreFsForTests(mockFs);
+    choreStore.setChoreStorePrincipalResolverForTests(() => PRINCIPAL);
+    choreStore.handle(
+      createActionRequest('manager', 0, {
+        type: 'participant_create',
+        participant: managerParticipant(),
+      })
+    );
+    choreStore.handle(
+      createActionRequest('sofia', 1, {
+        type: 'participant_create',
+        actorParticipantId: 'maya',
+        participant: managerParticipant('sofia'),
+      })
+    );
+    const definition = {
+      ...seededData('vacation').definitionsById.dishes,
+      assignment: { mode: 'person', participantIds: ['sofia'] },
+    };
+    choreStore.handle(
+      createActionRequest('definition', 2, {
+        type: 'definition_create',
+        actorParticipantId: 'maya',
+        definition,
+      })
+    );
+    choreStore.handle(
+      createActionRequest('materialize', 3, {
+        type: 'materialize_occurrences',
+        rangeStart: '2026-08-01T00:00:00.000Z',
+        rangeEnd: '2026-08-12T00:00:00.000Z',
+      })
+    );
+    const pause = createActionRequest('pause', 4, {
+      type: 'participant_update',
+      actorParticipantId: 'maya',
+      participant: {
+        ...managerParticipant('sofia'),
+        pausedAt: '2026-08-02T00:00:00.000Z',
+        resumeAt: '2026-08-12T00:00:00.000Z',
+      },
+    });
+    choreStore.handle(pause);
+    expect(pause.return).toHaveBeenCalledWith(200, expect.any(String));
+    const id = Object.keys(parseResponse(pause).data.occurrencesById)[0];
+    expect(id).toBeDefined();
+    vi.setSystemTime(new Date('2026-08-12T08:00:00.000Z'));
+    const move = createActionRequest('vacation-review', 5, {
+      type: 'vacation_reschedule',
+      actorParticipantId: 'maya',
+      participantId: 'sofia',
+      occurrenceIds: [id],
+      startDate: '2026-08-13',
+    });
+    choreStore.handle(move);
+    expect(move.return).toHaveBeenCalledWith(200, expect.any(String));
+    expect(
+      Object.values(parseResponse(move).data.occurrencesById).some(
+        (item) => (item as { carriedForwardFrom?: string }).carriedForwardFrom === id
+      )
+    ).toBe(true);
+  });
+
   it('materializes hourly chores across DST in the Docker policy', () => {
     const definition = {
       id: 'dishes',

@@ -494,9 +494,9 @@ export const svMessages = {
   'household.choreDialog.noStandby': 'Ingen reserv',
   'household.choreDialog.rotationStrategy': 'Rotationsmetod',
   'household.choreDialog.rotationOrdered': 'I turordning',
-  'household.choreDialog.rotationFair': 'Färst slutförda sysslor',
+  'household.choreDialog.rotationFair': 'Färst tilldelade eller slutförda sysslor',
   'household.choreDialog.rotationPreviewFair':
-    'Nästa tur går till personen med färst slutförda sysslor. Vid lika antal används denna ordning: {order}.',
+    'Nästa tur går till personen med färst tilldelade eller slutförda sysslor. Vid lika antal används denna ordning: {order}.',
   'household.choreDialog.resetClaimOnReject': 'Släpp anspråket när sysslan skickas tillbaka',
   'household.choreDialog.claimOpensBefore':
     'Öppna anspråk så här många minuter före start (tomt för när som helst)',

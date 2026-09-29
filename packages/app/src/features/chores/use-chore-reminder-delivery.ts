@@ -46,7 +46,7 @@ export function useChoreReminderDelivery(enabled = true) {
 
     const message = item.eventType.startsWith('reminder_')
       ? t(messageKey, { name: definition.title })
-      : `${definition.title}: ${item.eventType}`;
+      : `${definition.title}: ${t(`household.choreDialog.notify.${item.eventType as 'claimed' | 'completed' | 'approved' | 'rejected' | 'skipped'}`)}`;
     void integrationNotificationFeatureService
       .sendNotification({
         title: definition.title,

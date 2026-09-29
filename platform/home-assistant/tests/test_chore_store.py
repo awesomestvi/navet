@@ -457,6 +457,84 @@ class ChoreAuthorityTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(again["experience"]["pointTransactions"]), 1)
         self.assertEqual(again["experience"]["earnedPointsByParticipant"]["maya"], 5)
 
+    async def test_rejects_invalid_pause_dates_before_saving(self):
+        await self._create_manager()
+        before = copy.deepcopy(_Store.values)
+        for fields in ({"resumeAt": "2026-09-01T00:00:00.000Z"},
+            {"pausedAt": "2026-09-02T00:00:00.000Z", "resumeAt": "2026-09-01T00:00:00.000Z"}):
+            with self.subTest(fields=fields), self.assertRaises(chores.ChoreAuthorityError):
+                await self.authority.async_command({"commandId": "bad-pause", "baseRevision": self.authority.revision,
+                    "action": {"type": "participant_update", "actorParticipantId": "manager",
+                        "participant": {**_participant(), **fields}}})
+            self.assertEqual(_Store.values, before)
+
+    async def test_malformed_progress_targets_do_not_break_completion(self):
+        data = chores._empty_data()
+        data["participantsById"] = {"manager": _participant()}
+        for target in ({"id": "bad"}, {"id": "bad", "title": "Bad", "metric": "count", "target": 1, "awardPoints": "50"}):
+            data["experience"]["badgesById"] = {"bad": target}
+            with self.assertRaises(chores.ChoreAuthorityError):
+                chores._validate_progress_targets(data["experience"])
+            self.assertEqual(chores._award_progress(data, "2026-09-28T11:00:00.000Z")["experience"]["progressAwards"], [])
+
+    async def test_stale_alerts_cannot_starve_valid_delivery(self):
+        await self._create_manager()
+        self.authority.data["occurrencesById"]["fresh"] = {"id": "fresh", "definitionId": "dishes", "updatedAt": "2026-09-28T11:00:00.000Z"}
+        self.authority.data["outbox"] = [{"id": f"stale-{index}", "status": "pending", "destination": "provider",
+            "occurrenceId": "deleted", "occurrenceUpdatedAt": "2026-09-28T10:00:00.000Z", "nextAttemptAt": "2026-01-01T00:00:00.000Z"} for index in range(10)] + [
+            {"id": "fresh", "status": "pending", "destination": "provider", "occurrenceId": "fresh",
+                "occurrenceUpdatedAt": "2026-09-28T11:00:00.000Z", "nextAttemptAt": "2026-01-01T00:00:00.000Z"}]
+        self.authority.async_command = AsyncMock()
+        await self.authority._deliver_pending()
+        self.assertEqual([item["id"] for item in self.authority.data["outbox"]], ["fresh"])
+        self.authority.async_command.assert_awaited_once()
+        self.assertEqual(self.authority.async_command.call_args.args[0]["action"]["outboxId"], "fresh")
+
+    async def test_participant_pause_keeps_work_for_vacation_review(self):
+        await self._create_manager()
+        data = chores._empty_data()
+        data["participantsById"] = {"manager": _participant(), "bob": _participant("bob")}
+        data["definitionsById"] = {"dishes": {"id": "dishes", "assignment": {"mode": "person", "participantIds": ["bob"]},
+            "schedule": {"frequency": "daily", "startDate": "2026-08-01", "time": "16:00", "timeZone": "UTC"}, "dueWindowMinutes": 60}}
+        data["occurrencesById"] = {"future": {"id": "future", "definitionId": "dishes", "status": "available",
+            "scheduledAt": "2026-08-10T16:00:00.000Z", "dueAt": "2026-08-10T17:00:00.000Z", "assigneeIds": ["bob"], "assignmentSlot": "bob"}}
+        paused, _event = self.authority._apply_workspace_action(data, {"type": "participant_update", "actorParticipantId": "manager",
+            "participant": {**_participant("bob"), "pausedAt": "2026-08-02T00:00:00.000Z", "resumeAt": "2026-08-12T00:00:00.000Z"}},
+            "2026-08-01T08:00:00.000Z", "pause")
+        moved, _events = chores._vacation_reschedule(paused, {"actorParticipantId": "manager", "participantId": "bob",
+            "occurrenceIds": ["future"], "startDate": "2026-08-13"}, "2026-08-12T08:00:00.000Z", "review")
+        self.assertTrue(any(item.get("carriedForwardFrom") == "future" for item in moved["occurrencesById"].values()))
+
+    async def test_large_reward_activity_can_reload(self):
+        await self._create_manager()
+        data = copy.deepcopy(self.authority.data)
+        data["experience"]["gamificationMode"] = "family"
+        data["experience"]["earnedPointsByParticipant"] = {"manager": 20000}
+        data["experience"]["rewardRequestsById"] = {"large": {"id": "large", "rewardId": "goal", "rewardTitle": "Large reward", "participantId": "manager", "cost": 15000, "status": "requested"}}
+        updated, activity = self.authority._apply_workspace_action(data, {"type": "reward_decision", "requestId": "large", "actorParticipantId": "manager", "decision": "approve"}, "2026-09-28T10:00:00.000Z", "large-reward")
+        updated["activity"] = [activity]
+        self.assertEqual(chores._normalize_data(updated)["experience"]["pointTransactions"][-1]["pointsDelta"], -15000)
+
+    async def test_reward_request_after_pause_return(self):
+        await self._create_manager()
+        data = copy.deepcopy(self.authority.data)
+        data["participantsById"]["manager"].update({"pausedAt": "2026-09-01T00:00:00.000Z", "resumeAt": "2026-09-10T00:00:00.000Z"})
+        data["experience"]["gamificationMode"] = "family"
+        data["experience"]["earnedPointsByParticipant"] = {"manager": 100}
+        data["experience"]["rewardGoalsById"] = {"goal": {"id": "goal", "title": "Goal", "targetPoints": 40, "enabled": True}}
+        updated, _event = self.authority._apply_workspace_action(data, {"type": "reward_request", "requestId": "returned", "rewardId": "goal", "participantId": "manager"}, "2026-09-28T10:00:00.000Z", "returned-request")
+        self.assertEqual(updated["experience"]["rewardRequestsById"]["returned"]["status"], "requested")
+
+    async def test_hourly_ordered_rotation_keeps_anchor_across_windows(self):
+        data = chores._empty_data()
+        data["participantsById"] = {"alice": _participant("alice"), "bob": _participant("bob")}
+        data["definitionsById"] = {"hourly": {"id": "hourly", "enabled": True, "dueWindowMinutes": 60,
+            "assignment": {"mode": "rotation", "participantIds": ["alice", "bob"]},
+            "schedule": {"frequency": "hourly", "startDate": "2026-09-28", "time": "00:00", "timeZone": "UTC", "intervalHours": 1}}}
+        first, _events = chores._materialize(copy.deepcopy(data), "2026-09-28T00:00:00.000Z", "2026-09-28T03:00:00.000Z", "2026-09-28T00:00:00.000Z", "first")
+        later, _events = chores._materialize(copy.deepcopy(data), "2026-09-28T01:00:00.000Z", "2026-09-28T03:00:00.000Z", "2026-09-28T01:00:00.000Z", "later")
+        self.assertEqual(set(later["occurrencesById"]), {key for key, item in first["occurrencesById"].items() if item["scheduledAt"] >= "2026-09-28T01:00:00.000Z"})
+
     async def test_restore_rejects_invalid_rotation_fields_before_persisting(self):
         await self._create_manager()
         before = copy.deepcopy(_Store.values)
@@ -1091,7 +1169,7 @@ class ChoreAuthorityTests(unittest.IsolatedAsyncioTestCase):
         next_data["occurrencesById"]["due"]["updatedAt"] = "2026-09-28T10:01:00.000Z"
         await self.authority._commit_locked(next_data, [], "change-due", "2026-09-28T10:01:00.000Z")
         self.assertIn(("notify", "mobile_app_test", {"message": "clear_notification",
-            "data": {"tag": "navet_chore_outbox:alert:due"}}, {"blocking": True}),
+            "data": {"tag": "navet_chore_outbox:alert:due"}}, {"blocking": False}),
             self.hass.services.calls)
 
     async def test_calendar_projects_bounded_due_events(self):

@@ -1,3 +1,5 @@
+import { isPointTransaction, isProgressAward, isProgressTarget } from './chore-progress-policy.ts';
+
 export const CHORE_EXPERIENCE_VERSION = 2 as const;
 
 export type ChoreGamificationMode = 'off' | 'light' | 'family' | 'adventure';
@@ -206,63 +208,6 @@ function isRewardRequest(value: unknown, id: string): value is ChoreRewardReques
     typeof value.updatedAt === 'string' &&
     (value.managerParticipantId === undefined || typeof value.managerParticipantId === 'string') &&
     (value.reason === undefined || typeof value.reason === 'string')
-  );
-}
-
-function isPointTransaction(value: unknown): value is ChorePointTransaction {
-  return (
-    isRecord(value) &&
-    typeof value.id === 'string' &&
-    value.id.length > 0 &&
-    typeof value.participantId === 'string' &&
-    value.participantId.length > 0 &&
-    Number.isSafeInteger(value.pointsDelta) &&
-    Math.abs(Number(value.pointsDelta)) <= 1_000_000_000 &&
-    [
-      'opening_balance',
-      'completion',
-      'reopen',
-      'adjustment',
-      'reward',
-      'refund',
-      'reward_decision',
-      'progress_award',
-    ].includes(String(value.kind)) &&
-    typeof value.timestamp === 'string' &&
-    isOptionalTimestamp(value.timestamp) &&
-    (value.commandId === undefined || typeof value.commandId === 'string') &&
-    (value.rewardRequestId === undefined || typeof value.rewardRequestId === 'string') &&
-    (value.occurrenceId === undefined || typeof value.occurrenceId === 'string')
-  );
-}
-
-function isProgressTarget(value: unknown, id: string): value is ChoreProgressTarget {
-  return (
-    isRecord(value) &&
-    value.id === id &&
-    typeof value.title === 'string' &&
-    value.title.trim().length > 0 &&
-    ['selected_chore', 'count', 'points', 'days', 'streak'].includes(String(value.metric)) &&
-    Number.isSafeInteger(value.target) &&
-    Number(value.target) > 0 &&
-    (value.participantId === undefined || typeof value.participantId === 'string') &&
-    (value.definitionIds === undefined ||
-      (Array.isArray(value.definitionIds) &&
-        value.definitionIds.every((item) => typeof item === 'string'))) &&
-    (value.cycle === undefined || ['once', 'weekly', 'monthly'].includes(String(value.cycle))) &&
-    isOptionalBoundedInteger(value.awardPoints, 100_000)
-  );
-}
-
-function isProgressAward(value: unknown): value is ChoreProgressAward {
-  return (
-    isRecord(value) &&
-    typeof value.id === 'string' &&
-    typeof value.targetId === 'string' &&
-    typeof value.participantId === 'string' &&
-    typeof value.cycleKey === 'string' &&
-    typeof value.awardedAt === 'string' &&
-    isOptionalTimestamp(value.awardedAt)
   );
 }
 

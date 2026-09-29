@@ -63,7 +63,7 @@ completion actions remain available on a shared screen after a PIN is configured
 A chore can belong to one person, be open to anyone, create one occurrence for everyone, or rotate
 between selected people. A person's chore can name a standby who covers scheduled work while
 the primary person is away. Rotation can follow a fixed order or choose the person with the fewest
-completed turns. Schedules support one-time, daily, weekly, bi-weekly, tri-weekly, monthly,
+assigned or completed turns. Schedules support one-time, daily, weekly, bi-weekly, tri-weekly, monthly,
 hourly-interval, and after-completion recurrence. Calendar schedules and completion-date repeats
 keep the chosen local time; hourly intervals count elapsed hours through daylight-saving changes.
 Each person can have a later due date for their turn.

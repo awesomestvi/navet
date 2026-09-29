@@ -493,9 +493,9 @@ export const noMessages = {
   'household.choreDialog.noStandby': 'Ingen reserve',
   'household.choreDialog.rotationStrategy': 'Rotasjonsmetode',
   'household.choreDialog.rotationOrdered': 'I rekkefølge',
-  'household.choreDialog.rotationFair': 'Færrest fullførte oppgaver',
+  'household.choreDialog.rotationFair': 'Færrest tildelte eller fullførte oppgaver',
   'household.choreDialog.rotationPreviewFair':
-    'Neste tur går til personen med færrest fullførte oppgaver. Ved likt antall brukes denne rekkefølgen: {order}.',
+    'Neste tur går til personen med færrest tildelte eller fullførte oppgaver. Ved likt antall brukes denne rekkefølgen: {order}.',
   'household.choreDialog.resetClaimOnReject': 'Frigi krav ved tilbakesending',
   'household.choreDialog.claimOpensBefore':
     'Åpne krav så mange minutter før start (tomt for når som helst)',

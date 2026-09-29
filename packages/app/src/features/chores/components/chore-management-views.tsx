@@ -1760,7 +1760,11 @@ export function ChoreSettingsView({
     const firstDay = new Date(
       Math.max(Date.now(), Date.parse(participant.resumeAt ?? '')) + 86_400_000
     );
-    setVacationStartDate(firstDay.toISOString().slice(0, 10));
+    setVacationStartDate(
+      new Date(firstDay.getTime() - firstDay.getTimezoneOffset() * 60_000)
+        .toISOString()
+        .slice(0, 10)
+    );
   };
   const sections = [
     {

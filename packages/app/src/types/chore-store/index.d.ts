@@ -28,7 +28,7 @@ declare module '@docker/njs/chore-store.js' {
       rangeEnd: string,
       existingOccurrences: Record<string, unknown>,
       latestCompletedAt?: string
-    ): Array<{ scheduledAt: string; assigneeIds: string[] }>;
+    ): Array<{ id: string; scheduledAt: string; assigneeIds: string[] }>;
     resetChoreStoreForTests(): void;
     routeRequest(request: NjsChoreRequest, principal: ChorePrincipal): void;
     runPeriodic(session: unknown): Promise<void>;

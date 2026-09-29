@@ -494,9 +494,9 @@ export const nlMessages = {
   'household.choreDialog.noStandby': 'Geen reserve',
   'household.choreDialog.rotationStrategy': 'Rotatiemethode',
   'household.choreDialog.rotationOrdered': 'Op volgorde',
-  'household.choreDialog.rotationFair': 'Minste voltooide taken',
+  'household.choreDialog.rotationFair': 'Minste toegewezen of voltooide taken',
   'household.choreDialog.rotationPreviewFair':
-    'De volgende beurt gaat naar degene met de minste voltooide taken. Bij gelijke stand geldt deze volgorde: {order}.',
+    'De volgende beurt gaat naar degene met de minste toegewezen of voltooide taken. Bij gelijke stand geldt deze volgorde: {order}.',
   'household.choreDialog.resetClaimOnReject': 'Claim vrijgeven bij terugsturen',
   'household.choreDialog.claimOpensBefore':
     'Claim zoveel minuten voor de start openen (leeg voor altijd)',

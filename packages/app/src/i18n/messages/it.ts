@@ -501,9 +501,9 @@ export const itMessages = {
   'household.choreDialog.noStandby': 'Nessuna riserva',
   'household.choreDialog.rotationStrategy': 'Metodo di rotazione',
   'household.choreDialog.rotationOrdered': 'In ordine',
-  'household.choreDialog.rotationFair': 'Meno attività completate',
+  'household.choreDialog.rotationFair': 'Meno attività assegnate o completate',
   'household.choreDialog.rotationPreviewFair':
-    'Il prossimo turno spetta a chi ha completato meno attività. In caso di parità vale questo ordine: {order}.',
+    'Il prossimo turno spetta a chi ha meno attività assegnate o completate. In caso di parità vale questo ordine: {order}.',
   'household.choreDialog.resetClaimOnReject': 'Libera la prenotazione quando viene rimandata',
   'household.choreDialog.claimOpensBefore':
     'Apri la prenotazione questi minuti prima dell’inizio (vuoto: sempre)',

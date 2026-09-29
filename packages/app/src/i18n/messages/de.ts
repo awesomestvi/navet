@@ -497,9 +497,9 @@ export const deMessages = {
   'household.choreDialog.noStandby': 'Keine Vertretung',
   'household.choreDialog.rotationStrategy': 'Rotationsmethode',
   'household.choreDialog.rotationOrdered': 'Der Reihe nach',
-  'household.choreDialog.rotationFair': 'Wenigste erledigte Aufgaben',
+  'household.choreDialog.rotationFair': 'Wenigste zugewiesene oder erledigte Aufgaben',
   'household.choreDialog.rotationPreviewFair':
-    'Als Nächstes ist die Person mit den wenigsten erledigten Aufgaben dran. Bei Gleichstand gilt diese Reihenfolge: {order}.',
+    'Als Nächstes ist die Person mit den wenigsten zugewiesenen oder erledigten Aufgaben dran. Bei Gleichstand gilt diese Reihenfolge: {order}.',
   'household.choreDialog.resetClaimOnReject': 'Anspruch bei Rückgabe freigeben',
   'household.choreDialog.claimOpensBefore':
     'Anspruch so viele Minuten vor Beginn öffnen (leer für jederzeit)',

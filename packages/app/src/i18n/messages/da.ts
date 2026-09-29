@@ -495,9 +495,9 @@ export const daMessages = {
   'household.choreDialog.noStandby': 'Ingen reserve',
   'household.choreDialog.rotationStrategy': 'Rotationsmetode',
   'household.choreDialog.rotationOrdered': 'I rækkefølge',
-  'household.choreDialog.rotationFair': 'Færrest udførte opgaver',
+  'household.choreDialog.rotationFair': 'Færrest tildelte eller udførte opgaver',
   'household.choreDialog.rotationPreviewFair':
-    'Næste tur går til personen med færrest udførte opgaver. Ved lighed bruges denne rækkefølge: {order}.',
+    'Næste tur går til personen med færrest tildelte eller udførte opgaver. Ved lighed bruges denne rækkefølge: {order}.',
   'household.choreDialog.resetClaimOnReject': 'Frigiv krav ved tilbagesendelse',
   'household.choreDialog.claimOpensBefore': 'Åbn krav så mange minutter før start (tomt for altid)',
   'household.choreDialog.pendingApproval': 'Mens en tidligere tur afventer godkendelse',

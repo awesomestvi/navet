@@ -25,7 +25,7 @@ Use **Chores** to manage recurring work and **Progress** to review activity. Ope
 Each chore has a consistent automatic colour unless someone overrides it. Overdue red and
 completed green take priority over the custom colour.
 
-On **Who does it**, choose a standby for a person's chore or choose **Fewest completed chores**
+On **Who does it**, choose a standby for a person's chore or choose **Fewest assigned or completed chores**
 for rotation. **More options** can set a later due date for each person, open claiming shortly
 before the scheduled start, wait for an earlier claim's approval, and keep a claim when work is
 sent back. On **When it repeats**, choose **Hourly interval** for an elapsed-hour repeat or
@@ -65,7 +65,8 @@ automation. For scheduled delivery, set a weekly time trigger, call `navet.weekl
 `format: markdown` and a `response_variable`, then pass that variable's `content` to your
 notification action. The calendar entity **Navet chores** lists upcoming due work for calendar
 automations. Home Assistant also provides typed `navet.reward_decision` and
-`navet.adjust_points` actions. Give point adjustments a stable `command_id` so a retried
+`navet.adjust_points` actions for Home Assistant administrators and system automations.
+Give point adjustments a stable `command_id` so a retried
 automation cannot apply the same change twice.
 
 Each chore's notification settings can select which claim, completion, approval, and missed-work

@@ -493,9 +493,9 @@ export const fiMessages = {
   'household.choreDialog.noStandby': 'Ei varahenkilöä',
   'household.choreDialog.rotationStrategy': 'Vuorottelutapa',
   'household.choreDialog.rotationOrdered': 'Järjestyksessä',
-  'household.choreDialog.rotationFair': 'Vähiten tehtyjä askareita',
+  'household.choreDialog.rotationFair': 'Vähiten osoitettuja tai tehtyjä askareita',
   'household.choreDialog.rotationPreviewFair':
-    'Seuraava vuoro menee vähiten askareita tehneelle. Tasatilanteessa käytetään tätä järjestystä: {order}.',
+    'Seuraava vuoro menee henkilölle, jolla on vähiten osoitettuja tai tehtyjä askareita. Tasatilanteessa käytetään tätä järjestystä: {order}.',
   'household.choreDialog.resetClaimOnReject': 'Vapauta varaus palautettaessa',
   'household.choreDialog.claimOpensBefore':
     'Avaa varaus näin monta minuuttia ennen alkua (tyhjä = milloin vain)',
