@@ -52,7 +52,9 @@ const TasksSection = lazy(async () => {
   const module = await import('@navet/app/features/tasks/components/tasks-section');
   return { default: module.TasksSection };
 });
-const RoomChoreCard = lazy(() => import('@navet/app/features/chores/components/room-chore-card'));
+const RoomChoresSheet = lazy(
+  () => import('@navet/app/features/chores/components/room-chores-sheet')
+);
 const MediaSection = lazy(async () => {
   const module = await import('@navet/app/components/layout/media-section');
   return { default: module.MediaSection };
@@ -111,6 +113,9 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
   const choreWorkspace = useChoreWorkspaceStore((state) =>
     controller.activeSection === 'home' && !isAllRooms(controller.activeRoom) ? state.data : null
   );
+  const choreStatus = useChoreWorkspaceStore((state) =>
+    controller.activeSection === 'home' && !isAllRooms(controller.activeRoom) ? state.status : null
+  );
   const activeCustomSidebarActionId = useNavigationStore(
     (state) => state.activeCustomSidebarActionId
   );
@@ -126,6 +131,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
   );
   const [isAddClimateEntityDialogOpen, setIsAddClimateEntityDialogOpen] = useState(false);
   const [isRoomManagementOpen, setIsRoomManagementOpen] = useState(false);
+  const [choreSheetRoom, setChoreSheetRoom] = useState<string | null>(null);
   const [securityAddEntityRequestKey, setSecurityAddEntityRequestKey] = useState(0);
   const [mediaAddEntityRequestKey, setMediaAddEntityRequestKey] = useState(0);
   const {
@@ -155,6 +161,9 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
     updateCardSize,
   } = controller;
   useChoreWorkspaceSync(choresEnabled && activeSection === 'home' && !isAllRooms(activeRoom));
+  useEffect(() => {
+    setChoreSheetRoom(null);
+  }, [activeRoom, activeSection]);
   const activeRoomWorkspace = useMemo(
     () => roomWorkspace?.rooms.find((room) => roomNamesMatch(room.displayName, activeRoom)),
     [activeRoom, roomWorkspace]
@@ -258,7 +267,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
     );
   }, [activeRoom, deviceMap]);
   const roomStatusSummaryItems = useMemo(() => {
-    if (!sectionData.isOverviewSection || isAllRooms(activeRoom) || !showSummaryBar) {
+    if (!sectionData.isOverviewSection || isAllRooms(activeRoom)) {
       return [];
     }
 
@@ -275,22 +284,43 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
       activeRoom,
       {
         climateEntityIds: roomClimateEntityIds,
-        pendingChoreCount: roomTodayChores.length > 0 ? pendingRoomChores.length : undefined,
+        pendingChoreCount: choresEnabled ? pendingRoomChores.length : undefined,
         overdueChoreCount: overdueRoomChoreCount,
         routineCount,
         securityAlertCount: controller.activeRoomSecurityAlertCount,
         temperatureUnit,
       },
       t
-    );
+    )
+      .filter((item) => showSummaryBar || item.id === 'chores')
+      .map((item) =>
+        item.id === 'chores'
+          ? {
+              ...item,
+              value: choreWorkspace
+                ? item.value
+                : choreStatus === 'unavailable'
+                  ? t('household.unavailable.title')
+                  : choreStatus === 'unauthorized'
+                    ? t('household.unauthorized.title')
+                    : choreStatus === 'error'
+                      ? t('household.error.title')
+                      : t('common.loading'),
+              iconColor: choreWorkspace ? item.iconColor : '#cbd5e1',
+              onSelect: () => setChoreSheetRoom(activeRoom),
+            }
+          : item
+      );
   }, [
     activeRoom,
     availableDeviceMap,
+    choresEnabled,
+    choreWorkspace,
+    choreStatus,
     pendingRoomChores.length,
     overdueRoomChoreCount,
     roomClimateEntityIds,
     controller.activeRoomSecurityAlertCount,
-    roomTodayChores.length,
     routines.automations,
     routines.quickActions,
     showSummaryBar,
@@ -577,6 +607,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
             <SummaryBarStack>
               <SummaryBar
                 items={roomStatusSummaryItems}
+                singleRow
                 onNavigate={controller.setActiveSection}
                 ariaLabel={t('settings.dashboard.homeSummaryBar.title')}
               />
@@ -595,21 +626,21 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
                 usesHideAction
                 densePerformanceMode={controller.densePerformanceMode}
                 optimizeOffscreenPaint={controller.optimizeOffscreenPaint}
-                supplementalCards={pendingRoomChores.map((occurrence) => ({
-                  id: `room-chore-${occurrence.id}`,
-                  size: 'medium',
-                  content: choreWorkspace ? (
-                    <Suspense fallback={null}>
-                      <RoomChoreCard
-                        data={choreWorkspace}
-                        occurrence={occurrence}
-                        now={roomChoreNow}
-                      />
-                    </Suspense>
-                  ) : null,
-                }))}
               />
             </SummaryBarStack>
+            {choresEnabled && choreSheetRoom === activeRoom ? (
+              <Suspense fallback={null}>
+                <RoomChoresSheet
+                  room={activeRoom}
+                  data={choreWorkspace}
+                  occurrences={pendingRoomChores}
+                  now={roomChoreNow}
+                  onOpenChange={(open) => {
+                    if (!open) setChoreSheetRoom(null);
+                  }}
+                />
+              </Suspense>
+            ) : null}
           </RenderProfiler>
         )}
       </div>
