@@ -1,6 +1,44 @@
 {
   "materialization": [
     {
+      "name": "every two weeks from September 14 stays on Monday across Stockholm DST",
+      "participants": [
+        {
+          "id": "alice",
+          "displayName": "Alice",
+          "capabilities": ["complete", "approve", "manage"],
+          "createdAt": "2026-09-01T08:00:00.000Z",
+          "updatedAt": "2026-09-01T08:00:00.000Z"
+        }
+      ],
+      "definition": {
+        "id": "recycling",
+        "title": "Take out recycling",
+        "enabled": true,
+        "assignment": { "mode": "person", "participantIds": ["alice"] },
+        "schedule": {
+          "frequency": "weekly",
+          "startDate": "2026-09-14",
+          "time": "18:00",
+          "timeZone": "Europe/Stockholm",
+          "daysOfWeek": [1],
+          "intervalWeeks": 2
+        },
+        "dueWindowMinutes": 120,
+        "approval": { "required": false, "approverIds": [] },
+        "createdAt": "2026-09-01T08:00:00.000Z",
+        "updatedAt": "2026-09-14T08:00:00.000Z"
+      },
+      "rangeStart": "2026-09-14T00:00:00.000Z",
+      "rangeEnd": "2026-10-27T00:00:00.000Z",
+      "expected": [
+        { "scheduledAt": "2026-09-14T16:00:00.000Z", "assigneeIds": ["alice"] },
+        { "scheduledAt": "2026-09-28T16:00:00.000Z", "assigneeIds": ["alice"] },
+        { "scheduledAt": "2026-10-12T16:00:00.000Z", "assigneeIds": ["alice"] },
+        { "scheduledAt": "2026-10-26T17:00:00.000Z", "assigneeIds": ["alice"] }
+      ]
+    },
+    {
       "name": "weekly rotation across Stockholm DST fallback",
       "participants": [
         {

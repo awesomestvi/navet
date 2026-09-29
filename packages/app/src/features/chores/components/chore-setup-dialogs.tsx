@@ -1097,7 +1097,7 @@ export function AddChoreDialog({
       );
       setDayOfMonth(
         definition?.schedule.frequency === 'monthly'
-          ? (definition.schedule.dayOfMonth ?? new Date().getDate())
+          ? (definition.schedule.dayOfMonth ?? parseDateKey(definition.schedule.startDate).day)
           : new Date().getDate()
       );
       setExtraTimes(
@@ -1303,7 +1303,10 @@ export function AddChoreDialog({
                 startDate,
                 time,
                 timeZone,
-                ...(definition?.schedule.frequency === 'monthly' && definition.schedule.nthWeekday
+                ...(definition?.schedule.frequency === 'monthly' &&
+                definition.schedule.nthWeekday &&
+                repeatOverride === null &&
+                startDate === definition.schedule.startDate
                   ? { nthWeekday: definition.schedule.nthWeekday }
                   : { dayOfMonth: Math.min(31, Math.max(1, dayOfMonth)) }),
                 ...scheduleOptions,
@@ -1516,18 +1519,16 @@ export function AddChoreDialog({
     }
 
     if (value === 'biweekly' || value === 'triweekly' || value === 'fourweekly') {
-      if (frequency !== 'weekly' || weeklyDays.length <= 1) {
-        setWeeklyDays([
-          getDayOfWeek(isValidDate(scheduleStartDate) ? scheduleStartDate : localDateKey()),
-        ]);
-      }
+      setWeeklyDays([
+        getDayOfWeek(isValidDate(scheduleStartDate) ? scheduleStartDate : localDateKey()),
+      ]);
       setFrequency('weekly');
       setScheduleInterval(value === 'biweekly' ? 2 : value === 'triweekly' ? 3 : 4);
       return;
     }
 
     if (value === 'daily') setWeeklyDays(ALL_WEEK_DAYS);
-    if (value === 'weekly' && (frequency !== 'weekly' || weeklyDays.length <= 1)) {
+    if (value === 'weekly') {
       setWeeklyDays([
         getDayOfWeek(isValidDate(scheduleStartDate) ? scheduleStartDate : localDateKey()),
       ]);
@@ -1544,13 +1545,10 @@ export function AddChoreDialog({
   const changeScheduleStartDate = (value: string) => {
     setScheduleStartDate(value);
     if (!isValidDate(value)) return;
-    if (frequency === 'weekly' && weeklyDays.length <= 1) {
+    if (frequency === 'weekly') {
       setWeeklyDays([getDayOfWeek(value)]);
     }
-    if (
-      frequency === 'monthly' &&
-      !(definition?.schedule.frequency === 'monthly' && definition.schedule.nthWeekday)
-    ) {
+    if (frequency === 'monthly') {
       setDayOfMonth(parseDateKey(value).day);
     }
   };

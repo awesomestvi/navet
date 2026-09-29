@@ -737,6 +737,96 @@ describe('chores domain', () => {
     ).toEqual(['2026-08-27T09:00:00.000Z', '2026-09-10T09:00:00.000Z', '2026-09-24T09:00:00.000Z']);
   });
 
+  it('replaces future dates after each repeated edit of the same saved chore', () => {
+    const definition = makeDefinition({
+      assignment: { mode: 'person', participantIds: ['alice'] },
+    });
+    let workspace: ChoreWorkspaceData = {
+      ...createEmptyChoreWorkspace(),
+      participantsById: { alice },
+      definitionsById: { [definition.id]: definition },
+    };
+    const timestamp = '2026-09-01T08:00:00.000Z';
+    const schedules: Array<{
+      schedule: ChoreDefinition['schedule'];
+      dates: string[];
+    }> = [
+      {
+        schedule: {
+          frequency: 'weekly',
+          startDate: '2026-09-14',
+          time: '18:00',
+          timeZone: 'UTC',
+          daysOfWeek: [1],
+          intervalWeeks: 1,
+        },
+        dates: ['2026-09-14', '2026-09-21', '2026-09-28'],
+      },
+      {
+        schedule: {
+          frequency: 'daily',
+          startDate: '2026-09-14',
+          time: '18:00',
+          timeZone: 'UTC',
+          intervalDays: 3,
+        },
+        dates: ['2026-09-14', '2026-09-17', '2026-09-20', '2026-09-23', '2026-09-26', '2026-09-29'],
+      },
+      {
+        schedule: {
+          frequency: 'monthly',
+          startDate: '2026-09-14',
+          time: '18:00',
+          timeZone: 'UTC',
+          dayOfMonth: 14,
+        },
+        dates: ['2026-09-14'],
+      },
+      {
+        schedule: {
+          frequency: 'weekly',
+          startDate: '2026-09-16',
+          time: '18:00',
+          timeZone: 'UTC',
+          daysOfWeek: [3],
+          intervalWeeks: 2,
+        },
+        dates: ['2026-09-16', '2026-09-30'],
+      },
+    ];
+    for (const [index, { schedule, dates }] of schedules.entries()) {
+      workspace = applyChoreWorkspaceAction({
+        commandId: `edit-${index}`,
+        action: {
+          type: 'definition_update',
+          actorParticipantId: 'alice',
+          definition: {
+            ...workspace.definitionsById[definition.id],
+            schedule,
+            updatedAt: timestamp,
+          },
+        },
+        timestamp,
+        workspace,
+      }).data;
+      workspace = applyChoreWorkspaceAction({
+        commandId: `materialize-${index}`,
+        action: {
+          type: 'materialize_occurrences',
+          rangeStart: '2026-09-14T00:00:00.000Z',
+          rangeEnd: '2026-10-01T00:00:00.000Z',
+        },
+        timestamp,
+        workspace,
+      }).data;
+      expect(
+        Object.values(workspace.occurrencesById)
+          .map((item) => item.scheduledAt)
+          .sort()
+      ).toEqual(dates.map((date) => `${date}T18:00:00.000Z`));
+    }
+  });
+
   it('keeps overdue assignments when rotation changes and rematerializes the past', () => {
     const definition = makeDefinition({
       schedule: { frequency: 'daily', startDate: '2026-09-28', time: '18:00', timeZone: 'UTC' },

@@ -1,4 +1,7 @@
 import { createChoreDemoWorkspace } from '@navet/app/features/chores/chore-demo-fixture';
+import { isScheduledOnDate } from '@navet/core/chore-calendar-policy';
+import type { ChorePresentationMetadata } from '@navet/core/chore-experience';
+import type { ChoreDefinition } from '@navet/core/chores';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { expect, fireEvent, fn, userEvent, within } from 'storybook/test';
@@ -32,8 +35,12 @@ const workspace = createChoreDemoWorkspace({
     livingRoom: 'Living room',
   },
 });
-const saveChore = fn(async () => false);
-const saveEditedChore = fn(async () => false);
+const saveChore = fn(
+  async (_definition: ChoreDefinition, _presentation: ChorePresentationMetadata) => false
+);
+const saveEditedChore = fn(
+  async (_definition: ChoreDefinition, _presentation: ChorePresentationMetadata) => false
+);
 const saveManagementPin = fn(async () => true);
 
 function ChoreCreationStory() {
@@ -85,6 +92,86 @@ function ChoreEditingWeeklyDateStory() {
       participants={Object.values(workspace.participantsById)}
       onSave={saveEditedChore}
     />
+  );
+}
+
+function ChoreEditingWeeklyMultipleDaysStory() {
+  const definition = workspace.definitionsById.dishwasher;
+  if (!definition) throw new Error('Expected a chore to edit');
+  return (
+    <AddChoreDialog
+      definition={{
+        ...definition,
+        schedule: {
+          frequency: 'weekly',
+          startDate: '2026-09-10',
+          time: '18:00',
+          timeZone: 'Europe/Stockholm',
+          daysOfWeek: [4, 5],
+        },
+      }}
+      isOpen
+      onOpenChange={fn()}
+      participants={Object.values(workspace.participantsById)}
+      onSave={saveEditedChore}
+    />
+  );
+}
+
+function ChoreEditingMonthlyNthWeekdayStory() {
+  const definition = workspace.definitionsById.dishwasher;
+  if (!definition) throw new Error('Expected a chore to edit');
+  return (
+    <AddChoreDialog
+      definition={{
+        ...definition,
+        schedule: {
+          frequency: 'monthly',
+          startDate: '2026-09-11',
+          time: '18:00',
+          timeZone: 'Europe/Stockholm',
+          nthWeekday: { ordinal: 2, weekday: 5 },
+        },
+      }}
+      isOpen
+      onOpenChange={fn()}
+      participants={Object.values(workspace.participantsById)}
+      onSave={saveEditedChore}
+    />
+  );
+}
+
+function ChoreRepeatedEditingStory() {
+  const base = workspace.definitionsById.dishwasher;
+  if (!base) throw new Error('Expected a chore to edit');
+  const [definition, setDefinition] = useState<ChoreDefinition>({
+    ...base,
+    schedule: {
+      frequency: 'monthly',
+      startDate: '2026-09-11',
+      time: '18:00',
+      timeZone: 'Europe/Stockholm',
+      nthWeekday: { ordinal: 2, weekday: 5 },
+    },
+  });
+  const [isOpen, setIsOpen] = useState(true);
+  return (
+    <>
+      <button type="button" onClick={() => setIsOpen(true)}>
+        Reopen chore
+      </button>
+      <AddChoreDialog
+        definition={definition}
+        isOpen={isOpen}
+        onOpenChange={setIsOpen}
+        participants={Object.values(workspace.participantsById)}
+        onSave={async (saved) => {
+          saveEditedChore(saved, {});
+          setDefinition(saved);
+          return true;
+        }}
+      />
+    </>
   );
 }
 
@@ -576,6 +663,47 @@ export const MonthlyStartDate: Story = {
   },
 };
 
+export const RepeatOptionsSaveTheirDisplayedCadence: Story = {
+  play: async ({ canvasElement }) => {
+    saveChore.mockClear();
+    const dialog = within(canvasElement.ownerDocument.body).getByRole('dialog', {
+      name: 'Add a chore',
+    });
+    await userEvent.type(within(dialog).getByLabelText('Chore name'), 'Check schedule options');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
+    fireEvent.change(within(dialog).getByLabelText('Start date'), {
+      target: { value: '2026-09-14' },
+    });
+
+    const cases = [
+      ['once', { frequency: 'once', date: '2026-09-14' }],
+      ['daily', { frequency: 'daily', intervalDays: 1 }],
+      ['weekdays', { frequency: 'daily', daysOfWeek: [1, 2, 3, 4, 5] }],
+      ['weekends', { frequency: 'daily', daysOfWeek: [0, 6] }],
+      ['weekly', { frequency: 'weekly', intervalWeeks: 1, daysOfWeek: [1] }],
+      ['biweekly', { frequency: 'weekly', intervalWeeks: 2, daysOfWeek: [1] }],
+      ['triweekly', { frequency: 'weekly', intervalWeeks: 3, daysOfWeek: [1] }],
+      ['fourweekly', { frequency: 'weekly', intervalWeeks: 4, daysOfWeek: [1] }],
+      ['monthly', { frequency: 'monthly', dayOfMonth: 14 }],
+      ['custom', { frequency: 'daily', intervalDays: 2 }],
+      ['after_completion', { frequency: 'after_completion', intervalDays: 1 }],
+      ['hourly', { frequency: 'hourly', intervalHours: 1 }],
+    ] as const;
+    for (const [repeat, expected] of cases) {
+      await userEvent.selectOptions(within(dialog).getByLabelText('Repeat'), repeat);
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Add chore' }));
+      const saved = saveChore.mock.calls.at(-1)?.[0];
+      if (!saved) throw new Error(`Expected ${repeat} chore to save`);
+      await expect(saved?.schedule).toMatchObject(expected);
+      await expect(
+        saved.schedule.frequency === 'once' ? saved.schedule.date : saved.schedule.startDate
+      ).toBe('2026-09-14');
+    }
+    await expect(saveChore).toHaveBeenCalledTimes(cases.length);
+  },
+};
+
 export const EditColorOverride: Story = {
   render: () => <ChoreEditingStory />,
   play: async ({ canvasElement }) => {
@@ -620,6 +748,140 @@ export const EditWeeklyStartDate: Story = {
       }),
       expect.any(Object)
     );
+  },
+};
+
+export const EditWeeklyToEveryTwoWeeksUsesSelectedStartDate: Story = {
+  render: () => <ChoreEditingWeeklyMultipleDaysStory />,
+  play: async ({ canvasElement }) => {
+    saveEditedChore.mockClear();
+    const dialog = within(canvasElement.ownerDocument.body).getByRole('dialog', {
+      name: 'Edit chore',
+    });
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
+    await userEvent.selectOptions(within(dialog).getByLabelText('Repeat'), 'biweekly');
+    fireEvent.change(within(dialog).getByLabelText('Start date'), {
+      target: { value: '2026-09-14' },
+    });
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Save changes' }));
+    await expect(saveEditedChore).toHaveBeenCalledWith(
+      expect.objectContaining({
+        schedule: expect.objectContaining({
+          frequency: 'weekly',
+          intervalWeeks: 2,
+          startDate: '2026-09-14',
+          daysOfWeek: [1],
+        }),
+      }),
+      expect.any(Object)
+    );
+  },
+};
+
+export const EditMonthlyStartDateChangesDueDay: Story = {
+  render: () => <ChoreEditingMonthlyNthWeekdayStory />,
+  play: async ({ canvasElement }) => {
+    saveEditedChore.mockClear();
+    const dialog = within(canvasElement.ownerDocument.body).getByRole('dialog', {
+      name: 'Edit chore',
+    });
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
+    fireEvent.change(within(dialog).getByLabelText('Start date'), {
+      target: { value: '2026-09-14' },
+    });
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Save changes' }));
+    await expect(saveEditedChore).toHaveBeenCalledWith(
+      expect.objectContaining({
+        schedule: expect.objectContaining({
+          frequency: 'monthly',
+          startDate: '2026-09-14',
+          dayOfMonth: 14,
+        }),
+      }),
+      expect.any(Object)
+    );
+    await expect(saveEditedChore.mock.calls[0]?.[0].schedule).not.toHaveProperty('nthWeekday');
+  },
+};
+
+export const EditMonthlyWithoutChangingDateKeepsNthWeekday: Story = {
+  render: () => <ChoreEditingMonthlyNthWeekdayStory />,
+  play: async ({ canvasElement }) => {
+    saveEditedChore.mockClear();
+    const dialog = within(canvasElement.ownerDocument.body).getByRole('dialog', {
+      name: 'Edit chore',
+    });
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Save changes' }));
+    await expect(saveEditedChore).toHaveBeenCalledWith(
+      expect.objectContaining({
+        schedule: expect.objectContaining({
+          frequency: 'monthly',
+          startDate: '2026-09-11',
+          nthWeekday: { ordinal: 2, weekday: 5 },
+        }),
+      }),
+      expect.any(Object)
+    );
+  },
+};
+
+export const EditMonthlyAfterChangingRepeatUsesDisplayedDate: Story = {
+  render: () => <ChoreEditingMonthlyNthWeekdayStory />,
+  play: async ({ canvasElement }) => {
+    saveEditedChore.mockClear();
+    const dialog = within(canvasElement.ownerDocument.body).getByRole('dialog', {
+      name: 'Edit chore',
+    });
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
+    await userEvent.selectOptions(within(dialog).getByLabelText('Repeat'), 'weekly');
+    await userEvent.selectOptions(within(dialog).getByLabelText('Repeat'), 'monthly');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Save changes' }));
+    const saved = saveEditedChore.mock.calls[0]?.[0];
+    if (!saved) throw new Error('Expected edited chore to save');
+    await expect(saved.schedule).toMatchObject({
+      frequency: 'monthly',
+      startDate: '2026-09-11',
+      dayOfMonth: 11,
+    });
+    await expect(saved.schedule).not.toHaveProperty('nthWeekday');
+    if (saved.schedule.frequency !== 'monthly') throw new Error('Expected monthly schedule');
+    await expect(isScheduledOnDate(saved.schedule, '2026-10-11')).toBe(true);
+    await expect(isScheduledOnDate(saved.schedule, '2026-10-09')).toBe(false);
+  },
+};
+
+export const RepeatedMonthlyEditsKeepTheSelectedDay: Story = {
+  render: () => <ChoreRepeatedEditingStory />,
+  play: async ({ canvasElement }) => {
+    saveEditedChore.mockClear();
+    const body = within(canvasElement.ownerDocument.body);
+    let dialog = body.getByRole('dialog', { name: 'Edit chore' });
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
+    await userEvent.selectOptions(within(dialog).getByLabelText('Repeat'), 'weekly');
+    await userEvent.selectOptions(within(dialog).getByLabelText('Repeat'), 'monthly');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Save changes' }));
+    await userEvent.click(body.getByRole('button', { name: 'Reopen chore' }));
+    dialog = body.getByRole('dialog', { name: 'Edit chore' });
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
+    await expect(within(dialog).getByLabelText('Repeat')).toHaveValue('monthly');
+    await expect(within(dialog).getByLabelText('Start date')).toHaveValue('2026-09-11');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Save changes' }));
+    await expect(saveEditedChore).toHaveBeenCalledTimes(2);
+    for (const [saved] of saveEditedChore.mock.calls) {
+      await expect(saved.schedule).toMatchObject({
+        frequency: 'monthly',
+        startDate: '2026-09-11',
+        dayOfMonth: 11,
+      });
+      await expect(saved.schedule).not.toHaveProperty('nthWeekday');
+    }
   },
 };
 
