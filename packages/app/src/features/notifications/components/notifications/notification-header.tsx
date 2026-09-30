@@ -1,6 +1,7 @@
 import { Button } from '@navet/app/components/primitives/button';
 import { type PrimaryColor, type ThemeType, useI18n } from '@navet/app/hooks';
 import { Bell, Check, Trash2, X } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { getNotificationSurfaceTokens } from './notification-surface-tokens';
 
 interface NotificationHeaderProps {
@@ -13,6 +14,7 @@ interface NotificationHeaderProps {
   primaryColor: PrimaryColor;
   getColorValue: (color: PrimaryColor) => string;
   variant?: 'full' | 'actions';
+  endAction?: ReactNode;
 }
 
 export function NotificationHeader({
@@ -25,34 +27,39 @@ export function NotificationHeader({
   primaryColor,
   getColorValue,
   variant = 'full',
+  endAction,
 }: NotificationHeaderProps) {
   const { t } = useI18n();
   const surface = getNotificationSurfaceTokens(theme);
 
-  const actions = hasNotifications ? (
-    <div className={`flex flex-wrap items-center gap-2.5 px-4 py-3 ${surface.borderClassName}`}>
-      {unreadCount > 0 && onMarkAllAsRead && (
-        <Button
-          onClick={onMarkAllAsRead}
-          variant="secondary"
-          size="small"
-          leading={<Check className="h-3 w-3" />}
-          className="min-h-9 justify-start rounded-full px-3 text-xs"
-        >
-          {t('notifications.header.markAllRead')}
-        </Button>
-      )}
-      <Button
-        onClick={onClearAll}
-        variant="secondary"
-        size="small"
-        leading={<Trash2 className="h-3 w-3" />}
-        className="min-h-9 justify-start rounded-full px-3 text-xs"
-      >
-        {t('notifications.header.clearAll')}
-      </Button>
-    </div>
-  ) : null;
+  const actions =
+    hasNotifications || endAction ? (
+      <div className={`flex flex-wrap items-center gap-2.5 px-4 py-3 ${surface.borderClassName}`}>
+        {unreadCount > 0 && onMarkAllAsRead && (
+          <Button
+            onClick={onMarkAllAsRead}
+            variant="secondary"
+            size="small"
+            leading={<Check className="h-3 w-3" />}
+            className="min-h-9 justify-start rounded-full px-3 text-xs"
+          >
+            {t('notifications.header.markAllRead')}
+          </Button>
+        )}
+        {hasNotifications ? (
+          <Button
+            onClick={onClearAll}
+            variant="secondary"
+            size="small"
+            leading={<Trash2 className="h-3 w-3" />}
+            className="min-h-9 justify-start rounded-full px-3 text-xs"
+          >
+            {t('notifications.header.clearAll')}
+          </Button>
+        ) : null}
+        {endAction ? <div className="ml-auto">{endAction}</div> : null}
+      </div>
+    ) : null;
 
   if (variant === 'actions') {
     return actions;

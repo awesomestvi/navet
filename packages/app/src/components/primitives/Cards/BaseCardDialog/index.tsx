@@ -106,6 +106,7 @@ interface BaseCardDialogSheetProps extends BaseCardDialogSharedProps {
   contentDescription?: string;
   accentColor?: string;
   closeLabel?: string;
+  onCloseAutoFocus?: (event: Event) => void;
   persistentMobileDismiss?: boolean;
 }
 
@@ -132,6 +133,7 @@ interface BaseCardDialogRootProps {
   contentTitle?: string;
   contentDescription?: string;
   disableOpenAutoFocus?: boolean;
+  onCloseAutoFocus?: (event: Event) => void;
   mobileCoverSheet?: boolean;
   persistentMobileDismiss?: boolean;
   mobileCoverSheetActions?: ReactNode;
@@ -196,6 +198,7 @@ function BaseCardDialogRoot({
   contentTitle,
   contentDescription,
   disableOpenAutoFocus = false,
+  onCloseAutoFocus,
   mobileCoverSheet = true,
   persistentMobileDismiss = false,
   mobileCoverSheetActions,
@@ -406,6 +409,7 @@ function BaseCardDialogRoot({
       <Dialog.Portal>
         <Dialog.Overlay className={`fixed inset-0 z-50 ${overlayClassName}`} />
         <Dialog.Content
+          onCloseAutoFocus={onCloseAutoFocus}
           ref={mobileCoverSheetContentRef}
           className={resolvedContentClassName}
           style={resolvedContentStyle}
@@ -783,6 +787,7 @@ function BaseCardDialogSheetVariant({
   titleInContent = false,
   persistentMobileDismiss = true,
   closeLabel,
+  onCloseAutoFocus,
 }: BaseCardDialogSheetProps) {
   const resolvedContentStyle: CSSProperties = {
     ...(theme === 'glass' && accentColor
@@ -795,6 +800,7 @@ function BaseCardDialogSheetVariant({
 
   return (
     <BaseCardDialogRoot
+      onCloseAutoFocus={onCloseAutoFocus}
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       contentTitle={titleInContent ? undefined : (contentTitle ?? title)}

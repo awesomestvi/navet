@@ -136,7 +136,7 @@ const meta = {
       },
       description: {
         component:
-          'Notification panel for header bell interactions. Uses a focused desktop side panel and a full-height mobile panel with separate notification and update views. Clear-all confirmation should reset cleanly when the panel closes.',
+          'Notification panel for header bell interactions. Uses a focused desktop side panel and a shared mobile coversheet with separate notification and update views. Clear-all confirmation should reset cleanly when the panel closes.',
       },
     },
   },
@@ -172,7 +172,7 @@ export const MobileOpen: Story = {
 
   globals: {
     viewport: {
-      value: 'mobile1',
+      value: 'iphone14',
       isRotated: false,
     },
   },
@@ -183,21 +183,23 @@ export const MobileDoneCloses: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const page = within(canvasElement.ownerDocument.body);
     const dialog = await page.findByRole('dialog', { name: 'Notifications' });
-    const header = dialog.querySelector('header');
+    const header = dialog.querySelector('[data-sheet-surface-header]');
     const footer = dialog.querySelector('footer');
-    await expect(header).toHaveClass('safe-area-pt-5');
     if (!header) throw new Error('Notification header is missing');
     if (!footer) throw new Error('Notification footer is missing');
-    dialog.style.setProperty('--navet-safe-area-top-offset', '59px');
-    await expect(Number.parseFloat(getComputedStyle(header).paddingTop)).toBeGreaterThan(59);
-    const dismiss = within(header).getByRole('button', { name: 'Close' });
+    const dismiss = within(dialog).getByRole('button', { name: 'Close' });
+    await expect(dialog.querySelector('[data-mobile-cover-sheet-dismiss]')).toBeVisible();
+    await expect(dialog.getBoundingClientRect().top).toBeGreaterThan(0);
     const done = within(footer).getByRole('button', { name: 'Done' });
-    await expect(dismiss.getBoundingClientRect().top).toBeGreaterThanOrEqual(59);
+    await expect(dismiss.getBoundingClientRect().top).toBeGreaterThanOrEqual(
+      dialog.getBoundingClientRect().top
+    );
     await expect(done.getBoundingClientRect().top).toBeGreaterThan(
       header.getBoundingClientRect().bottom
     );
     await userEvent.click(done);
     await expect(page.queryByRole('dialog', { name: 'Notifications' })).not.toBeInTheDocument();
+    await expect(page.getByRole('button', { name: /^Notifications$/ })).toHaveFocus();
   },
 };
 
@@ -206,9 +208,9 @@ export const MobileDismissCloses: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const page = within(canvasElement.ownerDocument.body);
     const dialog = await page.findByRole('dialog', { name: 'Notifications' });
-    const header = dialog.querySelector('header');
+    const header = dialog.querySelector('[data-sheet-surface-header]');
     if (!header) throw new Error('Notification header is missing');
-    await userEvent.click(within(header).getByRole('button', { name: 'Close' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
     await expect(page.queryByRole('dialog', { name: 'Notifications' })).not.toBeInTheDocument();
   },
 };
@@ -412,7 +414,7 @@ export const MobileUpdateActions: Story = {
   ),
   globals: {
     viewport: {
-      value: 'mobile1',
+      value: 'iphone14',
       isRotated: false,
     },
   },
@@ -424,9 +426,9 @@ export const MobileUpdateActions: Story = {
     if (!footer) throw new Error('Notification footer is missing');
     const done = within(footer).getByRole('button', { name: 'Done' });
     const clearAll = within(footer).getByRole('button', { name: 'Clear all' });
-    await expect(done.getBoundingClientRect().top).toBeGreaterThan(
-      clearAll.getBoundingClientRect().bottom
-    );
+    await expect(
+      Math.abs(done.getBoundingClientRect().top - clearAll.getBoundingClientRect().top)
+    ).toBeLessThan(3);
     for (const [title, action] of [
       ['Upstairs heating controller firmware update', 'Update'],
       ['Navet Update', 'Restart'],

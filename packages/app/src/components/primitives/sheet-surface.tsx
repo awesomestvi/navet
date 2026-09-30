@@ -28,6 +28,7 @@ export interface SheetSurfaceProps {
   contentGlowClassName?: string;
   /** Keep the sheet available above the mobile breakpoint for focused detail surfaces. */
   responsive?: boolean;
+  onCloseAutoFocus?: (event: Event) => void;
 }
 
 export interface SheetSurfaceHeaderProps {
@@ -115,11 +116,13 @@ export function SheetSurface({
   contentStyle,
   contentGlowClassName,
   responsive = false,
+  onCloseAutoFocus,
 }: SheetSurfaceProps) {
   const { theme } = useTheme();
   return (
     <BaseCardDialog
       variant="sheet"
+      onCloseAutoFocus={onCloseAutoFocus}
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       title={title}
