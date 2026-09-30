@@ -83,8 +83,17 @@ returns `412`; the client loads the newest document, rebuilds the mutation again
 once. The command journal and activity log both detect retries after a partially successful durable
 write.
 
-The workspace document is the authority; command-journal and immutable-history files are
-reconstructable sidecars and cannot take the whole feature offline. Each successful workspace write
+The workspace revision is the authority. Small workspaces are stored inline. When a workspace
+exceeds 2 MiB, the storage authority writes occurrences, point transactions, progress awards, reward
+requests, activity, and delivery work into immutable chunks targeting 256 KiB, with a 2 MiB hard limit per chunk to preserve large legacy records. The workspace
+manifest records each chunk's SHA-256 identity. Records are written before the manifest is committed;
+reads verify and hydrate every referenced chunk before accepting the revision. The public workspace
+and backup formats contain the complete hydrated data. Core owns the unchanged domain contracts;
+Docker/NJS, the Vite development authority, and the Home Assistant integration own this storage framing.
+
+Command-journal and event-history files are reconstructable sidecars and cannot take the whole
+feature offline. Durable record chunks are authoritative and must be included with the workspace
+manifest in filesystem backups. Each successful workspace write
 keeps the previous valid document as a last-known-good copy. Reads repair malformed sidecars from
 the bounded activity log and automatically restore a malformed primary document from that healthy
 copy when possible. The client also reconciles a retryable error by reloading and checking the
@@ -254,7 +263,12 @@ Homey, and openHAB sessions. The Home Assistant custom panel uses the Navet cust
 authority. Each runtime stores chores at installation scope; optional provider projections expose
 a summary without owning the workspace.
 
-Completed and skipped occurrences older than 90 days are pruned during materialization. Activity is
+Completed and skipped occurrences older than 90 days are pruned during materialization. Unfinished
+work is retained. Materialization accepts at most 180 days and creates at most 5,000 new occurrences
+per definition in one request; retained occurrences do not consume that creation allowance.
+Point transactions and earned award identities have no age-based pruning. Immutable storage chunks
+are retained, including those referenced by the last-known-good revision, so recovery preserves
+accounting and replay protection. Activity is
 capped at 5,000 entries in the client document, immutable event history uses the manager-selected
 bounded policy (730 days and 50,000 events by default), and the idempotency journal retains the most
 recent 500 commands.

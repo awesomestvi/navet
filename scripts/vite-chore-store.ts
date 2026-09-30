@@ -1,3 +1,4 @@
+import choreDurableStorage from '../docker/njs/chore-durable-storage.js'
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto'
 import { mkdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
@@ -445,12 +446,22 @@ export function createViteChoreStoreRequestHandler(options: {
     }
   }
 
+  const durableHash = (value: string): string => createHash('sha256').update(value).digest('hex')
+  const readStoredDocument = (candidatePath: string, fallback: unknown): unknown =>
+    choreDurableStorage.decode(readJson<unknown>(candidatePath, fallback, MAX_DOCUMENT_BYTES), durableHash,
+      (key) => readJson<unknown>(`${filePath}.chunk-${key}`, null, choreDurableStorage.CHUNK_BYTES))
+  const writeStoredDocument = (candidatePath: string, document: PersistedChoreWorkspaceDocument): void => {
+    const stored = choreDurableStorage.encode(document, MAX_DOCUMENT_BYTES, durableHash,
+      (key, chunk) => writeJson(`${filePath}.chunk-${key}`, chunk, choreDurableStorage.CHUNK_BYTES))
+    writeJson(candidatePath, stored, MAX_DOCUMENT_BYTES)
+  }
+
   const readDocumentCandidate = (
     candidatePath: string,
     tenantId: string
   ): PersistedChoreWorkspaceDocument | null => {
     try {
-      return normalizeDocument(readJson<unknown>(candidatePath, null, MAX_DOCUMENT_BYTES), tenantId)
+      return normalizeDocument(readStoredDocument(candidatePath, null), tenantId)
     } catch {
       return null
     }
@@ -460,15 +471,15 @@ export function createViteChoreStoreRequestHandler(options: {
     previous: PersistedChoreWorkspaceDocument,
     next: PersistedChoreWorkspaceDocument
   ): void => {
-    writeJson(lastGoodWorkspacePath, previous, MAX_DOCUMENT_BYTES)
-    writeJson(filePath, next, MAX_DOCUMENT_BYTES)
+    writeStoredDocument(lastGoodWorkspacePath, previous)
+    writeStoredDocument(filePath, next)
   }
 
   const readDocument = (tenantId: string): PersistedChoreWorkspaceDocument => {
     const missing = Symbol('missing-chore-workspace')
     let rawDocument: unknown | typeof missing
     try {
-      rawDocument = readJson<unknown | typeof missing>(filePath, missing, MAX_DOCUMENT_BYTES)
+      rawDocument = readStoredDocument(filePath, missing)
     } catch {
       rawDocument = null
     }
@@ -499,7 +510,7 @@ export function createViteChoreStoreRequestHandler(options: {
         revision: backup.revision + 1,
         updatedAt: new Date().toISOString(),
       }
-      writeJson(filePath, document, MAX_DOCUMENT_BYTES)
+      writeStoredDocument(filePath, document)
       documentNeedsMigration = false
     }
     const timestamp = new Date().toISOString()
@@ -646,7 +657,7 @@ export function createViteChoreStoreRequestHandler(options: {
             revision: backup.revision + 1,
             updatedAt: new Date().toISOString(),
           }
-          writeJson(filePath, recovered, MAX_DOCUMENT_BYTES)
+          writeStoredDocument(filePath, recovered)
           replaceEventHistory(recovered.data.activity)
           try {
             unlinkSync(journalPath)
@@ -680,7 +691,7 @@ export function createViteChoreStoreRequestHandler(options: {
           updatedAt: new Date().toISOString(),
           data: emptyChoreWorkspace(),
         }
-        writeJson(filePath, recovered, MAX_DOCUMENT_BYTES)
+        writeStoredDocument(filePath, recovered)
         res.setHeader(CHORE_WORKSPACE_HEADERS.revision, '0')
         sendJson(res, 200, publicDocument(recovered, false))
         return
@@ -1028,7 +1039,7 @@ export function createViteChoreStoreRequestHandler(options: {
           data: nextData,
         }
         if (route === '/reset') {
-          writeJson(filePath, next, MAX_DOCUMENT_BYTES)
+          writeStoredDocument(filePath, next)
           for (const stalePath of [journalPath, eventHistoryPath, lastGoodWorkspacePath]) {
             try {
               unlinkSync(stalePath)

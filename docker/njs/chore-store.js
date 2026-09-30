@@ -1,3 +1,4 @@
+import choreDurableStorage from './chore-durable-storage.js';
 import choreCalendarPolicy from './chore-calendar-policy.js';
 import choreOccurrencePolicy from './chore-occurrence-policy.js';
 import choreProgressPolicy from './chore-progress-policy.js';
@@ -173,7 +174,7 @@ function readJson(path, fallback, maxBytes) {
 
 function writeJson(path, value, maxBytes) {
   const serialized = JSON.stringify(value);
-  if (serialized.length > maxBytes) {
+  if (Buffer.byteLength(serialized, 'utf8') > maxBytes) {
     const error = new Error('Chore workspace is too large');
     error.code = 'NAVET_CHORE_WRITE_LIMIT';
     throw error;
@@ -2419,7 +2420,7 @@ function applyWorkspaceAction(data, commandId, action, timestamp) {
       occurrencesById,
       completed.length > 0 ? completed[completed.length - 1] : undefined
     );
-    if (Object.keys(occurrencesById).length + materialized.filter(function (item) { return !occurrencesById[item.id]; }).length > 5000) {
+    if (materialized.filter(function (item) { return !occurrencesById[item.id]; }).length > 5000) {
       throw new Error('Too many chore occurrences');
     }
     for (let index = 0; index < materialized.length; index += 1) {
@@ -2511,9 +2512,26 @@ function isValidDocument(value) {
   );
 }
 
+function durableHash(value) {
+  return hashCrypto.createHash('sha256').update(value).digest('hex');
+}
+
+function readStoredDocument(path, fallback) {
+  return choreDurableStorage.decode(
+    readJson(path, fallback, MAX_CHORE_WORKSPACE_BYTES), durableHash,
+    function (key) { return readJson(CHORE_WORKSPACE_PATH + '.chunk-' + key, null, choreDurableStorage.CHUNK_BYTES); }
+  );
+}
+
+function writeStoredDocument(path, document) {
+  const stored = choreDurableStorage.encode(document, MAX_CHORE_WORKSPACE_BYTES, durableHash,
+    function (key, chunk) { writeJson(CHORE_WORKSPACE_PATH + '.chunk-' + key, chunk, choreDurableStorage.CHUNK_BYTES); });
+  writeJson(path, stored, MAX_CHORE_WORKSPACE_BYTES);
+}
+
 function readDocumentCandidate(path) {
   try {
-    const value = readJson(path, null, MAX_CHORE_WORKSPACE_BYTES);
+    const value = readStoredDocument(path, null);
     if (isValidDocument(value)) return value;
     if (
       isRecord(value) &&
@@ -2533,8 +2551,8 @@ function readDocumentCandidate(path) {
 }
 
 function persistDocument(previous, next) {
-  writeJson(CHORE_LAST_GOOD_WORKSPACE_PATH, previous, MAX_CHORE_WORKSPACE_BYTES);
-  writeJson(CHORE_WORKSPACE_PATH, next, MAX_CHORE_WORKSPACE_BYTES);
+  writeStoredDocument(CHORE_LAST_GOOD_WORKSPACE_PATH, previous);
+  writeStoredDocument(CHORE_WORKSPACE_PATH, next);
 }
 
 function applyScheduledState(document) {
@@ -2694,7 +2712,7 @@ function readDocument() {
   const missing = {};
   let document;
   try {
-    document = readJson(CHORE_WORKSPACE_PATH, missing, MAX_CHORE_WORKSPACE_BYTES);
+    document = readStoredDocument(CHORE_WORKSPACE_PATH, missing);
   } catch (_error) {
     document = null;
   }
@@ -2735,7 +2753,7 @@ function readDocument() {
       revision: backup.revision + 1,
       updatedAt: nowIso(),
     });
-    writeJson(CHORE_WORKSPACE_PATH, recovered, MAX_CHORE_WORKSPACE_BYTES);
+    writeStoredDocument(CHORE_WORKSPACE_PATH, recovered);
     appendEventHistory(recovered.data.activity, recovered.data.historyRetention);
     return recovered;
   }
@@ -3169,7 +3187,7 @@ function recoverWorkspace(r, principal) {
       revision: backup.revision + 1,
       updatedAt: nowIso(),
     });
-    writeJson(CHORE_WORKSPACE_PATH, recovered, MAX_CHORE_WORKSPACE_BYTES);
+    writeStoredDocument(CHORE_WORKSPACE_PATH, recovered);
     replaceEventHistory(recovered.data.activity);
     deleteFile(CHORE_JOURNAL_PATH);
     applyRevisionHeader(r, recovered.revision);
@@ -3193,7 +3211,7 @@ function recoverWorkspace(r, principal) {
     updatedAt: nowIso(),
     data: emptyData(),
   };
-  writeJson(CHORE_WORKSPACE_PATH, recovered, MAX_CHORE_WORKSPACE_BYTES);
+  writeStoredDocument(CHORE_WORKSPACE_PATH, recovered);
   applyRevisionHeader(r, recovered.revision);
   sendJson(r, 200, publicDocument(recovered, principal.tenantId));
 }
@@ -3406,7 +3424,7 @@ function commitAdministration(r, principal, operation) {
     data: nextData,
   };
   if (operation === 'reset') {
-    writeJson(CHORE_WORKSPACE_PATH, next, MAX_CHORE_WORKSPACE_BYTES);
+    writeStoredDocument(CHORE_WORKSPACE_PATH, next);
     deleteFile(CHORE_JOURNAL_PATH);
     deleteFile(CHORE_EVENT_HISTORY_PATH);
     deleteFile(CHORE_LAST_GOOD_WORKSPACE_PATH);

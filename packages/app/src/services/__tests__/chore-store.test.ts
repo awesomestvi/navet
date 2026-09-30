@@ -1,4 +1,6 @@
+import { createHash } from 'node:crypto';
 import choreCalendarPolicy from '@docker/njs/chore-calendar-policy.js';
+import durableStorage from '@docker/njs/chore-durable-storage.js';
 import choreOccurrencePolicy from '@docker/njs/chore-occurrence-policy.js';
 import choreStore from '@docker/njs/chore-store.js';
 import conformanceVectors from '@navet/core/chore-conformance-vectors.json';
@@ -206,6 +208,100 @@ afterEach(() => {
 });
 
 describe('NJS chore workspace store', () => {
+  it('keeps large accounting and unfinished work durable across commands, restarts and backup recovery', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-10T08:00:00.000Z'));
+    const mockFs = createMockFs();
+    choreStore.setChoreStoreFsForTests(mockFs);
+    choreStore.setChoreStorePrincipalResolverForTests(() => PRINCIPAL);
+    seedOccurrenceWorkspace();
+    const document = JSON.parse(mockFs.getFile(CHORE_PATH) ?? '{}');
+    document.data.experience = createChoreExperienceState();
+    document.data.experience.earnedPointsByParticipant = { maya: 12000 };
+    document.data.experience.pointTransactions = Array.from({ length: 12000 }, (_, index) => ({
+      id: `transaction:${index}:${'x'.repeat(150)}`,
+      participantId: 'maya',
+      pointsDelta: 1,
+      kind: 'adjustment',
+      timestamp: document.updatedAt,
+    }));
+    document.data.experience.pointTransactions[0].id += 'é'.repeat(140000);
+    document.data.experience.progressAwards = [
+      {
+        id: 'earned',
+        targetId: 'target',
+        participantId: 'maya',
+        cycleKey: 'lifetime',
+        awardedAt: document.updatedAt,
+      },
+    ];
+    const occurrence = document.data.occurrencesById[OCCURRENCE_ID];
+    for (let index = 0; index < 6000; index++) {
+      const id = `unfinished:${index}`;
+      document.data.occurrencesById[id] = { ...occurrence, id };
+    }
+    expect(JSON.stringify(document).length).toBeGreaterThan(2 * 1024 * 1024);
+    const hash = (value: string) => createHash('sha256').update(value).digest('hex');
+    const stored = durableStorage.encode(document, 2 * 1024 * 1024, hash, (key, chunk) =>
+      mockFs.writeFileSync(`${CHORE_PATH}.chunk-${key}`, JSON.stringify(chunk))
+    );
+    mockFs.writeFileSync(CHORE_PATH, JSON.stringify(stored));
+    const adjust = createActionRequest('large-ledger-adjust', document.revision, {
+      type: 'experience_points_adjust',
+      actorParticipantId: 'maya',
+      participantId: 'maya',
+      pointsDelta: 10,
+    });
+    choreStore.handle(adjust);
+    expect(adjust.return).toHaveBeenCalledWith(200, expect.any(String));
+    const updated = parseResponse(adjust);
+    expect(updated.data.experience.pointTransactions).toHaveLength(12001);
+    expect(updated.data.experience.earnedPointsByParticipant.maya).toBe(12010);
+    expect(updated.data.experience.progressAwards).toEqual(document.data.experience.progressAwards);
+    expect(Object.keys(updated.data.occurrencesById)).toHaveLength(6001);
+    expect(mockFs.getFile(CHORE_PATH)?.length).toBeLessThan(2 * 1024 * 1024);
+    choreStore.resetChoreStoreForTests();
+    choreStore.setChoreStoreFsForTests(mockFs);
+    choreStore.setChoreStorePrincipalResolverForTests(() => PRINCIPAL);
+    const reload = createRequest();
+    choreStore.handle(reload);
+    expect(parseResponse(reload).data.experience).toEqual(updated.data.experience);
+    const backup = createRequest({ uri: '/__navet_chores__/backup' });
+    choreStore.handle(backup);
+    expect(parseResponse(backup).workspace.experience.pointTransactions).toHaveLength(12001);
+    const failWrite = mockFs.renameSync.getMockImplementation();
+    mockFs.renameSync.mockImplementation((source, destination) => {
+      if (destination.includes('.chunk-')) throw new Error('Interrupted chunk write');
+      failWrite?.(source, destination);
+    });
+    const failed = createActionRequest('interrupted-adjust', updated.revision, {
+      type: 'experience_points_adjust',
+      actorParticipantId: 'maya',
+      participantId: 'maya',
+      pointsDelta: 10,
+    });
+    choreStore.handle(failed);
+    expect(failed.return.mock.calls.at(-1)?.[0]).toBeGreaterThanOrEqual(400);
+    if (!failWrite) throw new Error('Expected file rename implementation');
+    mockFs.renameSync.mockImplementation(failWrite);
+    const afterFailure = createRequest();
+    choreStore.handle(afterFailure);
+    expect(parseResponse(afterFailure).data.experience).toEqual(updated.data.experience);
+    const materialize = createActionRequest('large-workspace-materialize', updated.revision, {
+      type: 'materialize_occurrences',
+      rangeStart: '2026-08-10T00:00:00.000Z',
+      rangeEnd: '2026-08-11T00:00:00.000Z',
+    });
+    choreStore.handle(materialize);
+    expect(materialize.return).toHaveBeenCalledWith(200, expect.any(String));
+    expect(Object.keys(parseResponse(materialize).data.occurrencesById)).toHaveLength(6001);
+    const primary = JSON.parse(mockFs.getFile(CHORE_PATH) ?? '{}');
+    mockFs.writeFileSync(`${CHORE_PATH}.chunk-${primary.durableCollections.activity.at(-1)}`, '{');
+    const recovered = createRequest();
+    choreStore.handle(recovered);
+    expect(parseResponse(recovered).data.experience.pointTransactions).toHaveLength(12001);
+  });
+
   it('matches standby and fair rotation assignment in the packaged policy', () => {
     const timestamp = '2026-08-01T00:00:00.000Z';
     const alice = {

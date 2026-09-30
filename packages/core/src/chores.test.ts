@@ -440,6 +440,39 @@ describe('chores domain', () => {
     ).not.toThrow();
   });
 
+  it('continues hourly materialization beyond 5000 retained unfinished occurrences', () => {
+    const definition = makeDefinition({
+      assignment: { mode: 'person', participantIds: ['alice'] },
+      schedule: {
+        frequency: 'hourly',
+        startDate: '2026-08-01',
+        time: '00:00',
+        timeZone: 'UTC',
+        intervalHours: 1,
+      },
+    });
+    let workspace: ChoreWorkspaceData = {
+      ...createEmptyChoreWorkspace(),
+      participantsById: { alice },
+      definitionsById: { [definition.id]: definition },
+    };
+    for (const [index, [rangeStart, rangeEnd]] of [
+      ['2026-08-01T00:00:00.000Z', '2026-11-15T00:00:00.000Z'],
+      ['2026-11-15T00:00:00.000Z', '2027-03-01T00:00:00.000Z'],
+    ].entries()) {
+      workspace = applyChoreWorkspaceAction({
+        workspace,
+        action: { type: 'materialize_occurrences', rangeStart, rangeEnd },
+        commandId: `retained-hourly:${index}`,
+        timestamp: '2026-08-01T00:00:00.000Z',
+      }).data;
+    }
+    expect(Object.keys(workspace.occurrencesById).length).toBeGreaterThan(5000);
+    expect(
+      Object.values(workspace.occurrencesById).every((item) => item.status === 'available')
+    ).toBe(true);
+  });
+
   it('moves only reviewed vacation work and preserves claimed work', () => {
     const definition = makeDefinition({ assignment: { mode: 'person', participantIds: ['bob'] } });
     const pausedBob = {

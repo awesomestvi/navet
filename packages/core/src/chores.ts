@@ -2770,11 +2770,7 @@ export function applyChoreWorkspaceAction(
       definition.id,
       new Set(materialized.map((occurrence) => occurrence.id))
     );
-    if (
-      Object.keys(occurrencesById).length +
-        materialized.filter((item) => !occurrencesById[item.id]).length >
-      5000
-    ) {
+    if (materialized.filter((item) => !occurrencesById[item.id]).length > 5000) {
       throw new Error('Too many chore occurrences');
     }
     for (const occurrence of materialized) {

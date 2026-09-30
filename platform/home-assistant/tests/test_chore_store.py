@@ -272,6 +272,46 @@ class ChoreAuthorityTests(unittest.IsolatedAsyncioTestCase):
             "ha-user-1",
         )
 
+    async def test_large_ledger_survives_restart_and_chunk_failure(self):
+        await self._create_manager()
+        data = copy.deepcopy(self.authority.data)
+        data["experience"]["earnedPointsByParticipant"] = {"manager": 12000}
+        data["experience"]["pointTransactions"] = [{"id": f"transaction:{index}:" + "x" * 150,
+            "participantId": "manager", "pointsDelta": 1, "kind": "adjustment", "timestamp": "2026-09-30T08:00:00.000Z"} for index in range(12000)]
+        data["experience"]["progressAwards"] = [{"id": "earned", "targetId": "target", "participantId": "manager", "cycleKey": "lifetime", "awardedAt": "2026-09-30T08:00:00.000Z"}]
+        previous = copy.deepcopy(self.authority._document)
+        document = {**previous, "revision": previous["revision"] + 1, "data": data}
+        await self.authority._save(document, previous)
+        self.assertLess(len(json.dumps(_Store.values[chores.WORKSPACE_KEY]).encode()), chores.MAX_WORKSPACE_BYTES)
+        restarted = chores.ChoreAuthority(self.hass)
+        await restarted.async_initialize()
+        self.assertEqual(restarted.data["experience"], data["experience"])
+        result = await restarted.async_command({"commandId": "large-adjust", "baseRevision": restarted.revision,
+            "action": {"type": "experience_points_adjust", "actorParticipantId": "manager", "participantId": "manager", "pointsDelta": 10}}, "ha-user-1")
+        self.assertEqual(result["data"]["experience"]["earnedPointsByParticipant"]["manager"], 12010)
+        self.assertEqual(len(result["data"]["experience"]["pointTransactions"]), 12001)
+        original_save = _Store.async_save
+        async def fail_chunk(store, value):
+            if ".chunk." in store.key:
+                raise OSError("Interrupted chunk write")
+            await original_save(store, value)
+        _Store.async_save = fail_chunk
+        try:
+            with self.assertRaises(chores.ChoreStorageError):
+                await restarted.async_command({"commandId": "failed-adjust", "baseRevision": restarted.revision,
+                    "action": {"type": "experience_points_adjust", "actorParticipantId": "manager", "participantId": "manager", "pointsDelta": 10}}, "ha-user-1")
+        finally:
+            _Store.async_save = original_save
+        recovered = chores.ChoreAuthority(self.hass)
+        await recovered.async_initialize()
+        self.assertEqual(recovered.data["experience"], result["data"]["experience"])
+        stored = _Store.values[chores.WORKSPACE_KEY]
+        broken_key = stored["durableCollections"]["pointTransactions"][-1]
+        _Store.values[f"{chores.WORKSPACE_KEY}.chunk.{broken_key}"] = {"invalid": True}
+        backup = chores.ChoreAuthority(self.hass)
+        await backup.async_initialize()
+        self.assertEqual(backup.data["experience"], data["experience"])
+
     async def test_shared_occurrence_transition_conformance_vectors(self):
         path = pathlib.Path(__file__).parents[3] / "packages/core/src/chore-conformance-vectors.json"
         vectors = json.loads(path.read_text(encoding="utf-8"))

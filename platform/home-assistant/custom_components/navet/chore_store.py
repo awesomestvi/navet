@@ -814,6 +814,7 @@ def _materialize(data: dict[str, Any], range_start: str, range_end: str, timesta
     for definition in data["definitionsById"].values():
         if not definition.get("enabled") or definition.get("archivedAt"):
             continue
+        definition_additions_start = len(additions)
         schedule = definition.get("schedule", {})
         hourly_instants: list[datetime] = []
         hourly_indices: list[int] = []
@@ -912,6 +913,8 @@ def _materialize(data: dict[str, Any], range_start: str, range_end: str, timesta
                         for item in past_occurrences
                     ):
                         continue
+                    if len(additions) - definition_additions_start >= 5000:
+                        raise ChoreAuthorityError("Too many chore occurrences")
                     due = scheduled + timedelta(minutes=max(0, int(definition.get("dueWindowMinutes", 0))))
                     occurrences[occurrence_id] = {
                         "id": occurrence_id,
@@ -1256,6 +1259,94 @@ class ChoreAuthority:
             "alert_key": Store(hass, STORE_VERSION, ALERT_KEY, private=True, atomic_writes=True),
         }
 
+    def _chunk_store(self, key: str) -> Store:
+        return Store(self.hass, STORE_VERSION, f"{WORKSPACE_KEY}.chunk.{key}", private=True, atomic_writes=True)
+
+    @staticmethod
+    def _chunk_hash(chunk: Mapping[str, Any]) -> str:
+        return hashlib.sha256(json.dumps(chunk, separators=(",", ":"), sort_keys=True).encode()).hexdigest()
+
+    async def _encode_storage(self, document: dict[str, Any]) -> dict[str, Any]:
+        """Write immutable records before publishing the revision's manifest."""
+        if len(json.dumps(document, separators=(",", ":")).encode()) <= MAX_WORKSPACE_BYTES:
+            return document
+        references: dict[str, Any] = {"version": 1}
+        for name in ("occurrencesById", "pointTransactions", "progressAwards", "activity", "outbox", "rewardRequestsById"):
+            if name == "occurrencesById":
+                records = list(document["data"][name].values())
+            elif name == "rewardRequestsById":
+                records = list(document["data"]["experience"][name].values())
+            elif name in {"activity", "outbox"}:
+                records = document["data"][name]
+            else:
+                records = document["data"]["experience"][name]
+            chunks = []
+            items: list[dict[str, Any]] = []
+            size = 128
+            async def flush() -> None:
+                nonlocal items, size
+                if not items:
+                    return
+                chunk = {"version": 1, "collection": name, "items": items}
+                key = self._chunk_hash(chunk)
+                await self._chunk_store(key).async_save(chunk)
+                chunks.append(key)
+                items = []
+                size = 128
+            for item in records:
+                item_size = len(json.dumps(item, separators=(",", ":")).encode()) + 1
+                if item_size > MAX_WORKSPACE_BYTES - 128:
+                    raise ChoreStorageError("Chore durable record is too large")
+                if size + item_size > 256 * 1024:
+                    await flush()
+                items.append(item)
+                size += item_size
+            await flush()
+            references[name] = chunks
+        return {**document, "durableCollections": references, "data": {
+            **document["data"], "occurrencesById": {}, "activity": [], "outbox": [], "experience": {
+                **document["data"]["experience"], "pointTransactions": [], "progressAwards": [], "rewardRequestsById": {}}}}
+
+    async def _decode_storage(self, document: Any) -> Any:
+        """Hydrate and verify all referenced records before accepting a revision."""
+        if not isinstance(document, Mapping) or "durableCollections" not in document:
+            return document
+        if not isinstance(document.get("data"), Mapping) or not isinstance(document["data"].get("experience"), Mapping):
+            raise ChoreStorageError("Chore durable workspace is invalid")
+        references = document["durableCollections"]
+        if not isinstance(references, Mapping) or references.get("version") != 1:
+            raise ChoreStorageError("Chore durable manifest is invalid")
+        restored = {}
+        for name in ("occurrencesById", "pointTransactions", "progressAwards", "activity", "outbox", "rewardRequestsById"):
+            if not isinstance(references.get(name), list):
+                raise ChoreStorageError("Chore durable manifest is invalid")
+            items = []
+            for key in references[name]:
+                if not isinstance(key, str) or len(key) != 64 or any(char not in "0123456789abcdef" for char in key):
+                    raise ChoreStorageError("Chore durable reference is invalid")
+                try:
+                    chunk = await self._chunk_store(key).async_load()
+                except Exception as err:  # noqa: BLE001
+                    raise ChoreStorageError("Chore durable chunk could not be read") from err
+                if not isinstance(chunk, Mapping) or chunk.get("version") != 1 or chunk.get("collection") != name or not isinstance(chunk.get("items"), list) or self._chunk_hash(chunk) != key:
+                    raise ChoreStorageError("Chore durable chunk is missing or corrupt")
+                items.extend(chunk["items"])
+            restored[name] = items
+        occurrences = {}
+        for item in restored["occurrencesById"]:
+            if not isinstance(item, Mapping) or not isinstance(item.get("id"), str) or item["id"] in occurrences:
+                raise ChoreStorageError("Chore durable occurrence is invalid")
+            occurrences[item["id"]] = item
+        requests = {}
+        for item in restored["rewardRequestsById"]:
+            if not isinstance(item, Mapping) or not isinstance(item.get("id"), str) or item["id"] in requests:
+                raise ChoreStorageError("Chore durable request is invalid")
+            requests[item["id"]] = item
+        hydrated = {**document, "data": {**document["data"], "occurrencesById": occurrences, "activity": restored["activity"], "outbox": restored["outbox"],
+            "experience": {**document["data"]["experience"], "pointTransactions": restored["pointTransactions"], "progressAwards": restored["progressAwards"], "rewardRequestsById": requests}}}
+        hydrated.pop("durableCollections", None)
+        return hydrated
+
     async def async_initialize(self) -> None:
         run_initial_tick = True
         async with self._lock:
@@ -1277,6 +1368,7 @@ class ChoreAuthority:
                     primary = {"contractVersion": CONTRACT_VERSION, "revision": 0, "updatedAt": _iso(_now()), "data": _empty_data()}
             repaired_primary = False
             try:
+                primary = await self._decode_storage(primary)
                 data = _normalize_data(primary.get("data")) if isinstance(primary, Mapping) else _empty_data()
                 if isinstance(primary, Mapping) and data != primary.get("data"):
                     primary = {
@@ -1291,6 +1383,7 @@ class ChoreAuthority:
                 try:
                     if not isinstance(backup, Mapping):
                         raise ChoreStorageError("No healthy chore backup is available")
+                    backup = await self._decode_storage(backup)
                     data = _normalize_data(backup.get("data"))
                 except ChoreAuthorityError:
                     data = _empty_data()
@@ -1331,7 +1424,7 @@ class ChoreAuthority:
             self._alert_key = alert_key
             self._loaded = True
             if repaired_primary:
-                await self._stores["primary"].async_save(primary)
+                await self._stores["primary"].async_save(await self._encode_storage(primary))
         if run_initial_tick:
             await self.async_tick(_now())
 
@@ -1459,12 +1552,15 @@ class ChoreAuthority:
             if _valid_timestamp(event.get("timestamp"))
             and _parse_iso(event["timestamp"]) >= boundary
         ][-min(MAX_HISTORY_ITEMS, int(retention["maxEvents"])):]
-        payloads = {
-            "primary": next_document,
-            "last_good": previous,
-            "history": {"contractVersion": CONTRACT_VERSION, "events": self._history},
-            "journal": {"contractVersion": CONTRACT_VERSION, "commands": self._journal[-MAX_JOURNAL_ITEMS:]},
-        }
+        try:
+            payloads = {
+                "primary": await self._encode_storage(next_document),
+                "last_good": await self._encode_storage(previous),
+                "history": {"contractVersion": CONTRACT_VERSION, "events": self._history},
+                "journal": {"contractVersion": CONTRACT_VERSION, "commands": self._journal[-MAX_JOURNAL_ITEMS:]},
+            }
+        except Exception as err:  # noqa: BLE001
+            raise ChoreStorageError("Chore storage could not finish the request") from err
         limits = {
             "primary": MAX_WORKSPACE_BYTES,
             "last_good": MAX_WORKSPACE_BYTES,
@@ -1919,6 +2015,7 @@ class ChoreAuthority:
                 backup = await self._stores["last_good"].async_load()
                 if not isinstance(backup, Mapping):
                     raise ChoreAuthorityError("No healthy chore backup is available")
+                backup = await self._decode_storage(backup)
                 data = _normalize_data(backup.get("data"))
             else:
                 return await self._reset_locked(timestamp)
