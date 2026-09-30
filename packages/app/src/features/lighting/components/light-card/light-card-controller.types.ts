@@ -63,6 +63,7 @@ export interface LightCardController {
   onEffectSelect: (effect: string) => void;
   onIconChange: (icon: string) => void;
   onOpenChange: (open: boolean) => void;
+  onPowerChange: (isOn: boolean) => void;
   onTempChange: (temp: number) => void;
   onTempCommit: (temp: number) => void;
   tintColor: string;

@@ -1,6 +1,7 @@
 import { Button } from '@navet/app/components/primitives/button';
 import { ColorInputSwatch } from '@navet/app/components/primitives/color-input-swatch';
 import { useI18n } from '@navet/app/hooks';
+import type { ThemeType } from '@navet/app/hooks/use-theme';
 import type { CSSProperties } from 'react';
 import { memo } from 'react';
 import { getDeviceEditorSurfaceTokens } from './device-editor-surface-tokens';
@@ -10,6 +11,7 @@ interface CustomCardTintPickerProps {
   value?: string;
   onChange: (color: string) => void;
   isOn?: boolean;
+  surfaceTheme?: ThemeType;
   defaultColor?: string;
   className?: string;
   pickerRingColor?: string;
@@ -20,13 +22,14 @@ export const CustomCardTintPicker = memo(function CustomCardTintPicker({
   value,
   onChange,
   isOn = true,
+  surfaceTheme,
   defaultColor = '#f97316',
   className = '',
   pickerRingColor,
   resetButtonStyle,
 }: CustomCardTintPickerProps) {
   const { t } = useI18n();
-  const editorSurface = getDeviceEditorSurfaceTokens(isOn);
+  const editorSurface = getDeviceEditorSurfaceTokens(isOn, surfaceTheme);
 
   return (
     <DialogSectionRow

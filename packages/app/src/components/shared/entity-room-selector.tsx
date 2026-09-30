@@ -24,6 +24,7 @@ import { toast } from 'sonner';
 
 interface EntityRoomSelectorProps {
   entityId: string;
+  readOnly?: boolean;
   label?: string;
   compact?: boolean;
   forceDark?: boolean;
@@ -40,6 +41,7 @@ const CREATE_ROOM_VALUE = '__create_room__';
 
 export const EntityRoomSelector = memo(function EntityRoomSelector({
   entityId,
+  readOnly = false,
   label,
   compact = false,
   forceDark = false,
@@ -207,6 +209,8 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
       setIsSaving(false);
     }
   };
+
+  if (readOnly) return <span className={className}>{selectedRoomLabel}</span>;
 
   return (
     <div className={`min-w-0 ${className}`}>

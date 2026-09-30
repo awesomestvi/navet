@@ -444,7 +444,9 @@ export const DesktopStepperCreation: Story = {
     await userEvent.type(within(dialog).getByLabelText('End date'), '2026-12-31');
     await userEvent.type(within(dialog).getByLabelText('Dates to skip'), '2026-12-24');
     await expect(within(dialog).queryByText('Days of the week')).toBeNull();
-    await expect(dialog.querySelectorAll('input[type="color"]')).toHaveLength(1);
+    await expect(
+      within(dialog).getByRole('button', { name: 'Choose custom card color' })
+    ).toBeInTheDocument();
     await expect(within(dialog).getByLabelText('When missed')).toBeInTheDocument();
     await userEvent.click(sidebar.getByRole('button', { name: /The chore/ }));
     await expect(within(dialog).getByLabelText('Instructions')).toBeInTheDocument();
@@ -712,9 +714,14 @@ export const EditColorOverride: Story = {
       name: 'Edit chore',
     });
     await expect(within(dialog).queryByText('Start with a template')).toBeNull();
-    const colorInput = dialog.querySelector('input[type="color"]');
-    await expect(colorInput).not.toBeNull();
-    fireEvent.change(colorInput as HTMLInputElement, { target: { value: '#2563eb' } });
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Choose custom card color' }));
+    const picker = within(canvasElement.ownerDocument.body).getByRole('dialog', {
+      name: 'Choose custom card color',
+    });
+    fireEvent.change(within(picker).getByRole('textbox', { name: 'Hex color' }), {
+      target: { value: '#2563eb' },
+    });
+    await userEvent.keyboard('{Escape}');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
     await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
     await userEvent.click(within(dialog).getByRole('button', { name: 'Save changes' }));

@@ -195,6 +195,7 @@ export function useLightCardController({
     onEffectSelect,
     onIconChange: (icon) => setSelectedIcon(icon.trim()),
     onOpenChange: isOpen ? onClose : onOpen,
+    onPowerChange: toggleLightState,
     onTempChange: handleTempChange,
     onTempCommit: handleTempCommit,
     onTintColorChange: setTintColor,

@@ -1,6 +1,8 @@
 import { useTheme } from '@navet/app/hooks';
 import { Check } from 'lucide-react';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { ColorPickerPanel } from './color-picker-panel';
+import { PickerPopover } from './picker-popover';
 
 type ColorInputSwatchSize = 'small' | 'medium' | 'large';
 type ColorInputSwatchMode = 'picker' | 'swatch';
@@ -186,56 +188,56 @@ export const ColorInputSwatch = memo(function ColorInputSwatch({
   }
 
   return (
-    <label
-      title={title ?? ariaLabel}
-      aria-label={ariaLabel}
-      className={`cursor-pointer ${sharedClassName}`}
-      onClick={onClick}
-      onKeyDown={(event) => {
-        if ((event.key === 'Enter' || event.key === ' ') && !disabled) {
-          event.preventDefault();
-          (
-            event.currentTarget.querySelector('input[type="color"]') as HTMLInputElement | null
-          )?.click();
-        }
-      }}
-      tabIndex={disabled ? -1 : 0}
-      style={sharedStyle}
-    >
-      <input
-        type="color"
-        value={safeValue}
-        aria-label={ariaLabel}
-        disabled={disabled}
-        onChange={(event) => handleInputChange(event.target.value)}
-        onBlur={flushPendingChange}
-        className="absolute inset-0 cursor-pointer opacity-0"
-      />
-      {selected ? (
-        <Check
-          className={`${classes.icon} pointer-events-none text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]`}
-        />
-      ) : visual === 'rainbow' ? null : (
-        <div
-          className={`${classes.core} pointer-events-none flex items-center justify-center rounded-full`}
-          style={{
-            backgroundColor: coreBackground,
-            backdropFilter: 'blur(8px)',
+    <PickerPopover
+      label={ariaLabel}
+      disabled={disabled}
+      onClose={flushPendingChange}
+      trigger={
+        <button
+          type="button"
+          title={title ?? ariaLabel}
+          aria-label={ariaLabel}
+          disabled={disabled}
+          className={`cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current ${sharedClassName}`}
+          onClick={(event) => {
+            event.stopPropagation();
+            onClick?.(event);
           }}
+          style={sharedStyle}
         >
-          <div
-            className={`${classes.dot} rounded-full border`}
-            style={{
-              background: isIdleVisual
-                ? theme === 'light'
-                  ? '#9ca3af'
-                  : 'rgba(255,255,255,0.4)'
-                : `linear-gradient(135deg, ${safeValue} 0%, rgba(255, 255, 255, 0.9) 100%)`,
-              borderColor: dotBorder,
-            }}
-          />
-        </div>
-      )}
-    </label>
+          {selected ? (
+            <Check
+              className={`${classes.icon} pointer-events-none text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]`}
+            />
+          ) : visual === 'rainbow' ? null : (
+            <div
+              className={`${classes.core} pointer-events-none flex items-center justify-center rounded-full`}
+              style={{
+                backgroundColor: coreBackground,
+                backdropFilter: 'blur(8px)',
+              }}
+            >
+              <div
+                className={`${classes.dot} rounded-full border`}
+                style={{
+                  background: isIdleVisual
+                    ? theme === 'light'
+                      ? '#9ca3af'
+                      : 'rgba(255,255,255,0.4)'
+                    : `linear-gradient(135deg, ${safeValue} 0%, rgba(255, 255, 255, 0.9) 100%)`,
+                  borderColor: dotBorder,
+                }}
+              />
+            </div>
+          )}
+        </button>
+      }
+    >
+      <ColorPickerPanel
+        value={safeValue}
+        onChange={handleInputChange}
+        onCommit={flushPendingChange}
+      />
+    </PickerPopover>
   );
 });

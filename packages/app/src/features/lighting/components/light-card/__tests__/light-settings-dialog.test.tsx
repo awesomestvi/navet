@@ -14,6 +14,7 @@ describe('LightSettingsDialog', () => {
         onOpenChange={vi.fn()}
         name="Desk Lamp"
         isOn
+        onPowerChange={vi.fn()}
         supportsBrightness
         supportsColorTemperature={false}
         supportsColorControl={false}
@@ -52,8 +53,7 @@ describe('LightSettingsDialog', () => {
 
     expect(screen.getByText('Current effect: Rainbow')).toBeInTheDocument();
 
-    fireEvent.pointerDown(screen.getByRole('button', { name: 'Rainbow' }));
-    fireEvent.click(screen.getByRole('menuitemradio', { name: 'Fire' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Fire' }));
 
     expect(onEffectSelect).toHaveBeenCalledWith('Fire');
   });
@@ -66,6 +66,7 @@ describe('LightSettingsDialog', () => {
         onOpenChange={vi.fn()}
         name="Porch Light"
         isOn={false}
+        onPowerChange={vi.fn()}
         supportsBrightness={false}
         supportsColorTemperature={false}
         supportsColorControl={false}
@@ -105,6 +106,6 @@ describe('LightSettingsDialog', () => {
       backgroundColor: 'rgba(107, 114, 128, 0.14)',
       borderColor: 'rgba(107, 114, 128, 0.24)',
     });
-    expect(screen.getByRole('combobox', { name: 'Room' })).toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: 'Room' })).not.toBeInTheDocument();
   });
 });

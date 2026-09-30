@@ -11,7 +11,7 @@ import { EntityCardStoryFrame, noopCardSizeChange } from '@navet/app/storybook/s
 import type { Decorator, Meta, StoryObj } from '@storybook/react-vite';
 import type { ComponentProps, ReactNode } from 'react';
 import { useEffect } from 'react';
-import { expect } from 'storybook/test';
+import { expect, userEvent, within } from 'storybook/test';
 
 function LightCardStory(args: Omit<ComponentProps<typeof LightCard>, 'onSizeChange'>) {
   return (
@@ -191,5 +191,54 @@ export const WithEffects: Story = {
         })
       ),
     },
+  },
+};
+
+export const KelvinPicker: Story = {
+  ...Medium,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole('button', { name: 'Color Temperature' }));
+    const picker = within(canvasElement.ownerDocument.body).getByRole('dialog', {
+      name: 'Color Temperature',
+    });
+    await expect(within(picker).getByRole('slider', { name: 'Color Temperature' })).toBeVisible();
+    await userEvent.type(
+      within(picker).getByRole('slider', { name: 'Color Temperature' }),
+      '{End}'
+    );
+    await expect(within(picker).getByRole('slider', { name: 'Color Temperature' })).toHaveAttribute(
+      'aria-valuenow',
+      '6500'
+    );
+  },
+};
+
+export const ColorPicker: Story = {
+  ...Medium,
+  parameters: {
+    previewRuntime: {
+      scenario: replacePreviewEntity(
+        createPreviewStoryScenario(),
+        createPreviewLightEntity('light.living_room', {
+          supportedColorModes: ['rgb', 'color_temp'],
+          supported_color_modes: ['rgb', 'color_temp'],
+        })
+      ),
+    },
+  },
+  play: async ({ canvasElement }) => {
+    await userEvent.click(
+      within(canvasElement).getByRole('button', { name: 'Choose custom color' })
+    );
+    const picker = within(canvasElement.ownerDocument.body).getByRole('dialog', {
+      name: 'Choose custom color',
+    });
+    await expect(within(picker).getByRole('slider', { name: 'Hue' })).toBeVisible();
+    await expect(within(picker).queryByRole('textbox', { name: 'Hex color' })).toBeNull();
+    await userEvent.click(within(picker).getByRole('button', { name: 'Select color #FFA500' }));
+    await expect(
+      within(picker).getByRole('button', { name: 'Select color #FFA500' })
+    ).toHaveAttribute('aria-pressed', 'true');
   },
 };

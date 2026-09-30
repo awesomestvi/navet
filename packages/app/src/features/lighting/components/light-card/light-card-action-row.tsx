@@ -31,6 +31,13 @@ interface LightCardActionRowProps {
   brightness: number;
   currentEffect: string | null;
   onKelvinToggle: () => void;
+  temperature?: {
+    value: number;
+    min: number;
+    max: number;
+    onChange: (value: number) => void;
+    onCommit: (value: number) => void;
+  };
   onColorActivate: () => void;
   onColorChange: (color: string) => void;
   onEffectSelect: (effect: string) => void;
@@ -59,6 +66,7 @@ export const LightCardActionRow = memo(function LightCardActionRow({
   brightness,
   currentEffect,
   onKelvinToggle,
+  temperature,
   onColorActivate,
   onColorChange,
   onEffectSelect,
@@ -101,6 +109,7 @@ export const LightCardActionRow = memo(function LightCardActionRow({
           foregroundColor={foregroundColor}
           isActive={isKelvinMode}
           onClick={onKelvinToggle}
+          temperature={temperature}
         />
       )}
 

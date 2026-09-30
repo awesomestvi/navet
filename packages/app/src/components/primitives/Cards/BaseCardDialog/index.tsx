@@ -81,6 +81,12 @@ interface BaseCardDialogCardProps extends BaseCardDialogSharedProps {
   roomSelectorFallbackRoomName?: string;
   editableTitle?: boolean;
   onTitleChange?: (title: string) => void | Promise<void>;
+  headerEyebrow?: ReactNode;
+  headerPresentation?: 'default' | 'compact';
+  titleEditing?: boolean;
+  onTitleEditingChange?: (editing: boolean) => void;
+  showTabList?: boolean;
+  mobileCoverSheetActions?: ReactNode;
   headerSupportingContent?: ReactNode;
   headerTrailing?: ReactNode;
   headerClassName?: string;
@@ -533,6 +539,12 @@ function BaseCardDialogCardVariant({
   roomSelectorFallbackRoomName,
   editableTitle = true,
   onTitleChange,
+  headerEyebrow,
+  headerPresentation,
+  titleEditing,
+  onTitleEditingChange,
+  showTabList = true,
+  mobileCoverSheetActions,
   headerSupportingContent,
   headerTrailing,
   headerClassName,
@@ -605,10 +617,13 @@ function BaseCardDialogCardVariant({
       )}
     >
       <CardDialogHeader
+        presentation={headerPresentation}
+        titleEditing={titleEditing}
+        onTitleEditingChange={onTitleEditingChange}
         title={title}
         description={resolvedDescription}
         entityId={roomSelector ? undefined : entityId}
-        eyebrow={widgetRoomSelector}
+        eyebrow={headerEyebrow ?? widgetRoomSelector}
         showRoomSelector={!roomSelector}
         theme={theme}
         roomSelectorFallbackRoomName={roomSelectorFallbackRoomName}
@@ -619,7 +634,7 @@ function BaseCardDialogCardVariant({
         className={cn('mb-0 max-sm:pr-0', headerClassName)}
       />
 
-      {shouldRenderTabs ? (
+      {shouldRenderTabs && showTabList ? (
         <CardDialogTabList className="mt-3 mb-0 flex flex-wrap gap-2">
           {tabs.map((tab) => (
             <CardDialogTabTrigger
@@ -674,6 +689,7 @@ function BaseCardDialogCardVariant({
       contentOverlayStyle={contentOverlayStyle}
       persistentMobileDismiss
       mobileDismissStyle={paletteControlStyle}
+      mobileCoverSheetActions={mobileCoverSheetActions}
     >
       <CustomScrollbar
         isOn={theme !== 'light'}

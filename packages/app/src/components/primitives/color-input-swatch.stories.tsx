@@ -2,6 +2,7 @@ import { useTheme } from '@navet/app/hooks';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
+import { expect, userEvent, within } from 'storybook/test';
 import { ColorInputSwatch } from './color-input-swatch';
 
 function PickerModeStory() {
@@ -87,6 +88,19 @@ export const SwatchRow: Story = {
 
 export const PickerMode: Story = {
   render: () => <PickerModeStory />,
+  play: async ({ canvasElement }) => {
+    await userEvent.click(
+      within(canvasElement).getByRole('button', { name: 'Choose custom accent' })
+    );
+    const picker = within(canvasElement.ownerDocument.body).getByRole('dialog', {
+      name: 'Choose custom accent',
+    });
+    const hex = within(picker).getByRole('textbox', { name: 'Hex color' });
+    await userEvent.clear(hex);
+    await userEvent.type(hex, '#2563eb');
+    await expect(hex).toHaveValue('#2563eb');
+    await expect(within(canvasElement).getByText('#2563eb')).toBeVisible();
+  },
 };
 
 export const Docs: Story = {

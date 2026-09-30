@@ -38,23 +38,17 @@ describe('LightCardActionRow', () => {
     const colorButton = screen.getByRole('button', { name: 'Choose custom color' });
     expect(colorButton).toHaveAttribute('aria-pressed', 'false');
     expect(container.querySelector('.lucide-palette')).not.toBeNull();
-    const colorInput = container.querySelector('input[type="color"]');
-    expect(colorInput).not.toBeNull();
-
+    expect(container.querySelector('input[type="color"]')).toBeNull();
     fireEvent.click(colorButton);
-    expect(colorButton).toHaveAttribute('aria-pressed', 'true');
-    expect(colorButton.querySelector('[style*="255, 136, 0"]')).not.toBeNull();
+    expect(screen.getByRole('dialog', { name: 'Choose custom color' })).toBeInTheDocument();
     expect(onColorActivate).not.toHaveBeenCalled();
     expect(onColorChange).not.toHaveBeenCalled();
-
-    fireEvent.pointerDown(document.body);
-    expect(colorButton).toHaveAttribute('aria-pressed', 'false');
-    expect(colorButton.querySelector('[style*="255, 136, 0"]')).toBeNull();
-
-    fireEvent.click(colorButton);
-    fireEvent.change(colorInput as HTMLInputElement, {
+    fireEvent.click(screen.getByText('Detailed color'));
+    fireEvent.change(screen.getByRole('textbox', { name: 'Hex color' }), {
       target: { value: '#00ff00' },
     });
+    expect(onColorActivate).not.toHaveBeenCalled();
+    fireEvent.blur(screen.getByRole('textbox', { name: 'Hex color' }));
     expect(onColorActivate).toHaveBeenCalledTimes(1);
     expect(onColorChange).toHaveBeenCalledWith('#00ff00');
   });

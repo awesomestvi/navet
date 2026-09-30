@@ -24,6 +24,9 @@ import {
 import { toast } from 'sonner';
 
 interface CardDialogHeaderProps {
+  presentation?: 'default' | 'compact';
+  titleEditing?: boolean;
+  onTitleEditingChange?: (editing: boolean) => void;
   title: string;
   description?: string;
   entityId?: string;
@@ -86,6 +89,9 @@ interface CardDialogDoneFooterProps {
 }
 
 export const CardDialogHeader = memo(function CardDialogHeader({
+  presentation = 'default',
+  titleEditing,
+  onTitleEditingChange,
   title,
   description,
   entityId,
@@ -107,7 +113,12 @@ export const CardDialogHeader = memo(function CardDialogHeader({
 }: CardDialogHeaderProps) {
   const { t } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [internalTitleEditing, setInternalTitleEditing] = useState(false);
+  const isEditingTitle = titleEditing ?? internalTitleEditing;
+  const setIsEditingTitle = (editing: boolean) => {
+    setInternalTitleEditing(editing);
+    onTitleEditingChange?.(editing);
+  };
   const [displayTitle, setDisplayTitle] = useState(title);
   const [draftTitle, setDraftTitle] = useState(title);
   const [isSavingTitle, setIsSavingTitle] = useState(false);
@@ -129,7 +140,7 @@ export const CardDialogHeader = memo(function CardDialogHeader({
       />
     ) : null;
   const editLabel = t('entityNameEditor.edit', { name: '' }).trim();
-  const resolvedEyebrow = eyebrow ?? roomSelector;
+  const resolvedEyebrow = eyebrow ?? (presentation === 'compact' ? null : roomSelector);
   const titleClassName = theme === 'light' ? 'text-slate-950' : 'text-white';
   const descriptionClassName = theme === 'light' ? 'text-slate-700' : 'text-white/82';
   const descriptionSeparatorClassName = theme === 'light' ? 'text-slate-400' : 'text-white/40';
@@ -287,7 +298,7 @@ export const CardDialogHeader = memo(function CardDialogHeader({
             ) : null
           ) : null}
         </div>
-        {resolvedDescription || (canEditTitle && !isEditingTitle) ? (
+        {resolvedDescription || (canEditTitle && !isEditingTitle && presentation !== 'compact') ? (
           <Dialog.Description asChild>
             <div
               className={cn(
@@ -300,7 +311,7 @@ export const CardDialogHeader = memo(function CardDialogHeader({
               {resolvedDescription ? (
                 <span className="min-w-0 whitespace-normal break-words">{resolvedDescription}</span>
               ) : null}
-              {canEditTitle && !isEditingTitle ? (
+              {canEditTitle && !isEditingTitle && presentation !== 'compact' ? (
                 <>
                   {resolvedDescription ? (
                     <span aria-hidden="true" className={descriptionSeparatorClassName}>
@@ -323,7 +334,7 @@ export const CardDialogHeader = memo(function CardDialogHeader({
             </div>
           </Dialog.Description>
         ) : null}
-        {entityId ? (
+        {entityId && presentation !== 'compact' ? (
           <p className={cn('mt-1 text-xs', descriptionClassName)} style={descriptionStyle}>
             <span>{t('common.entityId')}: </span>
             <code className="select-text whitespace-normal [overflow-wrap:anywhere]">

@@ -1,33 +1,37 @@
 import { BaseCardDialog, type BaseCardDialogTab } from '@navet/app/components/primitives';
+import { Button } from '@navet/app/components/primitives/button';
 import {
   BrightnessPresetEditor,
-  BrightnessPresets,
-  BrightnessSlider,
-  ColorSelectorSection,
-  ColorTemperatureSection,
   CustomCardTintPicker,
   IconPicker,
 } from '@navet/app/components/shared/device-editor';
+import { EntityRoomSelector } from '@navet/app/components/shared/entity-room-selector';
 import { NEUTRAL_DIALOG_CONTROL_ACCENT } from '@navet/app/components/shared/theme/custom-card-tint-surface';
+import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import {
-  getAccentDialogSurface,
-  resolvePrimaryColorToken,
-} from '@navet/app/components/shared/theme/theme-colors';
-import { PRESET_COLORS } from '@navet/app/constants/light-constants';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@navet/app/components/ui/dropdown-menu';
 import type { BrightnessPresetKey } from '@navet/app/features/lighting/stores/light-preset-store';
 import { useI18n, useTheme } from '@navet/app/hooks';
-import { getEntityTypeLabel } from '@navet/app/utils/entity-type-label';
-import { Palette, Sliders, Star } from 'lucide-react';
-import { memo } from 'react';
+import { getProviderNativeId } from '@navet/app/utils/provider-ids';
+import { ArrowLeft, MapPin, MoreHorizontal, Palette, Pencil, Sliders, Star } from 'lucide-react';
+import { memo, useRef, useState } from 'react';
 import type { LightBrightnessPreset, LightEffectOption } from './light-card-types';
-import { LightEffectPicker } from './light-effect-picker';
+import { LightDialogControls } from './light-dialog-controls';
 
-interface LightSettingsDialogProps {
+export interface LightSettingsDialogProps {
   entityId: string;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   name: string;
+  room?: string;
   isOn: boolean;
+  onPowerChange: (isOn: boolean) => void;
   supportsBrightness: boolean;
   supportsColorTemperature: boolean;
   supportsColorControl: boolean;
@@ -65,7 +69,9 @@ export const LightSettingsDialog = memo(function LightSettingsDialog({
   isOpen,
   onOpenChange,
   name,
+  room,
   isOn,
+  onPowerChange,
   supportsBrightness,
   supportsColorTemperature,
   supportsColorControl,
@@ -96,20 +102,12 @@ export const LightSettingsDialog = memo(function LightSettingsDialog({
   onIconChange,
   onTintColorChange,
 }: LightSettingsDialogProps) {
-  const { accentColor, primaryColor, theme } = useTheme();
+  const { accentColor, theme } = useTheme();
   const { t } = useI18n();
-  const entityType = getEntityTypeLabel(entityId) || t('lighting.type.light');
-
-  const activeDialogColors = getAccentDialogSurface(resolvePrimaryColorToken(primaryColor));
-  const dialogSurface = isOn
-    ? {
-        panel: `bg-linear-to-br ${activeDialogColors.from} ${activeDialogColors.to}`,
-        border: activeDialogColors.border,
-      }
-    : {
-        panel: 'bg-linear-to-br from-gray-900/95 to-gray-950/95',
-        border: 'border-gray-500/10',
-      };
+  const [activeTab, setActiveTab] = useState('controls');
+  const [titleEditing, setTitleEditing] = useState(false);
+  const editTitleAfterMenuClose = useRef(false);
+  const surface = getThemeSurfaceTokens(theme);
 
   const tabs: BaseCardDialogTab[] = [
     {
@@ -117,56 +115,31 @@ export const LightSettingsDialog = memo(function LightSettingsDialog({
       label: t('common.controls'),
       icon: Sliders,
       content: (
-        <div className="space-y-6">
-          {supportsColorTemperature && (
-            <ColorTemperatureSection
-              colorTemp={colorTemp}
-              isOn={isOn}
-              minTemp={minColorTemp}
-              maxTemp={maxColorTemp}
-              tempOptions={tempOptions}
-              onTempChange={onTempChange}
-              onTempCommit={onTempCommit}
-            />
-          )}
-          {supportsColorControl && (
-            <ColorSelectorSection
-              colors={Array.from(PRESET_COLORS)}
-              selectedColor={selectedColor}
-              customColor={customColor}
-              isOn={isOn}
-              onColorChange={onColorChange}
-              onCustomColorChange={onCustomColorChange}
-            />
-          )}
-          {supportsBrightness && (
-            <>
-              <BrightnessSlider
-                value={brightness}
-                onChange={onBrightnessChange}
-                onCommit={onBrightnessCommit ?? onBrightnessChange}
-                isOn={isOn}
-                disabled={!isOn}
-                presentation="dialog"
-              />
-              <BrightnessPresets
-                presets={brightnessPresets}
-                currentBrightness={brightness}
-                isOn={isOn}
-                onBrightnessChange={onBrightnessCommit ?? onBrightnessChange}
-              />
-            </>
-          )}
-          {supportsEffects && effectOptions.length > 0 && (
-            <LightEffectPicker
-              currentEffect={currentEffect}
-              isOn={isOn}
-              onSelect={onEffectSelect}
-              options={effectOptions}
-              variant="dialog"
-            />
-          )}
-        </div>
+        <LightDialogControls
+          isOn={isOn}
+          onPowerChange={onPowerChange}
+          brightness={brightness}
+          brightnessPresets={brightnessPresets}
+          supportsBrightness={supportsBrightness}
+          onBrightnessChange={onBrightnessChange}
+          onBrightnessCommit={onBrightnessCommit}
+          supportsColorTemperature={supportsColorTemperature}
+          colorTemp={colorTemp}
+          minColorTemp={minColorTemp}
+          maxColorTemp={maxColorTemp}
+          tempOptions={tempOptions}
+          onTempChange={onTempChange}
+          onTempCommit={onTempCommit}
+          supportsColorControl={supportsColorControl}
+          selectedColor={selectedColor}
+          customColor={customColor}
+          onColorChange={onColorChange}
+          onCustomColorChange={onCustomColorChange}
+          supportsEffects={supportsEffects}
+          currentEffect={currentEffect}
+          effectOptions={effectOptions}
+          onEffectSelect={onEffectSelect}
+        />
       ),
     },
     ...(supportsBrightness
@@ -178,6 +151,7 @@ export const LightSettingsDialog = memo(function LightSettingsDialog({
             content: (
               <div className="space-y-6">
                 <BrightnessPresetEditor
+                  surfaceTheme={theme}
                   presets={brightnessPresets}
                   isOn={isOn}
                   onPresetValueChange={onBrightnessPresetValueChange}
@@ -198,25 +172,146 @@ export const LightSettingsDialog = memo(function LightSettingsDialog({
       icon: Palette,
       content: (
         <div className="space-y-6">
-          <CustomCardTintPicker value={tintColor} onChange={onTintColorChange} isOn={isOn} />
-          <IconPicker selectedIcon={selectedIcon} onIconChange={onIconChange} isLightOn={isOn} />
+          <CustomCardTintPicker
+            surfaceTheme={theme}
+            value={tintColor}
+            onChange={onTintColorChange}
+            isOn={isOn}
+          />
+          <IconPicker
+            surfaceTheme={theme}
+            selectedIcon={selectedIcon}
+            onIconChange={onIconChange}
+            isLightOn={isOn}
+          />
         </div>
       ),
     },
   ];
 
+  tabs.push({
+    key: 'room',
+    label: t('dashboard.roomsWorkspace.editRoom'),
+    icon: MapPin,
+    content: <EntityRoomSelector entityId={entityId} fallbackRoomName={room} />,
+  });
+  const menu = (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          iconOnly
+          variant="soft"
+          label={t('common.moreActions')}
+          className="pointer-events-auto h-10 w-10 rounded-full"
+        >
+          <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="end"
+        className="w-56"
+        onCloseAutoFocus={(event) => {
+          if (editTitleAfterMenuClose.current) {
+            event.preventDefault();
+            editTitleAfterMenuClose.current = false;
+            setTitleEditing(true);
+          }
+        }}
+      >
+        <DropdownMenuItem onSelect={() => setActiveTab('room')}>
+          <MapPin className="h-4 w-4" />
+          {t('dashboard.roomsWorkspace.editRoom')}
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onSelect={() => {
+            setActiveTab('controls');
+            editTitleAfterMenuClose.current = true;
+          }}
+        >
+          <Pencil className="h-4 w-4" />
+          {t('entityNameEditor.editCardName')}
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        {supportsBrightness && (
+          <DropdownMenuItem onSelect={() => setActiveTab('presets')}>
+            <Star className="h-4 w-4" />
+            {t('climate.presets')}
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuItem onSelect={() => setActiveTab('card')}>
+          <Palette className="h-4 w-4" />
+          {t('common.customize')}
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel className="space-y-1 font-normal">
+          <span className="block text-xs text-muted-foreground">{t('common.entityId')}</span>
+          <code className="block select-text break-all text-xs">
+            {getProviderNativeId(entityId)}
+          </code>
+        </DropdownMenuLabel>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+  const dialogTabs = tabs.map((tab) =>
+    tab.key === 'controls'
+      ? tab
+      : {
+          ...tab,
+          content: (
+            <div className="space-y-4">
+              <Button
+                variant="soft"
+                size="compact"
+                leading={<ArrowLeft className="h-4 w-4 shrink-0" aria-hidden="true" />}
+                onClick={() => setActiveTab('controls')}
+              >
+                {t('lighting.backToControls')}
+              </Button>
+              {tab.content}
+            </div>
+          ),
+        }
+  );
+
   return (
     <BaseCardDialog
       isOpen={isOpen}
-      onOpenChange={onOpenChange}
+      onOpenChange={(open) => {
+        if (!open) {
+          setActiveTab('controls');
+          setTitleEditing(false);
+        }
+        onOpenChange(open);
+      }}
       title={name}
       entityId={entityId}
-      description={entityType}
-      tabs={tabs}
+      headerEyebrow={
+        <div
+          className={`flex min-w-0 items-center gap-1.5 text-xs font-medium ${surface.textSecondary}`}
+        >
+          <EntityRoomSelector
+            entityId={entityId}
+            fallbackRoomName={room}
+            readOnly
+            className="truncate"
+          />
+          <span aria-hidden="true">·</span>
+          <span className="shrink-0">{t(isOn ? 'common.on' : 'common.off')}</span>
+        </div>
+      }
+      tabs={dialogTabs}
+      activeTab={activeTab}
+      onActiveTabChange={setActiveTab}
+      showTabList={false}
+      headerPresentation="compact"
+      headerClassName="max-sm:pr-24"
+      titleEditing={titleEditing}
+      onTitleEditingChange={setTitleEditing}
+      headerTrailing={<div className="hidden sm:block">{menu}</div>}
+      mobileCoverSheetActions={menu}
       theme={theme}
       tintColor={isOn ? tintColor : NEUTRAL_DIALOG_CONTROL_ACCENT}
       defaultTintAccent={accentColor}
-      contentSurface={dialogSurface}
       disableOpenAutoFocus
       maxWidth="md"
       height="capped"

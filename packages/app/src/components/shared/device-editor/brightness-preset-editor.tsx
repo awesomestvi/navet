@@ -19,6 +19,7 @@ import { Checkbox } from '@navet/app/components/ui/checkbox';
 import { Label } from '@navet/app/components/ui/label';
 import type { BrightnessPresetKey } from '@navet/app/constants/light-constants';
 import { useI18n } from '@navet/app/hooks';
+import type { ThemeType } from '@navet/app/hooks/use-theme';
 import type { LucideIcon } from 'lucide-react';
 import { GripVertical } from 'lucide-react';
 import { memo } from 'react';
@@ -34,6 +35,7 @@ interface BrightnessPresetEditorItem {
 interface BrightnessPresetEditorProps {
   presets: BrightnessPresetEditorItem[];
   isOn: boolean;
+  surfaceTheme?: ThemeType;
   onPresetValueChange: (key: BrightnessPresetKey, value: number) => void;
   onPresetOrderChange: (keys: BrightnessPresetKey[]) => void;
   onlyApplyToThisLight?: boolean;
@@ -43,12 +45,13 @@ interface BrightnessPresetEditorProps {
 export const BrightnessPresetEditor = memo(function BrightnessPresetEditor({
   presets,
   isOn,
+  surfaceTheme,
   onPresetValueChange,
   onPresetOrderChange,
   onlyApplyToThisLight = false,
   onOnlyApplyToThisLightChange,
 }: BrightnessPresetEditorProps) {
-  const editorSurface = getDeviceEditorSurfaceTokens(isOn);
+  const editorSurface = getDeviceEditorSurfaceTokens(isOn, surfaceTheme);
   const { t } = useI18n();
   const sensors = useSensors(
     useSensor(MouseSensor, {
@@ -131,6 +134,7 @@ export const BrightnessPresetEditor = memo(function BrightnessPresetEditor({
                 key={preset.key}
                 preset={preset}
                 isOn={isOn}
+                surfaceTheme={surfaceTheme}
                 onPresetValueChange={onPresetValueChange}
               />
             ))}
@@ -144,15 +148,17 @@ export const BrightnessPresetEditor = memo(function BrightnessPresetEditor({
 interface BrightnessPresetEditorRowProps {
   preset: BrightnessPresetEditorItem;
   isOn: boolean;
+  surfaceTheme?: ThemeType;
   onPresetValueChange: (key: BrightnessPresetKey, value: number) => void;
 }
 
 const BrightnessPresetEditorRow = memo(function BrightnessPresetEditorRow({
   preset,
   isOn,
+  surfaceTheme,
   onPresetValueChange,
 }: BrightnessPresetEditorRowProps) {
-  const editorSurface = getDeviceEditorSurfaceTokens(isOn);
+  const editorSurface = getDeviceEditorSurfaceTokens(isOn, surfaceTheme);
   const { t } = useI18n();
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
     id: preset.key,

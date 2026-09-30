@@ -131,3 +131,30 @@ export const Docs: Story = {
     docsOnly: true,
   },
 };
+
+export const Compact: Story = {
+  render: function CompactRows() {
+    const [selected, setSelected] = useState('Dim');
+    return (
+      <div className="w-72">
+        <SelectableCheckboxList>
+          {[
+            { label: 'Bright', value: 100 },
+            { label: 'Dim', value: 50 },
+            { label: 'Night', value: 25 },
+          ].map((preset) => (
+            <li key={preset.label}>
+              <SelectableCheckboxRow
+                size="compact"
+                checked={selected === preset.label}
+                onCheckedChange={() => setSelected(preset.label)}
+                label={preset.label}
+                trailing={<span className="text-xs tabular-nums">{preset.value}%</span>}
+              />
+            </li>
+          ))}
+        </SelectableCheckboxList>
+      </div>
+    );
+  },
+};
