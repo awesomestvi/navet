@@ -70,3 +70,6 @@ Thumbs.db
 .vercel
 .netlify
 scripts/push-ha-panel.sh
+
+# Independent GitHub profile repository
+/awesomestvi/

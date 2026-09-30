@@ -199,7 +199,6 @@ export function NotificationCenter({
             if (!open) onClose();
           }}
           title={t('notifications.title')}
-          description={t('notifications.title')}
           closeLabel={t('common.close')}
           bodyClassName="!overflow-hidden"
           onCloseAutoFocus={restoreTriggerFocus}

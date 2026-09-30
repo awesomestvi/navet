@@ -17,7 +17,7 @@ export interface SheetSurfaceProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
-  description: string;
+  description?: string;
   children: ReactNode;
   accentColor?: string;
   contentClassName?: string;

@@ -162,6 +162,12 @@ export const Open: Story = {};
 
 export const MobileOpen: Story = {
   render: () => <NotificationPanelMobileStory />,
+  play: async ({ canvasElement }) => {
+    const dialog = within(canvasElement.ownerDocument.body).getByRole('dialog', {
+      name: 'Notifications',
+    });
+    await expect(dialog).not.toHaveAttribute('aria-describedby');
+  },
   parameters: {
     docs: {
       story: {
