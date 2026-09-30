@@ -1,0 +1,6 @@
+type: new
+audiences:
+  - standalone
+  - home-assistant
+  - hacs
+summary: Request household rewards, review them, and track point spending, fulfillment, and refunds in shared chore history.

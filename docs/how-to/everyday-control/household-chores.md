@@ -93,9 +93,11 @@ Choose **See rewards** to reveal the supporting mission and reward cards below t
 hidden from Today until requested, while **Missions** and **Rewards** remain available as separate
 management destinations.
 
-Home shows a Chores summary pill when work remains. Rooms with chores show their own summary, and a
-pending chore also appears as a room card. An overdue chore changes the relevant summary pill to the
-same restrained red alert treatment used by Security.
+Home shows a Chores summary pill when work remains. Each room has a **Chores** pill showing
+remaining or overdue work, or **All done today**. Choose the Chores pill on Home or in a room to open the
+Household dashboard and complete chores. The room summary stays in one scrollable row, keeping device controls in
+their chosen positions as chores change. The Chores pill is available even when the dashboard
+summary is hidden. An overdue chore uses the same red alert treatment as Security.
 
 ## What to do next
 

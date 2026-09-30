@@ -13,9 +13,10 @@ from homeassistant.components.frontend import async_remove_panel
 from homeassistant.components.http import HomeAssistantView, StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
-from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.service import async_register_admin_service
 import homeassistant.helpers.config_validation as cv
 
 from .chore_store import (
@@ -234,43 +235,66 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
 
     if not domain_data.get("chore_services_registered"):
-        async def async_handle_chore_action(call: ServiceCall) -> None:
+        async def async_handle_chore_action(call: ServiceCall) -> dict | None:
             """Apply an authenticated Home Assistant action to durable chores."""
             try:
-                await authority.async_service_action(
+                result = await authority.async_service_action(
                     call.service,
                     call.data,
                     str(call.context.id),
                 )
+                return result if call.service == "weekly_report" else None
             except ChoreAuthorityError as err:
                 raise HomeAssistantError(str(err)) from err
 
         base_fields = {
             vol.Required("occurrence_id"): cv.string,
             vol.Required("participant_id"): cv.string,
+            vol.Optional("expected_occurrence_updated_at"): cv.string,
         }
         for action in CHORE_ACTIONS:
-            fields = dict(base_fields)
+            fields = {} if action in ("reward_decision", "adjust_points", "weekly_report") else dict(base_fields)
             if action in ("reject", "skip", "reopen", "reassign"):
                 fields[vol.Required("reason")] = cv.string
             if action == "reassign":
                 fields[vol.Required("assignee_ids")] = vol.All(cv.ensure_list, [cv.string])
-            hass.services.async_register(
-                DOMAIN,
-                action,
-                async_handle_chore_action,
-                schema=vol.Schema(fields),
-            )
+            if action == "reward_decision":
+                fields = {
+                    vol.Required("request_id"): cv.string,
+                    vol.Required("manager_participant_id"): cv.string,
+                    vol.Required("decision"): vol.In(("approve", "decline", "fulfill", "refund")),
+                    vol.Optional("reason"): cv.string,
+                }
+            if action == "adjust_points":
+                fields = {
+                    vol.Required("command_id"): cv.string,
+                    vol.Required("participant_id"): cv.string,
+                    vol.Required("manager_participant_id"): cv.string,
+                    vol.Required("points_delta"): vol.All(vol.Coerce(int), vol.Range(min=-10000, max=10000)),
+                    vol.Optional("reason"): cv.string,
+                }
+            if action == "weekly_report":
+                fields = {vol.Optional("format", default="markdown"): vol.In(("markdown", "html"))}
+            if action in ("reward_decision", "adjust_points"):
+                async_register_admin_service(hass, DOMAIN, action, async_handle_chore_action, vol.Schema(fields))
+            else:
+                hass.services.async_register(
+                    DOMAIN,
+                    action,
+                    async_handle_chore_action,
+                    schema=vol.Schema(fields),
+                    **({"supports_response": SupportsResponse.ONLY} if action == "weekly_report" else {}),
+                )
         domain_data["chore_services_registered"] = True
 
-    await hass.config_entries.async_forward_entry_setups(entry, [Platform.SENSOR])
+    await hass.config_entries.async_forward_entry_setups(entry, [Platform.SENSOR, Platform.CALENDAR])
 
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload Navet."""
-    unloaded = await hass.config_entries.async_unload_platforms(entry, [Platform.SENSOR])
+    unloaded = await hass.config_entries.async_unload_platforms(entry, [Platform.SENSOR, Platform.CALENDAR])
     async_remove_panel(hass, PANEL_FRONTEND_PATH, warn_if_unknown=False)
     authority = hass.data.get(DOMAIN, {}).get("chore_authority")
     if isinstance(authority, ChoreAuthority):

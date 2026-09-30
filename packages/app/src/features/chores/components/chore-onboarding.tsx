@@ -54,6 +54,7 @@ import type {
   ChoreReminderDestinationType,
   ChoreSchedule,
 } from '@navet/core/chores';
+import { isChoreParticipantPausedAt } from '@navet/core/chores';
 import {
   ArrowLeft,
   ArrowRight,
@@ -246,7 +247,9 @@ export function ChoreOnboardingWelcome({
     try {
       const document = parseChoreInterchangeDocument(JSON.parse(await file.text()) as unknown);
       const manager = Object.values(document.workspace.participantsById).find(
-        (participant) => !participant.pausedAt && participant.capabilities.includes('manage')
+        (participant) =>
+          !isChoreParticipantPausedAt(participant, new Date().toISOString()) &&
+          participant.capabilities.includes('manage')
       );
       if (!manager) throw new Error('Backup does not contain an active household manager');
       setPendingBackup({ actorParticipantId: manager.id, document });
@@ -578,9 +581,13 @@ export function ChoreOnboardingDialog({
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const activeStepButtonRef = useRef<HTMLButtonElement | null>(null);
   const scheduleIntervalValid =
-    repeat !== 'custom' && repeat !== 'after_completion'
+    repeat !== 'custom' && repeat !== 'after_completion' && repeat !== 'hourly'
       ? true
-      : isBoundedInteger(scheduleInterval, repeat === 'custom' ? 2 : 1, 3650);
+      : isBoundedInteger(
+          scheduleInterval,
+          repeat === 'custom' ? 2 : 1,
+          repeat === 'hourly' ? 8760 : 3650
+        );
   const choreScheduleValid =
     isValidTime(dueTime) &&
     isValidDate(scheduleStartDate) &&
@@ -970,23 +977,32 @@ export function ChoreOnboardingDialog({
                     dayOfMonth: startDateValue.getDate(),
                     ...scheduleOptions,
                   }
-                : repeat === 'after_completion'
+                : repeat === 'hourly'
                   ? {
-                      frequency: 'after_completion',
+                      frequency: 'hourly',
                       startDate,
                       time: dueTime,
                       timeZone,
-                      intervalDays: Math.max(1, scheduleIntervalValue),
+                      intervalHours: scheduleIntervalValue,
                       ...scheduleOptions,
                     }
-                  : {
-                      frequency: 'daily',
-                      startDate,
-                      time: dueTime,
-                      timeZone,
-                      intervalDays: Math.max(1, scheduleIntervalValue),
-                      ...scheduleOptions,
-                    };
+                  : repeat === 'after_completion'
+                    ? {
+                        frequency: 'after_completion',
+                        startDate,
+                        time: dueTime,
+                        timeZone,
+                        intervalDays: Math.max(1, scheduleIntervalValue),
+                        ...scheduleOptions,
+                      }
+                    : {
+                        frequency: 'daily',
+                        startDate,
+                        time: dueTime,
+                        timeZone,
+                        intervalDays: Math.max(1, scheduleIntervalValue),
+                        ...scheduleOptions,
+                      };
     setSaving(true);
     const saved = await onSaveChore(
       {

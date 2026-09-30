@@ -8,8 +8,10 @@ panel data in Home Assistant's private storage area.
 from __future__ import annotations
 
 import asyncio
+import copy
 import hashlib
 import hmac
+import html
 import json
 import secrets
 from collections.abc import Callable, Mapping
@@ -34,6 +36,7 @@ LAST_GOOD_KEY = "navet.chores.last_good"
 HISTORY_KEY = "navet.chores.history"
 JOURNAL_KEY = "navet.chores.journal"
 SECURITY_KEY = "navet.chores.security"
+ALERT_KEY = "navet.chores.alert_key"
 MAX_ACTIVITY_ITEMS = 5000
 MAX_OUTBOX_ITEMS = 5000
 MAX_JOURNAL_ITEMS = 500
@@ -131,7 +134,7 @@ def _empty_data() -> dict[str, Any]:
         "outbox": [],
         "historyRetention": dict(DEFAULT_RETENTION),
         "experience": {
-            "version": 1,
+            "version": 2,
             "gamificationMode": "off",
             "presentationByDefinitionId": {},
             "missionsById": {},
@@ -139,6 +142,11 @@ def _empty_data() -> dict[str, Any]:
             "earnedPointsByParticipant": {},
             "householdBonusPoints": 0,
             "awardedMissionIds": [],
+            "rewardRequestsById": {},
+            "pointTransactions": [],
+            "badgesById": {},
+            "achievementsById": {},
+            "progressAwards": [],
         },
     }
 
@@ -159,6 +167,38 @@ def _validate_rotation_fields(definition: Mapping[str, Any]) -> None:
     assignment = definition.get("assignment", {})
     if not isinstance(assignment, Mapping):
         raise ChoreAuthorityError("Chore assignment is invalid")
+    schedule = definition.get("schedule") or {}
+    if schedule.get("frequency") == "hourly" and (
+        type(schedule.get("intervalHours")) is not int or
+        not 1 <= schedule["intervalHours"] <= 8760
+    ):
+        raise ChoreAuthorityError("Chore hourly interval is invalid")
+    if assignment.get("rotationStrategy", "ordered") not in ("ordered", "fair"):
+        raise ChoreAuthorityError("Chore rotation strategy is invalid")
+    claim = definition.get("claimPolicy") or {}
+    if not isinstance(claim, Mapping):
+        raise ChoreAuthorityError("Chore claim policy is invalid")
+    opens_before = claim.get("opensBeforeMinutes")
+    if opens_before is not None and (type(opens_before) is not int or opens_before < 0):
+        raise ChoreAuthorityError("Chore claim window is invalid")
+    if claim.get("pendingApproval", "allow") not in ("allow", "block"):
+        raise ChoreAuthorityError("Chore pending claim policy is invalid")
+    approval = definition.get("approval") or {}
+    if approval.get("resetClaimOnReject") is not None and type(approval["resetClaimOnReject"]) is not bool:
+        raise ChoreAuthorityError("Chore approval reset policy is invalid")
+    standby = assignment.get("standbyParticipantIds", [])
+    if not isinstance(standby, list) or any(not isinstance(item, str) or not item for item in standby):
+        raise ChoreAuthorityError("Chore standby is invalid")
+    if any(item in assignment.get("participantIds", []) for item in standby):
+        raise ChoreAuthorityError("Chore standby must differ from the primary assignment")
+    overrides = assignment.get("participantScheduleOverrides") or {}
+    if not isinstance(overrides, Mapping) or any(
+        not isinstance(item, Mapping) or
+        (item.get("dueDateOffsetDays") is not None and
+         (type(item["dueDateOffsetDays"]) is not int or not 0 <= item["dueDateOffsetDays"] <= 365))
+        for item in overrides.values()
+    ):
+        raise ChoreAuthorityError("Chore personal due date is invalid")
     if assignment.get("rotationCadence", "scheduled_day") not in ("scheduled_day", "weekly"):
         raise ChoreAuthorityError("Chore rotation cadence is invalid")
     rotation_day = assignment.get("rotationDayOfWeek", 1)
@@ -191,6 +231,13 @@ def _normalize_data(value: Any) -> dict[str, Any]:
     ):
         raise ChoreStorageError("Chore workspace data is invalid")
     data = json.loads(json.dumps(value))
+    for participant in data["participantsById"].values():
+        if isinstance(participant, Mapping) and participant.get("resumeAt"):
+            try:
+                if not participant.get("pausedAt") or _parse_iso(participant["resumeAt"]) <= _parse_iso(participant["pausedAt"]):
+                    raise ChoreStorageError("Chore resume date is invalid")
+            except (TypeError, ValueError) as err:
+                raise ChoreStorageError("Chore resume date is invalid") from err
     for definition in data["definitionsById"].values():
         if isinstance(definition, Mapping):
             _repair_rotation_cursor(definition)
@@ -200,6 +247,30 @@ def _normalize_data(value: Any) -> dict[str, Any]:
                 raise ChoreStorageError(str(err)) from err
     data.setdefault("historyRetention", dict(DEFAULT_RETENTION))
     data.setdefault("experience", _empty_data()["experience"])
+    experience = data["experience"]
+    if not isinstance(experience, Mapping):
+        raise ChoreStorageError("Chore experience data is invalid")
+    if experience.get("version") == 1:
+        previous_balances = experience.get("earnedPointsByParticipant") or {}
+        if not isinstance(previous_balances, Mapping):
+            raise ChoreStorageError("Chore experience data is invalid")
+        balances = dict(previous_balances)
+        if experience.get("gamificationMode") != "off" and not balances:
+            for occurrence in data["occurrencesById"].values():
+                if not isinstance(occurrence, Mapping) or occurrence.get("status") != "done" or not occurrence.get("completedBy"):
+                    continue
+                metadata = experience.get("presentationByDefinitionId", {}).get(occurrence.get("definitionId"), {})
+                points = metadata.get("points", 0) if isinstance(metadata, Mapping) else 0
+                if type(points) is int:
+                    participant_id = str(occurrence["completedBy"])
+                    balances[participant_id] = balances.get(participant_id, 0) + points
+        data["experience"] = {**_empty_data()["experience"], **experience, "version": 2,
+            "earnedPointsByParticipant": balances,
+            "pointTransactions": [{"id": f"opening:{participant_id}", "participantId": participant_id,
+                "pointsDelta": points, "kind": "opening_balance",
+                "timestamp": "1970-01-01T00:00:00.000Z"} for participant_id, points in balances.items()]}
+    elif experience.get("version") != 2:
+        raise ChoreStorageError("Chore experience data is invalid")
     retention = data["historyRetention"]
     if (
         not isinstance(retention, Mapping)
@@ -350,6 +421,7 @@ def _reminder_outbox(
             str((definition.get("schedule") or {}).get("timeZone") or "UTC"),
         ),
         "occurrenceId": occurrence["id"],
+        "occurrenceUpdatedAt": occurrence.get("updatedAt"),
         "participantId": participant["id"],
         "destination": destination.get("type", "in_app"),
         **(
@@ -360,11 +432,19 @@ def _reminder_outbox(
     }
 
 
+def _participant_paused(participant: Mapping[str, Any], at: datetime) -> bool:
+    paused_at = participant.get("pausedAt")
+    if not paused_at:
+        return False
+    resume_at = participant.get("resumeAt")
+    return _parse_iso(paused_at) <= at and (not resume_at or at < _parse_iso(resume_at))
+
+
 def _active_manager(data: Mapping[str, Any], participant_id: str) -> bool:
     participant = data["participantsById"].get(participant_id)
     return bool(
         isinstance(participant, Mapping)
-        and not participant.get("pausedAt")
+        and not _participant_paused(participant, _now())
         and "manage" in participant.get("capabilities", [])
     )
 
@@ -374,9 +454,9 @@ def _require_manager(data: Mapping[str, Any], participant_id: str) -> None:
         raise ChoreAuthorityError("Only a household manager can change chores and profiles")
 
 
-def _require_capability(data: Mapping[str, Any], participant_id: str, capability: str) -> Mapping[str, Any]:
+def _require_capability(data: Mapping[str, Any], participant_id: str, capability: str, at: datetime | None = None) -> Mapping[str, Any]:
     participant = data["participantsById"].get(participant_id)
-    if not isinstance(participant, Mapping) or participant.get("pausedAt"):
+    if not isinstance(participant, Mapping) or _participant_paused(participant, at or _now()):
         raise ChoreAuthorityError("Chore participant is not active")
     if capability not in participant.get("capabilities", []):
         raise ChoreAuthorityError(f"Chore participant cannot {capability} chores")
@@ -450,16 +530,29 @@ def _date_keys(definition: Mapping[str, Any], start: datetime, end: datetime) ->
     return result
 
 
-def _assignment_slots(definition: Mapping[str, Any], data: Mapping[str, Any], index: int) -> list[tuple[str, list[str]]]:
+def _assignment_slots(definition: Mapping[str, Any], data: Mapping[str, Any], index: int, at: datetime | None = None) -> list[tuple[str, list[str]]]:
     assignment = definition.get("assignment", {})
-    ids = [
-        item
-        for item in assignment.get("participantIds", [])
-        if item in data["participantsById"]
-        and not data["participantsById"][item].get("pausedAt")
-        and "complete" in data["participantsById"][item].get("capabilities", [])
-    ]
+    def active(candidate_ids: list[str]) -> list[str]:
+        return [
+            item for item in candidate_ids
+            if item in data["participantsById"]
+            and not (
+                data["participantsById"][item].get("pausedAt") and (
+                    at is None or (
+                        _parse_iso(data["participantsById"][item]["pausedAt"]) <= at and
+                        (not data["participantsById"][item].get("resumeAt") or
+                         at < _parse_iso(data["participantsById"][item]["resumeAt"]))
+                    )
+                )
+            )
+            and "complete" in data["participantsById"][item].get("capabilities", [])
+        ]
+    ids = active(assignment.get("participantIds", []))
     if not ids:
+        if assignment.get("mode") == "person":
+            standby = active(assignment.get("standbyParticipantIds", []))
+            if standby:
+                return [("standby", [standby[0]])]
         return []
     mode = assignment.get("mode")
     if mode == "everyone":
@@ -472,7 +565,18 @@ def _assignment_slots(definition: Mapping[str, Any], data: Mapping[str, Any], in
             else 0
         )
         cursor = max(0, cursor)
-        item = ids[(cursor + index) % len(ids)]
+        if assignment.get("rotationStrategy") == "fair":
+            counts: dict[str, int] = {item: 0 for item in ids}
+            for occurrence in data["occurrencesById"].values():
+                if occurrence.get("definitionId") == definition.get("id") and occurrence.get("status") not in {"skipped", "missed"}:
+                    assignees = [occurrence["completedBy"]] if occurrence.get("status") == "done" and occurrence.get("completedBy") else occurrence.get("assigneeIds", [])
+                    for participant_id in assignees:
+                        if participant_id in counts:
+                            counts[participant_id] += 1
+            ordered = ids[cursor:] + ids[:cursor]
+            item = min(ordered, key=lambda participant_id: counts[participant_id])
+        else:
+            item = ids[(cursor + index) % len(ids)]
         return [(item, [item])]
     if mode == "person":
         return [(ids[0], [ids[0]])]
@@ -548,6 +652,11 @@ def _merge_imported_workspace(
             participant_map.get(item, item)
             for item in assignment.get("participantIds", [])
         ]
+        if isinstance(assignment.get("standbyParticipantIds"), list):
+            assignment["standbyParticipantIds"] = [
+                participant_map.get(item, item)
+                for item in assignment["standbyParticipantIds"]
+            ]
         overrides = assignment.get("participantScheduleOverrides")
         if isinstance(overrides, Mapping):
             assignment["participantScheduleOverrides"] = {
@@ -631,6 +740,69 @@ def _merge_imported_workspace(
     return data, events
 
 
+def _vacation_reschedule(data: dict[str, Any], action: Mapping[str, Any], timestamp: str,
+                         command_id: str) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    actor = str(action.get("actorParticipantId", ""))
+    _require_manager(data, actor)
+    participant_id = str(action.get("participantId", ""))
+    participant = data["participantsById"].get(participant_id)
+    if not isinstance(participant, Mapping) or not participant.get("pausedAt") or not participant.get("resumeAt"):
+        raise ChoreAuthorityError("A scheduled return is required")
+    occurrence_ids = action.get("occurrenceIds")
+    if not isinstance(occurrence_ids, list) or not 0 < len(occurrence_ids) <= 100 or len(set(occurrence_ids)) != len(occurrence_ids):
+        raise ChoreAuthorityError("Choose eligible chores to move")
+    try:
+        start_date = date.fromisoformat(str(action.get("startDate", "")))
+    except ValueError as err:
+        raise ChoreAuthorityError("Chore return date is invalid") from err
+    occurrences = dict(data["occurrencesById"])
+    selected = []
+    for occurrence_id in occurrence_ids:
+        occurrence = occurrences.get(occurrence_id)
+        if (not isinstance(occurrence, Mapping) or occurrence.get("status") != "available"
+            or occurrence.get("claimedAt") or occurrence.get("carriedForwardTo")
+            or participant_id not in occurrence.get("assigneeIds", [])
+            or _parse_iso(occurrence["scheduledAt"]) < _parse_iso(participant["pausedAt"])
+            or _parse_iso(occurrence["scheduledAt"]) >= _parse_iso(participant["resumeAt"])):
+            raise ChoreAuthorityError("A selected chore can no longer be moved")
+        selected.append(occurrence)
+    selected.sort(key=lambda item: item["scheduledAt"])
+    activities: list[dict[str, Any]] = []
+    for index, occurrence in enumerate(selected):
+        definition = data["definitionsById"].get(occurrence["definitionId"])
+        if not isinstance(definition, Mapping):
+            raise ChoreAuthorityError("Chore definition is no longer available")
+        time_zone = str(definition["schedule"]["timeZone"])
+        local_time = _parse_iso(occurrence["scheduledAt"]).astimezone(_zone(time_zone))
+        scheduled = datetime.combine(start_date + timedelta(days=index), local_time.time(),
+                                     tzinfo=_zone(time_zone)).astimezone(timezone.utc)
+        if scheduled <= _parse_iso(timestamp) or scheduled < _parse_iso(participant["resumeAt"]):
+            raise ChoreAuthorityError("Moved chores must begin after the return")
+        scheduled_iso = _iso(scheduled)
+        moved_id = _occurrence_id(str(definition["id"]), scheduled_iso,
+                                  f"vacation:{occurrence['id']}")
+        if moved_id in occurrences:
+            raise ChoreAuthorityError("Moved chore already exists")
+        occurrences[occurrence["id"]] = {**occurrence, "status": "skipped",
+            "skippedBy": actor, "skippedAt": timestamp,
+            "carriedForwardTo": moved_id, "updatedAt": timestamp}
+        moved = {**occurrence, "id": moved_id, "scheduledAt": scheduled_iso,
+            "dueAt": _iso(scheduled + (_parse_iso(occurrence["dueAt"]) - _parse_iso(occurrence["scheduledAt"]))),
+            "status": "available", "carriedForwardFrom": occurrence["id"], "updatedAt": timestamp}
+        for field in ("carriedForwardTo", "skippedBy", "skippedAt"):
+            moved.pop(field, None)
+        occurrences[moved_id] = moved
+        activities.append(_activity(f"{command_id}:created:{moved_id}", timestamp,
+            "occurrence_created", occurrenceId=moved_id, definitionId=definition["id"],
+            assigneeIds=occurrence.get("assigneeIds", []), reason="Moved after vacation"))
+    data["occurrencesById"] = occurrences
+    data["outbox"] = [item for item in data["outbox"] if item.get("status") == "delivered"
+                      or item.get("occurrenceId") not in occurrence_ids]
+    activities.append(_activity(command_id, timestamp, "vacation_rescheduled",
+        actorParticipantId=actor, participantId=participant_id))
+    return data, activities
+
+
 def _materialize(data: dict[str, Any], range_start: str, range_end: str, timestamp: str, command_id: str) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     start = _parse_iso(range_start)
     end = _parse_iso(range_end)
@@ -642,8 +814,25 @@ def _materialize(data: dict[str, Any], range_start: str, range_end: str, timesta
     for definition in data["definitionsById"].values():
         if not definition.get("enabled") or definition.get("archivedAt"):
             continue
+        definition_additions_start = len(additions)
         schedule = definition.get("schedule", {})
-        if schedule.get("frequency") == "after_completion":
+        hourly_instants: list[datetime] = []
+        hourly_indices: list[int] = []
+        if schedule.get("frequency") == "hourly":
+            time_zone = str(schedule.get("timeZone") or "UTC")
+            anchor = _scheduled_at(date.fromisoformat(str(schedule["startDate"])),
+                str(schedule["time"]), time_zone)
+            interval = timedelta(hours=int(schedule["intervalHours"]))
+            index = max(0, -((anchor - start) // interval))
+            while anchor + index * interval <= end:
+                instant = anchor + index * interval
+                local_date = instant.astimezone(_zone(time_zone)).date()
+                if (not schedule.get("endDate") or local_date.isoformat() <= schedule["endDate"]) and local_date.isoformat() not in schedule.get("excludedDates", []):
+                    hourly_instants.append(instant)
+                    hourly_indices.append(index)
+                index += 1
+            dates = [instant.astimezone(_zone(time_zone)).date() for instant in hourly_instants]
+        elif schedule.get("frequency") == "after_completion":
             completed = sorted(
                 occurrence["completedAt"]
                 for occurrence in occurrences.values()
@@ -671,7 +860,7 @@ def _materialize(data: dict[str, Any], range_start: str, range_end: str, timesta
             dates = _date_keys(definition, start, end)
         times = schedule.get("times") or [schedule.get("time", "00:00")]
         for index, local_date in enumerate(dates):
-            rotation_index = _rotation_index_for_date(
+            rotation_index = hourly_indices[index] if hourly_instants else _rotation_index_for_date(
                 dates,
                 index,
                 definition.get("assignment", {}).get("rotationReset"),
@@ -679,9 +868,21 @@ def _materialize(data: dict[str, Any], range_start: str, range_end: str, timesta
                 schedule.get("startDate") or schedule.get("date"),
                 definition.get("assignment", {}).get("rotationDayOfWeek", 1),
             )
-            for slot, assignees in _assignment_slots(
-                definition, data, rotation_index
-            ):
+            assignment_at = hourly_instants[index] if hourly_instants else _scheduled_at(local_date,
+                str(schedule.get("time") or "00:00"), str(schedule.get("timeZone") or "UTC"))
+            saved_by_slot = {}
+            if definition.get("assignment", {}).get("rotationStrategy") == "fair":
+                for item in occurrences.values():
+                    if item.get("definitionId") != definition["id"]:
+                        continue
+                    override = definition.get("assignment", {}).get("participantScheduleOverrides", {}).get((item.get("assigneeIds") or [""])[0], {})
+                    base_date = _parse_iso(item["scheduledAt"]).astimezone(_zone(str(schedule.get("timeZone") or "UTC"))).date() - timedelta(days=override.get("dueDateOffsetDays", 0))
+                    if (hourly_instants and item.get("scheduledAt") == _iso(assignment_at)) or (not hourly_instants and base_date == local_date):
+                        saved_by_slot[item["assignmentSlot"]] = item
+            saved = list(saved_by_slot.values())
+            slots = [(item["assignmentSlot"], item["assigneeIds"]) for item in saved] if saved and definition.get("assignment", {}).get("rotationStrategy") == "fair" else _assignment_slots(
+                definition, {**data, "occurrencesById": occurrences}, rotation_index, assignment_at)
+            for slot, assignees in slots:
                 override = definition.get("assignment", {}).get("participantScheduleOverrides", {}).get(assignees[0]) if len(assignees) == 1 else None
                 if isinstance(override, Mapping):
                     if override.get("daysOfWeek") and ((local_date.weekday() + 1) % 7) not in override["daysOfWeek"]:
@@ -689,8 +890,13 @@ def _materialize(data: dict[str, Any], range_start: str, range_end: str, timesta
                     times_for_slot = override.get("times") or times
                 else:
                     times_for_slot = times
-                for time_value in times_for_slot:
-                    scheduled = _scheduled_at(local_date, str(time_value), str(schedule.get("timeZone") or "UTC"))
+                scheduled_values = [hourly_instants[index]] if hourly_instants else [
+                    _scheduled_at(
+                        local_date + timedelta(days=override.get("dueDateOffsetDays", 0)) if isinstance(override, Mapping) else local_date,
+                        str(time_value), str(schedule.get("timeZone") or "UTC")
+                    ) for time_value in times_for_slot
+                ]
+                for scheduled in scheduled_values:
                     if not (start <= scheduled <= end):
                         continue
                     scheduled_iso = _iso(scheduled)
@@ -707,6 +913,8 @@ def _materialize(data: dict[str, Any], range_start: str, range_end: str, timesta
                         for item in past_occurrences
                     ):
                         continue
+                    if len(additions) - definition_additions_start >= 5000:
+                        raise ChoreAuthorityError("Too many chore occurrences")
                     due = scheduled + timedelta(minutes=max(0, int(definition.get("dueWindowMinutes", 0))))
                     occurrences[occurrence_id] = {
                         "id": occurrence_id,
@@ -730,7 +938,7 @@ def _materialize(data: dict[str, Any], range_start: str, range_end: str, timesta
 
 def _experience_point_balances(data: Mapping[str, Any], experience: Mapping[str, Any]) -> dict[str, int]:
     persisted = experience.get("earnedPointsByParticipant")
-    if isinstance(persisted, Mapping) and persisted:
+    if isinstance(persisted, Mapping):
         return {
             str(key): int(value)
             for key, value in persisted.items()
@@ -753,6 +961,8 @@ def _update_experience_points(
     data: Mapping[str, Any],
     previous: Mapping[str, Any],
     current: Mapping[str, Any],
+    command_id: str,
+    timestamp: str,
 ) -> tuple[dict[str, Any], str | None, int]:
     experience = dict(data.get("experience") or _empty_data()["experience"])
     if experience.get("gamificationMode") == "off":
@@ -773,7 +983,125 @@ def _update_experience_points(
     balances = _experience_point_balances(data, experience)
     balances[participant_id] = balances.get(participant_id, 0) + points_delta
     experience["earnedPointsByParticipant"] = balances
+    experience["pointTransactions"] = [*experience.get("pointTransactions", []), {
+        "id": f"points:{command_id}", "participantId": participant_id,
+        "pointsDelta": points_delta, "kind": "completion" if became_final else "reopen",
+        "timestamp": timestamp, "commandId": command_id, "occurrenceId": previous.get("id"),
+    }]
     return experience, participant_id, points_delta
+
+
+def _progress_cycle_key(cycle: str | None, at: str) -> str:
+    if cycle == "monthly":
+        return at[:7]
+    if cycle == "weekly":
+        day = date.fromisoformat(at[:10])
+        return (day - timedelta(days=day.weekday())).isoformat()
+    return "once"
+
+
+def _progress_value(target: Mapping[str, Any], participant_id: str, data: Mapping[str, Any], at: str) -> int:
+    cycle = target.get("cycle")
+    cycle_key = _progress_cycle_key(cycle, at)
+    selected = set(target.get("definitionIds") or [])
+    relevant = [item for item in data["occurrencesById"].values()
+        if (not selected or item.get("definitionId") in selected)
+        and _progress_cycle_key(cycle, str(item.get("completedAt") or item.get("scheduledAt"))) == cycle_key]
+    completed = [item for item in relevant if item.get("status") == "done" and item.get("completedBy") == participant_id]
+    metric = target.get("metric")
+    if metric in {"selected_chore", "count"}:
+        return len(completed)
+    if metric == "points":
+        relevant_ids = {item.get("id") for item in relevant}
+        return max(0, sum(item.get("pointsDelta", 0) for item in data["experience"].get("pointTransactions", [])
+            if item.get("participantId") == participant_id and item.get("kind") in {"completion", "reopen"}
+            and _progress_cycle_key(cycle, item["timestamp"]) == cycle_key
+            and (not selected or item.get("occurrenceId") in relevant_ids)))
+    if metric == "days":
+        return len({item["completedAt"][:10] for item in completed if item.get("completedAt")})
+    days: dict[str, str] = {}
+    for item in relevant:
+        day = item["scheduledAt"][:10]
+        if item.get("status") == "missed" and participant_id in item.get("assigneeIds", []):
+            days[day] = "missed"
+        elif item.get("status") == "done" and item.get("completedBy") == participant_id and days.get(day) != "missed":
+            days[day] = "done"
+    streak = 0
+    for day in sorted(days):
+        streak = streak + 1 if days[day] == "done" else 0
+    return streak
+
+
+def _without_stale_alerts(data: Mapping[str, Any]) -> list[dict[str, Any]]:
+    return [item for item in data.get("outbox", []) if item.get("status") == "delivered"
+        or not item.get("occurrenceUpdatedAt")
+        or item["occurrenceUpdatedAt"] == data.get("occurrencesById", {}).get(item.get("occurrenceId"), {}).get("updatedAt")]
+
+
+def _valid_progress_target(value: Any, expected_id: str) -> bool:
+    return (
+        isinstance(value, Mapping) and isinstance(value.get("id"), str) and value["id"] == expected_id
+        and isinstance(value.get("title"), str) and bool(value["title"].strip())
+        and isinstance(value.get("metric"), str) and value["metric"] in {"selected_chore", "count", "points", "days", "streak"}
+        and type(value.get("target")) is int and 0 < value["target"] <= 9007199254740991
+        and ("participantId" not in value or isinstance(value["participantId"], str))
+        and ("definitionIds" not in value or (isinstance(value["definitionIds"], list)
+            and all(isinstance(item, str) for item in value["definitionIds"])))
+        and ("cycle" not in value or (isinstance(value["cycle"], str) and value["cycle"] in {"once", "weekly", "monthly"}))
+        and ("awardPoints" not in value or (type(value["awardPoints"]) is int and 0 <= value["awardPoints"] <= 100000))
+    )
+
+
+def _validate_progress_targets(experience: Mapping[str, Any]) -> None:
+    for key in ("badgesById", "achievementsById"):
+        targets = experience.get(key)
+        if not isinstance(targets, Mapping) or any(not _valid_progress_target(value, key) for key, value in targets.items()):
+            raise ChoreAuthorityError("Chore progress target is invalid")
+
+
+def _validate_participant_pause(participant: Mapping[str, Any]) -> None:
+    if "pausedAt" in participant and not _valid_timestamp(participant["pausedAt"]):
+        raise ChoreAuthorityError("Chore pause date is invalid")
+    if "resumeAt" in participant and (not _valid_timestamp(participant["resumeAt"])
+        or not participant.get("pausedAt") or _parse_iso(participant["resumeAt"]) <= _parse_iso(participant["pausedAt"])):
+        raise ChoreAuthorityError("Chore resume date is invalid")
+
+
+def _award_progress(data: dict[str, Any], timestamp: str) -> dict[str, Any]:
+    experience = dict(data["experience"])
+    awards = list(experience.get("progressAwards", []))
+    transactions = list(experience.get("pointTransactions", []))
+    balances = _experience_point_balances(data, experience)
+    targets = []
+    for key in ("badgesById", "achievementsById"):
+        collection = experience.get(key)
+        if isinstance(collection, Mapping):
+            targets.extend(collection.values())
+    for target in targets:
+        if not isinstance(target, Mapping) or not _valid_progress_target(target, target.get("id")):
+            continue
+        cycle_key = _progress_cycle_key(target.get("cycle"), timestamp)
+        for participant_id in data["participantsById"]:
+            if target.get("participantId") and target["participantId"] != participant_id:
+                continue
+            award_id = f"progress:{target['id']}:{participant_id}:{cycle_key}"
+            if any(item.get("id") == award_id for item in awards):
+                continue
+            if _progress_value(target, participant_id, data, timestamp) < target["target"]:
+                continue
+            awards.append({"id": award_id, "targetId": target["id"], "participantId": participant_id,
+                "cycleKey": cycle_key, "awardedAt": timestamp})
+            if target.get("awardPoints"):
+                points = target["awardPoints"]
+                transactions.append({"id": f"points:{award_id}", "participantId": participant_id,
+                    "pointsDelta": points, "kind": "progress_award", "timestamp": timestamp})
+                balances[participant_id] = balances.get(participant_id, 0) + points
+    if len(awards) != len(experience.get("progressAwards", [])):
+        experience["progressAwards"] = awards
+        experience["pointTransactions"] = transactions
+        experience["earnedPointsByParticipant"] = balances
+        data["experience"] = experience
+    return data
 
 
 def _apply_occurrence(data: dict[str, Any], occurrence_id: str, command: Mapping[str, Any], timestamp: str, command_id: str) -> dict[str, Any]:
@@ -786,12 +1114,20 @@ def _apply_occurrence(data: dict[str, Any], occurrence_id: str, command: Mapping
     participant_id = str(command.get("participantId", ""))
     action_type = str(command.get("type", ""))
     capability = "approve" if action_type in {"approve", "reject"} and not command.get("managerOverride") else "manage" if action_type in {"approve", "reject", "skip", "reopen", "reassign"} else "complete"
-    _require_capability(data, participant_id, capability)
+    _require_capability(data, participant_id, capability, _parse_iso(timestamp))
     next_occurrence = dict(occurrence)
     if action_type == "claim":
         if participant_id not in occurrence.get("assigneeIds", []):
             raise ChoreAuthorityError("Participant is not assigned to this chore occurrence")
         claim = definition.get("claimPolicy") or {}
+        if claim.get("opensBeforeMinutes") is not None and _parse_iso(timestamp) < _parse_iso(occurrence["scheduledAt"]) - timedelta(minutes=claim["opensBeforeMinutes"]):
+            raise ChoreAuthorityError("This chore cannot be claimed yet")
+        if claim.get("pendingApproval") == "block" and any(
+            item.get("id") != occurrence_id and item.get("definitionId") == definition.get("id")
+            and item.get("status") == "awaiting_approval" and participant_id in item.get("assigneeIds", [])
+            for item in data["occurrencesById"].values()
+        ):
+            raise ChoreAuthorityError("Review the previous claim before starting this chore")
         expired = bool(occurrence.get("status") == "claimed" and occurrence.get("claimedAt") and claim.get("allowSteal") and claim.get("expiresAfterMinutes") is not None and _parse_iso(timestamp) >= _parse_iso(occurrence["claimedAt"]) + timedelta(minutes=int(claim["expiresAfterMinutes"])))
         if occurrence.get("status") != "available" and not expired:
             raise ChoreAuthorityError("Only available chores can be claimed")
@@ -820,7 +1156,11 @@ def _apply_occurrence(data: dict[str, Any], occurrence_id: str, command: Mapping
             next_occurrence.update(status="done", approvedBy=participant_id, approvedAt=timestamp)
             event_type = "approved"
         else:
-            next_occurrence.update(status="available", claimedBy=None, claimedAt=None, completedBy=None, completedAt=None, approvedBy=None, approvedAt=None)
+            keep_claim = approval.get("resetClaimOnReject") is False and bool(occurrence.get("claimedBy"))
+            next_occurrence.update(status="claimed" if keep_claim else "available",
+                claimedBy=occurrence.get("claimedBy") if keep_claim else None,
+                claimedAt=occurrence.get("claimedAt") if keep_claim else None,
+                completedBy=None, completedAt=None, approvedBy=None, approvedAt=None)
             event_type = "rejected"
     elif action_type in {"skip", "reopen", "reassign"}:
         reason = str(command.get("reason", "")).strip()
@@ -851,14 +1191,16 @@ def _apply_occurrence(data: dict[str, Any], occurrence_id: str, command: Mapping
         raise ChoreAuthorityError("Unsupported chore action")
     next_occurrence["updatedAt"] = timestamp
     experience, point_participant_id, points_delta = _update_experience_points(
-        data, occurrence, next_occurrence
+        data, occurrence, next_occurrence, command_id, timestamp
     )
     data = {
         **data,
         "occurrencesById": {**data["occurrencesById"], occurrence_id: next_occurrence},
         "experience": experience,
     }
-    return data, _activity(
+    if occurrence.get("status") != "done" and next_occurrence.get("status") == "done" and experience.get("gamificationMode") != "off":
+        data = _award_progress(data, timestamp)
+    activity = _activity(
         command_id,
         timestamp,
         event_type,
@@ -871,6 +1213,22 @@ def _apply_occurrence(data: dict[str, Any], occurrence_id: str, command: Mapping
         assigneeIds=next_occurrence.get("assigneeIds") if action_type == "reassign" else None,
         previousAssigneeIds=occurrence.get("assigneeIds") if action_type == "reassign" else None,
     )
+    outbox = [item for item in data.get("outbox", []) if item.get("occurrenceId") != occurrence_id
+        or item.get("status") == "delivered" or not item.get("destination")]
+    policy = definition.get("reminderPolicy") or {}
+    if policy.get("enabled") and event_type in policy.get("notifyOn", []):
+        approvers = (definition.get("approval") or {}).get("approverIds", [])
+        recipients = approvers if event_type in {"claimed", "completed"} and approvers else next_occurrence.get("assigneeIds", [])
+        for recipient_id in dict.fromkeys(recipients):
+            recipient = data["participantsById"].get(recipient_id)
+            if not isinstance(recipient, Mapping) or _participant_paused(recipient, _parse_iso(timestamp)) or (recipient.get("reminderPreferences") or {}).get("enabled") is False:
+                continue
+            item = _reminder_outbox(definition, next_occurrence, recipient, event_type,
+                f"event:{activity['id']}", _parse_iso(timestamp))
+            item["activityId"] = activity["id"]
+            outbox.append(item)
+    data["outbox"] = outbox
+    return data, activity
 
 
 class ChoreAuthority:
@@ -884,9 +1242,11 @@ class ChoreAuthority:
         self._history: list[dict[str, Any]] = []
         self._journal: list[dict[str, Any]] = []
         self._security: dict[str, Any] | None = None
+        self._alert_key: str = ""
         self._sessions: dict[str, dict[str, Any]] = {}
         self._subscribers: set[Callable[[dict[str, Any]], None]] = set()
         self._unsub_interval: Callable[[], None] | None = None
+        self._unsub_alert_actions: Callable[[], None] | None = None
         self._last_scheduler_run_at: str | None = None
         self._last_delivery_error: str | None = None
         self._recovery: dict[str, Any] | None = None
@@ -896,7 +1256,96 @@ class ChoreAuthority:
             "history": Store(hass, STORE_VERSION, HISTORY_KEY, private=True, atomic_writes=True),
             "journal": Store(hass, STORE_VERSION, JOURNAL_KEY, private=True, atomic_writes=True),
             "security": Store(hass, STORE_VERSION, SECURITY_KEY, private=True, atomic_writes=True),
+            "alert_key": Store(hass, STORE_VERSION, ALERT_KEY, private=True, atomic_writes=True),
         }
+
+    def _chunk_store(self, key: str) -> Store:
+        return Store(self.hass, STORE_VERSION, f"{WORKSPACE_KEY}.chunk.{key}", private=True, atomic_writes=True)
+
+    @staticmethod
+    def _chunk_hash(chunk: Mapping[str, Any]) -> str:
+        return hashlib.sha256(json.dumps(chunk, separators=(",", ":"), sort_keys=True).encode()).hexdigest()
+
+    async def _encode_storage(self, document: dict[str, Any]) -> dict[str, Any]:
+        """Write immutable records before publishing the revision's manifest."""
+        if len(json.dumps(document, separators=(",", ":")).encode()) <= MAX_WORKSPACE_BYTES:
+            return document
+        references: dict[str, Any] = {"version": 1}
+        for name in ("occurrencesById", "pointTransactions", "progressAwards", "activity", "outbox", "rewardRequestsById"):
+            if name == "occurrencesById":
+                records = list(document["data"][name].values())
+            elif name == "rewardRequestsById":
+                records = list(document["data"]["experience"][name].values())
+            elif name in {"activity", "outbox"}:
+                records = document["data"][name]
+            else:
+                records = document["data"]["experience"][name]
+            chunks = []
+            items: list[dict[str, Any]] = []
+            size = 128
+            async def flush() -> None:
+                nonlocal items, size
+                if not items:
+                    return
+                chunk = {"version": 1, "collection": name, "items": items}
+                key = self._chunk_hash(chunk)
+                await self._chunk_store(key).async_save(chunk)
+                chunks.append(key)
+                items = []
+                size = 128
+            for item in records:
+                item_size = len(json.dumps(item, separators=(",", ":")).encode()) + 1
+                if item_size > MAX_WORKSPACE_BYTES - 128:
+                    raise ChoreStorageError("Chore durable record is too large")
+                if size + item_size > 256 * 1024:
+                    await flush()
+                items.append(item)
+                size += item_size
+            await flush()
+            references[name] = chunks
+        return {**document, "durableCollections": references, "data": {
+            **document["data"], "occurrencesById": {}, "activity": [], "outbox": [], "experience": {
+                **document["data"]["experience"], "pointTransactions": [], "progressAwards": [], "rewardRequestsById": {}}}}
+
+    async def _decode_storage(self, document: Any) -> Any:
+        """Hydrate and verify all referenced records before accepting a revision."""
+        if not isinstance(document, Mapping) or "durableCollections" not in document:
+            return document
+        if not isinstance(document.get("data"), Mapping) or not isinstance(document["data"].get("experience"), Mapping):
+            raise ChoreStorageError("Chore durable workspace is invalid")
+        references = document["durableCollections"]
+        if not isinstance(references, Mapping) or references.get("version") != 1:
+            raise ChoreStorageError("Chore durable manifest is invalid")
+        restored = {}
+        for name in ("occurrencesById", "pointTransactions", "progressAwards", "activity", "outbox", "rewardRequestsById"):
+            if not isinstance(references.get(name), list):
+                raise ChoreStorageError("Chore durable manifest is invalid")
+            items = []
+            for key in references[name]:
+                if not isinstance(key, str) or len(key) != 64 or any(char not in "0123456789abcdef" for char in key):
+                    raise ChoreStorageError("Chore durable reference is invalid")
+                try:
+                    chunk = await self._chunk_store(key).async_load()
+                except Exception as err:  # noqa: BLE001
+                    raise ChoreStorageError("Chore durable chunk could not be read") from err
+                if not isinstance(chunk, Mapping) or chunk.get("version") != 1 or chunk.get("collection") != name or not isinstance(chunk.get("items"), list) or self._chunk_hash(chunk) != key:
+                    raise ChoreStorageError("Chore durable chunk is missing or corrupt")
+                items.extend(chunk["items"])
+            restored[name] = items
+        occurrences = {}
+        for item in restored["occurrencesById"]:
+            if not isinstance(item, Mapping) or not isinstance(item.get("id"), str) or item["id"] in occurrences:
+                raise ChoreStorageError("Chore durable occurrence is invalid")
+            occurrences[item["id"]] = item
+        requests = {}
+        for item in restored["rewardRequestsById"]:
+            if not isinstance(item, Mapping) or not isinstance(item.get("id"), str) or item["id"] in requests:
+                raise ChoreStorageError("Chore durable request is invalid")
+            requests[item["id"]] = item
+        hydrated = {**document, "data": {**document["data"], "occurrencesById": occurrences, "activity": restored["activity"], "outbox": restored["outbox"],
+            "experience": {**document["data"]["experience"], "pointTransactions": restored["pointTransactions"], "progressAwards": restored["progressAwards"], "rewardRequestsById": requests}}}
+        hydrated.pop("durableCollections", None)
+        return hydrated
 
     async def async_initialize(self) -> None:
         run_initial_tick = True
@@ -907,6 +1356,10 @@ class ChoreAuthority:
             history = await self._stores["history"].async_load()
             journal = await self._stores["journal"].async_load()
             security = await self._stores["security"].async_load()
+            alert_key = await self._stores["alert_key"].async_load()
+            if not isinstance(alert_key, str) or len(alert_key) != 64:
+                alert_key = secrets.token_hex(32)
+                await self._stores["alert_key"].async_save(alert_key)
             if primary is None:
                 last_good = await self._stores["last_good"].async_load()
                 if isinstance(last_good, Mapping) and isinstance(last_good.get("data"), Mapping):
@@ -915,6 +1368,7 @@ class ChoreAuthority:
                     primary = {"contractVersion": CONTRACT_VERSION, "revision": 0, "updatedAt": _iso(_now()), "data": _empty_data()}
             repaired_primary = False
             try:
+                primary = await self._decode_storage(primary)
                 data = _normalize_data(primary.get("data")) if isinstance(primary, Mapping) else _empty_data()
                 if isinstance(primary, Mapping) and data != primary.get("data"):
                     primary = {
@@ -929,6 +1383,7 @@ class ChoreAuthority:
                 try:
                     if not isinstance(backup, Mapping):
                         raise ChoreStorageError("No healthy chore backup is available")
+                    backup = await self._decode_storage(backup)
                     data = _normalize_data(backup.get("data"))
                 except ChoreAuthorityError:
                     data = _empty_data()
@@ -966,9 +1421,10 @@ class ChoreAuthority:
             self._history = list(history.get("events", [])) if isinstance(history, Mapping) else []
             self._journal = list(journal.get("commands", [])) if isinstance(journal, Mapping) else []
             self._security = dict(security) if isinstance(security, Mapping) else None
+            self._alert_key = alert_key
             self._loaded = True
             if repaired_primary:
-                await self._stores["primary"].async_save(primary)
+                await self._stores["primary"].async_save(await self._encode_storage(primary))
         if run_initial_tick:
             await self.async_tick(_now())
 
@@ -976,11 +1432,61 @@ class ChoreAuthority:
         await self.async_initialize()
         if self._unsub_interval is None:
             self._unsub_interval = async_track_time_interval(self.hass, self.async_tick, BACKGROUND_INTERVAL)
+        if self._unsub_alert_actions is None:
+            self._unsub_alert_actions = self.hass.bus.async_listen("mobile_app_notification_action", self.async_handle_alert_action)
 
     async def async_stop(self) -> None:
         if self._unsub_interval:
             self._unsub_interval()
             self._unsub_interval = None
+        if self._unsub_alert_actions:
+            self._unsub_alert_actions()
+            self._unsub_alert_actions = None
+
+    def alert_actions(self, item: Mapping[str, Any]) -> list[dict[str, str]]:
+        """Return only commands the addressed profile can apply to this exact revision."""
+        occurrence = self.data.get("occurrencesById", {}).get(item.get("occurrenceId"))
+        participant = self.data.get("participantsById", {}).get(item.get("participantId"))
+        definition = self.data.get("definitionsById", {}).get(occurrence.get("definitionId")) if occurrence else None
+        if not occurrence or not participant or not definition or not item.get("occurrenceUpdatedAt") or item.get("occurrenceUpdatedAt") != occurrence.get("updatedAt"):
+            return []
+        actions: list[tuple[str, str]] = []
+        if occurrence.get("status") == "available" and participant["id"] in occurrence.get("assigneeIds", []) and "complete" in participant.get("capabilities", []):
+            actions.append(("claim", "Claim"))
+        if occurrence.get("status") == "awaiting_approval" and participant["id"] in (definition.get("approval") or {}).get("approverIds", []) and "approve" in participant.get("capabilities", []):
+            actions.extend((("approve", "Approve"), ("reject", "Send back")))
+        if occurrence.get("status") in {"available", "claimed"} and "manage" in participant.get("capabilities", []):
+            actions.append(("skip", "Skip"))
+        return [{"action": f"navet_chore|{item['id']}|{name}|{self._alert_signature(item, name)}", "title": label} for name, label in actions[:3]]
+
+    def _alert_signature(self, item: Mapping[str, Any], operation: str) -> str:
+        payload = f"{item['id']}|{item.get('occurrenceUpdatedAt')}|{operation}"
+        return hmac.new(bytes.fromhex(self._alert_key), payload.encode(), hashlib.sha256).hexdigest()
+
+    async def async_handle_alert_action(self, event: Any) -> None:
+        """Apply mobile notification buttons through the same chore command path."""
+        action_id = getattr(event, "data", {}).get("action")
+        if not isinstance(action_id, str) or not action_id.startswith("navet_chore|"):
+            return
+        parts = action_id.split("|")
+        if len(parts) != 4:
+            return
+        _, outbox_id, operation, signature = parts
+        item = next((candidate for candidate in self.data.get("outbox", []) if candidate.get("id") == outbox_id), None)
+        if (not item or item.get("status") != "delivered"
+            or not hmac.compare_digest(signature, self._alert_signature(item, operation))
+            or action_id not in {choice["action"] for choice in self.alert_actions(item)}):
+            return
+        command = {"type": operation, "participantId": item["participantId"]}
+        if operation == "skip":
+            command["reason"] = "Skipped from chore alert"
+        try:
+            await self.async_command({"commandId": f"alert:{outbox_id}:{operation}",
+                "baseRevision": self.revision,
+                "action": {"type": "occurrence_action", "occurrenceId": item["occurrenceId"],
+                    "expectedOccurrenceUpdatedAt": item["occurrenceUpdatedAt"], "action": command}}, trusted_service=True)
+        except ChoreAuthorityError:
+            return
 
     @property
     def revision(self) -> int:
@@ -1037,6 +1543,7 @@ class ChoreAuthority:
         return unsubscribe
 
     async def _save(self, next_document: dict[str, Any], previous: dict[str, Any]) -> None:
+        next_document["data"]["outbox"] = _without_stale_alerts(next_document["data"])
         retention = next_document["data"].get("historyRetention") or DEFAULT_RETENTION
         boundary = _now() - timedelta(days=int(retention["maxAgeDays"]))
         self._history = [
@@ -1045,12 +1552,15 @@ class ChoreAuthority:
             if _valid_timestamp(event.get("timestamp"))
             and _parse_iso(event["timestamp"]) >= boundary
         ][-min(MAX_HISTORY_ITEMS, int(retention["maxEvents"])):]
-        payloads = {
-            "primary": next_document,
-            "last_good": previous,
-            "history": {"contractVersion": CONTRACT_VERSION, "events": self._history},
-            "journal": {"contractVersion": CONTRACT_VERSION, "commands": self._journal[-MAX_JOURNAL_ITEMS:]},
-        }
+        try:
+            payloads = {
+                "primary": await self._encode_storage(next_document),
+                "last_good": await self._encode_storage(previous),
+                "history": {"contractVersion": CONTRACT_VERSION, "events": self._history},
+                "journal": {"contractVersion": CONTRACT_VERSION, "commands": self._journal[-MAX_JOURNAL_ITEMS:]},
+            }
+        except Exception as err:  # noqa: BLE001
+            raise ChoreStorageError("Chore storage could not finish the request") from err
         limits = {
             "primary": MAX_WORKSPACE_BYTES,
             "last_good": MAX_WORKSPACE_BYTES,
@@ -1082,6 +1592,11 @@ class ChoreAuthority:
     async def _commit_locked(self, data: dict[str, Any], activities: list[dict[str, Any]], command_id: str, timestamp: str) -> dict[str, Any]:
         previous = dict(self._document or {})
         previous["data"] = json.loads(json.dumps(self.data))
+        stale_delivered = [item for item in previous["data"].get("outbox", [])
+            if item.get("status") == "delivered" and item.get("occurrenceUpdatedAt")
+            and (old := previous["data"].get("occurrencesById", {}).get(item.get("occurrenceId")))
+            and old.get("updatedAt") == item.get("occurrenceUpdatedAt")
+            and data.get("occurrencesById", {}).get(item.get("occurrenceId"), {}).get("updatedAt") != old.get("updatedAt")]
         self._history.extend(activity for activity in activities if activity["id"] not in {item.get("id") for item in self._history})
         data["activity"] = (list(data.get("activity", [])) + activities)[-MAX_ACTIVITY_ITEMS:]
         existing_outbox = {item.get("id") for item in data.get("outbox", [])}
@@ -1096,6 +1611,15 @@ class ChoreAuthority:
         if command_id:
             self._journal.append({"commandId": command_id, "revision": next_document["revision"], "timestamp": timestamp})
         await self._save(next_document, previous)
+        for item in stale_delivered:
+            target = str(item.get("destinationTarget", "")).removeprefix("notify.")
+            if not target.startswith("mobile_app_"):
+                continue
+            try:
+                await self.hass.services.async_call("notify", target,
+                    {"message": "clear_notification", "data": {"tag": f"navet_chore_{item['id']}"}}, blocking=False)
+            except Exception:  # noqa: BLE001
+                continue
         return self._public_document()
 
     async def _reset_locked(self, timestamp: str) -> dict[str, Any]:
@@ -1119,7 +1643,7 @@ class ChoreAuthority:
         result["management"] = {"pinConfigured": False}
         return result
 
-    async def async_command(self, request: Mapping[str, Any], user_id: str | None = None) -> dict[str, Any]:
+    async def async_command(self, request: Mapping[str, Any], user_id: str | None = None, *, trusted_service: bool = False) -> dict[str, Any]:
         await self.async_initialize()
         self._raise_if_recovery_required()
         command_id = str(request.get("commandId", ""))
@@ -1134,17 +1658,23 @@ class ChoreAuthority:
             action = request.get("action")
             if not isinstance(action, Mapping):
                 raise ChoreAuthorityError("Chore command is invalid")
-            if self._security and self._requires_management(action) and not self._session_valid(str(request.get("managementSessionToken", "")), user_id):
+            if self._security and self._requires_management(action) and not trusted_service and not self._session_valid(str(request.get("managementSessionToken", "")), user_id):
                 raise ChoreAuthorityError("Unlock chore management to continue")
             timestamp = _iso(_now())
             data = json.loads(json.dumps(self.data))
             activities: list[dict[str, Any]] = []
             if action.get("type") == "occurrence_action":
+                expected = action.get("expectedOccurrenceUpdatedAt")
+                if expected and data["occurrencesById"].get(str(action.get("occurrenceId", "")), {}).get("updatedAt") != expected:
+                    raise ChoreAuthorityError("This chore alert is out of date")
                 data, activity = _apply_occurrence(data, str(action.get("occurrenceId", "")), action.get("action", {}), timestamp, command_id)
                 activities.append(activity)
             elif action.get("type") == "materialize_occurrences":
                 data, additional = _materialize(data, str(action.get("rangeStart")), str(action.get("rangeEnd")), timestamp, command_id)
                 activities.append(_activity(command_id, timestamp, "workspace_materialized"))
+                activities.extend(additional)
+            elif action.get("type") == "vacation_reschedule":
+                data, additional = _vacation_reschedule(data, action, timestamp, command_id)
                 activities.extend(additional)
             else:
                 data, activity = self._apply_workspace_action(data, action, timestamp, command_id)
@@ -1153,13 +1683,14 @@ class ChoreAuthority:
 
     @staticmethod
     def _requires_management(action: Mapping[str, Any]) -> bool:
-        return str(action.get("type")) in {"participant_create", "participant_update", "definition_create", "definition_update", "definition_archive", "definition_restore", "definition_delete", "retention_update", "experience_update", "experience_points_adjust"}
+        return str(action.get("type")) in {"participant_create", "participant_update", "definition_create", "definition_update", "definition_archive", "definition_restore", "definition_delete", "retention_update", "experience_update", "experience_points_adjust", "reward_decision", "vacation_reschedule"}
 
     def _apply_workspace_action(self, data: dict[str, Any], action: Mapping[str, Any], timestamp: str, command_id: str) -> tuple[dict[str, Any], dict[str, Any]]:
         action_type = str(action.get("type"))
         actor = str(action.get("actorParticipantId", ""))
         if action_type == "participant_create":
             participant = dict(action.get("participant", {}))
+            _validate_participant_pause(participant)
             participant_id = str(participant.get("id", ""))
             if not participant_id or participant_id in data["participantsById"]:
                 raise ChoreAuthorityError("Household profile already exists")
@@ -1172,17 +1703,35 @@ class ChoreAuthority:
         if action_type == "participant_update":
             _require_manager(data, actor)
             participant = dict(action.get("participant", {}))
+            _validate_participant_pause(participant)
             current = data["participantsById"].get(participant.get("id"))
             if not current or participant.get("createdAt") != current.get("createdAt"):
                 raise ChoreAuthorityError("Household profile update is invalid")
             participants = {**data["participantsById"], participant["id"]: participant}
-            if not any(not item.get("pausedAt") and "manage" in item.get("capabilities", []) for item in participants.values()):
+            if not any(not _participant_paused(item, _parse_iso(timestamp)) and "manage" in item.get("capabilities", []) for item in participants.values()):
                 raise ChoreAuthorityError("The household needs an active manager")
             data["participantsById"] = participants
+            if current.get("pausedAt") != participant.get("pausedAt") or current.get("resumeAt") != participant.get("resumeAt"):
+                removed_ids = {
+                    key for key, occurrence in data["occurrencesById"].items()
+                    if occurrence.get("status") == "available"
+                    and "carriedForwardFrom" not in occurrence
+                    and not (participant["id"] in occurrence.get("assigneeIds", []) and _participant_paused(participant, _parse_iso(occurrence["scheduledAt"])))
+                    and _parse_iso(occurrence["scheduledAt"]) > _parse_iso(timestamp)
+                    and (
+                        participant["id"] in data["definitionsById"].get(occurrence.get("definitionId"), {}).get("assignment", {}).get("participantIds", [])
+                        or participant["id"] in data["definitionsById"].get(occurrence.get("definitionId"), {}).get("assignment", {}).get("standbyParticipantIds", [])
+                    )
+                }
+                data["occurrencesById"] = {key: value for key, value in data["occurrencesById"].items() if key not in removed_ids}
+                data["outbox"] = [item for item in data["outbox"] if item.get("status") == "delivered" or item.get("occurrenceId") not in removed_ids]
             return data, _activity(command_id, timestamp, "participant_updated", participantId=participant["id"], actorParticipantId=actor)
         if action_type in {"definition_create", "definition_update"}:
             _require_manager(data, actor)
             definition = dict(action.get("definition", {}))
+            notify_on = (definition.get("reminderPolicy") or {}).get("notifyOn", [])
+            if not isinstance(notify_on, list) or any(item not in {"claimed", "completed", "approved", "rejected", "skipped"} for item in notify_on):
+                raise ChoreAuthorityError("Chore notification events are invalid")
             _repair_rotation_cursor(definition)
             _validate_rotation_fields(definition)
             definition_id = str(definition.get("id", ""))
@@ -1190,6 +1739,10 @@ class ChoreAuthority:
                 raise ChoreAuthorityError("Chore is no longer available")
             for participant_id in definition.get("assignment", {}).get("participantIds", []):
                 _require_capability(data, str(participant_id), "complete")
+            for participant_id in definition.get("assignment", {}).get("standbyParticipantIds", []):
+                participant = data["participantsById"].get(str(participant_id))
+                if not isinstance(participant, Mapping) or "complete" not in participant.get("capabilities", []):
+                    raise ChoreAuthorityError("Chore standby includes an ineligible participant")
             for participant_id in definition.get("approval", {}).get("approverIds", []):
                 _require_capability(data, str(participant_id), "approve")
             current = data["definitionsById"].get(definition_id)
@@ -1268,7 +1821,15 @@ class ChoreAuthority:
             return data, _activity(command_id, timestamp, "retention_updated", actorParticipantId=actor)
         if action_type == "experience_update":
             _require_manager(data, actor)
-            data["experience"] = dict(action.get("experience", {}))
+            updated = action.get("experience")
+            current = data.get("experience") or _empty_data()["experience"]
+            if not isinstance(updated, Mapping) or updated.get("version") != 2:
+                raise ChoreAuthorityError("Chore experience data is invalid")
+            _validate_progress_targets(updated)
+            for key in ("rewardRequestsById", "pointTransactions", "progressAwards", "earnedPointsByParticipant"):
+                if updated.get(key) != current.get(key):
+                    raise ChoreAuthorityError("Reward and point history can only change through household actions")
+            data["experience"] = dict(updated)
             return data, _activity(command_id, timestamp, "experience_updated", actorParticipantId=actor)
         if action_type == "experience_points_adjust":
             _require_manager(data, actor)
@@ -1294,6 +1855,11 @@ class ChoreAuthority:
                 raise ChoreAuthorityError("Point balance must stay between -1000000000 and 1000000000")
             balances[participant_id] = next_balance
             experience["earnedPointsByParticipant"] = balances
+            experience["pointTransactions"] = [*experience.get("pointTransactions", []), {
+                "id": f"points:{command_id}", "participantId": participant_id,
+                "pointsDelta": points_delta, "kind": "adjustment",
+                "timestamp": timestamp, "commandId": command_id,
+            }]
             data["experience"] = experience
             return data, _activity(
                 command_id,
@@ -1304,6 +1870,65 @@ class ChoreAuthority:
                 pointsDelta=points_delta,
                 reason=reason or None,
             )
+        if action_type == "reward_request":
+            participant_id = str(action.get("participantId", ""))
+            participant = data["participantsById"].get(participant_id)
+            if not isinstance(participant, Mapping) or _participant_paused(participant, _parse_iso(timestamp)) or "complete" not in participant.get("capabilities", []):
+                raise ChoreAuthorityError("Chore participant is not active")
+            experience = dict(data.get("experience") or _empty_data()["experience"])
+            if experience.get("gamificationMode") == "off":
+                raise ChoreAuthorityError("Rewards are unavailable")
+            request_id = str(action.get("requestId", ""))
+            requests = dict(experience.get("rewardRequestsById", {}))
+            if not request_id or request_id in requests:
+                raise ChoreAuthorityError("Reward request already exists")
+            reward = experience.get("rewardGoalsById", {}).get(action.get("rewardId"))
+            if not isinstance(reward, Mapping) or not reward.get("enabled") or reward.get("participantId") not in (None, participant_id):
+                raise ChoreAuthorityError("Reward is unavailable")
+            cost = reward.get("targetPoints")
+            if type(cost) is not int or cost < 1 or _experience_point_balances(data, experience).get(participant_id, 0) < cost:
+                raise ChoreAuthorityError("Not enough points for this reward")
+            requests[request_id] = {"id": request_id, "rewardId": reward["id"], "rewardTitle": reward["title"],
+                "cost": cost, "participantId": participant_id, "status": "requested",
+                "requestedAt": timestamp, "updatedAt": timestamp}
+            experience["rewardRequestsById"] = requests
+            data["experience"] = experience
+            return data, _activity(command_id, timestamp, "reward_requested", actorParticipantId=participant_id, participantId=participant_id)
+        if action_type == "reward_decision":
+            _require_manager(data, actor)
+            experience = dict(data.get("experience") or _empty_data()["experience"])
+            requests = dict(experience.get("rewardRequestsById", {}))
+            request = requests.get(action.get("requestId"))
+            if not isinstance(request, Mapping):
+                raise ChoreAuthorityError("Reward request is no longer available")
+            decision = action.get("decision")
+            if decision not in ("approve", "decline", "fulfill", "refund"):
+                raise ChoreAuthorityError("Reward decision is invalid")
+            if ((decision in ("approve", "decline") and request["status"] != "requested")
+                or (decision == "fulfill" and request["status"] != "approved")
+                or (decision == "refund" and request["status"] not in ("approved", "fulfilled"))):
+                raise ChoreAuthorityError("Reward request has already changed")
+            status = {"approve": "approved", "decline": "declined", "fulfill": "fulfilled", "refund": "refunded"}[decision]
+            points_delta = -request["cost"] if decision == "approve" else request["cost"] if decision == "refund" else 0
+            balances = _experience_point_balances(data, experience)
+            participant_id = request["participantId"]
+            if points_delta < 0 and balances.get(participant_id, 0) < request["cost"]:
+                raise ChoreAuthorityError("Not enough points for this reward")
+            if points_delta:
+                balances[participant_id] = balances.get(participant_id, 0) + points_delta
+            experience["pointTransactions"] = [*experience.get("pointTransactions", []), {
+                "id": f"points:reward:{request['id']}:{decision}", "participantId": participant_id,
+                "pointsDelta": points_delta, "kind": "reward" if decision == "approve" else "refund" if decision == "refund" else "reward_decision",
+                "timestamp": timestamp, "commandId": command_id, "rewardRequestId": request["id"],
+            }]
+            requests[request["id"]] = {**request, "status": status, "updatedAt": timestamp,
+                "managerParticipantId": actor, "reason": str(action.get("reason") or "").strip()}
+            experience["rewardRequestsById"] = requests
+            experience["earnedPointsByParticipant"] = balances
+            data["experience"] = experience
+            return data, _activity(command_id, timestamp, f"reward_{status}", actorParticipantId=actor,
+                participantId=participant_id, reason=str(action.get("reason") or "").strip() or None,
+                pointsDelta=points_delta if points_delta and abs(points_delta) <= 10000 else None)
         if action_type == "reminder_acknowledge":
             actor_record = _require_capability(data, actor, "complete")
             outbox_id = str(action.get("outboxId", ""))
@@ -1390,6 +2015,7 @@ class ChoreAuthority:
                 backup = await self._stores["last_good"].async_load()
                 if not isinstance(backup, Mapping):
                     raise ChoreAuthorityError("No healthy chore backup is available")
+                backup = await self._decode_storage(backup)
                 data = _normalize_data(backup.get("data"))
             else:
                 return await self._reset_locked(timestamp)
@@ -1481,6 +2107,13 @@ class ChoreAuthority:
             for occurrence_id, occurrence_value in list(occurrences.items()):
                 occurrence = dict(occurrence_value)
                 due = _parse_iso(occurrence.get("dueAt", timestamp))
+                if not any(
+                    isinstance(data["participantsById"].get(item), Mapping) and
+                    not _participant_paused(data["participantsById"][item], now)
+                    and not _participant_paused(data["participantsById"][item], _parse_iso(occurrence["scheduledAt"]))
+                    for item in occurrence.get("assigneeIds", [])
+                ):
+                    continue
                 if now >= due and f"activity:scheduler:due:{occurrence['id']}" not in existing:
                     activities.append({"id": f"activity:scheduler:due:{occurrence['id']}", "commandId": f"scheduler:due:{occurrence['id']}", "occurrenceId": occurrence["id"], "definitionId": occurrence["definitionId"], "assigneeIds": occurrence.get("assigneeIds", []), "type": "due", "timestamp": occurrence["dueAt"]})
                 if now > due and occurrence.get("status") in {"available", "claimed", "awaiting_approval"} and f"activity:scheduler:overdue:{occurrence['id']}" not in existing:
@@ -1560,7 +2193,7 @@ class ChoreAuthority:
             ) -> None:
                 participant = data["participantsById"].get(participant_id)
                 preferences = participant.get("reminderPreferences") if isinstance(participant, Mapping) else None
-                if not isinstance(participant, Mapping) or participant.get("pausedAt") or (preferences or {}).get("enabled") is False:
+                if not isinstance(participant, Mapping) or _participant_paused(participant, now) or _participant_paused(participant, _parse_iso(occurrence["scheduledAt"])) or (preferences or {}).get("enabled") is False:
                     return
                 item = _reminder_outbox(definition, occurrence, participant, event_type, event_key, now)
                 if item["id"] in existing_outbox:
@@ -1617,11 +2250,22 @@ class ChoreAuthority:
         await self._deliver_pending()
 
     async def _deliver_pending(self) -> None:
-        pending = [item for item in self.data.get("outbox", []) if str(item.get("eventType", "")).startswith("reminder_") and item.get("destination") in {"provider", "home_assistant"} and item.get("status") in {"pending", "failed"} and _parse_iso(item.get("nextAttemptAt", _iso(_now()))) <= _now()][:10]
+        async with self._lock:
+            outbox = _without_stale_alerts(self.data)
+            if len(outbox) != len(self.data.get("outbox", [])):
+                previous = copy.deepcopy(self._document)
+                next_document = copy.deepcopy(self._document)
+                next_document["data"]["outbox"] = outbox
+                next_document["revision"] += 1
+                next_document["updatedAt"] = _iso(_now())
+                await self._save(next_document, previous)
+        pending = [item for item in self.data.get("outbox", []) if item.get("destination") in {"provider", "home_assistant"} and item.get("status") in {"pending", "failed"} and _parse_iso(item.get("nextAttemptAt", _iso(_now()))) <= _now()][:10]
         for item in pending:
             occurrence = self.data.get("occurrencesById", {}).get(item.get("occurrenceId"), {})
             definition = self.data.get("definitionsById", {}).get(occurrence.get("definitionId"), {})
             title = str(definition.get("title", "Navet chore"))
+            if item.get("occurrenceUpdatedAt") and item.get("occurrenceUpdatedAt") != occurrence.get("updatedAt"):
+                continue
             try:
                 target = str(item.get("destinationTarget", "")).strip()
                 if target.startswith("notify."):
@@ -1632,7 +2276,11 @@ class ChoreAuthority:
                 ):
                     raise ChoreAuthorityError("Invalid Home Assistant notification target")
                 if target:
-                    await self.hass.services.async_call("notify", target, {"title": title, "message": title, "data": {"choreOccurrenceId": item.get("occurrenceId"), "choreDefinitionId": occurrence.get("definitionId")}}, blocking=True)
+                    payload = {"choreOccurrenceId": item.get("occurrenceId"), "choreDefinitionId": occurrence.get("definitionId"),
+                        "choreOccurrenceUpdatedAt": item.get("occurrenceUpdatedAt"), "tag": f"navet_chore_{item['id']}"}
+                    if target.startswith("mobile_app_"):
+                        payload["actions"] = self.alert_actions(item)
+                    await self.hass.services.async_call("notify", target, {"title": title, "message": title, "data": payload}, blocking=True)
                 else:
                     await self.hass.services.async_call("persistent_notification", "create", {"title": title, "message": title, "notification_id": f"navet_chore_{item.get('id')}"}, blocking=True)
                 await self.async_command({"commandId": f"delivery:{item['id']}:{item.get('attempts', 0) + 1}", "baseRevision": self.revision, "action": {"type": "outbox_delivery_update", "outboxId": item["id"], "status": "delivered"}})
@@ -1733,6 +2381,33 @@ class ChoreAuthority:
     ) -> dict[str, Any]:
         """Execute a registered ``navet.*`` action without a browser client."""
         await self.async_initialize()
+        if service == "weekly_report":
+            return self.weekly_report(str(service_data.get("format", "markdown")))
+        if service == "reward_decision":
+            action = {"type": "reward_decision", "requestId": str(service_data.get("request_id", "")),
+                "actorParticipantId": str(service_data.get("manager_participant_id", "")),
+                "decision": str(service_data.get("decision", "")),
+                "reason": str(service_data.get("reason", "")) or None}
+            identity = f"{service_data.get('request_id', '')}:{service_data.get('decision', '')}"
+        elif service == "adjust_points":
+            action = {"type": "experience_points_adjust",
+                "actorParticipantId": str(service_data.get("manager_participant_id", "")),
+                "participantId": str(service_data.get("participant_id", "")),
+                "pointsDelta": int(service_data.get("points_delta", 0)),
+                "reason": str(service_data.get("reason", "")) or None}
+            identity = str(service_data.get("command_id", ""))
+            if not identity:
+                raise ChoreAuthorityError("Point adjustment needs a stable command ID")
+        else:
+            action = None
+            identity = str(service_data.get("occurrence_id", ""))
+        if action is not None:
+            command_key = f"ha:adjust_points:{identity}" if service == "adjust_points" else f"ha:{context_id}:{service}:{identity}"
+            return await self.async_command({
+                "commandId": command_key,
+                "baseRevision": self.revision,
+                "action": action,
+            }, trusted_service=True)
         occurrence_action: dict[str, Any] = {
             "type": service,
             "participantId": str(service_data.get("participant_id", "")),
@@ -1745,16 +2420,46 @@ class ChoreAuthority:
             {
                 "commandId": (
                     f"ha:{context_id}:{service}:"
-                    f"{service_data.get('occurrence_id', '')}"
+                    f"{identity}"
                 ),
                 "baseRevision": self.revision,
                 "action": {
                     "type": "occurrence_action",
                     "occurrenceId": str(service_data.get("occurrence_id", "")),
+                    "expectedOccurrenceUpdatedAt": service_data.get("expected_occurrence_updated_at"),
                     "action": occurrence_action,
                 },
             }
         )
+
+    def weekly_report(self, format: str = "markdown") -> dict[str, Any]:
+        """Render a bounded shareable report from durable events and current work."""
+        if format not in {"markdown", "html"}:
+            raise ChoreAuthorityError("Weekly report format must be markdown or html")
+        today = _now().date()
+        monday = today - timedelta(days=today.weekday())
+        starts = datetime.combine(monday, datetime.min.time(), tzinfo=timezone.utc)
+        ends = starts + timedelta(days=7)
+        next_ends = ends + timedelta(days=7)
+        events = [item for item in self._history
+            if starts <= _parse_iso(item["timestamp"]) < ends]
+        occurrences = list(self.data.get("occurrencesById", {}).values())
+        counts = {
+            "completed": sum(item.get("type") == "completed" for item in events),
+            "missed": sum(item.get("type") == "missed" for item in events),
+            "carried_forward": sum(bool(item.get("carriedForwardFrom")) and starts <= _parse_iso(item["scheduledAt"]) < ends for item in occurrences),
+            "awaiting_approval": sum(item.get("status") == "awaiting_approval" for item in occurrences),
+            "next_week": sum(ends <= _parse_iso(item["scheduledAt"]) < next_ends for item in occurrences),
+        }
+        title = f"Chores: {monday.isoformat()} to {(ends - timedelta(days=1)).date().isoformat()}"
+        labels = {"completed": "Completed", "missed": "Missed", "carried_forward": "Carried forward",
+            "awaiting_approval": "Awaiting approval", "next_week": "Next week"}
+        if format == "markdown":
+            content = "\n".join([f"# {title}", "", *(f"- {label}: {counts[key]}" for key, label in labels.items())])
+        else:
+            content = "\n".join([f"<h1>{html.escape(title)}</h1>", "<ul>",
+                *(f"<li>{html.escape(label)}: {counts[key]}</li>" for key, label in labels.items()), "</ul>"])
+        return {"format": format, "content": content, "week_start": monday.isoformat(), "counts": counts}
 
 
 @callback

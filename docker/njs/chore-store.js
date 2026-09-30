@@ -1,5 +1,7 @@
+import choreDurableStorage from './chore-durable-storage.js';
 import choreCalendarPolicy from './chore-calendar-policy.js';
 import choreOccurrencePolicy from './chore-occurrence-policy.js';
+import choreProgressPolicy from './chore-progress-policy.js';
 import fs from 'fs';
 import hashCrypto from 'crypto';
 import authStore from './auth-store.js';
@@ -172,7 +174,7 @@ function readJson(path, fallback, maxBytes) {
 
 function writeJson(path, value, maxBytes) {
   const serialized = JSON.stringify(value);
-  if (serialized.length > maxBytes) {
+  if (Buffer.byteLength(serialized, 'utf8') > maxBytes) {
     const error = new Error('Chore workspace is too large');
     error.code = 'NAVET_CHORE_WRITE_LIMIT';
     throw error;
@@ -192,6 +194,19 @@ function deleteFile(path) {
 
 function isRecord(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isParticipantPausedAt(participant, timestamp) {
+  return Boolean(participant.pausedAt && Date.parse(timestamp) >= Date.parse(participant.pausedAt) &&
+    (!participant.resumeAt || Date.parse(timestamp) < Date.parse(participant.resumeAt)));
+}
+
+function occurrenceHasActiveAssignee(occurrence, data, timestamp) {
+  return occurrence.assigneeIds.some(function (id) {
+    const participant = data.participantsById[id];
+    return isRecord(participant) && !isParticipantPausedAt(participant, timestamp) &&
+      !isParticipantPausedAt(participant, occurrence.scheduledAt);
+  });
 }
 
 function isValidTenantBinding(value) {
@@ -318,6 +333,29 @@ function isValidChoreWorkspaceData(value) {
 }
 
 function migrateChoreWorkspaceData(value) {
+  if (isRecord(value) && value.schemaVersion === SCHEMA_VERSION &&
+      isRecord(value.experience) && value.experience.version === 1) {
+    const oldExperience = value.experience;
+    const balances = Object.assign({}, oldExperience.earnedPointsByParticipant || {});
+    if (oldExperience.gamificationMode !== 'off' && Object.keys(balances).length === 0 &&
+      isRecord(value.occurrencesById)) {
+      Object.keys(value.occurrencesById).forEach(function (occurrenceId) {
+        const occurrence = value.occurrencesById[occurrenceId];
+        if (!isRecord(occurrence) || occurrence.status !== 'done' ||
+          typeof occurrence.completedBy !== 'string') return;
+        const metadata = oldExperience.presentationByDefinitionId[occurrence.definitionId];
+        balances[occurrence.completedBy] = (balances[occurrence.completedBy] || 0) +
+          (isRecord(metadata) && Number.isSafeInteger(metadata.points) ? metadata.points : 0);
+      });
+    }
+    const pointTransactions = Object.keys(balances).map(function (participantId) {
+      return { id: 'opening:' + participantId, participantId,
+        pointsDelta: balances[participantId], kind: 'opening_balance',
+        timestamp: '1970-01-01T00:00:00.000Z' };
+    });
+    value = Object.assign({}, value, { experience: Object.assign({}, createEmptyChoreExperience(),
+      oldExperience, { version: 2, earnedPointsByParticipant: balances, pointTransactions }) });
+  }
   if (isValidChoreWorkspaceData(value)) {
     if (value.historyRetention && value.experience) return value;
     return Object.assign({}, value, {
@@ -350,7 +388,7 @@ function isValidHistoryRetention(value) {
 
 function createEmptyChoreExperience() {
   return {
-    version: 1,
+    version: 2,
     gamificationMode: 'off',
     presentationByDefinitionId: {},
     missionsById: {},
@@ -358,6 +396,11 @@ function createEmptyChoreExperience() {
     earnedPointsByParticipant: {},
     householdBonusPoints: 0,
     awardedMissionIds: [],
+    rewardRequestsById: {},
+    pointTransactions: [],
+    badgesById: {},
+    achievementsById: {},
+    progressAwards: [],
   };
 }
 
@@ -372,7 +415,7 @@ function isOptionalSignedBoundedInteger(value, maximum) {
 function isValidChoreExperience(value) {
   if (
     !isRecord(value) ||
-    value.version !== 1 ||
+    value.version !== 2 ||
     (value.setupStartedAt !== undefined &&
       (typeof value.setupStartedAt !== 'string' || !Number.isFinite(Date.parse(value.setupStartedAt)))) ||
     (value.setupCompletedAt !== undefined &&
@@ -381,6 +424,11 @@ function isValidChoreExperience(value) {
     !isRecord(value.presentationByDefinitionId) ||
     !isRecord(value.missionsById) ||
     !isRecord(value.rewardGoalsById) ||
+    !isRecord(value.rewardRequestsById) ||
+    !Array.isArray(value.pointTransactions) ||
+    !isRecord(value.badgesById) ||
+    !isRecord(value.achievementsById) ||
+    !Array.isArray(value.progressAwards) ||
     (value.earnedPointsByParticipant !== undefined && !isRecord(value.earnedPointsByParticipant)) ||
     !isOptionalBoundedInteger(value.householdBonusPoints, 1000000000) ||
     (value.awardedMissionIds !== undefined &&
@@ -445,6 +493,30 @@ function isValidChoreExperience(value) {
         return false;
       }
     }
+  }
+  for (const requestId in value.rewardRequestsById) {
+    const request = value.rewardRequestsById[requestId];
+    if (!isRecord(request) || request.id !== requestId ||
+      typeof request.rewardId !== 'string' || typeof request.rewardTitle !== 'string' ||
+      typeof request.participantId !== 'string' || !Number.isSafeInteger(request.cost) ||
+      request.cost < 1 || request.cost > 1000000 ||
+      ['requested', 'approved', 'declined', 'fulfilled', 'refunded'].indexOf(request.status) === -1 ||
+      !Number.isFinite(Date.parse(request.requestedAt)) ||
+      !Number.isFinite(Date.parse(request.updatedAt))) return false;
+  }
+  for (const targetId in value.badgesById) {
+    if (!choreProgressPolicy.isProgressTarget(value.badgesById[targetId], targetId)) return false;
+  }
+  for (const targetId in value.achievementsById) {
+    if (!choreProgressPolicy.isProgressTarget(value.achievementsById[targetId], targetId)) return false;
+  }
+  if (!value.progressAwards.every(choreProgressPolicy.isProgressAward)) return false;
+  const transactionIds = [];
+  for (let index = 0; index < value.pointTransactions.length; index += 1) {
+    const transaction = value.pointTransactions[index];
+    if (!choreProgressPolicy.isPointTransaction(transaction) ||
+      transactionIds.indexOf(transaction.id) !== -1) return false;
+    transactionIds.push(transaction.id);
   }
   return true;
 }
@@ -582,6 +654,11 @@ function mergeImportedWorkspace(current, currentEvents, imported, timestamp) {
     remapped.assignment.participantIds = remapped.assignment.participantIds.map(function (id) {
       return participantMap[id] || id;
     });
+    if (Array.isArray(remapped.assignment.standbyParticipantIds)) {
+      remapped.assignment.standbyParticipantIds = remapped.assignment.standbyParticipantIds.map(function (id) {
+        return participantMap[id] || id;
+      });
+    }
     if (isRecord(remapped.assignment.participantScheduleOverrides)) {
       const overrides = {};
       Object.keys(remapped.assignment.participantScheduleOverrides).forEach(function (id) {
@@ -706,6 +783,7 @@ function createReminderOutboxItem(definition, occurrence, participant, eventType
     createdAt: timestamp,
     nextAttemptAt: nextReminderDeliveryAt(timestamp, participant, definition.schedule.timeZone),
     occurrenceId: occurrence.id,
+    occurrenceUpdatedAt: occurrence.updatedAt,
     participantId: participant.id,
     destination: destination.type || 'in_app',
     destinationTarget: destination.target,
@@ -734,6 +812,7 @@ function runWorkspaceScheduler(data, timestamp) {
     const lifecycleOccurrence = data.occurrencesById[lifecycleOccurrenceIds[lifecycleIndex]];
     const dueAt = Date.parse(lifecycleOccurrence.dueAt);
     if (!Number.isFinite(dueAt) || now < dueAt) continue;
+    if (!occurrenceHasActiveAssignee(lifecycleOccurrence, data, timestamp)) continue;
     const dueId = 'activity:scheduler:due:' + lifecycleOccurrence.id;
     if (!existingEventIds[dueId]) {
       existingEventIds[dueId] = true;
@@ -770,6 +849,7 @@ function runWorkspaceScheduler(data, timestamp) {
   for (let index = 0; index < occurrenceIds.length; index += 1) {
     const occurrence = data.occurrencesById[occurrenceIds[index]];
     if (occurrence.status !== 'available' && occurrence.status !== 'claimed') continue;
+    if (!occurrenceHasActiveAssignee(occurrence, data, timestamp)) continue;
     const definition = data.definitionsById[occurrence.definitionId];
     const policy = isRecord(definition) && isRecord(definition.missedPolicy)
       ? definition.missedPolicy
@@ -836,7 +916,7 @@ function runWorkspaceScheduler(data, timestamp) {
     const preferences = isRecord(participant) && isRecord(participant.reminderPreferences)
       ? participant.reminderPreferences
       : {};
-    if (!isRecord(participant) || participant.pausedAt !== undefined || preferences.enabled === false) {
+    if (!isRecord(participant) || isParticipantPausedAt(participant, timestamp) || preferences.enabled === false) {
       return;
     }
     const item = createReminderOutboxItem(
@@ -860,6 +940,7 @@ function runWorkspaceScheduler(data, timestamp) {
       ? definition.reminderPolicy
       : null;
     if (!policy || policy.enabled !== true || definition.archivedAt !== undefined) continue;
+    if (!occurrenceHasActiveAssignee(occurrence, data, timestamp)) continue;
     if (occurrence.status === 'available' || occurrence.status === 'claimed') {
       const dueAt = Date.parse(occurrence.dueAt);
       const beforeDue = Array.isArray(policy.beforeDueMinutes) ? policy.beforeDueMinutes : [];
@@ -1112,7 +1193,61 @@ function materializeDefinition(definition, participantsById, rangeStart, rangeEn
   if (!definition.enabled || definition.archivedAt !== undefined) return [];
   const startTime = Date.parse(rangeStart);
   const endTime = Date.parse(rangeEnd);
+  const completionCountsByParticipant = {};
+  if (definition.assignment.rotationStrategy === 'fair') {
+    for (const occurrenceId in existing) {
+      if (!Object.prototype.hasOwnProperty.call(existing, occurrenceId)) continue;
+      const occurrence = existing[occurrenceId];
+      if (occurrence.definitionId !== definition.id || includesValue(['skipped', 'missed'], occurrence.status)) continue;
+      const ids = occurrence.status === 'done' && occurrence.completedBy ? [occurrence.completedBy] : occurrence.assigneeIds;
+      for (let index = 0; index < ids.length; index += 1) completionCountsByParticipant[ids[index]] = (completionCountsByParticipant[ids[index]] || 0) + 1;
+    }
+  }
+  function assignmentSlotsAt(at, index) {
+    if (definition.assignment.rotationStrategy === 'fair') {
+      const saved = Object.values(existing).filter(function (item) {
+        if (item.definitionId !== definition.id) return false;
+        if (definition.schedule.frequency === 'hourly') return item.scheduledAt === at;
+        const participantId = item.assigneeIds[0];
+        const override = (definition.assignment.participantScheduleOverrides || {})[participantId] || {};
+        return choreCalendarPolicy.addCalendarDays(getZonedDateKey(item.scheduledAt, definition.schedule.timeZone), -(override.dueDateOffsetDays || 0)) === getZonedDateKey(at, definition.schedule.timeZone);
+      }).filter(function (item, index, items) {
+        return items.findIndex(function (candidate) { return candidate.assignmentSlot === item.assignmentSlot; }) === index;
+      });
+      if (saved.length) return saved.map(function (item) { return { assignmentSlot: item.assignmentSlot, assigneeIds: item.assigneeIds }; });
+    }
+    return choreCalendarPolicy.resolveAssignmentSlots(definition.assignment, participantsById, index, completionCountsByParticipant, at);
+  }
+  function countAssignment(id, assigneeIds) {
+    if (!existing[id] && definition.assignment.rotationStrategy === 'fair') {
+      for (let index = 0; index < assigneeIds.length; index += 1) completionCountsByParticipant[assigneeIds[index]] = (completionCountsByParticipant[assigneeIds[index]] || 0) + 1;
+    }
+  }
   const schedule = definition.schedule;
+  if (schedule.frequency === 'hourly') {
+    const anchor = Date.parse(localDateTimeToIso(schedule.startDate, schedule.time, schedule.timeZone));
+    const interval = schedule.intervalHours * 3600000;
+    const firstIndex = Math.max(0, Math.ceil((startTime - anchor) / interval));
+    const hourlyResults = [];
+    for (let index = firstIndex; anchor + index * interval <= endTime; index += 1) {
+      const scheduledAt = new Date(anchor + index * interval).toISOString();
+      const localDate = getZonedDateKey(scheduledAt, schedule.timeZone);
+      if ((schedule.endDate && localDate > schedule.endDate) || includesValue(schedule.excludedDates, localDate)) continue;
+      const slots = assignmentSlotsAt(scheduledAt, index);
+      for (let slotIndex = 0; slotIndex < slots.length; slotIndex += 1) {
+        const slot = slots[slotIndex];
+        const id = definition.id + ':' + scheduledAt + ':' + slot.assignmentSlot;
+        countAssignment(id, slot.assigneeIds);
+        hourlyResults.push(existing[id] || {
+          id, definitionId: definition.id, scheduledAt,
+          dueAt: new Date(Date.parse(scheduledAt) + Math.max(0, definition.dueWindowMinutes) * 60000).toISOString(),
+          assigneeIds: slot.assigneeIds, assignmentSlot: slot.assignmentSlot,
+          status: 'available', updatedAt: scheduledAt,
+        });
+      }
+    }
+    return hourlyResults;
+  }
   const rangeStartDate = getZonedDateKey(rangeStart, schedule.timeZone);
   const finalDate = getZonedDateKey(rangeEnd, schedule.timeZone);
   const dates = [];
@@ -1134,9 +1269,8 @@ function materializeDefinition(definition, participantsById, rangeStart, rangeEn
   }
   const results = [];
   for (let dateIndex = 0; dateIndex < dates.length; dateIndex += 1) {
-    const slots = choreCalendarPolicy.resolveAssignmentSlots(
-      definition.assignment,
-      participantsById,
+    const slots = assignmentSlotsAt(
+      localDateTimeToIso(dates[dateIndex], schedule.time, schedule.timeZone),
       choreCalendarPolicy.rotationIndexForDate(dates, dateIndex, definition.assignment.rotationReset, definition.assignment.rotationCadence, choreCalendarPolicy.scheduleStartDate(schedule), definition.assignment.rotationDayOfWeek)
     );
     for (let slotIndex = 0; slotIndex < slots.length; slotIndex += 1) {
@@ -1154,10 +1288,14 @@ function materializeDefinition(definition, participantsById, rangeStart, rangeEn
           ? schedule.times
           : [schedule.time];
       for (let timeIndex = 0; timeIndex < times.length; timeIndex += 1) {
-        const scheduledAt = localDateTimeToIso(dates[dateIndex], times[timeIndex], schedule.timeZone);
+        const personalDate = override && override.dueDateOffsetDays
+          ? choreCalendarPolicy.addCalendarDays(dates[dateIndex], override.dueDateOffsetDays)
+          : dates[dateIndex];
+        const scheduledAt = localDateTimeToIso(personalDate, times[timeIndex], schedule.timeZone);
         const scheduledTime = Date.parse(scheduledAt);
         if (scheduledTime < startTime || scheduledTime > endTime) continue;
         const id = definition.id + ':' + scheduledAt + ':' + slot.assignmentSlot;
+        countAssignment(id, slot.assigneeIds);
         results.push(
           existing[id] || {
             id,
@@ -1183,6 +1321,7 @@ function isValidWorkspaceAction(value) {
       !(
       typeof value.occurrenceId === 'string' &&
       value.occurrenceId.length > 0 &&
+      (value.expectedOccurrenceUpdatedAt === undefined || typeof value.expectedOccurrenceUpdatedAt === 'string') &&
       isRecord(value.action) &&
       typeof value.action.participantId === 'string' &&
       value.action.participantId.length > 0 &&
@@ -1250,6 +1389,22 @@ function isValidWorkspaceAction(value) {
       (value.reason === undefined || typeof value.reason === 'string')
     );
   }
+  if (value.type === 'reward_request') {
+    return typeof value.requestId === 'string' && value.requestId.length > 0 &&
+      typeof value.rewardId === 'string' && typeof value.participantId === 'string';
+  }
+  if (value.type === 'reward_decision') {
+    return typeof value.requestId === 'string' && typeof value.actorParticipantId === 'string' &&
+      ['approve', 'decline', 'fulfill', 'refund'].indexOf(value.decision) !== -1 &&
+      (value.reason === undefined || typeof value.reason === 'string');
+  }
+  if (value.type === 'vacation_reschedule') {
+    return typeof value.actorParticipantId === 'string' && typeof value.participantId === 'string' &&
+      Array.isArray(value.occurrenceIds) && value.occurrenceIds.length > 0 &&
+      value.occurrenceIds.length <= 100 && value.occurrenceIds.every(function (id) {
+        return typeof id === 'string' && id.length > 0;
+      }) && typeof value.startDate === 'string';
+  }
   if (value.type === 'reminder_acknowledge') {
     return typeof value.outboxId === 'string' && typeof value.actorParticipantId === 'string';
   }
@@ -1281,7 +1436,7 @@ function compareStrings(left, right) {
 
 function getExperiencePointBalances(data, experience) {
   const persisted = experience.earnedPointsByParticipant;
-  if (isRecord(persisted) && Object.keys(persisted).length > 0) {
+  if (isRecord(persisted)) {
     return Object.assign({}, persisted);
   }
   const balances = {};
@@ -1313,7 +1468,7 @@ function isWorkspaceMissionComplete(data, mission) {
   });
 }
 
-function updateExperiencePoints(data, previousOccurrence, nextOccurrence) {
+function updateExperiencePoints(data, previousOccurrence, nextOccurrence, commandId, timestamp) {
   const experience = isValidChoreExperience(data.experience)
     ? data.experience
     : createEmptyChoreExperience();
@@ -1332,7 +1487,13 @@ function updateExperiencePoints(data, previousOccurrence, nextOccurrence) {
     const balances = getExperiencePointBalances(data, experience);
     balances[participantId] =
       (balances[participantId] || 0) + (becameFinal ? points : -points);
-    nextExperience = Object.assign({}, nextExperience, { earnedPointsByParticipant: balances });
+    nextExperience = Object.assign({}, nextExperience, { earnedPointsByParticipant: balances,
+      pointTransactions: experience.pointTransactions.concat([{
+        id: 'points:' + commandId, participantId,
+        pointsDelta: becameFinal ? points : -points,
+        kind: becameFinal ? 'completion' : 'reopen', timestamp, commandId,
+        occurrenceId: previousOccurrence.id,
+      }]) });
   }
   const awardedMissionIds = (experience.awardedMissionIds || []).slice();
   let householdBonusPoints = experience.householdBonusPoints || 0;
@@ -1362,6 +1523,30 @@ function updateExperiencePoints(data, previousOccurrence, nextOccurrence) {
       awardedMissionIds,
     });
   }
+  if (becameFinal) {
+    const progress = choreProgressPolicy.earnChoreProgressAwards({
+      badges: nextExperience.badgesById,
+      achievements: nextExperience.achievementsById,
+      participantIds: Object.keys(data.participantsById),
+      occurrences: Object.values(dataWithNextOccurrence.occurrencesById),
+      transactions: nextExperience.pointTransactions,
+      existingAwards: nextExperience.progressAwards,
+      at: timestamp,
+    });
+    if (progress.awards.length > 0) {
+      const balances = getExperiencePointBalances(dataWithNextOccurrence, nextExperience);
+      for (let index = 0; index < progress.transactions.length; index += 1) {
+        const transaction = progress.transactions[index];
+        balances[transaction.participantId] =
+          (balances[transaction.participantId] || 0) + transaction.pointsDelta;
+      }
+      nextExperience = Object.assign({}, nextExperience, {
+        earnedPointsByParticipant: balances,
+        progressAwards: nextExperience.progressAwards.concat(progress.awards),
+        pointTransactions: nextExperience.pointTransactions.concat(progress.transactions),
+      });
+    }
+  }
   return nextExperience;
 }
 
@@ -1369,6 +1554,10 @@ function applyOccurrenceAction(data, commandId, workspaceAction, timestamp) {
   const occurrence = data.occurrencesById[workspaceAction.occurrenceId];
   if (!isRecord(occurrence) || typeof occurrence.id !== 'string') {
     throw new Error('Chore occurrence is no longer available');
+  }
+  if (workspaceAction.expectedOccurrenceUpdatedAt &&
+    occurrence.updatedAt !== workspaceAction.expectedOccurrenceUpdatedAt) {
+    throw new Error('This chore alert is out of date');
   }
   const definition = data.definitionsById[occurrence.definitionId];
   if (
@@ -1380,7 +1569,7 @@ function applyOccurrenceAction(data, commandId, workspaceAction, timestamp) {
   }
   const action = workspaceAction.action;
   const participant = data.participantsById[action.participantId];
-  if (!isRecord(participant) || participant.pausedAt !== undefined) {
+  if (!isRecord(participant) || isParticipantPausedAt(participant, timestamp)) {
     throw new Error('Chore participant is not active');
   }
   const requiredCapability =
@@ -1394,12 +1583,22 @@ function applyOccurrenceAction(data, commandId, workspaceAction, timestamp) {
   if (!includesValue(participant.capabilities, requiredCapability)) {
     throw new Error('Chore participant cannot ' + action.type + ' chores');
   }
+  if (action.type === 'claim' && isRecord(definition.claimPolicy) &&
+    definition.claimPolicy.pendingApproval === 'block') {
+    for (const candidateId in data.occurrencesById) {
+      const candidate = data.occurrencesById[candidateId];
+      if (candidateId !== occurrence.id && candidate.definitionId === definition.id &&
+        candidate.status === 'awaiting_approval' && includesValue(candidate.assigneeIds, action.participantId)) {
+        throw new Error('Review the previous claim before starting this chore');
+      }
+    }
+  }
   if (action.type === 'reassign') {
     for (let index = 0; index < action.assigneeIds.length; index += 1) {
       const assignee = data.participantsById[action.assigneeIds[index]];
       if (
         !isRecord(assignee) ||
-        assignee.pausedAt !== undefined ||
+        isParticipantPausedAt(assignee, timestamp) ||
         !includesValue(assignee.capabilities, 'complete')
       ) {
         throw new Error('Chore reassignment includes an ineligible participant');
@@ -1416,7 +1615,7 @@ function applyOccurrenceAction(data, commandId, workspaceAction, timestamp) {
   });
   const nextOccurrence = result.occurrence;
   const activity = result.activity;
-  const experience = updateExperiencePoints(data, occurrence, nextOccurrence);
+  const experience = updateExperiencePoints(data, occurrence, nextOccurrence, commandId, timestamp);
   const pointRecipientId =
     occurrence.status !== 'done' && nextOccurrence.status === 'done'
       ? nextOccurrence.completedBy
@@ -1442,11 +1641,35 @@ function applyOccurrenceAction(data, commandId, workspaceAction, timestamp) {
   }
   const nextOccurrences = Object.assign({}, data.occurrencesById);
   nextOccurrences[nextOccurrence.id] = nextOccurrence;
+  const outbox = data.outbox.filter(function (item) {
+    return item.occurrenceId !== occurrence.id || item.status === 'delivered' || !item.destination;
+  });
+  outbox.push(createOutboxItem(activity));
+  const reminderPolicy = isRecord(definition.reminderPolicy) ? definition.reminderPolicy : null;
+  if (reminderPolicy && reminderPolicy.enabled === true &&
+    includesValue(reminderPolicy.notifyOn || [], activity.type)) {
+    const recipients = (activity.type === 'claimed' || activity.type === 'completed') &&
+      definition.approval.approverIds.length > 0
+      ? definition.approval.approverIds : nextOccurrence.assigneeIds;
+    const seen = {};
+    for (let index = 0; index < recipients.length; index += 1) {
+      const recipientId = recipients[index];
+      if (seen[recipientId]) continue;
+      seen[recipientId] = true;
+      const recipient = data.participantsById[recipientId];
+      if (!isRecord(recipient) || isParticipantPausedAt(recipient, timestamp) ||
+        (isRecord(recipient.reminderPreferences) && recipient.reminderPreferences.enabled === false)) continue;
+      const item = createReminderOutboxItem(definition, nextOccurrence, recipient,
+        activity.type, 'event:' + activity.id, timestamp);
+      item.activityId = activity.id;
+      outbox.push(item);
+    }
+  }
   return Object.assign({}, data, {
     occurrencesById: nextOccurrences,
     experience,
     activity: data.activity.concat([activity]).slice(-MAX_ACTIVITY_ITEMS),
-    outbox: data.outbox.concat([createOutboxItem(activity)]).slice(-MAX_OUTBOX_ITEMS),
+    outbox: outbox.slice(-MAX_OUTBOX_ITEMS),
   });
 }
 
@@ -1467,7 +1690,10 @@ function isValidParticipantInput(participant) {
     Number.isFinite(Date.parse(participant.createdAt)) &&
     typeof participant.updatedAt === 'string' &&
     Number.isFinite(Date.parse(participant.updatedAt)) &&
-    (participant.pausedAt === undefined || Number.isFinite(Date.parse(participant.pausedAt)))
+    (participant.pausedAt === undefined || Number.isFinite(Date.parse(participant.pausedAt))) &&
+    (participant.resumeAt === undefined ||
+      (participant.pausedAt !== undefined && Number.isFinite(Date.parse(participant.resumeAt)) &&
+        Date.parse(participant.resumeAt) > Date.parse(participant.pausedAt)))
   );
 }
 
@@ -1481,6 +1707,11 @@ function isValidDefinitionInput(definition) {
     typeof definition.enabled === 'boolean' &&
     isRecord(definition.assignment) &&
     ['person', 'anyone', 'everyone', 'rotation'].indexOf(definition.assignment.mode) !== -1 &&
+    (definition.assignment.standbyParticipantIds === undefined ||
+      (Array.isArray(definition.assignment.standbyParticipantIds) &&
+        definition.assignment.standbyParticipantIds.every(function (id) { return typeof id === 'string' && id.length > 0; }))) &&
+    (definition.assignment.rotationStrategy === undefined ||
+      ['ordered', 'fair'].indexOf(definition.assignment.rotationStrategy) !== -1) &&
     (definition.assignment.rotationDayOfWeek === undefined ||
       (Number.isInteger(definition.assignment.rotationDayOfWeek) &&
         definition.assignment.rotationDayOfWeek >= 0 && definition.assignment.rotationDayOfWeek <= 6)) &&
@@ -1488,15 +1719,41 @@ function isValidDefinitionInput(definition) {
       ['scheduled_day', 'weekly'].indexOf(definition.assignment.rotationCadence) !== -1) &&
     Array.isArray(definition.assignment.participantIds) &&
     definition.assignment.participantIds.length > 0 &&
+    (definition.assignment.participantScheduleOverrides === undefined ||
+      (isRecord(definition.assignment.participantScheduleOverrides) &&
+        Object.values(definition.assignment.participantScheduleOverrides).every(function (override) {
+          return isRecord(override) && (override.dueDateOffsetDays === undefined ||
+            (Number.isSafeInteger(override.dueDateOffsetDays) && override.dueDateOffsetDays >= 0 &&
+              override.dueDateOffsetDays <= 365));
+        }))) &&
     isRecord(definition.schedule) &&
-    ['once', 'daily', 'weekly', 'monthly', 'after_completion'].indexOf(
+    ['once', 'daily', 'weekly', 'monthly', 'after_completion', 'hourly'].indexOf(
       definition.schedule.frequency
     ) !== -1 &&
+    (definition.schedule.frequency !== 'hourly' ||
+      (Number.isSafeInteger(definition.schedule.intervalHours) &&
+        definition.schedule.intervalHours >= 1 && definition.schedule.intervalHours <= 8760)) &&
     Number.isFinite(definition.dueWindowMinutes) &&
     definition.dueWindowMinutes >= 0 &&
     isRecord(definition.approval) &&
     typeof definition.approval.required === 'boolean' &&
     Array.isArray(definition.approval.approverIds) &&
+    (definition.approval.resetClaimOnReject === undefined ||
+      typeof definition.approval.resetClaimOnReject === 'boolean') &&
+    (definition.claimPolicy === undefined ||
+      (isRecord(definition.claimPolicy) &&
+        (definition.claimPolicy.opensBeforeMinutes === undefined ||
+          (Number.isSafeInteger(definition.claimPolicy.opensBeforeMinutes) &&
+            definition.claimPolicy.opensBeforeMinutes >= 0)) &&
+        (definition.claimPolicy.pendingApproval === undefined ||
+          ['allow', 'block'].indexOf(definition.claimPolicy.pendingApproval) !== -1))) &&
+    (definition.reminderPolicy === undefined ||
+      (isRecord(definition.reminderPolicy) &&
+        (definition.reminderPolicy.notifyOn === undefined ||
+          (Array.isArray(definition.reminderPolicy.notifyOn) &&
+            definition.reminderPolicy.notifyOn.every(function (event) {
+              return ['claimed', 'completed', 'approved', 'rejected', 'skipped'].indexOf(event) !== -1;
+            }))))) &&
     typeof definition.createdAt === 'string' &&
     Number.isFinite(Date.parse(definition.createdAt)) &&
     typeof definition.updatedAt === 'string' &&
@@ -1504,14 +1761,14 @@ function isValidDefinitionInput(definition) {
   );
 }
 
-function activeManagerCount(participantsById) {
+function activeManagerCount(participantsById, timestamp) {
   let count = 0;
   for (const participantId in participantsById) {
     if (!Object.prototype.hasOwnProperty.call(participantsById, participantId)) continue;
     const participant = participantsById[participantId];
     if (
       isRecord(participant) &&
-      participant.pausedAt === undefined &&
+      !isParticipantPausedAt(participant, timestamp) &&
       includesValue(participant.capabilities, 'manage')
     ) {
       count += 1;
@@ -1520,32 +1777,40 @@ function activeManagerCount(participantsById) {
   return count;
 }
 
-function assertManager(data, actorParticipantId) {
+function assertManager(data, actorParticipantId, timestamp) {
   const participant = data.participantsById[actorParticipantId];
-  if (!isRecord(participant) || participant.pausedAt !== undefined) {
+  if (!isRecord(participant) || isParticipantPausedAt(participant, timestamp)) {
     throw new Error('An active household manager is required');
   }
-  if (activeManagerCount(data.participantsById) > 0 && !includesValue(participant.capabilities, 'manage')) {
+  if (activeManagerCount(data.participantsById, timestamp) > 0 && !includesValue(participant.capabilities, 'manage')) {
     throw new Error('Only a household manager can change chores and profiles');
   }
 }
 
-function assertDefinitionReferences(data, definition) {
+function assertDefinitionReferences(data, definition, timestamp) {
   for (let index = 0; index < definition.assignment.participantIds.length; index += 1) {
     const participant = data.participantsById[definition.assignment.participantIds[index]];
     if (
       !isRecord(participant) ||
-      participant.pausedAt !== undefined ||
+      isParticipantPausedAt(participant, timestamp) ||
       !includesValue(participant.capabilities, 'complete')
     ) {
       throw new Error('Chore assignment includes an ineligible participant');
+    }
+  }
+  const standbyIds = definition.assignment.standbyParticipantIds || [];
+  for (let index = 0; index < standbyIds.length; index += 1) {
+    const participant = data.participantsById[standbyIds[index]];
+    if (!isRecord(participant) || !includesValue(participant.capabilities, 'complete') ||
+      includesValue(definition.assignment.participantIds, standbyIds[index])) {
+      throw new Error('Chore standby includes an ineligible participant');
     }
   }
   for (let index = 0; index < definition.approval.approverIds.length; index += 1) {
     const approver = data.participantsById[definition.approval.approverIds[index]];
     if (
       !isRecord(approver) ||
-      approver.pausedAt !== undefined ||
+      isParticipantPausedAt(approver, timestamp) ||
       !includesValue(approver.capabilities, 'approve')
     ) {
       throw new Error('Chore approval includes an ineligible participant');
@@ -1602,7 +1867,7 @@ function applyWorkspaceAction(data, commandId, action, timestamp) {
       if (typeof action.actorParticipantId !== 'string') {
         throw new Error('A household manager is required');
       }
-      assertManager(data, action.actorParticipantId);
+      assertManager(data, action.actorParticipantId, timestamp);
     }
     const participantsById = Object.assign({}, data.participantsById);
     participantsById[participant.id] = participant;
@@ -1616,7 +1881,7 @@ function applyWorkspaceAction(data, commandId, action, timestamp) {
   }
 
   if (action.type === 'participant_update') {
-    assertManager(data, action.actorParticipantId);
+    assertManager(data, action.actorParticipantId, timestamp);
     const participant = action.participant;
     const currentParticipant = isRecord(participant) ? data.participantsById[participant.id] : null;
     if (!isRecord(currentParticipant)) throw new Error('Household profile is no longer available');
@@ -1628,11 +1893,34 @@ function applyWorkspaceAction(data, commandId, action, timestamp) {
     }
     const participantsById = Object.assign({}, data.participantsById);
     participantsById[participant.id] = participant;
-    if (activeManagerCount(participantsById) === 0) {
+    if (activeManagerCount(participantsById, timestamp) === 0) {
       throw new Error('The household needs an active manager');
     }
+    const pauseChanged = currentParticipant.pausedAt !== participant.pausedAt ||
+      currentParticipant.resumeAt !== participant.resumeAt;
+    const occurrencesById = Object.assign({}, data.occurrencesById);
+    const removedIds = {};
+    if (pauseChanged) {
+      for (const id in occurrencesById) {
+        if (!Object.prototype.hasOwnProperty.call(occurrencesById, id)) continue;
+        const occurrence = occurrencesById[id];
+        const definition = data.definitionsById[occurrence.definitionId];
+        const assignment = definition && definition.assignment;
+        if (occurrence.status === 'available' && !occurrence.carriedForwardFrom &&
+          !(includesValue(occurrence.assigneeIds, participant.id) && isParticipantPausedAt(participant, occurrence.scheduledAt)) &&
+          Date.parse(occurrence.scheduledAt) > Date.parse(timestamp) && assignment &&
+          (includesValue(assignment.participantIds || [], participant.id) ||
+            includesValue(assignment.standbyParticipantIds || [], participant.id))) {
+          removedIds[id] = true;
+          delete occurrencesById[id];
+        }
+      }
+    }
+    const outbox = data.outbox.filter(function (item) {
+      return item.status === 'delivered' || !item.occurrenceId || !removedIds[item.occurrenceId];
+    });
     return appendWorkspaceActivity(
-      Object.assign({}, data, { participantsById }),
+      Object.assign({}, data, { participantsById, occurrencesById, outbox }),
       buildWorkspaceActivity(commandId, timestamp, 'participant_updated', {
         actorParticipantId: action.actorParticipantId,
         participantId: participant.id,
@@ -1641,7 +1929,7 @@ function applyWorkspaceAction(data, commandId, action, timestamp) {
   }
 
   if (action.type === 'definition_create' || action.type === 'definition_update') {
-    assertManager(data, action.actorParticipantId);
+    assertManager(data, action.actorParticipantId, timestamp);
     const definition = action.definition;
     if (!isValidDefinitionInput(definition)) throw new Error('Chore definition is invalid');
     const currentDefinition = data.definitionsById[definition.id];
@@ -1655,7 +1943,7 @@ function applyWorkspaceAction(data, commandId, action, timestamp) {
     ) {
       throw new Error('Chore creation time cannot be changed');
     }
-    assertDefinitionReferences(data, definition);
+    assertDefinitionReferences(data, definition, timestamp);
     const definitionsById = Object.assign({}, data.definitionsById);
     definitionsById[definition.id] = definition;
     let occurrencesById = data.occurrencesById;
@@ -1690,7 +1978,7 @@ function applyWorkspaceAction(data, commandId, action, timestamp) {
   }
 
   if (action.type === 'definition_archive' || action.type === 'definition_restore') {
-    assertManager(data, action.actorParticipantId);
+    assertManager(data, action.actorParticipantId, timestamp);
     const definition = data.definitionsById[action.definitionId];
     if (!isRecord(definition)) throw new Error('Chore is no longer available');
     const nextDefinition = Object.assign({}, definition, { enabled: true, updatedAt: timestamp });
@@ -1729,7 +2017,7 @@ function applyWorkspaceAction(data, commandId, action, timestamp) {
   }
 
   if (action.type === 'definition_delete') {
-    assertManager(data, action.actorParticipantId);
+    assertManager(data, action.actorParticipantId, timestamp);
     if (!isRecord(data.definitionsById[action.definitionId])) {
       throw new Error('Chore is no longer available');
     }
@@ -1798,7 +2086,7 @@ function applyWorkspaceAction(data, commandId, action, timestamp) {
   }
 
   if (action.type === 'retention_update') {
-    assertManager(data, action.actorParticipantId);
+    assertManager(data, action.actorParticipantId, timestamp);
     if (!isValidHistoryRetention(action.policy)) {
       throw new Error('Chore history retention policy is invalid');
     }
@@ -1811,9 +2099,16 @@ function applyWorkspaceAction(data, commandId, action, timestamp) {
   }
 
   if (action.type === 'experience_update') {
-    assertManager(data, action.actorParticipantId);
+    assertManager(data, action.actorParticipantId, timestamp);
     if (!isValidChoreExperience(action.experience)) {
       throw new Error('Chore experience data is invalid');
+    }
+    const currentExperience = data.experience || createEmptyChoreExperience();
+    if (JSON.stringify(action.experience.rewardRequestsById) !== JSON.stringify(currentExperience.rewardRequestsById) ||
+      JSON.stringify(action.experience.pointTransactions) !== JSON.stringify(currentExperience.pointTransactions) ||
+      JSON.stringify(action.experience.progressAwards) !== JSON.stringify(currentExperience.progressAwards) ||
+      JSON.stringify(action.experience.earnedPointsByParticipant) !== JSON.stringify(currentExperience.earnedPointsByParticipant)) {
+      throw new Error('Reward and point history can only change through household actions');
     }
     for (const definitionId in action.experience.presentationByDefinitionId) {
       if (!data.definitionsById[definitionId]) {
@@ -1848,7 +2143,7 @@ function applyWorkspaceAction(data, commandId, action, timestamp) {
   }
 
   if (action.type === 'experience_points_adjust') {
-    assertManager(data, action.actorParticipantId);
+    assertManager(data, action.actorParticipantId, timestamp);
     if (!data.participantsById[action.participantId]) {
       throw new Error('Chore participant is no longer available');
     }
@@ -1871,7 +2166,11 @@ function applyWorkspaceAction(data, commandId, action, timestamp) {
     balances[action.participantId] = nextBalance;
     return appendWorkspaceActivity(
       Object.assign({}, data, {
-        experience: Object.assign({}, experience, { earnedPointsByParticipant: balances }),
+        experience: Object.assign({}, experience, { earnedPointsByParticipant: balances,
+          pointTransactions: experience.pointTransactions.concat([{
+            id: 'points:' + commandId, participantId: action.participantId,
+            pointsDelta: action.pointsDelta, kind: 'adjustment', timestamp, commandId,
+          }]) }),
       }),
       buildWorkspaceActivity(commandId, timestamp, 'points_adjusted', {
         actorParticipantId: action.actorParticipantId,
@@ -1883,6 +2182,62 @@ function applyWorkspaceAction(data, commandId, action, timestamp) {
     );
   }
 
+  if (action.type === 'reward_request') {
+    const participant = data.participantsById[action.participantId];
+    if (!isRecord(participant) || isParticipantPausedAt(participant, timestamp) ||
+      !includesValue(participant.capabilities, 'complete')) throw new Error('Chore participant is not active');
+    const experience = data.experience || createEmptyChoreExperience();
+    if (experience.gamificationMode === 'off') throw new Error('Rewards are unavailable');
+    if (experience.rewardRequestsById[action.requestId]) throw new Error('Reward request already exists');
+    const reward = experience.rewardGoalsById[action.rewardId];
+    if (!reward || !reward.enabled ||
+      (reward.participantId && reward.participantId !== action.participantId)) throw new Error('Reward is unavailable');
+    if ((getExperiencePointBalances(data, experience)[action.participantId] || 0) < reward.targetPoints) {
+      throw new Error('Not enough points for this reward');
+    }
+    const requests = Object.assign({}, experience.rewardRequestsById);
+    requests[action.requestId] = { id: action.requestId, rewardId: reward.id,
+      rewardTitle: reward.title, cost: reward.targetPoints, participantId: action.participantId,
+      status: 'requested', requestedAt: timestamp, updatedAt: timestamp };
+    return appendWorkspaceActivity(Object.assign({}, data, { experience: Object.assign({}, experience,
+      { rewardRequestsById: requests }) }), buildWorkspaceActivity(commandId, timestamp,
+      'reward_requested', { actorParticipantId: action.participantId, participantId: action.participantId }));
+  }
+  if (action.type === 'reward_decision') {
+    assertManager(data, action.actorParticipantId, timestamp);
+    const experience = data.experience || createEmptyChoreExperience();
+    const request = experience.rewardRequestsById[action.requestId];
+    if (!request) throw new Error('Reward request is no longer available');
+    const decision = action.decision;
+    if ((decision === 'approve' || decision === 'decline') && request.status !== 'requested' ||
+      decision === 'fulfill' && request.status !== 'approved' ||
+      decision === 'refund' && ['approved', 'fulfilled'].indexOf(request.status) === -1) {
+      throw new Error('Reward request has already changed');
+    }
+    const status = decision === 'approve' ? 'approved' : decision === 'decline' ? 'declined' :
+      decision === 'fulfill' ? 'fulfilled' : 'refunded';
+    const pointsDelta = decision === 'approve' ? -request.cost : decision === 'refund' ? request.cost : 0;
+    const balances = getExperiencePointBalances(data, experience);
+    if (pointsDelta < 0 && (balances[request.participantId] || 0) < request.cost) {
+      throw new Error('Not enough points for this reward');
+    }
+    if (pointsDelta) balances[request.participantId] = (balances[request.participantId] || 0) + pointsDelta;
+    const requests = Object.assign({}, experience.rewardRequestsById);
+    requests[request.id] = Object.assign({}, request, { status, updatedAt: timestamp,
+      managerParticipantId: action.actorParticipantId, reason: action.reason && action.reason.trim() });
+    const transactions = experience.pointTransactions.concat([{
+      id: 'points:reward:' + request.id + ':' + decision,
+      participantId: request.participantId, pointsDelta,
+      kind: decision === 'approve' ? 'reward' : decision === 'refund' ? 'refund' : 'reward_decision', timestamp, commandId,
+      rewardRequestId: request.id,
+    }]);
+    return appendWorkspaceActivity(Object.assign({}, data, { experience: Object.assign({}, experience,
+      { rewardRequestsById: requests, earnedPointsByParticipant: balances, pointTransactions: transactions }) }),
+      buildWorkspaceActivity(commandId, timestamp, 'reward_' + status, {
+        actorParticipantId: action.actorParticipantId, participantId: request.participantId,
+        reason: action.reason && action.reason.trim(), pointsDelta: Math.abs(pointsDelta) <= 10000 ? pointsDelta || undefined : undefined,
+      }));
+  }
   if (action.type === 'reminder_acknowledge') {
     let reminder = null;
     for (let index = 0; index < data.outbox.length; index += 1) {
@@ -1892,7 +2247,7 @@ function applyWorkspaceAction(data, commandId, action, timestamp) {
       throw new Error('Chore reminder is no longer available');
     }
     const actor = data.participantsById[action.actorParticipantId];
-    if (!isRecord(actor) || actor.pausedAt !== undefined) {
+    if (!isRecord(actor) || isParticipantPausedAt(actor, timestamp)) {
       throw new Error('Chore participant is not active');
     }
     if (
@@ -1965,6 +2320,77 @@ function applyWorkspaceAction(data, commandId, action, timestamp) {
     );
   }
 
+  if (action.type === 'vacation_reschedule') {
+    assertManager(data, action.actorParticipantId, timestamp);
+    const participant = data.participantsById[action.participantId];
+    if (!isRecord(participant) || !participant.pausedAt || !participant.resumeAt) {
+      throw new Error('A scheduled return is required');
+    }
+    choreCalendarPolicy.parseDateKey(action.startDate);
+    let hasDuplicateIds = false;
+    for (let index = 0; index < action.occurrenceIds.length; index += 1) {
+      if (action.occurrenceIds.indexOf(action.occurrenceIds[index]) !== index) hasDuplicateIds = true;
+    }
+    if (action.occurrenceIds.length === 0 || action.occurrenceIds.length > 100 ||
+      hasDuplicateIds) {
+      throw new Error('Choose eligible chores to move');
+    }
+    const occurrencesById = Object.assign({}, data.occurrencesById);
+    const selected = action.occurrenceIds.map(function (id) {
+      const occurrence = occurrencesById[id];
+      if (!isRecord(occurrence) || occurrence.status !== 'available' || occurrence.claimedAt ||
+        occurrence.carriedForwardTo || !includesValue(occurrence.assigneeIds, participant.id) ||
+        Date.parse(occurrence.scheduledAt) < Date.parse(participant.pausedAt) ||
+        Date.parse(occurrence.scheduledAt) >= Date.parse(participant.resumeAt)) {
+        throw new Error('A selected chore can no longer be moved');
+      }
+      return occurrence;
+    }).sort(function (left, right) {
+      return left.scheduledAt < right.scheduledAt ? -1 : left.scheduledAt > right.scheduledAt ? 1 : 0;
+    });
+    const activities = [];
+    for (let index = 0; index < selected.length; index += 1) {
+      const occurrence = selected[index];
+      const definition = data.definitionsById[occurrence.definitionId];
+      if (!isRecord(definition)) throw new Error('Chore definition is no longer available');
+      const parts = getTimeZoneParts(Date.parse(occurrence.scheduledAt), definition.schedule.timeZone);
+      const scheduledAt = localDateTimeToIso(choreCalendarPolicy.addCalendarDays(action.startDate, index),
+        parts.hour + ':' + parts.minute, definition.schedule.timeZone);
+      if (Date.parse(scheduledAt) <= Date.parse(timestamp) ||
+        Date.parse(scheduledAt) < Date.parse(participant.resumeAt)) {
+        throw new Error('Moved chores must begin after the return');
+      }
+      const id = definition.id + ':' + scheduledAt + ':vacation:' + occurrence.id;
+      if (occurrencesById[id]) throw new Error('Moved chore already exists');
+      occurrencesById[occurrence.id] = Object.assign({}, occurrence, {
+        status: 'skipped', skippedBy: action.actorParticipantId,
+        skippedAt: timestamp, carriedForwardTo: id, updatedAt: timestamp,
+      });
+      const moved = Object.assign({}, occurrence, {
+        id, scheduledAt,
+        dueAt: new Date(Date.parse(scheduledAt) + Date.parse(occurrence.dueAt) -
+          Date.parse(occurrence.scheduledAt)).toISOString(),
+        status: 'available', carriedForwardFrom: occurrence.id,
+        updatedAt: timestamp,
+      });
+      delete moved.carriedForwardTo;
+      delete moved.skippedBy;
+      delete moved.skippedAt;
+      occurrencesById[id] = moved;
+      activities.push({ id: 'activity:' + commandId + ':created:' + id,
+        commandId, occurrenceId: id, definitionId: definition.id,
+        assigneeIds: occurrence.assigneeIds, type: 'occurrence_created',
+        reason: 'Moved after vacation', timestamp });
+    }
+    const outbox = data.outbox.filter(function (item) {
+      return item.status === 'delivered' || !includesValue(action.occurrenceIds, item.occurrenceId);
+    });
+    activities.push(buildWorkspaceActivity(commandId, timestamp, 'vacation_rescheduled', {
+      actorParticipantId: action.actorParticipantId, participantId: participant.id,
+    }));
+    return appendWorkspaceActivities(Object.assign({}, data, { occurrencesById, outbox }), activities);
+  }
+
   const rangeStart = Date.parse(action.rangeStart);
   const rangeEnd = Date.parse(action.rangeEnd);
   if (
@@ -1994,7 +2420,7 @@ function applyWorkspaceAction(data, commandId, action, timestamp) {
       occurrencesById,
       completed.length > 0 ? completed[completed.length - 1] : undefined
     );
-    if (Object.keys(occurrencesById).length + materialized.length > 5000) {
+    if (materialized.filter(function (item) { return !occurrencesById[item.id]; }).length > 5000) {
       throw new Error('Too many chore occurrences');
     }
     for (let index = 0; index < materialized.length; index += 1) {
@@ -2086,9 +2512,26 @@ function isValidDocument(value) {
   );
 }
 
+function durableHash(value) {
+  return hashCrypto.createHash('sha256').update(value).digest('hex');
+}
+
+function readStoredDocument(path, fallback) {
+  return choreDurableStorage.decode(
+    readJson(path, fallback, MAX_CHORE_WORKSPACE_BYTES), durableHash,
+    function (key) { return readJson(CHORE_WORKSPACE_PATH + '.chunk-' + key, null, choreDurableStorage.CHUNK_BYTES); }
+  );
+}
+
+function writeStoredDocument(path, document) {
+  const stored = choreDurableStorage.encode(document, MAX_CHORE_WORKSPACE_BYTES, durableHash,
+    function (key, chunk) { writeJson(CHORE_WORKSPACE_PATH + '.chunk-' + key, chunk, choreDurableStorage.CHUNK_BYTES); });
+  writeJson(path, stored, MAX_CHORE_WORKSPACE_BYTES);
+}
+
 function readDocumentCandidate(path) {
   try {
-    const value = readJson(path, null, MAX_CHORE_WORKSPACE_BYTES);
+    const value = readStoredDocument(path, null);
     if (isValidDocument(value)) return value;
     if (
       isRecord(value) &&
@@ -2108,8 +2551,8 @@ function readDocumentCandidate(path) {
 }
 
 function persistDocument(previous, next) {
-  writeJson(CHORE_LAST_GOOD_WORKSPACE_PATH, previous, MAX_CHORE_WORKSPACE_BYTES);
-  writeJson(CHORE_WORKSPACE_PATH, next, MAX_CHORE_WORKSPACE_BYTES);
+  writeStoredDocument(CHORE_LAST_GOOD_WORKSPACE_PATH, previous);
+  writeStoredDocument(CHORE_WORKSPACE_PATH, next);
 }
 
 function applyScheduledState(document) {
@@ -2165,9 +2608,10 @@ function materializePeriodicWindow(document, timestamp) {
 function pendingHomeAssistantReminders(document, timestamp) {
   const now = Date.parse(timestamp);
   return document.data.outbox.filter(function (item) {
+    const occurrence = document.data.occurrencesById[item.occurrenceId];
     return (
-      String(item.eventType).indexOf('reminder_') === 0 &&
       item.destination === 'home_assistant' &&
+      occurrence && (!item.occurrenceUpdatedAt || item.occurrenceUpdatedAt === occurrence.updatedAt) &&
       (item.status === 'pending' || item.status === 'failed') &&
       Date.parse(item.nextAttemptAt) <= now
     );
@@ -2184,6 +2628,7 @@ function reminderPayload(document, item) {
     data: {
       choreOccurrenceId: item.occurrenceId,
       choreDefinitionId: occurrence.definitionId,
+      choreOccurrenceUpdatedAt: item.occurrenceUpdatedAt,
     },
   };
 }
@@ -2267,7 +2712,7 @@ function readDocument() {
   const missing = {};
   let document;
   try {
-    document = readJson(CHORE_WORKSPACE_PATH, missing, MAX_CHORE_WORKSPACE_BYTES);
+    document = readStoredDocument(CHORE_WORKSPACE_PATH, missing);
   } catch (_error) {
     document = null;
   }
@@ -2308,7 +2753,7 @@ function readDocument() {
       revision: backup.revision + 1,
       updatedAt: nowIso(),
     });
-    writeJson(CHORE_WORKSPACE_PATH, recovered, MAX_CHORE_WORKSPACE_BYTES);
+    writeStoredDocument(CHORE_WORKSPACE_PATH, recovered);
     appendEventHistory(recovered.data.activity, recovered.data.historyRetention);
     return recovered;
   }
@@ -2418,6 +2863,8 @@ function requiresManagementSession(action) {
     'retention_update',
     'experience_update',
     'experience_points_adjust',
+    'reward_decision',
+    'vacation_reschedule',
   ].indexOf(action.type) !== -1;
 }
 
@@ -2636,7 +3083,7 @@ function configureManagementPin(r, principal) {
     typeof request.pin !== 'string' ||
     !MANAGEMENT_PIN_PATTERN.test(request.pin) ||
     !isRecord(actor) ||
-    actor.pausedAt !== undefined ||
+    isParticipantPausedAt(actor, nowIso()) ||
     !includesValue(actor.capabilities, 'manage')
   ) {
     sendJson(r, 400, { error: 'Use a 4 to 8 digit PIN for an active manager' });
@@ -2673,7 +3120,7 @@ function removeManagementPin(r, principal) {
     : null;
   if (
     !isRecord(actor) ||
-    actor.pausedAt !== undefined ||
+    isParticipantPausedAt(actor, nowIso()) ||
     !includesValue(actor.capabilities, 'manage')
   ) {
     sendJson(r, 403, { error: 'Management PIN removal requires an active manager' });
@@ -2740,7 +3187,7 @@ function recoverWorkspace(r, principal) {
       revision: backup.revision + 1,
       updatedAt: nowIso(),
     });
-    writeJson(CHORE_WORKSPACE_PATH, recovered, MAX_CHORE_WORKSPACE_BYTES);
+    writeStoredDocument(CHORE_WORKSPACE_PATH, recovered);
     replaceEventHistory(recovered.data.activity);
     deleteFile(CHORE_JOURNAL_PATH);
     applyRevisionHeader(r, recovered.revision);
@@ -2764,7 +3211,7 @@ function recoverWorkspace(r, principal) {
     updatedAt: nowIso(),
     data: emptyData(),
   };
-  writeJson(CHORE_WORKSPACE_PATH, recovered, MAX_CHORE_WORKSPACE_BYTES);
+  writeStoredDocument(CHORE_WORKSPACE_PATH, recovered);
   applyRevisionHeader(r, recovered.revision);
   sendJson(r, 200, publicDocument(recovered, principal.tenantId));
 }
@@ -2931,8 +3378,8 @@ function commitAdministration(r, principal, operation) {
     const importedActor = imported.workspace.participantsById[request.actorParticipantId];
     const isEmpty = Object.keys(current.data.participantsById).length === 0;
     const actorCanRestore = isEmpty
-      ? isRecord(importedActor) && importedActor.pausedAt === undefined && includesValue(importedActor.capabilities, 'manage')
-      : isRecord(currentActor) && currentActor.pausedAt === undefined && includesValue(currentActor.capabilities, 'manage');
+      ? isRecord(importedActor) && !isParticipantPausedAt(importedActor, nowIso()) && includesValue(importedActor.capabilities, 'manage')
+      : isRecord(currentActor) && !isParticipantPausedAt(currentActor, nowIso()) && includesValue(currentActor.capabilities, 'manage');
     if (!actorCanRestore) {
       sendJson(r, 403, { error: 'Only a household manager can restore chore data' });
       return;
@@ -2960,7 +3407,7 @@ function commitAdministration(r, principal, operation) {
     if (
       request.confirmation !== 'DELETE ALL CHORES' ||
       !isRecord(currentActor) ||
-      currentActor.pausedAt !== undefined ||
+      isParticipantPausedAt(currentActor, nowIso()) ||
       !includesValue(currentActor.capabilities, 'manage')
     ) {
       sendJson(r, 403, { error: 'Chore reset requires an active manager confirmation' });
@@ -2977,7 +3424,7 @@ function commitAdministration(r, principal, operation) {
     data: nextData,
   };
   if (operation === 'reset') {
-    writeJson(CHORE_WORKSPACE_PATH, next, MAX_CHORE_WORKSPACE_BYTES);
+    writeStoredDocument(CHORE_WORKSPACE_PATH, next);
     deleteFile(CHORE_JOURNAL_PATH);
     deleteFile(CHORE_EVENT_HISTORY_PATH);
     deleteFile(CHORE_LAST_GOOD_WORKSPACE_PATH);
@@ -3033,7 +3480,6 @@ function routeRequest(r, principal, options) {
       lastSchedulerRunAt,
       pendingDeliveryCount: document.data.outbox.filter(function (item) {
         return (
-          String(item.eventType).indexOf('reminder_') === 0 &&
           item.destination === 'home_assistant' &&
           (item.status === 'pending' || item.status === 'failed')
         );

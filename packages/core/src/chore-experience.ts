@@ -1,4 +1,6 @@
-export const CHORE_EXPERIENCE_VERSION = 1 as const;
+import { isPointTransaction, isProgressAward, isProgressTarget } from './chore-progress-policy.ts';
+
+export const CHORE_EXPERIENCE_VERSION = 2 as const;
 
 export type ChoreGamificationMode = 'off' | 'light' | 'family' | 'adventure';
 
@@ -40,6 +42,64 @@ export interface ChoreRewardGoal {
   updatedAt: string;
 }
 
+export type ChoreRewardRequestStatus =
+  | 'requested'
+  | 'approved'
+  | 'declined'
+  | 'fulfilled'
+  | 'refunded';
+
+export interface ChoreRewardRequest {
+  id: string;
+  rewardId: string;
+  rewardTitle: string;
+  cost: number;
+  participantId: string;
+  status: ChoreRewardRequestStatus;
+  requestedAt: string;
+  updatedAt: string;
+  managerParticipantId?: string;
+  reason?: string;
+}
+
+export interface ChorePointTransaction {
+  id: string;
+  participantId: string;
+  pointsDelta: number;
+  kind:
+    | 'opening_balance'
+    | 'completion'
+    | 'reopen'
+    | 'adjustment'
+    | 'reward'
+    | 'refund'
+    | 'reward_decision'
+    | 'progress_award';
+  timestamp: string;
+  commandId?: string;
+  rewardRequestId?: string;
+  occurrenceId?: string;
+}
+
+export interface ChoreProgressTarget {
+  id: string;
+  title: string;
+  metric: 'selected_chore' | 'count' | 'points' | 'days' | 'streak';
+  target: number;
+  participantId?: string;
+  definitionIds?: string[];
+  cycle?: 'once' | 'weekly' | 'monthly';
+  awardPoints?: number;
+}
+
+export interface ChoreProgressAward {
+  id: string;
+  targetId: string;
+  participantId: string;
+  cycleKey: string;
+  awardedAt: string;
+}
+
 export interface ChoreExperienceState {
   version: typeof CHORE_EXPERIENCE_VERSION;
   setupStartedAt?: string;
@@ -51,6 +111,11 @@ export interface ChoreExperienceState {
   earnedPointsByParticipant?: Record<string, number>;
   householdBonusPoints?: number;
   awardedMissionIds?: string[];
+  rewardRequestsById: Record<string, ChoreRewardRequest>;
+  pointTransactions: ChorePointTransaction[];
+  badgesById: Record<string, ChoreProgressTarget>;
+  achievementsById: Record<string, ChoreProgressTarget>;
+  progressAwards: ChoreProgressAward[];
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -126,6 +191,26 @@ function isRewardGoal(value: unknown, expectedId: string): value is ChoreRewardG
   );
 }
 
+function isRewardRequest(value: unknown, id: string): value is ChoreRewardRequest {
+  return (
+    isRecord(value) &&
+    value.id === id &&
+    typeof value.rewardId === 'string' &&
+    typeof value.rewardTitle === 'string' &&
+    Number.isSafeInteger(value.cost) &&
+    Number(value.cost) > 0 &&
+    Number(value.cost) <= 1_000_000 &&
+    typeof value.participantId === 'string' &&
+    ['requested', 'approved', 'declined', 'fulfilled', 'refunded'].includes(String(value.status)) &&
+    isOptionalTimestamp(value.requestedAt) &&
+    typeof value.requestedAt === 'string' &&
+    isOptionalTimestamp(value.updatedAt) &&
+    typeof value.updatedAt === 'string' &&
+    (value.managerParticipantId === undefined || typeof value.managerParticipantId === 'string') &&
+    (value.reason === undefined || typeof value.reason === 'string')
+  );
+}
+
 export function createChoreExperienceState(): ChoreExperienceState {
   return {
     version: CHORE_EXPERIENCE_VERSION,
@@ -136,6 +221,11 @@ export function createChoreExperienceState(): ChoreExperienceState {
     earnedPointsByParticipant: {},
     householdBonusPoints: 0,
     awardedMissionIds: [],
+    rewardRequestsById: {},
+    pointTransactions: [],
+    badgesById: {},
+    achievementsById: {},
+    progressAwards: [],
   };
 }
 
@@ -160,10 +250,35 @@ export function isChoreExperienceState(value: unknown): value is ChoreExperience
     isOptionalBoundedInteger(value.householdBonusPoints, 1_000_000_000) &&
     (value.awardedMissionIds === undefined ||
       (Array.isArray(value.awardedMissionIds) &&
-        value.awardedMissionIds.every((id) => typeof id === 'string' && id.length > 0)))
+        value.awardedMissionIds.every((id) => typeof id === 'string' && id.length > 0))) &&
+    isRecord(value.rewardRequestsById) &&
+    Object.entries(value.rewardRequestsById).every(([id, request]) =>
+      isRewardRequest(request, id)
+    ) &&
+    Array.isArray(value.pointTransactions) &&
+    value.pointTransactions.every(isPointTransaction) &&
+    new Set(value.pointTransactions.map((item) => item.id)).size ===
+      value.pointTransactions.length &&
+    isRecord(value.badgesById) &&
+    Object.entries(value.badgesById).every(([id, badge]) => isProgressTarget(badge, id)) &&
+    isRecord(value.achievementsById) &&
+    Object.entries(value.achievementsById).every(([id, achievement]) =>
+      isProgressTarget(achievement, id)
+    ) &&
+    Array.isArray(value.progressAwards) &&
+    value.progressAwards.every(isProgressAward)
   );
 }
 
 export function normalizeChoreExperienceState(value: unknown): ChoreExperienceState {
-  return isChoreExperienceState(value) ? value : createChoreExperienceState();
+  if (isChoreExperienceState(value)) return value;
+  if (isRecord(value) && value.version === 1) {
+    const migrated = {
+      ...createChoreExperienceState(),
+      ...value,
+      version: CHORE_EXPERIENCE_VERSION,
+    };
+    return isChoreExperienceState(migrated) ? migrated : createChoreExperienceState();
+  }
+  return createChoreExperienceState();
 }

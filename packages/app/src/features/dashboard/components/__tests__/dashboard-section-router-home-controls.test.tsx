@@ -294,7 +294,7 @@ describe('DashboardSectionRouter home controls', () => {
     });
   });
 
-  it('adds pending chores to their room grid', () => {
+  it('keeps pending chores out of the ordered room grid', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 8, 9, 11));
     useChoreWorkspaceStore.getState().setPreviewDocument({
@@ -305,15 +305,11 @@ describe('DashboardSectionRouter home controls', () => {
 
     renderWithProviders(<DashboardSectionRouter controller={controller} />);
 
-    expect(deviceGridPropsMock.mock.calls.at(-1)?.[0]).toMatchObject({
-      supplementalCards: [
-        expect.objectContaining({ id: 'room-chore-today-dishwasher', size: 'medium' }),
-      ],
-    });
+    expect(deviceGridPropsMock.mock.calls.at(-1)?.[0]).not.toHaveProperty('supplementalCards');
     expect(screen.getByText(/1 overdue/)).toBeInTheDocument();
   });
 
-  it('hides room chore summaries and cards when chores are disabled', () => {
+  it('hides room chore summaries when chores are disabled', () => {
     useChoreWorkspaceStore.getState().setPreviewDocument({
       data: createChoreDemoWorkspace({ copy: choreCopy }),
     });
@@ -323,10 +319,52 @@ describe('DashboardSectionRouter home controls', () => {
 
     renderWithProviders(<DashboardSectionRouter controller={controller} />);
 
-    expect(deviceGridPropsMock.mock.calls.at(-1)?.[0]).toMatchObject({
-      supplementalCards: [],
-    });
+    expect(deviceGridPropsMock.mock.calls.at(-1)?.[0]).not.toHaveProperty('supplementalCards');
+    expect(screen.queryByRole('button', { name: 'Open Chores' })).not.toBeInTheDocument();
     expect(screen.queryByText(/1 remaining/)).not.toBeInTheDocument();
+  });
+
+  it('navigates room chores to Household and preserves the grid after completion', () => {
+    const data = createChoreDemoWorkspace({ copy: choreCopy });
+    useChoreWorkspaceStore.getState().setPreviewDocument({ data });
+    const controller = createController();
+    controller.activeRoom = 'Kitchen';
+    controller.orderedCardIds = ['light.kitchen', 'light.dining'];
+
+    renderWithProviders(<DashboardSectionRouter controller={controller} />);
+    const gridProps = deviceGridPropsMock.mock.calls.at(-1)?.[0];
+    fireEvent.click(screen.getByRole('button', { name: 'Open Chores' }));
+
+    expect(controller.setActiveSection).toHaveBeenCalledWith('tasks');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    act(() => {
+      useChoreWorkspaceStore.getState().setPreviewDocument({
+        data: {
+          ...data,
+          occurrencesById: {
+            ...data.occurrencesById,
+            'today-dishwasher': { ...data.occurrencesById['today-dishwasher'], status: 'done' },
+          },
+        },
+      });
+    });
+    expect(screen.getByText('All done today')).toBeInTheDocument();
+    expect(deviceGridPropsMock.mock.calls.at(-1)?.[0]).toEqual(gridProps);
+    expect(deviceGridMountCount).toBe(1);
+  });
+
+  it('keeps the chore control available with no room chores and summaries hidden', () => {
+    useChoreWorkspaceStore.getState().setPreviewDocument({
+      data: createChoreDemoWorkspace({ copy: choreCopy }),
+    });
+    useSettingsStore.getState().updateSettings({ showHomeSummaryBar: false });
+    const controller = createController();
+    controller.activeRoom = 'Study';
+
+    renderWithProviders(<DashboardSectionRouter controller={controller} />);
+
+    expect(screen.getByRole('button', { name: 'Open Chores' })).toBeInTheDocument();
+    expect(screen.getByText('All done today')).toBeInTheDocument();
   });
 
   it('does not rerender another section when the chore workspace changes', () => {

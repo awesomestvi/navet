@@ -1,5 +1,8 @@
 import { themeColorValues } from '@navet/app/components/shared/theme/theme-colors';
-import type { ChoreExperienceState } from '@navet/core/chore-experience';
+import {
+  type ChoreExperienceState,
+  createChoreExperienceState,
+} from '@navet/core/chore-experience';
 import type {
   ChoreDefinition,
   ChoreOccurrence,
@@ -304,7 +307,7 @@ export function createChoreDemoWorkspace({
     }),
   ];
   const experience: ChoreExperienceState = {
-    version: 1,
+    ...createChoreExperienceState(),
     gamificationMode: mode === 'adventure' ? 'adventure' : mode === 'off' ? 'off' : 'family',
     presentationByDefinitionId: {
       dishwasher: {

@@ -7,6 +7,7 @@ import {
   type ChoreDefinition,
   type ChoreOccurrence,
   type ChoreParticipant,
+  type ChoreWorkspaceData,
   createChoreOutboxItem,
   createEmptyChoreWorkspace,
   getChoreTiming,
@@ -114,16 +115,7 @@ describe('chores domain', () => {
       activity: [],
       outbox: [],
       historyRetention: { maxAgeDays: 730, maxEvents: 50_000 },
-      experience: {
-        version: 1,
-        gamificationMode: 'off',
-        presentationByDefinitionId: {},
-        missionsById: {},
-        rewardGoalsById: {},
-        earnedPointsByParticipant: {},
-        householdBonusPoints: 0,
-        awardedMissionIds: [],
-      },
+      experience: createChoreExperienceState(),
     });
   });
 
@@ -149,6 +141,392 @@ describe('chores domain', () => {
       rangeEnd: '2026-08-18T00:00:00.000Z',
     });
     expect(laterOccurrence[0]?.assigneeIds).toEqual(['alice']);
+  });
+
+  it('uses standby coverage and completed history for fair rotation', () => {
+    const person = makeDefinition({
+      assignment: { mode: 'person', participantIds: ['alice'], standbyParticipantIds: ['bob'] },
+    });
+    const standby = materializeChoreOccurrences({
+      definition: person,
+      participantsById: { alice: { ...alice, pausedAt: '2026-08-01T08:00:00.000Z' }, bob },
+      rangeStart: '2026-08-01T00:00:00.000Z',
+      rangeEnd: '2026-08-11T00:00:00.000Z',
+    });
+    expect(standby[0]).toMatchObject({ assignmentSlot: 'standby', assigneeIds: ['bob'] });
+
+    const fair = makeDefinition({
+      assignment: { mode: 'rotation', participantIds: ['alice', 'bob'], rotationStrategy: 'fair' },
+    });
+    const completed = makeOccurrence({ status: 'done', completedBy: 'alice' });
+    const next = materializeChoreOccurrences({
+      definition: fair,
+      participantsById: { alice, bob },
+      existingOccurrences: { [completed.id]: completed },
+      rangeStart: '2026-08-17T00:00:00.000Z',
+      rangeEnd: '2026-08-18T00:00:00.000Z',
+    });
+    expect(next[0]?.assigneeIds).toEqual(['bob']);
+  });
+
+  it('enforces claim windows and retains a claim when review sends work back', () => {
+    const definition = makeDefinition({
+      claimPolicy: { required: true, allowSteal: false, opensBeforeMinutes: 30 },
+      approval: { required: true, approverIds: ['alice'], resetClaimOnReject: false },
+    });
+    const occurrence = makeOccurrence({
+      scheduledAt: '2026-08-10T16:00:00.000Z',
+      assigneeIds: ['bob'],
+    });
+    expect(() =>
+      applyChoreOccurrenceCommand({
+        definition,
+        occurrence,
+        command: { type: 'claim', participantId: 'bob' },
+        commandId: 'early',
+        timestamp: '2026-08-10T15:29:00.000Z',
+      })
+    ).toThrow('cannot be claimed yet');
+    const claimed = applyChoreOccurrenceCommand({
+      definition,
+      occurrence,
+      command: { type: 'claim', participantId: 'bob' },
+      commandId: 'claim',
+      timestamp: '2026-08-10T15:30:00.000Z',
+    }).occurrence;
+    const pending = applyChoreOccurrenceCommand({
+      definition,
+      occurrence: claimed,
+      command: { type: 'complete', participantId: 'bob' },
+      commandId: 'complete',
+      timestamp: '2026-08-10T16:10:00.000Z',
+    }).occurrence;
+    const sentBack = applyChoreOccurrenceCommand({
+      definition,
+      occurrence: pending,
+      command: { type: 'reject', participantId: 'alice' },
+      commandId: 'reject',
+      timestamp: '2026-08-10T16:20:00.000Z',
+    }).occurrence;
+    expect(sentBack).toMatchObject({ status: 'claimed', claimedBy: 'bob' });
+    expect(sentBack.completedBy).toBeUndefined();
+  });
+
+  it('keeps elapsed hourly intervals through DST and applies personal due offsets', () => {
+    const hourly = makeDefinition({
+      assignment: { mode: 'person', participantIds: ['alice'] },
+      schedule: {
+        frequency: 'hourly',
+        startDate: '2026-10-25',
+        time: '01:00',
+        timeZone: 'Europe/Stockholm',
+        intervalHours: 2,
+      },
+    });
+    const hourlyOccurrences = materializeChoreOccurrences({
+      definition: hourly,
+      participantsById: { alice },
+      rangeStart: '2026-10-24T22:00:00.000Z',
+      rangeEnd: '2026-10-25T06:00:00.000Z',
+    });
+    expect(hourlyOccurrences.map((occurrence) => occurrence.scheduledAt)).toEqual([
+      '2026-10-24T23:00:00.000Z',
+      '2026-10-25T01:00:00.000Z',
+      '2026-10-25T03:00:00.000Z',
+      '2026-10-25T05:00:00.000Z',
+    ]);
+
+    const personal = makeDefinition({
+      assignment: {
+        mode: 'everyone',
+        participantIds: ['alice', 'bob'],
+        participantScheduleOverrides: { bob: { dueDateOffsetDays: 1 } },
+      },
+    });
+    const occurrences = materializeChoreOccurrences({
+      definition: personal,
+      participantsById: { alice, bob },
+      rangeStart: '2026-08-01T00:00:00.000Z',
+      rangeEnd: '2026-08-11T00:00:00.000Z',
+    });
+    expect(occurrences.find((occurrence) => occurrence.assigneeIds[0] === 'bob')?.scheduledAt).toBe(
+      '2026-08-04T16:00:00.000Z'
+    );
+  });
+
+  it('keeps the chosen wall clock time for completion-date recurrence', () => {
+    const definition = makeDefinition({
+      assignment: { mode: 'person', participantIds: ['alice'] },
+      schedule: {
+        frequency: 'after_completion',
+        startDate: '2026-10-24',
+        time: '18:00',
+        timeZone: 'Europe/Stockholm',
+        intervalDays: 2,
+      },
+    });
+    const occurrences = materializeChoreOccurrences({
+      definition,
+      participantsById: { alice },
+      latestCompletedAt: '2026-10-24T18:00:00.000Z',
+      rangeStart: '2026-10-25T00:00:00.000Z',
+      rangeEnd: '2026-10-27T00:00:00.000Z',
+    });
+    expect(occurrences[0]?.scheduledAt).toBe('2026-10-26T17:00:00.000Z');
+  });
+
+  it('keeps vacation work through participant updates and rematerialization for review', () => {
+    const definition = makeDefinition({ assignment: { mode: 'person', participantIds: ['bob'] } });
+    const occurrence = makeOccurrence({
+      id: 'vacation-future',
+      assigneeIds: ['bob'],
+      scheduledAt: '2026-08-10T16:00:00.000Z',
+    });
+    let workspace = {
+      ...createEmptyChoreWorkspace(),
+      participantsById: { alice, bob },
+      definitionsById: { [definition.id]: definition },
+      occurrencesById: { [occurrence.id]: occurrence },
+    };
+    workspace = applyChoreWorkspaceAction({
+      workspace,
+      commandId: 'pause-bob',
+      timestamp: '2026-08-01T08:00:00.000Z',
+      action: {
+        type: 'participant_update',
+        actorParticipantId: 'alice',
+        participant: {
+          ...bob,
+          pausedAt: '2026-08-02T00:00:00.000Z',
+          resumeAt: '2026-08-12T00:00:00.000Z',
+        },
+      },
+    }).data as typeof workspace;
+    workspace = applyChoreWorkspaceAction({
+      workspace,
+      commandId: 'paused-materialize',
+      timestamp: '2026-08-01T08:00:00.000Z',
+      action: {
+        type: 'materialize_occurrences',
+        rangeStart: '2026-08-01T00:00:00.000Z',
+        rangeEnd: '2026-08-12T00:00:00.000Z',
+      },
+    }).data as typeof workspace;
+    expect(workspace.occurrencesById[occurrence.id]).toBeDefined();
+    const moved = applyChoreWorkspaceAction({
+      workspace,
+      commandId: 'vacation-review',
+      timestamp: '2026-08-12T08:00:00.000Z',
+      action: {
+        type: 'vacation_reschedule',
+        actorParticipantId: 'alice',
+        participantId: 'bob',
+        occurrenceIds: [occurrence.id],
+        startDate: '2026-08-13',
+      },
+    }).data;
+    expect(
+      Object.values(moved.occurrencesById).some((item) => item.carriedForwardFrom === occurrence.id)
+    ).toBe(true);
+  });
+
+  it('keeps fair rotation assignments stable when the same range is materialized again', () => {
+    const definition = makeDefinition({
+      schedule: { frequency: 'daily', startDate: '2026-08-03', time: '16:00', timeZone: 'UTC' },
+      assignment: { mode: 'rotation', participantIds: ['alice', 'bob'], rotationStrategy: 'fair' },
+    });
+    const input = {
+      definition,
+      participantsById: { alice, bob },
+      rangeStart: '2026-08-03T00:00:00.000Z',
+      rangeEnd: '2026-08-07T00:00:00.000Z',
+    };
+    const first = materializeChoreOccurrences(input);
+    expect(first.map((item) => item.assigneeIds[0])).toEqual(['alice', 'bob', 'alice', 'bob']);
+    const existingOccurrences = Object.fromEntries(first.map((item) => [item.id, item]));
+    expect(materializeChoreOccurrences({ ...input, existingOccurrences })).toEqual(first);
+  });
+
+  it('keeps fair rotation stable with personal dates and times', () => {
+    const definition = makeDefinition({
+      schedule: { frequency: 'daily', startDate: '2026-08-03', time: '16:00', timeZone: 'UTC' },
+      assignment: {
+        mode: 'rotation',
+        participantIds: ['alice', 'bob'],
+        rotationStrategy: 'fair',
+        participantScheduleOverrides: {
+          alice: { dueDateOffsetDays: 1, times: ['18:00'] },
+          bob: { times: ['19:00'] },
+        },
+      },
+    });
+    const input = {
+      definition,
+      participantsById: { alice, bob },
+      rangeStart: '2026-08-03T00:00:00.000Z',
+      rangeEnd: '2026-08-07T00:00:00.000Z',
+    };
+    const first = materializeChoreOccurrences(input);
+    const existingOccurrences = Object.fromEntries(first.map((item) => [item.id, item]));
+    expect(first.map((item) => item.assigneeIds[0])).toEqual(['alice', 'bob', 'alice', 'bob']);
+    expect(materializeChoreOccurrences({ ...input, existingOccurrences })).toEqual(first);
+  });
+
+  it('preserves a large reward transaction in a valid persisted workspace', () => {
+    const experience = createChoreExperienceState();
+    experience.gamificationMode = 'family';
+    experience.earnedPointsByParticipant = { bob: 20000 };
+    experience.rewardRequestsById.large = {
+      id: 'large',
+      rewardId: 'goal',
+      rewardTitle: 'Large reward',
+      cost: 15000,
+      participantId: 'bob',
+      status: 'requested',
+      requestedAt: alice.createdAt,
+      updatedAt: alice.createdAt,
+    };
+    const result = applyChoreWorkspaceAction({
+      workspace: { ...createEmptyChoreWorkspace(), participantsById: { alice, bob }, experience },
+      action: {
+        type: 'reward_decision',
+        actorParticipantId: 'alice',
+        requestId: 'large',
+        decision: 'approve',
+      },
+      commandId: 'large-approve',
+      timestamp: '2026-08-01T09:00:00.000Z',
+    });
+    const persisted = { ...result.data, activity: [result.activity] };
+    expect(isChoreWorkspaceData(persisted)).toBe(true);
+    expect(persisted.experience?.pointTransactions[0]?.pointsDelta).toBe(-15000);
+  });
+
+  it('counts reused hourly occurrences only once against the workspace cap', () => {
+    const definition = makeDefinition({
+      assignment: { mode: 'person', participantIds: ['alice'] },
+      schedule: {
+        frequency: 'hourly',
+        startDate: '2026-08-01',
+        time: '00:00',
+        timeZone: 'UTC',
+        intervalHours: 1,
+      },
+    });
+    const workspace = {
+      ...createEmptyChoreWorkspace(),
+      participantsById: { alice },
+      definitionsById: { [definition.id]: definition },
+    };
+    const action = {
+      type: 'materialize_occurrences' as const,
+      rangeStart: '2026-08-01T00:00:00.000Z',
+      rangeEnd: '2026-11-15T00:00:00.000Z',
+    };
+    const first = applyChoreWorkspaceAction({
+      workspace,
+      action,
+      commandId: 'hourly-first',
+      timestamp: action.rangeStart,
+    }).data;
+    expect(Object.keys(first.occurrencesById).length).toBeGreaterThan(2500);
+    expect(() =>
+      applyChoreWorkspaceAction({
+        workspace: first,
+        action,
+        commandId: 'hourly-again',
+        timestamp: action.rangeStart,
+      })
+    ).not.toThrow();
+  });
+
+  it('continues hourly materialization beyond 5000 retained unfinished occurrences', () => {
+    const definition = makeDefinition({
+      assignment: { mode: 'person', participantIds: ['alice'] },
+      schedule: {
+        frequency: 'hourly',
+        startDate: '2026-08-01',
+        time: '00:00',
+        timeZone: 'UTC',
+        intervalHours: 1,
+      },
+    });
+    let workspace: ChoreWorkspaceData = {
+      ...createEmptyChoreWorkspace(),
+      participantsById: { alice },
+      definitionsById: { [definition.id]: definition },
+    };
+    for (const [index, [rangeStart, rangeEnd]] of [
+      ['2026-08-01T00:00:00.000Z', '2026-11-15T00:00:00.000Z'],
+      ['2026-11-15T00:00:00.000Z', '2027-03-01T00:00:00.000Z'],
+    ].entries()) {
+      workspace = applyChoreWorkspaceAction({
+        workspace,
+        action: { type: 'materialize_occurrences', rangeStart, rangeEnd },
+        commandId: `retained-hourly:${index}`,
+        timestamp: '2026-08-01T00:00:00.000Z',
+      }).data;
+    }
+    expect(Object.keys(workspace.occurrencesById).length).toBeGreaterThan(5000);
+    expect(
+      Object.values(workspace.occurrencesById).every((item) => item.status === 'available')
+    ).toBe(true);
+  });
+
+  it('moves only reviewed vacation work and preserves claimed work', () => {
+    const definition = makeDefinition({ assignment: { mode: 'person', participantIds: ['bob'] } });
+    const pausedBob = {
+      ...bob,
+      pausedAt: '2026-08-01T00:00:00.000Z',
+      resumeAt: '2026-08-12T00:00:00.000Z',
+    };
+    const eligible = makeOccurrence({
+      id: 'vacation-work',
+      assigneeIds: ['bob'],
+      scheduledAt: '2026-08-10T16:00:00.000Z',
+    });
+    const claimed = makeOccurrence({
+      id: 'claimed-work',
+      assigneeIds: ['bob'],
+      status: 'claimed',
+      claimedBy: 'bob',
+      claimedAt: '2026-08-10T16:00:00.000Z',
+    });
+    const workspace = createEmptyChoreWorkspace();
+    workspace.participantsById = { alice, bob: pausedBob };
+    workspace.definitionsById = { [definition.id]: definition };
+    workspace.occurrencesById = { [eligible.id]: eligible, [claimed.id]: claimed };
+    const result = applyChoreWorkspaceAction({
+      workspace,
+      action: {
+        type: 'vacation_reschedule',
+        actorParticipantId: 'alice',
+        participantId: 'bob',
+        occurrenceIds: [eligible.id],
+        startDate: '2026-08-13',
+      },
+      commandId: 'move-vacation',
+      timestamp: '2026-08-12T08:00:00.000Z',
+    });
+    expect(result.data.occurrencesById[eligible.id]).toMatchObject({ status: 'skipped' });
+    expect(result.data.occurrencesById[claimed.id]).toMatchObject({ status: 'claimed' });
+    const moved = Object.values(result.data.occurrencesById).find(
+      (item) => item.carriedForwardFrom === eligible.id
+    );
+    expect(moved).toMatchObject({ status: 'available', scheduledAt: '2026-08-13T16:00:00.000Z' });
+    const afterReturn = runChoreWorkspaceScheduler(result.data, '2026-08-13T09:00:00.000Z');
+    expect(
+      afterReturn.activities.some(
+        (activity) => activity.type === 'overdue' || activity.type === 'missed'
+      )
+    ).toBe(false);
+    expect(afterReturn.outboxItems).toHaveLength(0);
+    const afterDue = runChoreWorkspaceScheduler(result.data, '2026-08-14T09:00:00.000Z');
+    expect(
+      afterDue.activities.some(
+        (activity) => activity.occurrenceId === moved?.id && activity.type === 'overdue'
+      )
+    ).toBe(true);
   });
 
   it.each([
@@ -382,18 +760,32 @@ describe('chores domain', () => {
       schemaVersion: 2,
       outbox: [],
       historyRetention: { maxAgeDays: 730, maxEvents: 50_000 },
+      experience: createChoreExperienceState(),
+    });
+    expect(() => migrateChoreWorkspaceData({ schemaVersion: 0 })).toThrow('Unsupported');
+  });
+
+  it('migrates saved experience balances into the reward transaction model', () => {
+    const current = createEmptyChoreWorkspace();
+    const legacy = {
+      ...current,
+      participantsById: { alice, bob },
       experience: {
         version: 1,
-        gamificationMode: 'off',
+        gamificationMode: 'family',
         presentationByDefinitionId: {},
         missionsById: {},
         rewardGoalsById: {},
-        earnedPointsByParticipant: {},
-        householdBonusPoints: 0,
-        awardedMissionIds: [],
+        earnedPointsByParticipant: { bob: 35 },
       },
+    };
+    const migrated = migrateChoreWorkspaceData(legacy);
+    expect(migrated.experience).toMatchObject({
+      version: 2,
+      earnedPointsByParticipant: { bob: 35 },
+      pointTransactions: [{ id: 'opening:bob', participantId: 'bob', pointsDelta: 35 }],
     });
-    expect(() => migrateChoreWorkspaceData({ schemaVersion: 0 })).toThrow('Unsupported');
+    expect(migrateChoreWorkspaceData(migrated)).toEqual(migrated);
   });
 
   it('repairs a corrupted rotation cursor without discarding the workspace', () => {
@@ -547,6 +939,96 @@ describe('chores domain', () => {
     expect(
       Object.values(result.data.occurrencesById).map((occurrence) => occurrence.scheduledAt)
     ).toEqual(['2026-08-27T09:00:00.000Z', '2026-09-10T09:00:00.000Z', '2026-09-24T09:00:00.000Z']);
+  });
+
+  it('replaces future dates after each repeated edit of the same saved chore', () => {
+    const definition = makeDefinition({
+      assignment: { mode: 'person', participantIds: ['alice'] },
+    });
+    let workspace: ChoreWorkspaceData = {
+      ...createEmptyChoreWorkspace(),
+      participantsById: { alice },
+      definitionsById: { [definition.id]: definition },
+    };
+    const timestamp = '2026-09-01T08:00:00.000Z';
+    const schedules: Array<{
+      schedule: ChoreDefinition['schedule'];
+      dates: string[];
+    }> = [
+      {
+        schedule: {
+          frequency: 'weekly',
+          startDate: '2026-09-14',
+          time: '18:00',
+          timeZone: 'UTC',
+          daysOfWeek: [1],
+          intervalWeeks: 1,
+        },
+        dates: ['2026-09-14', '2026-09-21', '2026-09-28'],
+      },
+      {
+        schedule: {
+          frequency: 'daily',
+          startDate: '2026-09-14',
+          time: '18:00',
+          timeZone: 'UTC',
+          intervalDays: 3,
+        },
+        dates: ['2026-09-14', '2026-09-17', '2026-09-20', '2026-09-23', '2026-09-26', '2026-09-29'],
+      },
+      {
+        schedule: {
+          frequency: 'monthly',
+          startDate: '2026-09-14',
+          time: '18:00',
+          timeZone: 'UTC',
+          dayOfMonth: 14,
+        },
+        dates: ['2026-09-14'],
+      },
+      {
+        schedule: {
+          frequency: 'weekly',
+          startDate: '2026-09-16',
+          time: '18:00',
+          timeZone: 'UTC',
+          daysOfWeek: [3],
+          intervalWeeks: 2,
+        },
+        dates: ['2026-09-16', '2026-09-30'],
+      },
+    ];
+    for (const [index, { schedule, dates }] of schedules.entries()) {
+      workspace = applyChoreWorkspaceAction({
+        commandId: `edit-${index}`,
+        action: {
+          type: 'definition_update',
+          actorParticipantId: 'alice',
+          definition: {
+            ...workspace.definitionsById[definition.id],
+            schedule,
+            updatedAt: timestamp,
+          },
+        },
+        timestamp,
+        workspace,
+      }).data;
+      workspace = applyChoreWorkspaceAction({
+        commandId: `materialize-${index}`,
+        action: {
+          type: 'materialize_occurrences',
+          rangeStart: '2026-09-14T00:00:00.000Z',
+          rangeEnd: '2026-10-01T00:00:00.000Z',
+        },
+        timestamp,
+        workspace,
+      }).data;
+      expect(
+        Object.values(workspace.occurrencesById)
+          .map((item) => item.scheduledAt)
+          .sort()
+      ).toEqual(dates.map((date) => `${date}T18:00:00.000Z`));
+    }
   });
 
   it('keeps overdue assignments when rotation changes and rematerializes the past', () => {
@@ -1326,7 +1808,7 @@ describe('chores domain', () => {
       definitionsById: { [definition.id]: definition },
     };
     const experience = {
-      version: 1 as const,
+      ...createChoreExperienceState(),
       gamificationMode: 'family' as const,
       presentationByDefinitionId: {
         [definition.id]: { estimatedMinutes: 5, points: 10 },
@@ -1379,6 +1861,91 @@ describe('chores domain', () => {
         workspace,
       })
     ).toThrow('unavailable chore');
+  });
+
+  it('requests rewards without spending and records one spend or refund per reviewed request', () => {
+    const experience = createChoreExperienceState();
+    experience.gamificationMode = 'family';
+    experience.earnedPointsByParticipant = { bob: 100 };
+    experience.rewardGoalsById.movie = {
+      id: 'movie',
+      title: 'Movie',
+      type: 'instant',
+      targetPoints: 40,
+      enabled: true,
+      createdAt: '2026-08-01T08:00:00.000Z',
+      updatedAt: '2026-08-01T08:00:00.000Z',
+    };
+    const initial = {
+      ...createEmptyChoreWorkspace(),
+      participantsById: { alice, bob },
+      experience,
+    };
+    const apply = (
+      workspace: ChoreWorkspaceData,
+      commandId: string,
+      action: Parameters<typeof applyChoreWorkspaceAction>[0]['action']
+    ) =>
+      applyChoreWorkspaceAction({
+        workspace,
+        commandId,
+        action,
+        timestamp: '2026-08-01T09:00:00.000Z',
+      }).data;
+    const requested = apply(initial, 'request-1', {
+      type: 'reward_request',
+      requestId: 'r1',
+      rewardId: 'movie',
+      participantId: 'bob',
+    });
+    expect(requested.experience?.earnedPointsByParticipant?.bob).toBe(100);
+    expect(requested.experience?.pointTransactions).toEqual([]);
+    const approved = apply(requested, 'approve-1', {
+      type: 'reward_decision',
+      requestId: 'r1',
+      actorParticipantId: 'alice',
+      decision: 'approve',
+    });
+    expect(approved.experience?.earnedPointsByParticipant?.bob).toBe(60);
+    expect(approved.experience?.pointTransactions).toMatchObject([
+      { id: 'points:reward:r1:approve', pointsDelta: -40, kind: 'reward' },
+    ]);
+    expect(() =>
+      apply(approved, 'approve-again', {
+        type: 'reward_decision',
+        requestId: 'r1',
+        actorParticipantId: 'alice',
+        decision: 'approve',
+      })
+    ).toThrow('already changed');
+    const fulfilled = apply(approved, 'fulfill-1', {
+      type: 'reward_decision',
+      requestId: 'r1',
+      actorParticipantId: 'alice',
+      decision: 'fulfill',
+    });
+    const refunded = apply(fulfilled, 'refund-1', {
+      type: 'reward_decision',
+      requestId: 'r1',
+      actorParticipantId: 'alice',
+      decision: 'refund',
+    });
+    expect(refunded.experience?.earnedPointsByParticipant?.bob).toBe(100);
+    expect(refunded.experience?.pointTransactions).toHaveLength(3);
+    const second = apply(refunded, 'request-2', {
+      type: 'reward_request',
+      requestId: 'r2',
+      rewardId: 'movie',
+      participantId: 'bob',
+    });
+    const declined = apply(second, 'decline-2', {
+      type: 'reward_decision',
+      requestId: 'r2',
+      actorParticipantId: 'alice',
+      decision: 'decline',
+    });
+    expect(declined.experience?.earnedPointsByParticipant?.bob).toBe(100);
+    expect(declined.experience?.pointTransactions).toHaveLength(4);
   });
 
   it('persists earned points across occurrence retention and reverses reopened work', () => {

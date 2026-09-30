@@ -29,6 +29,7 @@ COPY packages packages
 COPY assets assets
 COPY scripts scripts
 COPY docker/shared docker/shared
+COPY docker/njs/chore-durable-storage.js docker/njs/chore-durable-storage.js
 RUN NAVET_ENABLE_DEMO=$NAVET_ENABLE_DEMO pnpm build
 
 FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS rss-transport-build
@@ -65,8 +66,10 @@ COPY docker/njs/resource-host-policy.js /etc/nginx/njs/resource-host-policy.js
 COPY docker/njs/profile-store.js /etc/nginx/njs/profile-store.js
 COPY docker/shared /etc/nginx/shared
 COPY docker/njs/chore-store.js /etc/nginx/njs/chore-store.js
+COPY docker/njs/chore-durable-storage.js /etc/nginx/njs/chore-durable-storage.js
 COPY docker/njs/chore-occurrence-policy.js /etc/nginx/njs/chore-occurrence-policy.js
 COPY docker/njs/chore-calendar-policy.js /etc/nginx/njs/chore-calendar-policy.js
+COPY docker/njs/chore-progress-policy.js /etc/nginx/njs/chore-progress-policy.js
 COPY docker/njs/auth-store.js /etc/nginx/njs/auth-store.js
 COPY docker/njs/provider-session-store.js /etc/nginx/njs/provider-session-store.js
 COPY docker/njs/installation-authority.js /etc/nginx/njs/installation-authority.js

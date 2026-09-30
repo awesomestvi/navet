@@ -29,9 +29,12 @@ function applyChoreOccurrenceCommand(input) {
 	let nextOccurrence;
 	switch (command.type) {
 		case "claim": {
-			var _definition$claimPoli;
+			var _definition$claimPoli, _definition$claimPoli2;
 			assertAssigned(occurrence, participantId);
-			const canStealExpiredClaim = occurrence.status === "claimed" && ((_definition$claimPoli = definition.claimPolicy) === null || _definition$claimPoli === void 0 ? void 0 : _definition$claimPoli.allowSteal) === true && definition.claimPolicy.expiresAfterMinutes !== undefined && occurrence.claimedAt !== undefined && Date.parse(timestamp) >= Date.parse(occurrence.claimedAt) + definition.claimPolicy.expiresAfterMinutes * 6e4;
+			if (((_definition$claimPoli = definition.claimPolicy) === null || _definition$claimPoli === void 0 ? void 0 : _definition$claimPoli.opensBeforeMinutes) !== undefined && Date.parse(timestamp) < Date.parse(occurrence.scheduledAt) - definition.claimPolicy.opensBeforeMinutes * 6e4) {
+				throw new Error("This chore cannot be claimed yet");
+			}
+			const canStealExpiredClaim = occurrence.status === "claimed" && ((_definition$claimPoli2 = definition.claimPolicy) === null || _definition$claimPoli2 === void 0 ? void 0 : _definition$claimPoli2.allowSteal) === true && definition.claimPolicy.expiresAfterMinutes !== undefined && occurrence.claimedAt !== undefined && Date.parse(timestamp) >= Date.parse(occurrence.claimedAt) + definition.claimPolicy.expiresAfterMinutes * 6e4;
 			if (occurrence.status !== "available" && !canStealExpiredClaim) {
 				throw new Error("Only available chores can be claimed");
 			}
@@ -44,7 +47,7 @@ function applyChoreOccurrenceCommand(input) {
 			break;
 		}
 		case "complete": {
-			var _definition$claimPoli2, _occurrence$claimedBy, _occurrence$claimedAt;
+			var _definition$claimPoli3, _occurrence$claimedBy, _occurrence$claimedAt;
 			assertAssigned(occurrence, participantId);
 			if (occurrence.status !== "available" && occurrence.status !== "claimed" && occurrence.status !== "missed") {
 				throw new Error("Only available, claimed, or missed chores can be completed");
@@ -52,7 +55,7 @@ function applyChoreOccurrenceCommand(input) {
 			if ((occurrence.status === "claimed" || occurrence.status === "missed") && occurrence.claimedBy && occurrence.claimedBy !== participantId) {
 				throw new Error("A claimed chore can only be completed by its claimant");
 			}
-			if (occurrence.status === "available" && ((_definition$claimPoli2 = definition.claimPolicy) === null || _definition$claimPoli2 === void 0 ? void 0 : _definition$claimPoli2.required)) {
+			if (occurrence.status === "available" && ((_definition$claimPoli3 = definition.claimPolicy) === null || _definition$claimPoli3 === void 0 ? void 0 : _definition$claimPoli3.required)) {
 				throw new Error("This chore must be claimed before it can be completed");
 			}
 			nextOccurrence = Object.assign({}, occurrence, {
@@ -98,10 +101,11 @@ function applyChoreOccurrenceCommand(input) {
 			if (occurrence.status !== "awaiting_approval") {
 				throw new Error("Only completed chores awaiting approval can be rejected");
 			}
+			const keepClaim = definition.approval.resetClaimOnReject === false && !!occurrence.claimedBy;
 			nextOccurrence = Object.assign({}, occurrence, {
-				status: "available",
-				claimedBy: undefined,
-				claimedAt: undefined,
+				status: keepClaim ? "claimed" : "available",
+				claimedBy: keepClaim ? occurrence.claimedBy : undefined,
+				claimedAt: keepClaim ? occurrence.claimedAt : undefined,
 				completedBy: undefined,
 				completedAt: undefined,
 				approvedBy: undefined,

@@ -2,6 +2,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'no
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { createChoreExperienceState } from '@navet/core/chore-experience';
 import { createViteChoreStoreRequestHandler } from '@scripts/vite-chore-store';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -115,7 +116,7 @@ function experienceActionBody(commandId: string, baseRevision: number) {
       type: 'experience_update',
       actorParticipantId: 'maya',
       experience: {
-        version: 1,
+        ...createChoreExperienceState(),
         setupStartedAt: fixtureTimestamp,
         gamificationMode: 'off',
         presentationByDefinitionId: {},
@@ -336,6 +337,82 @@ describe('Vite chore workspace store', () => {
         ],
       },
     });
+  });
+
+  it('upgrades a nearly full inline ledger and keeps its complete history through restart and backup', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'navet-chore-store-'));
+    tempDirs.push(directory);
+    const filePath = join(directory, 'chores.json');
+    const makeHandler = () =>
+      createViteChoreStoreRequestHandler({ filePath, resolvePrincipal: () => PRINCIPAL });
+    let handler = makeHandler();
+    const participant = createResponse();
+    await handler(
+      createRequest(
+        'POST',
+        '/commands',
+        { 'x-navet-base-revision': '0' },
+        participantActionBody('large-manager', 0)
+      ),
+      participant.response
+    );
+    const document = JSON.parse(readFileSync(filePath, 'utf8'));
+    document.data.experience.pointTransactions = Array.from({ length: 6000 }, (_, index) => ({
+      id: `old:${index}:${'x'.repeat(150)}`,
+      participantId: 'maya',
+      pointsDelta: 1,
+      kind: 'adjustment',
+      timestamp: fixtureTimestamp,
+    }));
+    document.data.experience.earnedPointsByParticipant = { maya: 6000 };
+    const maxBytes = 2 * 1024 * 1024;
+    const spare = maxBytes - 100 - Buffer.byteLength(JSON.stringify(document), 'utf8');
+    document.data.experience.pointTransactions.forEach((item: { id: string }, index: number) => {
+      item.id += 'x'.repeat(Math.floor(spare / 6000) + (index < spare % 6000 ? 1 : 0));
+    });
+    writeFileSync(filePath, JSON.stringify(document));
+    const adjusted = createResponse();
+    await handler(
+      createRequest(
+        'POST',
+        '/commands',
+        { 'x-navet-base-revision': '1' },
+        pointAdjustmentActionBody('large-adjustment', 1)
+      ),
+      adjusted.response
+    );
+    expect(adjusted.status).toBe(200);
+    const data = JSON.parse(adjusted.body).data;
+    expect(data.experience.pointTransactions).toHaveLength(6001);
+    expect(data.experience.earnedPointsByParticipant.maya).toBe(5988);
+    expect(Buffer.byteLength(readFileSync(filePath, 'utf8'), 'utf8')).toBeLessThan(maxBytes);
+    handler = makeHandler();
+    const reloaded = createResponse();
+    await handler(createRequest('GET', '/workspace'), reloaded.response);
+    expect(JSON.parse(reloaded.body).data.experience).toEqual(data.experience);
+    const backup = createResponse();
+    await handler(createRequest('GET', '/backup'), backup.response);
+    expect(JSON.parse(backup.body).workspace.experience.pointTransactions).toEqual(
+      data.experience.pointTransactions
+    );
+    const restore = createResponse();
+    await handler(
+      createRequest(
+        'POST',
+        '/restore',
+        { 'x-navet-base-revision': '2' },
+        JSON.stringify({
+          commandId: 'restore-large-ledger',
+          baseRevision: 2,
+          actorParticipantId: 'maya',
+          mode: 'replace',
+          document: JSON.parse(backup.body),
+        })
+      ),
+      restore.response
+    );
+    expect(restore.status).toBe(200);
+    expect(JSON.parse(restore.body).data.experience).toEqual(data.experience);
   });
 
   it('persists signed manager point adjustments', async () => {
@@ -674,12 +751,21 @@ describe('Vite chore workspace store', () => {
     expect(JSON.parse(remove.body)).toEqual({ pinConfigured: false });
 
     const unprotected = createResponse();
+    const currentExperience = JSON.parse(allowed.body).data.experience;
     await handler(
       createRequest(
         'POST',
         '/commands',
         { 'x-navet-base-revision': '2' },
-        experienceActionBody('unprotected-experience', 2)
+        JSON.stringify({
+          commandId: 'unprotected-experience',
+          baseRevision: 2,
+          action: {
+            type: 'experience_update',
+            actorParticipantId: 'maya',
+            experience: { ...currentExperience, setupStartedAt: fixtureTimestamp },
+          },
+        })
       ),
       unprotected.response
     );

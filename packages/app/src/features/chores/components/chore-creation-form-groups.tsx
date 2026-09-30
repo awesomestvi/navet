@@ -56,6 +56,10 @@ interface ChoreCreationFormGroupsProps {
   onRotationCursorChange: (value: number) => void;
   rotationCadence: 'scheduled_day' | 'weekly';
   onRotationCadenceChange: (value: 'scheduled_day' | 'weekly') => void;
+  rotationStrategy?: 'ordered' | 'fair';
+  onRotationStrategyChange?: (value: 'ordered' | 'fair') => void;
+  standbyParticipantId?: string;
+  onStandbyParticipantChange?: (value: string) => void;
   participants: ChoreParticipant[];
   repeat: ChoreCreationRepeat;
   dueTime: string;
@@ -175,6 +179,10 @@ export function ChoreCreationFormGroups({
   participantIds,
   onParticipantsChange,
   rotationCadence,
+  rotationStrategy,
+  onRotationStrategyChange,
+  standbyParticipantId,
+  onStandbyParticipantChange,
   onRotationCadenceChange,
   rotationDayOfWeek,
   onRotationDayOfWeekChange,
@@ -232,9 +240,9 @@ export function ChoreCreationFormGroups({
   ] as const;
   const intervalMinimum = repeat === 'custom' ? 2 : 1;
   const intervalValid =
-    repeat !== 'custom' && repeat !== 'after_completion'
+    repeat !== 'custom' && repeat !== 'after_completion' && repeat !== 'hourly'
       ? true
-      : isBoundedInteger(interval, intervalMinimum, 3650);
+      : isBoundedInteger(interval, intervalMinimum, repeat === 'hourly' ? 8760 : 3650);
   const dueTimeValid = isValidTime(dueTime);
   const titleValid = title.trim().length > 0;
   const personSelectionValid =
@@ -413,6 +421,38 @@ export function ChoreCreationFormGroups({
               ) : null}
             </fieldset>
           )}
+          {assignmentMode === 'person' && participants.length > 1 && onStandbyParticipantChange ? (
+            <CardDialogSection className="mb-0" label={t('household.choreDialog.standbyPerson')}>
+              <Select
+                aria-label={t('household.choreDialog.standbyPerson')}
+                value={standbyParticipantId ?? ''}
+                onChange={(event) => onStandbyParticipantChange(event.target.value)}
+              >
+                <option value="">{t('household.choreDialog.noStandby')}</option>
+                {participants
+                  .filter((person) => person.id !== participantId)
+                  .map((person) => (
+                    <option key={person.id} value={person.id}>
+                      {person.displayName}
+                    </option>
+                  ))}
+              </Select>
+            </CardDialogSection>
+          ) : null}
+          {assignmentMode === 'rotation' && onRotationStrategyChange ? (
+            <CardDialogSection className="mb-0" label={t('household.choreDialog.rotationStrategy')}>
+              <Select
+                aria-label={t('household.choreDialog.rotationStrategy')}
+                value={rotationStrategy ?? 'ordered'}
+                onChange={(event) =>
+                  onRotationStrategyChange(event.target.value as 'ordered' | 'fair')
+                }
+              >
+                <option value="ordered">{t('household.choreDialog.rotationOrdered')}</option>
+                <option value="fair">{t('household.choreDialog.rotationFair')}</option>
+              </Select>
+            </CardDialogSection>
+          ) : null}
           {assignmentMode === 'rotation' ? (
             <CardDialogSection className="mb-0" label={t('household.choreDialog.rotationCadence')}>
               <Select
@@ -472,15 +512,14 @@ export function ChoreCreationFormGroups({
               </CardDialogSection>
               {rotationPeople.length > 0 ? (
                 <p className={cn('text-sm sm:col-span-2 break-words', surface.textSecondary)}>
-                  {t(
-                    rotationCadence === 'weekly'
-                      ? 'household.choreDialog.rotationPreviewWeekly'
-                      : 'household.choreDialog.rotationPreviewScheduled',
-                    {
-                      order: rotationOrder,
-                      day: weekdayLabel(rotationDayOfWeek),
-                    }
-                  )}
+                  {rotationStrategy === 'fair'
+                    ? t('household.choreDialog.rotationPreviewFair', { order: rotationOrder })
+                    : t(
+                        rotationCadence === 'weekly'
+                          ? 'household.choreDialog.rotationPreviewWeekly'
+                          : 'household.choreDialog.rotationPreviewScheduled',
+                        { order: rotationOrder, day: weekdayLabel(rotationDayOfWeek) }
+                      )}
                 </p>
               ) : null}
             </>
@@ -511,6 +550,7 @@ export function ChoreCreationFormGroups({
               <option value="monthly">{t('household.schedule.monthly')}</option>
               <option value="custom">{t('household.schedule.custom')}</option>
               <option value="after_completion">{t('household.schedule.afterCompletion')}</option>
+              <option value="hourly">{t('household.schedule.hourly')}</option>
             </Select>
           </CardDialogSection>
           {repeat === 'custom' ? (
@@ -610,6 +650,21 @@ export function ChoreCreationFormGroups({
                   {t('household.validation.wholeNumberRange', { min: 1, max: 3650 })}
                 </ChoreFieldError>
               ) : null}
+            </CardDialogSection>
+          ) : null}
+          {repeat === 'hourly' ? (
+            <CardDialogSection className="mb-0" label={t('household.choreDialog.intervalHours')}>
+              <Input
+                aria-label={t('household.choreDialog.intervalHours')}
+                invalid={!intervalValid}
+                min={1}
+                max={8760}
+                required
+                step={1}
+                type="number"
+                value={interval}
+                onChange={(event) => onIntervalChange(numericDraft(event.target.value))}
+              />
             </CardDialogSection>
           ) : null}
           {repeat !== 'once' ? (

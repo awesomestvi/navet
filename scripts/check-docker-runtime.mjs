@@ -2373,6 +2373,8 @@ try {
   assertBuiltStandaloneMetadata(containerName, expectedBuildVersion);
 
   const firstBrowser = await waitForAuthMetadata(baseUrl, containerName);
+  run('docker', ['cp', 'scripts/check-chore-durable-njs.js', `${containerName}:/tmp/check-chore-durable-njs.js`]);
+  run('docker', ['exec', containerName, 'njs', '/tmp/check-chore-durable-njs.js']);
   const secondBrowser = await waitForAuthMetadata(baseUrl, containerName);
   const installationKey = readInstallationKey(containerName);
   const htmlResponse = await fetch(`${baseUrl}/`);

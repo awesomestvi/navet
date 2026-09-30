@@ -1,0 +1,6 @@
+type: new
+audiences:
+  - standalone
+  - home-assistant
+  - hacs
+summary: Add recurring badges and personal achievements with durable progress awards and optional points.

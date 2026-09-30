@@ -160,6 +160,9 @@ export function mergeChoreInterchange(input: {
         participantIds: definition.assignment.participantIds.map(
           (id) => participantMap.get(id) ?? id
         ),
+        standbyParticipantIds: definition.assignment.standbyParticipantIds?.map(
+          (id) => participantMap.get(id) ?? id
+        ),
         participantScheduleOverrides: definition.assignment.participantScheduleOverrides
           ? Object.fromEntries(
               Object.entries(definition.assignment.participantScheduleOverrides).map(

@@ -16,10 +16,10 @@ tab is a navigation composition boundary, not a merge of the two command models.
 
 ## Scheduling
 
-Definitions support once, daily, weekly, monthly, and after-completion schedules. Bi-weekly and
+Definitions support once, daily, weekly, monthly, hourly, and after-completion schedules. Bi-weekly and
 tri-weekly choices are weekly schedules with an interval of two or three. A schedule stores an
 IANA time zone and local due time. Date ranges, exclusions, every-N-day or every-N-week intervals,
-multiple due times, nth-weekday monthly rules, and per-participant weekday/time variants deepen that
+multiple due times, nth-weekday monthly rules, and per-participant weekday/time and due-date offsets deepen that
 same model. Assignment stores an explicit ordered participant list independently of manager and
 approver capabilities. Optional `rotationCadence` selects `scheduled_day` (the default for saved
 chores without the field) or `weekly`. Scheduled-day rotation can preserve its cursor indefinitely
@@ -27,6 +27,10 @@ or reset within a week or month. Weekly rotation advances on the local `rotation
 (0 = Sunday, default 1 = Monday) from the week containing the schedule start date, including empty
 or excluded weeks, and ignores `rotationReset`.
 `rotationCursor` offsets the first participant in either cadence.
+Fair rotation chooses the active participant with the fewest assigned or completed turns; ties use
+the ordered list from `rotationCursor`. A person assignment may name active standby participants
+for dates when the primary person is paused. Hourly schedules advance by elapsed hours from the
+first local start time, while completion-date repeats retain the configured local clock time.
 Occurrence IDs are deterministic from definition, scheduled instant, and assignment slot so repeated
 materialization preserves completed state.
 
@@ -45,7 +49,11 @@ Assignment modes are:
 Workflow status (`available`, `claimed`, `awaiting_approval`, `done`, `skipped`, or `missed`) stays separate
 from timing (`upcoming`, `due`, or `overdue`). Definitions may require an explicit claim, allow an
 expired claim to be taken over, and define a missed-work grace period. The storage authority applies
-missed, automatic skip, or carry-forward rules from durable state whenever it serves the workspace;
+an optional claim-opening window, pending-approval claim rule, and claim reset choice on rejection.
+Person pauses can include a return timestamp. Scheduled work assigned during the pause does not
+produce overdue or missed events or reminders. A reviewed manager command can move selected,
+unclaimed occurrences to consecutive future days while retaining the originals as skipped history.
+The storage authority applies missed, automatic skip, or carry-forward rules from durable state whenever it serves the workspace;
 the scheduler therefore recovers after a browser or device restart.
 
 ## Persistence And Concurrency
@@ -75,8 +83,17 @@ returns `412`; the client loads the newest document, rebuilds the mutation again
 once. The command journal and activity log both detect retries after a partially successful durable
 write.
 
-The workspace document is the authority; command-journal and immutable-history files are
-reconstructable sidecars and cannot take the whole feature offline. Each successful workspace write
+The workspace revision is the authority. Small workspaces are stored inline. When a workspace
+exceeds 2 MiB, the storage authority writes occurrences, point transactions, progress awards, reward
+requests, activity, and delivery work into immutable chunks targeting 256 KiB, with a 2 MiB hard limit per chunk to preserve large legacy records. The workspace
+manifest records each chunk's SHA-256 identity. Records are written before the manifest is committed;
+reads verify and hydrate every referenced chunk before accepting the revision. The public workspace
+and backup formats contain the complete hydrated data. Core owns the unchanged domain contracts;
+Docker/NJS, the Vite development authority, and the Home Assistant integration own this storage framing.
+
+Command-journal and event-history files are reconstructable sidecars and cannot take the whole
+feature offline. Durable record chunks are authoritative and must be included with the workspace
+manifest in filesystem backups. Each successful workspace write
 keeps the previous valid document as a last-known-good copy. Reads repair malformed sidecars from
 the bounded activity log and automatically restore a malformed primary document from that healthy
 copy when possible. The client also reconciles a retryable error by reloading and checking the
@@ -110,6 +127,12 @@ acknowledgement remain household-profile policy rather than browser state. In-ap
 acknowledged through the normal command envelope. Home Assistant delivery uses the optional
 provider-neutral notification method, then commits a delivered or failed outbox result with bounded
 exponential retry timing; Home Assistant does not receive ownership of the chore state.
+Definitions may also select claim, completion, approval, and missed-work events for recipient
+alerts. An alert records the occurrence revision. The authority rejects an action from an older
+revision, removes pending alerts when the occurrence changes, and uses the same bounded outbox and
+quiet-hour policy for delivery. Home Assistant mobile action IDs are signed with a private
+installation key; the event handler checks the signature, recipient capability, and revision
+before sending a command to the authority.
 
 The capped workspace activity array is a rebuildable UI projection. Both authorities also append
 each unique activity to a separate versioned event-history file. Reads reconcile the current
@@ -162,11 +185,14 @@ bounded summary snapshot with due, overdue, approval, completed-today, and next-
 Navet custom integration exposes one summary sensor backed by rich attributes, rather than one
 entity per internal field.
 
-Home Assistant actions `navet.claim`, `navet.complete`, `navet.approve`, `navet.reject`,
-`navet.skip`, `navet.reopen`, and `navet.reassign` publish a typed action request. The active Navet
-runtime translates it into the same authoritative occurrence action used by the UI; the storage
-authority still verifies revision, participant, assignment, capability, and manager policy. For
-unattended automations, the authenticated Navet HTTP action API is the dependable boundary.
+Home Assistant publishes a bounded chores calendar beside the summary sensor. Actions
+`navet.claim`, `navet.complete`, `navet.approve`, `navet.reject`, `navet.skip`, `navet.reopen`,
+`navet.reassign`, `navet.reward_decision`, and `navet.adjust_points` route to the same authority
+used by the UI. The authority verifies revision, participant, assignment, capability, manager
+policy, and stable command identity. Reward decisions and point adjustments use Home Assistant
+admin services, permitting administrator accounts and system automation contexts. `navet.weekly_report` returns Markdown or HTML for an
+automation to deliver on its own schedule. The authenticated Navet HTTP action API provides the
+corresponding unattended boundary for standalone deployments.
 
 ## Optional Motivation Domain
 
@@ -186,16 +212,25 @@ once when its final required chore completes; the awarded mission ID is retained
 re-completing work cannot duplicate the household reward.
 
 Each participant has a provider-neutral point-history projection built from automatic completion
-and reopen deltas plus manager-authored manual adjustments. Manual adjustments require a non-zero
+and reopen deltas, manager-authored manual adjustments, and reward decisions. The experience state
+holds an immutable point transaction for every balance change and reward decision. Manual adjustments require a non-zero
 whole-number delta within 10,000 points and accept an optional reason. They can leave balances
 negative and remain in activity history without entering the public automation event feed. When a stored balance
 predates detailed point activities, the projection exposes the difference as one synthetic earlier
 balance instead of inventing chore-level history.
 
-The richer motivation contract remains a provider-neutral extension boundary for reward claims,
-manager adjustments, badges, and time-boxed challenges. Its ledger prevents repeated completion
-awards and defines audited reversal/refund behavior. Today uses the completion and balance portions
-of this contract.
+Reward goals show savings progress. A participant can request an enabled reward when they have its
+cost in points; requesting does not spend points. The request records the reward title and cost at
+that moment, so editing or deleting the goal does not alter an existing request. A manager approves
+or declines it. Approval spends the saved cost once, fulfillment records delivery, and a refund
+returns the spent points once. Decisions use the same revisioned and idempotent command path as
+other household actions. Badges and achievements share the versioned experience document; their
+durable awards are distinct from reward requests. Progress is calculated from final occurrences and
+immutable point transactions. A missed due day resets a due-day streak; a day without scheduled
+work does not advance or break it. Award IDs contain the target, participant, and cycle key. Optional
+award points create one transaction per award. Weekly cycles start Monday in UTC; monthly cycles use
+the UTC calendar month. A later reopen does not remove an earned award, and replaying a completion
+does not award it again.
 
 ## Identity Boundary
 
@@ -228,7 +263,12 @@ Homey, and openHAB sessions. The Home Assistant custom panel uses the Navet cust
 authority. Each runtime stores chores at installation scope; optional provider projections expose
 a summary without owning the workspace.
 
-Completed and skipped occurrences older than 90 days are pruned during materialization. Activity is
+Completed and skipped occurrences older than 90 days are pruned during materialization. Unfinished
+work is retained. Materialization accepts at most 180 days and creates at most 5,000 new occurrences
+per definition in one request; retained occurrences do not consume that creation allowance.
+Point transactions and earned award identities have no age-based pruning. Immutable storage chunks
+are retained, including those referenced by the last-known-good revision, so recovery preserves
+accounting and replay protection. Activity is
 capped at 5,000 entries in the client document, immutable event history uses the manager-selected
 bounded policy (730 days and 50,000 events by default), and the idempotency journal retains the most
 recent 500 commands.

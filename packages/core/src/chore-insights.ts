@@ -322,6 +322,57 @@ export function buildChoreWeeklyReport(input: {
   };
 }
 
+export function formatChoreWeeklyReport(
+  report: ChoreWeeklyReport,
+  definitions: ChoreWorkspaceData['definitionsById'],
+  format: 'markdown' | 'html'
+): string {
+  const title = `Chores: ${report.weekStart.slice(0, 10)} to ${report.weekEnd.slice(0, 10)}`;
+  const rows = [
+    ['Completed', report.completed],
+    ['Missed', report.missed],
+    ['Carried forward', report.carriedForward],
+    ['Awaiting approval', report.pendingApproval],
+    ['Next week', report.nextWeek],
+  ] as const;
+  const highlights = report.highlights.map(
+    (item) =>
+      `${item.type}: ${item.definitionId ? (definitions[item.definitionId]?.title ?? item.definitionId) : 'Chore'}`
+  );
+  if (format === 'markdown') {
+    return [
+      `# ${title}`,
+      '',
+      ...rows.map(([label, value]) => `- ${label}: ${value}`),
+      '',
+      '## Highlights',
+      ...highlights.map((item) => `- ${item}`),
+    ].join('\n');
+  }
+  const escapeHtml = (value: string) =>
+    value.replace(
+      /[&<>"']/g,
+      (character) =>
+        ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;',
+        })[character] ?? character
+    );
+  return [
+    `<h1>${escapeHtml(title)}</h1>`,
+    '<ul>',
+    ...rows.map(([label, value]) => `<li>${escapeHtml(label)}: ${value}</li>`),
+    '</ul>',
+    '<h2>Highlights</h2>',
+    '<ul>',
+    ...highlights.map((item) => `<li>${escapeHtml(item)}</li>`),
+    '</ul>',
+  ].join('\n');
+}
+
 export function applyChoreHistoryRetention(
   events: readonly ChoreActivity[],
   policy: ChoreHistoryRetentionPolicy,

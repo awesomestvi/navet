@@ -12,6 +12,11 @@ claim:
       required: true
       selector:
         text:
+    expected_occurrence_updated_at:
+      name: Alert occurrence version
+      description: Reject this action if the chore changed after the alert was sent.
+      selector:
+        text:
 complete:
   name: Complete chore
   description: Mark a Navet chore occurrence complete.
@@ -64,3 +69,73 @@ reassign:
       required: true
       selector:
         text:
+reward_decision:
+  name: Decide reward request
+  description: Approve, decline, fulfill, or refund a Navet reward request.
+  fields:
+    request_id:
+      name: Reward request ID
+      required: true
+      selector:
+        text:
+    manager_participant_id:
+      name: Manager profile ID
+      required: true
+      selector:
+        text:
+    decision:
+      name: Decision
+      required: true
+      selector:
+        select:
+          options:
+            - approve
+            - decline
+            - fulfill
+            - refund
+    reason:
+      name: Reason
+      selector:
+        text:
+adjust_points:
+  name: Adjust chore points
+  description: Adjust a person's points using a stable command ID for retry safety.
+  fields:
+    command_id:
+      name: Command ID
+      required: true
+      selector:
+        text:
+    participant_id:
+      name: Household profile ID
+      required: true
+      selector:
+        text:
+    manager_participant_id:
+      name: Manager profile ID
+      required: true
+      selector:
+        text:
+    points_delta:
+      name: Point change
+      required: true
+      selector:
+        number:
+          min: -10000
+          max: 10000
+          step: 1
+    reason:
+      name: Reason
+      selector:
+        text:
+weekly_report:
+  name: Get chore weekly report
+  description: Return a shareable weekly chore summary for automations or scheduled delivery.
+  fields:
+    format:
+      name: Format
+      selector:
+        select:
+          options:
+            - markdown
+            - html

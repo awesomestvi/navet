@@ -1,0 +1,6 @@
+type: improved
+audiences:
+  - standalone
+  - home-assistant
+  - hacs
+summary: Room chore summaries open the Household dashboard, keeping device controls in predictable positions.

@@ -59,6 +59,7 @@ function occurrence(
 function workspace(): ChoreWorkspaceData {
   const experience = createChoreExperienceState();
   experience.gamificationMode = 'family';
+  experience.earnedPointsByParticipant = { maya: 15 };
   experience.presentationByDefinitionId = {
     dishes: { points: 15, estimatedMinutes: 4 },
     toys: { points: 10, estimatedMinutes: 5 },
@@ -180,6 +181,9 @@ describe('chore dashboard selectors', () => {
       total: 2,
       percent: 100,
     });
+    // Completing work updates the persisted balance through the authority.
+    if (!data.experience) throw new Error('Expected chore experience');
+    data.experience.earnedPointsByParticipant = { maya: 25 };
     expect(getRewardProgressList(data)[0]).toMatchObject({ points: 300, percent: 38 });
 
     if (!data.experience) throw new Error('Expected chore experience');

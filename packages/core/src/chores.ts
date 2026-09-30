@@ -9,6 +9,7 @@ import {
   scheduleTimes,
 } from './chore-calendar-policy.ts';
 import { applyChoreOccurrenceCommand } from './chore-occurrence-policy.ts';
+import { earnChoreProgressAwards } from './chore-progress-policy.ts';
 
 export { applyChoreOccurrenceCommand } from './chore-occurrence-policy.ts';
 
@@ -17,6 +18,7 @@ import {
   type ChoreMission,
   createChoreExperienceState,
   isChoreExperienceState,
+  normalizeChoreExperienceState,
 } from './chore-experience.ts';
 
 export const CHORE_WORKSPACE_SCHEMA_VERSION = 2 as const;
@@ -36,6 +38,7 @@ export interface ChoreParticipant {
   avatarIcon?: string;
   capabilities: ChoreParticipantCapability[];
   pausedAt?: string;
+  resumeAt?: string;
   linkedAccountId?: string;
   linkedPersonEntityId?: string;
   reminderPreferences?: {
@@ -54,11 +57,24 @@ export interface ChoreParticipant {
   updatedAt: string;
 }
 
+export function isChoreParticipantPausedAt(
+  participant: ChoreParticipant,
+  timestamp: string
+): boolean {
+  return Boolean(
+    participant.pausedAt &&
+      Date.parse(timestamp) >= Date.parse(participant.pausedAt) &&
+      (!participant.resumeAt || Date.parse(timestamp) < Date.parse(participant.resumeAt))
+  );
+}
+
 export type ChoreAssignmentMode = 'person' | 'anyone' | 'everyone' | 'rotation';
 
 export interface ChoreAssignment {
   mode: ChoreAssignmentMode;
   participantIds: string[];
+  standbyParticipantIds?: string[];
+  rotationStrategy?: 'ordered' | 'fair';
   rotationCadence?: 'scheduled_day' | 'weekly';
   /** Local weekday for weekly handover, Sunday = 0. Defaults to Monday. */
   rotationDayOfWeek?: number;
@@ -69,6 +85,7 @@ export interface ChoreAssignment {
     {
       daysOfWeek?: number[];
       times?: string[];
+      dueDateOffsetDays?: number;
     }
   >;
 }
@@ -121,12 +138,21 @@ export type ChoreSchedule = ChoreScheduleOptions &
         timeZone: string;
         intervalDays: number;
       }
+    | {
+        frequency: 'hourly';
+        startDate: string;
+        time: string;
+        timeZone: string;
+        intervalHours: number;
+      }
   );
 
 export interface ChoreClaimPolicy {
   required: boolean;
   expiresAfterMinutes?: number;
   allowSteal: boolean;
+  opensBeforeMinutes?: number;
+  pendingApproval?: 'allow' | 'block';
 }
 
 export interface ChoreMissedPolicy {
@@ -142,11 +168,13 @@ export interface ChoreReminderPolicy {
   overdueEveryMinutes?: number;
   maxOverdueReminders?: number;
   approvalAfterMinutes?: number;
+  notifyOn?: Array<'claimed' | 'completed' | 'approved' | 'rejected' | 'skipped'>;
 }
 
 export interface ChoreApprovalPolicy {
   required: boolean;
   approverIds: string[];
+  resetClaimOnReject?: boolean;
 }
 
 export interface ChoreDefinition {
@@ -216,6 +244,12 @@ export type ChoreActivityType =
   | 'retention_updated'
   | 'experience_updated'
   | 'points_adjusted'
+  | 'reward_requested'
+  | 'reward_approved'
+  | 'reward_declined'
+  | 'reward_fulfilled'
+  | 'reward_refunded'
+  | 'vacation_rescheduled'
   | 'occurrence_created'
   | 'due'
   | 'overdue'
@@ -266,6 +300,7 @@ export interface ChoreOutboxItem {
   deliveredAt?: string;
   lastError?: string;
   occurrenceId?: string;
+  occurrenceUpdatedAt?: string;
   participantId?: string;
   destination?: ChoreReminderDestinationType;
   destinationTarget?: string;
@@ -305,6 +340,7 @@ export type ChoreOccurrenceCommand =
 export interface ChoreWorkspaceOccurrenceAction {
   type: 'occurrence_action';
   occurrenceId: string;
+  expectedOccurrenceUpdatedAt?: string;
   action: ChoreOccurrenceCommand;
 }
 
@@ -389,6 +425,29 @@ export interface ChoreWorkspaceExperiencePointsAdjustAction {
   reason?: string;
 }
 
+export interface ChoreWorkspaceRewardRequestAction {
+  type: 'reward_request';
+  requestId: string;
+  rewardId: string;
+  participantId: string;
+}
+
+export interface ChoreWorkspaceRewardDecisionAction {
+  type: 'reward_decision';
+  requestId: string;
+  actorParticipantId: string;
+  decision: 'approve' | 'decline' | 'fulfill' | 'refund';
+  reason?: string;
+}
+
+export interface ChoreWorkspaceVacationRescheduleAction {
+  type: 'vacation_reschedule';
+  actorParticipantId: string;
+  participantId: string;
+  occurrenceIds: string[];
+  startDate: string;
+}
+
 export type ChoreWorkspaceAction =
   | ChoreWorkspaceOccurrenceAction
   | ChoreWorkspaceParticipantCreateAction
@@ -403,7 +462,10 @@ export type ChoreWorkspaceAction =
   | ChoreWorkspaceOutboxDeliveryAction
   | ChoreWorkspaceRetentionUpdateAction
   | ChoreWorkspaceExperienceUpdateAction
-  | ChoreWorkspaceExperiencePointsAdjustAction;
+  | ChoreWorkspaceExperiencePointsAdjustAction
+  | ChoreWorkspaceRewardRequestAction
+  | ChoreWorkspaceRewardDecisionAction
+  | ChoreWorkspaceVacationRescheduleAction;
 
 export interface ApplyChoreCommandInput {
   commandId: string;
@@ -608,7 +670,13 @@ function isChoreParticipant(value: unknown, expectedId: string) {
     validReminderPreferences &&
     isIsoTimestamp(value.createdAt) &&
     isIsoTimestamp(value.updatedAt) &&
-    (value.pausedAt === undefined || isIsoTimestamp(value.pausedAt))
+    (value.pausedAt === undefined || isIsoTimestamp(value.pausedAt)) &&
+    (value.resumeAt === undefined ||
+      (typeof value.resumeAt === 'string' &&
+        typeof value.pausedAt === 'string' &&
+        isIsoTimestamp(value.resumeAt) &&
+        isIsoTimestamp(value.pausedAt) &&
+        Date.parse(value.resumeAt) > Date.parse(value.pausedAt)))
   );
 }
 
@@ -680,6 +748,13 @@ function isChoreSchedule(value: unknown): value is ChoreSchedule {
   if (value.frequency === 'after_completion') {
     return Number.isSafeInteger(value.intervalDays) && Number(value.intervalDays) > 0;
   }
+  if (value.frequency === 'hourly') {
+    return (
+      Number.isSafeInteger(value.intervalHours) &&
+      Number(value.intervalHours) >= 1 &&
+      Number(value.intervalHours) <= 8760
+    );
+  }
   return false;
 }
 
@@ -698,6 +773,10 @@ function isChoreDefinition(value: unknown, expectedId: string) {
     typeof value.enabled === 'boolean' &&
     ['person', 'anyone', 'everyone', 'rotation'].includes(String(value.assignment.mode)) &&
     isStringArray(value.assignment.participantIds) &&
+    (value.assignment.standbyParticipantIds === undefined ||
+      isStringArray(value.assignment.standbyParticipantIds)) &&
+    (value.assignment.rotationStrategy === undefined ||
+      ['ordered', 'fair'].includes(String(value.assignment.rotationStrategy))) &&
     (value.assignment.rotationCursor === undefined ||
       (Number.isSafeInteger(value.assignment.rotationCursor) &&
         Number(value.assignment.rotationCursor) >= 0)) &&
@@ -724,20 +803,31 @@ function isChoreDefinition(value: unknown, expectedId: string) {
                 override.times.length > 0 &&
                 override.times.every(
                   (time) => typeof time === 'string' && TIME_PATTERN.test(time)
-                )))
+                ))) &&
+            (override.dueDateOffsetDays === undefined ||
+              (Number.isSafeInteger(override.dueDateOffsetDays) &&
+                Number(override.dueDateOffsetDays) >= 0 &&
+                Number(override.dueDateOffsetDays) <= 365))
         ))) &&
     isChoreSchedule(value.schedule) &&
     Number.isFinite(value.dueWindowMinutes) &&
     Number(value.dueWindowMinutes) >= 0 &&
     typeof value.approval.required === 'boolean' &&
     isStringArray(value.approval.approverIds) &&
+    (value.approval.resetClaimOnReject === undefined ||
+      typeof value.approval.resetClaimOnReject === 'boolean') &&
     (value.claimPolicy === undefined ||
       (isRecord(value.claimPolicy) &&
         typeof value.claimPolicy.required === 'boolean' &&
         typeof value.claimPolicy.allowSteal === 'boolean' &&
         (value.claimPolicy.expiresAfterMinutes === undefined ||
           (Number.isSafeInteger(value.claimPolicy.expiresAfterMinutes) &&
-            Number(value.claimPolicy.expiresAfterMinutes) > 0)))) &&
+            Number(value.claimPolicy.expiresAfterMinutes) > 0)) &&
+        (value.claimPolicy.opensBeforeMinutes === undefined ||
+          (Number.isSafeInteger(value.claimPolicy.opensBeforeMinutes) &&
+            Number(value.claimPolicy.opensBeforeMinutes) >= 0)) &&
+        (value.claimPolicy.pendingApproval === undefined ||
+          ['allow', 'block'].includes(String(value.claimPolicy.pendingApproval))))) &&
     (value.missedPolicy === undefined ||
       (isRecord(value.missedPolicy) &&
         Number.isSafeInteger(value.missedPolicy.graceMinutes) &&
@@ -762,7 +852,12 @@ function isChoreDefinition(value: unknown, expectedId: string) {
             Number(value.reminderPolicy.maxOverdueReminders) > 0)) &&
         (value.reminderPolicy.approvalAfterMinutes === undefined ||
           (Number.isSafeInteger(value.reminderPolicy.approvalAfterMinutes) &&
-            Number(value.reminderPolicy.approvalAfterMinutes) >= 0)))) &&
+            Number(value.reminderPolicy.approvalAfterMinutes) >= 0)) &&
+        (value.reminderPolicy.notifyOn === undefined ||
+          (Array.isArray(value.reminderPolicy.notifyOn) &&
+            value.reminderPolicy.notifyOn.every((event) =>
+              ['claimed', 'completed', 'approved', 'rejected', 'skipped'].includes(String(event))
+            ))))) &&
     isIsoTimestamp(value.createdAt) &&
     isIsoTimestamp(value.updatedAt) &&
     (value.archivedAt === undefined || isIsoTimestamp(value.archivedAt))
@@ -815,6 +910,12 @@ function isChoreActivity(value: unknown) {
       'retention_updated',
       'experience_updated',
       'points_adjusted',
+      'reward_requested',
+      'reward_approved',
+      'reward_declined',
+      'reward_fulfilled',
+      'reward_refunded',
+      'vacation_rescheduled',
       'occurrence_created',
       'due',
       'overdue',
@@ -867,6 +968,12 @@ function isChoreOutboxItem(value: unknown) {
       'retention_updated',
       'experience_updated',
       'points_adjusted',
+      'reward_requested',
+      'reward_approved',
+      'reward_declined',
+      'reward_fulfilled',
+      'reward_refunded',
+      'vacation_rescheduled',
       'occurrence_created',
       'due',
       'overdue',
@@ -952,6 +1059,52 @@ export function isChoreWorkspaceData(value: unknown): value is ChoreWorkspaceDat
 }
 
 export function migrateChoreWorkspaceData(value: unknown): ChoreWorkspaceData {
+  if (
+    isRecord(value) &&
+    value.schemaVersion === CHORE_WORKSPACE_SCHEMA_VERSION &&
+    isRecord(value.experience) &&
+    value.experience.version === 1
+  ) {
+    if (
+      !isChoreExperienceState({
+        ...createChoreExperienceState(),
+        ...value.experience,
+        version: 2,
+      })
+    ) {
+      throw new Error('Unsupported or invalid chore workspace schema');
+    }
+    const experience = normalizeChoreExperienceState(value.experience);
+    const balances = { ...(experience.earnedPointsByParticipant ?? {}) };
+    if (
+      experience.gamificationMode !== 'off' &&
+      Object.keys(balances).length === 0 &&
+      isRecord(value.occurrencesById)
+    ) {
+      for (const occurrence of Object.values(value.occurrencesById)) {
+        if (
+          !isRecord(occurrence) ||
+          occurrence.status !== 'done' ||
+          typeof occurrence.completedBy !== 'string' ||
+          typeof occurrence.definitionId !== 'string'
+        )
+          continue;
+        balances[occurrence.completedBy] =
+          (balances[occurrence.completedBy] ?? 0) +
+          (experience.presentationByDefinitionId[occurrence.definitionId]?.points ?? 0);
+      }
+    }
+    experience.earnedPointsByParticipant = balances;
+    experience.pointTransactions = Object.entries(balances).map(([participantId, pointsDelta]) => ({
+      id: `opening:${participantId}`,
+      participantId,
+      pointsDelta,
+      kind: 'opening_balance',
+      timestamp: '1970-01-01T00:00:00.000Z',
+    }));
+    const migrated = { ...value, experience };
+    if (isChoreWorkspaceData(migrated)) return migrated;
+  }
   if (isChoreWorkspaceData(value)) {
     return value.experience ? value : { ...value, experience: createChoreExperienceState() };
   }
@@ -1073,7 +1226,89 @@ export function materializeChoreOccurrences({
     throw new Error('Invalid chore occurrence range');
   }
 
+  const completionCountsByParticipant: Record<string, number> = {};
+  if (definition.assignment.rotationStrategy === 'fair') {
+    for (const occurrence of Object.values(existingOccurrences)) {
+      if (
+        occurrence.definitionId !== definition.id ||
+        ['skipped', 'missed'].includes(occurrence.status)
+      )
+        continue;
+      for (const id of occurrence.status === 'done' && occurrence.completedBy
+        ? [occurrence.completedBy]
+        : occurrence.assigneeIds) {
+        completionCountsByParticipant[id] = (completionCountsByParticipant[id] ?? 0) + 1;
+      }
+    }
+  }
+  const assignmentSlotsAt = (at: string, index: number) => {
+    if (definition.assignment.rotationStrategy === 'fair') {
+      const saved = Object.values(existingOccurrences)
+        .filter((item) => {
+          if (item.definitionId !== definition.id) return false;
+          if (definition.schedule.frequency === 'hourly') return item.scheduledAt === at;
+          const participantId = item.assigneeIds[0];
+          const offset =
+            definition.assignment.participantScheduleOverrides?.[participantId]
+              ?.dueDateOffsetDays ?? 0;
+          return (
+            addCalendarDays(
+              getZonedDateKey(item.scheduledAt, definition.schedule.timeZone),
+              -offset
+            ) === getZonedDateKey(at, definition.schedule.timeZone)
+          );
+        })
+        .filter(
+          (item, index, items) =>
+            items.findIndex((candidate) => candidate.assignmentSlot === item.assignmentSlot) ===
+            index
+        );
+      if (saved.length)
+        return saved.map((item) => ({
+          assignmentSlot: item.assignmentSlot,
+          assigneeIds: item.assigneeIds,
+        }));
+    }
+    return resolveAssignmentSlots(
+      definition.assignment,
+      participantsById,
+      index,
+      completionCountsByParticipant,
+      at
+    );
+  };
   const schedule = definition.schedule;
+  if (schedule.frequency === 'hourly') {
+    const anchor = Date.parse(
+      localDateTimeToIso(schedule.startDate, schedule.time, schedule.timeZone)
+    );
+    const interval = schedule.intervalHours * 3_600_000;
+    const firstIndex = Math.max(0, Math.ceil((rangeStartTime - anchor) / interval));
+    const hourlyOccurrences: ChoreOccurrence[] = [];
+    for (let index = firstIndex; anchor + index * interval <= rangeEndTime; index += 1) {
+      const scheduledAt = new Date(anchor + index * interval).toISOString();
+      const localDate = getZonedDateKey(scheduledAt, schedule.timeZone);
+      if (
+        (schedule.endDate && localDate > schedule.endDate) ||
+        schedule.excludedDates?.includes(localDate)
+      )
+        continue;
+      const slots = assignmentSlotsAt(scheduledAt, index);
+      for (const slot of slots) {
+        const id = buildOccurrenceId(definition.id, scheduledAt, slot.assignmentSlot);
+        if (!existingOccurrences[id] && definition.assignment.rotationStrategy === 'fair') {
+          for (const participantId of slot.assigneeIds)
+            completionCountsByParticipant[participantId] =
+              (completionCountsByParticipant[participantId] ?? 0) + 1;
+        }
+        hourlyOccurrences.push(
+          existingOccurrences[id] ??
+            createOccurrence(definition, scheduledAt, slot.assignmentSlot, slot.assigneeIds)
+        );
+      }
+    }
+    return hourlyOccurrences;
+  }
   const rangeStartDateKey = getZonedDateKey(rangeStart, schedule.timeZone);
   let dateKey = scheduleStartDate(schedule);
   const finalDateKey = getZonedDateKey(rangeEnd, schedule.timeZone);
@@ -1111,7 +1346,8 @@ export function materializeChoreOccurrences({
       scheduleStartDate(schedule),
       definition.assignment.rotationDayOfWeek
     );
-    const slots = resolveAssignmentSlots(definition.assignment, participantsById, rotationIndex);
+    const assignmentAt = localDateTimeToIso(scheduledDate, schedule.time, schedule.timeZone);
+    const slots = assignmentSlotsAt(assignmentAt, rotationIndex);
     for (const slot of slots) {
       const override =
         slot.assigneeIds.length === 1
@@ -1121,14 +1357,18 @@ export function materializeChoreOccurrences({
         continue;
       }
       for (const scheduledTimeValue of override?.times ?? scheduleTimes(schedule)) {
-        const scheduledAt = localDateTimeToIso(
-          scheduledDate,
-          scheduledTimeValue,
-          schedule.timeZone
-        );
+        const personalDate = override?.dueDateOffsetDays
+          ? addCalendarDays(scheduledDate, override.dueDateOffsetDays)
+          : scheduledDate;
+        const scheduledAt = localDateTimeToIso(personalDate, scheduledTimeValue, schedule.timeZone);
         const scheduledTime = new Date(scheduledAt).getTime();
         if (scheduledTime < rangeStartTime || scheduledTime > rangeEndTime) continue;
         const id = buildOccurrenceId(definition.id, scheduledAt, slot.assignmentSlot);
+        if (!existingOccurrences[id] && definition.assignment.rotationStrategy === 'fair') {
+          for (const participantId of slot.assigneeIds)
+            completionCountsByParticipant[participantId] =
+              (completionCountsByParticipant[participantId] ?? 0) + 1;
+        }
         occurrences.push(
           existingOccurrences[id] ??
             createOccurrence(definition, scheduledAt, slot.assignmentSlot, slot.assigneeIds)
@@ -1175,7 +1415,7 @@ function createReminderOutboxItem(input: {
   definition: ChoreDefinition;
   occurrence: ChoreOccurrence;
   participant: ChoreParticipant;
-  eventType: ChoreReminderEventType;
+  eventType: ChoreOutboxEventType;
   eventKey: string;
   timestamp: string;
 }): ChoreOutboxItem {
@@ -1194,10 +1434,59 @@ function createReminderOutboxItem(input: {
       input.definition.schedule.timeZone
     ),
     occurrenceId: input.occurrence.id,
+    occurrenceUpdatedAt: input.occurrence.updatedAt,
     participantId: input.participant.id,
     destination: destination?.type ?? 'in_app',
     destinationTarget: destination?.target,
   };
+}
+
+function withOccurrenceEventNotifications(
+  workspace: ChoreWorkspaceData,
+  occurrence: ChoreOccurrence,
+  activity: ChoreActivity,
+  timestamp: string
+): ChoreWorkspaceData {
+  const definition = workspace.definitionsById[occurrence.definitionId];
+  const outbox = workspace.outbox.filter(
+    (item) =>
+      item.occurrenceId !== occurrence.id || item.status === 'delivered' || !item.destination
+  );
+  if (
+    !definition?.reminderPolicy?.enabled ||
+    !definition.reminderPolicy.notifyOn?.includes(
+      activity.type as 'claimed' | 'completed' | 'approved' | 'rejected' | 'skipped'
+    )
+  ) {
+    return { ...workspace, outbox };
+  }
+  const recipients =
+    activity.type === 'claimed' || activity.type === 'completed'
+      ? definition.approval.approverIds.length
+        ? definition.approval.approverIds
+        : occurrence.assigneeIds
+      : occurrence.assigneeIds;
+  for (const participantId of new Set(recipients)) {
+    const participant = workspace.participantsById[participantId];
+    if (
+      !participant ||
+      isChoreParticipantPausedAt(participant, timestamp) ||
+      participant.reminderPreferences?.enabled === false
+    )
+      continue;
+    outbox.push({
+      ...createReminderOutboxItem({
+        definition,
+        occurrence,
+        participant,
+        eventType: activity.type,
+        eventKey: `event:${activity.id}`,
+        timestamp,
+      }),
+      activityId: activity.id,
+    });
+  }
+  return { ...workspace, outbox };
 }
 
 export function runChoreWorkspaceScheduler(
@@ -1215,6 +1504,15 @@ export function runChoreWorkspaceScheduler(
     ...workspace.activity.map((activity) => activity.id),
     ...(options.existingEventIds ?? []),
   ]);
+  const hasAvailableAssignee = (occurrence: ChoreOccurrence) =>
+    occurrence.assigneeIds.some((id) => {
+      const participant = workspace.participantsById[id];
+      return (
+        participant &&
+        !isChoreParticipantPausedAt(participant, timestamp) &&
+        !isChoreParticipantPausedAt(participant, occurrence.scheduledAt)
+      );
+    });
 
   const addLifecycleEvent = (
     occurrence: ChoreOccurrence,
@@ -1238,6 +1536,7 @@ export function runChoreWorkspaceScheduler(
   for (const occurrence of Object.values(workspace.occurrencesById)) {
     const dueAt = Date.parse(occurrence.dueAt);
     if (!Number.isFinite(dueAt) || now < dueAt) continue;
+    if (!hasAvailableAssignee(occurrence)) continue;
     addLifecycleEvent(occurrence, 'due', occurrence.dueAt);
     const resolvedAt = occurrence.completedAt ?? occurrence.skippedAt ?? occurrence.missedAt;
     if (now > dueAt && (!resolvedAt || Date.parse(resolvedAt) > dueAt)) {
@@ -1247,6 +1546,7 @@ export function runChoreWorkspaceScheduler(
 
   for (const occurrence of Object.values(workspace.occurrencesById)) {
     if (occurrence.status !== 'available' && occurrence.status !== 'claimed') continue;
+    if (!hasAvailableAssignee(occurrence)) continue;
     const definition = workspace.definitionsById[occurrence.definitionId];
     const policy = definition?.missedPolicy;
     if (!definition || !policy) continue;
@@ -1314,7 +1614,7 @@ export function runChoreWorkspaceScheduler(
     const participant = workspace.participantsById[participantId];
     if (
       !participant ||
-      participant.pausedAt ||
+      isChoreParticipantPausedAt(participant, timestamp) ||
       participant.reminderPreferences?.enabled === false
     ) {
       return;
@@ -1336,6 +1636,7 @@ export function runChoreWorkspaceScheduler(
     const definition = workspace.definitionsById[occurrence.definitionId];
     const policy = definition?.reminderPolicy;
     if (!definition || !policy?.enabled || definition.archivedAt) continue;
+    if (!hasAvailableAssignee(occurrence)) continue;
 
     if (occurrence.status === 'available' || occurrence.status === 'claimed') {
       const dueAt = Date.parse(occurrence.dueAt);
@@ -1434,7 +1735,7 @@ export function applyChoreWorkspaceOccurrenceCommand(
   }
 
   const participant = input.workspace.participantsById[input.command.participantId];
-  if (!participant || participant.pausedAt) {
+  if (!participant || isChoreParticipantPausedAt(participant, input.timestamp)) {
     throw new Error('Chore participant is not active');
   }
 
@@ -1443,10 +1744,28 @@ export function applyChoreWorkspaceOccurrenceCommand(
     throw new Error(`Chore participant cannot ${input.command.type} chores`);
   }
 
+  if (
+    input.command.type === 'claim' &&
+    definition.claimPolicy?.pendingApproval === 'block' &&
+    Object.values(input.workspace.occurrencesById).some(
+      (candidate) =>
+        candidate.id !== occurrence.id &&
+        candidate.definitionId === definition.id &&
+        candidate.status === 'awaiting_approval' &&
+        candidate.assigneeIds.includes(input.command.participantId)
+    )
+  ) {
+    throw new Error('Review the previous claim before starting this chore');
+  }
+
   if (input.command.type === 'reassign') {
     for (const assigneeId of [...new Set(input.command.assigneeIds)]) {
       const assignee = input.workspace.participantsById[assigneeId];
-      if (!assignee || assignee.pausedAt || !assignee.capabilities.includes('complete')) {
+      if (
+        !assignee ||
+        isChoreParticipantPausedAt(assignee, input.timestamp) ||
+        !assignee.capabilities.includes('complete')
+      ) {
         throw new Error('Chore reassignment includes an ineligible participant');
       }
     }
@@ -1496,32 +1815,58 @@ function buildWorkspaceActivity(input: {
   };
 }
 
-function assertWorkspaceManager(workspace: ChoreWorkspaceData, participantId: string) {
+function assertWorkspaceManager(
+  workspace: ChoreWorkspaceData,
+  participantId: string,
+  timestamp: string
+) {
   const participant = workspace.participantsById[participantId];
-  if (!participant || participant.pausedAt) {
+  if (!participant || isChoreParticipantPausedAt(participant, timestamp)) {
     throw new Error('An active household manager is required');
   }
   const activeManagers = Object.values(workspace.participantsById).filter(
-    (candidate) => !candidate.pausedAt && candidate.capabilities.includes('manage')
+    (candidate) =>
+      !isChoreParticipantPausedAt(candidate, timestamp) && candidate.capabilities.includes('manage')
   );
   if (activeManagers.length > 0 && !participant.capabilities.includes('manage')) {
     throw new Error('Only a household manager can change chores and profiles');
   }
 }
 
-function assertDefinitionReferences(workspace: ChoreWorkspaceData, definition: ChoreDefinition) {
+function assertDefinitionReferences(
+  workspace: ChoreWorkspaceData,
+  definition: ChoreDefinition,
+  timestamp: string
+) {
   if (definition.assignment.participantIds.length === 0) {
     throw new Error('A chore needs at least one eligible participant');
   }
   for (const participantId of definition.assignment.participantIds) {
     const participant = workspace.participantsById[participantId];
-    if (!participant || participant.pausedAt || !participant.capabilities.includes('complete')) {
+    if (
+      !participant ||
+      isChoreParticipantPausedAt(participant, timestamp) ||
+      !participant.capabilities.includes('complete')
+    ) {
       throw new Error('Chore assignment includes an ineligible participant');
+    }
+  }
+  for (const participantId of definition.assignment.standbyParticipantIds ?? []) {
+    const participant = workspace.participantsById[participantId];
+    if (
+      !participant?.capabilities.includes('complete') ||
+      definition.assignment.participantIds.includes(participantId)
+    ) {
+      throw new Error('Chore standby includes an ineligible participant');
     }
   }
   for (const approverId of definition.approval.approverIds) {
     const approver = workspace.participantsById[approverId];
-    if (!approver || approver.pausedAt || !approver.capabilities.includes('approve')) {
+    if (
+      !approver ||
+      isChoreParticipantPausedAt(approver, timestamp) ||
+      !approver.capabilities.includes('approve')
+    ) {
       throw new Error('Chore approval includes an ineligible participant');
     }
   }
@@ -1551,6 +1896,12 @@ export function applyChoreWorkspaceAction(
   const { action, commandId, timestamp, workspace } = input;
   if (action.type === 'occurrence_action') {
     const previousOccurrence = workspace.occurrencesById[action.occurrenceId];
+    if (
+      action.expectedOccurrenceUpdatedAt &&
+      previousOccurrence?.updatedAt !== action.expectedOccurrenceUpdatedAt
+    ) {
+      throw new Error('This chore alert is out of date');
+    }
     const result = applyChoreWorkspaceOccurrenceCommand({
       commandId,
       command: action.action,
@@ -1558,9 +1909,15 @@ export function applyChoreWorkspaceAction(
       timestamp,
       workspace,
     });
+    const eventData = withOccurrenceEventNotifications(
+      result.data,
+      result.occurrence,
+      result.activity,
+      timestamp
+    );
     const experience = workspace.experience ?? createChoreExperienceState();
     if (!previousOccurrence || experience.gamificationMode === 'off') {
-      return { activity: result.activity, data: result.data };
+      return { activity: result.activity, data: eventData };
     }
     const points = experience.presentationByDefinitionId[previousOccurrence.definitionId]?.points;
     const becameFinal = previousOccurrence.status !== 'done' && result.occurrence.status === 'done';
@@ -1577,7 +1934,22 @@ export function applyChoreWorkspaceAction(
     if (points && participantId && (becameFinal || stoppedBeingFinal)) {
       const balances = getChoreExperiencePointBalances(workspace);
       balances[participantId] = (balances[participantId] ?? 0) + pointsDelta;
-      nextExperience = { ...nextExperience, earnedPointsByParticipant: balances };
+      nextExperience = {
+        ...nextExperience,
+        earnedPointsByParticipant: balances,
+        pointTransactions: [
+          ...nextExperience.pointTransactions,
+          {
+            id: `points:${commandId}`,
+            participantId,
+            pointsDelta,
+            kind: becameFinal ? 'completion' : 'reopen',
+            timestamp,
+            commandId,
+            occurrenceId: previousOccurrence.id,
+          },
+        ],
+      };
     }
     const awardedMissionIds = [...(experience.awardedMissionIds ?? [])];
     let householdBonusPoints = experience.householdBonusPoints ?? 0;
@@ -1600,14 +1972,41 @@ export function applyChoreWorkspaceAction(
     ) {
       nextExperience = { ...nextExperience, householdBonusPoints, awardedMissionIds };
     }
+    if (becameFinal) {
+      const progress = earnChoreProgressAwards({
+        badges: nextExperience.badgesById,
+        achievements: nextExperience.achievementsById,
+        participantIds: Object.keys(workspace.participantsById),
+        occurrences: Object.values(eventData.occurrencesById),
+        transactions: nextExperience.pointTransactions,
+        existingAwards: nextExperience.progressAwards,
+        at: timestamp,
+      });
+      if (progress.awards.length) {
+        const balances = getChoreExperiencePointBalances({
+          ...eventData,
+          experience: nextExperience,
+        });
+        for (const transaction of progress.transactions) {
+          balances[transaction.participantId] =
+            (balances[transaction.participantId] ?? 0) + transaction.pointsDelta;
+        }
+        nextExperience = {
+          ...nextExperience,
+          earnedPointsByParticipant: balances,
+          progressAwards: [...nextExperience.progressAwards, ...progress.awards],
+          pointTransactions: [...nextExperience.pointTransactions, ...progress.transactions],
+        };
+      }
+    }
     const activity = pointsDelta
       ? { ...result.activity, participantId, pointsDelta }
       : result.activity;
-    if (nextExperience === experience) return { activity, data: result.data };
+    if (nextExperience === experience) return { activity, data: eventData };
     return {
       activity,
       data: {
-        ...result.data,
+        ...eventData,
         experience: nextExperience,
       },
     };
@@ -1626,7 +2025,7 @@ export function applyChoreWorkspaceAction(
       }
     } else {
       if (!action.actorParticipantId) throw new Error('A household manager is required');
-      assertWorkspaceManager(workspace, action.actorParticipantId);
+      assertWorkspaceManager(workspace, action.actorParticipantId, timestamp);
     }
     return {
       activity: buildWorkspaceActivity({
@@ -1647,7 +2046,7 @@ export function applyChoreWorkspaceAction(
   }
 
   if (action.type === 'participant_update') {
-    assertWorkspaceManager(workspace, action.actorParticipantId);
+    assertWorkspaceManager(workspace, action.actorParticipantId, timestamp);
     const current = workspace.participantsById[action.participant.id];
     if (!current) throw new Error('Household profile is no longer available');
     if (
@@ -1661,9 +2060,32 @@ export function applyChoreWorkspaceAction(
       [action.participant.id]: action.participant,
     };
     const activeManagerCount = Object.values(nextParticipants).filter(
-      (participant) => !participant.pausedAt && participant.capabilities.includes('manage')
+      (participant) =>
+        !isChoreParticipantPausedAt(participant, timestamp) &&
+        participant.capabilities.includes('manage')
     ).length;
     if (activeManagerCount === 0) throw new Error('The household needs an active manager');
+    const pauseChanged =
+      current.pausedAt !== action.participant.pausedAt ||
+      current.resumeAt !== action.participant.resumeAt;
+    const removedOccurrenceIds = new Set<string>();
+    if (pauseChanged) {
+      for (const occurrence of Object.values(workspace.occurrencesById)) {
+        const assignment = workspace.definitionsById[occurrence.definitionId]?.assignment;
+        if (
+          occurrence.status === 'available' &&
+          !occurrence.carriedForwardFrom &&
+          !(
+            occurrence.assigneeIds.includes(action.participant.id) &&
+            isChoreParticipantPausedAt(action.participant, occurrence.scheduledAt)
+          ) &&
+          Date.parse(occurrence.scheduledAt) > Date.parse(timestamp) &&
+          (assignment?.participantIds.includes(action.participant.id) ||
+            assignment?.standbyParticipantIds?.includes(action.participant.id))
+        )
+          removedOccurrenceIds.add(occurrence.id);
+      }
+    }
     return {
       activity: buildWorkspaceActivity({
         commandId,
@@ -1672,12 +2094,24 @@ export function applyChoreWorkspaceAction(
         actorParticipantId: action.actorParticipantId,
         participantId: action.participant.id,
       }),
-      data: { ...workspace, participantsById: nextParticipants },
+      data: {
+        ...workspace,
+        participantsById: nextParticipants,
+        occurrencesById: Object.fromEntries(
+          Object.entries(workspace.occurrencesById).filter(([id]) => !removedOccurrenceIds.has(id))
+        ),
+        outbox: workspace.outbox.filter(
+          (item) =>
+            item.status === 'delivered' ||
+            !item.occurrenceId ||
+            !removedOccurrenceIds.has(item.occurrenceId)
+        ),
+      },
     };
   }
 
   if (action.type === 'definition_create' || action.type === 'definition_update') {
-    assertWorkspaceManager(workspace, action.actorParticipantId);
+    assertWorkspaceManager(workspace, action.actorParticipantId, timestamp);
     if (!isChoreDefinition(action.definition, action.definition.id)) {
       throw new Error('Chore definition is invalid');
     }
@@ -1693,7 +2127,7 @@ export function applyChoreWorkspaceAction(
     ) {
       throw new Error('Chore creation time cannot be changed');
     }
-    assertDefinitionReferences(workspace, action.definition);
+    assertDefinitionReferences(workspace, action.definition, timestamp);
     const shouldRematerialize =
       action.type === 'definition_update' &&
       current !== undefined &&
@@ -1741,7 +2175,7 @@ export function applyChoreWorkspaceAction(
   }
 
   if (action.type === 'definition_archive' || action.type === 'definition_restore') {
-    assertWorkspaceManager(workspace, action.actorParticipantId);
+    assertWorkspaceManager(workspace, action.actorParticipantId, timestamp);
     const definition = workspace.definitionsById[action.definitionId];
     if (!definition) throw new Error('Chore is no longer available');
     const nextDefinition = { ...definition, enabled: true, updatedAt: timestamp };
@@ -1782,7 +2216,7 @@ export function applyChoreWorkspaceAction(
   }
 
   if (action.type === 'definition_delete') {
-    assertWorkspaceManager(workspace, action.actorParticipantId);
+    assertWorkspaceManager(workspace, action.actorParticipantId, timestamp);
     if (!workspace.definitionsById[action.definitionId]) {
       throw new Error('Chore is no longer available');
     }
@@ -1851,7 +2285,7 @@ export function applyChoreWorkspaceAction(
   }
 
   if (action.type === 'retention_update') {
-    assertWorkspaceManager(workspace, action.actorParticipantId);
+    assertWorkspaceManager(workspace, action.actorParticipantId, timestamp);
     if (!isChoreHistoryRetentionPolicy(action.policy)) {
       throw new Error('Chore history retention policy is invalid');
     }
@@ -1867,9 +2301,22 @@ export function applyChoreWorkspaceAction(
   }
 
   if (action.type === 'experience_update') {
-    assertWorkspaceManager(workspace, action.actorParticipantId);
+    assertWorkspaceManager(workspace, action.actorParticipantId, timestamp);
     if (!isChoreExperienceState(action.experience)) {
       throw new Error('Chore experience data is invalid');
+    }
+    const currentExperience = workspace.experience ?? createChoreExperienceState();
+    if (
+      JSON.stringify(action.experience.rewardRequestsById) !==
+        JSON.stringify(currentExperience.rewardRequestsById) ||
+      JSON.stringify(action.experience.pointTransactions) !==
+        JSON.stringify(currentExperience.pointTransactions) ||
+      JSON.stringify(action.experience.progressAwards) !==
+        JSON.stringify(currentExperience.progressAwards) ||
+      JSON.stringify(action.experience.earnedPointsByParticipant) !==
+        JSON.stringify(currentExperience.earnedPointsByParticipant)
+    ) {
+      throw new Error('Reward and point history can only change through household actions');
     }
     for (const definitionId of Object.keys(action.experience.presentationByDefinitionId)) {
       if (!workspace.definitionsById[definitionId]) {
@@ -1903,7 +2350,7 @@ export function applyChoreWorkspaceAction(
   }
 
   if (action.type === 'experience_points_adjust') {
-    assertWorkspaceManager(workspace, action.actorParticipantId);
+    assertWorkspaceManager(workspace, action.actorParticipantId, timestamp);
     if (!workspace.participantsById[action.participantId]) {
       throw new Error('Chore participant is no longer available');
     }
@@ -1934,7 +2381,159 @@ export function applyChoreWorkspaceAction(
       }),
       data: {
         ...workspace,
-        experience: { ...experience, earnedPointsByParticipant: balances },
+        experience: {
+          ...experience,
+          earnedPointsByParticipant: balances,
+          pointTransactions: [
+            ...experience.pointTransactions,
+            {
+              id: `points:${commandId}`,
+              participantId: action.participantId,
+              pointsDelta: action.pointsDelta,
+              kind: 'adjustment',
+              timestamp,
+              commandId,
+            },
+          ],
+        },
+      },
+    };
+  }
+
+  if (action.type === 'reward_request') {
+    if (!action.requestId.trim()) throw new Error('Reward request ID is required');
+    const participant = workspace.participantsById[action.participantId];
+    if (
+      !participant ||
+      isChoreParticipantPausedAt(participant, timestamp) ||
+      !participant.capabilities.includes('complete')
+    ) {
+      throw new Error('Chore participant is not active');
+    }
+    const experience = workspace.experience ?? createChoreExperienceState();
+    if (experience.gamificationMode === 'off') throw new Error('Rewards are unavailable');
+    if (experience.rewardRequestsById[action.requestId])
+      throw new Error('Reward request already exists');
+    const reward = experience.rewardGoalsById[action.rewardId];
+    if (
+      !reward?.enabled ||
+      (reward.participantId && reward.participantId !== action.participantId)
+    ) {
+      throw new Error('Reward is unavailable');
+    }
+    if (
+      (getChoreExperiencePointBalances(workspace)[action.participantId] ?? 0) < reward.targetPoints
+    ) {
+      throw new Error('Not enough points for this reward');
+    }
+    return {
+      activity: buildWorkspaceActivity({
+        commandId,
+        timestamp,
+        type: 'reward_requested',
+        actorParticipantId: action.participantId,
+        participantId: action.participantId,
+      }),
+      data: {
+        ...workspace,
+        experience: {
+          ...experience,
+          rewardRequestsById: {
+            ...experience.rewardRequestsById,
+            [action.requestId]: {
+              id: action.requestId,
+              rewardId: reward.id,
+              rewardTitle: reward.title,
+              cost: reward.targetPoints,
+              participantId: action.participantId,
+              status: 'requested',
+              requestedAt: timestamp,
+              updatedAt: timestamp,
+            },
+          },
+        },
+      },
+    };
+  }
+
+  if (action.type === 'reward_decision') {
+    assertWorkspaceManager(workspace, action.actorParticipantId, timestamp);
+    const experience = workspace.experience ?? createChoreExperienceState();
+    const request = experience.rewardRequestsById[action.requestId];
+    if (!request) throw new Error('Reward request is no longer available');
+    const status =
+      action.decision === 'approve'
+        ? 'approved'
+        : action.decision === 'decline'
+          ? 'declined'
+          : action.decision === 'fulfill'
+            ? 'fulfilled'
+            : 'refunded';
+    if (
+      ((action.decision === 'approve' || action.decision === 'decline') &&
+        request.status !== 'requested') ||
+      (action.decision === 'fulfill' && request.status !== 'approved') ||
+      (action.decision === 'refund' && !['approved', 'fulfilled'].includes(request.status))
+    ) {
+      throw new Error('Reward request has already changed');
+    }
+    const pointsDelta =
+      action.decision === 'approve'
+        ? -request.cost
+        : action.decision === 'refund'
+          ? request.cost
+          : 0;
+    const balances = getChoreExperiencePointBalances(workspace);
+    if (pointsDelta < 0 && (balances[request.participantId] ?? 0) < request.cost) {
+      throw new Error('Not enough points for this reward');
+    }
+    if (pointsDelta)
+      balances[request.participantId] = (balances[request.participantId] ?? 0) + pointsDelta;
+    const pointTransactions = [
+      ...experience.pointTransactions,
+      {
+        id: `points:reward:${request.id}:${action.decision}`,
+        participantId: request.participantId,
+        pointsDelta,
+        kind:
+          action.decision === 'approve'
+            ? ('reward' as const)
+            : action.decision === 'refund'
+              ? ('refund' as const)
+              : ('reward_decision' as const),
+        timestamp,
+        commandId,
+        rewardRequestId: request.id,
+      },
+    ];
+    const activity = buildWorkspaceActivity({
+      commandId,
+      timestamp,
+      type: `reward_${status}` as ChoreActivityType,
+      actorParticipantId: action.actorParticipantId,
+      participantId: request.participantId,
+      reason: action.reason?.trim() || undefined,
+      pointsDelta: Math.abs(pointsDelta) <= 10_000 ? pointsDelta || undefined : undefined,
+    });
+    return {
+      activity,
+      data: {
+        ...workspace,
+        experience: {
+          ...experience,
+          rewardRequestsById: {
+            ...experience.rewardRequestsById,
+            [request.id]: {
+              ...request,
+              status,
+              updatedAt: timestamp,
+              managerParticipantId: action.actorParticipantId,
+              reason: action.reason?.trim() || undefined,
+            },
+          },
+          earnedPointsByParticipant: balances,
+          pointTransactions,
+        },
       },
     };
   }
@@ -1945,7 +2544,8 @@ export function applyChoreWorkspaceAction(
       throw new Error('Chore reminder is no longer available');
     }
     const actor = workspace.participantsById[action.actorParticipantId];
-    if (!actor || actor.pausedAt) throw new Error('Chore participant is not active');
+    if (!actor || isChoreParticipantPausedAt(actor, timestamp))
+      throw new Error('Chore participant is not active');
     if (
       reminder.participantId !== action.actorParticipantId &&
       !actor.capabilities.includes('manage')
@@ -2028,6 +2628,114 @@ export function applyChoreWorkspaceAction(
     };
   }
 
+  if (action.type === 'vacation_reschedule') {
+    assertWorkspaceManager(workspace, action.actorParticipantId, timestamp);
+    const participant = workspace.participantsById[action.participantId];
+    if (!participant?.pausedAt || !participant.resumeAt) {
+      throw new Error('A scheduled return is required');
+    }
+    parseDateKey(action.startDate);
+    if (
+      action.occurrenceIds.length === 0 ||
+      action.occurrenceIds.length > 100 ||
+      new Set(action.occurrenceIds).size !== action.occurrenceIds.length
+    ) {
+      throw new Error('Choose eligible chores to move');
+    }
+    const occurrencesById = { ...workspace.occurrencesById };
+    const additionalActivities: ChoreActivity[] = [];
+    const selected = action.occurrenceIds
+      .map((id) => {
+        const occurrence = occurrencesById[id];
+        if (
+          occurrence?.status !== 'available' ||
+          occurrence.claimedAt ||
+          occurrence.carriedForwardTo ||
+          !occurrence.assigneeIds.includes(participant.id) ||
+          Date.parse(occurrence.scheduledAt) < Date.parse(participant.pausedAt as string) ||
+          Date.parse(occurrence.scheduledAt) >= Date.parse(participant.resumeAt as string)
+        ) {
+          throw new Error('A selected chore can no longer be moved');
+        }
+        return occurrence;
+      })
+      .sort((left, right) => left.scheduledAt.localeCompare(right.scheduledAt));
+    for (const [index, occurrence] of selected.entries()) {
+      const definition = workspace.definitionsById[occurrence.definitionId];
+      if (!definition) throw new Error('Chore definition is no longer available');
+      const parts = getTimeZoneParts(
+        Date.parse(occurrence.scheduledAt),
+        definition.schedule.timeZone
+      );
+      const time = `${parts.hour}:${parts.minute}`;
+      const scheduledAt = localDateTimeToIso(
+        addCalendarDays(action.startDate, index),
+        time,
+        definition.schedule.timeZone
+      );
+      if (
+        Date.parse(scheduledAt) <= Date.parse(timestamp) ||
+        Date.parse(scheduledAt) < Date.parse(participant.resumeAt)
+      ) {
+        throw new Error('Moved chores must begin after the return');
+      }
+      const id = buildOccurrenceId(definition.id, scheduledAt, `vacation:${occurrence.id}`);
+      if (occurrencesById[id]) throw new Error('Moved chore already exists');
+      occurrencesById[occurrence.id] = {
+        ...occurrence,
+        status: 'skipped',
+        skippedBy: action.actorParticipantId,
+        skippedAt: timestamp,
+        carriedForwardTo: id,
+        updatedAt: timestamp,
+      };
+      occurrencesById[id] = {
+        ...occurrence,
+        id,
+        scheduledAt,
+        dueAt: new Date(
+          Date.parse(scheduledAt) +
+            Date.parse(occurrence.dueAt) -
+            Date.parse(occurrence.scheduledAt)
+        ).toISOString(),
+        status: 'available',
+        carriedForwardFrom: occurrence.id,
+        carriedForwardTo: undefined,
+        skippedBy: undefined,
+        skippedAt: undefined,
+        updatedAt: timestamp,
+      };
+      additionalActivities.push({
+        id: `activity:${commandId}:created:${id}`,
+        commandId,
+        occurrenceId: id,
+        definitionId: definition.id,
+        assigneeIds: occurrence.assigneeIds,
+        type: 'occurrence_created',
+        reason: 'Moved after vacation',
+        timestamp,
+      });
+    }
+    return {
+      activity: buildWorkspaceActivity({
+        commandId,
+        timestamp,
+        type: 'vacation_rescheduled',
+        actorParticipantId: action.actorParticipantId,
+        participantId: participant.id,
+      }),
+      additionalActivities,
+      data: {
+        ...workspace,
+        occurrencesById,
+        outbox: workspace.outbox.filter(
+          (item) =>
+            item.status === 'delivered' || !action.occurrenceIds.includes(item.occurrenceId ?? '')
+        ),
+      },
+    };
+  }
+
   const rangeStart = Date.parse(action.rangeStart);
   const rangeEnd = Date.parse(action.rangeEnd);
   if (
@@ -2062,7 +2770,7 @@ export function applyChoreWorkspaceAction(
       definition.id,
       new Set(materialized.map((occurrence) => occurrence.id))
     );
-    if (Object.keys(occurrencesById).length + materialized.length > 5000) {
+    if (materialized.filter((item) => !occurrencesById[item.id]).length > 5000) {
       throw new Error('Too many chore occurrences');
     }
     for (const occurrence of materialized) {
@@ -2126,6 +2834,10 @@ export function applyChoreWorkspaceAction(
       scheduledAt <= rangeEnd &&
       scheduledAt > Date.parse(timestamp) &&
       !scheduledIds.has(id) &&
+      !occurrence.assigneeIds.some((participantId) => {
+        const participant = workspace.participantsById[participantId];
+        return participant && isChoreParticipantPausedAt(participant, occurrence.scheduledAt);
+      }) &&
       canDiscardForRematerialization(occurrence)
     ) {
       delete occurrencesById[id];
@@ -2165,7 +2877,7 @@ export function getChoreExperiencePointBalances(
 ): Record<string, number> {
   const experience = workspace.experience ?? createChoreExperienceState();
   const persisted = experience.earnedPointsByParticipant;
-  if (persisted && Object.keys(persisted).length > 0) return { ...persisted };
+  if (persisted) return { ...persisted };
   const balances: Record<string, number> = {};
   for (const occurrence of Object.values(workspace.occurrencesById)) {
     if (occurrence.status !== 'done' || !occurrence.completedBy) continue;

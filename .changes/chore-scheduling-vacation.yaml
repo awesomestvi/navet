@@ -1,0 +1,6 @@
+type: new
+audiences:
+  - standalone
+  - home-assistant
+  - hacs
+summary: Add fair rotation, standby coverage, flexible schedules, claim rules, and reviewed vacation rescheduling.

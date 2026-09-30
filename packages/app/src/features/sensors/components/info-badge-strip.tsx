@@ -15,6 +15,8 @@ interface SummaryBarProps {
   ariaLabel?: string;
   leadingContent?: ReactNode;
   trailingContent?: ReactNode;
+  /** Preserve room control positions as summary items change. */
+  singleRow?: boolean;
 }
 
 export const SummaryBar = memo(function SummaryBar({
@@ -24,6 +26,7 @@ export const SummaryBar = memo(function SummaryBar({
   ariaLabel = 'Status summary',
   leadingContent,
   trailingContent,
+  singleRow = false,
 }: SummaryBarProps) {
   const { theme } = useTheme();
   const { t } = useI18n();
@@ -39,8 +42,11 @@ export const SummaryBar = memo(function SummaryBar({
     <nav className={`min-w-0 ${className}`} aria-label={ariaLabel}>
       {/* biome-ignore-start lint/a11y/noNoninteractiveTabindex: Static status chips need a focus target so keyboard users can scroll them on narrow screens. */}
       <div
-        tabIndex={isMobileViewport ? 0 : undefined}
-        className="scrollbar-hide flex gap-1.5 overflow-x-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 md:flex-wrap md:gap-2 md:overflow-visible"
+        tabIndex={isMobileViewport || singleRow ? 0 : undefined}
+        className={cn(
+          'scrollbar-hide flex gap-1.5 overflow-x-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 md:gap-2',
+          singleRow ? 'h-11 flex-nowrap items-center' : 'md:flex-wrap md:overflow-visible'
+        )}
       >
         {/* biome-ignore-end lint/a11y/noNoninteractiveTabindex: End scroll region opening tag. */}
         {leadingContent}

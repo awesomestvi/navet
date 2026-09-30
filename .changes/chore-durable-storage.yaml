@@ -1,0 +1,6 @@
+type: fixed
+audiences:
+  - standalone
+  - home-assistant
+  - hacs
+summary: Preserve large chore ledgers and unfinished work in durable storage so accumulated history cannot block household actions.
