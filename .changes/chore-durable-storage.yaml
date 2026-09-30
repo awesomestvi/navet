@@ -1,4 +1,4 @@
-type: fix
+type: fixed
 audiences:
   - standalone
   - home-assistant
