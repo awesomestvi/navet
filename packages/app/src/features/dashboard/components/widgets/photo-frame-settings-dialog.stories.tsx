@@ -4,6 +4,7 @@ import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import { SettingsDialogStoryFrame } from '@navet/app/storybook/story-frames';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
+import { expect, within } from 'storybook/test';
 import { PhotoFrameSettingsDialog } from './photo-frame-settings-dialog';
 import type { PhotoFrameSourceMode } from './photo-frame-types';
 
@@ -73,4 +74,20 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {};
+export const Default: Story = {
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole('button', { name: 'Open photo dialog' }));
+    const dialog = within(await within(document.body).findByRole('dialog'));
+    await expect(dialog.getByRole('button', { name: 'Add URL' })).toBeVisible();
+    await expect(dialog.queryByRole('button', { name: 'Customize' })).not.toBeInTheDocument();
+    await userEvent.click(dialog.getByRole('button', { name: 'More actions' }));
+    await userEvent.click(within(document.body).getByRole('menuitem', { name: 'Customize' }));
+    await expect(dialog.getByRole('button', { name: 'Back to controls' })).toBeVisible();
+    await userEvent.click(dialog.getByRole('button', { name: 'Back to controls' }));
+    await expect(dialog.getByRole('button', { name: 'Add URL' })).toBeVisible();
+  },
+};
+export const Mobile: Story = {
+  ...Default,
+  globals: { viewport: { value: 'mobile1', isRotated: false } },
+};

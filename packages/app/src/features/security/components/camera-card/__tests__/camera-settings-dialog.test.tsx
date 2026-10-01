@@ -68,6 +68,9 @@ describe('CameraSettingsDialog', () => {
       backgroundColor: 'rgba(107, 114, 128, 0.14)',
       borderColor: 'rgba(107, 114, 128, 0.24)',
     });
+    expect(screen.queryByRole('combobox', { name: 'Room' })).not.toBeInTheDocument();
+    fireEvent.keyDown(screen.getAllByRole('button', { name: 'More actions' })[0], { key: 'Enter' });
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Edit room' }));
     expect(screen.getByRole('combobox', { name: 'Room' })).toBeInTheDocument();
   });
 
@@ -360,7 +363,8 @@ describe('CameraSettingsDialog', () => {
       />
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'More actions' }));
+    fireEvent.keyDown(screen.getAllByRole('button', { name: 'More actions' })[0], { key: 'Enter' });
+    fireEvent.click(screen.getByRole('menuitem', { name: 'More actions' }));
     fireEvent.click(screen.getByRole('switch', { name: 'Motion Detection' }));
     await waitFor(() =>
       expect(toggleCameraAccessoryMock).toHaveBeenCalledWith(
@@ -415,7 +419,8 @@ describe('CameraSettingsDialog', () => {
       />
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Metrics' }));
+    fireEvent.keyDown(screen.getAllByRole('button', { name: 'More actions' })[0], { key: 'Enter' });
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Metrics' }));
 
     expect(screen.getByRole('checkbox', { name: /Temperature/ })).toBeChecked();
     expect(screen.getByRole('checkbox', { name: /Humidity/ })).not.toBeChecked();
@@ -429,7 +434,7 @@ describe('CameraSettingsDialog', () => {
     );
   });
 
-  it('shows icons in the controls and metrics tab pills', () => {
+  it('keeps controls visible and offers metrics in the overflow menu', () => {
     renderWithProviders(
       <CameraSettingsDialog
         {...defaultProps}
@@ -445,8 +450,9 @@ describe('CameraSettingsDialog', () => {
       />
     );
 
-    expect(screen.getByRole('button', { name: 'Controls' }).querySelector('svg')).not.toBeNull();
-    expect(screen.getByRole('button', { name: 'Metrics' }).querySelector('svg')).not.toBeNull();
+    expect(screen.queryByRole('button', { name: 'Controls' })).not.toBeInTheDocument();
+    fireEvent.keyDown(screen.getAllByRole('button', { name: 'More actions' })[0], { key: 'Enter' });
+    expect(screen.getByRole('menuitem', { name: 'Metrics' })).toBeVisible();
   });
 
   it('routes sibling number controls through the camera provider service', async () => {
@@ -465,7 +471,8 @@ describe('CameraSettingsDialog', () => {
       />
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'More actions' }));
+    fireEvent.keyDown(screen.getAllByRole('button', { name: 'More actions' })[0], { key: 'Enter' });
+    fireEvent.click(screen.getByRole('menuitem', { name: 'More actions' }));
     const slider = screen.getByRole('slider', { name: 'Image Brightness' });
     fireEvent.keyDown(slider, { key: 'ArrowRight' });
     fireEvent.keyUp(slider, { key: 'ArrowRight' });
@@ -489,7 +496,8 @@ describe('CameraSettingsDialog', () => {
       />
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'More actions' }));
+    fireEvent.keyDown(screen.getAllByRole('button', { name: 'More actions' })[0], { key: 'Enter' });
+    fireEvent.click(screen.getByRole('menuitem', { name: 'More actions' }));
     const switchList = screen.getByTestId('camera-switch-list');
     expect(screen.getByRole('switch', { name: 'Camera Mode 0' })).toBeInTheDocument();
     expect(switchList).toBeInTheDocument();

@@ -6,6 +6,7 @@ import {
   type PortalActionDockAnchorRect,
 } from '@navet/app/components/patterns/portal-action-dock';
 import { BaseCard } from '@navet/app/components/primitives';
+import { Button } from '@navet/app/components/primitives/button';
 import { EntityCardHeader } from '@navet/app/components/primitives/entity-card-header';
 import { EntityCardHeaderIcon } from '@navet/app/components/primitives/entity-card-header-icon';
 import { getCardActionControlSizes } from '@navet/app/components/shared/card-action-control-sizes';
@@ -35,9 +36,9 @@ import { parseProviderScopedId } from '@navet/app/utils/provider-ids';
 import { Fan, MoreHorizontal, RotateCcw, RotateCw, Wind } from 'lucide-react';
 import { type MouseEvent, memo, useCallback, useEffect, useState } from 'react';
 import { getLightCardSurfaceTokens } from '../light-card/light-card-surface-tokens';
-import { SwitchSettingsDialog } from '../switch-settings-dialog';
 import { useSwitchCardAppearance } from '../use-switch-card-appearance';
 import type { SwitchSiblingEntity } from '../use-switch-card-controller';
+import { FanSettingsDialog } from './fan-settings-dialog';
 
 interface FanCardProps {
   id: string;
@@ -229,7 +230,7 @@ const FanPresetOverflowButton = memo(function FanPresetOverflowButton({
 export const FanCard = memo(function FanCard({
   id,
   name,
-  room: _room,
+  room,
   providerId,
   initialState = false,
   initialPercentage = 0,
@@ -298,7 +299,8 @@ export const FanCard = memo(function FanCard({
       return entity ? { id: entityId, entity } : null;
     })
     .filter((entry): entry is SwitchSiblingEntity => entry !== null);
-  const showsSettingsButton = supportsFanSpeed || siblingEntities.length > 0 || isEditMode;
+  const showsSettingsButton =
+    supportsFanSpeed || hasAdvancedFanControls || siblingEntities.length > 0 || isEditMode;
 
   useEffect(() => {
     if (!providerState) {
@@ -736,29 +738,59 @@ export const FanCard = memo(function FanCard({
       </BaseCard>
 
       {showsSettingsButton ? (
-        <SwitchSettingsDialog
+        <FanSettingsDialog
           entityId={id}
+          name={name}
+          room={room}
           isOpen={isSettingsOpen}
           onOpenChange={setIsSettingsOpen}
-          name={name}
-          labelContextName={name}
-          entityType={t('climate.mode.fan')}
           isOn={isOn}
-          metricSectionTitle=""
-          metricSectionDescription=""
-          metricLimit={0}
-          availableMetrics={[]}
-          selectedMetricLabels={[]}
-          getMetricLabel={(metric) => metric.label}
-          onMetricToggle={() => undefined}
+          percentage={displayedPercentage}
+          supportsSpeed={supportsFanSpeed}
+          onPowerChange={updatePower}
+          onSpeedPreview={previewSpeed}
+          onSpeedCommit={updateSpeed}
+          direction={fanDirection}
+          oscillating={fanOscillating}
+          onDirectionChange={() => {
+            void runAction(
+              () => setFanDirection(directionIsReverse ? 'forward' : 'reverse'),
+              t('lighting.feedback.updateSwitchFailed')
+            );
+          }}
+          onOscillationChange={() => {
+            void runAction(
+              () => setFanOscillation(!fanOscillating),
+              t('lighting.feedback.updateSwitchFailed')
+            );
+          }}
           selectedIcon={selectedIcon}
           onIconChange={setSelectedIcon}
-          siblingEntities={siblingEntities}
           tintColor={tintColor}
           onTintColorChange={setTintColor}
-          dialogTintColor={fanAccentColor}
-          dialogSurfaceClassName={surfaceTokens.cardClassName}
-          dialogSurfaceStyle={surfaceTokens.cardStyle}
+          siblingControls={
+            siblingEntities.length > 0 ? (
+              <div className="flex flex-col gap-2">
+                {siblingEntities.map(({ id: siblingId, entity }) => (
+                  <Button
+                    key={siblingId}
+                    variant="soft"
+                    aria-pressed={entity.state === 'on'}
+                    onClick={() => {
+                      void runAction(async () => {
+                        await dispatchEntityCommand({
+                          type: entity.state === 'on' ? 'turn_off' : 'turn_on',
+                          entityId: siblingId,
+                        });
+                      }, t('lighting.feedback.updateSwitchFailed'));
+                    }}
+                  >
+                    {String(entity.attributes?.friendly_name ?? siblingId)}
+                  </Button>
+                ))}
+              </div>
+            ) : undefined
+          }
         />
       ) : null}
     </>

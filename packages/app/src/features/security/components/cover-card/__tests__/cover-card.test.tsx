@@ -2,7 +2,7 @@ import { I18nProvider } from '@navet/app/i18n/i18n-provider';
 import { homeAssistantStore } from '@navet/app/stores/home-assistant-store';
 import { coverEntityFactory } from '@navet/app/test/fixtures/home-assistant/entities/cover';
 import { resetAppStores } from '@navet/app/test/store-reset';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { ComponentProps } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CoverCard } from '../index';
@@ -131,6 +131,70 @@ describe('CoverCard', () => {
       value: vi.fn(),
     });
   });
+
+  it('opens with position controls and sends dialog actions to the provider', async () => {
+    renderCoverCard({ size: 'medium' });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Open settings for Living Room Blind cover' })
+    );
+    const dialog = within(screen.getByRole('dialog'));
+    fireEvent.click(dialog.getByRole('button', { name: 'Open' }));
+    await waitFor(() => expect(openCoverMock).toHaveBeenCalled());
+    fireEvent.click(dialog.getByRole('button', { name: 'Stop' }));
+    await waitFor(() => expect(stopCoverMock).toHaveBeenCalled());
+    fireEvent.click(
+      within(dialog.getByRole('group', { name: 'Controls' })).getByRole('button', { name: 'Close' })
+    );
+    await waitFor(() => expect(closeCoverMock).toHaveBeenCalled());
+    fireEvent.click(dialog.getByRole('button', { name: '25%' }));
+    await waitFor(() =>
+      expect(setCoverPositionMock).toHaveBeenCalledWith('cover.living_room_blind', 25, 'position')
+    );
+  });
+
+  it('keeps unsupported cover dialog actions disabled and hides position presets', () => {
+    renderCoverCard({ size: 'medium', hasPosition: false, supportedFeatures: COVER_FEATURE_OPEN });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Open settings for Living Room Blind cover' })
+    );
+    const dialog = within(screen.getByRole('dialog'));
+    expect(dialog.getByRole('button', { name: 'Open' })).toBeEnabled();
+    expect(dialog.getByRole('button', { name: 'Stop' })).toBeDisabled();
+    expect(
+      within(dialog.getByRole('group', { name: 'Controls' })).getByRole('button', { name: 'Close' })
+    ).toBeDisabled();
+    expect(dialog.queryByRole('button', { name: '25%' })).not.toBeInTheDocument();
+  });
+
+  it.each(['medium'] as const)(
+    'drags the %s handle relative to the current position',
+    async (size) => {
+      renderCoverCard({ size, initialPosition: 72 });
+      const slider = screen.getByRole('slider', { name: 'Living Room Blind cover' });
+      const card = slider.closest('[data-cover-card-root="true"]') as HTMLElement;
+      vi.spyOn(card, 'getBoundingClientRect').mockReturnValue({
+        top: 0,
+        bottom: 100,
+        height: 100,
+        left: 0,
+        right: 168,
+        width: 168,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      });
+      const handle = slider.querySelector('[data-cover-position-handle]') as HTMLElement;
+      fireEvent.pointerDown(handle, { clientY: 60, pointerId: 1 });
+      fireEvent.pointerMove(slider, { clientY: 40, pointerId: 1 });
+      expect(setCoverPositionMock).not.toHaveBeenCalled();
+      fireEvent.pointerUp(slider, { clientY: 40, pointerId: 1 });
+      await waitFor(() =>
+        expect(setCoverPositionMock).toHaveBeenCalledWith('cover.living_room_blind', 92, 'position')
+      );
+      expect(setCoverPositionMock).toHaveBeenCalledTimes(1);
+      expect(closeCoverMock).not.toHaveBeenCalled();
+    }
+  );
 
   it('calls the provider open cover action', async () => {
     renderCoverCard();
@@ -443,7 +507,7 @@ describe('CoverCard', () => {
 
     const gestureSurface = screen.getByRole('slider', { name: 'Living Room Blind cover' });
     const cardRoot = gestureSurface.closest('[data-cover-card-root="true"]') as HTMLElement;
-    vi.spyOn(cardRoot, 'getBoundingClientRect').mockReturnValue({
+    vi.spyOn(gestureSurface, 'getBoundingClientRect').mockReturnValue({
       bottom: 200,
       height: 200,
       left: 0,

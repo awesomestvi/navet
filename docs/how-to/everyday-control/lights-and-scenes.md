@@ -50,12 +50,14 @@ power button. Drag the vertical slider up to brighten the light or down to dim i
 to apply its brightness immediately.
 
 Choose **Warmth**, **Colors**, or **Effects** below the brightness controls. Only supported controls
-appear. Turn the light on to adjust them. In **Colors**, use the hue strip or a preset; expand
-**Detailed color** for saturation and hex input. In **Effects**, select an effect or **No effect**.
+appear. Turn the light on to adjust them. In **Colors**, use the hue strip or a preset.
+In **Effects**, select an effect or **No effect**.
 
 The header shows the room and light state above the card name. Open the three-dot menu beside
 Close to **Edit room**, **Edit card name**, manage **Presets**, or
 **Customize** the card's tint or icon. The entity ID appears at the bottom of the menu.
+Choose **Hide** or **Remove** to remove the card from its dashboard view. For a card placed in
+the Home layout, choose **Remove from home**.
 Select **Back to controls** to return to the light controls.
 Select **Done** or close the dialog when finished.
 

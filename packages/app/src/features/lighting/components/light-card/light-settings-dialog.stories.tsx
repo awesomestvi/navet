@@ -46,6 +46,7 @@ function LightSettingsDialogStory({
         entityId="light.living_room_main"
         isOpen={isOpen}
         onOpenChange={setIsOpen}
+        onRemoveCard={() => setIsOpen(false)}
         name="Living Room Main"
         room="Living room"
         isOn={isOn}
@@ -137,6 +138,42 @@ export const Default: Story = {
       await expect(dialogScope.getByText('62%')).toBeInTheDocument();
     });
 
+    await step('keeps warmth and color controls in the same layout', async () => {
+      await userEvent.click(dialogScope.getByRole('tab', { name: 'Warmth' }));
+      const dialogBounds = dialog.getBoundingClientRect();
+      const warmthSlider = dialogScope.getByRole('slider', { name: 'Color Temperature' });
+      const warmthBounds = warmthSlider.getBoundingClientRect();
+      const warmthTrack = warmthSlider.parentElement?.parentElement?.firstElementChild;
+      const warmthTrackWidth = warmthTrack?.getBoundingClientRect().width;
+      const doneBounds = dialogScope.getByRole('button', { name: 'Done' }).getBoundingClientRect();
+      await userEvent.click(dialogScope.getByRole('tab', { name: 'Colors' }));
+      const colorBounds = dialogScope.getByRole('slider', { name: 'Hue' }).getBoundingClientRect();
+      await expect(warmthSlider.getBoundingClientRect().width).toBeCloseTo(warmthBounds.width, 0);
+      await expect(warmthTrack?.getBoundingClientRect().width).toBeCloseTo(
+        warmthTrackWidth ?? 0,
+        0
+      );
+      await expect(warmthSlider.closest('[role="tabpanel"]')).toHaveAttribute('inert');
+      await expect(dialog.getBoundingClientRect().height).toBeCloseTo(dialogBounds.height, 0);
+      await expect(dialog.getBoundingClientRect().top).toBeCloseTo(dialogBounds.top, 0);
+      await expect(colorBounds.top).toBeCloseTo(warmthBounds.top, 0);
+      await expect(
+        dialogScope.getByRole('button', { name: 'Done' }).getBoundingClientRect().top
+      ).toBeCloseTo(doneBounds.top, 0);
+      await expect(dialogScope.queryByText('Detailed color')).not.toBeInTheDocument();
+      await userEvent.click(dialogScope.getByRole('tab', { name: 'Warmth' }));
+      warmthSlider.focus();
+      await userEvent.keyboard('{Home}');
+      await expect(
+        warmthSlider.getBoundingClientRect().left - (warmthTrack?.getBoundingClientRect().left ?? 0)
+      ).toBeCloseTo(0, 0);
+      await userEvent.keyboard('{End}');
+      await expect(
+        (warmthTrack?.getBoundingClientRect().right ?? 0) -
+          warmthSlider.getBoundingClientRect().right
+      ).toBeCloseTo(0, 0);
+    });
+
     await step('updates brightness with keyboard interaction', async () => {
       brightnessSlider.focus();
       await userEvent.keyboard('{ArrowUp}');
@@ -193,6 +230,16 @@ export const Default: Story = {
         );
         await expect(dialogScope.getByRole('textbox', { name: 'Card name' })).toHaveFocus();
         await userEvent.click(dialogScope.getByRole('button', { name: 'Cancel' }));
+        await userEvent.click(dialogScope.getByRole('button', { name: 'More actions' }));
+        const hideAction = within(await within(document.body).findByRole('menu')).getByRole(
+          'menuitem',
+          { name: 'Hide' }
+        );
+        await expect(hideAction).toHaveAttribute('data-variant', 'destructive');
+        await userEvent.click(hideAction);
+        await expect(
+          within(document.body).queryByRole('dialog', { name: 'Living Room Main' })
+        ).not.toBeInTheDocument();
       }
     );
   },

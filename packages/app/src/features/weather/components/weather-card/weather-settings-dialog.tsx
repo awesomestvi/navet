@@ -1,4 +1,8 @@
-import { CardDialogChoicePill, CardDialogSection } from '@navet/app/components/patterns';
+import {
+  CardDialogSection,
+  SelectableCheckboxList,
+  SelectableCheckboxRow,
+} from '@navet/app/components/patterns';
 import { BaseCardDialogWithState } from '@navet/app/components/primitives';
 import { normalizeCustomCardTint } from '@navet/app/components/shared/theme/custom-card-tint-surface';
 import { useI18n } from '@navet/app/hooks';
@@ -98,21 +102,25 @@ export function WeatherSettingsDialog({
       controlsTabContent={
         <>
           <CardDialogSection label={t('weather.settings.forecast')} className="mb-4">
-            <div className="inline-flex items-center gap-1">
+            <SelectableCheckboxList aria-label={t('weather.settings.forecast')}>
               {(['hourly', 'weekly'] as const).map((option) => (
-                <CardDialogChoicePill
-                  key={option}
-                  active={forecastMode === option}
-                  accentColor={activeAccentColor}
-                  size="compact"
-                  onClick={() => onForecastModeChange(option)}
-                >
-                  {option === 'hourly'
-                    ? t('weather.settings.hourly')
-                    : t('weather.settings.weekly')}
-                </CardDialogChoicePill>
+                <li key={option}>
+                  <SelectableCheckboxRow
+                    size="compact"
+                    checked={forecastMode === option}
+                    checkboxPaletteColor={activeAccentColor}
+                    onCheckedChange={(checked) => {
+                      if (checked) onForecastModeChange(option);
+                    }}
+                    label={
+                      option === 'hourly'
+                        ? t('weather.settings.hourly')
+                        : t('weather.settings.weekly')
+                    }
+                  />
+                </li>
               ))}
-            </div>
+            </SelectableCheckboxList>
           </CardDialogSection>
 
           <CardDialogSection
@@ -123,26 +131,26 @@ export function WeatherSettingsDialog({
                 : undefined
             }
           >
-            <div className="flex flex-wrap gap-2">
+            <SelectableCheckboxList aria-label={t('weather.settings.metrics')}>
               {metricOptions.map((metricId) => {
                 const checked = selectedAvailableMetricIds.includes(metricId);
-                const disabled =
-                  !checked && selectedAvailableMetricIds.length >= MAX_WEATHER_METRICS;
-
+                const disabled = checked
+                  ? selectedAvailableMetricIds.length <= 1
+                  : selectedAvailableMetricIds.length >= MAX_WEATHER_METRICS;
                 return (
-                  <CardDialogChoicePill
-                    key={metricId}
-                    active={checked}
-                    accentColor={activeAccentColor}
-                    size="compact"
-                    disabled={disabled}
-                    onClick={() => handleMetricChange(metricId, !checked)}
-                  >
-                    {t(getWeatherMetricLabelKey(metricId))}
-                  </CardDialogChoicePill>
+                  <li key={metricId}>
+                    <SelectableCheckboxRow
+                      size="compact"
+                      checked={checked}
+                      checkboxPaletteColor={activeAccentColor}
+                      disabled={disabled}
+                      onCheckedChange={(nextChecked) => handleMetricChange(metricId, nextChecked)}
+                      label={t(getWeatherMetricLabelKey(metricId))}
+                    />
+                  </li>
                 );
               })}
-            </div>
+            </SelectableCheckboxList>
           </CardDialogSection>
         </>
       }

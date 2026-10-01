@@ -6,6 +6,54 @@ import { describe, expect, it, vi } from 'vitest';
 import { BaseCardDialog } from '.';
 
 describe('BaseCardDialog', () => {
+  it('keeps primary controls visible and returns to them after secondary navigation and reopening', () => {
+    const onRoomChange = vi.fn();
+    const props = {
+      isOpen: true,
+      onOpenChange: vi.fn(),
+      title: 'Photo settings',
+      theme: 'dark' as const,
+      roomSelector: {
+        value: 'kitchen',
+        label: 'Kitchen',
+        options: [
+          { label: 'Kitchen', value: 'kitchen' },
+          { label: 'Office', value: 'office' },
+        ],
+        onChange: onRoomChange,
+      },
+      tabs: [
+        { key: 'controls', label: 'Controls', icon: Sliders, content: <p>Photo sources</p> },
+        {
+          key: 'customize',
+          label: 'Customize',
+          icon: Sliders,
+          content: <p>Appearance settings</p>,
+        },
+      ],
+    };
+    const { rerender } = renderWithProviders(<BaseCardDialog {...props} />);
+    expect(screen.getByText('Photo sources')).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Customize' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: 'Room' })).not.toBeInTheDocument();
+    fireEvent.keyDown(screen.getAllByRole('button', { name: 'More actions' })[0], { key: 'Enter' });
+    expect(screen.queryByRole('menuitem', { name: 'Edit card name' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Edit room' }));
+    fireEvent.change(screen.getByRole('combobox', { name: 'Room' }), {
+      target: { value: 'office' },
+    });
+    expect(onRoomChange).toHaveBeenCalledWith('office');
+    fireEvent.click(screen.getByRole('button', { name: 'Back to controls' }));
+    expect(screen.getByText('Photo sources')).toBeVisible();
+    fireEvent.keyDown(screen.getAllByRole('button', { name: 'More actions' })[0], { key: 'Enter' });
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Customize' }));
+    expect(screen.getByText('Appearance settings')).toBeVisible();
+    rerender(<BaseCardDialog {...props} isOpen={false} />);
+    rerender(<BaseCardDialog {...props} />);
+    expect(screen.getByText('Photo sources')).toBeVisible();
+    expect(screen.getByText('Appearance settings')).not.toBeVisible();
+  });
+
   it.each([
     ['home_assistant:sensor.office_temperature', 'sensor.office_temperature'],
     ['sensor.office_temperature', 'sensor.office_temperature'],
@@ -14,6 +62,7 @@ describe('BaseCardDialog', () => {
   ])('shows the native provider ID for %s while editing', (entityId, nativeId) => {
     renderWithProviders(
       <BaseCardDialog
+        navigation="tabs"
         isOpen
         onOpenChange={vi.fn()}
         title="Temperature"
@@ -158,6 +207,7 @@ describe('BaseCardDialog', () => {
   it('renders the room selector as a plain eyebrow and keeps actions palette-aware', () => {
     renderWithProviders(
       <BaseCardDialog
+        navigation="tabs"
         isOpen
         onOpenChange={vi.fn()}
         title="Plant Light"
@@ -225,6 +275,7 @@ describe('BaseCardDialog', () => {
   it('renders entity-backed room selectors as plain eyebrows above the title', () => {
     renderWithProviders(
       <BaseCardDialog
+        navigation="tabs"
         isOpen
         onOpenChange={vi.fn()}
         title="Window Lamp"

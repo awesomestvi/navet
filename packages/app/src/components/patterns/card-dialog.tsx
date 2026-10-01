@@ -219,14 +219,27 @@ export const CardDialogHeader = memo(function CardDialogHeader({
   return (
     <div className={cn('mb-4 flex items-start justify-between gap-4 max-sm:pr-14', className)}>
       <div className="min-w-0">
-        {resolvedEyebrow}
-        <div
-          className={cn(
-            'flex min-w-0 items-center',
-            isEditingTitle ? 'gap-4' : 'gap-2',
-            resolvedEyebrow ? 'mt-1' : undefined
-          )}
-        >
+        {presentation === 'compact' ? (
+          <div
+            className={cn(
+              'flex min-w-0 items-center gap-1.5 text-xs font-medium',
+              descriptionClassName
+            )}
+          >
+            {resolvedEyebrow}
+            {resolvedEyebrow && resolvedDescription ? <span aria-hidden="true">·</span> : null}
+            {resolvedDescription ? (
+              <Dialog.Description asChild>
+                <span className="shrink-0" style={descriptionStyle}>
+                  {resolvedDescription}
+                </span>
+              </Dialog.Description>
+            ) : null}
+          </div>
+        ) : (
+          resolvedEyebrow
+        )}
+        <div className={cn('flex min-w-0 items-center', isEditingTitle ? 'gap-4' : 'gap-2')}>
           <Dialog.Title asChild>
             <h2
               className={cn(
@@ -298,7 +311,8 @@ export const CardDialogHeader = memo(function CardDialogHeader({
             ) : null
           ) : null}
         </div>
-        {resolvedDescription || (canEditTitle && !isEditingTitle && presentation !== 'compact') ? (
+        {presentation !== 'compact' &&
+        (resolvedDescription || (canEditTitle && !isEditingTitle)) ? (
           <Dialog.Description asChild>
             <div
               className={cn(
@@ -311,7 +325,7 @@ export const CardDialogHeader = memo(function CardDialogHeader({
               {resolvedDescription ? (
                 <span className="min-w-0 whitespace-normal break-words">{resolvedDescription}</span>
               ) : null}
-              {canEditTitle && !isEditingTitle && presentation !== 'compact' ? (
+              {canEditTitle && !isEditingTitle ? (
                 <>
                   {resolvedDescription ? (
                     <span aria-hidden="true" className={descriptionSeparatorClassName}>

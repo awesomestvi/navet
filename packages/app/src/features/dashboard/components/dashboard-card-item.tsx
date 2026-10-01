@@ -180,6 +180,18 @@ export const DashboardCardItem = memo(function DashboardCardItem({
       headerSubtitleOverride,
       presentationVariant,
       mediaStackSettings,
+      onRemoveCard: onRemoveFromLayout
+        ? () => onRemoveFromLayout(id)
+        : allowEntityRemoval && onRemoveEntity
+          ? () => onRemoveEntity(id)
+          : undefined,
+      removeCardLabel: onRemoveFromLayout
+        ? (removeFromLayoutLabel ?? t('dashboard.edit.removeFromHome'))
+        : t(
+            usesHideAction
+              ? 'dashboard.roomsWorkspace.hideDevice'
+              : 'dashboard.roomsWorkspace.removeDevice'
+          ),
     })
   ) : card ? (
     <WidgetCard

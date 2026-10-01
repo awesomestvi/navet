@@ -35,12 +35,14 @@ export function ColorPickerPanel({
   onChange,
   onCommit,
   compact = false,
+  showDetailedColor = true,
   presets = [],
 }: {
   value: string;
   onChange: (value: string) => void;
   onCommit?: (color: string) => void;
   compact?: boolean;
+  showDetailedColor?: boolean;
   presets?: readonly string[];
 }) {
   const { t } = useI18n();
@@ -142,12 +144,12 @@ export function ColorPickerPanel({
         onCommit?.(toHex(h, compact ? color.s || 0.75 : color.s, compact ? 1 : color.v))
       }
       rootClassName="relative flex h-9 w-full touch-none select-none items-center"
-      trackClassName={`relative grow rounded-full ${compact ? 'h-6' : 'h-3'}`}
+      trackClassName="relative h-3 grow rounded-full"
       rangeStyle={{ background: 'transparent' }}
       trackStyle={{
         background: 'linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)',
       }}
-      thumbClassName="block h-5 w-5 rounded-full border-2 border-white shadow-md outline-none focus-visible:ring-2 focus-visible:ring-current"
+      thumbClassName={`block ${compact ? 'h-6 w-6' : 'h-5 w-5'} rounded-full border-2 border-white shadow-[0_2px_6px_#0003] outline-none focus-visible:ring-2 focus-visible:ring-current`}
       thumbStyle={{ background: `hsl(${color.h}, 100%, 50%)` }}
     />
   );
@@ -194,7 +196,7 @@ export function ColorPickerPanel({
           </div>
           {hueControl}
           <div className="space-y-2">
-            <span className="text-xs opacity-70">{t('lighting.colorPresets')}</span>
+            <span className="block text-xs opacity-70">{t('lighting.colorPresets')}</span>
             <div className="flex flex-wrap gap-1">
               {presets.map((preset) => (
                 <button
@@ -219,26 +221,28 @@ export function ColorPickerPanel({
               ))}
             </div>
           </div>
-          <div>
-            <button
-              type="button"
-              aria-expanded={showDetails}
-              className="flex h-9 w-full items-center justify-between text-xs opacity-70 outline-none focus-visible:ring-2 focus-visible:ring-current"
-              onClick={() => setShowDetails(!showDetails)}
-            >
-              {t('lighting.colorDetails')}
-              <ChevronDown
-                className={`h-4 w-4 ${showDetails ? 'rotate-180' : ''}`}
-                aria-hidden="true"
-              />
-            </button>
-            {showDetails && (
-              <div className="space-y-3 pt-2">
-                {saturationControl}
-                {hexControl}
-              </div>
-            )}
-          </div>
+          {showDetailedColor && (
+            <div>
+              <button
+                type="button"
+                aria-expanded={showDetails}
+                className="flex h-9 w-full items-center justify-between text-xs opacity-70 outline-none focus-visible:ring-2 focus-visible:ring-current"
+                onClick={() => setShowDetails(!showDetails)}
+              >
+                {t('lighting.colorDetails')}
+                <ChevronDown
+                  className={`h-4 w-4 ${showDetails ? 'rotate-180' : ''}`}
+                  aria-hidden="true"
+                />
+              </button>
+              {showDetails && (
+                <div className="space-y-3 pt-2">
+                  {saturationControl}
+                  {hexControl}
+                </div>
+              )}
+            </div>
+          )}
         </>
       ) : (
         <>

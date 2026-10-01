@@ -28,6 +28,9 @@ including humidity readings exposed by thermostats. Sensors you hide stay hidden
    change it.
 4. Select the thermostat for more controls, including available HVAC modes and presets.
 
+In the thermostat dialog, open **More actions** to edit the room or card name. Select **Controls**
+for additional device controls, then **Back to controls** to return to the thermostat.
+
 ## Humidity and water devices
 
 Humidifiers and dehumidifiers can expose a target humidity. Water heaters can expose temperature,
@@ -37,6 +40,14 @@ operation mode, or power when the provider supplies those capabilities.
 
 Supported fans can expose power, percentage, direction, oscillation, or presets. A fan with only a
 power capability remains a simple control.
+
+Select a fan card's settings button to open its controls. Use the power button to turn the fan
+on or off. For fans with speed control, choose **Low**, **Medium**, or **High**, or drag the
+speed slider and release to apply the change. Selecting a speed also turns the fan on.
+Oscillation and direction controls appear when the device supports them.
+
+Open the three-dot menu to **Edit room**, **Edit card name**, or **Customize** the card's tint
+and icon. Select **Back to controls** to return, and **Done** when finished.
 
 ## If a control is absent
 

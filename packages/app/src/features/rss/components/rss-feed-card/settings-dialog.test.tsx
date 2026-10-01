@@ -1,5 +1,5 @@
 import { renderWithProviders } from '@navet/app/test/render';
-import { screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { RSSFeedSettingsDialog } from './settings-dialog';
 import type { RSSProvider } from './types';
@@ -14,7 +14,7 @@ const providers: RSSProvider[] = [
 ];
 
 describe('RSSFeedSettingsDialog', () => {
-  it('renders the updated header layout with room selector on the right', () => {
+  it('keeps feeds visible and moves room and secondary settings into the overflow menu', () => {
     renderWithProviders(
       <RSSFeedSettingsDialog
         isOpen
@@ -43,5 +43,15 @@ describe('RSSFeedSettingsDialog', () => {
 
     expect(screen.getAllByText('Daily Feed').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Living Room').length).toBeGreaterThan(0);
+    expect(screen.getByRole('checkbox', { name: /BBC World/ })).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Add feed' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: 'Room' })).not.toBeInTheDocument();
+    fireEvent.keyDown(screen.getAllByRole('button', { name: 'More actions' })[0], { key: 'Enter' });
+    expect(screen.getByRole('menuitem', { name: 'Add feed' })).toBeVisible();
+    expect(screen.getByRole('menuitem', { name: 'Customize' })).toBeVisible();
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Edit room' }));
+    expect(screen.getByRole('combobox', { name: 'Room' })).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'Back to controls' }));
+    expect(screen.getByRole('checkbox', { name: /BBC World/ })).toBeVisible();
   });
 });

@@ -189,75 +189,89 @@ export function LightDialogControls(props: ControlProps) {
             ))}
           </TabList>
         )}
-        {props.supportsColorTemperature && (
-          <TabPanel value="white" className={modes.length > 1 ? 'mt-6 space-y-3' : 'space-y-3'}>
-            <div className="flex items-center justify-between gap-3 text-sm">
-              <span className="font-medium">{t('lighting.warmth')}</span>
-              <span className="tabular-nums">{Math.round(props.colorTemp)} K</span>
-            </div>
-            <Slider
-              value={props.colorTemp}
-              min={props.minColorTemp}
-              max={props.maxColorTemp}
-              step={100}
-              ariaLabel={t('lighting.colorTemperature')}
-              disabled={!props.isOn}
-              onValueChange={props.onTempChange}
-              onValueCommit={props.onTempCommit ?? props.onTempChange}
-              rootClassName="relative flex h-9 w-full touch-none select-none items-center"
-              trackClassName="relative h-6 grow rounded-full border border-current/10"
-              trackStyle={{
-                background: `linear-gradient(to right, ${kelvinToColor(props.minColorTemp)}, ${kelvinToColor(props.maxColorTemp)})`,
-                opacity: props.isOn ? 1 : 0.4,
-              }}
-              rangeStyle={{ background: 'transparent' }}
-              thumbClassName="block h-5 w-5 rounded-full border-2 border-white bg-white shadow-[0_0_0_1px_#0008] outline-none focus-visible:ring-2 focus-visible:ring-current"
-            />
-            <div className={`flex justify-between text-xs tabular-nums ${surface.textSecondary}`}>
-              <span>{props.minColorTemp} K</span>
-              <span>{props.maxColorTemp} K</span>
-            </div>
-            <div className="flex flex-wrap gap-1">
-              {props.tempOptions.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  disabled={!props.isOn}
-                  aria-label={`${option.label} (${option.value}K)`}
-                  aria-pressed={props.colorTemp === option.value}
-                  onClick={() => {
-                    props.onTempChange(option.value);
-                    props.onTempCommit?.(option.value);
-                  }}
-                  className="flex h-9 w-9 items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-current disabled:opacity-40"
-                >
-                  <span
-                    className={`h-7 w-7 rounded-full border border-current/20 ${props.colorTemp === option.value ? 'ring-2 ring-current ring-offset-2 ring-offset-transparent' : ''}`}
-                    style={{ background: option.color }}
-                  />
-                </button>
-              ))}
-            </div>
-          </TabPanel>
-        )}
-        {props.supportsColorControl && (
-          <TabPanel value="color" className={modes.length > 1 ? 'mt-6' : undefined}>
-            <fieldset disabled={!props.isOn} className="min-w-0 disabled:opacity-40">
-              <legend className="sr-only">{t('lighting.lightColor')}</legend>
-              <div inert={!props.isOn}>
-                <ColorPickerPanel
-                  compact
-                  value={draftColor}
-                  presets={PRESET_COLORS}
-                  onChange={(color) => {
-                    setDraftColor(color);
-                  }}
-                  onCommit={commitColor}
-                />
+        <div
+          className={modes.length > 1 ? 'mt-6 grid grid-cols-1' : 'grid grid-cols-1'}
+          hidden={visibleMode === 'effects'}
+        >
+          {props.supportsColorTemperature && (
+            <TabPanel
+              value="white"
+              className="min-w-0 col-start-1 row-start-1 space-y-3"
+              preserveLayout
+            >
+              <div className="flex h-9 items-center justify-between gap-3 text-sm">
+                <span className="font-medium">{t('lighting.warmth')}</span>
+                <span className="tabular-nums">{Math.round(props.colorTemp)} K</span>
               </div>
-            </fieldset>
-          </TabPanel>
-        )}
+              <Slider
+                value={props.colorTemp}
+                min={props.minColorTemp}
+                max={props.maxColorTemp}
+                step={100}
+                ariaLabel={t('lighting.colorTemperature')}
+                disabled={!props.isOn}
+                onValueChange={props.onTempChange}
+                onValueCommit={props.onTempCommit ?? props.onTempChange}
+                rootClassName="relative flex h-9 w-full touch-none select-none items-center"
+                trackClassName="relative h-3 grow rounded-full border border-current/10"
+                trackStyle={{
+                  background: `linear-gradient(to right, ${kelvinToColor(props.minColorTemp)}, ${kelvinToColor(props.maxColorTemp)})`,
+                  opacity: props.isOn ? 1 : 0.4,
+                }}
+                rangeStyle={{ background: 'transparent' }}
+                thumbClassName="block h-6 w-6 rounded-full border border-black/10 bg-white shadow-[0_2px_6px_#0003] outline-none focus-visible:ring-2 focus-visible:ring-current"
+              />
+              <div className="space-y-2">
+                <div
+                  className={`flex justify-between text-xs tabular-nums ${surface.textSecondary}`}
+                >
+                  <span>{props.minColorTemp} K</span>
+                  <span>{props.maxColorTemp} K</span>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {props.tempOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      disabled={!props.isOn}
+                      aria-label={`${option.label} (${option.value}K)`}
+                      aria-pressed={props.colorTemp === option.value}
+                      onClick={() => {
+                        props.onTempChange(option.value);
+                        props.onTempCommit?.(option.value);
+                      }}
+                      className="flex h-9 w-9 items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-current disabled:opacity-40"
+                    >
+                      <span
+                        className={`h-7 w-7 rounded-full border border-current/20 ${props.colorTemp === option.value ? 'ring-2 ring-current ring-offset-2 ring-offset-transparent' : ''}`}
+                        style={{ background: option.color }}
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </TabPanel>
+          )}
+          {props.supportsColorControl && (
+            <TabPanel value="color" className="min-w-0 col-start-1 row-start-1" preserveLayout>
+              <fieldset disabled={!props.isOn} className="min-w-0 disabled:opacity-40">
+                <legend className="sr-only">{t('lighting.lightColor')}</legend>
+                <div inert={!props.isOn}>
+                  <ColorPickerPanel
+                    compact
+                    showDetailedColor={false}
+                    value={draftColor}
+                    presets={PRESET_COLORS}
+                    onChange={(color) => {
+                      setDraftColor(color);
+                    }}
+                    onCommit={commitColor}
+                  />
+                </div>
+              </fieldset>
+            </TabPanel>
+          )}
+        </div>
         {props.supportsEffects && props.effectOptions.length > 0 && (
           <TabPanel value="effects" className={modes.length > 1 ? 'mt-6 space-y-2' : 'space-y-2'}>
             <p className={`text-xs ${surface.textSecondary}`}>

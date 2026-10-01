@@ -1,23 +1,18 @@
-import { CardDialogSection } from '@navet/app/components/patterns';
-import { BaseCard, BaseCardDialogWithState } from '@navet/app/components/primitives';
+import { BaseCard } from '@navet/app/components/primitives';
 import { CardMetric } from '@navet/app/components/primitives/card-metric';
 import { CardMetricActionLayout } from '@navet/app/components/primitives/card-metric-action-layout';
 import { EntityCardHeader } from '@navet/app/components/primitives/entity-card-header';
 import { EntityCardHeaderIcon } from '@navet/app/components/primitives/entity-card-header-icon';
 import { type CardSize, isCompactCardSize } from '@navet/app/components/shared/card-size-selector';
 import { getCardShellSurfaceTokens } from '@navet/app/components/shared/theme/card-shell-surface-tokens';
-import {
-  getAccentDialogSurface,
-  type PresetPrimaryColor,
-  resolvePrimaryColorToken,
-} from '@navet/app/components/shared/theme/theme-colors';
-import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
-import { type ThemeType, useI18n, useTheme } from '@navet/app/hooks';
+import { type ThemeType, useI18n } from '@navet/app/hooks';
 import type { HTMLAttributes, MouseEvent as ReactMouseEvent } from 'react';
 import { getSecurityCardSurfaceTokens } from '../security-card-surface-tokens';
 import { CoverActionRow } from './cover-action-row';
+import { CoverDragHandle, CoverPositionFill } from './cover-position-fill';
 import { CoverPositionGestureSurface } from './cover-position-gesture-surface';
 import { CoverPresetChips } from './cover-preset-chips';
+import { CoverSettingsDialog } from './cover-settings-dialog';
 import { CoverWindowVisualization } from './cover-window-visualization';
 import type { CoverIconButtonProps, DeviceClass, DeviceClassConfig } from './types';
 
@@ -31,133 +26,6 @@ type CoverColorSet = {
 
 const COVER_OPEN_TONE_THRESHOLD = 50;
 const COVER_POSITION_GESTURE_SELECTOR = '[data-cover-position-gesture="true"]';
-
-type CoverDeviceTypeAccentClasses = {
-  selectedButton: string;
-  unselectedLightButton: string;
-  unselectedDarkButton: string;
-  unselectedLightIcon: string;
-  unselectedDarkIcon: string;
-  unselectedLightIconColor: string;
-  unselectedDarkIconColor: string;
-  unselectedLightText: string;
-  unselectedDarkText: string;
-};
-
-const COVER_DEVICE_TYPE_ACCENT_CLASSES: Record<PresetPrimaryColor, CoverDeviceTypeAccentClasses> = {
-  orange: {
-    selectedButton: 'border-orange-300/70 bg-orange-400/18 shadow-lg shadow-orange-500/20',
-    unselectedLightButton:
-      'border-orange-200/80 bg-orange-50/80 hover:border-orange-300 hover:bg-orange-100/80',
-    unselectedDarkButton:
-      'border-orange-200/14 bg-orange-300/[0.045] hover:border-orange-200/26 hover:bg-orange-300/[0.075]',
-    unselectedLightIcon: 'bg-orange-100 text-orange-700',
-    unselectedDarkIcon:
-      'bg-orange-300/10 text-orange-100/78 group-hover:bg-orange-300/14 group-hover:text-orange-50',
-    unselectedLightIconColor: 'text-orange-700',
-    unselectedDarkIconColor: 'text-orange-100/78',
-    unselectedLightText: 'text-orange-950',
-    unselectedDarkText: 'text-orange-50/88',
-  },
-  blue: {
-    selectedButton: 'border-blue-300/70 bg-blue-400/18 shadow-lg shadow-blue-500/20',
-    unselectedLightButton:
-      'border-blue-200/80 bg-blue-50/80 hover:border-blue-300 hover:bg-blue-100/80',
-    unselectedDarkButton:
-      'border-blue-200/14 bg-blue-300/[0.045] hover:border-blue-200/26 hover:bg-blue-300/[0.075]',
-    unselectedLightIcon: 'bg-blue-100 text-blue-700',
-    unselectedDarkIcon:
-      'bg-blue-300/10 text-blue-100/78 group-hover:bg-blue-300/14 group-hover:text-blue-50',
-    unselectedLightIconColor: 'text-blue-700',
-    unselectedDarkIconColor: 'text-blue-100/78',
-    unselectedLightText: 'text-blue-950',
-    unselectedDarkText: 'text-blue-50/88',
-  },
-  green: {
-    selectedButton: 'border-green-300/70 bg-green-400/18 shadow-lg shadow-green-500/20',
-    unselectedLightButton:
-      'border-green-200/80 bg-green-50/80 hover:border-green-300 hover:bg-green-100/80',
-    unselectedDarkButton:
-      'border-green-200/14 bg-green-300/[0.045] hover:border-green-200/26 hover:bg-green-300/[0.075]',
-    unselectedLightIcon: 'bg-green-100 text-green-700',
-    unselectedDarkIcon:
-      'bg-green-300/10 text-green-100/78 group-hover:bg-green-300/14 group-hover:text-green-50',
-    unselectedLightIconColor: 'text-green-700',
-    unselectedDarkIconColor: 'text-green-100/78',
-    unselectedLightText: 'text-green-950',
-    unselectedDarkText: 'text-green-50/88',
-  },
-  purple: {
-    selectedButton: 'border-purple-300/70 bg-purple-400/18 shadow-lg shadow-purple-500/20',
-    unselectedLightButton:
-      'border-purple-200/80 bg-purple-50/80 hover:border-purple-300 hover:bg-purple-100/80',
-    unselectedDarkButton:
-      'border-purple-200/14 bg-purple-300/[0.045] hover:border-purple-200/26 hover:bg-purple-300/[0.075]',
-    unselectedLightIcon: 'bg-purple-100 text-purple-700',
-    unselectedDarkIcon:
-      'bg-purple-300/10 text-purple-100/78 group-hover:bg-purple-300/14 group-hover:text-purple-50',
-    unselectedLightIconColor: 'text-purple-700',
-    unselectedDarkIconColor: 'text-purple-100/78',
-    unselectedLightText: 'text-purple-950',
-    unselectedDarkText: 'text-purple-50/88',
-  },
-  pink: {
-    selectedButton: 'border-pink-300/70 bg-pink-400/18 shadow-lg shadow-pink-500/20',
-    unselectedLightButton:
-      'border-pink-200/80 bg-pink-50/80 hover:border-pink-300 hover:bg-pink-100/80',
-    unselectedDarkButton:
-      'border-pink-200/14 bg-pink-300/[0.045] hover:border-pink-200/26 hover:bg-pink-300/[0.075]',
-    unselectedLightIcon: 'bg-pink-100 text-pink-700',
-    unselectedDarkIcon:
-      'bg-pink-300/10 text-pink-100/78 group-hover:bg-pink-300/14 group-hover:text-pink-50',
-    unselectedLightIconColor: 'text-pink-700',
-    unselectedDarkIconColor: 'text-pink-100/78',
-    unselectedLightText: 'text-pink-950',
-    unselectedDarkText: 'text-pink-50/88',
-  },
-  red: {
-    selectedButton: 'border-red-300/70 bg-red-400/18 shadow-lg shadow-red-500/20',
-    unselectedLightButton:
-      'border-red-200/80 bg-red-50/80 hover:border-red-300 hover:bg-red-100/80',
-    unselectedDarkButton:
-      'border-red-200/14 bg-red-300/[0.045] hover:border-red-200/26 hover:bg-red-300/[0.075]',
-    unselectedLightIcon: 'bg-red-100 text-red-700',
-    unselectedDarkIcon:
-      'bg-red-300/10 text-red-100/78 group-hover:bg-red-300/14 group-hover:text-red-50',
-    unselectedLightIconColor: 'text-red-700',
-    unselectedDarkIconColor: 'text-red-100/78',
-    unselectedLightText: 'text-red-950',
-    unselectedDarkText: 'text-red-50/88',
-  },
-  yellow: {
-    selectedButton: 'border-yellow-300/70 bg-yellow-400/18 shadow-lg shadow-yellow-500/20',
-    unselectedLightButton:
-      'border-yellow-200/80 bg-yellow-50/80 hover:border-yellow-300 hover:bg-yellow-100/80',
-    unselectedDarkButton:
-      'border-yellow-200/14 bg-yellow-300/[0.045] hover:border-yellow-200/26 hover:bg-yellow-300/[0.075]',
-    unselectedLightIcon: 'bg-yellow-100 text-yellow-700',
-    unselectedDarkIcon:
-      'bg-yellow-300/10 text-yellow-100/78 group-hover:bg-yellow-300/14 group-hover:text-yellow-50',
-    unselectedLightIconColor: 'text-yellow-700',
-    unselectedDarkIconColor: 'text-yellow-100/78',
-    unselectedLightText: 'text-yellow-950',
-    unselectedDarkText: 'text-yellow-50/88',
-  },
-  teal: {
-    selectedButton: 'border-teal-300/70 bg-teal-400/18 shadow-lg shadow-teal-500/20',
-    unselectedLightButton:
-      'border-teal-200/80 bg-teal-50/80 hover:border-teal-300 hover:bg-teal-100/80',
-    unselectedDarkButton:
-      'border-teal-200/14 bg-teal-300/[0.045] hover:border-teal-200/26 hover:bg-teal-300/[0.075]',
-    unselectedLightIcon: 'bg-teal-100 text-teal-700',
-    unselectedDarkIcon:
-      'bg-teal-300/10 text-teal-100/78 group-hover:bg-teal-300/14 group-hover:text-teal-50',
-    unselectedLightIconColor: 'text-teal-700',
-    unselectedDarkIconColor: 'text-teal-100/78',
-    unselectedLightText: 'text-teal-950',
-    unselectedDarkText: 'text-teal-50/88',
-  },
-};
 
 function isCoverOpenTone(position: number) {
   return position > COVER_OPEN_TONE_THRESHOLD;
@@ -198,7 +66,7 @@ interface CoverCardViewProps {
 export function CoverCardView({
   entityId,
   name,
-  room: _room,
+  room,
   position,
   deviceClass,
   deviceClassConfig,
@@ -227,19 +95,12 @@ export function CoverCardView({
   setDeviceClass,
 }: CoverCardViewProps) {
   const { t } = useI18n();
-  const { primaryColor } = useTheme();
   const isSmall = isCompactCardSize(size);
   const isMedium = size === 'medium';
   const clampedPosition = Math.max(0, Math.min(100, position));
 
-  const surface = getThemeSurfaceTokens(theme);
   const cardShell = getCardShellSurfaceTokens(theme);
   const securitySurface = getSecurityCardSurfaceTokens(theme);
-  const activeDialogColor = resolvePrimaryColorToken(primaryColor);
-  const activeDialogColors = getAccentDialogSurface(activeDialogColor);
-  const deviceTypeAccent = COVER_DEVICE_TYPE_ACCENT_CLASSES[activeDialogColor];
-  const dialogContentClassName = `h-auto max-h-[85vh] animate-in fade-in zoom-in duration-200 bg-linear-to-br ${activeDialogColors.from} ${activeDialogColors.to} ${activeDialogColors.border}`;
-
   const DeviceIcon = deviceClassConfig[deviceClass].icon;
   const handleToggle = () => {
     if (clampedPosition > 0) {
@@ -276,9 +137,11 @@ export function CoverCardView({
       disableDefaultSheen
       overlay={
         <>
-          <div
-            className={`absolute inset-x-0 bottom-0 bg-linear-to-br ${openColors.gradient} transition-[height] duration-700 ease-out`}
-            style={{ height: `${clampedPosition}%` }}
+          <CoverPositionFill
+            position={clampedPosition}
+            theme={theme}
+            coverageGradient={openColors.gradient}
+            cardSize={size}
           />
           <div className={`absolute inset-0 bg-linear-to-br ${openColors.glow} to-transparent`} />
           {securitySurface.overlayClassName ? (
@@ -293,8 +156,9 @@ export function CoverCardView({
           <CoverPositionGestureSurface
             position={clampedPosition}
             ariaLabel={t('cover.ariaLabel', { name })}
-            disabled={!canSetPosition}
-            className={`absolute inset-0 z-10 rounded-[inherit] ${
+            disabled={!canSetPosition || isEditMode}
+            mapToCardBounds
+            className={`absolute ${size === 'extra-small' ? '-inset-x-2.5 -inset-y-2' : '-inset-3'} z-10 rounded-[inherit] outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-current ${
               canSetPosition ? '' : 'pointer-events-none'
             }`}
             onPreviewPosition={onPreviewPosition}
@@ -302,6 +166,9 @@ export function CoverCardView({
             onTap={isEditMode ? undefined : handleToggle}
           >
             <span className="sr-only">{t('cover.ariaLabel', { name })}</span>
+            {canSetPosition && !isEditMode && isMedium && (
+              <CoverDragHandle position={clampedPosition} theme={theme} cardSize={size} />
+            )}
           </CoverPositionGestureSurface>
         ) : null}
 
@@ -384,77 +251,26 @@ export function CoverCardView({
       </div>
 
       {isSettingsOpen ? (
-        <BaseCardDialogWithState
+        <CoverSettingsDialog
+          entityId={entityId}
+          name={name}
+          room={room}
           isOpen={isSettingsOpen}
           onOpenChange={setIsSettingsOpen}
-          title={name}
-          entityId={entityId}
-          entityType={t('cover.settings.deviceType')}
-          theme={theme}
-          disableOpenAutoFocus
-          contentClassName={dialogContentClassName}
-          controlsTabContent={
-            <CardDialogSection
-              label={t('cover.settings.deviceType')}
-              helperText={t('cover.settings.description', { name })}
-              helperTextClassName={surface.textSecondary}
-              className="mb-0"
-            >
-              <div className="grid grid-cols-2 gap-2">
-                {(Object.keys(deviceClassConfig) as DeviceClass[]).map((type) => {
-                  const config = deviceClassConfig[type];
-                  const Icon = config.icon;
-                  const isSelected = deviceClass === type;
-
-                  return (
-                    <button
-                      type="button"
-                      key={type}
-                      onClick={() => setDeviceClass(type)}
-                      className={`group flex min-h-14 items-center gap-2.5 rounded-[18px] border px-3 py-2.5 text-left transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] duration-200 ${
-                        isSelected
-                          ? deviceTypeAccent.selectedButton
-                          : theme === 'light'
-                            ? deviceTypeAccent.unselectedLightButton
-                            : deviceTypeAccent.unselectedDarkButton
-                      }`}
-                    >
-                      <span
-                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[14px] transition-colors ${
-                          isSelected
-                            ? 'bg-white/16 text-white'
-                            : theme === 'light'
-                              ? deviceTypeAccent.unselectedLightIcon
-                              : deviceTypeAccent.unselectedDarkIcon
-                        }`}
-                      >
-                        <Icon
-                          className={`h-[18px] w-[18px] ${
-                            isSelected
-                              ? 'text-white'
-                              : theme === 'light'
-                                ? deviceTypeAccent.unselectedLightIconColor
-                                : deviceTypeAccent.unselectedDarkIconColor
-                          }`}
-                        />
-                      </span>
-                      <span
-                        className={`min-w-0 flex-1 truncate text-sm font-semibold ${
-                          isSelected
-                            ? 'text-white'
-                            : theme === 'light'
-                              ? deviceTypeAccent.unselectedLightText
-                              : deviceTypeAccent.unselectedDarkText
-                        }`}
-                      >
-                        {t(config.labelKey)}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </CardDialogSection>
-          }
+          position={clampedPosition}
+          stateLabel={stateDisplay.text}
+          deviceClass={deviceClass}
+          deviceClassConfig={deviceClassConfig}
+          onDeviceClassChange={setDeviceClass}
+          onPreviewPosition={onPreviewPosition}
+          onCommitPosition={onCommitPosition}
+          onOpen={handleOpen}
+          onStop={handleStop}
+          onClose={handleClose}
+          canOpen={canOpen}
+          canStop={canStop}
+          canClose={canClose}
+          canSetPosition={canSetPosition}
         />
       ) : null}
     </BaseCard>

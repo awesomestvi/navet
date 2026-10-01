@@ -22,12 +22,20 @@ included in configuration export.
 Choose **Photo**, then select or enter the available image sources. Use images you are allowed to
 display and that the browser can reach.
 
+Open the photo card's settings to manage its sources and shuffle setting. Use **More actions**
+to **Edit room** or **Customize** its appearance. Select **Back to controls** to return to sources,
+and **Done** when finished.
+
 ## Add an RSS feed
 
 1. Choose **RSS Feed**.
 2. Enter the feed address.
 3. Choose how many items to show where available.
 4. Save and wait for the feed to load.
+
+In the RSS card's settings, open **More actions** and choose **Add feed** to add a feed or adjust the
+article count. **Edit room** and **Customize** are available in the same menu. Select
+**Back to controls** to return to your feeds. A card with no saved feeds opens directly in the feed form.
 
 Live feeds require a public HTTPS address and a signed-in Navet session. The Home Assistant add-on
 uses your authenticated Ingress session. If feed loading stops after signing out, reconnect your

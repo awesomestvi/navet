@@ -451,10 +451,8 @@ describe('LightCard', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Open settings for Desk Lamp' }));
 
     fireEvent.click(screen.getByRole('tab', { name: 'Colors' }));
-    fireEvent.click(screen.getByText('Detailed color'));
-    const settingsColorInput = screen.getByRole('textbox', { name: 'Hex color' });
-    fireEvent.change(settingsColorInput, { target: { value: '#00ff00' } });
-    fireEvent.blur(settingsColorInput);
+    expect(screen.queryByText('Detailed color')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Select color #4ECDC4' }));
     expect(colorButton).toHaveAttribute('aria-pressed', 'true');
     expect(colorButton.style.background).toContain('conic-gradient');
   });

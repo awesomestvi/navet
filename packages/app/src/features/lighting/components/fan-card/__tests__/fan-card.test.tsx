@@ -5,7 +5,7 @@ import { renderWithProviders } from '@navet/app/test/render';
 import { resetAppStores } from '@navet/app/test/store-reset';
 import type { NavetCapabilityId } from '@navet/core/capabilities';
 import type { NavetEntity } from '@navet/core/types';
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FanCard } from '..';
 
@@ -244,7 +244,29 @@ describe('FanCard', () => {
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(screen.getAllByText('Ceiling Fan').length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: 'Done' })).toBeInTheDocument();
-    expect(screen.getByDisplayValue('Fan')).toBeInTheDocument();
+    const dialog = within(screen.getByRole('dialog'));
+    expect(dialog.getByRole('slider', { name: 'Fan Speed' })).toHaveAttribute(
+      'aria-valuenow',
+      '66'
+    );
+    fireEvent.click(dialog.getByRole('button', { name: 'Fan High' }));
+    expect(serviceMock.callService).toHaveBeenCalledWith(
+      'fan',
+      'set_percentage',
+      { percentage: 100 },
+      { entity_id: 'fan.ceiling_fan' }
+    );
+    expect(dialog.getByRole('slider', { name: 'Fan Speed' })).toHaveAttribute(
+      'aria-valuenow',
+      '100'
+    );
+    fireEvent.click(dialog.getByRole('button', { name: 'Turn off' }));
+    expect(serviceMock.callService).toHaveBeenCalledWith(
+      'fan',
+      'turn_off',
+      {},
+      { entity_id: 'fan.ceiling_fan' }
+    );
   });
 
   it('uses compact speed controls and settings on extra-small cards', () => {

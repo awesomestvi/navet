@@ -8,7 +8,7 @@ import {
 import { useI18n, useTheme } from '@navet/app/hooks';
 import type { ThemeType } from '@navet/app/hooks/use-theme';
 import { Palette, Plus, Sliders } from 'lucide-react';
-import { type CSSProperties, useMemo, useState } from 'react';
+import { type CSSProperties, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { RSSCardTabContent } from './rss-card-tab-content';
 import { RSSFeedsTabContent } from './rss-feeds-tab-content';
@@ -65,6 +65,9 @@ export function RSSFeedSettingsDialog({
   const [providerName, setProviderName] = useState('');
   const [providerUrl, setProviderUrl] = useState('');
   const [activeTab, setActiveTab] = useState(hasProviders ? 'feeds' : 'setup');
+  useEffect(() => {
+    if (!isOpen) setActiveTab(hasProviders ? 'feeds' : 'setup');
+  }, [isOpen, hasProviders]);
   const hasProviderDraft = providerName.trim().length > 0 || providerUrl.trim().length > 0;
   const canAddProvider = providerName.trim().length > 0 && providerUrl.trim().length > 0;
   const activeAccentColor = resolvedTintColor ?? primaryColorValue;
@@ -146,7 +149,7 @@ export function RSSFeedSettingsDialog({
       },
       {
         key: 'setup',
-        label: t('rss.settings.setupTab'),
+        label: t('rss.settings.addFeed'),
         icon: Plus,
         content: (
           <div className="space-y-4">
@@ -214,7 +217,14 @@ export function RSSFeedSettingsDialog({
       isOpen={isOpen}
       onOpenChange={handleOpenChange}
       title={title}
-      tabs={tabs}
+      tabs={
+        hasProviders
+          ? tabs
+          : [
+              ...tabs.filter((tab) => tab.key === 'setup'),
+              ...tabs.filter((tab) => tab.key !== 'setup'),
+            ]
+      }
       theme={theme}
       roomSelector={{
         value: roomValue,
@@ -225,9 +235,9 @@ export function RSSFeedSettingsDialog({
       editableTitle={false}
       activeTab={activeTab}
       onActiveTabChange={setActiveTab}
-      maxWidth="lg"
+      maxWidth="md"
+      height="capped"
       scrollClassName="max-sm:max-h-[calc(100dvh-3rem)] max-sm:min-h-0 max-sm:flex-1"
-      headerClassName="max-sm:mb-3"
       footerContent={
         <CardDialogFooter className="px-0 max-sm:pb-[calc(env(safe-area-inset-bottom,0px)+0.5rem)]">
           <Button variant="secondary" onClick={() => handleOpenChange(false)}>

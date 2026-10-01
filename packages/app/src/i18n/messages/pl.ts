@@ -2354,6 +2354,7 @@ export const plMessages = {
   'deviceType.sensorGroup': 'Grupa czujników',
   'common.close': 'Zamknij',
   'lighting.backToControls': 'Wróć do sterowania',
+  'common.backToControls': 'Wróć do sterowania',
   'entityNameEditor.editCardName': 'Edytuj nazwę karty',
   'entityNameEditor.edit': 'Edytuj {name}',
   'entityNameEditor.inputLabel': 'Nazwa karty',
@@ -2466,14 +2467,14 @@ export const plMessages = {
   'widgets.photoFrame.settings.title': 'Źródła zdjęć',
   'widgets.photoFrame.settings.source': 'Źródło',
   'widgets.photoFrame.settings.sourceUrls': 'Adresy URL',
-  'widgets.photoFrame.settings.sourceHomeAssistant': 'Media Home Assistant',
+  'widgets.photoFrame.settings.sourceProviderMedia': 'Media dostawcy',
   'widgets.photoFrame.settings.shuffle': 'Losowa kolejność zdjęć',
   'widgets.photoFrame.settings.shuffleDescription':
     'Automatycznie wyświetlaj zdjęcia w losowej kolejności.',
   'widgets.photoFrame.settings.addUrl': 'Dodaj adres URL',
   'widgets.photoFrame.settings.photos': 'Zdjęcia',
   'widgets.photoFrame.settings.urlPlaceholder': 'https://example.com/photo.jpg',
-  'widgets.photoFrame.settings.homeAssistantMedia': 'Media Home Assistant',
+  'widgets.photoFrame.settings.providerMedia': 'Media dostawcy',
   'widgets.photoFrame.settings.homeAssistantMediaPlaceholder':
     'media-source://media_source/local/family',
   'widgets.photoFrame.settings.homeAssistantMediaDescription':
@@ -3236,7 +3237,6 @@ export const plMessages = {
   'widgets.generic.unknown': 'Nieznane',
   'widgets.generic.entity': 'Encja',
   'rss.settings.feedsTab': 'Kanały RSS',
-  'rss.settings.setupTab': 'Konfiguracja',
   'energy.model.home': 'Dom',
   'sensorGroup.sample.bathroom': 'Łazienka',
   'sensorGroup.sample.kitchen': 'Kuchnia',

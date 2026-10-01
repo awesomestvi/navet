@@ -42,6 +42,8 @@ interface CardRendererOptions {
   headerSubtitleOverride?: string;
   presentationVariant?: 'media-stack';
   mediaStackSettings?: MediaDialogMediaStackSettings;
+  onRemoveCard?: () => void;
+  removeCardLabel?: string;
 }
 
 type CardRenderFn = (options: CardRendererOptions) => ReactElement | null;
@@ -357,8 +359,10 @@ function EntityAvailabilityFrame({
 }
 
 const cardRegistry: Partial<Record<string, CardRenderFn>> = {
-  lights: ({ device, size, handleSizeChange, isEditMode }) => (
+  lights: ({ device, size, handleSizeChange, isEditMode, onRemoveCard, removeCardLabel }) => (
     <LightCard
+      onRemoveCard={onRemoveCard}
+      removeCardLabel={removeCardLabel}
       id={device.id as string}
       name={device.name as string}
       room={device.room as string}

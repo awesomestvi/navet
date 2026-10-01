@@ -5,6 +5,7 @@ import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import { SettingsDialogStoryFrame } from '@navet/app/storybook/story-frames';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
+import { expect, within } from 'storybook/test';
 import { WeatherSettingsDialog } from './weather-settings-dialog';
 
 function WeatherSettingsDialogStory() {
@@ -77,3 +78,29 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
+
+export const SelectableControls: Story = {
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole('button', { name: 'Open weather dialog' }));
+    const dialog = within(await within(document.body).findByRole('dialog'));
+    await userEvent.click(dialog.getByRole('checkbox', { name: 'Weekly' }));
+    await expect(dialog.getByRole('checkbox', { name: 'Weekly' })).toBeChecked();
+    await expect(dialog.getByRole('checkbox', { name: 'Hourly' })).not.toBeChecked();
+    await userEvent.click(dialog.getByRole('checkbox', { name: 'Weekly' }));
+    await expect(dialog.getByRole('checkbox', { name: 'Weekly' })).toBeChecked();
+    await userEvent.click(dialog.getByRole('checkbox', { name: 'Feels like' }));
+    await userEvent.click(dialog.getByRole('checkbox', { name: 'Gusts' }));
+    await expect(dialog.getByRole('checkbox', { name: 'Pressure' })).toBeDisabled();
+    await userEvent.click(dialog.getByRole('checkbox', { name: 'Precipitation' }));
+    await expect(dialog.getByRole('checkbox', { name: 'Pressure' })).toBeEnabled();
+    for (const name of ['Humidity', 'Wind', 'Feels like']) {
+      await userEvent.click(dialog.getByRole('checkbox', { name }));
+    }
+    await expect(dialog.getByRole('checkbox', { name: 'Gusts' })).toBeChecked();
+    await expect(dialog.getByRole('checkbox', { name: 'Gusts' })).toBeDisabled();
+  },
+};
+export const MobileSelectableControls: Story = {
+  ...SelectableControls,
+  globals: { viewport: { value: 'mobile1', isRotated: false } },
+};
