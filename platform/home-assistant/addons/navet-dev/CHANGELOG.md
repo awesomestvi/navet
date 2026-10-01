@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.17.5-beta.2
+
+## New features
+
+- Add actionable chore alerts, shareable weekly reports, and Home Assistant calendar and automation actions.
+- Add recurring badges and personal achievements with durable progress awards and optional points.
+- Request household rewards, review them, and track point spending, fulfillment, and refunds in shared chore history.
+- Add fair rotation, standby coverage, flexible schedules, claim rules, and reviewed vacation rescheduling.
+
+## Improvements and bug fixes
+
+- Preserve large chore ledgers and unfinished work in durable storage so accumulated history cannot block household actions.
+- Room chore summaries open the Household dashboard, keeping device controls in predictable positions.
+
 ## 0.17.5-beta.1
 
 ## New features
