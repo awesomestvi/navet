@@ -16,7 +16,7 @@ async function setup(options = {}) {
   const request = {
     source: 'github:issue:42', requestId: 'event:123', mode: 'implement', revision: 'scope-v1',
     authority: { actor: 'maintainer', reference: 'verified-event', observedAt: now },
-    brief: { acceptanceCriteria: ['Settings survive save and reopen.'] }, requiredGates: ['ci', 'visual'],
+    brief: { outcome: 'Persist settings.', acceptanceCriteria: ['Settings survive save and reopen.'] }, requiredGates: ['ci', 'visual'],
   };
   const task = await store.enqueue(request);
   const owner = 'coordinator-thread';
@@ -40,6 +40,24 @@ describe('durable agent task lifecycle', () => {
     expect(await store.list()).toHaveLength(1);
     await expect(store.enqueue({ ...request, revision: 'scope-v2' })).rejects.toThrow('different scope');
     expect((await stat(path.join(directory, 'tasks.json'))).mode & 0o777).toBe(0o600);
+  });
+
+  it('rejects changed briefs, gates and authority while allowing fresh observations of identical scope', async () => {
+    const { store, request } = await setup();
+    for (const replacement of [
+      { brief: { ...request.brief, acceptanceCriteria: ['Delete persisted settings.'] } },
+      { brief: { ...request.brief, exclusions: ['Skip persistence verification.'] } },
+      { requiredGates: ['ci'] },
+      { authority: { ...request.authority, actor: 'different-maintainer' } },
+      { authority: { ...request.authority, reference: 'different-event' } },
+    ]) await expect(store.enqueue({ ...request, ...replacement })).rejects.toThrow('different scope');
+    const repeated = await store.enqueue({ ...request,
+      brief: { acceptanceCriteria: [...request.brief.acceptanceCriteria], outcome: request.brief.outcome },
+      requiredGates: ['visual', 'output', 'ci', 'ci'],
+      authority: { ...request.authority, observedAt: 999_999 },
+    });
+    expect(repeated.brief).toEqual(request.brief);
+    expect(await store.list()).toHaveLength(1);
   });
 
   it('preserves dispatch intent across restart and distinguishes pending setup from a delivery handle', async () => {
