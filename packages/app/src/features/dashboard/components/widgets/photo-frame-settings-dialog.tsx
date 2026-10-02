@@ -92,7 +92,7 @@ export function PhotoFrameSettingsDialog({
             size="compact"
             onClick={() => onSourceModeChange('home-assistant')}
           >
-            {t('widgets.photoFrame.settings.sourceHomeAssistant')}
+            {t('widgets.photoFrame.settings.sourceProviderMedia')}
           </CardDialogChoicePill>
         </div>
       </CardDialogSection>
@@ -182,7 +182,7 @@ export function PhotoFrameSettingsDialog({
         </>
       ) : (
         <CardDialogSection
-          label={t('widgets.photoFrame.settings.homeAssistantMedia')}
+          label={t('widgets.photoFrame.settings.providerMedia')}
           helperText={t('widgets.photoFrame.settings.homeAssistantMediaDescription')}
         >
           <Input

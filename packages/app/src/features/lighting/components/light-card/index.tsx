@@ -32,6 +32,8 @@ interface LightCardProps {
   isEditMode: boolean;
   cardTapAction?: 'toggle' | 'controls';
   presentation?: 'card' | 'table-row';
+  onRemoveCard?: () => void;
+  removeCardLabel?: string;
 }
 
 function resolveLightCardSize(size: CardSize): CardSize {
@@ -51,6 +53,8 @@ export const LightCard = memo(function LightCard({
   isEditMode,
   cardTapAction,
   presentation = 'card',
+  onRemoveCard,
+  removeCardLabel,
 }: LightCardProps) {
   const { theme, colors, accentColor } = useTheme();
   const { ambientLightBleed, lowPowerMode, effectsQuality } = useSettingsStore(
@@ -353,11 +357,15 @@ export const LightCard = memo(function LightCard({
 
       {controller.isOpen ? (
         <LightSettingsDialog
+          onRemoveCard={onRemoveCard}
+          removeCardLabel={removeCardLabel}
           entityId={id}
           isOpen={controller.isOpen}
           onOpenChange={controller.onOpenChange}
           name={name}
+          room={room}
           isOn={controller.isOn}
+          onPowerChange={controller.onPowerChange}
           supportsBrightness={controller.supportsBrightness}
           supportsColorTemperature={controller.supportsColorTemperature}
           supportsColorControl={controller.supportsColorControl}

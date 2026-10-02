@@ -4,6 +4,7 @@ import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import { EntityCardStoryFrame, noopCardSizeChange } from '@navet/app/storybook/story-frames';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { ComponentProps } from 'react';
+import { expect, within } from 'storybook/test';
 
 function FanCardStory(args: Omit<ComponentProps<typeof FanCard>, 'onSizeChange'>) {
   return (
@@ -171,4 +172,32 @@ export const Docs: Story = {
   parameters: {
     docsOnly: true,
   },
+};
+
+export const ControlsDialog: Story = {
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole('button', { name: /Open settings for/i }));
+    const scope = within(await within(document.body).findByRole('dialog'));
+    await expect(scope.getByRole('slider', { name: 'Fan Speed' })).toHaveAttribute(
+      'aria-valuenow',
+      '66'
+    );
+    await userEvent.click(scope.getByRole('button', { name: 'Fan High' }));
+    await expect(scope.getByRole('slider', { name: 'Fan Speed' })).toHaveAttribute(
+      'aria-valuenow',
+      '100'
+    );
+    await userEvent.click(scope.getByRole('button', { name: 'Turn off' }));
+    await expect(scope.getByRole('button', { name: 'Turn on' })).toBeInTheDocument();
+    await userEvent.click(scope.getByRole('button', { name: 'More actions' }));
+    const menu = within(await within(document.body).findByRole('menu'));
+    await userEvent.click(menu.getByRole('menuitem', { name: 'Customize' }));
+    await userEvent.click(scope.getByRole('button', { name: 'Back to controls' }));
+    await expect(scope.getByRole('button', { name: 'More actions' })).toBeInTheDocument();
+  },
+};
+
+export const MobileControlsDialog: Story = {
+  ...ControlsDialog,
+  globals: { viewport: { value: 'mobile1', isRotated: false } },
 };

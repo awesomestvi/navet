@@ -1,3 +1,5 @@
+import { dispatchEntityCommand } from '@navet/app/commands';
+import * as topologyHooks from '@navet/app/hooks/use-registry-device-topology';
 import { homeAssistantStore } from '@navet/app/stores/home-assistant-store';
 import { integrationStore } from '@navet/app/stores/integration-store';
 import { fanEntityFactory } from '@navet/app/test/fixtures/home-assistant/entities/fan';
@@ -5,7 +7,7 @@ import { renderWithProviders } from '@navet/app/test/render';
 import { resetAppStores } from '@navet/app/test/store-reset';
 import type { NavetCapabilityId } from '@navet/core/capabilities';
 import type { NavetEntity } from '@navet/core/types';
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FanCard } from '..';
 
@@ -27,31 +29,33 @@ vi.mock('@navet/app/services/home-assistant.service', () => ({
 }));
 
 vi.mock('@navet/app/commands', () => ({
-  dispatchEntityCommand: async ({
-    type,
-    entityId,
-    percentage,
-  }: {
-    type: 'turn_on' | 'turn_off' | 'set_fan_speed';
-    entityId: string;
-    percentage?: number;
-  }) => {
-    const domain = entityId.split('.', 1)[0] || 'fan';
-    if (type === 'set_fan_speed') {
-      await serviceMock.callService(
-        'fan',
-        'set_percentage',
-        { percentage },
-        { entity_id: entityId }
-      );
-    } else {
-      await serviceMock.callService(domain, type, {}, { entity_id: entityId });
+  dispatchEntityCommand: vi.fn(
+    async ({
+      type,
+      entityId,
+      percentage,
+    }: {
+      type: 'turn_on' | 'turn_off' | 'set_fan_speed';
+      entityId: string;
+      percentage?: number;
+    }) => {
+      const domain = entityId.split('.', 1)[0] || 'fan';
+      if (type === 'set_fan_speed') {
+        await serviceMock.callService(
+          'fan',
+          'set_percentage',
+          { percentage },
+          { entity_id: entityId }
+        );
+      } else {
+        await serviceMock.callService(domain, type, {}, { entity_id: entityId });
+      }
+      return {
+        accepted: true,
+        requiresEventConfirmation: true,
+      };
     }
-    return {
-      accepted: true,
-      requiresEventConfirmation: true,
-    };
-  },
+  ),
 }));
 
 vi.mock('@navet/app/services/integration-native-action.service', () => ({
@@ -244,7 +248,73 @@ describe('FanCard', () => {
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(screen.getAllByText('Ceiling Fan').length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: 'Done' })).toBeInTheDocument();
-    expect(screen.getByDisplayValue('Fan')).toBeInTheDocument();
+    const dialog = within(screen.getByRole('dialog'));
+    expect(dialog.getByRole('slider', { name: 'Fan Speed' })).toHaveAttribute(
+      'aria-valuenow',
+      '66'
+    );
+    fireEvent.click(dialog.getByRole('button', { name: 'Fan High' }));
+    expect(serviceMock.callService).toHaveBeenCalledWith(
+      'fan',
+      'set_percentage',
+      { percentage: 100 },
+      { entity_id: 'fan.ceiling_fan' }
+    );
+    expect(dialog.getByRole('slider', { name: 'Fan Speed' })).toHaveAttribute(
+      'aria-valuenow',
+      '100'
+    );
+    fireEvent.click(dialog.getByRole('button', { name: 'Turn off' }));
+    expect(serviceMock.callService).toHaveBeenCalledWith(
+      'fan',
+      'turn_off',
+      {},
+      { entity_id: 'fan.ceiling_fan' }
+    );
+  });
+
+  it('routes sibling toggles to the fan owner when another provider is current', async () => {
+    setFanProviderEntity(['toggle', 'fan_speed']);
+    integrationStore.setState({ currentProviderId: 'openhab' });
+    homeAssistantStore.setState({
+      entities: {
+        'fan.ceiling_fan': createFanEntity(66),
+        'switch.fan_light': {
+          ...createFanEntity(0, 'off'),
+          entity_id: 'switch.fan_light',
+          attributes: { friendly_name: 'Fan light' },
+        },
+      },
+    });
+    const topology = vi.spyOn(topologyHooks, 'useProviderClimateTopology').mockReturnValue({
+      deviceId: 'fan-device',
+      siblingIds: ['switch.fan_light'],
+    });
+    try {
+      renderWithProviders(
+        <FanCard
+          id="home_assistant:fan.ceiling_fan"
+          name="Ceiling Fan"
+          room="Bedroom"
+          providerId="home_assistant"
+          initialState
+          initialPercentage={66}
+          size="medium"
+          onSizeChange={vi.fn()}
+          isEditMode={false}
+        />
+      );
+      fireEvent.click(screen.getByRole('button', { name: 'Open settings for Ceiling Fan' }));
+      fireEvent.click(
+        within(screen.getByRole('dialog')).getByRole('button', { name: 'Fan light' })
+      );
+      expect(dispatchEntityCommand).toHaveBeenCalledWith(
+        { type: 'turn_on', entityId: 'switch.fan_light' },
+        'home_assistant'
+      );
+    } finally {
+      topology.mockRestore();
+    }
   });
 
   it('uses compact speed controls and settings on extra-small cards', () => {

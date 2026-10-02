@@ -6,6 +6,7 @@ import {
   CardDialogTabList,
   CardDialogTabTrigger,
 } from '@navet/app/components/patterns/card-dialog';
+import { CardDialogOverflowMenu } from '@navet/app/components/patterns/card-dialog-overflow-menu';
 import { Button } from '@navet/app/components/primitives/button';
 import {
   coverSheetHeaderClassName,
@@ -15,6 +16,7 @@ import { TabPanel, Tabs } from '@navet/app/components/primitives/tabs';
 import { CompactRoomSelector } from '@navet/app/components/shared/device-editor/compact-room-selector';
 import { CustomCardTintPicker } from '@navet/app/components/shared/device-editor/custom-card-tint-picker';
 import { CustomScrollbar } from '@navet/app/components/shared/device-editor/custom-scrollbar';
+import { EntityRoomSelector } from '@navet/app/components/shared/entity-room-selector';
 import { getBaseCardDialogSurface } from '@navet/app/components/shared/theme/base-card-dialog-surface';
 import { getInheritedDialogSectionStyle } from '@navet/app/components/shared/theme/custom-card-tint-surface';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
@@ -22,7 +24,7 @@ import { cn } from '@navet/app/components/ui/utils';
 import { useI18n, useTheme } from '@navet/app/hooks';
 import type { ThemeType } from '@navet/app/hooks/use-theme';
 import * as Dialog from '@radix-ui/react-dialog';
-import { type LucideIcon, Palette, Sliders, X } from 'lucide-react';
+import { ArrowLeft, type LucideIcon, MapPin, Palette, Sliders, X } from 'lucide-react';
 import type { CSSProperties, ReactNode, PointerEvent as ReactPointerEvent } from 'react';
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
@@ -81,9 +83,20 @@ interface BaseCardDialogCardProps extends BaseCardDialogSharedProps {
   roomSelectorFallbackRoomName?: string;
   editableTitle?: boolean;
   onTitleChange?: (title: string) => void | Promise<void>;
+  headerEyebrow?: ReactNode;
+  headerPresentation?: 'default' | 'compact';
+  titleEditing?: boolean;
+  onTitleEditingChange?: (editing: boolean) => void;
+  showTabList?: boolean;
+  /** Defaults to overflow: controls first, secondary sections and card management in More actions. */
+  navigation?: 'tabs' | 'overflow';
+  onRemoveCard?: () => void;
+  removeCardLabel?: string;
+  mobileCoverSheetActions?: ReactNode;
   headerSupportingContent?: ReactNode;
   headerTrailing?: ReactNode;
   headerClassName?: string;
+  showHeaderDivider?: boolean;
   contentSurface?: { panel: string; border: string };
   activeTab?: string;
   defaultTab?: string;
@@ -533,9 +546,19 @@ function BaseCardDialogCardVariant({
   roomSelectorFallbackRoomName,
   editableTitle = true,
   onTitleChange,
+  headerEyebrow,
+  headerPresentation,
+  titleEditing,
+  onTitleEditingChange,
+  showTabList = true,
+  navigation = 'overflow',
+  onRemoveCard,
+  removeCardLabel,
+  mobileCoverSheetActions,
   headerSupportingContent,
   headerTrailing,
   headerClassName,
+  showHeaderDivider = true,
   bodyClassName,
   scrollClassName,
   contentSurface,
@@ -556,10 +579,41 @@ function BaseCardDialogCardVariant({
   const { accentColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const dialogSurface = contentSurface ?? getBaseCardDialogSurface(theme);
-  const firstTabKey = tabs[0]?.key;
-  const shouldRenderTabs = tabs.length > 1;
+  const overflowNavigation = navigation === 'overflow';
+  const [internalTitleEditing, setInternalTitleEditing] = useState(false);
+  const resolvedTitleEditing = titleEditing ?? internalTitleEditing;
+  const handleTitleEditingChange = (editing: boolean) => {
+    setInternalTitleEditing(editing);
+    onTitleEditingChange?.(editing);
+  };
+  const dialogTabs =
+    overflowNavigation &&
+    !tabs.some((tab) => tab.key === 'room') &&
+    (entityId || roomSelector?.onChange)
+      ? [
+          ...tabs,
+          {
+            key: 'room',
+            label: t('dashboard.roomsWorkspace.editRoom'),
+            icon: MapPin,
+            content: roomSelector ? (
+              getWidgetRoomSelector(roomSelector, theme)
+            ) : (
+              <EntityRoomSelector
+                entityId={entityId ?? ''}
+                fallbackRoomName={roomSelectorFallbackRoomName}
+              />
+            ),
+          },
+        ]
+      : tabs;
+  const firstTabKey = dialogTabs[0]?.key;
+  const shouldRenderTabs = dialogTabs.length > 1;
   const [internalActiveTab, setInternalActiveTab] = useState(defaultTab ?? firstTabKey ?? '');
-  const resolvedActiveTab = activeTab ?? internalActiveTab;
+  const requestedTab = activeTab ?? internalActiveTab;
+  const resolvedActiveTab = dialogTabs.some((tab) => tab.key === requestedTab)
+    ? requestedTab
+    : (firstTabKey ?? '');
   const resolvedDescription = description ?? entityType;
 
   useEffect(() => {
@@ -571,6 +625,13 @@ function BaseCardDialogCardVariant({
     if (!isOpen || activeTab !== undefined || !resolvedActiveTab) return;
     setInternalActiveTab(resolvedActiveTab);
   }, [activeTab, isOpen, resolvedActiveTab]);
+
+  useEffect(() => {
+    if (!isOpen && overflowNavigation) {
+      setInternalActiveTab(firstTabKey ?? '');
+      setInternalTitleEditing(false);
+    }
+  }, [isOpen, overflowNavigation, firstTabKey]);
 
   const handleActiveTabChange = (nextTab: string) => {
     if (activeTab === undefined) setInternalActiveTab(nextTab);
@@ -595,33 +656,80 @@ function BaseCardDialogCardVariant({
     contentClassName
   );
 
+  const canEditName = Boolean(editableTitle && (entityId || onTitleChange));
+  const hasOverflowActions = dialogTabs.length > 1 || canEditName || entityId || onRemoveCard;
+  const menu =
+    overflowNavigation && hasOverflowActions ? (
+      <CardDialogOverflowMenu
+        theme={theme}
+        sections={dialogTabs.slice(1)}
+        onSectionChange={handleActiveTabChange}
+        onEditName={
+          canEditName
+            ? () => {
+                handleActiveTabChange(firstTabKey ?? '');
+                handleTitleEditingChange(true);
+              }
+            : undefined
+        }
+        entityId={entityId}
+        onRemoveCard={
+          onRemoveCard
+            ? () => {
+                onOpenChange(false);
+                onRemoveCard();
+              }
+            : undefined
+        }
+        removeCardLabel={removeCardLabel}
+      />
+    ) : null;
+  const readOnlyRoom = roomSelector ? (
+    <span className={`truncate text-xs font-medium ${surface.textSecondary}`}>
+      {roomSelector.label}
+    </span>
+  ) : entityId ? (
+    <EntityRoomSelector
+      entityId={entityId}
+      fallbackRoomName={roomSelectorFallbackRoomName}
+      readOnly
+      className={`truncate text-xs font-medium ${surface.textSecondary}`}
+    />
+  ) : null;
+
   const cardHeader = (
     <header
       data-card-dialog-header
       className={cn(
         coverSheetHeaderClassName,
-        'shrink-0 border-b max-sm:pt-2 max-sm:pr-4',
-        dialogSurface.border
+        'shrink-0 max-sm:pt-2 max-sm:pr-4',
+        overflowNavigation && 'pb-0 sm:pb-0',
+        !overflowNavigation && showHeaderDivider && ['border-b', dialogSurface.border]
       )}
     >
       <CardDialogHeader
+        presentation={overflowNavigation ? 'compact' : headerPresentation}
+        titleEditing={resolvedTitleEditing}
+        onTitleEditingChange={handleTitleEditingChange}
         title={title}
         description={resolvedDescription}
         entityId={roomSelector ? undefined : entityId}
-        eyebrow={widgetRoomSelector}
-        showRoomSelector={!roomSelector}
+        eyebrow={headerEyebrow ?? (overflowNavigation ? readOnlyRoom : widgetRoomSelector)}
+        showRoomSelector={!overflowNavigation && !roomSelector}
         theme={theme}
         roomSelectorFallbackRoomName={roomSelectorFallbackRoomName}
         editableTitle={editableTitle}
         onTitleChange={onTitleChange}
         supportingContent={headerSupportingContent}
-        trailing={headerTrailing}
-        className={cn('mb-0 max-sm:pr-0', headerClassName)}
+        trailing={
+          overflowNavigation ? <div className="hidden sm:block">{menu}</div> : headerTrailing
+        }
+        className={cn('mb-0', overflowNavigation ? 'max-sm:pr-24' : 'max-sm:pr-0', headerClassName)}
       />
 
-      {shouldRenderTabs ? (
+      {shouldRenderTabs && showTabList && !overflowNavigation ? (
         <CardDialogTabList className="mt-3 mb-0 flex flex-wrap gap-2">
-          {tabs.map((tab) => (
+          {dialogTabs.map((tab) => (
             <CardDialogTabTrigger
               key={tab.key}
               active={resolvedActiveTab === tab.key}
@@ -636,15 +744,37 @@ function BaseCardDialogCardVariant({
     </header>
   );
 
+  const renderSectionContent = (tab: BaseCardDialogTab) =>
+    overflowNavigation && tab.key !== firstTabKey ? (
+      <div className="space-y-4">
+        <Button
+          variant="soft"
+          size="compact"
+          leading={<ArrowLeft className="h-4 w-4" />}
+          onClick={() => handleActiveTabChange(firstTabKey ?? '')}
+        >
+          {t('common.backToControls')}
+        </Button>
+        {tab.content}
+      </div>
+    ) : (
+      tab.content
+    );
   const cardBody = (
     <CardDialogBody className={bodyClassName}>
-      {shouldRenderTabs
-        ? tabs.map((tab) => (
-            <TabPanel key={tab.key} value={tab.key}>
-              {tab.content}
-            </TabPanel>
+      {overflowNavigation
+        ? dialogTabs.map((tab) => (
+            <section key={tab.key} aria-label={tab.label} hidden={tab.key !== resolvedActiveTab}>
+              {renderSectionContent(tab)}
+            </section>
           ))
-        : (tabs[0]?.content ?? null)}
+        : shouldRenderTabs
+          ? dialogTabs.map((tab) => (
+              <TabPanel key={tab.key} value={tab.key}>
+                {tab.content}
+              </TabPanel>
+            ))
+          : (dialogTabs[0]?.content ?? null)}
 
       {footerContent ? (
         footerContent
@@ -674,6 +804,7 @@ function BaseCardDialogCardVariant({
       contentOverlayStyle={contentOverlayStyle}
       persistentMobileDismiss
       mobileDismissStyle={paletteControlStyle}
+      mobileCoverSheetActions={overflowNavigation ? menu : mobileCoverSheetActions}
     >
       <CustomScrollbar
         isOn={theme !== 'light'}

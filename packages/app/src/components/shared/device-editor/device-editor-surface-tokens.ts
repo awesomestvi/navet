@@ -1,4 +1,28 @@
-export function getDeviceEditorSurfaceTokens(isOn: boolean) {
+import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
+import type { ThemeType } from '@navet/app/hooks/use-theme';
+
+export function getDeviceEditorSurfaceTokens(isOn: boolean, theme?: ThemeType) {
+  if (theme) {
+    const surface = getThemeSurfaceTokens(theme);
+    return {
+      sectionLabelClassName: surface.textSecondary,
+      sectionValueClassName: surface.textPrimary,
+      titleClassName: surface.textPrimary,
+      descriptionClassName: surface.textSecondary,
+      closeButtonClassName: `${surface.subtleBg} ${surface.hoverBg}`,
+      closeIconClassName: surface.textSecondary,
+      settingPanelClassName: `${surface.border} ${surface.subtleBg}`,
+      settingLabelClassName: surface.textPrimary,
+      settingDescriptionClassName: surface.textSecondary,
+      dragHandleClassName: `${surface.textSecondary} cursor-grab active:cursor-grabbing`,
+      iconChipClassName: surface.iconBg,
+      iconClassName: surface.textPrimary,
+      inputClassName: `${surface.borderStrong} ${surface.inputBg} ${surface.textPrimary}`,
+      suffixClassName: surface.textSecondary,
+      disabledCircleClassName: 'cursor-not-allowed opacity-50',
+      disabledSurfaceColor: '#4a4a4a',
+    };
+  }
   return {
     sectionLabelClassName: isOn ? 'text-gray-200' : 'text-gray-600',
     sectionValueClassName: isOn ? 'text-white' : 'text-gray-700',

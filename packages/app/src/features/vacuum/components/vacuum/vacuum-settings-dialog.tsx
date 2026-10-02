@@ -1,13 +1,9 @@
+import { CardDialogFooter, CardDialogSection } from '@navet/app/components/patterns';
+import { Button } from '@navet/app/components/primitives/button';
 import {
-  CardDialogBody,
-  CardDialogFooter,
-  CardDialogHeader,
-  CardDialogSection,
-  CardDialogTabList,
-  CardDialogTabTrigger,
-} from '@navet/app/components/patterns';
-import { Button, coverSheetHeaderClassName, ModalSurface } from '@navet/app/components/primitives';
-import { TabPanel, Tabs } from '@navet/app/components/primitives/tabs';
+  BaseCardDialog,
+  type BaseCardDialogTab,
+} from '@navet/app/components/primitives/Cards/BaseCardDialog';
 import { CustomCardTintPicker } from '@navet/app/components/shared/device-editor';
 import {
   getInheritedDialogSectionStyle,
@@ -15,7 +11,6 @@ import {
   withTintAlpha,
 } from '@navet/app/components/shared/theme/custom-card-tint-surface';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
-import { cn } from '@navet/app/components/ui/utils';
 import { useI18n } from '@navet/app/hooks';
 import type { ThemeType } from '@navet/app/hooks/use-theme';
 import { getEntityTypeLabel } from '@navet/app/utils/entity-type-label';
@@ -220,76 +215,14 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
     onClose();
   };
 
-  return (
-    <ModalSurface
-      isOpen={isOpen}
-      titleInContent
-      onOpenChange={(open) => {
-        if (!open) {
-          onClose();
-        }
-      }}
-      title={name}
-      description={entityType}
-      disableOpenAutoFocus
-      mobileCoverSheet
-      bodyClassName="vacuum-settings-dialog-body relative flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain"
-      overlayClassName={surface.dialogBackdrop}
-      contentClassName="flex h-auto max-h-[85vh] max-w-md flex-col"
-    >
-      <Tabs value={activeTab} defaultValue="controls" onValueChange={handleTabChange}>
-        <header
-          data-card-dialog-header
-          className={cn(
-            coverSheetHeaderClassName,
-            'shrink-0 border-b max-sm:pt-2 max-sm:pr-4',
-            surface.border
-          )}
-        >
-          <CardDialogHeader
-            title={name}
-            description={entityType}
-            entityId={entityId}
-            roomSelectorFallbackRoomName={room}
-            theme={theme}
-            className="mb-0 max-sm:pr-0"
-          />
-
-          <CardDialogTabList className="mt-3 mb-0 flex flex-wrap gap-2">
-            {shouldShowControlsTab ? (
-              <CardDialogTabTrigger
-                active={activeTab === 'controls'}
-                accentColor={activeControlColor}
-                icon={Sliders}
-                onClick={() => setActiveTab('controls')}
-              >
-                {t('common.controls')}
-              </CardDialogTabTrigger>
-            ) : null}
-            {shouldShowMapTab ? (
-              <CardDialogTabTrigger
-                active={activeTab === 'map'}
-                accentColor={activeControlColor}
-                icon={MapIcon}
-                onClick={() => setActiveTab('map')}
-              >
-                {t('vacuum.settings.map')}
-              </CardDialogTabTrigger>
-            ) : null}
-            <CardDialogTabTrigger
-              active={activeTab === 'card'}
-              accentColor={activeControlColor}
-              icon={Palette}
-              onClick={() => setActiveTab('card')}
-            >
-              {t('common.customize')}
-            </CardDialogTabTrigger>
-          </CardDialogTabList>
-        </header>
-
-        <CardDialogBody>
-          {shouldShowControlsTab ? (
-            <TabPanel value="controls" className="space-y-5">
+  const tabs: BaseCardDialogTab[] = [
+    ...(shouldShowControlsTab
+      ? [
+          {
+            key: 'controls',
+            label: t('common.controls'),
+            icon: Sliders,
+            content: (
               <VacuumCleaningControls
                 isLawnMower={isLawnMower}
                 fanSpeed={selectedFanSpeed}
@@ -306,14 +239,20 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
                 capabilities={capabilities}
                 accentColor={activeControlColor}
               />
-            </TabPanel>
-          ) : null}
-
-          {shouldShowMapTab ? (
-            <TabPanel value="map">
+            ),
+          },
+        ]
+      : []),
+    ...(shouldShowMapTab
+      ? [
+          {
+            key: 'map',
+            label: t('vacuum.settings.map'),
+            icon: MapIcon,
+            content: (
               <CardDialogSection className="mb-0">
-                <div className="mb-0">
-                  <div className="text-sm font-medium text-white">{t('vacuum.settings.plan')}</div>
+                <div className={`text-sm font-medium ${surface.textPrimary}`}>
+                  {t('vacuum.settings.plan')}
                 </div>
                 <VacuumPlannerSection
                   availableAreas={cleaningAreas}
@@ -324,33 +263,58 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
                   activePillStyle={activePillStyle}
                 />
               </CardDialogSection>
-            </TabPanel>
-          ) : null}
+            ),
+          },
+        ]
+      : []),
+    {
+      key: 'card',
+      label: t('common.customize'),
+      icon: Palette,
+      content: (
+        <CustomCardTintPicker
+          value={resolvedTintColor}
+          onChange={handleTintChange}
+          isOn={theme !== 'light'}
+          defaultColor={accentColorValue}
+        />
+      ),
+    },
+  ];
 
-          <TabPanel value="card">
-            <CustomCardTintPicker
-              value={resolvedTintColor}
-              onChange={handleTintChange}
-              isOn={theme !== 'light'}
-              defaultColor={accentColorValue}
-            />
-          </TabPanel>
-
-          <CardDialogFooter className="mt-6 items-center justify-end gap-2">
-            <Button variant="soft" onClick={onClose}>
-              {t('common.cancel')}
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={handlePlannerStart}
-              className={theme !== 'light' ? 'border-white/10 bg-white/8 hover:bg-white/12' : ''}
-              style={softControlStyle}
-            >
-              {startActionLabel}
-            </Button>
-          </CardDialogFooter>
-        </CardDialogBody>
-      </Tabs>
-    </ModalSurface>
+  return (
+    <BaseCardDialog
+      isOpen={isOpen}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      title={name}
+      entityId={entityId}
+      entityType={entityType}
+      roomSelectorFallbackRoomName={room}
+      theme={theme}
+      tintColor={resolvedTintColor}
+      defaultTintAccent={accentColorValue}
+      disableOpenAutoFocus
+      height="capped"
+      tabs={tabs}
+      activeTab={activeTab}
+      onActiveTabChange={handleTabChange}
+      footerContent={
+        <CardDialogFooter className="mt-6 items-center justify-end gap-2">
+          <Button variant="soft" onClick={onClose}>
+            {t('common.cancel')}
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={handlePlannerStart}
+            className={theme !== 'light' ? 'border-white/10 bg-white/8 hover:bg-white/12' : ''}
+            style={softControlStyle}
+          >
+            {startActionLabel}
+          </Button>
+        </CardDialogFooter>
+      }
+    />
   );
 });

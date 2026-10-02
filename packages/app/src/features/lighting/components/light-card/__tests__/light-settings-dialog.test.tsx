@@ -14,6 +14,7 @@ describe('LightSettingsDialog', () => {
         onOpenChange={vi.fn()}
         name="Desk Lamp"
         isOn
+        onPowerChange={vi.fn()}
         supportsBrightness
         supportsColorTemperature={false}
         supportsColorControl={false}
@@ -52,20 +53,23 @@ describe('LightSettingsDialog', () => {
 
     expect(screen.getByText('Current effect: Rainbow')).toBeInTheDocument();
 
-    fireEvent.pointerDown(screen.getByRole('button', { name: 'Rainbow' }));
-    fireEvent.click(screen.getByRole('menuitemradio', { name: 'Fire' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Fire' }));
 
     expect(onEffectSelect).toHaveBeenCalledWith('Fire');
   });
 
-  it('hides brightness controls and presets for on-off only lights', () => {
+  it('hides brightness controls and presets for on-off only lights and exposes card hiding', () => {
+    const onRemoveCard = vi.fn();
+    const onOpenChange = vi.fn();
     renderWithProviders(
       <LightSettingsDialog
         entityId="light.porch"
         isOpen
-        onOpenChange={vi.fn()}
+        onOpenChange={onOpenChange}
+        onRemoveCard={onRemoveCard}
         name="Porch Light"
         isOn={false}
+        onPowerChange={vi.fn()}
         supportsBrightness={false}
         supportsColorTemperature={false}
         supportsColorControl={false}
@@ -105,6 +109,12 @@ describe('LightSettingsDialog', () => {
       backgroundColor: 'rgba(107, 114, 128, 0.14)',
       borderColor: 'rgba(107, 114, 128, 0.24)',
     });
-    expect(screen.getByRole('combobox', { name: 'Room' })).toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: 'Room' })).not.toBeInTheDocument();
+    fireEvent.keyDown(screen.getAllByRole('button', { name: 'More actions' })[0], { key: 'Enter' });
+    const hideAction = screen.getByRole('menuitem', { name: 'Hide' });
+    expect(hideAction).toHaveAttribute('data-variant', 'destructive');
+    fireEvent.click(hideAction);
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+    expect(onRemoveCard).toHaveBeenCalledTimes(1);
   });
 });

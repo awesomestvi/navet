@@ -5,6 +5,7 @@ import { SettingsDialogStoryFrame } from '@navet/app/storybook/story-frames';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { ComponentProps } from 'react';
 import { useEffect, useState } from 'react';
+import { expect, userEvent, within } from 'storybook/test';
 import { VacuumSettingsDialog } from './vacuum-settings-dialog';
 
 function VacuumSettingsDialogStory(
@@ -169,4 +170,38 @@ export const OrderedAreaCleaning: Story = {
       ],
     },
   },
+};
+
+export const OverflowNavigation: Story = {
+  play: async ({ canvasElement }) => {
+    const page = within(document.body);
+    await userEvent.click(
+      within(canvasElement).getByRole('button', { name: 'Open vacuum dialog' })
+    );
+    const dialog = within(await page.findByRole('dialog', { name: 'Robo Cleaner' }));
+    await expect(dialog.getByRole('button', { name: 'Standard' })).toBeVisible();
+    await expect(dialog.queryByRole('tablist')).not.toBeInTheDocument();
+    await userEvent.click(dialog.getByRole('button', { name: 'More actions' }));
+    await userEvent.click(page.getByRole('menuitem', { name: 'Map' }));
+    await userEvent.click(dialog.getByRole('button', { name: /^Kitchen/ }));
+    await expect(dialog.getByText('1 selected')).toBeVisible();
+    await userEvent.click(dialog.getByRole('button', { name: 'Back to controls' }));
+    await expect(dialog.getByRole('button', { name: 'Standard' })).toBeVisible();
+    await userEvent.click(dialog.getByRole('button', { name: 'More actions' }));
+    await userEvent.click(page.getByRole('menuitem', { name: 'Customize' }));
+    await expect(dialog.getByRole('button', { name: 'Back to controls' })).toBeVisible();
+    await userEvent.click(dialog.getByRole('button', { name: 'Cancel' }));
+    await userEvent.click(
+      within(canvasElement).getByRole('button', { name: 'Open vacuum dialog' })
+    );
+    await expect(
+      within(await page.findByRole('dialog')).getByRole('button', { name: 'Standard' })
+    ).toBeVisible();
+    await userEvent.click(within(page.getByRole('dialog')).getByRole('button', { name: 'Cancel' }));
+  },
+};
+
+export const MobileOverflowNavigation: Story = {
+  ...OverflowNavigation,
+  globals: { viewport: { value: 'mobile1', isRotated: false } },
 };

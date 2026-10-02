@@ -284,11 +284,12 @@ export const TabTrigger = forwardRef<HTMLButtonElement, TabTriggerProps>(functio
 
 export interface TabPanelProps extends HTMLAttributes<HTMLDivElement> {
   value: string;
+  preserveLayout?: boolean;
   children: ReactNode;
 }
 
 export const TabPanel = forwardRef<HTMLDivElement, TabPanelProps>(function TabPanel(
-  { value, className, children, ...props },
+  { value, className, children, preserveLayout = false, style, ...props },
   ref
 ) {
   const { value: currentValue, baseId } = useTabsContext();
@@ -303,8 +304,11 @@ export const TabPanel = forwardRef<HTMLDivElement, TabPanelProps>(function TabPa
       id={panelId}
       role="tabpanel"
       aria-labelledby={triggerId}
-      hidden={!isActive}
-      className={cn(isActive ? 'block' : 'hidden', className)}
+      hidden={!isActive && !preserveLayout}
+      aria-hidden={preserveLayout && !isActive ? true : props['aria-hidden']}
+      inert={preserveLayout && !isActive ? true : props.inert}
+      style={{ ...style, ...(preserveLayout && !isActive ? { visibility: 'hidden' } : {}) }}
+      className={cn(isActive || preserveLayout ? 'block' : 'hidden', className)}
     >
       {children}
     </div>

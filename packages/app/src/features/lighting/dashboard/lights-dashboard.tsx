@@ -87,6 +87,8 @@ const RoomLightCard = memo(function RoomLightCard({
     >
       {light.available ? (
         <LightCard
+          onRemoveCard={onRemoveEntity ? () => onRemoveEntity(light.id) : undefined}
+          removeCardLabel={t('dashboard.roomsWorkspace.hideDevice')}
           id={light.id}
           name={light.name}
           room={light.room}

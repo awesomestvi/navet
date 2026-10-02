@@ -31,6 +31,7 @@ export function SelectableCheckboxList({
 }
 
 export interface SelectableCheckboxRowProps {
+  size?: 'default' | 'compact';
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
   label: ReactNode;
@@ -56,6 +57,7 @@ export interface SelectableCheckboxRowProps {
 }
 
 export function SelectableCheckboxRow({
+  size = 'default',
   checked,
   onCheckedChange,
   label,
@@ -91,7 +93,8 @@ export function SelectableCheckboxRow({
   return (
     <div
       className={cn(
-        'flex min-h-14 min-w-0 max-w-full items-center gap-3 px-4 py-3 transition-colors motion-reduce:transition-none',
+        'flex min-w-0 max-w-full items-center transition-colors motion-reduce:transition-none',
+        size === 'compact' ? 'min-h-10 gap-2 px-3 py-1' : 'min-h-14 gap-3 px-4 py-3',
         surface.textPrimary,
         surface.hoverBg,
         disabled && 'opacity-50',
@@ -107,11 +110,17 @@ export function SelectableCheckboxRow({
       <label
         htmlFor={checkboxId}
         className={cn(
-          'flex min-w-0 flex-1 cursor-pointer items-center gap-3 text-left',
+          'flex min-w-0 flex-1 cursor-pointer items-center text-left',
+          size === 'compact' ? 'gap-2' : 'gap-3',
           disabled && 'cursor-not-allowed'
         )}
       >
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center">
+        <span
+          className={cn(
+            'flex shrink-0 items-center justify-center',
+            size === 'compact' ? 'h-8 w-8' : 'h-9 w-9'
+          )}
+        >
           <Checkbox
             id={checkboxId}
             checked={checked}

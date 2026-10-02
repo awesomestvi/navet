@@ -170,12 +170,12 @@ describe('LightCard', () => {
       entityId: 'light.desk_lamp',
     });
     expect(card).toHaveAttribute('aria-pressed', 'false');
-    expect(screen.queryByText('Controls')).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: 'Desk Lamp' })).not.toBeInTheDocument();
 
     fireEvent.click(card);
 
     expect(dispatchEntityCommandMock).toHaveBeenCalledTimes(1);
-    expect(screen.getByText('Controls')).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Desk Lamp' })).toBeInTheDocument();
   });
 
   it('can open controls from the card while preserving the global toggle-first preference', () => {
@@ -206,7 +206,7 @@ describe('LightCard', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Desk Lamp' }));
 
     expect(dispatchEntityCommandMock).not.toHaveBeenCalled();
-    expect(screen.getByText('Controls')).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Desk Lamp' })).toBeInTheDocument();
   });
 
   it('keeps room-list controls compact while exposing brightness for active lights', () => {
@@ -251,7 +251,7 @@ describe('LightCard', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Desk Lamp' }));
 
-    expect(screen.getByText('Controls')).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Desk Lamp' })).toBeInTheDocument();
   });
 
   it('shows the effect picker on medium cards and sends effect selections to Home Assistant', async () => {
@@ -354,7 +354,7 @@ describe('LightCard', () => {
       },
     });
 
-    const { container } = renderWithProviders(
+    renderWithProviders(
       <LightCard
         id="light.desk_lamp"
         name="Desk Lamp"
@@ -369,12 +369,12 @@ describe('LightCard', () => {
     );
 
     const colorButton = screen.getByRole('button', { name: 'Choose custom color' });
-    const colorInput = container.querySelector('input[type="color"]');
-    expect(colorInput).not.toBeNull();
-
     fireEvent.click(colorButton);
-    fireEvent.change(colorInput as HTMLInputElement, { target: { value: '#00ff00' } });
-    fireEvent.pointerDown(document.body);
+    fireEvent.click(screen.getByText('Detailed color'));
+    const colorInput = screen.getByRole('textbox', { name: 'Hex color' });
+    fireEvent.change(colorInput, { target: { value: '#00ff00' } });
+    fireEvent.blur(colorInput);
+    fireEvent.keyDown(colorInput, { key: 'Escape' });
 
     expect(colorButton).toHaveAttribute('aria-pressed', 'true');
     expect(colorButton.style.background).toContain('conic-gradient');
@@ -389,7 +389,7 @@ describe('LightCard', () => {
       },
     });
 
-    const { container } = renderWithProviders(
+    renderWithProviders(
       <LightCard
         id="light.desk_lamp"
         name="Desk Lamp"
@@ -404,15 +404,20 @@ describe('LightCard', () => {
     );
 
     const colorButton = screen.getByRole('button', { name: 'Choose custom color' });
-    const colorInput = container.querySelector('input[type="color"]');
-    expect(colorInput).not.toBeNull();
-    fireEvent.change(colorInput as HTMLInputElement, { target: { value: '#00ff00' } });
+    fireEvent.click(colorButton);
+    fireEvent.click(screen.getByText('Detailed color'));
+    const colorInput = screen.getByRole('textbox', { name: 'Hex color' });
+    fireEvent.change(colorInput, { target: { value: '#00ff00' } });
+    fireEvent.blur(colorInput);
+    fireEvent.keyDown(colorInput, { key: 'Escape' });
 
     const temperatureButton = screen.getByRole('button', { name: /color temperature/i });
     fireEvent.click(temperatureButton);
-    expect(temperatureButton).toHaveAttribute('aria-pressed', 'true');
+    expect(temperatureButton).toHaveAttribute('aria-expanded', 'true');
 
-    fireEvent.pointerDown(document.body);
+    fireEvent.keyDown(screen.getByRole('slider', { name: /color temperature/i }), {
+      key: 'Escape',
+    });
 
     expect(temperatureButton).toHaveAttribute('aria-pressed', 'false');
     expect(colorButton).toHaveAttribute('aria-pressed', 'true');
@@ -445,12 +450,9 @@ describe('LightCard', () => {
     const colorButton = screen.getByRole('button', { name: 'Choose custom color' });
     fireEvent.click(screen.getByRole('button', { name: 'Open settings for Desk Lamp' }));
 
-    const settingsColorInput = document.querySelector(
-      'input[type="color"][aria-label="Custom color picker"]'
-    );
-    expect(settingsColorInput).not.toBeNull();
-    fireEvent.change(settingsColorInput as HTMLInputElement, { target: { value: '#00ff00' } });
-
+    fireEvent.click(screen.getByRole('tab', { name: 'Colors' }));
+    expect(screen.queryByText('Detailed color')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Select color #4ECDC4' }));
     expect(colorButton).toHaveAttribute('aria-pressed', 'true');
     expect(colorButton.style.background).toContain('conic-gradient');
   });

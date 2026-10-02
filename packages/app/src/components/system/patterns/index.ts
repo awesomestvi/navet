@@ -11,4 +11,5 @@ export {
   SettingsLivePreviewFrame,
   TableCellContent,
 } from '@navet/app/components/patterns';
+export { CardDialogOverflowMenu } from '@navet/app/components/patterns/card-dialog-overflow-menu';
 export { MessageBar, type MessageBarProps } from '@navet/app/components/primitives/message-bar';

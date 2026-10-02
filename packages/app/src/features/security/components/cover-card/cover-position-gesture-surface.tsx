@@ -10,6 +10,7 @@ interface CoverPositionGestureSurfaceProps {
   position: number;
   ariaLabel: string;
   disabled?: boolean;
+  mapToCardBounds?: boolean;
   className?: string;
   children: ReactNode;
   onPreviewPosition: (newPosition: number) => void;
@@ -23,8 +24,10 @@ function clampPosition(value: number) {
 
 const DRAG_START_THRESHOLD_PX = 4;
 
-function getGestureMappingBounds(element: HTMLElement) {
-  const cardRoot = element.closest<HTMLElement>('[data-cover-card-root="true"]');
+function getGestureMappingBounds(element: HTMLElement, mapToCardBounds: boolean) {
+  const cardRoot = mapToCardBounds
+    ? element.closest<HTMLElement>('[data-cover-card-root="true"]')
+    : null;
   const cardBounds = cardRoot?.getBoundingClientRect();
 
   if (cardBounds && cardBounds.height > 1) {
@@ -50,6 +53,7 @@ export function CoverPositionGestureSurface({
   position,
   ariaLabel,
   disabled = false,
+  mapToCardBounds = false,
   className = '',
   children,
   onPreviewPosition,
@@ -63,6 +67,7 @@ export function CoverPositionGestureSurface({
   const heightRef = useRef(1);
   const previewPositionRef = useRef(position);
   const hasDraggedRef = useRef(false);
+  const dragFromHandleRef = useRef(false);
 
   const previewFromClientY = useCallback(
     (clientY: number) => {
@@ -74,7 +79,11 @@ export function CoverPositionGestureSurface({
         hasDraggedRef.current = true;
       }
       const pointerY = Math.max(0, Math.min(heightRef.current, clientY - surfaceTopRef.current));
-      const nextPosition = clampPosition(100 - (pointerY / heightRef.current) * 100);
+      const nextPosition = clampPosition(
+        dragFromHandleRef.current
+          ? startPositionRef.current - (deltaY / heightRef.current) * 100
+          : 100 - (pointerY / heightRef.current) * 100
+      );
       previewPositionRef.current = nextPosition;
       onPreviewPosition(nextPosition);
     },
@@ -89,8 +98,12 @@ export function CoverPositionGestureSurface({
     event.preventDefault();
     event.stopPropagation();
 
-    const bounds = getGestureMappingBounds(event.currentTarget);
+    const dragFromHandle =
+      event.target instanceof Element &&
+      event.target.closest('[data-cover-position-handle]') !== null;
+    const bounds = getGestureMappingBounds(event.currentTarget, mapToCardBounds && !dragFromHandle);
     pointerIdRef.current = event.pointerId;
+    dragFromHandleRef.current = dragFromHandle;
     startYRef.current = event.clientY;
     startPositionRef.current = position;
     previewPositionRef.current = position;
@@ -184,6 +197,7 @@ export function CoverPositionGestureSurface({
       role="slider"
       tabIndex={disabled ? -1 : 0}
       aria-label={ariaLabel}
+      aria-orientation="vertical"
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={position}

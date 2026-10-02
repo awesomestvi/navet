@@ -1,3 +1,4 @@
+export { CardDialogOverflowMenu } from '@navet/app/components/patterns/card-dialog-overflow-menu';
 export {
   AttentionBand,
   type AttentionBandItem,

@@ -42,8 +42,16 @@ Pinning keeps the card in the device list. To restore a hidden device first, use
 
 ## Control a lock or cover
 
-Open the card, confirm the target, then use the supported action. Slide or swipe confirmation can
-be required for lock state changes.
+For a lock, open the card, confirm the target, then use the supported action. Slide or swipe
+confirmation can be required for lock state changes.
+
+For a cover, select the card's settings button to open its controls. Use **Open**, **Stop**, or
+**Close** when the device supports them. For covers with position control, drag the handle on the card or the larger position control
+in its dialog, then release to apply the change. The shaded fill shows the closed portion: 72% open leaves 28% covered. Dragging upward opens the cover further. You can also select a percentage preset.
+
+The three-dot menu provides **Edit room**, **Edit card name**, and **Customize**. Choose
+**Customize** to set the cover's device type, such as blind, curtain, or garage door.
+Select **Back to controls** to return, and **Done** when finished.
 
 ## Arm or disarm an alarm
 

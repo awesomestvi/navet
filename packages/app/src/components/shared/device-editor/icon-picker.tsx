@@ -7,6 +7,7 @@ import {
   resolveLightIconComponent,
 } from '@navet/app/constants/icon-map';
 import { useI18n, useTheme } from '@navet/app/hooks';
+import type { ThemeType } from '@navet/app/hooks/use-theme';
 import type { TranslationKey } from '@navet/app/i18n';
 import {
   Circle,
@@ -45,6 +46,7 @@ interface IconPickerProps {
   selectedIcon: string;
   onIconChange: (iconName: string) => void;
   isLightOn: boolean;
+  surfaceTheme?: ThemeType;
   label?: string;
   accentColor?: string;
   inputVariant?: InputProps['variant'];
@@ -94,6 +96,7 @@ export const IconPicker = memo(function IconPicker({
   selectedIcon,
   onIconChange,
   isLightOn,
+  surfaceTheme,
   label,
   accentColor,
   inputVariant = 'soft',
@@ -101,7 +104,7 @@ export const IconPicker = memo(function IconPicker({
   const { primaryColor } = useTheme();
   const { t } = useI18n();
   const activeColor = accentColor ?? getThemeColorValue(primaryColor);
-  const editorSurface = getDeviceEditorSurfaceTokens(isLightOn);
+  const editorSurface = getDeviceEditorSurfaceTokens(isLightOn, surfaceTheme);
   const normalizedIconName = normalizeLightIconName(selectedIcon);
   const customIconComponent = normalizedIconName
     ? resolveLightIconComponent(normalizedIconName)
@@ -137,11 +140,11 @@ export const IconPicker = memo(function IconPicker({
           >
             {IconComponent ? (
               <IconComponent
-                className={`h-4 w-4 ${isLightOn ? 'text-white' : editorSurface.closeIconClassName}`}
+                className={`h-4 w-4 ${surfaceTheme ? editorSurface.iconClassName : isLightOn ? 'text-white' : editorSurface.closeIconClassName}`}
               />
             ) : (
               <span
-                className={`text-sm leading-none ${isLightOn ? 'text-white' : editorSurface.closeIconClassName}`}
+                className={`text-sm leading-none ${surfaceTheme ? editorSurface.iconClassName : isLightOn ? 'text-white' : editorSurface.closeIconClassName}`}
               >
                 {isEmojiIcon ? selectedIcon.trim() : '•'}
               </span>
@@ -165,7 +168,11 @@ export const IconPicker = memo(function IconPicker({
           target="_blank"
           rel="noreferrer"
           className={`inline-flex items-center gap-2 text-xs font-medium underline underline-offset-4 ${
-            isLightOn ? 'text-white/80 hover:text-white' : editorSurface.sectionLabelClassName
+            surfaceTheme
+              ? editorSurface.sectionLabelClassName
+              : isLightOn
+                ? 'text-white/80 hover:text-white'
+                : editorSurface.sectionLabelClassName
           }`}
         >
           {t('lighting.lucideIconLibrary')}

@@ -177,7 +177,7 @@ describe('WidgetCard info widget', () => {
     expect(screen.getByPlaceholderText('Search sensors...')).toBeInTheDocument();
   });
 
-  it('updates the custom card name and room from the settings header', async () => {
+  it('updates the custom card name and room through the shared overflow menu', async () => {
     const onUpdate = vi.fn();
 
     renderWithProviders(
@@ -195,11 +195,14 @@ describe('WidgetCard info widget', () => {
     );
 
     fireEvent.click(await screen.findByRole('button', { name: 'Customize' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Edit Info' }));
-    fireEvent.change(screen.getByLabelText('Card name'), {
+    fireEvent.keyDown(screen.getAllByRole('button', { name: 'More actions' })[0], { key: 'Enter' });
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Edit card name' }));
+    fireEvent.change(await screen.findByLabelText('Card name'), {
       target: { value: 'Kitchen sensors' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Save card name' }));
+    fireEvent.keyDown(screen.getAllByRole('button', { name: 'More actions' })[0], { key: 'Enter' });
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Edit room' }));
     fireEvent.change(screen.getByLabelText('Room'), { target: { value: '__home__' } });
 
     expect(onUpdate).toHaveBeenCalledWith('custom-info', {

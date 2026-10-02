@@ -3,6 +3,7 @@ import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import { SettingsDialogStoryFrame } from '@navet/app/storybook/story-frames';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
+import { expect, within } from 'storybook/test';
 import { ClimateSettingsDialog } from './index';
 
 function ClimateSettingsDialogStory() {
@@ -62,4 +63,20 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {};
+export const Default: Story = {
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole('button', { name: 'Open Climate dialog' }));
+    const dialog = within(await within(document.body).findByRole('dialog'));
+    await userEvent.click(dialog.getByRole('button', { name: 'More actions' }));
+    await expect(within(document.body).getByRole('menuitem', { name: 'Edit room' })).toBeVisible();
+    await userEvent.click(within(document.body).getByRole('menuitem', { name: 'Controls' }));
+    await userEvent.click(dialog.getByRole('button', { name: 'Back to controls' }));
+    await expect(
+      dialog.queryByRole('button', { name: 'Back to controls' })
+    ).not.toBeInTheDocument();
+  },
+};
+export const Mobile: Story = {
+  ...Default,
+  globals: { viewport: { value: 'mobile1', isRotated: false } },
+};

@@ -32,6 +32,8 @@ describe('VacuumSettingsDialog', () => {
       />
     );
 
+    fireEvent.keyDown(screen.getAllByRole('button', { name: 'More actions' })[0], { key: 'Enter' });
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Edit room' }));
     expect(entityRoomSelectorMock.mock.calls[0]?.[0]).toEqual(
       expect.objectContaining({
         entityId: 'vacuum.roborock',
@@ -79,8 +81,8 @@ describe('VacuumSettingsDialog', () => {
 
     const dialog = screen.getByRole('dialog');
     expect(dialog).toHaveClass(
-      'flex',
-      'flex-col',
+      'max-sm:!flex',
+      'max-sm:!flex-col',
       'max-h-[85vh]',
       'max-sm:!h-[80dvh]',
       'max-sm:!rounded-t-[30px]',
@@ -96,11 +98,9 @@ describe('VacuumSettingsDialog', () => {
       'py-3',
       'max-sm:pt-2',
       'max-sm:pr-4',
-      'border-b'
+      'pb-0'
     );
-    expect(
-      document.body.querySelector('.relative.flex.min-h-0.flex-1.flex-col.overflow-y-auto')
-    ).not.toBeNull();
+    expect(dialog.querySelector('[dir="ltr"]')).not.toBeNull();
   });
 
   it('renders the footer as part of the scrollable dialog body', () => {
@@ -142,9 +142,7 @@ describe('VacuumSettingsDialog', () => {
 
     const startButton = screen.getByRole('button', { name: 'Start Cleaning' });
     const cancelButton = screen.getByRole('button', { name: 'Cancel' });
-    const scrollRoot = document.body.querySelector(
-      '.relative.flex.min-h-0.flex-1.flex-col.overflow-y-auto'
-    );
+    const scrollRoot = screen.getByRole('dialog').querySelector('[dir="ltr"]');
     const footer = startButton.closest('.mt-6.flex.justify-end');
 
     expect(scrollRoot).not.toBeNull();
@@ -189,7 +187,9 @@ describe('VacuumSettingsDialog', () => {
       />
     );
 
-    expect(screen.getByRole('button', { name: 'Map' })).toBeInTheDocument();
+    fireEvent.keyDown(screen.getAllByRole('button', { name: 'More actions' })[0], { key: 'Enter' });
+    expect(screen.getByRole('menuitem', { name: 'Map' })).toBeInTheDocument();
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' });
 
     rerender(
       <VacuumSettingsDialog
@@ -225,7 +225,8 @@ describe('VacuumSettingsDialog', () => {
       />
     );
 
-    expect(screen.queryByRole('button', { name: 'Map' })).not.toBeInTheDocument();
+    fireEvent.keyDown(screen.getAllByRole('button', { name: 'More actions' })[0], { key: 'Enter' });
+    expect(screen.queryByRole('menuitem', { name: 'Map' })).not.toBeInTheDocument();
   });
 
   it('selects areas in the map tab and starts area cleaning from controls', () => {
@@ -267,7 +268,8 @@ describe('VacuumSettingsDialog', () => {
       />
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Map' }));
+    fireEvent.keyDown(screen.getAllByRole('button', { name: 'More actions' })[0], { key: 'Enter' });
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Map' }));
     fireEvent.click(screen.getByRole('button', { name: /^Kitchen/ }));
     fireEvent.click(screen.getByRole('button', { name: /^Hallway/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Start Cleaning' }));
@@ -313,7 +315,8 @@ describe('VacuumSettingsDialog', () => {
       />
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Map' }));
+    fireEvent.keyDown(screen.getAllByRole('button', { name: 'More actions' })[0], { key: 'Enter' });
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Map' }));
     fireEvent.click(screen.getByRole('button', { name: /^Kitchen/ }));
     expect(screen.getByText('1 selected')).toBeInTheDocument();
     expect(screen.getByText('Stop 1')).toBeInTheDocument();
@@ -395,7 +398,8 @@ describe('VacuumSettingsDialog', () => {
       />
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Map' }));
+    fireEvent.keyDown(screen.getAllByRole('button', { name: 'More actions' })[0], { key: 'Enter' });
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Map' }));
     fireEvent.click(screen.getByRole('button', { name: /^Kitchen/ }));
 
     expect(screen.getByText('Stop 1')).toBeInTheDocument();
@@ -438,9 +442,10 @@ describe('VacuumSettingsDialog', () => {
       />
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Map' }));
+    fireEvent.keyDown(screen.getAllByRole('button', { name: 'More actions' })[0], { key: 'Enter' });
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Map' }));
     expect(
-      within(screen.getByRole('tabpanel')).getByRole('button', { name: /^Kitchen/ })
+      within(screen.getByRole('region', { name: 'Map' })).getByRole('button', { name: /^Kitchen/ })
     ).toBeInTheDocument();
 
     rerender(
@@ -479,7 +484,7 @@ describe('VacuumSettingsDialog', () => {
     );
 
     expect(
-      within(screen.getByRole('tabpanel')).getByRole('button', { name: /^Kitchen/ })
+      within(screen.getByRole('region', { name: 'Map' })).getByRole('button', { name: /^Kitchen/ })
     ).toBeInTheDocument();
   });
 

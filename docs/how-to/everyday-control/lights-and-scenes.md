@@ -34,7 +34,32 @@ Open the light card to use available controls:
 - Color.
 - Saved brightness or temperature presets.
 
-The card only shows controls supported by the entity.
+The card only shows controls supported by the entity. Turn the light on, then select the palette
+button to choose a color with the hue strip or a preset swatch. Select **Detailed color** to adjust
+saturation and brightness or enter a six-digit hex color such as `#ff8800`. Drag changes apply when
+you release the control; hex changes apply when you leave the field or close the picker.
+
+Select the thermometer button to adjust **Warmth** in Kelvin (K). Lower values give warmer light
+and higher values give cooler light. The strip's range matches the light's capabilities.
+Brightness stays available on the card while either picker is open.
+
+## Light dialog
+
+Open a light's controls dialog for a larger brightness slider, named brightness presets, and a
+power button. Drag the vertical slider up to brighten the light or down to dim it. Select a preset
+to apply its brightness immediately.
+
+Choose **Warmth**, **Colors**, or **Effects** below the brightness controls. Only supported controls
+appear. Turn the light on to adjust them. In **Colors**, use the hue strip or a preset.
+In **Effects**, select an effect or **No effect**.
+
+The header shows the room and light state above the card name. Open the three-dot menu beside
+Close to **Edit room**, **Edit card name**, manage **Presets**, or
+**Customize** the card's tint or icon. The entity ID appears at the bottom of the menu.
+Choose **Hide** or **Remove** to remove the card from its dashboard view. For a card placed in
+the Home layout, choose **Remove from home**.
+Select **Back to controls** to return to the light controls.
+Select **Done** or close the dialog when finished.
 
 ## Switch card measurements
 

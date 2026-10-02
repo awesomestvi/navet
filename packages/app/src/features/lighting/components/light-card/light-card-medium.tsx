@@ -1,4 +1,4 @@
-import { BrightnessSlider, KelvinSlider } from '@navet/app/components/shared/device-editor';
+import { BrightnessSlider } from '@navet/app/components/shared/device-editor';
 import type { LucideIcon } from 'lucide-react';
 import { memo } from 'react';
 import { LightCardActionRow } from './light-card-action-row';
@@ -98,19 +98,7 @@ export const LightCardMedium = memo(function LightCardMedium({
       />
 
       <div className="flex-1 flex flex-col justify-end gap-4">
-        {isKelvinMode && supportsColorTemperature ? (
-          <KelvinSlider
-            value={colorTemp}
-            currentTempColor={currentTempColor}
-            onChange={onTempChange}
-            onCommit={onTempCommit}
-            isOn={isOn}
-            min={minColorTemp}
-            max={maxColorTemp}
-            size="medium"
-            activeColor={activeColor}
-          />
-        ) : supportsBrightness ? (
+        {supportsBrightness ? (
           <BrightnessSlider
             value={brightness}
             onChange={onBrightnessChange}
@@ -139,6 +127,13 @@ export const LightCardMedium = memo(function LightCardMedium({
           brightness={brightness}
           currentEffect={currentEffect}
           onKelvinToggle={onKelvinToggle}
+          temperature={{
+            value: colorTemp,
+            min: minColorTemp,
+            max: maxColorTemp,
+            onChange: onTempChange,
+            onCommit: onTempCommit,
+          }}
           onColorActivate={onColorActivate}
           onColorChange={onColorChange}
           onEffectSelect={onEffectSelect}

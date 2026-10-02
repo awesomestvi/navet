@@ -3,7 +3,7 @@ import {
   type CardSize,
   isExtraSmallCardSize,
 } from '@navet/app/components/shared/card-size-selector';
-import { BrightnessSlider, KelvinSlider } from '@navet/app/components/shared/device-editor';
+import { BrightnessSlider } from '@navet/app/components/shared/device-editor';
 import { useTheme } from '@navet/app/hooks';
 import type { LucideIcon } from 'lucide-react';
 import { memo } from 'react';
@@ -173,20 +173,7 @@ export const LightCardSmall = memo(function LightCardSmall({
       <div
         className={`flex-1 flex flex-col ${isExtraSmall ? 'justify-end gap-2' : 'justify-end gap-4'}`}
       >
-        {!isExtraSmall && isKelvinMode && supportsColorTemperature ? (
-          <KelvinSlider
-            value={colorTemp}
-            currentTempColor={currentTempColor}
-            onChange={onTempChange}
-            onCommit={onTempCommit}
-            isOn={isOn}
-            min={minColorTemp}
-            max={maxColorTemp}
-            size="small"
-            showLabel
-            activeColor={activeColor}
-          />
-        ) : !isExtraSmall && supportsBrightness ? (
+        {!isExtraSmall && supportsBrightness ? (
           <BrightnessSlider
             value={brightness}
             onChange={onBrightnessChange}
@@ -217,6 +204,13 @@ export const LightCardSmall = memo(function LightCardSmall({
             brightness={brightness}
             currentEffect={currentEffect}
             onKelvinToggle={onKelvinToggle}
+            temperature={{
+              value: colorTemp,
+              min: minColorTemp,
+              max: maxColorTemp,
+              onChange: onTempChange,
+              onCommit: onTempCommit,
+            }}
             onColorActivate={onColorActivate}
             onColorChange={onColorChange}
             onEffectSelect={onEffectSelect}

@@ -202,7 +202,8 @@ describe('ClimateSettingsDialog', () => {
       ],
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /^Controls$/ }));
+    fireEvent.keyDown(screen.getAllByRole('button', { name: 'More actions' })[0], { key: 'Enter' });
+    fireEvent.click(screen.getByRole('menuitem', { name: /^Controls$/ }));
 
     expect(screen.getByText('Fan')).toBeInTheDocument();
     expect(screen.getByText('Fan · 50%')).toBeInTheDocument();
@@ -250,7 +251,8 @@ describe('ClimateSettingsDialog', () => {
       ],
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /^Controls$/ }));
+    fireEvent.keyDown(screen.getAllByRole('button', { name: 'More actions' })[0], { key: 'Enter' });
+    fireEvent.click(screen.getByRole('menuitem', { name: /^Controls$/ }));
     fireEvent.click(screen.getByRole('button', { name: /Good night/i }));
 
     expect(serviceMock.callService).toHaveBeenCalledWith(

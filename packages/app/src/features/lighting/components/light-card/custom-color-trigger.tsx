@@ -1,5 +1,8 @@
+import { ColorPickerPanel } from '@navet/app/components/primitives/color-picker-panel';
+import { PickerPopover } from '@navet/app/components/primitives/picker-popover';
 import { RoundControlButton } from '@navet/app/components/primitives/round-control-button';
 import { getCardActionControlSizes } from '@navet/app/components/shared/card-action-control-sizes';
+import { PRESET_COLORS } from '@navet/app/constants/light-constants';
 import { useI18n, useTheme } from '@navet/app/hooks';
 import { Palette } from 'lucide-react';
 import { memo, useEffect, useRef, useState } from 'react';
@@ -29,110 +32,80 @@ export const CustomColorTrigger = memo(function CustomColorTrigger({
   const { t } = useI18n();
   const { theme } = useTheme();
   const controlSizes = getCardActionControlSizes(size);
-  const triggerRef = useRef<HTMLDivElement>(null);
-  const colorInputRef = useRef<HTMLInputElement>(null);
-  const [isLocallySelected, setIsLocallySelected] = useState(false);
   const inputColor =
     typeof currentColor === 'string' && /^#[0-9a-fA-F]{6}$/.test(currentColor)
       ? currentColor
       : '#ffa500';
+  const [preview, setPreview] = useState(inputColor);
+  const pending = useRef<string | null>(null);
+  useEffect(() => {
+    if (!pending.current) setPreview(inputColor);
+  }, [inputColor]);
+  const commit = () => {
+    if (!pending.current || !isOn) return;
+    const next = pending.current;
+    pending.current = null;
+    onActivate();
+    onColorChange(next);
+  };
   const effectiveTheme = theme === 'light' && isOn ? 'dark' : theme;
-  const isSelected = isActive || isLocallySelected;
-
-  useEffect(() => {
-    if (isActive || !isOn) {
-      setIsLocallySelected(false);
-    }
-  }, [isActive, isOn]);
-
-  useEffect(() => {
-    if (!isLocallySelected) {
-      return;
-    }
-
-    const clearPendingSelection = () => setIsLocallySelected(false);
-    const handlePointerDown = (event: PointerEvent) => {
-      if (!triggerRef.current?.contains(event.target as Node)) {
-        clearPendingSelection();
-      }
-    };
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        clearPendingSelection();
-      }
-    };
-
-    document.addEventListener('pointerdown', handlePointerDown, true);
-    document.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('focus', clearPendingSelection);
-
-    return () => {
-      document.removeEventListener('pointerdown', handlePointerDown, true);
-      document.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('focus', clearPendingSelection);
-    };
-  }, [isLocallySelected]);
-
   return (
-    <div ref={triggerRef} className="relative shrink-0">
-      <RoundControlButton
-        theme={effectiveTheme}
-        size={size}
-        variant="soft"
-        aria-label={t('lighting.chooseCustomColor')}
-        title={t('lighting.customColor')}
-        aria-pressed={isSelected}
-        disabled={!isOn}
-        className={
-          isActive && isOn
-            ? 'overflow-hidden !border-0 !shadow-none !drop-shadow-none backdrop-blur-none'
-            : !isOn
-              ? 'opacity-50'
-              : undefined
-        }
-        style={
-          isActive && isOn
-            ? {
-                background: RAINBOW_COLOR_BACKGROUND,
-                backdropFilter: 'none',
-                WebkitBackdropFilter: 'none',
-                boxShadow: 'none',
-              }
-            : undefined
-        }
-        iconClassName={isActive && isOn ? 'text-slate-900' : !isOn ? 'text-current/60' : undefined}
-        iconStyle={
-          isActive && isOn
-            ? undefined
-            : foregroundColor
-              ? { color: foregroundColor }
-              : isLocallySelected && isOn
-                ? { color: inputColor }
+    <PickerPopover
+      label={t('lighting.chooseCustomColor')}
+      disabled={!isOn}
+      onClose={commit}
+      wide
+      trigger={
+        <RoundControlButton
+          theme={effectiveTheme}
+          size={size}
+          variant="soft"
+          aria-label={t('lighting.chooseCustomColor')}
+          title={t('lighting.customColor')}
+          aria-pressed={isActive}
+          disabled={!isOn}
+          className={
+            isActive && isOn
+              ? 'overflow-hidden !border-0 !shadow-none !drop-shadow-none backdrop-blur-none'
+              : !isOn
+                ? 'opacity-50'
                 : undefined
-        }
-        onPointerDown={(event) => event.stopPropagation()}
-        onClick={(event) => {
-          event.stopPropagation();
-          setIsLocallySelected(true);
-          colorInputRef.current?.click();
+          }
+          style={
+            isActive && isOn
+              ? {
+                  background: RAINBOW_COLOR_BACKGROUND,
+                  backdropFilter: 'none',
+                  WebkitBackdropFilter: 'none',
+                  boxShadow: 'none',
+                }
+              : undefined
+          }
+          iconClassName={
+            isActive && isOn ? 'text-slate-900' : !isOn ? 'text-current/60' : undefined
+          }
+          iconStyle={
+            isActive && isOn ? undefined : foregroundColor ? { color: foregroundColor } : undefined
+          }
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.stopPropagation();
+          }}
+        >
+          <Palette aria-hidden="true" className={controlSizes.icon} strokeWidth={2.25} />
+        </RoundControlButton>
+      }
+    >
+      <ColorPickerPanel
+        compact
+        presets={PRESET_COLORS}
+        value={preview}
+        onChange={(color) => {
+          pending.current = color;
+          setPreview(color);
         }}
-      >
-        <Palette aria-hidden="true" className={controlSizes.icon} strokeWidth={2.25} />
-      </RoundControlButton>
-      <input
-        ref={colorInputRef}
-        type="color"
-        value={inputColor}
-        disabled={!isOn}
-        tabIndex={-1}
-        aria-hidden="true"
-        className="sr-only"
-        onChange={(event) => {
-          setIsLocallySelected(false);
-          onActivate();
-          onColorChange(event.target.value);
-        }}
+        onCommit={commit}
       />
-    </div>
+    </PickerPopover>
   );
 });

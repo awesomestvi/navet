@@ -52,6 +52,7 @@ export function RSSSetupTabContent({
             type="text"
             value={providerName}
             onChange={(event) => onProviderNameChange(event.target.value)}
+            aria-label={t('rss.settings.providerName')}
             placeholder={t('rss.settings.providerName')}
             inputClassName={`${surface.surface.inputBg} ${surface.surface.border} ${surface.surface.textPrimary} placeholder:text-[var(--rss-placeholder-color)] rounded-2xl`}
             style={inputStyle}
@@ -60,6 +61,7 @@ export function RSSSetupTabContent({
             type="url"
             value={providerUrl}
             onChange={(event) => onProviderUrlChange(event.target.value)}
+            aria-label={t('rss.settings.providerUrl')}
             placeholder={t('rss.settings.providerUrl')}
             inputClassName={`${surface.surface.inputBg} ${surface.surface.border} ${surface.surface.textPrimary} placeholder:text-[var(--rss-placeholder-color)] rounded-2xl`}
             style={inputStyle}
