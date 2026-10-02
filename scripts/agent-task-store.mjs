@@ -1,8 +1,8 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { constants } from 'node:fs';
 import { chmod, mkdir, open, readFile, rename, rm, stat } from 'node:fs/promises';
 import { hostname } from 'node:os';
 import path from 'node:path';
+import { DatabaseSync } from 'node:sqlite';
 
 const STATES = {
   queued: ['investigating', 'waiting-for-input', 'terminal-failure'],
@@ -59,49 +59,52 @@ export class AgentTaskStore {
     await mkdir(this.directory, { recursive: true, mode: 0o700 });
     if ((await stat(this.directory)).isDirectory() === false) throw new Error('Invalid state directory.');
     await chmod(this.directory, 0o700);
+    const mutexPath = `${this.lock}.sqlite`;
+    const mutexFile = await open(mutexPath, 'a', 0o600);
+    await mutexFile.close();
+    await chmod(mutexPath, 0o600);
     const started = Date.now();
-    let handle;
-    while (!handle) {
-      try {
-        handle = await open(this.lock, constants.O_CREAT | constants.O_EXCL | constants.O_WRONLY, 0o600);
-        await handle.writeFile(JSON.stringify({ pid: process.pid, host: hostname() }));
-        await handle.sync();
-      } catch (error) {
-        if (error.code !== 'EEXIST') {
-          if (handle) {
-            await handle.close();
-            await rm(this.lock, { force: true });
-          }
-          throw error;
-        }
-        // Never break a lock on elapsed time alone: another coordinator may still be live.
-        try {
-          // Serialize recovery so two observers of the same dead owner cannot remove
-          // a newly acquired live lock after one of them has already recovered it.
-          const recoveryPath = `${this.lock}.recovery`;
-          const recovery = await open(recoveryPath, 'wx', 0o600);
-          try {
-            const owner = JSON.parse(await readFile(this.lock, 'utf8'));
-            if (owner.host === hostname() && Number.isInteger(owner.pid) && owner.pid > 0) {
-              try { process.kill(owner.pid, 0); } catch (probe) {
-                if (probe.code === 'ESRCH') {
-                  await rm(this.lock, { force: true });
-                  continue;
-                }
-              }
-            }
-          } finally {
-            await recovery.close();
-            await rm(recoveryPath, { force: true });
-          }
-        } catch (readError) {
-          if (readError.code === 'ENOENT') continue;
-        }
-        if (Date.now() - started >= this.lockTimeoutMs) throw new Error('Task store is locked; inspect its live owner.');
-        await new Promise((resolve) => setTimeout(resolve, 20));
-      }
-    }
+    const mutex = new DatabaseSync(mutexPath);
+    let acquired = false;
     try {
+      mutex.exec('PRAGMA busy_timeout = 0;');
+      while (!acquired) {
+        try {
+          // OS-managed SQLite locks disappear on process exit, including SIGKILL.
+          // No owner-file creation or recursive recovery-lock window remains.
+          mutex.exec('BEGIN IMMEDIATE;');
+          acquired = true;
+        } catch (error) {
+          if (error.errcode !== 5 && error.errcode !== 6) throw error;
+          if (Date.now() - started >= this.lockTimeoutMs) {
+            throw new Error(`Task store is locked; inspect its live owner (${mutexPath}).`);
+          }
+          await new Promise((resolve) => setTimeout(resolve, 20));
+        }
+      }
+      // Preserve legacy live/unknown owners during an upgrade. Older coordinator
+      // versions must be stopped before upgrading; do not run mixed lock protocols.
+      try {
+        await stat(`${this.lock}.recovery`);
+        throw new Error(`Legacy recovery lock requires inspection (${this.lock}.recovery).`);
+      } catch (error) {
+        if (error.code !== 'ENOENT') throw error;
+      }
+      try {
+        const owner = JSON.parse(await readFile(this.lock, 'utf8'));
+        if (owner.host !== hostname() || !Number.isInteger(owner.pid) || owner.pid <= 0) {
+          throw new Error('Unknown legacy task lock owner; inspect before repair.');
+        }
+        try {
+          process.kill(owner.pid, 0);
+          throw new Error('Task store is locked by a live legacy owner.');
+        } catch (error) {
+          if (error.code !== 'ESRCH') throw error;
+        }
+        await rm(this.lock);
+      } catch (error) {
+        if (error.code !== 'ENOENT') throw error;
+      }
       let state;
       try { state = JSON.parse(await readFile(this.file, 'utf8')); } catch (error) {
         if (error.code !== 'ENOENT') throw error;
@@ -124,8 +127,7 @@ export class AgentTaskStore {
       }
       return structuredClone(result);
     } finally {
-      await handle.close();
-      await rm(this.lock, { force: true });
+      mutex.close();
     }
   }
 

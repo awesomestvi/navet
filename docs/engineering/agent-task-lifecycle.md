@@ -49,10 +49,12 @@ a fresh observation naming that owner, status `missing` or `terminal`, and an `o
 within the preceding minute. The coordinator supplies this from the owning task service. An
 unfinished dispatch continues to occupy capacity after its coordinator lease expires.
 
-Transactions use an exclusive process lock and atomic state replacement. A live process lock is
-preserved. A dead same-host process lock can be recovered. Corrupt or unknown state fails closed;
-inspect and preserve it before repair. A recovery lock left by an interrupted recovery also needs
-inspection before removal.
+Transactions use an exclusive SQLite write lock and atomic JSON state replacement. A live lock is
+preserved; the operating system releases it on process exit. Corrupt or unknown state fails closed;
+inspect and preserve it before repair. Node's built-in SQLite file is coordination metadata; task
+records remain in `tasks.json`. Do not delete the SQLite file to unlock a live transaction. Use Node
+22.16 or later. Stop coordinators running an older implementation before upgrading; inspect any
+legacy `tasks.lock.recovery` file separately before removing it.
 
 ## Evidence And Acceptance
 

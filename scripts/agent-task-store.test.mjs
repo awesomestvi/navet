@@ -1,6 +1,9 @@
+import { spawn } from 'node:child_process';
+import { once } from 'node:events';
 import { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { hostname, tmpdir } from 'node:os';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
 import { AgentTaskStore } from './agent-task-store.mjs';
 
@@ -156,7 +159,82 @@ describe('durable agent task lifecycle', () => {
     expect((await store.list())[0].followups).toHaveLength(3);
   });
 
-  it('recovers a dead process lock, preserves a live lock, and fails closed on corrupt state', async () => {
+  it('releases interrupted recovery and serializes concurrent process recovery', async () => {
+    const { store, directory, request } = await setup({ lockTimeoutMs: 80 });
+    const recoveryPath = path.join(directory, 'tasks.lock.sqlite');
+    const deadOwner = JSON.stringify({ pid: 2_147_483_647, host: hostname() });
+    await writeFile(path.join(directory, 'tasks.lock'), deadOwner);
+    const holder = spawn(process.execPath, ['--input-type=module', '-e', `
+      import { DatabaseSync } from 'node:sqlite';
+      const db = new DatabaseSync(process.argv[1]);
+      db.exec('BEGIN IMMEDIATE;');
+      process.send('locked');
+      setInterval(() => {}, 1000);
+    `, recoveryPath], { stdio: ['ignore', 'ignore', 'pipe', 'ipc'] });
+    try {
+      const ready = await Promise.race([
+        once(holder, 'message'),
+        once(holder, 'exit').then(() => { throw new Error('Recovery holder exited before locking.'); }),
+      ]);
+      expect(ready[0]).toBe('locked');
+      await expect(store.list()).rejects.toThrow('locked');
+      expect(await readFile(path.join(directory, 'tasks.lock'), 'utf8')).toBe(deadOwner);
+      const exited = once(holder, 'exit');
+      holder.kill('SIGKILL');
+      await exited;
+      const moduleUrl = pathToFileURL(path.resolve('scripts/agent-task-store.mjs')).href;
+      await Promise.all(Array.from({ length: 4 }, (_, index) => new Promise((resolve, reject) => {
+        const child = spawn(process.execPath, ['--input-type=module', '-e', `
+          import { AgentTaskStore } from ${JSON.stringify(moduleUrl)};
+          const store = new AgentTaskStore(process.argv[1]);
+          await store.enqueue(JSON.parse(process.argv[2]));
+        `, directory, JSON.stringify({ ...request, requestId: `process:${index}`,
+          authority: { ...request.authority, observedAt: Date.now() } })], { stdio: ['ignore', 'ignore', 'pipe'] });
+        let errors = '';
+        child.stderr.on('data', (chunk) => { errors += chunk; });
+        child.on('error', reject);
+        child.on('exit', (code) => code === 0 ? resolve() : reject(new Error(errors)));
+      })));
+      expect(await store.list()).toHaveLength(5);
+      expect((await stat(recoveryPath)).mode & 0o777).toBe(0o600);
+    } finally {
+      holder.kill('SIGKILL');
+    }
+  }, 10_000);
+
+  it('preserves committed JSON when a writer is killed before replacement', async () => {
+    const { store, directory } = await setup();
+    const before = await readFile(path.join(directory, 'tasks.json'), 'utf8');
+    const moduleUrl = pathToFileURL(path.resolve('scripts/agent-task-store.mjs')).href;
+    const writer = spawn(process.execPath, ['--input-type=module', '-e', `
+      import { AgentTaskStore } from ${JSON.stringify(moduleUrl)};
+      const store = new AgentTaskStore(process.argv[1]);
+      await store.transaction(async (state) => {
+        state.tasks.length = 0;
+        process.send('writing');
+        await new Promise(() => { setInterval(() => {}, 1000); });
+      });
+    `, directory], { stdio: ['ignore', 'ignore', 'pipe', 'ipc'] });
+    try {
+      const ready = await Promise.race([
+        once(writer, 'message'),
+        once(writer, 'exit').then(() => { throw new Error('Writer exited before transaction.'); }),
+      ]);
+      expect(ready[0]).toBe('writing');
+      const exited = once(writer, 'exit');
+      writer.kill('SIGKILL');
+      await exited;
+      expect(await store.list()).toHaveLength(1);
+      expect(await readFile(path.join(directory, 'tasks.json'), 'utf8')).toBe(before);
+      await writeFile(path.join(directory, 'tasks.lock.recovery'), 'unknown legacy recovery');
+      await expect(store.list()).rejects.toThrow('Legacy recovery lock requires inspection');
+      expect(await readFile(path.join(directory, 'tasks.json'), 'utf8')).toBe(before);
+    } finally {
+      writer.kill('SIGKILL');
+    }
+  }, 10_000);
+
+  it('recovers a dead legacy lock, preserves a live legacy lock, and fails closed on corrupt state', async () => {
     const { store, directory } = await setup({ lockTimeoutMs: 40 });
     await writeFile(path.join(directory, 'tasks.lock'), JSON.stringify({ pid: 2_147_483_647, host: hostname() }));
     expect(await store.list()).toHaveLength(1);
