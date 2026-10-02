@@ -50,7 +50,12 @@ task terminal merely to free capacity; terminal failure needs a verified conclus
 
 Continue authorized replies and review remediation in the existing delivery task. Use its history
 to verify that a follow-up request/comment/check ID has not already been sent. Preserve the original
-delivery binding. When acknowledgement is uncertain, inspect task history before resending.
+delivery binding. Reserve each batch with `reserve-followup`, using stable, source-prefixed event
+IDs. Send only the newly reserved `events` when its `followupDecision.action` is `send`. Include
+its token in the message. A `reconcile` decision requires inspecting the existing delivery history;
+`skip` means every event already has a confirmed receipt. After observing the message in the
+confirmed delivery task, use `confirm-followup` with its token, thread ID, reference and fresh
+observation time. When acknowledgement is uncertain, inspect task history before resending.
 
 Existing tasks may predate the store. Reconstruct their identity, accepted request, confirmed
 thread, current scope and outputs from GitHub and task history before recording them. Reconstructing

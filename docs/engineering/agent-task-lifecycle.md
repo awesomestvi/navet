@@ -39,6 +39,11 @@ use `bind` with that token and the returned `clientThreadId` or confirmed `threa
 creation result needs reconciliation against existing tasks before another creation attempt.
 Pending worktree setup is distinct from a confirmed delivery handle.
 
+`reserve-followup` takes a batch of stable event IDs and returns a `followupDecision`: send only
+new events, reconcile an uncertain earlier send, or skip confirmed events. Include its token in
+the follow-up and confirm the receipt only after observing that message in the bound delivery task.
+Overlapping batches share event receipts so changing a batch does not resend an earlier event.
+
 An expired lease alone does not prove its owner stopped. Reclaiming another owner's lease requires
 a fresh observation naming that owner, status `missing` or `terminal`, and an `observedAt` timestamp
 within the preceding minute. The coordinator supplies this from the owning task service. An

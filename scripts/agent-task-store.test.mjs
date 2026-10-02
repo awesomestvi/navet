@@ -138,6 +138,24 @@ describe('durable agent task lifecycle', () => {
     expect((await restarted.list()).find((entry) => entry.id === task.id).context.branch).toBe('feature/repair');
   });
 
+  it('reconciles uncertain follow-ups and suppresses overlapping event batches across restart', async () => {
+    const { store, task, directory, owner, claim, act } = await setup();
+    await claim();
+    const intent = await act('dispatch-intent');
+    await act('bind', { token: intent.dispatch.token, threadId: 'delivery' });
+    const first = await act('reserve-followup', { events: ['review:1', 'check:2'] });
+    expect(first.followupDecision).toMatchObject({ action: 'send', events: ['check:2', 'review:1'] });
+    const restarted = new AgentTaskStore(directory, { now: () => 1_000_001 });
+    const pending = await restarted.mutate(task.id, 'reserve-followup', { owner, events: ['review:1', 'review:3'] });
+    expect(pending.followupDecision.action).toBe('reconcile');
+    await expect(act('confirm-followup', { token: first.followupDecision.token, threadId: 'different', reference: 'message', observedAt: 1_000_000 })).rejects.toThrow('handle');
+    await act('confirm-followup', { token: first.followupDecision.token, threadId: 'delivery', reference: 'observed-message', observedAt: 1_000_000 });
+    const next = await act('reserve-followup', { events: ['review:3', 'review:1'] });
+    expect(next.followupDecision).toMatchObject({ action: 'send', events: ['review:3'] });
+    expect((await act('reserve-followup', { events: ['check:2', 'review:1'] })).followupDecision.action).toBe('skip');
+    expect((await store.list())[0].followups).toHaveLength(3);
+  });
+
   it('recovers a dead process lock, preserves a live lock, and fails closed on corrupt state', async () => {
     const { store, directory } = await setup({ lockTimeoutMs: 40 });
     await writeFile(path.join(directory, 'tasks.lock'), JSON.stringify({ pid: 2_147_483_647, host: hostname() }));

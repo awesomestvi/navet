@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { createHash } from 'node:crypto';
-import { existsSync, mkdtempSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -24,6 +24,9 @@ function symbolKey(symbol) {
 }
 
 export function generateCatalog({ root, entries, stories = [], compilerOptions = {} }) {
+  root = realpathSync(path.resolve(root));
+  entries = entries.map((entry) => ({ ...entry, file: realpathSync(path.resolve(root, entry.file)) }));
+  stories = stories.map((file) => realpathSync(path.resolve(root, file)));
   const cache = path.join(root, '.cache/agent-design');
   mkdirSync(cache, { recursive: true });
   const temporary = mkdtempSync(path.join(cache, 'catalog-'));

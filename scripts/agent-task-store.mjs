@@ -169,6 +169,7 @@ export class AgentTaskStore {
       if (!task) throw new Error('Unknown task.');
       const now = this.now();
       let nextDispatchAction;
+      let followupDecision;
       if (action === 'claim') {
         if (['delivered', 'terminal-failure'].includes(task.state)) throw new Error('Terminal work cannot be claimed.');
         requireValue(input.owner, 'owner');
@@ -214,6 +215,38 @@ export class AgentTaskStore {
             requireValue(input.clientThreadId, 'clientThreadId');
             if (task.dispatch.clientThreadId && task.dispatch.clientThreadId !== input.clientThreadId) throw new Error('Pending setup handle changed.');
             task.dispatch.clientThreadId = input.clientThreadId;
+          }
+        } else if (action === 'reserve-followup') {
+          if (!task.dispatch?.threadId || TERMINAL.has(task.state)) throw new Error('A resumable delivery is required.');
+          if (!Array.isArray(input.events) || !input.events.length) throw new Error('Follow-up events are required.');
+          input.events.forEach((event) => requireValue(event, 'event'));
+          const events = [...new Set(input.events)].sort();
+          task.followups ??= [];
+          const existing = task.followups.filter((receipt) => events.includes(receipt.event));
+          const pending = existing.filter((receipt) => receipt.status === 'pending');
+          if (pending.length) {
+            followupDecision = { action: 'reconcile', receipts: pending };
+          } else {
+            const fresh = events.filter((event) => !existing.some((receipt) => receipt.event === event));
+            if (fresh.length) {
+              const token = randomUUID();
+              const receipts = fresh.map((event) => ({ event, token, threadId: task.dispatch.threadId,
+                head: task.head, status: 'pending', intentAt: now }));
+              task.followups.push(...receipts);
+              followupDecision = { action: 'send', token, events: fresh, threadId: task.dispatch.threadId };
+            } else followupDecision = { action: 'skip', events };
+          }
+        } else if (action === 'confirm-followup') {
+          const receipts = task.followups?.filter((receipt) => receipt.token === input.token);
+          if (!receipts?.length || input.threadId !== task.dispatch?.threadId) throw new Error('Unknown follow-up or delivery handle.');
+          requireValue(input.reference, 'follow-up acknowledgement');
+          if (!observationIsFresh(input, now) || receipts.some((receipt) => input.observedAt < receipt.intentAt)) {
+            throw new Error('A fresh follow-up acknowledgement is required.');
+          }
+          for (const receipt of receipts) {
+            receipt.status = 'confirmed';
+            receipt.reference = input.reference;
+            receipt.observedAt = input.observedAt;
           }
         } else if (action === 'context') {
           const context = input.context;
@@ -271,7 +304,7 @@ export class AgentTaskStore {
         ...(action === 'evidence' ? { evidence: input.evidence } : {}),
         ...(action === 'transition' ? { reason: input.reason } : {}),
       });
-      return nextDispatchAction ? { ...task, nextDispatchAction } : task;
+      return nextDispatchAction ? { ...task, nextDispatchAction } : followupDecision ? { ...task, followupDecision } : task;
     });
   }
 }

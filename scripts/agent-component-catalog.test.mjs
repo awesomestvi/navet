@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { it, expect } from 'vitest';
@@ -22,6 +22,13 @@ it('discovers real exports, typed contracts, and story references and refreshes 
       expect.objectContaining({ name: 'onClose', optional: true }),
     ]));
     expect(sheet.stories[0]).toMatchObject({ title: 'Components/Sheet', exports: ['Default'] });
+    const linkedRoot = `${root}-link`;
+    try {
+      symlinkSync(root, linkedRoot, 'dir');
+      const linked = generateCatalog({ root: linkedRoot, entries: [{ file: path.join(linkedRoot, 'index.ts'), importFrom: '@navet/ui' }], stories: [path.join(linkedRoot, 'sheet.stories.tsx')] });
+      expect(linked.entries).toEqual(first.entries);
+      expect(linked.sourceFingerprint).toBe(first.sourceFingerprint);
+    } finally { rmSync(linkedRoot, { force: true }); }
     writeFileSync(component, 'export interface SheetProps { title: string; disabled: boolean }\nexport function Sheet(props: SheetProps) { return props.title; }');
     const next = generateCatalog(input);
     expect(next.sourceFingerprint).not.toBe(first.sourceFingerprint);
