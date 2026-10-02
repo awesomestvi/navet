@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { chmod, mkdir, open, readFile, rename, rm, stat } from 'node:fs/promises';
 import { hostname } from 'node:os';
 import path from 'node:path';
+import { isDeepStrictEqual } from 'node:util';
 
 // Load through Node so browser-oriented test bundlers do not bundle this native module.
 const sqlite = process.getBuiltinModule?.('node:sqlite');
@@ -149,18 +150,25 @@ export class AgentTaskStore {
     if (!brief || !Array.isArray(brief.acceptanceCriteria) || !brief.acceptanceCriteria.length) {
       throw new Error('Acceptance criteria are required.');
     }
+    brief.acceptanceCriteria.forEach((criterion) => requireValue(criterion, 'acceptance criterion'));
     if (!Array.isArray(requiredGates) || requiredGates.some((item) => typeof item !== 'string' || !item.trim())) {
       throw new Error('Invalid required gates.');
     }
+    const gates = [...new Set([...requiredGates, 'output'])];
     return this.transaction((state) => {
       const existing = state.tasks.find((task) => task.id === id);
       if (existing) {
-        if (existing.revision !== revision || existing.mode !== mode) throw new Error('Request identity was reused with different scope.');
+        if (existing.revision !== revision || existing.mode !== mode ||
+            !isDeepStrictEqual(existing.brief, brief) ||
+            !isDeepStrictEqual([...existing.requiredGates].sort(), [...gates].sort()) ||
+            existing.authority.actor !== authority.actor || existing.authority.reference !== authority.reference) {
+          throw new Error('Request identity was reused with different scope.');
+        }
         return existing;
       }
       const task = {
         id, source, requestId, mode, revision, authority, brief,
-        state: 'queued', head: null, requiredGates: [...new Set([...requiredGates, 'output'])],
+        state: 'queued', head: null, requiredGates: gates,
         evidence: [], dispatch: null, lease: null, retries: 0,
         createdAt: this.now(), updatedAt: this.now(), history: [],
       };

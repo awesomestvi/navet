@@ -56,6 +56,11 @@ records remain in `tasks.json`. Do not delete the SQLite file to unlock a live t
 22.16 or later. Stop coordinators running an older implementation before upgrading; inspect any
 legacy `tasks.lock.recovery` file separately before removing it.
 
+Repeated intake must preserve the entire brief, acceptance criteria, required gates and original
+authority actor/reference as well as mode and revision. Changed scope needs a new authorized
+request identity. Object key order, duplicate/reordered gate names and fresh observation timestamps
+do not change scope.
+
 ## Evidence And Acceptance
 
 Use `head` to record the current implementation commit. Use `evidence` to record each required
