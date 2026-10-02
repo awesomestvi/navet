@@ -2455,13 +2455,13 @@ export const svMessages = {
   'widgets.photoFrame.settings.title': 'Fotokällor',
   'widgets.photoFrame.settings.source': 'Källa',
   'widgets.photoFrame.settings.sourceUrls': 'Manuella URL:er',
-  'widgets.photoFrame.settings.sourceProviderMedia': 'Leverantörsmedia',
+  'widgets.photoFrame.settings.sourceProviderMedia': 'Home Assistant-media',
   'widgets.photoFrame.settings.shuffle': 'Fotoblandare',
   'widgets.photoFrame.settings.shuffleDescription': 'Blanda bilder automatiskt.',
   'widgets.photoFrame.settings.addUrl': 'Lägg till URL',
   'widgets.photoFrame.settings.photos': 'Foton',
   'widgets.photoFrame.settings.urlPlaceholder': 'https://exempel.se/foto.jpg',
-  'widgets.photoFrame.settings.providerMedia': 'Leverantörsmedia',
+  'widgets.photoFrame.settings.providerMedia': 'Home Assistant-media',
   'widgets.photoFrame.settings.homeAssistantMediaPlaceholder':
     'media-source://media_source/local/family',
   'widgets.photoFrame.settings.homeAssistantMediaDescription':
