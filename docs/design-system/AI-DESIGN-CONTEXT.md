@@ -29,7 +29,11 @@ that export. The catalog complements source and rendered review; it does not val
 Run `pnpm agent:tokens` before reading `.cache/agent-design/tokens.tokens.json`. The command
 regenerates a [DTCG 2025.10](https://www.designtokens.org/tr/2025.10/format/) subset from the
 public TypeScript token exports without evaluating UI modules. Check that generation succeeded;
-a cached file from a failed generation is not current evidence.
+a cached file from a failed generation is not current evidence. Use `pnpm agent:tokens controlSizePx`
+for a case-insensitive path search. It regenerates the same full export and prints only matching
+tokens and omissions, retaining values, units, source locations and the source fingerprint. An empty
+result means the query found no source path; inspect the catalog or token entry before assuming
+the design system lacks the needed recipe.
 
 The export includes finite numeric constants with explicit `Px` or `Ms` units, the `durationsMs`
 group, and unitless `fontScale` values. Imported constant references resolve through TypeScript.

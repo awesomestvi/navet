@@ -111,11 +111,35 @@ export function generateDesignTokens({ root, file = 'packages/app/src/ui-kit/tok
   }
 }
 
+export function findDesignTokens(document, query) {
+  const normalized = query.trim().toLowerCase();
+  const tokens = [];
+  function visit(group, parts) {
+    if ('$value' in group) {
+      const tokenPath = parts.join('.');
+      if (tokenPath.toLowerCase().includes(normalized)) tokens.push({ path: tokenPath, ...group });
+      return;
+    }
+    for (const [key, value] of Object.entries(group)) {
+      if (!key.startsWith('$')) visit(value, [...parts, key]);
+    }
+  }
+  visit(document, []);
+  const metadata = document.$extensions[EXTENSION];
+  return {
+    sourceFingerprint: metadata.sourceFingerprint,
+    tokens,
+    omitted: metadata.omitted.filter((item) => item.path.toLowerCase().includes(normalized)),
+  };
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
   const root = process.cwd();
   const tokens = generateDesignTokens({ root });
   const output = path.join(root, '.cache/agent-design/tokens.tokens.json');
   await mkdir(path.dirname(output), { recursive: true });
   await writeFile(output, `${JSON.stringify(tokens, null, 2)}\n`);
-  console.log(`Generated ${tokens.$extensions[EXTENSION].tokenCount} tokens at ${path.relative(root, output)}.`);
+  const query = process.argv.slice(2).join(' ').trim();
+  console.log(query ? JSON.stringify(findDesignTokens(tokens, query), null, 2)
+    : `Generated ${tokens.$extensions[EXTENSION].tokenCount} tokens at ${path.relative(root, output)}.`);
 }

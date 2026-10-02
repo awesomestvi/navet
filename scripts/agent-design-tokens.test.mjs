@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { generateDesignTokens } from './agent-design-tokens.mjs';
+import { findDesignTokens, generateDesignTokens } from './agent-design-tokens.mjs';
 
 function fixture() {
   const root = mkdtempSync(path.join(tmpdir(), 'navet-token-export-'));
@@ -35,6 +35,16 @@ describe('source-derived design token exchange', () => {
         'tokens.surfaceClassName', 'tokens.reduceMotion', 'tokens.focus',
       ]));
       expect(first.tokens.controlHeightPx.$extensions['app.navet.design'].source).toBe('tokens.ts');
+      const selected = findDesignTokens(first, 'CONTROLHEIGHT');
+      expect(selected).toEqual({
+        sourceFingerprint: metadata.sourceFingerprint,
+        tokens: [{ path: 'tokens.controlHeightPx', ...first.tokens.controlHeightPx }],
+        omitted: [],
+      });
+      expect(findDesignTokens(first, 'surfaceClassName').omitted).toEqual([
+        expect.objectContaining({ path: 'tokens.surfaceClassName', source: 'tokens.ts' }),
+      ]);
+      expect(findDesignTokens(first, 'unknown')).toEqual({ sourceFingerprint: metadata.sourceFingerprint, tokens: [], omitted: [] });
       const link = `${root}-link`;
       try {
         symlinkSync(root, link, 'dir');
