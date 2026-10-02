@@ -24,6 +24,25 @@ Export presence does not establish component maturity. The catalog marks stabili
 Story associations identify imports in story files, not proof that every listed story exercises
 that export. The catalog complements source and rendered review; it does not validate UI quality.
 
+## Source-Derived Token Exchange
+
+Run `pnpm agent:tokens` before reading `.cache/agent-design/tokens.tokens.json`. The command
+regenerates a [DTCG 2025.10](https://www.designtokens.org/tr/2025.10/format/) subset from the
+public TypeScript token exports without evaluating UI modules. Check that generation succeeded;
+a cached file from a failed generation is not current evidence.
+
+The export includes finite numeric constants with explicit `Px` or `Ms` units, the `durationsMs`
+group, and unitless `fontScale` values. Imported constant references resolve through TypeScript.
+Each record carries its source location; the root extension carries the source fingerprint and
+an omission inventory. A unit-bearing value that cannot be resolved to a numeric constant stops
+generation rather than producing an invented value.
+
+This is discovery metadata, not a separately editable token source. Colors, Tailwind class
+combinations, dynamic theme helpers, density selection and reduced-motion policy still need their
+source recipes and rendered stories. An omission means inspect that recipe; it does not authorize
+replacing it with a numeric approximation. Select components with the catalog, read their recipe,
+resolve supported values from this export, and verify the resulting composition in Storybook.
+
 ## Product Feel
 
 Navet should feel glanceable, compact but calm, direct, tactile, and recognizably Navet.
