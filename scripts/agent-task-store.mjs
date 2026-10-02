@@ -2,7 +2,11 @@ import { createHash, randomUUID } from 'node:crypto';
 import { chmod, mkdir, open, readFile, rename, rm, stat } from 'node:fs/promises';
 import { hostname } from 'node:os';
 import path from 'node:path';
-import { DatabaseSync } from 'node:sqlite';
+
+// Load through Node so browser-oriented test bundlers do not bundle this native module.
+const sqlite = process.getBuiltinModule?.('node:sqlite');
+if (!sqlite) throw new Error('Agent task storage requires Node 22.16 or later with SQLite support.');
+const { DatabaseSync } = sqlite;
 
 const STATES = {
   queued: ['investigating', 'waiting-for-input', 'terminal-failure'],
