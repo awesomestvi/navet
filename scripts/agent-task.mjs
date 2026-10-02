@@ -5,7 +5,8 @@ import { AgentTaskStore } from './agent-task-store.mjs';
 
 // Use a file for sensitive inputs; do not put proposal contents or credentials in shell args.
 const [directory, action, inputFile] = process.argv.slice(2);
-if (!directory || !action || !['list', 'enqueue', 'mutate'].includes(action)) {
+if (!directory || !action || !['list', 'enqueue', 'mutate'].includes(action)
+  || (action !== 'list' && !inputFile)) {
   console.error('Usage: node scripts/agent-task.mjs <private-state-directory> <list|enqueue|mutate> [input.json]');
   process.exitCode = 1;
 } else {
