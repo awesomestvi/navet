@@ -98,11 +98,12 @@ export function CoverPositionGestureSurface({
     event.preventDefault();
     event.stopPropagation();
 
-    const bounds = getGestureMappingBounds(event.currentTarget, mapToCardBounds);
-    pointerIdRef.current = event.pointerId;
-    dragFromHandleRef.current =
+    const dragFromHandle =
       event.target instanceof Element &&
       event.target.closest('[data-cover-position-handle]') !== null;
+    const bounds = getGestureMappingBounds(event.currentTarget, mapToCardBounds && !dragFromHandle);
+    pointerIdRef.current = event.pointerId;
+    dragFromHandleRef.current = dragFromHandle;
     startYRef.current = event.clientY;
     startPositionRef.current = position;
     previewPositionRef.current = position;

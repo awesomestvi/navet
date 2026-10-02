@@ -1,0 +1,3 @@
+type: improved
+audiences: [standalone, home-assistant, hacs]
+summary: Keep card controls easy to reach with shared settings menus, compact light and fan controls, and clearer blind positioning.

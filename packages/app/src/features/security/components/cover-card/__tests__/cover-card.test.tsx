@@ -167,7 +167,7 @@ describe('CoverCard', () => {
   });
 
   it.each(['medium'] as const)(
-    'drags the %s handle relative to the current position',
+    'drags the %s handle using its gesture surface height when card bounds differ',
     async (size) => {
       renderCoverCard({ size, initialPosition: 72 });
       const slider = screen.getByRole('slider', { name: 'Living Room Blind cover' });
@@ -183,11 +183,22 @@ describe('CoverCard', () => {
         y: 0,
         toJSON: () => ({}),
       });
+      vi.spyOn(slider, 'getBoundingClientRect').mockReturnValue({
+        top: -10,
+        bottom: 110,
+        height: 120,
+        left: 0,
+        right: 168,
+        width: 168,
+        x: 0,
+        y: -10,
+        toJSON: () => ({}),
+      });
       const handle = slider.querySelector('[data-cover-position-handle]') as HTMLElement;
       fireEvent.pointerDown(handle, { clientY: 60, pointerId: 1 });
-      fireEvent.pointerMove(slider, { clientY: 40, pointerId: 1 });
+      fireEvent.pointerMove(slider, { clientY: 36, pointerId: 1 });
       expect(setCoverPositionMock).not.toHaveBeenCalled();
-      fireEvent.pointerUp(slider, { clientY: 40, pointerId: 1 });
+      fireEvent.pointerUp(slider, { clientY: 36, pointerId: 1 });
       await waitFor(() =>
         expect(setCoverPositionMock).toHaveBeenCalledWith('cover.living_room_blind', 92, 'position')
       );

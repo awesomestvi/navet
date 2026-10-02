@@ -778,10 +778,13 @@ export const FanCard = memo(function FanCard({
                     aria-pressed={entity.state === 'on'}
                     onClick={() => {
                       void runAction(async () => {
-                        await dispatchEntityCommand({
-                          type: entity.state === 'on' ? 'turn_off' : 'turn_on',
-                          entityId: siblingId,
-                        });
+                        await dispatchEntityCommand(
+                          {
+                            type: entity.state === 'on' ? 'turn_off' : 'turn_on',
+                            entityId: siblingId,
+                          },
+                          resolvedProviderId
+                        );
                       }, t('lighting.feedback.updateSwitchFailed'));
                     }}
                   >
