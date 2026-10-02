@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.17.6-beta.1
+
+## Improvements and bug fixes
+
+- Keep card controls easy to reach with shared settings menus, compact light and fan controls, and clearer blind positioning.
+
 ## 0.17.5-beta.2
 
 ## New features
