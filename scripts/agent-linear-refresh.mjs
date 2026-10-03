@@ -1,5 +1,4 @@
 import { createHash } from 'node:crypto';
-import { taskHasLinearRefresh } from './agent-linear-inbox.mjs';
 import { createPlanningBinding, evaluatePlanningObservation } from './agent-planning-scope.mjs';
 
 // Service readers use this only for a definitive, identity-bound not-found observation.
@@ -67,8 +66,7 @@ export async function reconcileLinearRefresh({ inbox, eventId, store, owner, rea
   // observations survive handoff in task history, so another owner can finish the receipt.
   let updatedTasks = 0;
   for (const task of tasks) {
-    if ((status !== 'unavailable' && taskHasLinearRefresh(task, eventId, record.firstSeenAt)) ||
-        task.lease?.owner !== owner || task.lease.expiresAt <= observedAt) continue;
+    if (task.lease?.owner !== owner || task.lease.expiresAt <= observedAt) continue;
     await store.mutate(task.id, 'planning-observation', { owner, observation });
     updatedTasks++;
   }

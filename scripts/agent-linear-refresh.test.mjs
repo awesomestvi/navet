@@ -184,6 +184,16 @@ describe('fresh Linear planning reconciliation', () => {
     expect(planningStatus(tasks.find((item) => item.id === next.id), clock()).result).toBe('pass');
   });
 
+  it('applies later withdrawal reads to already handled records while other owners are pending', async () => {
+    const { reconcile, store, request, task, advance } = await setup();
+    await store.enqueue({ ...request, requestId: 'another-owner-request' });
+    expect((await reconcile()).decision).toBe('retry');
+    advance(1000);
+    expect(await reconcile(async () => ({ ...issue(), labels: ['Deferred'] })))
+      .toMatchObject({ decision: 'retry', updatedTasks: 1 });
+    expect((await store.list()).find((item) => item.id === task.id).planning.revokedAt).toBe(time + 1000);
+  });
+
   it('does not confirm when another bound request appears before receipt acknowledgement', async () => {
     const { reconcile, inbox, store, request } = await setup();
     const racedInbox = { store: inbox.store, pending: () => inbox.pending(), confirm: async (...args) => {
