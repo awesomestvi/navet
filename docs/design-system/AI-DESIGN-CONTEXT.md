@@ -28,13 +28,15 @@ combined API.
 Export presence does not establish component maturity. The [maturity inventory](component-maturity.json)
 classifies inspected canonical components and records rationale and source/story evidence. The catalog
 matches each annotation to the exact export, import surface and source; stale identities or missing
-evidence stop generation. Other exports remain `unclassified`. `maturityFingerprint` covers the
+evidence stop generation. Types and token/helper values remain `unclassified`; component maturity applies to the inspected
+component and namespace contracts. `maturityFingerprint` covers the
 inventory and evidence separately from the TypeScript `sourceFingerprint`.
 
 `app-coupled` identifies components that require app context or helpers. Reuse them inside Navet's
 app through their listed import surface; they are not standalone `@navet/ui` contracts. `stable`
 is reserved for an explicitly curated mature contract, and `experimental` identifies an evolving
-contract. The inventory covers card/sheet foundations, form controls, typography, status and action
+contract. The inventory covers the current catalog's component and namespace contracts, including
+card/sheet foundations, form controls, typography, status and action
 primitives, navigation workspace parts, dialog compositions and tabs. Read namespace entries as
 composition objects, not JSX components. Layout wrappers can have narrower contracts than their
 surrounding app-coupled composition. No contract is classified stable. Read each rationale for context requirements, labeling responsibilities and
