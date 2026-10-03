@@ -131,6 +131,42 @@ Use unique IDs when multiple instances can coexist. The caller owns validation, 
 and persistence; pair this field with the existing settings workflow rather than adding a separate
 save mechanism.
 
+## Empty card with an optional action
+
+Keep the card shell and empty-state pattern together. The caller owns card dimensions and the
+configuration workflow. Supply both `actionLabel` and `onAction` for an action; omit them when
+there is no supported destination. Import icons explicitly. Storybook test helpers belong only
+in test stories, while a product caller supplies its own handler.
+
+```tsx
+import { BaseCard } from '@navet/app/ui-kit/primitives';
+import { CardEmptyState } from '@navet/app/ui-kit/patterns';
+import { Plus, Rss } from 'lucide-react';
+
+export function EmptyFeedCard({ onConfigureFeeds }: { onConfigureFeeds?: () => void }) {
+  return (
+    <div className="h-40 w-40">
+      <BaseCard size="small">
+        <CardEmptyState
+          title="No feeds selected"
+          description="Select one or more providers for this card."
+          icon={Rss}
+          size="small"
+          actionLabel={onConfigureFeeds ? 'Configure RSS providers' : undefined}
+          actionIcon={Plus}
+          onAction={onConfigureFeeds}
+        />
+      </BaseCard>
+    </div>
+  );
+}
+```
+
+Review the existing small and large/no-action stories before adapting the pattern to another
+card. This example proves composition and API compatibility; provider configuration, saved choices
+and other card sizes need their own journey evidence. Product copy follows the feature's existing
+translation workflow.
+
 ## Evidence for a UI approval package
 
 Record the selected recipe, source contract, current commit and actual story IDs. Review realistic
