@@ -55,15 +55,16 @@ export async function reconcileLinearRefresh({ inbox, eventId, store, owner, rea
     try { binding = completeIssue(issue, record.receipt.issueId, observedAt); }
     catch (error) { status = error instanceof LinearIssueNotFoundError && error.issueId === record.receipt.issueId ? 'missing' : 'unavailable'; }
   }
+  // State identity is stable across owners' fresh reads; observation time remains separate.
   const reference = 'sha256:' + createHash('sha256').update(JSON.stringify({
-    eventId, issueId: record.receipt.issueId, startedAt, observedAt, status,
+    eventId, issueId: record.receipt.issueId, status,
     ...(binding ? { binding, labels: [...issue.labels].sort(), archivedAt: issue.archivedAt, canceledAt: issue.canceledAt } : {}),
   })).digest('hex');
   const observation = { status, reference: `linear-refresh:${eventId}:${reference}`, observedAt, ...(status === 'available' ? { issue } : status === 'missing' ? { issueId: record.receipt.issueId } : {}) };
   const tasks = (await store.list()).filter((task) => task.planning?.binding.issueId === record.receipt.issueId &&
     !['delivered', 'terminal-failure'].includes(task.state));
   // Each coordinator refreshes only tasks under its live leases. Successful event-scoped
-  // observations survive handoff in task history, so another owner can finish the receipt.
+  // observations survive handoff when all owners read the same proposal state.
   let updatedTasks = 0;
   for (const task of tasks) {
     if (task.lease?.owner !== owner || task.lease.expiresAt <= observedAt) continue;

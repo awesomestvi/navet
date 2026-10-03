@@ -184,6 +184,27 @@ describe('fresh Linear planning reconciliation', () => {
     expect(planningStatus(tasks.find((item) => item.id === next.id), clock()).result).toBe('pass');
   });
 
+  it('keeps a receipt pending until every task reflects the same confirming proposal state', async () => {
+    const { reconcile, inbox, store, request, task, advance } = await setup();
+    const next = await store.enqueue({ ...request, requestId: 'next-owner-request' });
+    expect((await reconcile()).decision).toBe('retry');
+    await store.mutate(task.id, 'release', { owner: 'coordinator', reason: 'Allow next coordinator.' });
+    await store.mutate(next.id, 'claim', { owner: 'next-coordinator', durationMs: 300_000 });
+    advance(1000);
+    const withdrawn = async () => ({ ...issue(), labels: ['Deferred'] });
+    expect(await reconcile(withdrawn, { owner: 'next-coordinator' }))
+      .toMatchObject({ decision: 'retry', updatedTasks: 1 });
+    expect(await inbox.pending()).toHaveLength(1);
+    await store.mutate(next.id, 'release', { owner: 'next-coordinator', reason: 'Refresh previous request too.' });
+    await store.mutate(task.id, 'claim', { owner: 'coordinator', durationMs: 300_000 });
+    advance(1000);
+    expect(await reconcile(withdrawn)).toMatchObject({ decision: 'confirmed', updatedTasks: 1 });
+    expect(await inbox.pending()).toEqual([]);
+    for (const record of await store.list()) expect(planningStatus(record, time + 2000).reason).toBe('planning-request-revoked');
+    await expect(store.mutate(task.id, 'transition', { owner: 'coordinator', state: 'investigating', reason: 'Start.' }))
+      .rejects.toThrow('revoked');
+  });
+
   it('applies later withdrawal reads to already handled records while other owners are pending', async () => {
     const { reconcile, store, request, task, advance } = await setup();
     await store.enqueue({ ...request, requestId: 'another-owner-request' });

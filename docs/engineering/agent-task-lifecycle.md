@@ -223,19 +223,20 @@ Cached issue bodies and webhook payloads cannot substitute for this read.
 The consumer checks the returned identity, complete fields and elapsed read freshness, then
 updates nonterminal tasks bound to that issue through normal `planning-observation` mutations.
 Each caller updates only records under its own live leases; the consumer neither claims ownership nor
-creates tasks. Event-scoped observations in task history preserve progress across release, handoff
-and restart. Other coordinators reconcile their records with fresh service reads, and the receipt
-remains pending until every applicable nonterminal record has been handled. Confirmation rechecks
-that condition atomically with receipt persistence. An earlier event observation records completed
-reconciliation but still expires normally as execution evidence. Terminal history and unbound
-tasks remain intact. Scope withdrawal latches through
-the existing guard. An Approved stage does not grant authority or revive a revoked request.
+creates tasks. Event-scoped observations preserve progress across release, handoff and restart only
+while each record’s latest observation matches the same normalized proposal state. Other
+coordinators reconcile their records with fresh service reads, and the receipt remains pending
+until every applicable nonterminal record has been handled. Confirmation rechecks
+that condition atomically with receipt persistence. If a later owner reads a changed proposal,
+other owners must refresh their records before confirmation. Matching observations still expire
+normally as execution evidence. Terminal history and unbound tasks remain intact. Scope withdrawal
+latches through the existing guard. An Approved stage does not grant authority or revive a revoked request.
 
 A failed, slow, mismatched or incomplete read records unavailable planning evidence on owned
 bound tasks and returns `retry`, leaving the receipt pending. A successful read confirms the
-receipt only after every applicable nonterminal task has a durable event-scoped observation. Lease failures or interrupted
-confirmation leave pending work for reconciliation. Confirmation persists a hash of normalized
-service-read evidence and timestamps, omitting proposal contents and temporary credentials.
+receipt only after every applicable nonterminal task has a matching durable event-scoped
+observation. Lease failures or interrupted confirmation leave pending work for reconciliation. Confirmation persists a hash of normalized
+service-read state with the confirming observation timestamp, omitting proposal contents and temporary credentials.
 
 Run this consumer from an existing coordinator with verified service access. It opens no listener,
 sends no message, changes no Linear issue and starts no worker. New execution still needs its own

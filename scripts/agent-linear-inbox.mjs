@@ -52,12 +52,13 @@ function compactInbox(inbox, now, { deduplicationMs, maxSettledReceipts }) {
   return inbox;
 }
 
-// The task history retains event-scoped observations across lease handoffs and restart.
-export function taskHasLinearRefresh(task, eventId, firstSeenAt) {
-  return task.history.some((entry) => entry.action === 'planning-observation' &&
-    (['pass', 'fail'].includes(entry.planning?.result) || entry.planning?.reason === 'planning-stage-ambiguous') &&
-    entry.planning.observedAt >= firstSeenAt &&
-    entry.planning.reference.startsWith(`linear-refresh:${eventId}:`));
+// Lease handoffs retain progress only while the latest observation matches this read.
+function taskHasLinearRefresh(task, eventId, firstSeenAt, reference) {
+  const observation = task.planning.observation;
+  return observation &&
+    (['pass', 'fail'].includes(observation.result) || observation.reason === 'planning-stage-ambiguous') &&
+    observation.observedAt >= firstSeenAt &&
+    observation.reference === `linear-refresh:${eventId}:${reference}`;
 }
 
 export class LinearEventInputError extends Error {}
@@ -118,7 +119,7 @@ export class AgentLinearInbox {
       if (requireTaskReconciliation && state.tasks.some((task) =>
         task.planning?.binding.issueId === record.receipt.issueId &&
         !['delivered', 'terminal-failure'].includes(task.state) &&
-        !taskHasLinearRefresh(task, eventId, record.firstSeenAt))) {
+        !taskHasLinearRefresh(task, eventId, record.firstSeenAt, observation.reference))) {
         return { eventId, decision: 'retry', authority: 'none' };
       }
       record.confirmation = { reference: observation.reference, observedAt: observation.observedAt };
