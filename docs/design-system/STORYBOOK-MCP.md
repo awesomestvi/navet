@@ -21,6 +21,37 @@ schema converter is pinned within its supported dependency range to match the ad
 version. Discover tools and their schemas from the running server: the current names differ
 from the latest [Storybook MCP documentation](https://storybook.js.org/docs/ai/mcp/overview).
 
+## Connect a Codex client
+
+Start the loopback server above, then register it:
+
+```bash
+codex mcp add navet-storybook --url http://127.0.0.1:6017/mcp
+codex mcp get navet-storybook --json
+```
+
+These commands save and inspect the connection configuration. Load the connection in a new
+Codex session; a saved entry alone does not prove live discovery. Confirm that the client exposes
+Navet's documentation, preview and focused testing tools before using them. The server requires
+no OAuth login. Its process must remain running for calls to succeed.
+
+Codex also supports a trusted project's `.codex/config.toml` when a project-scoped connection is
+preferred:
+
+```toml
+[mcp_servers.navet-storybook]
+url = "http://127.0.0.1:6017/mcp"
+```
+
+Use one configuration location for the connection. The native Codex app-server pilot successfully
+initialized this HTTP endpoint and discovered all eight tools and the preview-app resource without
+starting a model or delivery task. OAuth status discovery returned unknown, and session cleanup
+reported an unsupported DELETE response; these did not prevent tool inventory. Actual tool calls
+in a delivery session and broader task evaluation need their own evidence.
+
+Remove an unwanted global registration with `codex mcp remove navet-storybook`. Configuration
+behavior is documented in the [official Codex MCP guide](https://learn.chatgpt.com/docs/extend/mcp?surface=cli).
+
 ## Use the available tools
 
 1. Call `list-all-documentation` with `withStoryIds: true` to discover component and story IDs.
@@ -64,5 +95,5 @@ additional themes and the full product journey still need their own coverage. Th
 three preview and test targets, not a product-wide UX audit.
 
 Keep filesystem access as an operational fallback. Current MCP extraction does not establish
-the design-system discovery exit gate. Broader component coverage, meaningful examples, client
-configuration and comparison on representative delivery tasks remain evaluation work.
+the design-system discovery exit gate. Broader component coverage, meaningful examples, native tool calls in delivery sessions and
+comparison on representative delivery tasks remain evaluation work.
