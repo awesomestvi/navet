@@ -1,0 +1,3 @@
+type: internal
+audiences: []
+summary: Bind planning proposals to immutable scope fingerprints and recheck withdrawal before new agent execution.

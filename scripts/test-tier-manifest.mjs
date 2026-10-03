@@ -10,6 +10,7 @@ export const TEST_TIERS = {
       'assets/public/boot-i18n.test.ts',
       'scripts/agent-dispatch-workflow.test.mjs',
       'scripts/agent-task-store.test.mjs',
+      'scripts/agent-planning-scope.test.mjs',
       'scripts/agent-component-catalog.test.mjs',
       'scripts/run-as-navet-nisse.test.mjs',
       'scripts/sync-github-labels.test.mjs',

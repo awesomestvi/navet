@@ -13,6 +13,7 @@ These suites block release-oriented workflows and should stay intentionally smal
 
 | Group | Why it exists | Status |
 |---|---|---|
+| `scripts/agent-task-store.test.mjs`, `scripts/agent-planning-scope.test.mjs` | Private lifecycle authority, scope withdrawal and duplicate/recovery boundaries | Keep |
 | `assets/public/boot-i18n.test.ts`, `scripts/vite-preload-graph.test.mjs` | Low-power startup and authenticated-transition preload graph remain parseable and release-gated | Keep |
 | `packages/provider-*/src/*.test.*` | Provider contract conformance for Home Assistant, Homey, openHAB, and planned-provider boundaries | Keep |
 | `packages/app/src/auth/__tests__/adapters.test.ts`, `runtime.test.ts`, `homeAssistantDiscovery.test.ts`, `homey-oauth-auth.test.ts` | Auth/runtime bootstrap and provider login flows | Keep |

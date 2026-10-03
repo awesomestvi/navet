@@ -89,6 +89,47 @@ through the owning service immediately before dispatch and completion. The Linea
 write as the maintainer account, so an account ID or Approved label alone is insufficient evidence
 of a human decision. Preserve the existing explicit maintainer request path during integration.
 
+## Planning Proposal Scope
+
+For a delivery selected from the planning hub, include `planningBinding` in the enqueue input.
+`createPlanningBinding(issue)` produces the issue/team/project identity and a SHA-256 revision
+from the full title, description and complete attachment references. Use a complete fresh issue
+read; missing attachment data cannot be treated as an empty list. Priority and proposal-stage
+changes do not change the scope fingerprint. Record the selected option, acceptance criteria and
+visibility decision in the proposal before the maintainer accepts its revision.
+
+The trusted request's `authority.planningRevision` must name that exact fingerprint. Repeated
+intake cannot change or remove the binding. A revised proposal needs a new authorized request.
+The fingerprint and an Approved label verify neither human authorship nor implementation
+permission. The existing trusted maintainer request and permission checks remain required;
+connector-attributed account IDs cannot establish a human decision.
+
+After claiming the existing task, use the `planning-observation` mutation with `observation`:
+`status` (`available` or `unavailable`), `observedAt`, service `reference`, and, when available,
+the freshly fetched complete `issue`. The issue supplies its ID/UUID, team, project, title,
+description, attachments, complete label names and archival/cancellation state. Re-fetch through
+the owning service immediately before new execution. Record access or synchronization failure
+as unavailable, rather than retaining an earlier successful read as current evidence.
+
+A matching scope in exactly one Approved or In delivery stage supplies a planning-scope pass.
+Changes to content, references or identity, withdrawal, or archival revoke this request for new
+execution. A later Approved label cannot revive it; resumption requires a new trusted request.
+Ambiguous/missing stages and lost access are unverified. Observations expire after one minute
+and cannot move backwards. These checks gate first dispatch, new follow-up sends, new resource
+allocations, execution transitions and readiness/completion. The first dispatch separately
+rechecks request authority and its accepted planning revision.
+
+An uncertain dispatch or follow-up remains reconcilable after withdrawal. Confirm receipts,
+record usage, preserve context and release ownership without starting new work. The record
+retains the binding and normalized observation across restart; it omits proposal text and
+attachment URLs. It does not cancel a running worker or mark a Linear proposal delivered.
+
+The coordinator must verify service responses and human decision provenance before supplying
+observations, stop an active worker when appropriate, and reconcile planning updates idempotently.
+Automatic Linear approval intake, verified human provenance, remote synchronization and active-worker
+withdrawal require integration pilots. Existing explicit requests without a planning binding retain
+their request-authority workflow; this optional guard does not claim coverage for them.
+
 ## Execution Budgets
 
 Bounded requests include `resourceLimits` with three positive integers: `maxElapsedMs`,
