@@ -64,8 +64,8 @@ describe('read-only planning result verification', () => {
     (v) => { v.comment.issue.archivedAt = new Date(time).toISOString(); },
     (v) => { v.comment.issue.canceledAt = new Date(time).toISOString(); },
     (v) => { v.comment.body = 'Different confidential content.'; },
-    (v) => { v.comment.createdAt = new Date(time - 2000).toISOString(); },
-    (v) => { v.comment.updatedAt = new Date(time + 1).toISOString(); },
+    (v) => { v.comment.createdAt = new Date(time - 31_001).toISOString(); },
+    (v) => { v.comment.updatedAt = new Date(time + 30_001).toISOString(); },
     (v) => { v.comment.updatedAt = new Date(time - 999).toISOString(); },
     (v) => { v.comment.url = 'https://example.test/secret'; },
     (v) => { v.comment.url = 'https://user:secret@linear.app/example/issue/NAV-42/test'; },
@@ -73,6 +73,16 @@ describe('read-only planning result verification', () => {
   ])('rejects identity, publication, lifecycle or content mismatch %#', async (change) => {
     const { reader } = setup({ response: () => { const value = data(); change(value); return Response.json({ data: value }); } });
     expect(await reader(expected)).toEqual({ status: 'unavailable', reference: 'linear-result-unavailable', observedAt: time });
+  });
+
+  it.each([-30_000, 30_000])('accepts bounded cross-system clock skew of %i ms', async (offset) => {
+    const { reader } = setup({ response: () => {
+      const value = data();
+      value.comment.createdAt = new Date(time + offset).toISOString();
+      value.comment.updatedAt = value.comment.createdAt;
+      return Response.json({ data: value });
+    } });
+    expect((await reader({ ...expected, notBefore: time })).status).toBe('available');
   });
 
   it('rejects edits between the two reads even when content is unchanged', async () => {

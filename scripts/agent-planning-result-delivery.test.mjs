@@ -59,8 +59,8 @@ async function setup(options = {}) {
       const input = payload.variables.input;
       if (options.failBeforeCreate) throw new Error('Synthetic transport failure.');
       const comment = { id: input.id, body: input.body, issue: remoteIssue, user: { id: id(3), app: true, active: true },
-        url: `https://linear.app/example/issue/NAV-42/research#comment-${input.id}`, createdAt: new Date(time).toISOString(),
-        updatedAt: new Date(time).toISOString(), archivedAt: null, onBehalfOf: null, syncedWith: [] };
+        url: `https://linear.app/example/issue/NAV-42/research#comment-${input.id}`, createdAt: new Date(time + (options.serviceClockSkewMs ?? 0)).toISOString(),
+        updatedAt: new Date(time + (options.serviceClockSkewMs ?? 0)).toISOString(), archivedAt: null, onBehalfOf: null, syncedWith: [] };
       comments.set(input.id, comment);
       if (options.loseAcknowledgement) throw new Error('Synthetic lost acknowledgement.');
       return Response.json({ data: { commentCreate: { success: true, comment } } });
@@ -100,6 +100,13 @@ describe('coordinator result handoff with durable storage and real transport ada
     expect(counts()).toEqual({ mutations: 1, writerCreations: 1 });
     expect(await readFile(path.join(directory, 'tasks.json'), 'utf8')).not.toContain(body);
     expect(JSON.stringify(result)).not.toMatch(/Private worker|writer-token|reader-token/);
+  });
+
+  it.each([-30_000, 30_000])('reconciles a created artifact when the service clock differs by %i ms', async (serviceClockSkewMs) => {
+    const { input, counts } = await setup({ serviceClockSkewMs });
+    expect((await deliverPlanningResult(input)).status).toBe('verified');
+    expect((await deliverPlanningResult({ ...input, body: undefined })).status).toBe('verified');
+    expect(counts()).toEqual({ mutations: 1, writerCreations: 1 });
   });
 
   it('performs the first send after an unavailable pre-send read without replacing the reserved identity', async () => {

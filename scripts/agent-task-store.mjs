@@ -3,6 +3,7 @@ import { chmod, mkdir, open, readFile, rename, rm, stat } from 'node:fs/promises
 import { hostname } from 'node:os';
 import path from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
+import { linearResultTimesMatch } from './agent-linear-result-time.mjs';
 import { evaluatePlanningObservation, requirePlanningScope, validatePlanningBinding } from './agent-planning-scope.mjs';
 
 // Load through Node so browser-oriented test bundlers do not bundle this native module.
@@ -498,10 +499,8 @@ export class AgentTaskStore {
                 result.issueId !== receipt.issueId || result.authorId !== receipt.writerAppUserId ||
                 result.bodyHash !== receipt.bodyHash || receipt.head !== task.head || receipt.revision !== task.revision ||
                 receipt.planningRevision !== task.planning?.binding.revision ||
-                typeof result.createdAt !== 'string' || typeof result.updatedAt !== 'string' ||
-                !Number.isFinite(Date.parse(result.createdAt)) || !Number.isFinite(Date.parse(result.updatedAt)) ||
-                Date.parse(result.createdAt) < receipt.intentAt || Date.parse(result.updatedAt) < Date.parse(result.createdAt) ||
-                Date.parse(result.updatedAt) > observation.observedAt ||
+                !linearResultTimesMatch({ createdAt: result.createdAt, updatedAt: result.updatedAt,
+                  notBefore: receipt.intentAt, observedAt: observation.observedAt }) ||
                 observation.reference !== 'linear-result:sha256:' + createHash('sha256').update(JSON.stringify(result)).digest('hex')) {
               throw new Error('Planning result requires fresh exact-scope service readback.');
             }

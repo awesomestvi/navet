@@ -178,7 +178,9 @@ its accepted scope; comment contents cannot establish their own task identity or
 `linearResultBodyHash` hashes the exact UTF-8 Markdown representation returned by Linear.
 
 The reader checks the workspace, active app identities, proposal team and project, explicit active
-lifecycle fields, content hash, creation time and Linear URL. Comments written on behalf of a human
+lifecycle fields, content hash, creation time and Linear URL. Cross-system timestamp comparisons
+allow up to 30 seconds of skew between Linear and the runner. Ordering within Linear stays strict,
+and runner observation freshness and approval expiry receive no allowance. Comments written on behalf of a human
 or associated with external sync targets remain unavailable. Two bounded reads must agree. The
 result contains artifact metadata and a service reference, without the comment body or credentials.
 Permission-masked missing comments and service errors remain unverified rather than proving deletion.

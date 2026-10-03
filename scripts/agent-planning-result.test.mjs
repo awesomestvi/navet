@@ -152,11 +152,23 @@ describe('durable Linear result intent and readback', () => {
   it.each([{ commentId: 'other' }, { issueId: 'other' }, { authorId: 'human' },
     { bodyHash: linearResultBodyHash('Changed result.') }, { url: 'https://github.com/example/result' },
     { createdAt: 'invalid' }, { createdAt: new Date(1).toISOString() },
-    { updatedAt: new Date(1_700_000_000_001).toISOString() }])('rejects mismatched readback %j', async (change) => {
+    { updatedAt: new Date(1_700_000_030_001).toISOString() },
+    { createdAt: new Date(1_699_999_969_999).toISOString() }])('rejects mismatched readback %j', async (change) => {
     const { act, intent, readback, store } = await setup();
     const pending = await intent();
     await expect(act('planning-result-observation', { observation: readback(pending.planningResult, change) })).rejects.toThrow('Planning result');
     expect((await store.list())[0].planningResult.status).toBe('pending');
+  });
+
+  it.each([-30_000, 30_000])('confirms exact service readback with bounded clock skew of %i ms', async (offset) => {
+    const { act, intent, readback, now } = await setup();
+    const pending = await intent();
+    const serviceTime = new Date(now() + offset).toISOString();
+    const confirmed = await act('planning-result-observation', { observation: readback(pending.planningResult,
+      { createdAt: serviceTime, updatedAt: serviceTime }) });
+    expect(confirmed.planningResult.status).toBe('confirmed');
+    expect(confirmed.planningResult.observedAt).toBe(now());
+    expect(confirmed.evidence).toEqual([]);
   });
 
   it('blocks new writes after withdrawal but permits read-only reconciliation of pending output', async () => {

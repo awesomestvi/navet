@@ -110,12 +110,13 @@ an explicit destination value. Changing the destination requires a new authorize
    `intentAt` as `notBefore`. An unavailable read cannot establish that creation failed or authorize
    a replacement comment. A pending or unverified reserved intent with no `attemptedAt` can obtain
    its first send permit using the same comment ID through the controlled writer after the current
-   source and ownership checks pass. This requires
-   every writer to use the durable attempt protocol; an imported or unknown writer outcome requires
+   source and ownership checks pass. This requires every writer to use the durable attempt protocol; an imported or unknown writer outcome requires
    investigation. A confirmed intent returns `skip` for creation; completion still needs
    fresh readback. Changed content or head requires a new scoped request.
-4. Record the owning-service result using `planning-result-observation`. Available observations
-   must match the reserved comment, destination, writer and content, with a fresh service reference.
+4. Record the owning-service result using `planning-result-observation`. The reader and store allow
+   at most 30 seconds of Linear/runner clock skew for service creation and update timestamps.
+   Local observations must remain fresh, and Linear update time cannot precede creation time.
+   Available observations must match the reserved comment, destination, writer and content, with a fresh service reference.
    For an unavailable read, include the reserved `commentId`; the receipt becomes `unverified` and
    blocks readiness even when earlier output evidence passed. History retains prior observations.
    Conflicting observations cannot restore a pass at the same timestamp as an unavailable result.

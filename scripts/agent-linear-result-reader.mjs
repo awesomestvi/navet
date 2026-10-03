@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
+import { linearResultTimesMatch } from './agent-linear-result-time.mjs';
 import { readLinearResponseJson } from './agent-linear-reader.mjs';
 
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
@@ -75,12 +76,10 @@ export function createLinearResultReader({ getAccessToken, policy, fetchImpl = g
         }
         if (typeof comment.createdAt !== 'string' || typeof comment.updatedAt !== 'string' ||
             typeof comment.url !== 'string' || comment.url.length > 4096) throw new Error('Incomplete result metadata.');
-        const createdAt = Date.parse(comment.createdAt);
-        const updatedAt = Date.parse(comment.updatedAt);
         const observed = now();
         if (!Number.isSafeInteger(observed) || observed < startedAt || observed - startedAt > maxReadMs ||
-            !Number.isFinite(createdAt) || !Number.isFinite(updatedAt) ||
-            createdAt < expected.notBefore || updatedAt < createdAt || updatedAt > observed) {
+            !linearResultTimesMatch({ createdAt: comment.createdAt, updatedAt: comment.updatedAt,
+              notBefore: expected.notBefore, observedAt: observed })) {
           throw new Error('Result time mismatch.');
         }
         const bodyHash = linearResultBodyHash(comment.body);
