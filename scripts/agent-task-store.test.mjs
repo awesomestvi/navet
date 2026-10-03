@@ -252,6 +252,21 @@ describe('durable agent task lifecycle', () => {
     expect((await store.mutate(task.id, 'claim', { ...input, observation: { owner, status: 'terminal', observedAt: 1_100_001 } })).lease.owner).toBe(input.owner);
   });
 
+  it('keeps an expired undispatched claim occupying capacity across restart until observed recovery and release', async () => {
+    const { store, directory, task, request, owner, claim, advance } = await setup();
+    await claim();
+    const second = await store.enqueue({ ...request, requestId: 'second-queued-task' });
+    advance(100_001);
+    const restarted = new AgentTaskStore(directory, { now: () => 1_100_001 });
+    await expect(restarted.mutate(second.id, 'claim', { owner: 'parallel', durationMs: 1000 })).rejects.toThrow('Active task budget');
+    await expect(restarted.mutate(task.id, 'claim', { owner: 'recovery', durationMs: 1000 })).rejects.toThrow('fresh owner');
+    await restarted.mutate(task.id, 'claim', { owner: 'recovery', durationMs: 1000,
+      observation: { owner, status: 'missing', observedAt: 1_100_001 } });
+    await expect(restarted.mutate(second.id, 'claim', { owner: 'parallel', durationMs: 1000 })).rejects.toThrow('Active task budget');
+    await restarted.mutate(task.id, 'release', { owner: 'recovery', reason: 'Observed missing owner and recovered record.' });
+    expect((await restarted.mutate(second.id, 'claim', { owner: 'parallel', durationMs: 1000 })).lease.owner).toBe('parallel');
+  });
+
   it('hands off record ownership without freeing a live delivery or resetting its budget', async () => {
     const { store, task, owner, act, usage, request } = await boundedSetup();
     await usage(0, 0);
@@ -284,7 +299,7 @@ describe('durable agent task lifecycle', () => {
   });
 
   it('invalidates readiness on a new head and prevents failing or missing evidence from passing', async () => {
-    const { task, claim, act, evidence } = await setup();
+    const { task, claim, act, evidence, advance } = await setup();
     await claim();
     const intent = await act('dispatch-intent');
     await act('bind', { token: intent.dispatch.token, threadId: 'delivery-thread' });
@@ -293,9 +308,9 @@ describe('durable agent task lifecycle', () => {
     await act('transition', { state: 'verifying', reason: 'Checks.' });
     await evidence('ci'); await evidence('visual');
     await expect(act('transition', { state: 'awaiting-approval', reason: 'Review.' })).rejects.toThrow('incomplete');
-    await evidence('output'); await evidence('ci', 'sha-a', 'fail');
+    await evidence('output'); advance(1); await evidence('ci', 'sha-a', 'fail');
     await expect(act('transition', { state: 'awaiting-approval', reason: 'Review.' })).rejects.toThrow('incomplete');
-    await evidence('ci');
+    advance(1); await evidence('ci');
     expect((await act('transition', { state: 'awaiting-approval', reason: 'Review.' })).state).toBe('awaiting-approval');
     expect((await act('head', { head: 'sha-b' })).state).toBe('verifying');
     await expect(evidence('ci', 'sha-a')).rejects.toThrow('different head');
@@ -303,15 +318,59 @@ describe('durable agent task lifecycle', () => {
     expect(task.head).toBeNull();
   });
 
+  it('rejects delayed evidence after restart and keeps the newest gate failure blocking approval', async () => {
+    const { directory, store, task, owner, claim, act, evidence, advance } = await setup();
+    await claim();
+    const intent = await act('dispatch-intent');
+    await act('bind', { token: intent.dispatch.token, threadId: 'delivery-thread' });
+    await act('head', { head: 'sha-a' });
+    await act('transition', { state: 'investigating', reason: 'Start.' });
+    await act('transition', { state: 'verifying', reason: 'Checks.' });
+    await evidence('ci'); await evidence('visual'); await evidence('output');
+    advance(100);
+    await evidence('ci', 'sha-a', 'fail');
+    const restarted = new AgentTaskStore(directory, { now: () => 1_000_200 });
+    await expect(restarted.mutate(task.id, 'evidence', { owner, evidence: {
+      gate: 'ci', head: 'sha-a', revision: 'scope-v1', result: 'pass', artifact: 'delayed-pass', observedAt: 1_000_000,
+    } })).rejects.toThrow('cannot move backwards');
+    expect((await store.list())[0].evidence.find((item) => item.gate === 'ci')).toMatchObject({ result: 'fail', observedAt: 1_000_100 });
+    await expect(restarted.mutate(task.id, 'transition', { owner, state: 'awaiting-approval', reason: 'Review.' })).rejects.toThrow('incomplete');
+    advance(200);
+    await evidence('ci');
+    expect((await act('transition', { state: 'awaiting-approval', reason: 'New checks.' })).state).toBe('awaiting-approval');
+  });
+
+  it('rejects conflicting timestamp ties across restart while allowing identical receipt retries', async () => {
+    const { directory, store, task, owner, claim, act, evidence, advance } = await setup();
+    await claim();
+    const intent = await act('dispatch-intent');
+    await act('bind', { token: intent.dispatch.token, threadId: 'delivery-thread' });
+    await act('head', { head: 'sha-a' });
+    await act('transition', { state: 'investigating', reason: 'Start.' });
+    await act('transition', { state: 'verifying', reason: 'Checks.' });
+    await evidence('ci'); await evidence('ci', 'sha-a', 'fail'); await evidence('visual'); await evidence('output');
+    const prior = (await store.list())[0].evidence.find((item) => item.gate === 'ci');
+    const restarted = new AgentTaskStore(directory, { now: () => 1_000_000 });
+    await restarted.mutate(task.id, 'evidence', { owner, evidence: prior });
+    await expect(restarted.mutate(task.id, 'evidence', { owner, evidence: { ...prior, result: 'pass' } }))
+      .rejects.toThrow('share a timestamp');
+    await expect(restarted.mutate(task.id, 'transition', { owner, state: 'awaiting-approval', reason: 'Review.' }))
+      .rejects.toThrow('incomplete');
+    expect((await store.list())[0].evidence.find((item) => item.gate === 'ci')).toEqual(prior);
+    advance(1);
+    await evidence('ci');
+    expect((await act('transition', { state: 'awaiting-approval', reason: 'New checks.' })).state).toBe('awaiting-approval');
+  });
+
   it('retains failure evidence and rejects automatic completion of implementation without acceptance', async () => {
-    const { store, claim, act, evidence } = await setup();
+    const { store, claim, act, evidence, advance } = await setup();
     await claim();
     const intent = await act('dispatch-intent');
     await act('bind', { token: intent.dispatch.token, threadId: 'delivery-thread' });
     await act('head', { head: 'sha-a' });
     await act('transition', { state: 'investigating', reason: 'Start.' });
     await act('transition', { state: 'verifying', reason: 'Check.' });
-    await evidence('ci', 'sha-a', 'fail'); await evidence('ci'); await evidence('visual'); await evidence('output');
+    await evidence('ci', 'sha-a', 'fail'); advance(1); await evidence('ci'); await evidence('visual'); await evidence('output');
     await expect(act('transition', { state: 'delivered', reason: 'Done.' })).rejects.toThrow('maintainer acceptance');
     const record = (await store.list())[0];
     expect(record.state).toBe('verifying');

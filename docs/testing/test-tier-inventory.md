@@ -13,6 +13,7 @@ These suites block release-oriented workflows and should stay intentionally smal
 
 | Group | Why it exists | Status |
 |---|---|---|
+| `scripts/agent-task-store.test.mjs`, `scripts/agent-planning-scope.test.mjs`, `scripts/agent-linear-event.test.mjs`, `scripts/agent-linear-inbox.test.mjs`, `scripts/agent-linear-refresh.test.mjs` | Private lifecycle authority, signed planning events, durable receipt acknowledgement, fresh service-read reconciliation, scope withdrawal and duplicate/recovery boundaries | Keep |
 | `scripts/agent-design-tokens.test.mjs`, `scripts/agent-design-token-css.test.mjs` | Agent design context preserves source provenance and units; CSS discovery rejects imports outside the checkout and installed Tailwind package and prevents stylesheet JavaScript execution | Keep |
 | `assets/public/boot-i18n.test.ts`, `scripts/vite-preload-graph.test.mjs` | Low-power startup and authenticated-transition preload graph remain parseable and release-gated | Keep |
 | `packages/provider-*/src/*.test.*` | Provider contract conformance for Home Assistant, Homey, openHAB, and planned-provider boundaries | Keep |
@@ -62,6 +63,7 @@ workflows by default.
 | `packages/app/src/features/dashboard/**` | Largest user-facing regression surface for layout, editing, widgets, and navigation | Keep |
 | `packages/app/src/features/media/**`, `lighting/**`, `security/**`, `energy/**`, `climate/**`, `rss/**`, `tasks/**`, `settings/**`, `sensors/**`, `vacuum/**`, `calendar/**`, `notifications/**` | User-visible feature regressions and UI behavior | Keep |
 | `packages/app/src/components/**` | Shared UI and interaction regressions | Keep |
+| `scripts/agent-component-catalog.test.mjs` | Source-derived component metadata, story references, and compiler-input fingerprints for developer discovery | Keep |
 | most `packages/app/src/hooks/**` | Hook-level regression coverage for app behavior and feature composition | Keep |
 | most `packages/app/src/utils/**`, `packages/app/src/runtime/**`, `packages/app/src/navigation/**`, `packages/app/src/api/**` | Utility and runtime drift detection that is useful but not release-critical | Keep |
 | `pnpm test:storybook` | Separate visual/story regression surface | Keep |
