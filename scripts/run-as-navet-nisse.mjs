@@ -72,7 +72,7 @@ export function parseOperation(args, repository = DEFAULT_REPOSITORY) {
   }
   const [operation, first, second, third] = args;
   if (operation === 'comment' && second === '--body-file' && third && args.length === 4) {
-    const number = numeric(first, 'Issue or pull request number');
+    const number = numeric(first, 'Issue number');
     return {
       method: 'POST',
       path: `/repos/${repository}/issues/${number}/comments`,
@@ -110,7 +110,33 @@ export function parseOperation(args, repository = DEFAULT_REPOSITORY) {
   );
 }
 
+async function requireIssueTarget(token, operation, fetchImpl) {
+  const headers = { Accept: 'application/vnd.github+json', Authorization: `Bearer ${token}`,
+    'X-GitHub-Api-Version': '2022-11-28' };
+  const match = /^\/repos\/([\w.-]+\/[\w.-]+)\/issues\/(\d+|comments\/\d+)\/(comments|labels\/[^/]+|reactions(?:\/\d+)?)$/.exec(operation.path);
+  if (!match) throw new Error('Unsupported Navet Nisse mutation target.');
+  const prefix = `/repos/${match[1]}/issues/`;
+  let target = match[2];
+  if (target.startsWith('comments/')) {
+    const response = await fetchWithTimeout(`${API_ROOT}${prefix}${target}`, { method: 'GET', headers }, fetchImpl);
+    if (!response.ok) throw new Error(`Navet Nisse comment target read failed with ${response.status}.`);
+    const comment = await response.json();
+    const issuePrefix = `${API_ROOT}${prefix}`;
+    if (String(comment.id) !== target.slice('comments/'.length) || typeof comment.issue_url !== 'string' ||
+        !comment.issue_url.startsWith(issuePrefix) || !/^\d+$/.test(comment.issue_url.slice(issuePrefix.length))) {
+      throw new Error('Navet Nisse comment target identity mismatch.');
+    }
+    target = comment.issue_url.slice(issuePrefix.length);
+  }
+  const response = await fetchWithTimeout(`${API_ROOT}${prefix}${target}`, { method: 'GET', headers }, fetchImpl);
+  if (!response.ok) throw new Error(`Navet Nisse issue target read failed with ${response.status}.`);
+  const issue = await response.json();
+  if (String(issue.number) !== target) throw new Error('Navet Nisse issue target identity mismatch.');
+  if (Object.hasOwn(issue, 'pull_request')) throw new Error('Navet Nisse mutations are restricted to issues; PR replies use the maintainer identity.');
+}
+
 export async function performOperation({ token, operation, fetchImpl = fetch }) {
+  await requireIssueTarget(token, operation, fetchImpl);
   const body = operation.bodyFile
     ? { body: await readFile(operation.bodyFile, 'utf8') }
     : operation.body;

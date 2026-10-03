@@ -159,6 +159,9 @@ Branches, commits, pushes, pull requests, and review-thread replies use the main
 identity. Navet Nisse posts progress updates and blocking questions on the linked issue and reads
 PR feedback through its read-only Pull requests permission. The App credential is used for issue
 comments, issue-comment reactions, and request-label removal through the repository wrapper.
+Before every mutation, the wrapper reads the target issue and rejects PR targets. Reaction
+operations first resolve the comment to its owning issue. Failed or mismatched target reads
+stop the mutation.
 
 Review CI results and Cloudflare previews directly from the pull request's checks. Responsive
 screenshots are available in the CI run's artifacts.
