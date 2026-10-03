@@ -147,6 +147,9 @@ importers:
       playwright:
         specifier: ^1.62.1
         version: 1.62.1
+      postcss:
+        specifier: 8.5.26
+        version: 8.5.26
       sharp:
         specifier: ^0.35.3
         version: 0.35.3(@types/node@26.2.0)

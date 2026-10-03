@@ -86,7 +86,7 @@ export function generateCatalog({ root, entries, stories = [], compilerOptions =
       const storyExports = [];
       function visit(node) {
         if (ast.isPropertyAssignment(node) && node.name.getText(source) === 'title' && ast.isStringLiteral(node.initializer)) title ??= node.initializer.text;
-        if (ast.isImportSpecifier(node) || ast.isPropertyAccessExpression(node)) {
+        if (ast.isImportSpecifier(node) || ast.isPropertyAccessExpression(node) || (ast.isImportClause(node) && node.name)) {
           imports.add(symbolKey(resolveSymbol(checker, checker.getSymbolAtLocation(node.name))));
         }
         if (ast.isVariableStatement(node) && node.modifiers?.some((modifier) => modifier.kind === ast.SyntaxKind.ExportKeyword)) {
