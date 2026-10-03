@@ -84,7 +84,7 @@ function nativeCall(record) {
     name = payload.name; input = payload.arguments;
   } else if (payload.type === 'custom_tool_call' && payload.name === 'exec') {
     // Accept one literal tool call, never evaluate arbitrary orchestration code.
-    const match = /^text\(await tools\.(exec_command|write_stdin)\((\{[\s\S]*\})\)\);?$/.exec(payload.input);
+    const match = /^text\(await tools\.(exec_command|write_stdin)\((\{[\s\S]*\})\)\);?$/.exec(typeof payload.input === 'string' ? payload.input.trim() : '');
     if (!match) throw new Error('Unsupported native command wrapper.');
     name = match[1]; input = match[2];
   } else if (payload.type === 'custom_tool_call') {

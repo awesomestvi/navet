@@ -61,7 +61,7 @@ async function currentFixture({ continued = false, direct = false, mutate = () =
   const args = { cmd: command, workdir: root, login: false };
   const call = { timestamp, type: 'response_item', payload: direct
     ? { type: 'function_call', name: 'exec_command', call_id: 'push-call', arguments: JSON.stringify(args) }
-    : { type: 'custom_tool_call', name: 'exec', call_id: 'push-call', input: `text(await tools.exec_command(${JSON.stringify(args)}));` } };
+    : { type: 'custom_tool_call', name: 'exec', call_id: 'push-call', input: `text(await tools.exec_command(${JSON.stringify(args)}));\n` } };
   const output = value.record.payload.item.aggregated_output;
   const result = (id, value) => ({ timestamp, type: 'response_item', payload: {
     type: direct ? 'function_call_output' : 'custom_tool_call_output', call_id: id,
