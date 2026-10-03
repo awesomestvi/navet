@@ -108,6 +108,27 @@ or compiled composition recipes for those dependencies. Changed-story discovery 
 modified story file as unreachable while listing its five modified story IDs; explicit focused
 selection and rendered inspection are required when its coverage report contradicts itself.
 
+## Composition discovery limits
+
+Use MCP for story selection, then use the source-derived catalog and source story to assemble
+complete compositions. These targets have different extraction limits:
+
+| Composition | MCP API and example coverage | Source fallback |
+| --- | --- | --- |
+| Navigation workspace | Story IDs resolve, but documentation omits member APIs and the default example contains only `NavigationWorkspace.Item`. | Query `pnpm agent:components NavigationWorkspace.ScrollArea` and inspect the full workspace story for frame, sidebar, content and scroll-area composition. |
+| Card action row | Props include required `theme`, size and overflow items. Generated size examples omit `theme` and action fixtures. | Supply the source-backed required props and read the action-row story for actual overflow actions. |
+| Summary bar | Props include items, navigation, labeling and single-row behavior. Generated examples reference `items` without declaring the fixture. | Read the summary source story for item types, fixture definitions and wrapper context. |
+
+Focused MCP tests with accessibility enabled pass for navigation default, card-action medium and
+summary default: three tests pass and eleven other stories are skipped. Preview links resolve
+for all three; link resolution is not rendered inspection. These selected tests do not establish
+keyboard focus containment in the card action dock, responsive overflow across themes, or
+complete summary navigation behavior. The mobile-grouped navigation story separately passes its
+four-row equal-height and two-separator assertions with accessibility enabled (one test passes,
+one story is skipped). This verifies the grouped composition in the test browser; it does not
+establish a phone viewport or a theme matrix. An agent must include those interaction and state checks
+when they form part of the accepted scope.
+
 Keep filesystem access as an operational fallback. Current MCP extraction does not establish
 the design-system discovery exit gate. Broader component coverage, complete examples and
 comparison on representative delivery tasks remain evaluation work.
