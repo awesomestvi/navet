@@ -23,6 +23,15 @@ function symbolKey(symbol) {
   return declaration ? `${declaration.getSourceFile().fileName}:${declaration.pos}` : null;
 }
 
+// The generated config's temporary path is provenance, not a compiler option.
+function canonicalOptions(value, root) {
+  if (Array.isArray(value)) return value.map((item) => canonicalOptions(item, root));
+  if (value && typeof value === 'object') return Object.fromEntries(Object.keys(value).filter((key) => key !== 'configFilePath').sort()
+    .map((key) => [key, canonicalOptions(value[key], root)]));
+  if (typeof value === 'string' && path.isAbsolute(value)) return path.relative(root, value).split(path.sep).join('/');
+  return value;
+}
+
 export function generateCatalog({ root, entries, stories = [], compilerOptions = {} }) {
   root = realpathSync(path.resolve(root));
   entries = entries.map((entry) => ({ ...entry, file: realpathSync(path.resolve(root, entry.file)) }));
@@ -100,6 +109,10 @@ export function generateCatalog({ root, entries, stories = [], compilerOptions =
       }
     }
     const fingerprint = createHash('sha256');
+    fingerprint.update(JSON.stringify(canonicalOptions(program.getCompilerOptions(), root)));
+    fingerprint.update(JSON.stringify(entries.map((entry) => ({ file: relative(entry.file), importFrom: entry.importFrom }))));
+    fingerprint.update(JSON.stringify(stories.map(relative)));
+
     for (const source of program.getSourceFileNames().filter((file) => file.startsWith(`${root}${path.sep}`) && !file.includes(`${path.sep}node_modules${path.sep}`)).sort().map((file) => program.getSourceFile(file))) {
       fingerprint.update(relative(source.fileName)).update(source.text);
     }

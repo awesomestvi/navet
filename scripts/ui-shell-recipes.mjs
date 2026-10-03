@@ -33,13 +33,42 @@ export function findLegacyModalRecipes(root, files) {
     for (const file of files) {
       const source = project.program.getSourceFile(path.resolve(root, file));
       if (!source) throw new Error(`UI shell source did not load: ${file}`);
-      function visit(node) {
+      const builders = new Set(['cn', 'clsx', 'classnames', 'classNames', 'twMerge', 'cva']);
+      for (const statement of source.statements) {
+        if (!ast.isImportDeclaration(statement) || !ast.isStringLiteral(statement.moduleSpecifier)) continue;
+        const module = statement.moduleSpecifier.text;
+        const clause = statement.importClause;
+        if (['clsx', 'classnames', 'tailwind-merge', 'class-variance-authority'].includes(module) && clause?.name) builders.add(clause.name.text);
+        if (clause?.namedBindings && ast.isNamedImports(clause.namedBindings)) {
+          for (const specifier of clause.namedBindings.elements) {
+            if (builders.has((specifier.propertyName ?? specifier.name).text)) builders.add(specifier.name.text);
+          }
+        }
+      }
+      const inspected = new Set();
+      function inspectClasses(node) {
+        if (!node || inspected.has(node)) return;
+        inspected.add(node);
         const value = ast.isStringLiteral(node) || ast.isNoSubstitutionTemplateLiteral(node)
           ? node.text
           : ast.isTemplateExpression(node)
             ? [node.head.text, ...node.templateSpans.map((span) => span.literal.text)].join(' ')
             : null;
         if (value !== null && matchesRecipe(value)) violations.add(file);
+        if (ast.isIdentifier(node)) {
+          const symbol = project.checker.getSymbolAtLocation(node);
+          const declaration = symbol?.valueDeclaration?.resolve();
+          if (declaration && ast.isVariableDeclaration(declaration)) inspectClasses(declaration.initializer);
+        } else if (ast.isConditionalExpression(node)) {
+          inspectClasses(node.whenTrue); inspectClasses(node.whenFalse);
+        } else node.forEachChild(inspectClasses);
+      }
+      function visit(node) {
+        if (ast.isJsxAttribute(node) && /^(?:class|className|.*ClassName)$/.test(node.name.getText(source))) inspectClasses(node.initializer);
+        if (ast.isPropertyAssignment(node) && /^(?:class|className|.*ClassName)$/.test(node.name.getText(source).replace(/^['"]|['"]$/g, ''))) inspectClasses(node.initializer);
+        if (ast.isCallExpression(node) && ast.isIdentifier(node.expression) && builders.has(node.expression.text)) {
+          node.arguments.forEach(inspectClasses);
+        }
         node.forEachChild(visit);
       }
       visit(source);

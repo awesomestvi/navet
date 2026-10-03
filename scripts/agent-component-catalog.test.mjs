@@ -68,3 +68,24 @@ it('discovers real exports, typed contracts, and story references and refreshes 
     expect(next.entries.find((item) => item.name === 'Sheet').properties.map((prop) => prop.name)).toEqual(['title', 'disabled']);
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
+
+it('fingerprints effective inherited and explicit compiler options with stable repeated generation', () => {
+  const root = mkdtempSync(path.join(tmpdir(), 'navet-catalog-options-'));
+  try {
+    writeFileSync(path.join(root, 'index.ts'), 'export function Sheet(props: { title?: string }) { return props.title; }');
+    writeFileSync(path.join(root, 'base.json'), JSON.stringify({ compilerOptions: { strictNullChecks: false } }));
+    writeFileSync(path.join(root, 'tsconfig.json'), JSON.stringify({ extends: './base.json' }));
+    const input = { root, entries: [{ file: 'index.ts', importFrom: '@navet/ui' }] };
+    const first = generateCatalog(input);
+    expect(first.entries[0].properties[0].type).toBe('string');
+    expect(generateCatalog(input).sourceFingerprint).toBe(first.sourceFingerprint);
+    writeFileSync(path.join(root, 'base.json'), JSON.stringify({ compilerOptions: { strictNullChecks: true } }));
+    const inherited = generateCatalog(input);
+    expect(inherited.entries[0].properties[0].type).toBe('string | undefined');
+    expect(inherited.sourceFingerprint).not.toBe(first.sourceFingerprint);
+    const overridden = generateCatalog({ ...input, compilerOptions: { strictNullChecks: false } });
+    expect(overridden.entries[0].properties[0].type).toBe('string');
+    expect(overridden.sourceFingerprint).not.toBe(inherited.sourceFingerprint);
+    expect(generateCatalog({ ...input, compilerOptions: { strictNullChecks: false } }).sourceFingerprint).toBe(overridden.sourceFingerprint);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});

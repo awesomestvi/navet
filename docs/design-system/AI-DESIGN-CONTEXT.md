@@ -17,7 +17,7 @@ The full source of truth remains:
 Run `pnpm agent:components SheetSurface` to inspect matching exports, import paths, typed
 parameters, props, source locations, and associated story files. Run `pnpm agent:components`
 without a query to generate `.cache/agent-design/components.json`. Every invocation regenerates
-metadata from current source and includes a fingerprint of its local TypeScript inputs.
+metadata from current source and includes a fingerprint of its local TypeScript sources, effective compiler options, catalog entry points, and story inputs.
 
 For union-based props, `properties` contains the fields shared across alternatives; `variants`
 preserves each alternative's own fields, types and required/optional discriminator. Select one
@@ -160,8 +160,9 @@ Avoid:
 
 The UI-kit boundary check rejects the known centered-modal and bottom-sheet shell signatures,
 including reordered utility classes and multiline literals. Existing migration exceptions remain
-explicit in the checker. It parses static string and template values, excluding comments and
-interpreting escapes. It does not establish equivalent computed styles, follow classes assembled
+explicit in the checker. It parses static string and template values in class attributes, class properties, and recognized
+class-building calls, interpreting escapes. Plain text fixtures, comments, and prose are outside
+the class check. It does not establish equivalent computed styles, follow classes assembled
 across expressions, or replace rendered review. Structural layout markup remains
 valid when it does not reproduce a complete forbidden signature.
 
