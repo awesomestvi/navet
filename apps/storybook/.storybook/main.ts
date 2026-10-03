@@ -13,9 +13,9 @@ const config: StorybookConfig = {
   addons: [
     '@storybook/addon-docs',
     '@storybook/addon-a11y',
-    ...(enableAgentMcp ? [{
+    ...(enableAgentMcp ? ['@storybook/addon-vitest', {
       name: '@storybook/addon-mcp',
-      options: { toolsets: { docs: true, dev: true, test: false } },
+      options: { toolsets: { docs: true, dev: true, test: true } },
     }] : []),
   ],
   framework: {

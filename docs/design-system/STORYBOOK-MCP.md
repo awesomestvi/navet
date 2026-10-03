@@ -1,6 +1,6 @@
 # Storybook MCP pilot
 
-The opt-in local MCP server helps agents discover Navet story IDs and obtain preview links.
+The opt-in local MCP server helps agents discover Navet story IDs, obtain preview links and run focused component and accessibility tests.
 It complements the generated component catalog and source recipes. Its documentation extraction
 currently has gaps; the presence of a component in discovery does not establish a complete API.
 
@@ -32,9 +32,19 @@ from the latest [Storybook MCP documentation](https://storybook.js.org/docs/ai/m
 5. Use `get-stories-by-component` for direct and transitive consumers of a changed shared piece.
    Its distance limit may omit consumers; inspect the returned clipping information.
 
-The pilot enables documentation and development tools. MCP test tools are disabled; focused
-checks run through Navet's existing validation commands and browser tools. A preview URL proves
-that the story resolves, not that its interaction, accessibility, themes or responsive states pass.
+The pilot enables documentation, development and testing tools. It adds the existing Vitest addon
+only when the MCP flag is enabled. Call `run-story-tests` with discovered IDs for focused feedback:
+
+```json
+{
+  "stories": [{ "storyId": "components-patterns-form-field--error-state" }],
+  "a11y": true
+}
+```
+
+Inspect the returned passing/failing stories and accessibility reports. Run the applicable Navet
+validation commands as defined by the repository guide. A preview URL proves that the story
+resolves; test results apply to the selected stories, their assertions and tested rendering state.
 
 ## Observed extraction limits
 
@@ -47,9 +57,12 @@ the actual composition recipe before using them as implementation examples.
 
 The discovered form error-state preview displayed its validation message and an input with
 `aria-invalid=true`. The vacuum unavailable preview displayed its unavailable state. The sheet
-preview opened at 390 × 844; at desktop width the mobile sheet remains hidden. These checks
-verify three preview targets, not a product-wide UX audit.
+preview opened at 390 × 844; at desktop width the mobile sheet remains hidden. The focused MCP test tool also returned passing
+results for these three story IDs with accessibility enabled. Its Vitest runner reported four tests passed and fourteen skipped across
+three story files. The default sheet test uses its default rendering state; phone interaction,
+additional themes and the full product journey still need their own coverage. These checks verify
+three preview and test targets, not a product-wide UX audit.
 
 Keep filesystem access as an operational fallback. Current MCP extraction does not establish
-the design-system discovery exit gate. Broader component coverage, meaningful examples, focused
-testing integration and comparison on representative delivery tasks remain evaluation work.
+the design-system discovery exit gate. Broader component coverage, meaningful examples, client
+configuration and comparison on representative delivery tasks remain evaluation work.
