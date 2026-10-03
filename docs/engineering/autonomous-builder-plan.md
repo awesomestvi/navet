@@ -117,14 +117,15 @@ The coordinator supplies two service adapters:
   `visibility`: `private-planning` or `public-delivery-approved`. The latter records the human's
   authorization for a scoped public delivery; private planning alone does not authorize publication.
   Implementation and stewardship intake require `public-delivery-approved`, since these delivery
-  workers produce public PRs. Private research and audit requests retain private planning scope.
+  workers produce public PRs. Private research and audit records retain private planning scope;
+  they cannot execute through the shared public delivery queue.
 - `readIssue(issueId)` returns a complete fresh planning observation with `status`, service
   `reference`, `observedAt` and the issue, including all attachment references, label names and
   explicit lifecycle fields. Unavailable reads cannot reuse an earlier pass.
 
 [`createLinearIssueReader`](../../scripts/agent-linear-reader.mjs) implements the read-only Linear
 adapter. Configure the expected workspace, app user, team and project IDs in private runner state,
-and supply an OAuth access-token callback backed by secure storage and refresh. The reader checks
+and supply an OAuth access-token callback backed by secure credential storage. The reader checks
 the active app identity on every response, follows complete attachment and label pagination, and
 compares two complete reads before returning an observation. It uses Linear's fixed GraphQL endpoint
 with redirects disabled. Defaults bound each operation to 20 seconds and each snapshot to 20 pages;
@@ -137,16 +138,35 @@ and [official SDK schema](https://github.com/linear/linear/blob/master/packages/
 Unit transport fixtures verify failure handling and identity boundaries. A live app-token read and
 the independently authenticated maintainer-request adapter remain activation work.
 
+For a local coordinator run, [`createLinearReadSession`](../../scripts/agent-linear-auth.mjs)
+exchanges securely loaded app credentials for a token with only `read` scope. Create a fresh session
+at run start, pass `session.getAccessToken` to the reader and call `session.close()` in the run's
+`finally` block. Expired, canceled or closed sessions cannot supply a token. Access tokens remain
+in memory; they are not stored in runner JSON or passed in command arguments. This follows Linear's
+[client-credentials procedure](https://linear.app/developers/oauth-2-0-authentication#client-credentials-tokens).
+
+Use a dedicated private OAuth app with client credentials enabled. Restrict the app's team access
+to Navet in Linear's app settings. Its configured IDs still constrain every reader response to the
+planning project. Use a credential manager through `readCredentials` when available. The local
+`readLinearClientCredentials(file)` fallback accepts only an owner-private, regular, singly linked
+JSON file containing `clientId` and `clientSecret`, in an owner-private directory. The file must be
+outside tracked content, typically under `.cache/agent-planning`, with directory mode `0700` and
+file mode `0600`. Platforms without verifiable POSIX ownership require a credential-manager adapter.
+Store credentials through the local secure setup path; do not place them in chat, issue content,
+PRs or command arguments. App installation and a live identity-verified read remain activation gates.
+
 These adapters are the authentication boundary. The helper validates their agreement and freshness;
 it does not authenticate callback output, dispatch a worker or create a public artifact. Approval
 also retains the selected option, acceptance criteria, permitted changes and visibility in the
 trusted work brief. Public delivery requires the recorded visibility decision.
 
-The task store checks public-delivery visibility at the planning execution gate too. A private-only
-or legacy implementation/stewardship record with no visibility decision cannot start new execution,
-reserve new follow-ups or reach delivery transitions, even if it bypassed intake. Monitoring an
-existing dispatch receipt remains possible without authorizing new work. Retain private research
-and audit output in the planning hub; its visibility does not authorize public artifacts.
+The task store checks public-delivery visibility at the planning execution gate for every mode.
+A private-only or legacy record with no visibility decision cannot start new execution, reserve
+new follow-ups or reach delivery transitions, even if it bypassed intake. Monitoring an existing
+dispatch receipt remains possible without authorizing new work. The shared queue delivers research
+through public Nisse comments. A dedicated private completion route into the planning hub remains
+required before private research and audit records can dispatch. Their visibility does not authorize
+public artifacts.
 
 For Linear-native approval, agent writes need a distinct identity. Linear's
 [OAuth app actor](https://linear.app/developers/oauth-actor-authorization) attributes mutations to

@@ -24,7 +24,7 @@ function requireText(value) {
   return value;
 }
 
-async function boundedJson(response, bounded) {
+export async function readLinearResponseJson(response, bounded, maxBytes = 1_048_576) {
   if (!response?.ok || !response.body?.getReader) throw new Error('Planning service unavailable.');
   const reader = response.body.getReader();
   const chunks = [];
@@ -34,7 +34,7 @@ async function boundedJson(response, bounded) {
       const { done, value } = await bounded(reader.read());
       if (done) break;
       bytes += value.byteLength;
-      if (bytes > 1_048_576) throw new Error('Planning service response exceeds its limit.');
+      if (bytes > maxBytes) throw new Error('Planning service response exceeds its limit.');
       chunks.push(Buffer.from(value));
     }
     return JSON.parse(Buffer.concat(chunks).toString('utf8'));
@@ -99,7 +99,7 @@ export function createLinearIssueReader({ getAccessToken, policy, fetchImpl = gl
             body: JSON.stringify({ query: QUERY, variables: { id: issueId,
               attachmentsAfter: connections.attachments.after, labelsAfter: connections.labels.after,
               readAttachments: !connections.attachments.complete, readLabels: !connections.labels.complete } }) }));
-          const result = await boundedJson(response, bounded);
+          const result = await readLinearResponseJson(response, bounded);
           if (result.errors !== undefined && (!Array.isArray(result.errors) || result.errors.length)) {
             throw new Error('Planning service returned errors.');
           }

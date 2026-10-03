@@ -191,8 +191,8 @@ describe('trusted planning request intake', () => {
     expect(await store.list()).toEqual([]);
   });
 
-  it.each(['research', 'audit'])('retains private %s as planning work without a public delivery grant', async (mode) => {
-    const { input } = await setup();
+  it.each(['research', 'audit'])('records private %s without allowing public delivery dispatch', async (mode) => {
+    const { input, store } = await setup();
     const task = await enqueuePlanningRequest({ ...input, readRequest: async () => {
       const observation = await input.readRequest();
       observation.request.mode = mode;
@@ -200,5 +200,10 @@ describe('trusted planning request intake', () => {
       return observation;
     } });
     expect(task).toMatchObject({ state: 'queued', mode, brief: { visibility: 'private-planning' }, dispatch: null });
+    await store.mutate(task.id, 'claim', { owner: 'coordinator', durationMs: 30_000 });
+    await store.mutate(task.id, 'planning-observation', { owner: 'coordinator', observation: await input.readIssue() });
+    await expect(store.mutate(task.id, 'dispatch-intent', { owner: 'coordinator', authority: task.authority }))
+      .rejects.toThrow('visibility approval');
+    expect((await store.list())[0].dispatch).toBeNull();
   });
 });

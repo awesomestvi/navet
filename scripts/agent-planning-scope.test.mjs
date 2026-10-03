@@ -250,7 +250,7 @@ describe('planning scope lifecycle gates', () => {
     expect((await dispatch()).nextDispatchAction).toBe('create');
   });
 
-  it.each(['implement', 'steward'])('blocks private-only %s execution even when it bypasses planning intake', async (mode) => {
+  it.each(['implement', 'steward', 'research', 'audit'])('blocks private-only %s execution even when it bypasses planning intake', async (mode) => {
     const { observe, dispatch, act, store } = await setup({ mode, visibility: 'private-planning' });
     await observe();
     await expect(dispatch()).rejects.toThrow('visibility approval');
