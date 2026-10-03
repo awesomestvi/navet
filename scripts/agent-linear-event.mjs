@@ -15,6 +15,11 @@ function canonical(value, depth = 0) {
   return JSON.stringify(value);
 }
 
+export function validateLinearEventPolicy(policy) {
+  return { organizationId: uuid(policy?.organizationId, 'configured organization ID'),
+    webhookId: uuid(policy?.webhookId, 'configured webhook ID') };
+}
+
 // A signed service event proves transport provenance, never a human decision.
 // Linear's default API actor can be the authenticating user. Keep that distinction explicit.
 export function verifyLinearEvent({ rawBody, signature, secret, policy, now = Date.now() }) {
@@ -27,8 +32,7 @@ export function verifyLinearEvent({ rawBody, signature, secret, policy, now = Da
   }
   const expected = createHmac('sha256', secret).update(rawBody).digest();
   if (!timingSafeEqual(expected, Buffer.from(signature, 'hex'))) throw new Error('Linear signature mismatch.');
-  const organizationId = uuid(policy?.organizationId, 'configured organization ID');
-  const webhookId = uuid(policy?.webhookId, 'configured webhook ID');
+  const { organizationId, webhookId } = validateLinearEventPolicy(policy);
   if (!Number.isSafeInteger(now) || now <= 0) throw new Error('Invalid Linear observation time.');
   let event;
   try { event = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(rawBody)); }

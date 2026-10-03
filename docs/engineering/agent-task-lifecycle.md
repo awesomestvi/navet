@@ -156,11 +156,43 @@ human provenance. The verifier always returns `authority: none`; the existing tr
 request remains required. Dedicated app-actor authorization is appropriate for service writes,
 but configuring it alone does not prove who made a particular decision.
 
-The receiver, private durable receipt storage, fresh service reads, app-actor configuration and
-human-approval bridge require an integration pilot. This library opens no listener and changes
-no Linear or task-store state. Linear documents the transport and actor contracts in
+The verifier opens no listener and changes no Linear or task-store state. Its receiving integration,
+fresh service reads, app-actor configuration and human-approval bridge require an integration pilot. Linear documents the transport and actor contracts in
 [Webhooks](https://linear.app/developers/webhooks) and
 [OAuth actor authorization](https://linear.app/developers/oauth-actor-authorization).
+
+## Durable Linear Receipt Inbox
+
+`AgentLinearInbox` in `scripts/agent-linear-inbox.mjs` persists normalized event receipts through
+the existing task store's SQLite lock and atomic state-file replacement. It adds a versioned
+`linearEventInbox` field while preserving task records and leases. Use a private receipt directory
+for a separate receiving process; recording a receipt creates no delivery task.
+
+`accept` verifies the raw event before entering the transaction. A new supported event returns
+`refresh`; an uncertain earlier refresh returns `reconcile`; a confirmed refresh returns `skip`.
+Unsupported signed models return `ignore`. Repeated receipt deliveries retain the original event
+and confirmation, increment a delivery count and preserve pending work across restarts. Corrupt
+inbox history fails closed. The state directory and files use the existing private permissions.
+
+`pending` returns refresh receipts that need reconciliation. The consumer fetches a complete,
+fresh issue snapshot, checks the proposal binding and trusted request authority, and updates any
+bound task through its normal owned mutations. After observing the required refresh reconciliation,
+call `confirm(eventId, { reference, observedAt })`. The reference is a SHA-256 identifier for the
+private service-read evidence; observation time must be fresh and at or after event receipt.
+Confirmation records refresh evidence. Task readiness and delivery keep their own gates.
+
+`startLinearEventReceiver` in `scripts/agent-linear-receiver.mjs` provides an opt-in local HTTP
+receiver at `127.0.0.1` and `/linear/webhook`. Supply an inbox, private signing secret, configured
+organization/webhook IDs and an optional port. Its returned handle has `url` and `stop`. The
+receiver accepts bounded JSON POST bodies, verifies the event, and sends HTTP 200 only after the
+receipt transaction is durable. Invalid events are rejected; storage failures return 503 for
+retry. Responses omit receipt contents and private error details.
+
+The local receiver has synthetic HTTP and process-restart pilots. It needs an authorized HTTPS
+endpoint and actual Linear delivery before production use. Its service-read consumer, human
+approval bridge and task-worker interruption integration remain pending. The receiver grants
+no implementation authority and leaves automatic dispatch off. Keep signing configuration and
+raw payloads outside public artifacts.
 
 ## Execution Budgets
 
