@@ -79,8 +79,8 @@ and limits; completing it does not activate authority or replace the trusted req
 
 Use `head` to record the current implementation commit. Use `evidence` to record each required
 gate with `result` (`pass`, `fail`, or `unverified`), proposal `revision`, current `head`, artifact
-reference, and observation time. The latest result for that gate and head controls readiness;
-history retains failures. A changed head invalidates readiness until fresh evidence is recorded.
+reference, and observation time. The observation with the newest timestamp for that gate, head,
+and scope controls readiness. Older observations are rejected, and history retains failures. A changed head invalidates readiness until fresh evidence is recorded.
 
 Transitions follow `queued -> investigating -> building -> verifying -> awaiting-approval ->
 delivered`, with explicit waiting and failure states. Each transition requires a reason. Returning
@@ -161,7 +161,9 @@ failed commands and contradictory counts. It supports a completed ordinary
 `git push origin <branch>` through the native bash/zsh command form. It checks the current
 repository's origin, the commit-bound typecheck/Tier 1/Tier 2 hook, their ordered output and complete
 passing tier counts, and the pushed destination/branch/commit. Abbreviated push SHAs must resolve
-to the confirmed full commit. Unsupported hook or command forms remain unverified.
+to the confirmed full commit. For first branch pushes, Git reports `[new branch]` without a SHA;
+the push-updated `refs/remotes/origin/<branch>` must resolve to the confirmed full commit.
+Unsupported hook or command forms remain unverified.
 
 The command prints only proved head/count/provenance facts. Native prompts, commands and raw
 output stay outside agent context. A valid hash confirms an unchanged local record; it is not a

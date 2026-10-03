@@ -104,12 +104,18 @@ export async function verifyValidationReceipt({ receiptFile, expectedHead, repos
   }
   const escaped = branch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const pushed = new RegExp(`^\\s*[a-f0-9]{7,40}\\.\\.([a-f0-9]{7,40})\\s+${escaped} -> ${escaped}\\s*$`, 'm').exec(output);
-  if (!pushed || !expectedHead.startsWith(pushed[1]) ||
+  const created = new RegExp(`^\\s*\\* \\[new branch\\]\\s+${escaped} -> ${escaped}\\s*$`, 'm').test(output);
+  if ((!pushed && !created) ||
       !output.includes(`To https://github.com/${repository}.git`) && !output.includes(`To github.com:${repository}.git`)) {
     throw new Error('Native receipt pushed head, branch or destination mismatch.');
   }
-  if (await git(root, ['rev-parse', '--verify', `${pushed[1]}^{commit}`]) !== expectedHead) {
-    throw new Error('Native receipt push abbreviation is not the confirmed commit.');
+  if (pushed) {
+    if (!expectedHead.startsWith(pushed[1]) || await git(root, ['rev-parse', '--verify', `${pushed[1]}^{commit}`]) !== expectedHead) {
+      throw new Error('Native receipt push abbreviation is not the confirmed commit.');
+    }
+  } else if (await git(root, ['rev-parse', '--verify', `refs/remotes/origin/${branch}^{commit}`]) !== expectedHead) {
+    // A new-branch status has no SHA; the push-updated tracking ref must corroborate it.
+    throw new Error('Native receipt new branch is not the confirmed commit.');
   }
   // Output only the proved facts; never expose native prompts, commands or log bodies.
   return { version: 1, gate: 'local-validation', result: 'pass', head: expectedHead,

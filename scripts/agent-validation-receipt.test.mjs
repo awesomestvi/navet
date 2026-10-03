@@ -63,6 +63,25 @@ describe('native validation receipt verification', () => {
     expect(result).not.toHaveProperty('aggregated_output');
   });
 
+  it('verifies first branch pushes using the push-updated tracking ref and fails closed on a changed or missing ref', async () => {
+    const { input } = await fixture((record) => {
+      record.payload.item.aggregated_output = record.payload.item.aggregated_output.replace(
+        `abcdef0..${head.slice(0, 8)}`, '* [new branch]');
+    });
+    const ref = `refs/remotes/origin/${branch}`;
+    await git(['update-ref', ref, head]);
+    try {
+      expect((await verifyValidationReceipt(input)).result).toBe('pass');
+      await writeFile(path.join(root, 'extra.txt'), 'next commit');
+      await git(['add', 'extra.txt']);
+      await git(['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '--quiet', '-m', 'test: changed tracking ref']);
+      await git(['update-ref', ref, await git(['rev-parse', 'HEAD'])]);
+      await expect(verifyValidationReceipt(input)).rejects.toThrow('not the confirmed commit');
+      await git(['update-ref', '-d', ref]);
+      await expect(verifyValidationReceipt(input)).rejects.toThrow('Git evidence is unavailable');
+    } finally { await git(['update-ref', '-d', ref]); }
+  });
+
   it.each(['head', 'repository', 'branch', 'threadId'])('rejects mismatched expected %s', async (key) => {
     const { input } = await fixture();
     const changed = key === 'head' ? 'a'.repeat(40) : key === 'repository' ? 'other/repo' : 'different';

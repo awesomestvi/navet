@@ -68,3 +68,22 @@ it('discovers real exports, typed contracts, and story references and refreshes 
     expect(next.entries.find((item) => item.name === 'Sheet').properties.map((prop) => prop.name)).toEqual(['title', 'disabled']);
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
+
+it.each([
+  "const meta = { title: 'Components/Sheet', component: Sheet }; export default meta;",
+  "export default { title: 'Components/Sheet', component: Sheet };",
+  "const meta = ({ title: 'Components/Sheet', component: Sheet } satisfies { title: string; component: unknown }); export default meta;",
+  "const meta = { 'title': 'Components/Sheet', component: Sheet } as const; export default meta;",
+])('reads only the default metadata title despite earlier fixture and nested titles: %s', (metadata) => {
+  const root = mkdtempSync(path.join(tmpdir(), 'navet-catalog-story-title-'));
+  try {
+    writeFileSync(path.join(root, 'index.ts'), 'export function Sheet(props: { title: string }) { return props.title; }');
+    writeFileSync(path.join(root, 'sheet.stories.tsx'), `import { Sheet } from './index';
+      const items = [{ title: 'Front door is unlocked' }];
+      const other = { title: 'Unrelated metadata' };
+      ${metadata}
+      export const Default = { args: { title: 'Fixture title' } };`);
+    const catalog = generateCatalog({ root, entries: [{ file: 'index.ts', importFrom: '@navet/ui' }], stories: ['sheet.stories.tsx'] });
+    expect(catalog.entries[0].stories[0]).toMatchObject({ title: 'Components/Sheet', exports: ['Default'] });
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
