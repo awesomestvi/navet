@@ -57,6 +57,7 @@ workflows by default.
 
 | Group | Why it exists | Status |
 |---|---|---|
+| `scripts/agent-component-maturity.test.mjs` | Source-bound maturity guidance rejects moved exports, missing evidence and conflicting classifications | Keep |
 | `packages/app/src/features/dashboard/**` | Largest user-facing regression surface for layout, editing, widgets, and navigation | Keep |
 | `packages/app/src/features/media/**`, `lighting/**`, `security/**`, `energy/**`, `climate/**`, `rss/**`, `tasks/**`, `settings/**`, `sensors/**`, `vacuum/**`, `calendar/**`, `notifications/**` | User-visible feature regressions and UI behavior | Keep |
 | `packages/app/src/components/**` | Shared UI and interaction regressions | Keep |

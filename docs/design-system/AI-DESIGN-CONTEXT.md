@@ -24,8 +24,17 @@ preserves each alternative's own fields, types and required/optional discriminat
 valid contract before composing a component. Props from different alternatives are not a single
 combined API.
 
-Export presence does not establish component maturity. The catalog marks stability as
-`unclassified`; use the design-system guidance and rendered stories to choose the correct recipe.
+Export presence does not establish component maturity. The [maturity inventory](component-maturity.json)
+classifies inspected canonical components and records rationale and source/story evidence. The catalog
+matches each annotation to the exact export, import surface and source; stale identities or missing
+evidence stop generation. Other exports remain `unclassified`. `maturityFingerprint` covers the
+inventory and evidence separately from the TypeScript `sourceFingerprint`.
+
+`app-coupled` identifies components that require app context or helpers. Reuse them inside Navet's
+app through their listed import surface; they are not standalone `@navet/ui` contracts. `stable`
+is reserved for an explicitly curated mature contract, and `experimental` identifies an evolving
+contract. This initial inventory makes no stable or experimental classification. A classification
+is guidance, not proof of accessibility, complete state coverage or public SemVer guarantees.
 Story associations identify imports in story files, not proof that every listed story exercises
 that export. The catalog complements source and rendered review; it does not validate UI quality.
 

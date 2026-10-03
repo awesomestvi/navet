@@ -1,0 +1,104 @@
+{
+  "version": 1,
+  "components": [
+    {
+      "name": "BaseCard",
+      "importFrom": "@navet/app/ui-kit/primitives",
+      "source": "packages/app/src/components/primitives/base-card.tsx",
+      "status": "app-coupled",
+      "rationale": "Uses app theme/effects hooks and shared card-state helpers.",
+      "evidence": [
+        "packages/app/src/components/primitives/base-card.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "BaseCardDialog",
+      "importFrom": "@navet/app/ui-kit/primitives",
+      "source": "packages/app/src/components/primitives/Cards/BaseCardDialog/index.tsx",
+      "status": "app-coupled",
+      "rationale": "Uses app theme/i18n hooks and device-editor room/tint controls.",
+      "evidence": [
+        "packages/app/src/components/patterns/card-dialog-overflow-menu.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "CardShell",
+      "importFrom": "@navet/app/ui-kit/primitives",
+      "source": "packages/app/src/components/primitives/card-shell.tsx",
+      "status": "app-coupled",
+      "rationale": "Composes app BaseCard, ModalSurface and size editor with app i18n.",
+      "evidence": [
+        "packages/app/src/components/primitives/card-shell.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "SheetSurface",
+      "importFrom": "@navet/app/ui-kit/primitives",
+      "source": "packages/app/src/components/primitives/sheet-surface.tsx",
+      "status": "app-coupled",
+      "rationale": "Uses app theme context and the app dialog shell.",
+      "evidence": [
+        "packages/app/src/components/primitives/sheet-surface.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "SheetSurfaceHeader",
+      "importFrom": "@navet/app/ui-kit/primitives",
+      "source": "packages/app/src/components/primitives/sheet-surface.tsx",
+      "status": "app-coupled",
+      "rationale": "Uses app theme context and sheet header token helpers.",
+      "evidence": [
+        "packages/app/src/components/primitives/sheet-surface.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "ModalSurface",
+      "importFrom": "@navet/app/ui-kit/primitives",
+      "source": "packages/app/src/components/primitives/modal-surface.tsx",
+      "status": "app-coupled",
+      "rationale": "Uses app theme context and BaseCardDialog.",
+      "evidence": [
+        "packages/app/src/components/primitives/modal-surface.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "FieldBlock",
+      "importFrom": "@navet/app/ui-kit/patterns",
+      "source": "packages/app/src/components/patterns/field-block.tsx",
+      "status": "app-coupled",
+      "rationale": "Uses app theme context and typography/spacing helpers; callers own control IDs and validation.",
+      "evidence": [
+        "packages/app/src/components/patterns/field-block.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "CardEmptyState",
+      "importFrom": "@navet/app/ui-kit/patterns",
+      "source": "packages/app/src/components/patterns/card-empty-state.tsx",
+      "status": "app-coupled",
+      "rationale": "Uses app theme context, card size and entity header/tint helpers.",
+      "evidence": [
+        "packages/app/src/components/patterns/card-empty-state.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "DashboardEmptyState",
+      "importFrom": "@navet/app/ui-kit/patterns",
+      "source": "packages/app/src/components/patterns/dashboard-empty-state.tsx",
+      "status": "app-coupled",
+      "rationale": "Wraps the shared EmptyStatePanel with app theme and dashboard helpers.",
+      "evidence": [
+        "packages/app/src/components/patterns/dashboard-empty-state.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    }
+  ]
+}
