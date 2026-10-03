@@ -33,7 +33,7 @@ async function setup() {
   await act('bind', { token: dispatched.dispatch.token, threadId: 'worker' });
   await act('transition', { state: 'investigating', reason: 'Research the authorized scope.' });
   await act('transition', { state: 'verifying', reason: 'Read back the result.' });
-  const input = { bodyHash: linearResultBodyHash('The exact selected research.'), writerAppUserId, authority };
+  const input = { head: task.head, bodyHash: linearResultBodyHash('The exact selected research.'), writerAppUserId, authority };
   const intent = () => act('planning-result-intent', input);
   const readback = (receipt, changes = {}) => {
     const result = { commentId: receipt.commentId, issueId: receipt.issueId, authorId: receipt.writerAppUserId,
@@ -186,7 +186,7 @@ describe('durable Linear result intent and readback', () => {
     await act('planning-observation', { observation: { status: 'available', issue, reference: 'fresh', observedAt: now() } });
     await expect(act('transition', { state: 'delivered', reason: 'Old readback.' })).rejects.toThrow('evidence is incomplete');
     await act('head', { head: 'new-head' });
-    await expect(intent()).rejects.toThrow('different content or scope');
+    await expect(intent()).rejects.toThrow('exact worker head');
     await expect(act('planning-result-observation', { observation: readback(pending.planningResult) })).rejects.toThrow('exact-scope');
   });
 

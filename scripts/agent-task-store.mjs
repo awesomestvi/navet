@@ -419,6 +419,7 @@ export class AgentTaskStore {
             receipt.observedAt = input.observedAt;
           }
         } else if (action === 'planning-result-intent') {
+          if (input.head !== task.head) throw new Error('Planning result requires the exact worker head.');
           if (!['research', 'audit'].includes(task.mode) || !task.planning ||
               task.brief.resultDestination !== 'linear-planning' || !task.dispatch?.threadId || TERMINAL.has(task.state)) {
             throw new Error('Planning result requires an active research or audit delivery bound to Linear.');

@@ -92,7 +92,7 @@ Planning-bound research and audits can record `brief.resultDestination: linear-p
 accepted request. Other tasks use the existing public GitHub result path; `public-github` is also
 an explicit destination value. Changing the destination requires a new authorized request.
 
-1. At a verified worker checkpoint, call `planning-result-intent` with the expected `bodyHash`,
+1. At a verified worker checkpoint, call `planning-result-intent` with the exact worker `head`, expected `bodyHash`,
    `writerAppUserId` and freshly rechecked authority. A confirmed delivery handle, current planning
    scope and `verifying` or `awaiting-approval` state are required. Bounded tasks also need an unused
    resource reservation for the `planning-result` operation.
@@ -127,6 +127,34 @@ These actions preserve local intent and observations; they do not write to Linea
 caller-supplied evidence. The shared queue still requires public visibility approval at execution
 gates. The dedicated private worker, installed writer identity, coordinator integration and observed
 live pilot remain activation requirements for private research and audits.
+
+### Coordinator result handoff
+
+[`deliverPlanningResult`](../../scripts/agent-planning-result-delivery.mjs) joins the result adapters
+to these store actions under a current coordinator lease. Supply the verified worker's exact `head`
+(`null` for research with no commit), private result Markdown, expected writer app identity and the
+trusted proposal, request and result readers. Supply a `createWriter` factory that constructs the
+bounded app writer with the helper's readers, cancellation signal and durable `beginWrite` callback.
+Caller-owned app sessions must close when the coordinator run ends.
+
+The helper checks the current owner and scope, refreshes the proposal and human request, reserves
+the result and records readback. A head changed while services are read cannot adopt the earlier
+worker output. Bounded tasks require the caller's resource reservation and fresh measured usage.
+Readback of an attempted or already observed result can proceed without a new publication request;
+it uses the recorded content hash and does not need the worker Markdown or another writer session.
+An unavailable or malformed fresh probe invalidates the prior readback pass.
+
+`verified` means the result artifact was observed, not that the task passed quality review or was
+accepted. The helper neither records output/quality evidence nor transitions the task to delivered.
+`pending` preserves uncertain write or readback receipts for investigation; `blocked` preserves a
+checkpoint whose scope or send permission could not be verified. Neither disposition authorizes a
+replacement task, comment or retry of an attempted send.
+
+Remote operations share a run deadline of up to one minute. Cancellation stops further operations;
+started local atomic transactions finish before the helper returns. A timeout does not establish
+that the owning worker stopped. Recovery still requires actual ownership observations. This helper
+is not connected to the paused queue automation; live credentials, the human-request source,
+destination policy and an observed private-worker pilot remain activation gates.
 
 Transitions follow `queued -> investigating -> building -> verifying -> awaiting-approval ->
 delivered`, with explicit waiting and failure states. Each transition requires a reason. Returning
