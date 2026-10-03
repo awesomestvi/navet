@@ -74,7 +74,8 @@ do not change scope.
 Use `head` to record the current implementation commit. Use `evidence` to record each required
 gate with `result` (`pass`, `fail`, or `unverified`), proposal `revision`, current `head`, artifact
 reference, and observation time. The latest result for that gate and head controls readiness;
-history retains failures. A changed head invalidates readiness until fresh evidence is recorded.
+history retains failures. Observations cannot move backwards, and conflicting results or artifacts
+cannot share a timestamp; identical receipt retries remain idempotent. A changed head invalidates readiness until fresh evidence is recorded.
 
 Transitions follow `queued -> investigating -> building -> verifying -> awaiting-approval ->
 delivered`, with explicit waiting and failure states. Each transition requires a reason. Returning

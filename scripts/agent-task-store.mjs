@@ -424,6 +424,9 @@ export class AgentTaskStore {
           if (!Number.isFinite(item.observedAt) || item.observedAt <= 0 || item.observedAt > now) throw new Error('Invalid evidence observation time.');
           const prior = task.evidence.find((value) => value.gate === item.gate && value.head === item.head && value.revision === item.revision);
           if (prior && item.observedAt < prior.observedAt) throw new Error('Evidence observations cannot move backwards.');
+          if (prior && item.observedAt === prior.observedAt && !isDeepStrictEqual(item, prior)) {
+            throw new Error('Conflicting evidence observations cannot share a timestamp.');
+          }
           // Preserve history, but use only the latest observation for a gate/head/revision.
           task.evidence = task.evidence.filter((prior) => !(prior.gate === item.gate && prior.head === item.head && prior.revision === item.revision));
           task.evidence.push(item);
