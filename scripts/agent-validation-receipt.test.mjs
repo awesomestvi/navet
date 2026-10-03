@@ -6,7 +6,7 @@ import path from 'node:path';
 import { promisify } from 'node:util';
 import { pathToFileURL } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { verifyValidationReceipt } from './agent-validation-receipt.mjs';
+import { verifyValidationReceipt, validationPushCommand } from './agent-validation-receipt.mjs';
 
 const run = promisify(execFile);
 const execute = (file, args) => run(file, args, { env: Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_'))) });
@@ -35,7 +35,7 @@ async function fixture(changeRecord = () => {}, changeReceipt = () => {}) {
   const dir = await mkdtemp(path.join(tmpdir(), 'navet-native-receipt-'));directories.push(dir);
   const record = { timestamp, type: 'event_msg', payload: { type: 'item_completed', thread_id: threadId,
     item: { type: 'CommandExecution', id: 'native-operation', status: 'completed', exit_code: 0,
-      command: ['/bin/zsh', '-c', `git push origin ${branch}`], cwd: pathToFileURL(root).href,
+      command: ['/bin/zsh', '-c', validationPushCommand({ head, branch })], cwd: pathToFileURL(root).href,
       aggregated_output: `$ tsc --noEmit\n$ node scripts/run-test-tier.mjs tier1\nTests  10 passed (10)\n$ node scripts/run-test-tier.mjs tier2\nTests  5 passed (5)\nTo https://github.com/${repository}.git\n  abcdef0..${head.slice(0, 8)}  ${branch} -> ${branch}\n` } } };
   changeRecord(record);
   const raw = JSON.stringify(record) + '\n';
@@ -81,7 +81,7 @@ describe('native validation receipt verification', () => {
     head = await git(['rev-parse', 'HEAD']);
     await git(['update-ref', `refs/remotes/origin/${branch}`, head]);
     await writeFile(input.receiptFile, JSON.stringify({ ...receipt, head, hook: { ...receipt.hook, sourceAtHead: head } }));
-    await expect(verifyValidationReceipt({ ...input, expectedHead: head })).rejects.toThrow('immutable push-time');
+    await expect(verifyValidationReceipt({ ...input, expectedHead: head })).rejects.toThrow('commit-bound validation');
     const missing = await fixture((record) => {
       record.payload.item.aggregated_output = record.payload.item.aggregated_output.replace(`abcdef0..${head.slice(0, 8)}`, '* [new branch]');
     });
@@ -105,6 +105,26 @@ describe('native validation receipt verification', () => {
     expect(await invoke('yes')).toEqual({ code: 1, output: '' });
   });
 
+  it('executes the committed validation chain despite a substituted working-tree hook', async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'navet-immutable-hook-')); directories.push(dir);
+    const prior = await readFile(path.join(root, '.husky/pre-push'), 'utf8');
+    await writeFile(path.join(dir, 'pnpm'), '#!/bin/sh\necho "checked:$1"\n[ "$1" != "test:tier2" ] || [ "$NAVET_TEST_FAIL_TIER" != "yes" ]\n');
+    await chmod(path.join(dir, 'pnpm'), 0o755);
+    await writeFile(path.join(root, '.husky/pre-push'), 'echo forged-validation; exit 0\n');
+    const command = validationPushCommand({ head, branch }).split(' && git push origin ')[0];
+    const options = { cwd: root, env: { ...process.env, PATH: `${dir}:${process.env.PATH}` } };
+    try {
+      const { stdout } = await run('/bin/sh', ['-c', command], options);
+      expect(stdout).toContain('checked:typecheck');
+      expect(stdout).toContain('checked:test:tier1');
+      expect(stdout).toContain('checked:test:tier2');
+      expect(stdout).toContain(`Navet validated push: ${head} refs/heads/${branch}`);
+      expect(stdout).not.toContain('forged-validation');
+      await expect(run('/bin/sh', ['-c', command], { ...options,
+        env: { ...options.env, NAVET_TEST_FAIL_TIER: 'yes' } })).rejects.toMatchObject({ code: 1 });
+    } finally { await writeFile(path.join(root, '.husky/pre-push'), prior); }
+  });
+
   it.each(['head', 'repository', 'branch', 'threadId'])('rejects mismatched expected %s', async (key) => {
     const { input } = await fixture();
     const changed = key === 'head' ? 'a'.repeat(40) : key === 'repository' ? 'other/repo' : 'different';
@@ -125,9 +145,10 @@ describe('native validation receipt verification', () => {
     await expect(verifyValidationReceipt(wrongSession.input)).rejects.toThrow('thread identity');
   });
 
-  it.each(['failed', 'pending', 'bypassed', 'masked'])('rejects %s command execution', async (kind) => {
+  it.each(['failed', 'pending', 'bypassed', 'masked', 'dirty-hook'])('rejects %s command execution', async (kind) => {
     const { input } = await fixture((record) => {
       const item = record.payload.item;
+      if (kind === 'dirty-hook') item.command[2] = `git push origin ${branch}`;
       if (kind === 'failed') item.exit_code = 1;
       if (kind === 'pending') item.status = 'inProgress';
       if (kind === 'bypassed') item.command[2] = `HUSKY=0 git push origin ${branch}`;

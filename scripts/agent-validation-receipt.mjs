@@ -18,6 +18,16 @@ pnpm typecheck &&
 const normalizeHook = (value) => value.replace(/\s+/g, ' ').trim();
 const sha = (value) => typeof value === 'string' && /^[a-f0-9]{40}$/.test(value);
 
+// Execute the commit's validation hook explicitly before the ordinary push. The
+// native command records which immutable hook ran even if the working hook is dirty.
+export function validationPushCommand({ head, branch }) {
+  if (!sha(head) || typeof branch !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(branch)) {
+    throw new Error('Valid commit and branch are required.');
+  }
+  const refs = `refs/heads/${branch} ${head} refs/heads/${branch} ${'0'.repeat(40)}`;
+  return `navet_hook="$(git show ${head}:.husky/pre-push)" && printf '%s\\n' '${refs}' | /bin/sh -c "$navet_hook" && git push origin ${branch}`;
+}
+
 async function git(root, args) {
   try { return (await execute('git', ['-C', root, ...args], { maxBuffer: 1_048_576,
     env: Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_'))) })).stdout.trim(); }
@@ -92,9 +102,9 @@ export async function verifyValidationReceipt({ receiptFile, expectedHead, repos
       item?.type !== 'CommandExecution' || item.id !== source.itemId ||
       item.status !== 'completed' || item.exit_code !== 0 || !Array.isArray(item.command) ||
       item.command.length !== 3 || !['/bin/zsh', '/bin/bash'].includes(item.command[0]) ||
-      !['-c', '-lc'].includes(item.command[1]) || item.command[2] !== `git push origin ${branch}` ||
+      !['-c', '-lc'].includes(item.command[1]) || item.command[2] !== validationPushCommand({ head: expectedHead, branch }) ||
       typeof item.cwd !== 'string' || await realpath(item.cwd.startsWith('file:') ? fileURLToPath(item.cwd) : item.cwd) !== root) {
-    throw new Error('Native receipt is not the matching successful ordinary push command.');
+    throw new Error('Native receipt is not the matching successful commit-bound validation and ordinary push command.');
   }
   if (typeof item.aggregated_output !== 'string') throw new Error('Native push output is missing.');
   const output = item.aggregated_output.replace(/\u001b\[[0-9;]*m/g, '');

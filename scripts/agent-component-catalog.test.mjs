@@ -4,6 +4,19 @@ import path from 'node:path';
 import { it, expect } from 'vitest';
 import { generateCatalog } from './agent-component-catalog.mjs';
 
+it('links default-imported stories to re-exported default components', () => {
+  const root = mkdtempSync(path.join(tmpdir(), 'navet-catalog-default-'));
+  try {
+    writeFileSync(path.join(root, 'sheet.ts'), 'export default function Sheet(props: { title: string }) { return props.title; }');
+    writeFileSync(path.join(root, 'index.ts'), "export { default as Sheet } from './sheet';");
+    writeFileSync(path.join(root, 'sheet.stories.tsx'), "import Sheet from './sheet'; const meta = { title: 'Components/Sheet', component: Sheet }; export default meta; export const Default = {};");
+    const catalog = generateCatalog({ root, entries: [{ file: 'index.ts', importFrom: '@navet/ui' }], stories: ['sheet.stories.tsx'] });
+    expect(catalog.entries.find((item) => item.name === 'Sheet').stories).toEqual([
+      { source: 'sheet.stories.tsx', title: 'Components/Sheet', exports: ['Default'] },
+    ]);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
 it('preserves variant-specific properties and discriminator requirements', () => {
   const root = mkdtempSync(path.join(tmpdir(), 'navet-catalog-variants-'));
   try {

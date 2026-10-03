@@ -25,10 +25,11 @@ Modes are `research`, `implement`, `audit`, and `steward`. The `output` gate is 
 Source and request identity determine the task ID. Repeated intake returns the existing task;
 changing its mode or revision requires a new request identity.
 
-A mutation input contains `id`, `action`, and an `input` object. Claim a task with `owner` and
-`durationMs`, then include that owner in subsequent mutations. Lease duration is bounded to one
-hour and the default active-task limit is one. Ownership must refer to a real coordinator handle
-that can be observed during recovery.
+A mutation input contains `id`, `action`, and an `input` object. The CLI requires `input.owner`
+to match the current coordinator's `CODEX_THREAD_ID` environment variable for every mutation.
+Claim a task with that `owner` and `durationMs`, then include the owner in subsequent mutations.
+Lease duration is bounded to one hour and the default active-task limit is one. Ownership must
+refer to a real coordinator handle that can be observed during recovery.
 
 ## Dispatch And Recovery
 
@@ -46,8 +47,9 @@ Overlapping batches share event receipts so changing a batch does not resend an 
 
 An expired lease alone does not prove its owner stopped. Reclaiming another owner's lease requires
 a fresh observation naming that owner, status `missing` or `terminal`, and an `observedAt` timestamp
-within the preceding minute. The coordinator supplies this from the owning task service. An
-unfinished dispatch continues to occupy capacity after its coordinator lease expires.
+within the preceding minute. The coordinator supplies this from the owning task service. A retained
+claim or unfinished dispatch occupies capacity after its coordinator lease expires. Recover an
+expired claim with the required owner observation, then release it when no work remains.
 
 For a deliberate handoff, the current owner calls `release` with a concrete `reason` after saving
 its checkpoint and observations. This clears record ownership so the next coordinator can claim
@@ -79,8 +81,10 @@ and limits; completing it does not activate authority or replace the trusted req
 
 Use `head` to record the current implementation commit. Use `evidence` to record each required
 gate with `result` (`pass`, `fail`, or `unverified`), proposal `revision`, current `head`, artifact
-reference, and observation time. The observation with the newest timestamp for that gate, head,
-and scope controls readiness. Older observations are rejected, and history retains failures. A changed head invalidates readiness until fresh evidence is recorded.
+reference, and observation time. The latest result for that gate and head controls readiness;
+history retains failures. Observations cannot move backwards. A failure takes precedence over a
+pass at the same timestamp; other conflicting timestamp ties are rejected, while identical
+receipt retries remain idempotent. A changed head invalidates readiness until fresh evidence is recorded.
 
 Transitions follow `queued -> investigating -> building -> verifying -> awaiting-approval ->
 delivered`, with explicit waiting and failure states. Each transition requires a reason. Returning
@@ -96,6 +100,159 @@ withdrawal, merge state, artifact availability, or the truth of supplied observa
 through the owning service immediately before dispatch and completion. The Linear connector can
 write as the maintainer account, so an account ID or Approved label alone is insufficient evidence
 of a human decision. Preserve the existing explicit maintainer request path during integration.
+
+## Planning Proposal Scope
+
+For a delivery selected from the planning hub, include `planningBinding` in the enqueue input.
+`createPlanningBinding(issue)` produces the issue/team/project identity and a SHA-256 revision
+from the full title, description and complete attachment references. Linear private-storage
+URLs in attachments and Markdown descriptions bind to the file address with temporary `signature` access parameters removed.
+Other query parameters, fragments, hosts and file paths remain part of scope. This normalization
+establishes neither file access nor human approval; verify artifact permissions separately. Linear
+explains signed links in
+[File storage authentication](https://linear.app/developers/file-storage-authentication). Use a
+complete fresh issue read; missing attachment data cannot be treated as an empty list. Priority and proposal-stage
+changes do not change the scope fingerprint. Record the selected option, acceptance criteria and
+visibility decision in the proposal before the maintainer accepts its revision.
+
+The trusted request's `authority.planningRevision` must name that exact fingerprint. Repeated
+intake cannot change or remove the binding. A revised proposal needs a new authorized request.
+The fingerprint and an Approved label verify neither human authorship nor implementation
+permission. The existing trusted maintainer request and permission checks remain required;
+connector-attributed account IDs cannot establish a human decision.
+
+After claiming the existing task, use the `planning-observation` mutation with `observation`:
+`status` (`available` or `unavailable`), `observedAt`, service `reference`, and, when available,
+the freshly fetched complete `issue`. The issue supplies its ID/UUID, team, project, title,
+description, attachments, complete label names and archival/cancellation state. Re-fetch through
+the owning service immediately before new execution. Record access or synchronization failure
+as unavailable, rather than retaining an earlier successful read as current evidence.
+
+A matching scope in exactly one Approved or In delivery stage supplies a planning-scope pass.
+Changes to content, references or identity, withdrawal, or archival revoke this request for new
+execution. A later Approved label cannot revive it; resumption requires a new trusted request.
+Ambiguous/missing stages and lost access are unverified. Observations expire after one minute
+and cannot move backwards. At equal timestamps, failures take precedence over unverified results,
+which take precedence over passes; other conflicting ties are rejected. These checks gate first dispatch, new follow-up sends, new resource
+allocations, execution transitions and readiness/completion. The first dispatch separately
+rechecks request authority and its accepted planning revision.
+
+An uncertain dispatch or follow-up remains reconcilable after withdrawal. Confirm receipts,
+record usage, preserve context and release ownership without starting new work. The record
+retains the binding and normalized observation across restart; it omits proposal text and
+attachment URLs. It does not cancel a running worker or mark a Linear proposal delivered.
+
+The coordinator must verify service responses and human decision provenance before supplying
+observations, stop an active worker when appropriate, and reconcile planning updates idempotently.
+Automatic Linear approval intake, verified human provenance, remote synchronization and active-worker
+withdrawal require integration pilots. Existing explicit requests without a planning binding retain
+their request-authority workflow; this optional guard does not claim coverage for them.
+
+## Signed Linear Event Observations
+
+`verifyLinearEvent` in `scripts/agent-linear-event.mjs` accepts the exact raw request bytes,
+Linear-Signature, a private signing secret and the configured organization/webhook IDs. It verifies
+HMAC-SHA256 before parsing, checks the signed transport timestamp within one minute, restricts
+body size and nesting, and rejects a different organization or webhook. Keep the secret and raw
+payload outside repository artifacts and public logs.
+
+The returned receipt retains event identity, actor attribution, timestamps and content hashes.
+It omits proposal/comment text, actor names and email addresses, and private artifact URLs. Its
+stable event ID derives from signed logical content, excluding retry-specific transport time;
+an unsigned Linear-Delivery header cannot supply deduplication identity. Persist accepted event
+IDs atomically in the receiving integration before acknowledging a new event. Identical logical
+retries can reconcile the prior receipt without starting another task.
+
+Issue and issue-comment events request a fresh complete planning read. They do not replace that
+read, supply an approval, enqueue work or stop a worker. A deletion or changed proposal must be
+reconciled through the existing planning-scope checks. Unsupported models supply no dispatch
+intent. Issue attachment changes need an additional supported event adapter or polling.
+
+Linear's default API authentication attributes writes to the authenticating user. Therefore a
+signed event with a user actor, an Approved label or an approval-like comment does not establish
+human provenance. The verifier always returns `authority: none`; the existing trusted maintainer
+request remains required. Dedicated app-actor authorization is appropriate for service writes,
+but configuring it alone does not prove who made a particular decision.
+
+The verifier opens no listener and changes no Linear or task-store state. Its receiving integration,
+fresh service reads, app-actor configuration and human-approval bridge require an integration pilot. Linear documents the transport and actor contracts in
+[Webhooks](https://linear.app/developers/webhooks) and
+[OAuth actor authorization](https://linear.app/developers/oauth-actor-authorization).
+
+## Durable Linear Receipt Inbox
+
+`AgentLinearInbox` in `scripts/agent-linear-inbox.mjs` persists normalized event receipts through
+the existing task store's SQLite lock and atomic state-file replacement. It adds a versioned
+`linearEventInbox` field while preserving task records and leases. Use a private receipt directory
+for a separate receiving process; recording a receipt creates no delivery task.
+
+`accept` verifies the raw event before entering the transaction. A new supported event returns
+`refresh`; an uncertain earlier refresh returns `reconcile`; a confirmed refresh returns `skip`.
+Unsupported signed models return `ignore`. Repeated receipt deliveries retain the original event
+and confirmation, increment a delivery count and preserve pending work across restarts. Corrupt
+inbox history fails closed. The state directory and files use the existing private permissions.
+
+Pending refresh receipts survive compaction. The inbox retains at most 1,000 confirmed or ignored
+receipts from the last 24 hours for retry deduplication. After eviction, a repeated supported
+event requests a fresh planning read, which still supplies no implementation authority. At
+1,000 pending refreshes, new supported events receive a retryable storage failure until the
+consumer reconciles work; existing pending events remain available. Constructor options
+`maxSettledReceipts`, `deduplicationMs`, and `maxPendingReceipts` configure these positive limits.
+
+`pending` returns refresh receipts that need reconciliation. The consumer fetches a complete,
+fresh issue snapshot, checks the proposal binding and trusted request authority, and updates any
+bound task through its normal owned mutations. After observing the required refresh reconciliation,
+call `confirm(eventId, { reference, observedAt })`. The reference is a SHA-256 identifier for the
+private service-read evidence; observation time must be fresh and at or after event receipt.
+Confirmation records refresh evidence. Task readiness and delivery keep their own gates.
+
+`startLinearEventReceiver` in `scripts/agent-linear-receiver.mjs` provides an opt-in local HTTP
+receiver at `127.0.0.1` and `/linear/webhook`. Supply an inbox, private signing secret, configured
+organization/webhook IDs and an optional port. Its returned handle has `url` and `stop`. The
+receiver accepts bounded JSON POST bodies, verifies the event, and sends HTTP 200 only after the
+receipt transaction is durable. Invalid events are rejected; storage failures return 503 for
+retry. Responses omit receipt contents and private error details.
+
+The local receiver has synthetic HTTP and process-restart pilots. It needs an authorized HTTPS
+endpoint and actual Linear delivery before production use. Its human approval bridge and task-worker
+interruption integration remain pending. The receiver grants no implementation authority and leaves automatic dispatch off. Keep signing configuration and
+raw payloads outside public artifacts.
+
+## Fresh Linear Planning Reconciliation
+
+`reconcileLinearRefresh` in `scripts/agent-linear-refresh.mjs` consumes one pending refresh receipt.
+Supply `inbox`, its `eventId`, the existing task `store`, the owning coordinator `owner`, and a
+`readIssue(issueId)` callback that performs a complete read through the owning Linear service.
+The inbox and task store must share the same private state directory so confirmation can inspect
+task progress atomically. The callback must enforce the service request timeout and return the issue UUID, team, project,
+full title and description, complete attachments and label names, and explicit archival/cancellation
+values (`null` or valid timestamp strings). For a definitive service-confirmed missing issue, throw `LinearIssueNotFoundError(issueId)`
+from the refresh module. The identity-bound observation withdraws the proposal, latches revocation,
+and confirms the receipt. Permission errors and ambiguous HTTP 404 responses remain unavailable.
+Cached issue bodies and webhook payloads cannot substitute for this read.
+
+The consumer checks the returned identity, complete fields and elapsed read freshness, then
+updates nonterminal tasks bound to that issue through normal `planning-observation` mutations.
+Each caller updates only records under its own live leases; the consumer neither claims ownership nor
+creates tasks. Event-scoped observations preserve progress across release, handoff and restart only
+while each record’s latest observation matches the same normalized proposal state. Other
+coordinators reconcile their records with fresh service reads, and the receipt remains pending
+until every applicable nonterminal record has been handled. Confirmation rechecks
+that condition atomically with receipt persistence. If a later owner reads a changed proposal,
+other owners must refresh their records before confirmation. Matching observations still expire
+normally as execution evidence. Terminal history and unbound tasks remain intact. Scope withdrawal
+latches through the existing guard. An Approved stage does not grant authority or revive a revoked request.
+
+A failed, slow, mismatched or incomplete read records unavailable planning evidence on owned
+bound tasks and returns `retry`, leaving the receipt pending. A successful read confirms the
+receipt only after every applicable nonterminal task has a matching durable event-scoped
+observation. Lease failures or interrupted confirmation leave pending work for reconciliation. Confirmation persists a hash of normalized
+service-read state with the confirming observation timestamp, omitting proposal contents and temporary credentials.
+
+Run this consumer from an existing coordinator with verified service access. It opens no listener,
+sends no message, changes no Linear issue and starts no worker. New execution still needs its own
+fresh planning observation and trusted maintainer request. Actual webhook-to-coordinator delivery,
+human-approval provenance and worker withdrawal require operational integration pilots.
 
 ## Execution Budgets
 
@@ -157,8 +314,11 @@ command item ID and SHA-256 of that complete record including its newline. Its `
 
 The verifier reads a fixed complete-record prefix, confirms session and execution-thread identity,
 and rejects missing/partial records, changed hashes, wrong checkouts, mismatched repositories,
-failed commands and contradictory counts. It supports a completed ordinary
-`git push origin <branch>` through the native bash/zsh command form. It checks the current
+failed commands and contradictory counts. It accepts the exact native bash/zsh command generated by
+`validationPushCommand({ head: expectedHead, branch })` from `scripts/agent-validation-receipt.mjs`.
+The command loads the hook from the confirmed Git commit and executes that immutable source
+with the commit and destination refs before an ordinary push. The push also runs its normal hooks.
+A dirty working-tree hook cannot substitute for the explicit committed validation chain. It checks the current
 repository's origin, the commit-bound typecheck/Tier 1/Tier 2 hook, their ordered output and complete
 passing tier counts, and the pushed destination/branch/commit. Abbreviated push SHAs must resolve
 to the confirmed full commit. For first branch pushes, Git reports `[new branch]` without a SHA;

@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 import { createHash } from 'node:crypto';
-import { existsSync, mkdtempSync, mkdirSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, mkdtempSync, mkdirSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import * as ast from 'typescript/unstable/ast';
 import { API, SignatureKind, SymbolFlags } from 'typescript/unstable/sync';
+import { applyComponentMaturity } from './agent-component-maturity.mjs';
 
 function storiesIn(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -42,7 +43,7 @@ function storyTitle(source, checker) {
   return property && ast.isStringLiteral(property.initializer) ? property.initializer.text : null;
 }
 
-export function generateCatalog({ root, entries, stories = [], compilerOptions = {} }) {
+export function generateCatalog({ root, entries, stories = [], compilerOptions = {}, maturityInventory }) {
   root = realpathSync(path.resolve(root));
   entries = entries.map((entry) => ({ ...entry, file: realpathSync(path.resolve(root, entry.file)) }));
   stories = stories.map((file) => realpathSync(path.resolve(root, file)));
@@ -108,7 +109,7 @@ export function generateCatalog({ root, entries, stories = [], compilerOptions =
           const module = resolveSymbol(checker, checker.getSymbolAtLocation(node.name));
           if (module) for (const exported of checker.getExportsOfModule(module)) imports.add(symbolKey(resolveSymbol(checker, exported)));
         }
-        if (ast.isImportSpecifier(node) || ast.isPropertyAccessExpression(node)) {
+        if (ast.isImportSpecifier(node) || ast.isPropertyAccessExpression(node) || (ast.isImportClause(node) && node.name)) {
           imports.add(symbolKey(resolveSymbol(checker, checker.getSymbolAtLocation(node.name))));
         }
         if (ast.isVariableStatement(node) && node.modifiers?.some((modifier) => modifier.kind === ast.SyntaxKind.ExportKeyword)) {
@@ -125,11 +126,12 @@ export function generateCatalog({ root, entries, stories = [], compilerOptions =
     for (const source of program.getSourceFileNames().filter((file) => file.startsWith(`${root}${path.sep}`) && !file.includes(`${path.sep}node_modules${path.sep}`)).sort().map((file) => program.getSourceFile(file))) {
       fingerprint.update(relative(source.fileName)).update(source.text);
     }
-    return {
+    const catalog = {
       version: 1, sourceFingerprint: fingerprint.digest('hex'),
       guidance: ['docs/design-system/README.md', 'docs/design-system/AI-DESIGN-CONTEXT.md', 'ai/skills/navet-ux.md'],
       entries: records.map(({ symbolKey: _key, ...record }) => record).sort((a, b) => a.name.localeCompare(b.name)),
     };
+    return maturityInventory ? applyComponentMaturity(catalog, { root, inventory: maturityInventory }) : catalog;
   } finally {
     snapshot?.dispose();
     api.close();
@@ -142,10 +144,11 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
   const entries = ['primitives', 'patterns', 'tokens'].map((name) => ({
     file: path.join(root, `packages/app/src/ui-kit/${name}.ts`), importFrom: `@navet/app/ui-kit/${name}`,
   }));
-  const catalog = generateCatalog({ root, entries, stories: storiesIn(path.join(root, 'packages/app/src')) });
+  const maturityInventory = JSON.parse(readFileSync(path.join(root, 'docs/design-system/component-maturity.json'), 'utf8'));
+  const catalog = generateCatalog({ root, entries, stories: storiesIn(path.join(root, 'packages/app/src')), maturityInventory });
   const query = process.argv[2];
   if (query) {
-    console.log(JSON.stringify({ sourceFingerprint: catalog.sourceFingerprint, entries: catalog.entries.filter((entry) => `${entry.name} ${entry.source} ${entry.description}`.toLowerCase().includes(query.toLowerCase())) }, null, 2));
+    console.log(JSON.stringify({ sourceFingerprint: catalog.sourceFingerprint, maturityFingerprint: catalog.maturityFingerprint, entries: catalog.entries.filter((entry) => `${entry.name} ${entry.source} ${entry.description}`.toLowerCase().includes(query.toLowerCase())) }, null, 2));
   } else {
     const output = path.join(root, '.cache/agent-design/components.json');
     await mkdir(path.dirname(output), { recursive: true });

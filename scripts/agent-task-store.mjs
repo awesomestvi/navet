@@ -3,6 +3,7 @@ import { chmod, mkdir, open, readFile, rename, rm, stat } from 'node:fs/promises
 import { hostname } from 'node:os';
 import path from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
+import { evaluatePlanningObservation, requirePlanningScope, validatePlanningBinding } from './agent-planning-scope.mjs';
 
 // Load through Node so browser-oriented test bundlers do not bundle this native module.
 const sqlite = process.getBuiltinModule?.('node:sqlite');
@@ -199,7 +200,7 @@ export class AgentTaskStore {
     return this.transaction((state) => state.tasks);
   }
 
-  async enqueue({ source, requestId, mode, revision, authority, brief, requiredGates = [], resourceLimits }) {
+  async enqueue({ source, requestId, mode, revision, authority, brief, requiredGates = [], resourceLimits, planningBinding }) {
     const id = taskId(source, requestId);
     if (!['research', 'implement', 'audit', 'steward'].includes(mode)) throw new Error('Unsupported task mode.');
     requireValue(revision, 'revision');
@@ -215,6 +216,12 @@ export class AgentTaskStore {
     }
     const gates = [...new Set([...requiredGates, 'output'])];
     if (resourceLimits !== undefined) validateResourceLimits(resourceLimits);
+    if (planningBinding !== undefined) {
+      validatePlanningBinding(planningBinding);
+      if (authority.planningRevision !== planningBinding.revision) {
+        throw new Error('Request authority must name the accepted planning revision.');
+      }
+    }
     return this.transaction((state) => {
       const existing = state.tasks.find((task) => task.id === id);
       if (existing) {
@@ -222,6 +229,7 @@ export class AgentTaskStore {
             !isDeepStrictEqual(existing.brief, brief) ||
             !isDeepStrictEqual([...existing.requiredGates].sort(), [...gates].sort()) ||
             !isDeepStrictEqual(existing.resources?.limits, resourceLimits) ||
+            !isDeepStrictEqual(existing.planning?.binding, planningBinding) ||
             existing.authority.actor !== authority.actor || existing.authority.reference !== authority.reference) {
           throw new Error('Request identity was reused with different scope.');
         }
@@ -230,6 +238,7 @@ export class AgentTaskStore {
       const task = {
         id, source, requestId, mode, revision, authority, brief,
         state: 'queued', head: null, requiredGates: gates,
+        ...(planningBinding ? { planning: { binding: structuredClone(planningBinding), observation: null } } : {}),
         evidence: [], dispatch: null, lease: null, retries: 0,
         createdAt: this.now(), updatedAt: this.now(), history: [],
         ...(resourceLimits ? { resources: { limits: resourceLimits, startedAt: null, usage: null, reservations: [] } } : {}),
@@ -250,7 +259,7 @@ export class AgentTaskStore {
         if (['delivered', 'terminal-failure'].includes(task.state)) throw new Error('Terminal work cannot be claimed.');
         requireValue(input.owner, 'owner');
         if (state.tasks.filter((other) => other.id !== id && !TERMINAL.has(other.state) &&
-            (other.lease?.expiresAt > now || other.dispatch)).length >= this.maxActiveTasks) {
+            (other.lease || other.dispatch)).length >= this.maxActiveTasks) {
           throw new Error('Active task budget exhausted.');
         }
         if (!Number.isFinite(input.durationMs) || input.durationMs <= 0 || input.durationMs > 3_600_000) throw new Error('Invalid lease duration.');
@@ -269,6 +278,20 @@ export class AgentTaskStore {
         if (action === 'release') {
           requireValue(input.reason, 'release reason');
           task.lease = null;
+        } else if (action === 'planning-observation') {
+          if (!task.planning) throw new Error('Task has no planning binding.');
+          const observation = evaluatePlanningObservation(task.planning.binding, input.observation, now);
+          if (task.planning.observation && observation.observedAt < task.planning.observation.observedAt) {
+            throw new Error('Planning observations cannot move backwards.');
+          }
+          const previous = task.planning.observation;
+          const blockingRank = { pass: 0, unverified: 1, fail: 2 };
+          if (previous && observation.observedAt === previous.observedAt &&
+              !isDeepStrictEqual(observation, previous) && blockingRank[observation.result] <= blockingRank[previous.result]) {
+            throw new Error('Conflicting planning observations cannot relax or replace a timestamp tie.');
+          }
+          task.planning.observation = observation;
+          if (observation.result === 'fail') task.planning.revokedAt ??= now;
         } else if (action === 'resource-usage') {
           if (!task.resources) throw new Error('Task has no configured resource limits.');
           const usage = input.usage;
@@ -303,6 +326,7 @@ export class AgentTaskStore {
             }
             return { ...task, resourceDecision: { action: existing.settledAt ? 'skip' : 'reconcile', reservation: existing } };
           }
+          requirePlanningScope(task, now);
           const status = requireResourceCapacity(task, now);
           if (input.modelTokens > status.remaining.modelTokens || input.toolCalls > status.remaining.toolCalls) {
             throw new Error('Resource reservation exceeds the remaining budget.');
@@ -319,9 +343,11 @@ export class AgentTaskStore {
           if (TERMINAL.has(task.state)) throw new Error('Terminal work cannot be dispatched.');
           nextDispatchAction = task.dispatch ? 'reconcile' : 'create';
           if (!task.dispatch) {
+            requirePlanningScope(task, now);
             bindResourceReservation(task, input, now, 'dispatch');
             if (!observationIsFresh(input.authority, now) || input.authority.actor !== task.authority.actor ||
-                input.authority.reference !== task.authority.reference || input.authority.revision !== task.revision) {
+                input.authority.reference !== task.authority.reference || input.authority.revision !== task.revision ||
+                (task.planning && input.authority.planningRevision !== task.planning.binding.revision)) {
               throw new Error('Dispatch requires freshly rechecked authority for this revision.');
             }
             task.dispatch = { token: randomUUID(), intentAt: now, clientThreadId: null, threadId: null,
@@ -355,6 +381,7 @@ export class AgentTaskStore {
           } else {
             const fresh = events.filter((event) => !existing.some((receipt) => receipt.event === event));
             if (fresh.length) {
+              requirePlanningScope(task, now);
               bindResourceReservation(task, input, now, `followup:${JSON.stringify(fresh)}`);
               const token = randomUUID();
               const receipts = fresh.map((event) => ({ event, token, threadId: task.dispatch.threadId,
@@ -403,11 +430,18 @@ export class AgentTaskStore {
           if (!Number.isFinite(item.observedAt) || item.observedAt <= 0 || item.observedAt > now) throw new Error('Invalid evidence observation time.');
           const prior = task.evidence.find((value) => value.gate === item.gate && value.head === item.head && value.revision === item.revision);
           if (prior && item.observedAt < prior.observedAt) throw new Error('Evidence observations cannot move backwards.');
+          if (prior && item.observedAt === prior.observedAt && !isDeepStrictEqual(item, prior) &&
+              !(prior.result === 'pass' && item.result === 'fail')) {
+            throw new Error('Conflicting evidence observations cannot share a timestamp.');
+          }
           // Preserve history, but use only the latest observation for a gate/head/revision.
           task.evidence = task.evidence.filter((prior) => !(prior.gate === item.gate && prior.head === item.head && prior.revision === item.revision));
           task.evidence.push(item);
         } else if (action === 'transition') {
           if (!STATES[task.state]?.includes(input.state)) throw new Error(`Invalid transition ${task.state} -> ${input.state}.`);
+          if (['investigating', 'building', 'verifying', 'awaiting-approval', 'delivered'].includes(input.state)) {
+            requirePlanningScope(task, now);
+          }
           if (['investigating', 'building', 'verifying'].includes(input.state)) requireResourceCapacity(task, now);
           if (['awaiting-approval', 'delivered'].includes(input.state)) {
             if (!task.dispatch?.threadId) throw new Error('Confirmed delivery handle is required.');
@@ -433,6 +467,7 @@ export class AgentTaskStore {
       task.updatedAt = now;
       task.history.push({ action, owner: input.owner, state: task.state, head: task.head, at: now,
         ...(action === 'evidence' ? { evidence: input.evidence } : {}),
+        ...(action === 'planning-observation' ? { planning: task.planning.observation } : {}),
         ...(action === 'resource-usage' ? { usage: input.usage, settledReservations: input.settledReservations ?? [] } : {}),
         ...(['transition', 'release'].includes(action) ? { reason: input.reason } : {}),
       });

@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { once } from 'node:events';
 import { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { hostname, tmpdir } from 'node:os';
@@ -29,6 +29,43 @@ async function setup(options = {}) {
   return { directory, store, request, task, owner, claim, act, evidence, advance: (delta) => { now += delta; } };
 }
 afterEach(async () => { await Promise.all(directories.splice(0).map((directory) => rm(directory, { recursive: true, force: true }))); });
+
+describe('coordinator identity at the task CLI boundary', () => {
+  it.each([
+    { threadId: undefined, inputOwner: 'coordinator-thread' },
+    { threadId: 'other-coordinator', inputOwner: 'coordinator-thread' },
+    { threadId: 'coordinator-thread', inputOwner: undefined },
+  ])('rejects mismatched or missing ownership without changing the saved checkpoint: %j', async ({ threadId, inputOwner }) => {
+    const { directory, task, owner } = await setup();
+    const store = new AgentTaskStore(directory);
+    await store.mutate(task.id, 'claim', { owner, durationMs: 100_000 });
+    await store.mutate(task.id, 'context', { owner, context: { nextAction: 'Preserve this checkpoint.' } });
+    const inputFile = path.join(directory, 'input.json');
+    await writeFile(inputFile, JSON.stringify({ id: task.id, action: 'context', input: { owner: inputOwner, context: { nextAction: 'Overwrite checkpoint.' } } }));
+    const before = await readFile(path.join(directory, 'tasks.json'), 'utf8');
+    const env = { ...process.env };
+    delete env.CODEX_THREAD_ID;
+    if (threadId !== undefined) env.CODEX_THREAD_ID = threadId;
+    const result = spawnSync(process.execPath, [path.resolve('scripts/agent-task.mjs'), directory, 'mutate', inputFile], { env, encoding: 'utf8' });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('Mutation owner must match CODEX_THREAD_ID.');
+    expect(await readFile(path.join(directory, 'tasks.json'), 'utf8')).toBe(before);
+  });
+
+  it('lets the current coordinator claim and update its checkpoint', async () => {
+    const { directory, task, owner } = await setup();
+    const inputFile = path.join(directory, 'input.json');
+    for (const mutation of [
+      { action: 'claim', input: { owner, durationMs: 100_000 } },
+      { action: 'context', input: { owner, context: { nextAction: 'Continue verified work.' } } },
+    ]) {
+      await writeFile(inputFile, JSON.stringify({ id: task.id, ...mutation }));
+      const result = spawnSync(process.execPath, [path.resolve('scripts/agent-task.mjs'), directory, 'mutate', inputFile], { env: { ...process.env, CODEX_THREAD_ID: owner }, encoding: 'utf8' });
+      expect(result.status, result.stderr).toBe(0);
+    }
+    expect((await new AgentTaskStore(directory).list())[0].context.nextAction).toBe('Continue verified work.');
+  });
+});
 
 async function boundedSetup(limitOverrides = {}) {
   const base = await setup();
@@ -215,6 +252,21 @@ describe('durable agent task lifecycle', () => {
     expect((await store.mutate(task.id, 'claim', { ...input, observation: { owner, status: 'terminal', observedAt: 1_100_001 } })).lease.owner).toBe(input.owner);
   });
 
+  it('keeps an expired undispatched claim occupying capacity across restart until observed recovery and release', async () => {
+    const { store, directory, task, request, owner, claim, advance } = await setup();
+    await claim();
+    const second = await store.enqueue({ ...request, requestId: 'second-queued-task' });
+    advance(100_001);
+    const restarted = new AgentTaskStore(directory, { now: () => 1_100_001 });
+    await expect(restarted.mutate(second.id, 'claim', { owner: 'parallel', durationMs: 1000 })).rejects.toThrow('Active task budget');
+    await expect(restarted.mutate(task.id, 'claim', { owner: 'recovery', durationMs: 1000 })).rejects.toThrow('fresh owner');
+    await restarted.mutate(task.id, 'claim', { owner: 'recovery', durationMs: 1000,
+      observation: { owner, status: 'missing', observedAt: 1_100_001 } });
+    await expect(restarted.mutate(second.id, 'claim', { owner: 'parallel', durationMs: 1000 })).rejects.toThrow('Active task budget');
+    await restarted.mutate(task.id, 'release', { owner: 'recovery', reason: 'Observed missing owner and recovered record.' });
+    expect((await restarted.mutate(second.id, 'claim', { owner: 'parallel', durationMs: 1000 })).lease.owner).toBe('parallel');
+  });
+
   it('hands off record ownership without freeing a live delivery or resetting its budget', async () => {
     const { store, task, owner, act, usage, request } = await boundedSetup();
     await usage(0, 0);
@@ -247,7 +299,7 @@ describe('durable agent task lifecycle', () => {
   });
 
   it('invalidates readiness on a new head and prevents failing or missing evidence from passing', async () => {
-    const { task, claim, act, evidence } = await setup();
+    const { task, claim, act, evidence, advance } = await setup();
     await claim();
     const intent = await act('dispatch-intent');
     await act('bind', { token: intent.dispatch.token, threadId: 'delivery-thread' });
@@ -256,9 +308,9 @@ describe('durable agent task lifecycle', () => {
     await act('transition', { state: 'verifying', reason: 'Checks.' });
     await evidence('ci'); await evidence('visual');
     await expect(act('transition', { state: 'awaiting-approval', reason: 'Review.' })).rejects.toThrow('incomplete');
-    await evidence('output'); await evidence('ci', 'sha-a', 'fail');
+    await evidence('output'); advance(1); await evidence('ci', 'sha-a', 'fail');
     await expect(act('transition', { state: 'awaiting-approval', reason: 'Review.' })).rejects.toThrow('incomplete');
-    await evidence('ci');
+    advance(1); await evidence('ci');
     expect((await act('transition', { state: 'awaiting-approval', reason: 'Review.' })).state).toBe('awaiting-approval');
     expect((await act('head', { head: 'sha-b' })).state).toBe('verifying');
     await expect(evidence('ci', 'sha-a')).rejects.toThrow('different head');
@@ -288,15 +340,37 @@ describe('durable agent task lifecycle', () => {
     expect((await act('transition', { state: 'awaiting-approval', reason: 'New checks.' })).state).toBe('awaiting-approval');
   });
 
+  it('rejects conflicting timestamp ties across restart while allowing identical receipt retries', async () => {
+    const { directory, store, task, owner, claim, act, evidence, advance } = await setup();
+    await claim();
+    const intent = await act('dispatch-intent');
+    await act('bind', { token: intent.dispatch.token, threadId: 'delivery-thread' });
+    await act('head', { head: 'sha-a' });
+    await act('transition', { state: 'investigating', reason: 'Start.' });
+    await act('transition', { state: 'verifying', reason: 'Checks.' });
+    await evidence('ci'); await evidence('ci', 'sha-a', 'fail'); await evidence('visual'); await evidence('output');
+    const prior = (await store.list())[0].evidence.find((item) => item.gate === 'ci');
+    const restarted = new AgentTaskStore(directory, { now: () => 1_000_000 });
+    await restarted.mutate(task.id, 'evidence', { owner, evidence: prior });
+    await expect(restarted.mutate(task.id, 'evidence', { owner, evidence: { ...prior, result: 'pass' } }))
+      .rejects.toThrow('share a timestamp');
+    await expect(restarted.mutate(task.id, 'transition', { owner, state: 'awaiting-approval', reason: 'Review.' }))
+      .rejects.toThrow('incomplete');
+    expect((await store.list())[0].evidence.find((item) => item.gate === 'ci')).toEqual(prior);
+    advance(1);
+    await evidence('ci');
+    expect((await act('transition', { state: 'awaiting-approval', reason: 'New checks.' })).state).toBe('awaiting-approval');
+  });
+
   it('retains failure evidence and rejects automatic completion of implementation without acceptance', async () => {
-    const { store, claim, act, evidence } = await setup();
+    const { store, claim, act, evidence, advance } = await setup();
     await claim();
     const intent = await act('dispatch-intent');
     await act('bind', { token: intent.dispatch.token, threadId: 'delivery-thread' });
     await act('head', { head: 'sha-a' });
     await act('transition', { state: 'investigating', reason: 'Start.' });
     await act('transition', { state: 'verifying', reason: 'Check.' });
-    await evidence('ci', 'sha-a', 'fail'); await evidence('ci'); await evidence('visual'); await evidence('output');
+    await evidence('ci', 'sha-a', 'fail'); advance(1); await evidence('ci'); await evidence('visual'); await evidence('output');
     await expect(act('transition', { state: 'delivered', reason: 'Done.' })).rejects.toThrow('maintainer acceptance');
     const record = (await store.list())[0];
     expect(record.state).toBe('verifying');
