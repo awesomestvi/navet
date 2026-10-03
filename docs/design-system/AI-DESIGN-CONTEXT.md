@@ -19,6 +19,11 @@ parameters, props, source locations, and associated story files. Run `pnpm agent
 without a query to generate `.cache/agent-design/components.json`. Every invocation regenerates
 metadata from current source and includes a fingerprint of its local TypeScript inputs.
 
+For union-based props, `properties` contains the fields shared across alternatives; `variants`
+preserves each alternative's own fields, types and required/optional discriminator. Select one
+valid contract before composing a component. Props from different alternatives are not a single
+combined API.
+
 Export presence does not establish component maturity. The catalog marks stability as
 `unclassified`; use the design-system guidance and rendered stories to choose the correct recipe.
 Story associations identify imports in story files, not proof that every listed story exercises
