@@ -270,8 +270,9 @@ pattern, inspect supported states, and run relevant checks without inventing its
    and `glass`, `dark`, `light`, and `black` themes.
 5. Audit the documented Storybook baseline failures, verify their current status, and repair valid
    assertions without weakening tests. Promote a lane to required only after its baseline is green.
-6. Create a small repeatable agent evaluation set from real Navet tasks. Include a card dialog,
-   settings flow, unavailable state, responsive dashboard composition, and shared-component extension.
+6. Use the [five-case agent UI evaluation](agent-ui-evaluation.md) from real Navet sources.
+   It covers a card dialog, settings flow, unavailable state, responsive dashboard composition
+   and shared-component extension; record controlled runs before claiming context improvements.
 7. Track invalid props/imports, duplicated primitives, token violations, accessibility failures,
    maintainer correction effort, runtime, and cost. Compare filesystem-only context with curated
    metadata and MCP using the same task set.
