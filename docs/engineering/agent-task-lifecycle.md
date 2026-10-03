@@ -25,10 +25,11 @@ Modes are `research`, `implement`, `audit`, and `steward`. The `output` gate is 
 Source and request identity determine the task ID. Repeated intake returns the existing task;
 changing its mode or revision requires a new request identity.
 
-A mutation input contains `id`, `action`, and an `input` object. Claim a task with `owner` and
-`durationMs`, then include that owner in subsequent mutations. Lease duration is bounded to one
-hour and the default active-task limit is one. Ownership must refer to a real coordinator handle
-that can be observed during recovery.
+A mutation input contains `id`, `action`, and an `input` object. The CLI requires `input.owner`
+to match the current coordinator's `CODEX_THREAD_ID` environment variable for every mutation.
+Claim a task with that `owner` and `durationMs`, then include the owner in subsequent mutations.
+Lease duration is bounded to one hour and the default active-task limit is one. Ownership must
+refer to a real coordinator handle that can be observed during recovery.
 
 ## Dispatch And Recovery
 

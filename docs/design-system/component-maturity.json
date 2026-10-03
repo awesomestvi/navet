@@ -1,0 +1,296 @@
+{
+  "version": 1,
+  "components": [
+    {
+      "name": "BaseCard",
+      "importFrom": "@navet/app/ui-kit/primitives",
+      "source": "packages/app/src/components/primitives/base-card.tsx",
+      "status": "app-coupled",
+      "rationale": "Uses app theme/effects hooks and shared card-state helpers.",
+      "evidence": [
+        "packages/app/src/components/primitives/base-card.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "BaseCardDialog",
+      "importFrom": "@navet/app/ui-kit/primitives",
+      "source": "packages/app/src/components/primitives/Cards/BaseCardDialog/index.tsx",
+      "status": "app-coupled",
+      "rationale": "Uses app theme/i18n hooks and device-editor room/tint controls.",
+      "evidence": [
+        "packages/app/src/components/patterns/card-dialog-overflow-menu.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "CardShell",
+      "importFrom": "@navet/app/ui-kit/primitives",
+      "source": "packages/app/src/components/primitives/card-shell.tsx",
+      "status": "app-coupled",
+      "rationale": "Composes app BaseCard, ModalSurface and size editor with app i18n.",
+      "evidence": [
+        "packages/app/src/components/primitives/card-shell.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "SheetSurface",
+      "importFrom": "@navet/app/ui-kit/primitives",
+      "source": "packages/app/src/components/primitives/sheet-surface.tsx",
+      "status": "app-coupled",
+      "rationale": "Uses app theme context and the app dialog shell.",
+      "evidence": [
+        "packages/app/src/components/primitives/sheet-surface.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "SheetSurfaceHeader",
+      "importFrom": "@navet/app/ui-kit/primitives",
+      "source": "packages/app/src/components/primitives/sheet-surface.tsx",
+      "status": "app-coupled",
+      "rationale": "Uses app theme context and sheet header token helpers.",
+      "evidence": [
+        "packages/app/src/components/primitives/sheet-surface.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "ModalSurface",
+      "importFrom": "@navet/app/ui-kit/primitives",
+      "source": "packages/app/src/components/primitives/modal-surface.tsx",
+      "status": "app-coupled",
+      "rationale": "Uses app theme context and BaseCardDialog.",
+      "evidence": [
+        "packages/app/src/components/primitives/modal-surface.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "FieldBlock",
+      "importFrom": "@navet/app/ui-kit/patterns",
+      "source": "packages/app/src/components/patterns/field-block.tsx",
+      "status": "app-coupled",
+      "rationale": "Uses app theme context and typography/spacing helpers; callers own control IDs and validation.",
+      "evidence": [
+        "packages/app/src/components/patterns/field-block.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "CardEmptyState",
+      "importFrom": "@navet/app/ui-kit/patterns",
+      "source": "packages/app/src/components/patterns/card-empty-state.tsx",
+      "status": "app-coupled",
+      "rationale": "Uses app theme context, card size and entity header/tint helpers.",
+      "evidence": [
+        "packages/app/src/components/patterns/card-empty-state.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "DashboardEmptyState",
+      "importFrom": "@navet/app/ui-kit/patterns",
+      "source": "packages/app/src/components/patterns/dashboard-empty-state.tsx",
+      "status": "app-coupled",
+      "rationale": "Wraps the shared EmptyStatePanel with app theme and dashboard helpers.",
+      "evidence": [
+        "packages/app/src/components/patterns/dashboard-empty-state.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "Button",
+      "importFrom": "@navet/app/ui-kit/primitives",
+      "source": "packages/app/src/components/primitives/button.tsx",
+      "status": "app-coupled",
+      "rationale": "Reads app theme, accent and primary color; uses app control/focus and appearance-picker helpers. Loading disables the native button; icon-only actions require a label.",
+      "evidence": [
+        "packages/app/src/components/primitives/button.stories.tsx"
+      ]
+    },
+    {
+      "name": "Input",
+      "importFrom": "@navet/app/ui-kit/primitives",
+      "source": "packages/app/src/components/primitives/input.tsx",
+      "status": "app-coupled",
+      "rationale": "Reads app theme and accent; uses app field/focus helpers. Forwards native input attributes and marks invalid state; callers supply labels and associated help/error IDs.",
+      "evidence": [
+        "packages/app/src/components/primitives/input.stories.tsx"
+      ]
+    },
+    {
+      "name": "Textarea",
+      "importFrom": "@navet/app/ui-kit/primitives",
+      "source": "packages/app/src/components/primitives/textarea.tsx",
+      "status": "app-coupled",
+      "rationale": "Reads app theme and accent; uses app field/focus helpers. Forwards native textarea attributes; callers supply labels, validation and associated help/error IDs.",
+      "evidence": [
+        "packages/app/src/components/primitives/textarea.stories.tsx"
+      ]
+    },
+    {
+      "name": "Checkbox",
+      "importFrom": "@navet/app/ui-kit/primitives",
+      "source": "packages/app/src/components/primitives/checkbox.tsx",
+      "status": "app-coupled",
+      "rationale": "Wraps Radix Checkbox with app theme, palette types and appearance helpers. Callers supply the label and selection configuration; the component does not compose a field row.",
+      "evidence": [
+        "packages/app/src/components/primitives/checkbox.stories.tsx"
+      ]
+    },
+    {
+      "name": "Radio",
+      "importFrom": "@navet/app/ui-kit/primitives",
+      "source": "packages/app/src/components/primitives/radio.tsx",
+      "status": "app-coupled",
+      "rationale": "Reads app accent color and wraps a native radio input. Callers own group names, labels and selection state.",
+      "evidence": [
+        "packages/app/src/components/primitives/radio.stories.tsx"
+      ]
+    },
+    {
+      "name": "Switch",
+      "importFrom": "@navet/app/ui-kit/primitives",
+      "source": "packages/app/src/components/primitives/switch.tsx",
+      "status": "app-coupled",
+      "rationale": "Reads app theme and accent; renders a controlled button with switch semantics. Callers own its accessible name and persistence; a prevented click suppresses onCheckedChange.",
+      "evidence": [
+        "packages/app/src/components/primitives/switch.stories.tsx"
+      ]
+    },
+    {
+      "name": "Select",
+      "importFrom": "@navet/app/ui-kit/primitives",
+      "source": "packages/app/src/components/primitives/select.tsx",
+      "status": "app-coupled",
+      "rationale": "Reads app theme and accent; wraps a native select with app focus helpers. Callers supply options, labels and associated validation text.",
+      "evidence": [
+        "packages/app/src/components/primitives/select.stories.tsx"
+      ]
+    },
+    {
+      "name": "Slider",
+      "importFrom": "@navet/app/ui-kit/primitives",
+      "source": "packages/app/src/components/primitives/slider.tsx",
+      "status": "app-coupled",
+      "rationale": "Uses the app coarse-pointer media-query hook and wraps Radix Slider. Callers supply ariaLabel, controlled value and visual track/thumb styles; live value and commit callbacks have distinct roles.",
+      "evidence": [
+        "packages/app/src/components/primitives/slider.stories.tsx"
+      ]
+    },
+    {
+      "name": "Text",
+      "importFrom": "@navet/app/ui-kit/primitives",
+      "source": "packages/app/src/components/primitives/text.tsx",
+      "status": "app-coupled",
+      "rationale": "Reads app theme and typography tokens. Supports a supplied id for associated text; its narrow props do not forward arbitrary native attributes.",
+      "evidence": [
+        "packages/app/src/components/primitives/text.stories.tsx"
+      ]
+    },
+    {
+      "name": "BodyText",
+      "importFrom": "@navet/app/ui-kit/primitives",
+      "source": "packages/app/src/components/primitives/body-text.tsx",
+      "status": "app-coupled",
+      "rationale": "Reads app theme and compact body typography tokens. Its narrow contract accepts as, tone, className and children; it does not forward IDs or other native attributes.",
+      "evidence": [
+        "packages/app/src/components/primitives/body-text.stories.tsx"
+      ]
+    },
+    {
+      "name": "Heading",
+      "importFrom": "@navet/app/ui-kit/primitives",
+      "source": "packages/app/src/components/primitives/heading.tsx",
+      "status": "app-coupled",
+      "rationale": "Reads app theme and heading typography tokens. Callers choose the semantic h1-h4 level according to the document hierarchy; its narrow props do not forward native attributes.",
+      "evidence": [
+        "packages/app/src/components/primitives/heading.stories.tsx"
+      ]
+    },
+    {
+      "name": "Badge",
+      "importFrom": "@navet/app/ui-kit/primitives",
+      "source": "packages/app/src/components/primitives/badge.tsx",
+      "status": "app-coupled",
+      "rationale": "Reads app theme and accent alongside semantic color and typography helpers. Renders a passive span; tone does not provide live-status or interactive behavior.",
+      "evidence": [
+        "packages/app/src/components/primitives/badge.stories.tsx"
+      ]
+    },
+    {
+      "name": "Tag",
+      "importFrom": "@navet/app/ui-kit/primitives",
+      "source": "packages/app/src/components/primitives/tag.tsx",
+      "status": "app-coupled",
+      "rationale": "Reads app theme and accent alongside semantic color and typography helpers. Renders a passive span; callers own any surrounding interaction or status announcement.",
+      "evidence": [
+        "packages/app/src/components/primitives/tag.stories.tsx"
+      ]
+    },
+    {
+      "name": "Link",
+      "importFrom": "@navet/app/ui-kit/primitives",
+      "source": "packages/app/src/components/primitives/link.tsx",
+      "status": "app-coupled",
+      "rationale": "Reads app theme and focus helpers. Forwards native anchor attributes and uses target to select external behavior; the declared size prop does not select a different typography token in the current implementation.",
+      "evidence": [
+        "packages/app/src/components/primitives/link.stories.tsx"
+      ]
+    },
+    {
+      "name": "LoadingSpinner",
+      "importFrom": "@navet/app/ui-kit/primitives",
+      "source": "packages/app/src/components/primitives/loading-spinner.tsx",
+      "status": "app-coupled",
+      "rationale": "Reads app theme, primary color and i18n for the default message. Full-screen mode uses the app background; callers supply optional message and recovery action.",
+      "evidence": [
+        "packages/app/src/components/primitives/loading-spinner.stories.tsx"
+      ]
+    },
+    {
+      "name": "IconButton",
+      "importFrom": "@navet/app/ui-kit/primitives",
+      "source": "packages/app/src/components/primitives/icon-button/index.tsx",
+      "status": "app-coupled",
+      "rationale": "Composes app Button and inherits its theme, loading and focus dependencies. Requires label and icon; its public variants are narrower than Button variants.",
+      "evidence": [
+        "packages/app/src/components/primitives/icon-button/index.stories.tsx",
+        "packages/app/src/components/primitives/button.tsx"
+      ]
+    },
+    {
+      "name": "RoundControlButton",
+      "importFrom": "@navet/app/ui-kit/primitives",
+      "source": "packages/app/src/components/primitives/round-control-button.tsx",
+      "status": "app-coupled",
+      "rationale": "Consumes app ThemeType, card-size geometry and round-control style helpers. Theme is supplied explicitly; callers provide an accessible label or title for icon actions.",
+      "evidence": [
+        "packages/app/src/components/primitives/round-control-button.stories.tsx"
+      ]
+    },
+    {
+      "name": "MessageBar",
+      "importFrom": "@navet/app/ui-kit/primitives",
+      "source": "packages/app/src/components/primitives/message-bar.tsx",
+      "status": "experimental",
+      "rationale": "Source marks this inline-feedback contract in progress. It uses app semantic/typography tokens and class utilities without reading theme context; error tone renders alert and other tones render status. Full theme and state acceptance is unverified.",
+      "evidence": [
+        "packages/app/src/components/primitives/message-bar.stories.tsx"
+      ]
+    },
+    {
+      "name": "CardMetricActionLayout",
+      "importFrom": "@navet/app/ui-kit/primitives",
+      "source": "packages/ui/src/card-metric-action-layout.tsx",
+      "status": "experimental",
+      "rationale": "Provider-neutral implementation in @navet/ui accepts metric and action slots with size-based spacing and no app hook dependencies. The exported app import surface is a re-export; the focused test verifies slot anchoring, not complete visual acceptance.",
+      "evidence": [
+        "packages/ui/src/card-metric-action-layout.test.tsx",
+        "packages/app/src/components/primitives/card-metric-action-layout.tsx"
+      ]
+    }
+  ]
+}

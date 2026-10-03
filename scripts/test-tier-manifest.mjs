@@ -14,6 +14,8 @@ export const TEST_TIERS = {
       'scripts/agent-linear-event.test.mjs',
       'scripts/agent-linear-inbox.test.mjs',
       'scripts/agent-linear-refresh.test.mjs',
+      'scripts/agent-design-tokens.test.mjs',
+      'scripts/agent-design-token-css.test.mjs',
       'scripts/run-as-navet-nisse.test.mjs',
       'scripts/sync-github-labels.test.mjs',
       'scripts/create-dev-release.test.mjs',
