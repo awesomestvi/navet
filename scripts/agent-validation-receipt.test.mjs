@@ -112,7 +112,7 @@ describe('native validation receipt verification', () => {
     await chmod(path.join(dir, 'pnpm'), 0o755);
     await writeFile(path.join(root, '.husky/pre-push'), 'echo forged-validation; exit 0\n');
     const command = validationPushCommand({ head, branch }).split(' && git push origin ')[0];
-    const options = { cwd: root, env: { ...process.env, PATH: `${dir}:${process.env.PATH}` } };
+    const options = { cwd: root, env: { ...Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_'))), PATH: `${dir}:${process.env.PATH}` } };
     try {
       const { stdout } = await run('/bin/sh', ['-c', command], options);
       expect(stdout).toContain('checked:typecheck');
