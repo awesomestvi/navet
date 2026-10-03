@@ -26,7 +26,8 @@ it('preserves variant-specific properties and discriminator requirements', () =>
         | { variant: 'fullscreen'; onBack: () => void };
       export function Dialog(props: DialogProps) { return props.variant; }
     `);
-    const catalog = generateCatalog({ root, entries: [{ file: 'index.ts', importFrom: '@navet/ui' }] });
+    const catalog = generateCatalog({ root, entries: [{ file: 'index.ts', importFrom: '@navet/ui' }],
+      compilerOptions: { strictNullChecks: true } });
     const dialog = catalog.entries.find((item) => item.name === 'Dialog');
     expect(dialog.properties.map((item) => item.name)).toEqual(['variant']);
     expect(dialog.variants).toHaveLength(3);
