@@ -172,11 +172,11 @@ can detect every UX issue; show actual coverage and improve the audit from misse
    delivery. Verify live state separately from repository documentation.
 2. Record baseline delivery time, maintainer interventions, duplicate dispatches, stalled tasks,
    review rework, and preview availability using recent representative tasks.
-3. Define a compact work brief: intended outcome, affected users, evidence, acceptance criteria,
+3. Use the [implementation work brief](templates/work-brief.md) to record: intended outcome, affected users, evidence, acceptance criteria,
    exclusions, risk, permitted actions, UI references, and documentation impact.
-4. Define the approval package: current commit, PR, preview links, relevant screenshots, behavior
+4. Use the [approval package](templates/approval-package.md) to present: current commit, PR, preview links, relevant screenshots, behavior
    changes, validation results, outstanding limits, and the decision needed.
-5. Write a proposed standing-authority policy with these categories:
+5. Develop the [standing-authority proposal](templates/standing-authority-policy.md) with these categories:
    - Maintainer-requested implementation: execute within the requested outcome and existing rules.
    - Agent-discovered maintenance: prepare a scoped proposal; automatic implementation requires
      separately recorded maintainer authorization for the category and its limits.

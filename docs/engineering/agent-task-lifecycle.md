@@ -67,6 +67,14 @@ authority actor/reference as well as mode and revision. Changed scope needs a ne
 request identity. Object key order, duplicate/reordered gate names and fresh observation timestamps
 do not change scope.
 
+## Delivery Records
+
+Use the [implementation work brief](templates/work-brief.md) for the accepted outcome and the
+[approval package](templates/approval-package.md) for current-head maintainer review. Keep these
+records in their existing planning/delivery home and link them from private task context. The
+[standing-authority proposal](templates/standing-authority-policy.md) records proposed categories
+and limits; completing it does not activate authority or replace the trusted request path.
+
 ## Evidence And Acceptance
 
 Use `head` to record the current implementation commit. Use `evidence` to record each required
