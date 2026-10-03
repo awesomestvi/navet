@@ -46,7 +46,7 @@ criteria. It must ask for missing reproduction information instead of speculatin
 - Forbidden: merge its own work, change foundational principles to fit a solution, weaken
   tests, publish, or report success with a failing deterministic gate.
 
-The delivery agent runs deterministic validation, then opens a non-draft PR. CodeRabbit reviews
+The delivery agent runs deterministic validation, then opens a non-draft PR. PR-Agent reviews
 the PR while CI runs and posts findings as review comments. Verify each finding against the current
 PR head, fix valid issues, and continue until no actionable findings remain. The maintainer decides
 when to merge.
@@ -179,8 +179,8 @@ Research work ends after its useful conclusion is recorded. Implementation work 
 linked PR; the agent may push feedback-driven revisions but may not merge its own work.
 
 The private Codex runner also checks open, non-draft PRs linked to its delivery tasks for new,
-unresolved CodeRabbit review threads. It sends the comment links and IDs to the existing delivery
-task once, without creating a new task or making a public claim. The delivery task verifies each
+unresolved PR-Agent review threads authored by `github-actions[bot]`. It sends the comment links
+and IDs to the existing delivery task once, without creating a new task or making a public claim. The delivery task verifies each
 finding against the current PR head, fixes only valid issues, runs focused checks, then replies in
 the review thread and resolves it when addressed. If a finding needs a product or architecture
 decision, the task asks the maintainer instead of guessing. The runner does not dispatch comments
@@ -240,13 +240,24 @@ configured for the repository:
 3. Configure one local Codex scheduled task to poll request labels, accepted `/navet` commands,
    accepted answers, scheduled issues authored by `github-actions[bot]` with the expected
    workflow-owned issue type,
-   and unresolved CodeRabbit review threads on PRs linked to its delivery tasks. Do not authorize
-   work from issue-body markers. Dispatch no more than one issue or PR per run and follow the
+   and unresolved PR-Agent review threads authored by `github-actions[bot]` on PRs linked to its
+   delivery tasks. Do not authorize work from issue-body markers. Dispatch no more than one issue or PR per run and follow the
    private queue contract above. Keep only one active queue runner so two agents cannot claim the
    same work.
-4. Install CodeRabbit as the independent, read-only PR reviewer. Let it review non-draft PRs automatically; do not add a second general
-   reviewer until measured misses justify the duplicate cost. Reviewer comments are advisory;
-   deterministic CI and the maintainer's merge decision remain authoritative.
+4. Add an OpenAI API key as the repository Actions secret `OPENAI_KEY`. The **PR-Agent**
+   workflow reviews non-draft PRs when opened, reopened, marked ready, or updated with new
+   commits. It runs an immutable container through GitHub's API without checking out PR code,
+   including for contributor forks. Its token can read contents and write PR comments;
+   it cannot change repository contents. Configure review rules and OpenAI models in
+   `.pr_agent.toml`. Settings come from the workflow revision: the PR merge revision for
+   repository branches and the protected base revision for forks. Constitution context comes
+   from the default branch.
+   The default review model is `gpt-5.6-sol`, with `gpt-5.6-terra` as fallback. Reviews use
+   the API key's billing and quota. The workflow reports missing credentials and review failures
+   as failed runs. Findings appear as inline review threads and a persistent summary from
+   `github-actions[bot]`. It does not rewrite PR descriptions or approve PRs.
+   Keep one general reviewer active. Reviewer comments are advisory; deterministic CI and the
+   maintainer's merge decision remain authoritative.
 5. Protect `main`: require a pull request and resolved review conversations. For a solo-maintainer
    repository, set required approving reviews to zero and disable required CODEOWNER review; the
    maintainer's merge records acceptance for the current head. Require **CI / Product review gate**
