@@ -51,6 +51,15 @@ function compactInbox(inbox, now, { deduplicationMs, maxSettledReceipts }) {
   inbox.receipts = inbox.receipts.filter((record) => pendingReceipt(record) || retained.has(record));
   return inbox;
 }
+
+// The task history retains event-scoped observations across lease handoffs and restart.
+export function taskHasLinearRefresh(task, eventId, firstSeenAt) {
+  return task.history.some((entry) => entry.action === 'planning-observation' &&
+    (['pass', 'fail'].includes(entry.planning?.result) || entry.planning?.reason === 'planning-stage-ambiguous') &&
+    entry.planning.observedAt >= firstSeenAt &&
+    entry.planning.reference.startsWith(`linear-refresh:${eventId}:`));
+}
+
 export class LinearEventInputError extends Error {}
 
 // Receipt metadata shares the existing store's process-safe atomic transaction mechanism.
@@ -95,7 +104,7 @@ export class AgentLinearInbox {
   async pending() {
     return this.store.transaction((state) => compactInbox(inboxIn(state), this.now(), this.retention).receipts.filter(pendingReceipt));
   }
-  async confirm(eventId, observation) {
+  async confirm(eventId, observation, { requireTaskReconciliation = false } = {}) {
     const now = this.now();
     if (!Number.isSafeInteger(now) || now <= 0 || !HASH.test(eventId) || !HASH.test(observation?.reference) ||
         !Number.isSafeInteger(observation.observedAt) || observation.observedAt > now ||
@@ -106,6 +115,12 @@ export class AgentLinearInbox {
       if (!record || record.receipt.intent !== 'refresh-planning') throw new Error('Unknown Linear refresh event.');
       if (observation.observedAt < record.firstSeenAt) throw new Error('Linear refresh predates event receipt.');
       if (record.confirmation) return { eventId, decision: 'skip', authority: 'none' };
+      if (requireTaskReconciliation && state.tasks.some((task) =>
+        task.planning?.binding.issueId === record.receipt.issueId &&
+        !['delivered', 'terminal-failure'].includes(task.state) &&
+        !taskHasLinearRefresh(task, eventId, record.firstSeenAt))) {
+        return { eventId, decision: 'retry', authority: 'none' };
+      }
       record.confirmation = { reference: observation.reference, observedAt: observation.observedAt };
       inbox.receipts = [...inbox.receipts.filter((entry) => entry !== record), record];
       compactInbox(inbox, now, this.retention);

@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { taskHasLinearRefresh } from './agent-linear-inbox.mjs';
 import { createPlanningBinding, evaluatePlanningObservation } from './agent-planning-scope.mjs';
 
 // Service readers use this only for a definitive, identity-bound not-found observation.
@@ -35,6 +36,9 @@ export async function reconcileLinearRefresh({ inbox, eventId, store, owner, rea
   if (typeof readIssue !== 'function' || typeof owner !== 'string' || !owner.trim()) {
     throw new Error('Planning refresh requires an owning coordinator and service reader.');
   }
+  if (!store.directory || inbox.store?.directory !== store.directory) {
+    throw new Error('Planning refresh inbox and tasks must share their private store directory.');
+  }
   const pending = await inbox.pending();
   const record = pending.find((entry) => entry.receipt.eventId === eventId);
   if (!record) throw new Error('Unknown or already confirmed planning refresh.');
@@ -56,15 +60,20 @@ export async function reconcileLinearRefresh({ inbox, eventId, store, owner, rea
     eventId, issueId: record.receipt.issueId, startedAt, observedAt, status,
     ...(binding ? { binding, labels: [...issue.labels].sort(), archivedAt: issue.archivedAt, canceledAt: issue.canceledAt } : {}),
   })).digest('hex');
-  const observation = { status, reference, observedAt, ...(status === 'available' ? { issue } : status === 'missing' ? { issueId: record.receipt.issueId } : {}) };
+  const observation = { status, reference: `linear-refresh:${eventId}:${reference}`, observedAt, ...(status === 'available' ? { issue } : status === 'missing' ? { issueId: record.receipt.issueId } : {}) };
   const tasks = (await store.list()).filter((task) => task.planning?.binding.issueId === record.receipt.issueId &&
     !['delivered', 'terminal-failure'].includes(task.state));
-  // Normal store mutations recheck leases, ordering, and latched revocation. A partial
-  // update or lost acknowledgement leaves the inbox pending for idempotent reconciliation.
+  // Each coordinator refreshes only tasks under its live leases. Successful event-scoped
+  // observations survive handoff in task history, so another owner can finish the receipt.
+  let updatedTasks = 0;
   for (const task of tasks) {
+    if ((status !== 'unavailable' && taskHasLinearRefresh(task, eventId, record.firstSeenAt)) ||
+        task.lease?.owner !== owner || task.lease.expiresAt <= observedAt) continue;
     await store.mutate(task.id, 'planning-observation', { owner, observation });
+    updatedTasks++;
   }
-  if (status === 'unavailable') return { eventId, decision: 'retry', updatedTasks: tasks.length, authority: 'none' };
-  const confirmation = await inbox.confirm(eventId, { reference, observedAt });
-  return { ...confirmation, updatedTasks: tasks.length };
+  if (status === 'unavailable') return { eventId, decision: 'retry', updatedTasks, authority: 'none' };
+  // Confirmation rechecks all bound records under the same transaction as receipt persistence.
+  const confirmation = await inbox.confirm(eventId, { reference, observedAt }, { requireTaskReconciliation: true });
+  return { ...confirmation, updatedTasks };
 }

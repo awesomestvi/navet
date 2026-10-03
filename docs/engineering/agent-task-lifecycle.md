@@ -212,7 +212,8 @@ raw payloads outside public artifacts.
 `reconcileLinearRefresh` in `scripts/agent-linear-refresh.mjs` consumes one pending refresh receipt.
 Supply `inbox`, its `eventId`, the existing task `store`, the owning coordinator `owner`, and a
 `readIssue(issueId)` callback that performs a complete read through the owning Linear service.
-The callback must enforce the service request timeout and return the issue UUID, team, project,
+The inbox and task store must share the same private state directory so confirmation can inspect
+task progress atomically. The callback must enforce the service request timeout and return the issue UUID, team, project,
 full title and description, complete attachments and label names, and explicit archival/cancellation
 values. For a definitive service-confirmed missing issue, throw `LinearIssueNotFoundError(issueId)`
 from the refresh module. The identity-bound observation withdraws the proposal, latches revocation,
@@ -221,13 +222,18 @@ Cached issue bodies and webhook payloads cannot substitute for this read.
 
 The consumer checks the returned identity, complete fields and elapsed read freshness, then
 updates nonterminal tasks bound to that issue through normal `planning-observation` mutations.
-The caller must already own their current leases; the consumer neither claims ownership nor
-creates tasks. Terminal history and unbound tasks remain intact. Scope withdrawal latches through
+Each caller updates only records under its own live leases; the consumer neither claims ownership nor
+creates tasks. Event-scoped observations in task history preserve progress across release, handoff
+and restart. Other coordinators reconcile their records with fresh service reads, and the receipt
+remains pending until every applicable nonterminal record has been handled. Confirmation rechecks
+that condition atomically with receipt persistence. An earlier event observation records completed
+reconciliation but still expires normally as execution evidence. Terminal history and unbound
+tasks remain intact. Scope withdrawal latches through
 the existing guard. An Approved stage does not grant authority or revive a revoked request.
 
 A failed, slow, mismatched or incomplete read records unavailable planning evidence on owned
 bound tasks and returns `retry`, leaving the receipt pending. A successful read confirms the
-receipt only after every applicable owned task update succeeds. Lease failures or interrupted
+receipt only after every applicable nonterminal task has a durable event-scoped observation. Lease failures or interrupted
 confirmation leave pending work for reconciliation. Confirmation persists a hash of normalized
 service-read evidence and timestamps, omitting proposal contents and temporary credentials.
 

@@ -116,6 +116,13 @@ describe('fresh Linear planning reconciliation', () => {
     expect(planningStatus((await store.list())[0], time).result).toBe('pass');
   });
 
+  it('confirms a complete ambiguous-stage read while keeping execution blocked', async () => {
+    const { reconcile, store } = await setup();
+    expect(await reconcile(async () => ({ ...issue(), labels: ['Approved', 'Deferred'] })))
+      .toMatchObject({ decision: 'confirmed', updatedTasks: 1 });
+    expect(planningStatus((await store.list())[0], time)).toMatchObject({ result: 'unverified', reason: 'planning-stage-ambiguous' });
+  });
+
   it('replaces a previous pass on lost access and retains the receipt for retry without error disclosure', async () => {
     const { directory, reconcile, store, inbox, task } = await setup();
     await store.mutate(task.id, 'planning-observation', { owner: 'coordinator', observation: { status: 'available', issue: issue(), reference: 'earlier-read', observedAt: time } });
@@ -147,17 +154,49 @@ describe('fresh Linear planning reconciliation', () => {
     expect(planningStatus((await store.list())[0], clock()).result).toBe('unverified');
   });
 
-  it('preserves unowned tasks and pending receipts on lease failure', async () => {
+  it('preserves unowned tasks and pending receipts for their own coordinator', async () => {
     const { reconcile, inbox, store } = await setup();
     const before = await store.list();
-    await expect(reconcile(undefined, { owner: 'another-coordinator' })).rejects.toThrow('owner lease');
+    expect(await reconcile(undefined, { owner: 'another-coordinator' })).toMatchObject({ decision: 'retry', updatedTasks: 0 });
     expect(await store.list()).toEqual(before);
+    expect(await inbox.pending()).toHaveLength(1);
+  });
+
+  it('reconciles multiple requests sequentially under individual leases across restart', async () => {
+    const { directory, reconcile, inbox, store, task, request, accepted, clock, advance } = await setup();
+    // A second accepted revision can coexist with a released request at the default capacity.
+    const next = await store.enqueue({ ...request, requestId: 'revised-human-event' });
+    expect(await reconcile()).toMatchObject({ decision: 'retry', updatedTasks: 1 });
+    expect((await store.list()).find((item) => item.id === next.id).planning.observation).toBeNull();
+    expect(await inbox.pending()).toHaveLength(1);
+    await store.mutate(task.id, 'release', { owner: 'coordinator', reason: 'Hand off reconciliation capacity.' });
+    await store.mutate(next.id, 'claim', { owner: 'next-coordinator', durationMs: 300_000 });
+    advance(61_000);
+    const restarted = new AgentTaskStore(directory, { now: clock });
+    const restartedInbox = new AgentLinearInbox(directory, { now: clock });
+    expect(await reconcileLinearRefresh({ inbox: restartedInbox, store: restarted, eventId: accepted.eventId,
+      owner: 'next-coordinator', readIssue: async () => issue(), now: clock }))
+      .toMatchObject({ decision: 'confirmed', updatedTasks: 1 });
+    expect(await restartedInbox.pending()).toEqual([]);
+    const tasks = await restarted.list();
+    expect(tasks.find((item) => item.id === task.id).lease).toBeNull();
+    expect(planningStatus(tasks.find((item) => item.id === task.id), clock()).result).toBe('unverified');
+    expect(planningStatus(tasks.find((item) => item.id === next.id), clock()).result).toBe('pass');
+  });
+
+  it('does not confirm when another bound request appears before receipt acknowledgement', async () => {
+    const { reconcile, inbox, store, request } = await setup();
+    const racedInbox = { store: inbox.store, pending: () => inbox.pending(), confirm: async (...args) => {
+      await store.enqueue({ ...request, requestId: 'concurrent-request' });
+      return inbox.confirm(...args);
+    } };
+    expect(await reconcile(undefined, { inbox: racedInbox })).toMatchObject({ decision: 'retry', updatedTasks: 1 });
     expect(await inbox.pending()).toHaveLength(1);
   });
 
   it('reconciles after interrupted confirmation and restart without creating another task', async () => {
     const { directory, reconcile, inbox, store, clock, advance } = await setup();
-    const interrupted = { pending: () => inbox.pending(), confirm: async () => { throw new Error('Lost acknowledgement'); } };
+    const interrupted = { store: inbox.store, pending: () => inbox.pending(), confirm: async () => { throw new Error('Lost acknowledgement'); } };
     await expect(reconcile(undefined, { inbox: interrupted })).rejects.toThrow('Lost acknowledgement');
     expect(planningStatus((await store.list())[0], clock()).result).toBe('pass');
     expect(await inbox.pending()).toHaveLength(1);
@@ -191,6 +230,17 @@ describe('fresh Linear planning reconciliation', () => {
     const readIds = [];
     expect((await reconcile(async (id) => { readIds.push(id); return issue(); }, { eventId: comment.eventId })).decision).toBe('confirmed');
     expect(readIds).toEqual([issueId]);
+  });
+
+  it('rejects a separate receipt store before reading or acknowledging work', async () => {
+    const { reconcile, inbox, store } = await setup();
+    const other = await setup();
+    let calls = 0;
+    await expect(reconcile(async () => { calls++; return issue(); }, { store: other.store }))
+      .rejects.toThrow('share their private store directory');
+    expect(calls).toBe(0);
+    expect(await inbox.pending()).toHaveLength(1);
+    expect((await store.list())[0].planning.observation).toBeNull();
   });
 
   it('refuses unknown or confirmed events before calling the service reader', async () => {
