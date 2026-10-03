@@ -168,6 +168,29 @@ through public Nisse comments. A dedicated private completion route into the pla
 required before private research and audit records can dispatch. Their visibility does not authorize
 public artifacts.
 
+### Private result readback
+
+[`createLinearResultReader`](../../scripts/agent-linear-result-reader.mjs) reads an exact result
+comment using the read-only app session. Configure the expected writer app identity separately from
+the reader identity. Supply the comment and proposal IDs, the expected Markdown `bodyHash`, and
+`notBefore` from the verified task dispatch. Record those expectations from the owning worker and
+its accepted scope; comment contents cannot establish their own task identity or approval.
+`linearResultBodyHash` hashes the exact UTF-8 Markdown representation returned by Linear.
+
+The reader checks the workspace, active app identities, proposal team and project, explicit active
+lifecycle fields, content hash, creation time and Linear URL. Comments written on behalf of a human
+or associated with external sync targets remain unavailable. Two bounded reads must agree. The
+result contains artifact metadata and a service reference, without the comment body or credentials.
+Permission-masked missing comments and service errors remain unverified rather than proving deletion.
+The query follows the [official Linear SDK schema](https://github.com/linear/linear/blob/master/packages/sdk/src/schema.graphql).
+
+Readback verifies the observed artifact, not its quality, proposal approval, complete attachment
+contents, access controls or the absence of other publication channels. The private worker route
+must separately verify the destination before writing, preserve an idempotent result identity,
+reconcile uncertain writes, and recheck accepted scope and human authority before completion.
+The writer, queue integration and live readback pilot remain activation gates; this reader does
+not enable private dispatch or change the shared queue's public visibility requirement.
+
 For Linear-native approval, agent writes need a distinct identity. Linear's
 [OAuth app actor](https://linear.app/developers/oauth-actor-authorization) attributes mutations to
 the installed application; default API authentication can attribute them to the authenticating

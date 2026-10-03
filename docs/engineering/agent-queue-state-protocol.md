@@ -42,8 +42,10 @@ if it is unavailable, report the missing owner privately before mutating state.
    observations. After a push, record the new head before evaluating readiness.
 9. Present one current-head approval package when applicable gates pass. A completed Codex turn
    is not merge, public research delivery, or acceptance. For implementation, verify the
-   maintainer's merge and exact accepted head before recording `delivered`. For research, verify
-   the actual Nisse comment author and URL. Preserve cleanup work independently.
+   maintainer's merge and exact accepted head before recording `delivered`. For public research,
+   verify the actual Nisse comment author and URL. Private planning results require the separate
+   [Linear result readback](autonomous-builder-plan.md#private-result-readback) contract; its writer,
+   queue integration and live pilot remain activation gates. Preserve cleanup work independently.
 
 The default capacity is one unfinished claimed or dispatched task. Lease expiration does not
 free dispatched capacity. Reconcile existing work before creating another delivery. Do not mark a
