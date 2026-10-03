@@ -1,8 +1,25 @@
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { hasLegacyModalRecipe } from './ui-shell-recipes.mjs';
+import { findLegacyModalRecipes } from './ui-shell-recipes.mjs';
+
+function hasLegacyModalRecipe(source) {
+  const root = mkdtempSync(path.join(tmpdir(), 'navet-ui-shell-test-'));
+  try {
+    writeFileSync(path.join(root, 'example.tsx'), source);
+    return findLegacyModalRecipes(root, ['example.tsx']).has('example.tsx');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
 
 describe('known legacy shell recipes', () => {
+  it('accepts an empty file selection', () => {
+    expect(findLegacyModalRecipes(process.cwd(), []).size).toBe(0);
+  });
   it.each([
+    String.raw`<div className={'fixed\nleft-1/2 top-1/2 z-50 shadow-2xl backdrop-blur-xl'} />`,
     '<div className="fixed left-1/2 top-1/2 z-50 shadow-2xl backdrop-blur-xl" />',
     '<div className="shadow-2xl backdrop-blur-xl top-1/2 z-50 left-1/2 fixed" />',
     '<div className={`shadow-2xl fixed\n  backdrop-blur-xl z-50 top-1/2 left-1/2 ${surface}`} />',

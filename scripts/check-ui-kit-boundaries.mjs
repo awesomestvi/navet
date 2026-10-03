@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
-import { hasLegacyModalRecipe } from './ui-shell-recipes.mjs';
+import { findLegacyModalRecipes } from './ui-shell-recipes.mjs';
 
 const ROOT = process.cwd();
 
@@ -72,10 +72,9 @@ for (const dir of PUBLIC_EXPORT_DIRS) {
   }
 }
 
-for (const relativePath of [...walk('packages/app/src/components/layout'), ...walk('packages/app/src/features')]) {
-  const source = fs.readFileSync(path.join(ROOT, relativePath), 'utf8');
-
-  if (hasLegacyModalRecipe(source) && !LEGACY_MODAL_ALLOWLIST.has(relativePath)) {
+const shellFiles = [...walk('packages/app/src/components/layout'), ...walk('packages/app/src/features')];
+for (const relativePath of findLegacyModalRecipes(ROOT, shellFiles)) {
+  if (!LEGACY_MODAL_ALLOWLIST.has(relativePath)) {
     violations.push(
       `${relativePath}: use shared ModalSurface or SheetSurface instead of reauthoring shell recipes`
     );

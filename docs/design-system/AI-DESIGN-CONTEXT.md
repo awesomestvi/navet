@@ -160,8 +160,9 @@ Avoid:
 
 The UI-kit boundary check rejects the known centered-modal and bottom-sheet shell signatures,
 including reordered utility classes and multiline literals. Existing migration exceptions remain
-explicit in the checker. This lexical check does not establish equivalent computed styles, follow
-classes assembled across expressions, or replace rendered review. Structural layout markup remains
+explicit in the checker. It parses static string and template values, excluding comments and
+interpreting escapes. It does not establish equivalent computed styles, follow classes assembled
+across expressions, or replace rendered review. Structural layout markup remains
 valid when it does not reproduce a complete forbidden signature.
 
 ## Handoff Checklist
