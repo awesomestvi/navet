@@ -51,6 +51,39 @@ Use the [agent composition recipes](AGENT-COMPOSITION-RECIPES.md) to choose card
 navigation, sheets, settings fields, summaries and state compositions. The examples name actual
 props and source stories; inspect current contracts before adapting them.
 
+## Source-Derived Token Exchange
+
+Run `pnpm agent:tokens` before reading `.cache/agent-design/tokens.tokens.json`. The command
+regenerates a [DTCG 2025.10](https://www.designtokens.org/tr/2025.10/format/) subset from the
+public TypeScript token exports and the app stylesheet without evaluating UI modules. Check that
+generation succeeded;
+a cached file from a failed generation is not current evidence. Use `pnpm agent:tokens controlSizePx`
+for a case-insensitive path search. It regenerates the same full export and prints only matching
+tokens and omissions, retaining values, units, source locations and the source fingerprint. An empty
+result means the query found no source path; inspect the catalog or token entry before assuming
+the design system lacks the needed recipe.
+
+The export includes finite numeric constants with explicit `Px` or `Ms` units, the `durationsMs`
+group, and unitless `fontScale` values. Imported constant references resolve through TypeScript.
+Supported spacing, inset, radius, height and width utility constants are resolved through the
+installed Tailwind compiler and Navet's actual imported CSS. Equal height/width pairs can supply
+one size dimension. The export preserves `rem` and `px`; it never assumes a browser root font size
+or a four-pixel spacing scale. Conditional, conflicting, unsupported or mixed-value utilities
+remain omissions. Each resolved utility retains its original classes and affected CSS properties.
+
+Each record carries its TypeScript source location. The root extension carries separate TypeScript
+and stylesheet fingerprints, CSS import provenance, compiler version and an omission inventory.
+Path searches include both fingerprints when CSS resolution is present. A unit-bearing value that
+cannot be resolved to a numeric constant stops generation rather than producing an invented value.
+
+This is discovery metadata, not a separately editable token source. Colors, typography, contextual
+spacing, unequal/composite class combinations, dynamic theme helpers, density selection and
+reduced-motion policy still need their source recipes and rendered stories. An omission means inspect that recipe; it does not authorize
+replacing it with a numeric approximation. Imported stylesheets must belong to the checkout or
+the installed Tailwind package; stylesheet JavaScript plugins are not evaluated. Select components
+with the catalog, read their recipe,
+resolve supported values from this export, and verify the resulting composition in Storybook.
+
 ## Product Feel
 
 Navet should feel glanceable, compact but calm, direct, tactile, and recognizably Navet.
