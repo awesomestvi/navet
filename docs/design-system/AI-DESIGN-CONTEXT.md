@@ -24,6 +24,12 @@ Export presence does not establish component maturity. The catalog marks stabili
 Story associations identify imports in story files, not proof that every listed story exercises
 that export. The catalog complements source and rendered review; it does not validate UI quality.
 
+## Local Storybook Discovery
+
+Use the opt-in [Storybook MCP pilot](STORYBOOK-MCP.md) to discover actual story IDs and preview
+links. Inspect the returned API and examples for completeness; use the generated catalog and
+source recipes when extraction is incomplete. Rendered inspection remains required.
+
 ## Product Feel
 
 Navet should feel glanceable, compact but calm, direct, tactile, and recognizably Navet.
