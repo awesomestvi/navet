@@ -135,4 +135,3 @@ it('fingerprints effective inherited and explicit compiler options with stable r
     expect(generateCatalog({ ...input, compilerOptions: { strictNullChecks: false } }).sourceFingerprint).toBe(overridden.sourceFingerprint);
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
-
