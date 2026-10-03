@@ -1,18 +1,19 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
+import { findLegacyModalRecipes } from './ui-shell-recipes.mjs';
+import { findUiFeatureImports } from './ui-feature-imports.mjs';
 
 const ROOT = process.cwd();
 
 const SHARED_DIRS = [
+  'packages/ui/src',
   'packages/app/src/components/primitives',
   'packages/app/src/components/patterns',
   'packages/app/src/components/shared',
   'packages/app/src/components/system',
   'packages/app/src/ui-kit',
 ];
-
-const PUBLIC_EXPORT_DIRS = ['packages/app/src/components/system', 'packages/app/src/ui-kit'];
 
 const LEGACY_MODAL_ALLOWLIST = new Set([
   'packages/app/src/features/security/components/camera-card/camera-settings-dialog.tsx',
@@ -55,31 +56,15 @@ for (const dir of SHARED_DIRS) {
   for (const relativePath of walk(dir)) {
     const source = fs.readFileSync(path.join(ROOT, relativePath), 'utf8');
 
-    if (source.includes(`/app/features/`)) {
-      violations.push(`${relativePath}: shared UI layers must not import from feature modules`);
+    for (const specifier of findUiFeatureImports(relativePath, source)) {
+      violations.push(`${relativePath}: shared UI layers must not depend on feature modules (${specifier})`);
     }
   }
 }
 
-for (const dir of PUBLIC_EXPORT_DIRS) {
-  for (const relativePath of walk(dir)) {
-    const source = fs.readFileSync(path.join(ROOT, relativePath), 'utf8');
-
-    if (/export\s+.*from\s+['"]@\/app\/features\//.test(source)) {
-      violations.push(`${relativePath}: public UI-kit surfaces must not re-export feature modules`);
-    }
-  }
-}
-
-for (const relativePath of [...walk('packages/app/src/components/layout'), ...walk('packages/app/src/features')]) {
-  const source = fs.readFileSync(path.join(ROOT, relativePath), 'utf8');
-
-  const hasLegacyModalRecipe =
-    /(fixed (left-1\/2 top-1\/2|top-1\/2 left-1\/2) z-50 .*shadow-2xl backdrop-blur-xl)/.test(
-      source
-    ) || /fixed inset-x-0 bottom-0 z-50 .*rounded-\[30px\].*shadow-2xl/.test(source);
-
-  if (hasLegacyModalRecipe && !LEGACY_MODAL_ALLOWLIST.has(relativePath)) {
+const shellFiles = [...walk('packages/app/src/components/layout'), ...walk('packages/app/src/features')];
+for (const relativePath of findLegacyModalRecipes(ROOT, shellFiles)) {
+  if (!LEGACY_MODAL_ALLOWLIST.has(relativePath)) {
     violations.push(
       `${relativePath}: use shared ModalSurface or SheetSurface instead of reauthoring shell recipes`
     );
