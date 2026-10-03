@@ -41,11 +41,18 @@ export function taskId(source, requestId) {
   ])).digest('hex');
 }
 
-function completeEvidence(task) {
-  return task.requiredGates.every((gate) => task.evidence.some((item) =>
+function completeEvidence(task, now) {
+  const gatesPass = task.requiredGates.every((gate) => task.evidence.some((item) =>
     item.gate === gate && item.result === 'pass' && item.revision === task.revision &&
     item.head === task.head && item.artifact && item.observedAt
   ));
+  if (!gatesPass || task.brief.resultDestination !== 'linear-planning') return gatesPass;
+  const receipt = task.planningResult;
+  return receipt?.status === 'confirmed' && receipt.head === task.head && receipt.revision === task.revision &&
+    receipt.planningRevision === task.planning?.binding.revision && observationIsFresh(receipt, now) &&
+    task.evidence.some((item) => item.gate === 'output' && item.result === 'pass' &&
+      item.head === task.head && item.revision === task.revision && item.artifact === receipt.reference &&
+      item.observedAt === receipt.observedAt);
 }
 
 function validateResourceLimits(limits) {
@@ -216,6 +223,13 @@ export class AgentTaskStore {
     }
     const gates = [...new Set([...requiredGates, 'output'])];
     if (resourceLimits !== undefined) validateResourceLimits(resourceLimits);
+    if (brief.resultDestination !== undefined && !['public-github', 'linear-planning'].includes(brief.resultDestination)) {
+      throw new Error('Unsupported result destination.');
+    }
+    if (brief.resultDestination === 'linear-planning' &&
+        (!planningBinding || !['research', 'audit'].includes(mode))) {
+      throw new Error('Linear result destination requires planning-bound research or audit.');
+    }
     if (planningBinding !== undefined) {
       validatePlanningBinding(planningBinding);
       if (authority.planningRevision !== planningBinding.revision) {
@@ -255,6 +269,7 @@ export class AgentTaskStore {
       const now = this.now();
       let nextDispatchAction;
       let followupDecision;
+      let planningResultDecision;
       if (action === 'claim') {
         if (['delivered', 'terminal-failure'].includes(task.state)) throw new Error('Terminal work cannot be claimed.');
         requireValue(input.owner, 'owner');
@@ -403,6 +418,79 @@ export class AgentTaskStore {
             receipt.reference = input.reference;
             receipt.observedAt = input.observedAt;
           }
+        } else if (action === 'planning-result-intent') {
+          if (!['research', 'audit'].includes(task.mode) || !task.planning ||
+              task.brief.resultDestination !== 'linear-planning' || !task.dispatch?.threadId || TERMINAL.has(task.state)) {
+            throw new Error('Planning result requires an active research or audit delivery bound to Linear.');
+          }
+          if (typeof input.bodyHash !== 'string' || typeof input.writerAppUserId !== 'string' ||
+              !/^sha256:[a-f0-9]{64}$/.test(input.bodyHash) ||
+              !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(input.writerAppUserId)) {
+            throw new Error('Planning result requires a content hash and writer app identity.');
+          }
+          const existing = task.planningResult;
+          if (existing) {
+            if (existing.bodyHash !== input.bodyHash || existing.writerAppUserId !== input.writerAppUserId ||
+                existing.head !== task.head || existing.revision !== task.revision ||
+                existing.planningRevision !== task.planning.binding.revision) {
+              throw new Error('Planning result identity was reused with different content or scope.');
+            }
+            planningResultDecision = { action: existing.status === 'confirmed' ? 'skip' : 'reconcile', receipt: existing };
+          } else {
+            if (!['verifying', 'awaiting-approval'].includes(task.state)) throw new Error('Planning result needs a verified worker checkpoint.');
+            requirePlanningScope(task, now);
+            bindResourceReservation(task, input, now, 'planning-result');
+            if (!observationIsFresh(input.authority, now) || input.authority.actor !== task.authority.actor ||
+                input.authority.reference !== task.authority.reference || input.authority.revision !== task.revision ||
+                input.authority.planningRevision !== task.planning.binding.revision) {
+              throw new Error('Planning result requires freshly rechecked authority for this revision.');
+            }
+            task.planningResult = { status: 'pending', commentId: randomUUID(), issueId: task.planning.binding.issueId,
+              writerAppUserId: input.writerAppUserId, bodyHash: input.bodyHash, intentAt: now,
+              head: task.head, revision: task.revision, planningRevision: task.planning.binding.revision,
+              ...(task.resources ? { resourceToken: input.resourceToken } : {}) };
+            planningResultDecision = { action: 'create', receipt: task.planningResult };
+          }
+        } else if (action === 'planning-result-observation') {
+          const receipt = task.planningResult;
+          const observation = input.observation;
+          const result = observation?.result;
+          if (observation?.status === 'unavailable') {
+            if (!receipt || input.commentId !== receipt.commentId ||
+                !observationIsFresh(observation, now) || observation.observedAt < receipt.intentAt ||
+                (receipt.observedAt && observation.observedAt < receipt.observedAt) ||
+                observation.reference !== 'linear-result-unavailable') {
+              throw new Error('Planning result failure requires a fresh matching service observation.');
+            }
+            receipt.status = 'unverified';
+            receipt.reference = observation.reference;
+            receipt.observedAt = observation.observedAt;
+          } else {
+            if (!receipt || observation?.status !== 'available' || !observationIsFresh(observation, now) ||
+                observation.observedAt < receipt.intentAt || result?.commentId !== receipt.commentId ||
+                result.issueId !== receipt.issueId || result.authorId !== receipt.writerAppUserId ||
+                result.bodyHash !== receipt.bodyHash || receipt.head !== task.head || receipt.revision !== task.revision ||
+                receipt.planningRevision !== task.planning?.binding.revision ||
+                typeof result.createdAt !== 'string' || typeof result.updatedAt !== 'string' ||
+                !Number.isFinite(Date.parse(result.createdAt)) || !Number.isFinite(Date.parse(result.updatedAt)) ||
+                Date.parse(result.createdAt) < receipt.intentAt || Date.parse(result.updatedAt) < Date.parse(result.createdAt) ||
+                Date.parse(result.updatedAt) > observation.observedAt ||
+                observation.reference !== 'linear-result:sha256:' + createHash('sha256').update(JSON.stringify(result)).digest('hex')) {
+              throw new Error('Planning result requires fresh exact-scope service readback.');
+            }
+            requireValue(result.url, 'planning result URL');
+            const url = new URL(result.url);
+            if (url.origin !== 'https://linear.app' || url.username || url.password ||
+                !/^\/[^/]+\/issue\/[^/]+(?:\/.*)?$/.test(url.pathname) ||
+                (receipt.observedAt && (observation.observedAt < receipt.observedAt ||
+                  (observation.observedAt === receipt.observedAt && receipt.reference !== observation.reference)))) {
+              throw new Error('Planning result readback cannot change destination or move backwards.');
+            }
+            receipt.status = 'confirmed';
+            receipt.reference = observation.reference;
+            receipt.observedAt = observation.observedAt;
+            receipt.url = result.url;
+          }
         } else if (action === 'context') {
           const context = input.context;
           if (!context || typeof context !== 'object' || Array.isArray(context)) throw new Error('Invalid task context.');
@@ -445,7 +533,16 @@ export class AgentTaskStore {
           if (['investigating', 'building', 'verifying'].includes(input.state)) requireResourceCapacity(task, now);
           if (['awaiting-approval', 'delivered'].includes(input.state)) {
             if (!task.dispatch?.threadId) throw new Error('Confirmed delivery handle is required.');
-            if (!completeEvidence(task)) throw new Error('Current-head required evidence is incomplete.');
+            if (!completeEvidence(task, now)) throw new Error('Current-head required evidence is incomplete.');
+            if (task.brief.resultDestination === 'linear-planning') {
+              if (!observationIsFresh(input.authority, now) ||
+                  input.authority.observedAt < task.planningResult.observedAt ||
+                  input.authority.actor !== task.authority.actor || input.authority.reference !== task.authority.reference ||
+                  input.authority.revision !== task.revision || input.authority.planningRevision !== task.planning.binding.revision) {
+                throw new Error('Linear readiness requires authority rechecked after result readback.');
+              }
+              task.authority = input.authority;
+            }
             if (task.mode === 'implement' && !task.head) throw new Error('Implementation head is required.');
           }
           if (input.state === 'delivered' && task.mode === 'implement') {
@@ -468,10 +565,13 @@ export class AgentTaskStore {
       task.history.push({ action, owner: input.owner, state: task.state, head: task.head, at: now,
         ...(action === 'evidence' ? { evidence: input.evidence } : {}),
         ...(action === 'planning-observation' ? { planning: task.planning.observation } : {}),
+        ...(['planning-result-intent', 'planning-result-observation'].includes(action)
+          ? { planningResult: structuredClone(task.planningResult) } : {}),
         ...(action === 'resource-usage' ? { usage: input.usage, settledReservations: input.settledReservations ?? [] } : {}),
         ...(['transition', 'release'].includes(action) ? { reason: input.reason } : {}),
       });
-      return nextDispatchAction ? { ...task, nextDispatchAction } : followupDecision ? { ...task, followupDecision } : task;
+      return nextDispatchAction ? { ...task, nextDispatchAction } : followupDecision ? { ...task, followupDecision }
+        : planningResultDecision ? { ...task, planningResultDecision } : task;
     });
   }
 }

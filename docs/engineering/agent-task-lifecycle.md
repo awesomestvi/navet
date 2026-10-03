@@ -86,6 +86,40 @@ history retains failures. Observations cannot move backwards. A failure takes pr
 pass at the same timestamp; other conflicting timestamp ties are rejected, while identical
 receipt retries remain idempotent. A changed head invalidates readiness until fresh evidence is recorded.
 
+### Linear result receipts
+
+Planning-bound research and audits can record `brief.resultDestination: linear-planning` in the
+accepted request. Other tasks use the existing public GitHub result path; `public-github` is also
+an explicit destination value. Changing the destination requires a new authorized request.
+
+1. At a verified worker checkpoint, call `planning-result-intent` with the expected `bodyHash`,
+   `writerAppUserId` and freshly rechecked authority. A confirmed delivery handle, current planning
+   scope and `verifying` or `awaiting-approval` state are required. Bounded tasks also need an unused
+   resource reservation for the `planning-result` operation.
+2. The initial `planningResultDecision.action: create` reserves one comment UUID before a service
+   write. Use that UUID as Linear's `CommentCreateInput.id`; retain the proposal ID, content hash,
+   writer identity, head and accepted revisions. Store result Markdown in private worker storage,
+   separately from the receipt. Verify destination access and publication channels before writing.
+3. An existing pending or unverified intent returns `reconcile`. Inspect the reserved comment
+   through the [Linear result reader](autonomous-builder-plan.md#private-result-readback), using its
+   `intentAt` as `notBefore`. An unavailable read cannot establish that creation failed or authorize
+   a replacement comment. A confirmed intent returns `skip` for creation; completion still needs
+   fresh readback. Changed content or head requires a new scoped request.
+4. Record the owning-service result using `planning-result-observation`. Available observations
+   must match the reserved comment, destination, writer and content, with a fresh service reference.
+   For an unavailable read, include the reserved `commentId`; the receipt becomes `unverified` and
+   blocks readiness even when earlier output evidence passed. History retains prior observations.
+   Conflicting observations cannot restore a pass at the same timestamp as an unavailable result.
+5. Verify result quality and the task's other required gates separately. Record `output` evidence
+   with the exact readback reference and observation time. Readiness and delivery require matching
+   current-head, current-scope evidence and a confirmed result read within the preceding minute.
+   Include human authority rechecked after that readback in the readiness or delivery transition.
+
+These actions preserve local intent and observations; they do not write to Linear or authenticate
+caller-supplied evidence. The shared queue still requires public visibility approval at execution
+gates. The dedicated private worker, app writer, coordinator integration and observed live pilot
+remain activation requirements for private research and audits.
+
 Transitions follow `queued -> investigating -> building -> verifying -> awaiting-approval ->
 delivered`, with explicit waiting and failure states. Each transition requires a reason. Returning
 from `retryable-failure` requires `maxRetries`; the first retry fixes that limit and retries are

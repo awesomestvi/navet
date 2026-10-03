@@ -173,7 +173,7 @@ public artifacts.
 [`createLinearResultReader`](../../scripts/agent-linear-result-reader.mjs) reads an exact result
 comment using the read-only app session. Configure the expected writer app identity separately from
 the reader identity. Supply the comment and proposal IDs, the expected Markdown `bodyHash`, and
-`notBefore` from the verified task dispatch. Record those expectations from the owning worker and
+`notBefore` from the durable result intent. Record those expectations from the owning worker and
 its accepted scope; comment contents cannot establish their own task identity or approval.
 `linearResultBodyHash` hashes the exact UTF-8 Markdown representation returned by Linear.
 
@@ -188,8 +188,11 @@ Readback verifies the observed artifact, not its quality, proposal approval, com
 contents, access controls or the absence of other publication channels. The private worker route
 must separately verify the destination before writing, preserve an idempotent result identity,
 reconcile uncertain writes, and recheck accepted scope and human authority before completion.
-The writer, queue integration and live readback pilot remain activation gates; this reader does
-not enable private dispatch or change the shared queue's public visibility requirement.
+The task store's [Linear result receipts](agent-task-lifecycle.md#linear-result-receipts) reserve a
+comment UUID before creation and retain observations for reconciliation. A matching fresh readback
+and separate output evidence are required for readiness or delivery. The app writer, coordinator
+integration and live readback pilot remain activation gates; these building blocks do not enable
+private dispatch or change the shared queue's public visibility requirement.
 
 For Linear-native approval, agent writes need a distinct identity. Linear's
 [OAuth app actor](https://linear.app/developers/oauth-actor-authorization) attributes mutations to
