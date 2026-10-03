@@ -70,6 +70,36 @@ describe('durable Linear result intent and readback', () => {
     await expect(act('transition', { state: 'delivered', reason: 'Missing quality evidence.' })).rejects.toThrow('evidence is incomplete');
   });
 
+  it('atomically grants one send and returns reconciliation across store restarts', async () => {
+    const { intent, act, directory, task, owner, authority, now } = await setup();
+    const pending = await intent();
+    const sent = await act('planning-result-attempt', { commentId: pending.planningResult.commentId, authority });
+    expect(sent.planningResultDecision.action).toBe('send');
+    expect(sent.planningResult.attemptedAt).toBe(now());
+    const restarted = new AgentTaskStore(directory, { now });
+    const again = await restarted.mutate(task.id, 'planning-result-attempt', { owner, commentId: pending.planningResult.commentId });
+    expect(again.planningResultDecision.action).toBe('reconcile');
+    expect(again.planningResult.attemptedAt).toBe(sent.planningResult.attemptedAt);
+  });
+
+  it('checks current authority and planning visibility before permitting the first send', async () => {
+    const { intent, act, store, authority } = await setup();
+    const pending = await intent();
+    const input = { commentId: pending.planningResult.commentId, authority };
+    await expect(act('planning-result-attempt', { ...input, authority: { ...authority, actor: 'other' } })).rejects.toThrow('authority rechecked');
+    await store.transaction((state) => { state.tasks[0].brief.visibility = 'private-planning'; });
+    await expect(act('planning-result-attempt', input)).rejects.toThrow('visibility approval');
+    expect((await store.list())[0].planningResult.attemptedAt).toBeUndefined();
+  });
+
+  it('does not publish from a checkpoint paused while the writer was reading services', async () => {
+    const { intent, act, authority } = await setup();
+    const pending = await intent();
+    await act('transition', { state: 'waiting-for-input', reason: 'Wait for the maintainer.' });
+    await expect(act('planning-result-attempt', { commentId: pending.planningResult.commentId, authority }))
+      .rejects.toThrow('current worker checkpoint');
+  });
+
   it('requires matching fresh readback and output evidence before delivery', async () => {
     const { act, intent, readback, task, advance, now } = await setup();
     const pending = await intent();

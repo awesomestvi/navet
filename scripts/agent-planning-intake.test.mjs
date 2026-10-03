@@ -2,7 +2,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { enqueuePlanningRequest } from './agent-planning-intake.mjs';
+import { enqueuePlanningRequest, validatePlanningRequestObservation } from './agent-planning-intake.mjs';
 import { createPlanningBinding } from './agent-planning-scope.mjs';
 import { AgentTaskStore } from './agent-task-store.mjs';
 
@@ -35,6 +35,16 @@ async function setup() {
 }
 
 describe('trusted planning request intake', () => {
+  it.each(['identity', 'clock', 'backwards', 'expired'])('rejects invalid %s metadata at the shared authority validator boundary', async (kind) => {
+    const { input, request } = await setup();
+    const time = input.now();
+    expect(() => validatePlanningRequestObservation({ status: 'authorized', request },
+      kind === 'identity' ? undefined : input.identity,
+      kind === 'clock' ? NaN : time,
+      kind === 'backwards' ? time - 1 : kind === 'expired' ? time + 60_001 : time))
+      .toThrow('exact identity and fresh read window');
+  });
+
   it('queues one exact approved scope without claiming, dispatching or storing a planning pass', async () => {
     const { input, store, request } = await setup();
     const reads = [];

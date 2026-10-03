@@ -7,7 +7,13 @@ function clock(now) {
   return value;
 }
 
-function acceptedRequest(observation, identity, startedAt, now) {
+export function validatePlanningRequestObservation(observation, identity, startedAt, now) {
+  if (!identity || ['source', 'requestId'].some((key) => typeof identity[key] !== 'string' ||
+      !identity[key].trim() || identity[key].length > 4096) ||
+      !Number.isSafeInteger(startedAt) || startedAt <= 0 || !Number.isSafeInteger(now) ||
+      now < startedAt || now - startedAt > 60_000) {
+    throw new Error('Trusted request validation requires an exact identity and fresh read window.');
+  }
   if (observation?.status !== 'authorized') throw new Error('Trusted request is not authorized.');
   const request = structuredClone(observation.request);
   if (!request || request.source !== identity.source || request.requestId !== identity.requestId) {
@@ -50,7 +56,7 @@ export async function enqueuePlanningRequest({ store, identity, readRequest, rea
     throw new Error('Planning intake requires a store, request identity and trusted service readers.');
   }
   const startedAt = clock(now);
-  const initial = acceptedRequest(await readRequest({ ...identity }), identity, startedAt, clock(now));
+  const initial = validatePlanningRequestObservation(await readRequest({ ...identity }), identity, startedAt, clock(now));
   const planningStartedAt = clock(now);
   const observation = await readIssue(initial.planningBinding.issueId);
   const planningFinishedAt = clock(now);
@@ -61,7 +67,7 @@ export async function enqueuePlanningRequest({ store, identity, readRequest, rea
   // Re-read authority after the planning request, so withdrawal or scope edits during that
   // read cannot enqueue the old approval. No local timestamp can renew a cached approval.
   const approvalStartedAt = clock(now);
-  const current = acceptedRequest(await readRequest({ ...identity }), identity, approvalStartedAt, clock(now));
+  const current = validatePlanningRequestObservation(await readRequest({ ...identity }), identity, approvalStartedAt, clock(now));
   const withoutObservationTime = (request) => {
     const copy = structuredClone(request);
     delete copy.authority.observedAt;

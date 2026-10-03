@@ -451,6 +451,32 @@ export class AgentTaskStore {
               ...(task.resources ? { resourceToken: input.resourceToken } : {}) };
             planningResultDecision = { action: 'create', receipt: task.planningResult };
           }
+        } else if (action === 'planning-result-attempt') {
+          const receipt = task.planningResult;
+          if (!receipt || input.commentId !== receipt.commentId || receipt.head !== task.head ||
+              receipt.revision !== task.revision || receipt.planningRevision !== task.planning?.binding.revision ||
+              !['research', 'audit'].includes(task.mode) || task.brief.resultDestination !== 'linear-planning' ||
+              !task.dispatch?.threadId || TERMINAL.has(task.state)) {
+            throw new Error('Planning result send requires the reserved active scope.');
+          }
+          if (receipt.attemptedAt || receipt.status !== 'pending') {
+            planningResultDecision = { action: 'reconcile', receipt };
+          } else {
+            if (!['verifying', 'awaiting-approval'].includes(task.state)) {
+              throw new Error('Planning result send requires a current worker checkpoint.');
+            }
+            requirePlanningScope(task, now);
+            bindResourceReservation(task, { resourceToken: receipt.resourceToken }, now, 'planning-result');
+            if (!observationIsFresh(input.authority, now) || input.authority.observedAt < receipt.intentAt ||
+                input.authority.actor !== task.authority.actor || input.authority.reference !== task.authority.reference ||
+                input.authority.revision !== task.revision || input.authority.planningRevision !== task.planning.binding.revision ||
+                input.authority.observedAt < task.planning.observation.observedAt) {
+              throw new Error('Planning result send requires authority rechecked after the current scope read.');
+            }
+            receipt.attemptedAt = now;
+            task.authority = input.authority;
+            planningResultDecision = { action: 'send', receipt };
+          }
         } else if (action === 'planning-result-observation') {
           const receipt = task.planningResult;
           const observation = input.observation;
@@ -565,7 +591,7 @@ export class AgentTaskStore {
       task.history.push({ action, owner: input.owner, state: task.state, head: task.head, at: now,
         ...(action === 'evidence' ? { evidence: input.evidence } : {}),
         ...(action === 'planning-observation' ? { planning: task.planning.observation } : {}),
-        ...(['planning-result-intent', 'planning-result-observation'].includes(action)
+        ...(['planning-result-intent', 'planning-result-attempt', 'planning-result-observation'].includes(action)
           ? { planningResult: structuredClone(task.planningResult) } : {}),
         ...(action === 'resource-usage' ? { usage: input.usage, settledReservations: input.settledReservations ?? [] } : {}),
         ...(['transition', 'release'].includes(action) ? { reason: input.reason } : {}),

@@ -39,10 +39,19 @@ export async function readLinearClientCredentials(file) {
   }
 }
 
-// Obtain one read-only app token for one coordinator run. No token is written to disk or
-// returned as session metadata. The reader still verifies its app identity through Linear.
-export async function createLinearReadSession({ readCredentials, fetchImpl = globalThis.fetch,
-  now = () => Date.now(), signal, timeoutMs = 20_000 }) {
+// Closed scope factories prevent callers from requesting general write or admin access.
+export function createLinearReadSession(options) {
+  return createLinearAppSession(options, ['read'], 'Linear read-only app authentication failed.');
+}
+
+export function createLinearCommentSession(options) {
+  return createLinearAppSession(options, ['read', 'comments:create'], 'Linear comment app authentication failed.');
+}
+
+// Obtain one app token for one coordinator run. Tokens remain in memory. Transport adapters
+// still verify the installed app identity through Linear before reading or mutating content.
+async function createLinearAppSession({ readCredentials, fetchImpl = globalThis.fetch,
+  now = () => Date.now(), signal, timeoutMs = 20_000 }, requestedScopes, failureMessage) {
   if (typeof readCredentials !== 'function' || typeof fetchImpl !== 'function' || typeof now !== 'function' ||
       !Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 60_000) {
     throw new Error('Linear read session requires credential storage and bounded transport.');
@@ -69,15 +78,16 @@ export async function createLinearReadSession({ readCredentials, fetchImpl = glo
     const response = await bounded(fetchImpl('https://api.linear.app/oauth/token', {
       method: 'POST', redirect: 'error', cache: 'no-store', signal: controller.signal,
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ grant_type: 'client_credentials', scope: 'read',
+      body: new URLSearchParams({ grant_type: 'client_credentials', scope: requestedScopes.join(','),
         client_id: credentials.clientId, client_secret: credentials.clientSecret }).toString(),
     }));
     const result = await readLinearResponseJson(response, bounded, 16_384);
     const scopes = Array.isArray(result?.scope) ? result.scope : typeof result?.scope === 'string' ? result.scope.trim().split(/[\s,]+/) : [];
     if (!secretText(result?.access_token, 8192) || result.token_type?.toLowerCase() !== 'bearer' ||
         !Number.isSafeInteger(result.expires_in) || result.expires_in <= 30 ||
-        scopes.length !== 1 || scopes[0] !== 'read' || result.refresh_token !== undefined) {
-      throw new Error('Invalid read-only client credentials response.');
+        scopes.length !== requestedScopes.length || new Set(scopes).size !== requestedScopes.length ||
+        scopes.some((scope) => !requestedScopes.includes(scope)) || result.refresh_token !== undefined) {
+      throw new Error('Invalid scoped client credentials response.');
     }
     const finishedAt = now();
     const expiresAt = startedAt + result.expires_in * 1000;
@@ -89,13 +99,13 @@ export async function createLinearReadSession({ readCredentials, fetchImpl = glo
       getAccessToken: async ({ signal: readSignal } = {}) => {
         const observedAt = now();
         if (signal?.aborted || !Number.isSafeInteger(observedAt) || observedAt < startedAt || observedAt >= expiresAt - 30_000) token = null;
-        if (!token || readSignal?.aborted) throw new Error('Linear read session is closed or expired.');
+        if (!token || readSignal?.aborted) throw new Error('Linear app session is closed or expired.');
         return token;
       },
       close: () => { token = null; },
     };
   } catch {
-    throw new Error('Linear read-only app authentication failed.');
+    throw new Error(failureMessage);
   } finally {
     clearTimeout(timer);
     signal?.removeEventListener('abort', cancel);

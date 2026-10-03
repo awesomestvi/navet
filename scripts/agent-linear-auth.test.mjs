@@ -2,7 +2,7 @@ import { chmod, link, mkdir, mkdtemp, readdir, rm, symlink, writeFile } from 'no
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { createLinearReadSession, readLinearClientCredentials } from './agent-linear-auth.mjs';
+import { createLinearCommentSession, createLinearReadSession, readLinearClientCredentials } from './agent-linear-auth.mjs';
 
 const directories = [];
 afterEach(async () => {
@@ -32,6 +32,21 @@ function harness(response = tokenResponse(), changes = {}) {
 }
 
 describe('run-scoped Linear app authentication', () => {
+  it('requests only read and comments:create for the separately configured comment app', async () => {
+    const { input, requests } = harness(tokenResponse({ scope: 'comments:create read' }));
+    const session = await createLinearCommentSession(input);
+    expect(new URLSearchParams(requests[0].body).get('scope')).toBe('read,comments:create');
+    expect(await session.getAccessToken()).toBe('synthetic-run-token');
+    session.close();
+    await expect(session.getAccessToken()).rejects.toThrow('closed or expired');
+  });
+
+  it.each(['read write', 'read admin', 'read', 'read read', 'read comments:create issues:create'])
+    ('rejects insufficient, broader or duplicated comment grants %s', async (scope) => {
+      const { input } = harness(tokenResponse({ scope }));
+      await expect(createLinearCommentSession(input)).rejects.toThrow('comment app authentication failed');
+    });
+
   it('requests only read scope from the fixed token endpoint with redirects disabled', async () => {
     const { input, requests } = harness();
     const session = await createLinearReadSession(input);

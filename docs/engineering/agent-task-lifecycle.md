@@ -100,10 +100,18 @@ an explicit destination value. Changing the destination requires a new authorize
    write. Use that UUID as Linear's `CommentCreateInput.id`; retain the proposal ID, content hash,
    writer identity, head and accepted revisions. Store result Markdown in private worker storage,
    separately from the receipt. Verify destination access and publication channels before writing.
+   The writer's `beginWrite` callback records the fresh planning observation, then calls
+   `planning-result-attempt` with the comment ID and freshly checked authority under the current
+   coordinator lease. Only its initial `send` decision permits a mutation. The saved `attemptedAt`
+   survives restarts; another attempt returns `reconcile`. Paused checkpoints cannot receive a
+   first send permission. Inspect actual ownership before recovering an expired coordinator.
 3. An existing pending or unverified intent returns `reconcile`. Inspect the reserved comment
    through the [Linear result reader](autonomous-builder-plan.md#private-result-readback), using its
    `intentAt` as `notBefore`. An unavailable read cannot establish that creation failed or authorize
-   a replacement comment. A confirmed intent returns `skip` for creation; completion still needs
+   a replacement comment. A reserved intent with no `attemptedAt` can obtain its first send permit
+   through the controlled writer after the current source and ownership checks pass. This requires
+   every writer to use the durable attempt protocol; an imported or unknown writer outcome requires
+   investigation. A confirmed intent returns `skip` for creation; completion still needs
    fresh readback. Changed content or head requires a new scoped request.
 4. Record the owning-service result using `planning-result-observation`. Available observations
    must match the reserved comment, destination, writer and content, with a fresh service reference.
@@ -117,8 +125,8 @@ an explicit destination value. Changing the destination requires a new authorize
 
 These actions preserve local intent and observations; they do not write to Linear or authenticate
 caller-supplied evidence. The shared queue still requires public visibility approval at execution
-gates. The dedicated private worker, app writer, coordinator integration and observed live pilot
-remain activation requirements for private research and audits.
+gates. The dedicated private worker, installed writer identity, coordinator integration and observed
+live pilot remain activation requirements for private research and audits.
 
 Transitions follow `queued -> investigating -> building -> verifying -> awaiting-approval ->
 delivered`, with explicit waiting and failure states. Each transition requires a reason. Returning

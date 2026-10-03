@@ -190,9 +190,43 @@ must separately verify the destination before writing, preserve an idempotent re
 reconcile uncertain writes, and recheck accepted scope and human authority before completion.
 The task store's [Linear result receipts](agent-task-lifecycle.md#linear-result-receipts) reserve a
 comment UUID before creation and retain observations for reconciliation. A matching fresh readback
-and separate output evidence are required for readiness or delivery. The app writer, coordinator
+and separate output evidence are required for readiness or delivery. The installed writer identity, coordinator
 integration and live readback pilot remain activation gates; these building blocks do not enable
 private dispatch or change the shared queue's public visibility requirement.
+
+### Result write adapter
+
+[`createLinearResultWriter`](../../scripts/agent-linear-result-writer.mjs) uses the reserved comment
+ID and exact result Markdown. It checks the active app identity, workspace, proposal team and project,
+explicit lifecycle fields and absence of issue sync targets. Two destination reads must agree.
+Between them it obtains a complete fresh proposal read; after them it rechecks the human request,
+selected brief, required gates and resource limits through the trusted request adapter.
+
+The coordinator supplies `beginWrite({ taskId, commentId, authority, observation })`. Record the
+planning observation and reserve the send using the task-store procedure above. Return only its
+`planningResultDecision`. The adapter accepts a creation or reconciliation intent that has never
+received a send reservation, then requires the durable first-send permit before mutation. It does
+not trust a caller timestamp to renew approval or treat an uncertain attempt as a failed write.
+
+One writer session allows one attempted send. The mutation creates an issue comment without user
+impersonation or a synced Slack-thread request. Cancellation, redirects, changed scope, expired
+credentials and mismatched identities stop the operation. A lost reservation acknowledgement or any
+failure after the reservation returns `uncertain`, requiring inspection of the reserved comment.
+A successful response is only an acknowledgement; the separate result reader verifies output.
+
+Use a separately configured writer OAuth app restricted to Navet. The
+`createLinearCommentSession` factory requests exactly `read,comments:create`, rejects broader or
+incomplete grants and keeps its token in memory for one run. Close it in the run's `finally` block.
+Keep the reader app on read-only scope. Linear's
+[OAuth scope contract](https://linear.app/developers/oauth-2-0-authentication) provides the targeted
+comment permission and states that changing an app's client-credentials scopes invalidates its
+existing app tokens.
+
+The trusted readers and send callback are authentication boundaries; the adapter does not prove
+their assertions. Destination reads are stability checks, not a transaction with the mutation or
+proof that every notification/export channel is disabled. The installed writer, private worker,
+verified destination policy, coordinator integration and live pilot remain activation gates.
+Transport tests use synthetic credentials and do not establish live permissions or delivery.
 
 For Linear-native approval, agent writes need a distinct identity. Linear's
 [OAuth app actor](https://linear.app/developers/oauth-actor-authorization) attributes mutations to
