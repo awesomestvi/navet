@@ -13,7 +13,6 @@ does not establish a stable public API or complete accessibility coverage.
 | Controls with secondary configuration | Card variant of `BaseCardDialog`, `navigation="overflow"`, controls tab first | [Controls-first dialog](../../packages/app/src/components/patterns/card-dialog-overflow-menu.stories.tsx): More actions, edit name/room, secondary section, Back to controls, close/reopen. |
 | Mobile detail or command sheet | `SheetSurface` directly containing `SheetSurfaceHeader` and body | [Sheet surface](../../packages/app/src/components/primitives/sheet-surface.stories.tsx): open on a phone, dismissal, scroll, long content and desktop visibility. |
 | Sidebar-to-detail navigation | `NavigationWorkspace.Frame` with its named parts | [Navigation workspace](../../packages/app/src/components/patterns/navigation-workspace.stories.tsx): frame context, labeled navigation, `aria-current`, explicit sidebar/detail grid and owned scroll regions. The namespace is a composition object. |
-| Small view switch | `Tabs`, `TabList`, `TabTrigger` and `TabPanel` | [Tabs](../../packages/app/src/components/primitives/tabs.stories.tsx): controlled/uncontrolled selection, matching values, linked IDs, overflow and inactive-panel focus. Inspect keyboard handling in the current source before acceptance. |
 | Settings form | Existing settings-dialog shell; `FieldBlock` around control primitives | [Field states](../../packages/app/src/components/patterns/field-block.stories.tsx): hint, required, error and disabled. Inspect a neighboring feature's settings dialog for save and cancellation behavior. |
 | Dashboard summary | Existing feature summary inside the shared dashboard layout | [Dashboard guidance](../product/dashboard-principles.md) and the nearest summary implementation: reading order, condensed/expanded presentation and no-data behavior. Select its actual feature composition rather than assuming a generic summary-bar component. |
 | Empty card or section | `CardEmptyState` inside `BaseCard`; `DashboardEmptyState` for sections | [Card empty states](../../packages/app/src/components/patterns/card-empty-state.stories.tsx) and [dashboard empty states](../../packages/app/src/components/patterns/dashboard-empty-state.stories.tsx): small/large sizes, optional action, no matches versus unconfigured content. |
@@ -75,11 +74,13 @@ selection callbacks and `aria-current`. `Item`'s `active` prop controls visual s
 choose its placement with the page's existing main landmark in mind. The source story uses an
 explicit detail scroll region rather than relying on the frame to scroll.
 
-`Tabs` requires `defaultValue`, including in controlled compositions, and supplies selection context
-and generated IDs. Match each `TabTrigger` value to its `TabPanel`. The trigger's click updates
-selection; the source does not implement Arrow/Home/End navigation. Verify the intended keyboard
-path in the rendered composition before acceptance. `preserveLayout` retains an inactive panel's
-geometry while making it invisible and inert.
+The existing `Tabs` contract requires `defaultValue`, including in controlled compositions, and
+supplies selection context and generated IDs. Each `TabTrigger` value links to its `TabPanel`.
+The current primitive leaves inactive triggers outside the Tab sequence and supplies no arrow-key
+navigation, which blocks keyboard-only view switching. A new view-switch composition must provide
+and verify a complete keyboard selection path before it can use this primitive. Inspection alone
+cannot satisfy that requirement. A shared repair requires its scoped implementation approval.
+`preserveLayout` retains an inactive panel's geometry while making it invisible and inert.
 
 `CardDialogTabList` is a layout wrapper and `CardDialogTabTrigger` is a controlled pill; they do not
 supply the `Tabs` context or linked panel semantics. Choose the actual interaction contract required
