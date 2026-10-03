@@ -4,6 +4,32 @@ import path from 'node:path';
 import { it, expect } from 'vitest';
 import { generateCatalog } from './agent-component-catalog.mjs';
 
+it('preserves variant-specific properties and discriminator requirements', () => {
+  const root = mkdtempSync(path.join(tmpdir(), 'navet-catalog-variants-'));
+  try {
+    writeFileSync(path.join(root, 'index.ts'), `
+      type DialogProps = { variant?: 'card'; anchor: { x: number; y: number } }
+        | { variant: 'sheet'; snapPoints?: number[] }
+        | { variant: 'fullscreen'; onBack: () => void };
+      export function Dialog(props: DialogProps) { return props.variant; }
+    `);
+    const catalog = generateCatalog({ root, entries: [{ file: 'index.ts', importFrom: '@navet/ui' }] });
+    const dialog = catalog.entries.find((item) => item.name === 'Dialog');
+    expect(dialog.properties.map((item) => item.name)).toEqual(['variant']);
+    expect(dialog.variants).toHaveLength(3);
+    const card = dialog.variants.find((item) => item.properties.some((prop) => prop.name === 'anchor'));
+    expect(card.properties).toEqual(expect.arrayContaining([
+      expect.objectContaining({ name: 'variant', optional: true, type: '"card" | undefined' }),
+      expect.objectContaining({ name: 'anchor', optional: false }),
+    ]));
+    const fullscreen = dialog.variants.find((item) => item.properties.some((prop) => prop.name === 'onBack'));
+    expect(fullscreen.properties).toEqual(expect.arrayContaining([
+      expect.objectContaining({ name: 'variant', optional: false, type: '"fullscreen"' }),
+      expect.objectContaining({ name: 'onBack', optional: false, type: '() => void' }),
+    ]));
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
 it('discovers real exports, typed contracts, and story references and refreshes after source changes', () => {
   const root = mkdtempSync(path.join(tmpdir(), 'navet-catalog-'));
   try {
