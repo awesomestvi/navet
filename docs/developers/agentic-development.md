@@ -13,13 +13,13 @@ open pull requests manually.
 1. A maintainer adds `navet: research` for investigation or `navet: implement` for a fix.
    When Navet Nisse asks a blocking question or requests a retest, the issue reporter or a
    maintainer can reply normally.
-2. The private Codex runner checks the queue every 15 minutes. After dispatch succeeds, it
+2. The private Codex runner checks the queue on its configured schedule. After dispatch succeeds, it
    removes the request label. Add the same label later to request another run. If dispatch fails,
    the label stays in place for a retry.
 3. Codex creates an isolated worktree task from the default branch. Research tasks report without
    changing code; implementation tasks reproduce, fix, validate, review, and open a pull request.
-4. CI, Cloudflare previews, and independent review provide evidence. Navet Nisse maintains one
-   pull-request summary with the current validation result and preview links.
+4. CI, Cloudflare previews, and independent review provide evidence. Use the pull request's
+   checks to inspect the current validation results and preview links.
 5. A maintainer reviews the result, gives product feedback, and decides whether to merge. Runtime
    changes merged to `main` publish a Navet Dev build automatically; production publication remains separate.
 
