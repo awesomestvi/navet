@@ -53,7 +53,7 @@ returned source-matching props including `isOpen`, `onOpenChange`, `title` and `
 Form-field documentation returned only a heading and Stories section. BaseCardDialog returned
 story names and wrapper snippets without its discriminated props. Generated snippets may show
 `@navet/app` imports and local wrapper components; select the stable UI-kit entrypoint and read
-the actual composition recipe before using them as implementation examples.
+the [agent composition recipes](AGENT-COMPOSITION-RECIPES.md) before using them as implementation examples.
 
 The discovered form error-state preview displayed its validation message and an input with
 `aria-invalid=true`. The vacuum unavailable preview displayed its unavailable state. The sheet

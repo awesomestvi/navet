@@ -35,6 +35,10 @@ Use the opt-in [Storybook MCP pilot](STORYBOOK-MCP.md) to discover actual story 
 links. Inspect the returned API and examples for completeness; use the generated catalog and
 source recipes when extraction is incomplete. Rendered inspection remains required.
 
+Use the [agent composition recipes](AGENT-COMPOSITION-RECIPES.md) to choose card controls, overflow
+navigation, sheets, settings fields, summaries and state compositions. The examples name actual
+props and source stories; inspect current contracts before adapting them.
+
 ## Product Feel
 
 Navet should feel glanceable, compact but calm, direct, tactile, and recognizably Navet.
