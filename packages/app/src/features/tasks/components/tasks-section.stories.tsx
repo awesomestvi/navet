@@ -242,8 +242,8 @@ export const ScriptsList: Story = {
     },
   },
   play: async ({ canvas, userEvent, step }) => {
-    await step('opens the scripts list without per-item type tags', async () => {
-      await userEvent.click(canvas.getByRole('button', { name: /scripts/i }));
+    await step('opens quick actions and exposes script run controls', async () => {
+      await userEvent.click(canvas.getByRole('button', { name: /^quick actions\b/i }));
       await expect(canvas.getByText('Feed Mowgli')).toBeInTheDocument();
       await expect(canvas.getByText('Stop all music')).toBeInTheDocument();
       await expect(canvas.getByRole('button', { name: 'Run Feed Mowgli' })).toBeInTheDocument();
