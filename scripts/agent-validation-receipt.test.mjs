@@ -1,0 +1,145 @@
+import { createHash } from 'node:crypto';
+import { execFile } from 'node:child_process';
+import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { promisify } from 'node:util';
+import { pathToFileURL } from 'node:url';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { verifyValidationReceipt } from './agent-validation-receipt.mjs';
+
+const execute = promisify(execFile);
+const directories = [];
+let root;
+let head;
+const repository = 'example/navet';
+const branch = 'feature/receipt.v1';
+const threadId = 'confirmed-thread';
+const timestamp = '2020-01-01T00:00:00.000Z';
+const hook = 'pnpm typecheck &&\n  pnpm test:tier1 &&\n  pnpm test:tier2\n';
+const git = async (args) => (await execute('git', ['-C', root, ...args])).stdout.trim();
+beforeAll(async () => {
+  root = await mkdtemp(path.join(tmpdir(), 'navet-native-receipt-repo-')); directories.push(root);
+  await execute('git', ['init', '--quiet', root]);
+  await git(['config', 'remote.origin.url', `https://github.com/${repository}.git`]);
+  await mkdir(path.join(root, '.husky'));
+  await writeFile(path.join(root, '.husky/pre-push'), hook);
+  await git(['add', '.husky/pre-push']);
+  await git(['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '--quiet', '-m', 'test: receipt fixture']);
+  head = await git(['rev-parse', 'HEAD']);
+});
+afterAll(async () => { await Promise.all(directories.map((directory) => rm(directory, { recursive: true, force: true }))); });
+
+async function fixture(changeRecord = () => {}, changeReceipt = () => {}) {
+  const dir = await mkdtemp(path.join(tmpdir(), 'navet-native-receipt-'));directories.push(dir);
+  const record = { timestamp, type: 'event_msg', payload: { type: 'item_completed', thread_id: threadId,
+    item: { type: 'CommandExecution', id: 'native-operation', status: 'completed', exit_code: 0,
+      command: ['/bin/zsh', '-c', `git push origin ${branch}`], cwd: pathToFileURL(root).href,
+      aggregated_output: `$ tsc --noEmit\n$ node scripts/run-test-tier.mjs tier1\nTests  10 passed (10)\n$ node scripts/run-test-tier.mjs tier2\nTests  5 passed (5)\nTo https://github.com/${repository}.git\n  abcdef0..${head.slice(0, 8)}  ${branch} -> ${branch}\n` } } };
+  changeRecord(record);
+  const raw = JSON.stringify(record) + '\n';
+  const sessionFile = path.join(dir, 'native.jsonl');
+  await writeFile(sessionFile, JSON.stringify({ type: 'session_meta', payload: { id: threadId } }) + '\n' +
+    JSON.stringify({ type: 'response_item', payload: { type: 'message', content: 'PRIVATE_PROMPT_SENTINEL' } }) + '\n' + raw);
+  const receipt = { version: 2, gate: 'local-validation', head, repository, branch, threadId,
+    tier1Tests: 10, tier2Tests: 5, source: { file: sessionFile, line: 3, timestamp,
+      itemId: 'native-operation', recordSha256: createHash('sha256').update(raw).digest('hex') },
+    hook: { file: '.husky/pre-push', sourceAtHead: head } };
+  changeReceipt(receipt);
+  const receiptFile = path.join(dir, 'receipt.json');
+  await writeFile(receiptFile, JSON.stringify(receipt));
+  return { input: { receiptFile, expectedHead: head, repositoryRoot: root, repository, branch, threadId },
+    receipt, record, sessionFile, raw };
+}
+
+describe('native validation receipt verification', () => {
+  it('verifies actual Git commit/hook identity and returns only proved, redacted facts', async () => {
+    const { input } = await fixture();
+    const result = await verifyValidationReceipt(input);
+    expect(result).toMatchObject({ result: 'pass', head, typecheck: 'verified native chain', tier1Tests: 10, tier2Tests: 5 });
+    expect(JSON.stringify(result)).not.toContain('PRIVATE_PROMPT_SENTINEL');
+    expect(result).not.toHaveProperty('command');
+    expect(result).not.toHaveProperty('aggregated_output');
+  });
+
+  it.each(['head', 'repository', 'branch', 'threadId'])('rejects mismatched expected %s', async (key) => {
+    const { input } = await fixture();
+    const changed = key === 'head' ? 'a'.repeat(40) : key === 'repository' ? 'other/repo' : 'different';
+    await expect(verifyValidationReceipt({ ...input, [key === 'head' ? 'expectedHead' : key]: changed })).rejects.toThrow('mismatch');
+  });
+
+  it('rejects a substituted native line even with an otherwise valid receipt', async () => {
+    const { input } = await fixture(() => {}, (receipt) => { receipt.source.recordSha256 = '0'.repeat(64); });
+    await expect(verifyValidationReceipt(input)).rejects.toThrow('hash mismatch');
+  });
+
+  it('rejects a foreign native session and foreign nested execution', async () => {
+    const foreign = await fixture((record) => { record.payload.thread_id = 'foreign'; });
+    await expect(verifyValidationReceipt(foreign.input)).rejects.toThrow('matching successful');
+    const wrongSession = await fixture();
+    const bytes = await readFile(wrongSession.sessionFile, 'utf8');
+    await writeFile(wrongSession.sessionFile, bytes.replace('"id":"confirmed-thread"', '"id":"foreign"'));
+    await expect(verifyValidationReceipt(wrongSession.input)).rejects.toThrow('thread identity');
+  });
+
+  it.each(['failed', 'pending', 'bypassed', 'masked'])('rejects %s command execution', async (kind) => {
+    const { input } = await fixture((record) => {
+      const item = record.payload.item;
+      if (kind === 'failed') item.exit_code = 1;
+      if (kind === 'pending') item.status = 'inProgress';
+      if (kind === 'bypassed') item.command[2] = `HUSKY=0 git push origin ${branch}`;
+      if (kind === 'masked') item.command[2] += '; true';
+    });
+    await expect(verifyValidationReceipt(input)).rejects.toThrow('ordinary push');
+  });
+
+  it.each(['typecheck', 'tier1', 'tier2', 'failed-tier', 'destination', 'pushed-head', 'branch'])('rejects incomplete or wrong %s evidence', async (kind) => {
+    const { input } = await fixture((record) => {
+      const item = record.payload.item;
+      const replacements = { typecheck: ['$ tsc --noEmit', 'missing'], tier1: ['Tests  10 passed (10)', 'missing'],
+        tier2: ['Tests  5 passed (5)', 'missing'], 'failed-tier': ['Tests  10 passed (10)', 'Tests  1 failed | 10 passed (11)'],
+        destination: [`To https://github.com/${repository}.git`, 'To https://github.com/other/repo.git'],
+        'pushed-head': [head.slice(0, 8), 'ffffffff'], branch: [`${branch} -> ${branch}`, 'feature/receiptXv1 -> feature/receiptXv1'] };
+      item.aggregated_output = item.aggregated_output.replace(...replacements[kind]);
+    });
+    await expect(verifyValidationReceipt(input)).rejects.toThrow();
+  });
+
+  it('rejects an unfinished writer tail and malformed complete prefixes', async () => {
+    const partial = await fixture();
+    const bytes = await readFile(partial.sessionFile, 'utf8');await writeFile(partial.sessionFile, bytes.slice(0, -1));
+    await expect(verifyValidationReceipt(partial.input)).rejects.toThrow('Complete native receipt');
+    const malformed = await fixture();await writeFile(malformed.sessionFile, '{bad}\n' + malformed.raw);
+    await expect(verifyValidationReceipt(malformed.input)).rejects.toThrow('Malformed');
+  });
+
+  it('rejects another checkout and another repository remote', async () => {
+    const other = await fixture((record) => { record.payload.item.cwd = tmpdir(); });
+    await expect(verifyValidationReceipt(other.input)).rejects.toThrow('ordinary push');
+    const valid = await fixture();await git(['config', 'remote.origin.url', 'https://github.com/other/repo.git']);
+    try { await expect(verifyValidationReceipt(valid.input)).rejects.toThrow('repository mismatch'); }
+    finally { await git(['config', 'remote.origin.url', `https://github.com/${repository}.git`]); }
+  });
+
+  it('rejects future native command timestamps even when the receipt repeats them', async () => {
+    const future = '2099-01-01T00:00:00.000Z';
+    const { input } = await fixture((record) => { record.timestamp = future; }, (receipt) => { receipt.source.timestamp = future; });
+    await expect(verifyValidationReceipt(input)).rejects.toThrow('ordinary push');
+  });
+
+  it('does not trust receipt assertions about counts or commit-bound hooks', async () => {
+    const counts = await fixture(() => {}, (receipt) => { receipt.tier1Tests = 11; });
+    await expect(verifyValidationReceipt(counts.input)).rejects.toThrow('test counts');
+    const hook = await fixture(() => {}, (receipt) => { receipt.hook.sourceAtHead = 'a'.repeat(40); });
+    await expect(verifyValidationReceipt(hook.input)).rejects.toThrow('provenance mismatch');
+  });
+  it('rejects a changed hook at the actual referenced commit despite apparently passing output', async () => {
+    await writeFile(path.join(root, '.husky/pre-push'), 'pnpm typecheck\n');
+    await git(['add', '.husky/pre-push']);
+    await git(['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '--quiet', '-m', 'test: unsupported hook']);
+    head = await git(['rev-parse', 'HEAD']);
+    const { input } = await fixture();
+    await expect(verifyValidationReceipt(input)).rejects.toThrow('Unsupported commit-bound');
+  });
+
+});

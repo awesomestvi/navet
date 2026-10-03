@@ -142,6 +142,33 @@ checkpoint, and present a concrete decision when a limit is reached. Numerical p
 measurement and monitored-worker integration require a live pilot before operational exit gates
 pass. Local tests prove record behavior; an interrupted-delivery pilot proves operational recovery.
 
+## Verify Native Validation Receipts
+
+`pnpm agent:validation <private-input.json>` verifies a version 2 local-validation receipt against
+a completed native Codex push event and the pre-push hook stored at its commit. Supply the private
+`receiptFile`, freshly confirmed `expectedHead`, `repositoryRoot`, GitHub `repository` (owner/name),
+`branch` and confirmed delivery `threadId`. Fetch the current PR head independently before using
+the result as current-head evidence; this local verifier does not query GitHub or grant authority.
+
+A receipt contains version/gate, full head, repository, branch, thread ID and positive Tier 1/2
+counts. Its `source` names the absolute native session file, one-based line, timestamp, native
+command item ID and SHA-256 of that complete record including its newline. Its `hook` names
+`.husky/pre-push` and the same full `sourceAtHead`. Keep the receipt and input files private.
+
+The verifier reads a fixed complete-record prefix, confirms session and execution-thread identity,
+and rejects missing/partial records, changed hashes, wrong checkouts, mismatched repositories,
+failed commands and contradictory counts. It supports a completed ordinary
+`git push origin <branch>` through the native bash/zsh command form. It checks the current
+repository's origin, the commit-bound typecheck/Tier 1/Tier 2 hook, their ordered output and complete
+passing tier counts, and the pushed destination/branch/commit. Abbreviated push SHAs must resolve
+to the confirmed full commit. Unsupported hook or command forms remain unverified.
+
+The command prints only proved head/count/provenance facts. Native prompts, commands and raw
+output stay outside agent context. A valid hash confirms an unchanged local record; it is not a
+signature or independent human approval. The coordinator still verifies receipt provenance,
+current remote checks and authority, and follows the task store's evidence/ownership contract.
+The verifier does not mutate the queue, send messages, stop workers, merge or publish.
+
 ## Observe Local Codex Usage
 
 `pnpm agent:usage <private-input.json>` reads a fixed snapshot of one local Codex session log.
