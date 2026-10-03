@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { once } from 'node:events';
 import { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { hostname, tmpdir } from 'node:os';
@@ -29,6 +29,43 @@ async function setup(options = {}) {
   return { directory, store, request, task, owner, claim, act, evidence, advance: (delta) => { now += delta; } };
 }
 afterEach(async () => { await Promise.all(directories.splice(0).map((directory) => rm(directory, { recursive: true, force: true }))); });
+
+describe('coordinator identity at the task CLI boundary', () => {
+  it.each([
+    { threadId: undefined, inputOwner: 'coordinator-thread' },
+    { threadId: 'other-coordinator', inputOwner: 'coordinator-thread' },
+    { threadId: 'coordinator-thread', inputOwner: undefined },
+  ])('rejects mismatched or missing ownership without changing the saved checkpoint: %j', async ({ threadId, inputOwner }) => {
+    const { directory, task, owner } = await setup();
+    const store = new AgentTaskStore(directory);
+    await store.mutate(task.id, 'claim', { owner, durationMs: 100_000 });
+    await store.mutate(task.id, 'context', { owner, context: { nextAction: 'Preserve this checkpoint.' } });
+    const inputFile = path.join(directory, 'input.json');
+    await writeFile(inputFile, JSON.stringify({ id: task.id, action: 'context', input: { owner: inputOwner, context: { nextAction: 'Overwrite checkpoint.' } } }));
+    const before = await readFile(path.join(directory, 'tasks.json'), 'utf8');
+    const env = { ...process.env };
+    delete env.CODEX_THREAD_ID;
+    if (threadId !== undefined) env.CODEX_THREAD_ID = threadId;
+    const result = spawnSync(process.execPath, [path.resolve('scripts/agent-task.mjs'), directory, 'mutate', inputFile], { env, encoding: 'utf8' });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('Mutation owner must match CODEX_THREAD_ID.');
+    expect(await readFile(path.join(directory, 'tasks.json'), 'utf8')).toBe(before);
+  });
+
+  it('lets the current coordinator claim and update its checkpoint', async () => {
+    const { directory, task, owner } = await setup();
+    const inputFile = path.join(directory, 'input.json');
+    for (const mutation of [
+      { action: 'claim', input: { owner, durationMs: 100_000 } },
+      { action: 'context', input: { owner, context: { nextAction: 'Continue verified work.' } } },
+    ]) {
+      await writeFile(inputFile, JSON.stringify({ id: task.id, ...mutation }));
+      const result = spawnSync(process.execPath, [path.resolve('scripts/agent-task.mjs'), directory, 'mutate', inputFile], { env: { ...process.env, CODEX_THREAD_ID: owner }, encoding: 'utf8' });
+      expect(result.status, result.stderr).toBe(0);
+    }
+    expect((await new AgentTaskStore(directory).list())[0].context.nextAction).toBe('Continue verified work.');
+  });
+});
 
 async function boundedSetup(limitOverrides = {}) {
   const base = await setup();
