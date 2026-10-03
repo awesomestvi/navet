@@ -83,5 +83,47 @@ through the owning service immediately before dispatch and completion. The Linea
 write as the maintainer account, so an account ID or Approved label alone is insufficient evidence
 of a human decision. Preserve the existing explicit maintainer request path during integration.
 
-Elapsed execution and model/tool expenditure limits still require coordinator integration. Local
-unit tests prove record behavior; a live interrupted-delivery pilot proves operational recovery.
+## Execution Budgets
+
+Bounded requests include `resourceLimits` with three positive integers: `maxElapsedMs`,
+`maxModelTokens`, and `maxToolCalls`. Limits are part of the authorized request identity. A repeated
+event cannot remove or expand them. Existing records without limits remain unbounded; the
+coordinator must identify them explicitly when evaluating operational coverage.
+
+Elapsed time starts at the first claim and includes waiting between runs. Renewing ownership or
+restarting the store does not reset it. Model tokens count cumulative input and output tokens,
+and tool calls count cumulative executed calls across the coordinator and its workers. These are
+execution units, not monetary charges. Choose the numerical policy from measured workloads and
+maintainer-approved operating limits before activating bounded intake.
+
+Use `resource-usage` with a `usage` observation containing cumulative `modelTokens`, `toolCalls`,
+`reference`, and `observedAt`. Read counts from the actual execution service or verified execution
+log. Counters must be nonnegative, monotonic integers; observations must be within the preceding
+minute. Missing measurement is not zero usage. Record actual overruns even when they exceed the
+limit so recovery retains the failure evidence.
+
+Before a model or tool operation, call `reserve-resources` with a stable `event`, the upper bound
+on its `modelTokens`, and its maximum `toolCalls`. Its `resourceDecision.action` is `execute` for a
+new allocation, `reconcile` for an uncertain existing operation, or `skip` for a settled operation.
+Only `execute` permits starting the operation. Preserve the returned reservation token. Reserve
+input tokens plus the provider-enforced output allowance for model work; a worker whose usage
+cannot be measured or bounded needs a runner integration before it can execute under this policy.
+
+Pass the reservation token as `resourceToken` to initial `dispatch-intent` and newly sent
+`reserve-followup` actions. A reservation bound to dispatch cannot authorize a separate follow-up.
+Existing dispatch and receipt reconciliation remain available without another allocation.
+
+After verifying that cumulative usage includes an operation's completed execution, pass its token
+in `settledReservations` with `resource-usage`. Pending allocations remain charged across restarts
+and uncertain outcomes. Capacity uses measured cumulative usage plus all pending allocations;
+an unsettled completed operation can therefore hold capacity conservatively until reconciled.
+The exported `resourceStatus(task, now)` reports bounded coverage, observation freshness, remaining
+units, and exhaustion.
+
+Exhausted or unmeasured budgets block new allocations, dispatches, follow-up sends, and transitions
+into execution. Ownership, acknowledgements, evidence, context, waiting and failure records remain
+available for recovery. The store does not cancel an already running worker. The coordinator must
+apply provider limits, monitor actual worker usage and deadlines, stop new work, preserve its
+checkpoint, and present a concrete decision when a limit is reached. Numerical policy, service
+measurement and monitored-worker integration require a live pilot before operational exit gates
+pass. Local tests prove record behavior; an interrupted-delivery pilot proves operational recovery.

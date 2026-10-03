@@ -5,7 +5,7 @@ import { hostname, tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
-import { AgentTaskStore } from './agent-task-store.mjs';
+import { AgentTaskStore, resourceStatus } from './agent-task-store.mjs';
 
 const directories = [];
 async function setup(options = {}) {
@@ -29,6 +29,133 @@ async function setup(options = {}) {
   return { directory, store, request, task, owner, claim, act, evidence, advance: (delta) => { now += delta; } };
 }
 afterEach(async () => { await Promise.all(directories.splice(0).map((directory) => rm(directory, { recursive: true, force: true }))); });
+
+async function boundedSetup(limitOverrides = {}) {
+  const base = await setup();
+  const limits = { maxElapsedMs: 2000, maxModelTokens: 1000, maxToolCalls: 10, ...limitOverrides };
+  const request = { ...base.request, requestId: 'bounded-event', resourceLimits: limits };
+  const task = await base.store.enqueue(request);
+  const act = (action, input = {}) => base.store.mutate(task.id, action, { owner: base.owner, ...input });
+  await act('claim', { durationMs: 100_000 });
+  const usage = (modelTokens, toolCalls, extra = {}) => act('resource-usage', {
+    usage: { modelTokens, toolCalls, reference: 'verified:task-service:usage', observedAt: 1_000_000 }, ...extra,
+  });
+  return { ...base, task, request, limits, act, usage };
+}
+
+describe('execution resource budgets', () => {
+  it('preserves approved limits on repeated intake and rejects missing or invalid dimensions', async () => {
+    const { store, request, limits } = await boundedSetup();
+    await expect(store.enqueue({ ...request, resourceLimits: { ...limits, maxModelTokens: 2000 } })).rejects.toThrow('different scope');
+    await expect(store.enqueue({ ...request, resourceLimits: undefined })).rejects.toThrow('different scope');
+    for (const resourceLimits of [null, {}, { ...limits, maxElapsedMs: 0 }, { ...limits, maxToolCalls: 0.5 }, { ...limits, extra: 1 }]) {
+      await expect(store.enqueue({ ...request, requestId: 'invalid', resourceLimits })).rejects.toThrow('Resource limits');
+    }
+  });
+
+  it('retains uncertain allocations across restart and settles them against cumulative measured usage', async () => {
+    const { store, directory, task, owner, act, usage } = await boundedSetup();
+    const allocation = { event: 'model:turn:1', modelTokens: 600, toolCalls: 3 };
+    await expect(act('reserve-resources', allocation)).rejects.toThrow('Fresh resource usage');
+    await usage(0, 0);
+    const reserved = await act('reserve-resources', allocation);
+    expect(reserved.resourceDecision.action).toBe('execute');
+    const restarted = new AgentTaskStore(directory, { now: () => 1_000_001 });
+    const again = await restarted.mutate(task.id, 'reserve-resources', { owner, ...allocation });
+    expect(again.resourceDecision.action).toBe('reconcile');
+    expect(again.resourceDecision.reservation.token).toBe(reserved.resourceDecision.reservation.token);
+    await expect(act('reserve-resources', { ...allocation, modelTokens: 500 })).rejects.toThrow('different allocation');
+    await expect(act('reserve-resources', { ...allocation, event: 'model:turn:2', modelTokens: 500 })).rejects.toThrow('remaining budget');
+    await expect(usage(200, 2, { settledReservations: ['unknown'] })).rejects.toThrow('Unknown resource settlement');
+    const settled = await usage(200, 2, { settledReservations: [reserved.resourceDecision.reservation.token] });
+    expect(resourceStatus(settled, 1_000_000).remaining).toEqual({ elapsedMs: 2000, modelTokens: 800, toolCalls: 8 });
+    expect((await act('reserve-resources', allocation)).resourceDecision.action).toBe('skip');
+    expect((await store.list()).find((item) => item.id === task.id).resources.reservations).toHaveLength(1);
+  });
+
+  it('blocks new work after elapsed limits while preserving recovery and failure observations', async () => {
+    const { act, usage, advance, task, request } = await boundedSetup();
+    await usage(0, 0);
+    await act('transition', { state: 'investigating', reason: 'Begin bounded work.' });
+    advance(2000);
+    await act('claim', { durationMs: 100_000 });
+    await expect(act('reserve-resources', { event: 'tool:late', modelTokens: 0, toolCalls: 1 })).rejects.toThrow('budget exhausted');
+    await expect(act('transition', { state: 'building', reason: 'Resume.' })).rejects.toThrow('budget exhausted');
+    await expect(act('dispatch-intent', { authority: { ...request.authority, revision: task.revision, observedAt: 1_002_000 } })).rejects.toThrow('budget exhausted');
+    await act('resource-usage', { usage: { modelTokens: 5, toolCalls: 1, reference: 'verified:final-usage', observedAt: 1_002_000 } });
+    await act('context', { context: { nextAction: 'Present the exhausted budget and request a decision.' } });
+    expect((await act('transition', { state: 'waiting-for-input', reason: 'Execution deadline reached.' })).state).toBe('waiting-for-input');
+  });
+
+  it('records actual overruns and rejects stale or decreasing observations without erasing them', async () => {
+    const { act, usage, advance } = await boundedSetup();
+    const observed = await usage(1001, 11);
+    expect(resourceStatus(observed, 1_000_000).exceeded).toBe(true);
+    await expect(usage(1000, 11)).rejects.toThrow('monotonic');
+    await expect(act('reserve-resources', { event: 'tool:overrun', modelTokens: 0, toolCalls: 1 })).rejects.toThrow('budget exhausted');
+    advance(60_001);
+    await expect(usage(1001, 11)).rejects.toThrow('fresh');
+  });
+
+  it('charges measured usage and uncertain allocations together until verified settlement', async () => {
+    const { act, usage } = await boundedSetup();
+    await usage(0, 0);
+    const first = await act('reserve-resources', { event: 'model:uncertain', modelTokens: 600, toolCalls: 1 });
+    const observed = await usage(500, 1);
+    expect(resourceStatus(observed, 1_000_000).exceeded).toBe(true);
+    await expect(act('reserve-resources', { event: 'model:next', modelTokens: 1, toolCalls: 0 })).rejects.toThrow('budget exhausted');
+    const settled = await usage(500, 1, { settledReservations: [first.resourceDecision.reservation.token] });
+    expect(resourceStatus(settled, 1_000_000).remaining.modelTokens).toBe(500);
+    await act('reserve-resources', { event: 'model:next', modelTokens: 500, toolCalls: 0 });
+  });
+
+  it('requires a fresh measured observation before new work even while limits remain', async () => {
+    const { act, usage, advance } = await boundedSetup({ maxElapsedMs: 200_000 });
+    await usage(0, 0);
+    advance(60_001);
+    await expect(act('reserve-resources', { event: 'late-measurement', modelTokens: 10, toolCalls: 1 })).rejects.toThrow('Fresh resource usage');
+  });
+
+  it('serializes competing reservations so their sum cannot exceed the shared budget', async () => {
+    const { store, directory, task, owner, usage } = await boundedSetup();
+    await usage(0, 0);
+    const other = new AgentTaskStore(directory, { now: () => 1_000_000 });
+    const outcomes = await Promise.allSettled([store, other].map((instance, index) =>
+      instance.mutate(task.id, 'reserve-resources', { owner, event: `model:${index}`, modelTokens: 600, toolCalls: 1 })));
+    expect(outcomes.filter((outcome) => outcome.status === 'fulfilled')).toHaveLength(1);
+    const saved = (await store.list()).find((item) => item.id === task.id);
+    expect(resourceStatus(saved, 1_000_000).remaining.modelTokens).toBe(400);
+    expect(saved.resources.reservations).toHaveLength(1);
+  });
+
+  it('requires separate resource reservations for dispatch and newly sent follow-ups', async () => {
+    const { act, usage, request } = await boundedSetup();
+    await usage(0, 0);
+    const authority = { ...request.authority, revision: request.revision };
+    await expect(act('dispatch-intent', { authority })).rejects.toThrow('unused resource reservation');
+    const first = await act('reserve-resources', { event: 'tool:create', modelTokens: 0, toolCalls: 1 });
+    const resourceToken = first.resourceDecision.reservation.token;
+    const intent = await act('dispatch-intent', { authority, resourceToken });
+    expect(intent.dispatch.resourceToken).toBe(resourceToken);
+    expect((await act('dispatch-intent')).nextDispatchAction).toBe('reconcile');
+    await act('bind', { token: intent.dispatch.token, threadId: 'delivery' });
+    await expect(act('reserve-followup', { events: ['github:review:1'], resourceToken })).rejects.toThrow('unused resource reservation');
+    const followup = await act('reserve-resources', { event: 'tool:send', modelTokens: 0, toolCalls: 1 });
+    const reserved = await act('reserve-followup', { events: ['github:review:1'], resourceToken: followup.resourceDecision.reservation.token });
+    expect(reserved.followupDecision.action).toBe('send');
+    expect((await act('reserve-followup', { events: ['github:review:1'] })).followupDecision.action).toBe('reconcile');
+  });
+
+  it('fails closed when stored resource limits have become invalid', async () => {
+    const { task, directory, act, usage } = await boundedSetup();
+    await usage(0, 0);
+    const file = path.join(directory, 'tasks.json');
+    const state = JSON.parse(await readFile(file, 'utf8'));
+    delete state.tasks.find((item) => item.id === task.id).resources.limits.maxToolCalls;
+    await writeFile(file, JSON.stringify(state));
+    await expect(act('reserve-resources', { event: 'tool:corrupt', modelTokens: 0, toolCalls: 1 })).rejects.toThrow('Resource limits');
+  });
+});
 
 describe('durable agent task lifecycle', () => {
   it('atomically deduplicates concurrent intake and rejects changed scope under the same request', async () => {
