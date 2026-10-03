@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
-import { execFile } from 'node:child_process';
-import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { execFile, spawn } from 'node:child_process';
+import { mkdtemp, mkdir, readFile, rm, writeFile, chmod } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
@@ -63,23 +63,46 @@ describe('native validation receipt verification', () => {
     expect(result).not.toHaveProperty('aggregated_output');
   });
 
-  it('verifies first branch pushes using the push-updated tracking ref and fails closed on a changed or missing ref', async () => {
-    const { input } = await fixture((record) => {
+  it('binds first branch pushes to immutable hook output and rejects rebinding the receipt to a later commit', async () => {
+    const boundHook = await readFile(path.join(process.cwd(), '.husky/pre-push'), 'utf8');
+    await writeFile(path.join(root, '.husky/pre-push'), boundHook);
+    await git(['add', '.husky/pre-push']);
+    await git(['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '--quiet', '-m', 'test: bound push hook']);
+    head = await git(['rev-parse', 'HEAD']);
+    const originalHead = head;
+    const { input, receipt } = await fixture((record) => {
       record.payload.item.aggregated_output = record.payload.item.aggregated_output.replace(
-        `abcdef0..${head.slice(0, 8)}`, '* [new branch]');
+        `abcdef0..${head.slice(0, 8)}`, '* [new branch]') + `Navet validated push: ${head} refs/heads/${branch}\n`;
     });
-    const ref = `refs/remotes/origin/${branch}`;
-    await git(['update-ref', ref, head]);
-    try {
-      expect((await verifyValidationReceipt(input)).result).toBe('pass');
-      await writeFile(path.join(root, 'extra.txt'), 'next commit');
-      await git(['add', 'extra.txt']);
-      await git(['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '--quiet', '-m', 'test: changed tracking ref']);
-      await git(['update-ref', ref, await git(['rev-parse', 'HEAD'])]);
-      await expect(verifyValidationReceipt(input)).rejects.toThrow('not the confirmed commit');
-      await git(['update-ref', '-d', ref]);
-      await expect(verifyValidationReceipt(input)).rejects.toThrow('Git evidence is unavailable');
-    } finally { await git(['update-ref', '-d', ref]); }
+    expect((await verifyValidationReceipt(input)).result).toBe('pass');
+    await writeFile(path.join(root, 'extra.txt'), 'later unvalidated commit');
+    await git(['add', 'extra.txt']);
+    await git(['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '--quiet', '-m', 'test: later unvalidated head']);
+    head = await git(['rev-parse', 'HEAD']);
+    await git(['update-ref', `refs/remotes/origin/${branch}`, head]);
+    await writeFile(input.receiptFile, JSON.stringify({ ...receipt, head, hook: { ...receipt.hook, sourceAtHead: head } }));
+    await expect(verifyValidationReceipt({ ...input, expectedHead: head })).rejects.toThrow('immutable push-time');
+    const missing = await fixture((record) => {
+      record.payload.item.aggregated_output = record.payload.item.aggregated_output.replace(`abcdef0..${head.slice(0, 8)}`, '* [new branch]');
+    });
+    await expect(verifyValidationReceipt(missing.input)).rejects.toThrow('immutable push-time');
+    expect(originalHead).not.toBe(head);
+  });
+
+  it('prints the captured Git push head only after the complete validation chain passes', async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'navet-push-hook-')); directories.push(dir);
+    const pnpm = path.join(dir, 'pnpm');
+    await writeFile(pnpm, '#!/bin/sh\n[ "$1" != "test:tier2" ] || [ "$NAVET_TEST_FAIL_TIER" != "yes" ]\n');
+    await chmod(pnpm, 0o755);
+    const hookFile = path.join(process.cwd(), '.husky/pre-push');
+    const refs = `refs/heads/${branch} ${head} refs/heads/${branch} ${'0'.repeat(40)}\n`;
+    const invoke = (fail) => new Promise((resolve) => {
+      const child = spawn('/bin/sh', [hookFile], { env: { ...process.env, PATH: `${dir}:${process.env.PATH}`, NAVET_TEST_FAIL_TIER: fail } });
+      let output = ''; child.stdout.on('data', (data) => { output += data; });
+      child.on('close', (code) => resolve({ code, output })); child.stdin.end(refs);
+    });
+    expect(await invoke('no')).toEqual({ code: 0, output: `Navet validated push: ${head} refs/heads/${branch}\n` });
+    expect(await invoke('yes')).toEqual({ code: 1, output: '' });
   });
 
   it.each(['head', 'repository', 'branch', 'threadId'])('rejects mismatched expected %s', async (key) => {

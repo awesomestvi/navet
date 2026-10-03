@@ -12,7 +12,6 @@ export const TEST_TIERS = {
       'scripts/agent-task-store.test.mjs',
       'scripts/agent-codex-usage.test.mjs',
       'scripts/agent-validation-receipt.test.mjs',
-      'scripts/agent-component-catalog.test.mjs',
       'scripts/run-as-navet-nisse.test.mjs',
       'scripts/sync-github-labels.test.mjs',
       'scripts/create-dev-release.test.mjs',

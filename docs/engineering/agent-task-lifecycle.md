@@ -162,7 +162,9 @@ failed commands and contradictory counts. It supports a completed ordinary
 repository's origin, the commit-bound typecheck/Tier 1/Tier 2 hook, their ordered output and complete
 passing tier counts, and the pushed destination/branch/commit. Abbreviated push SHAs must resolve
 to the confirmed full commit. For first branch pushes, Git reports `[new branch]` without a SHA;
-the push-updated `refs/remotes/origin/<branch>` must resolve to the confirmed full commit.
+the commit-bound pre-push hook captures Git’s input refs and prints the full validated local SHA
+and remote branch after the required checks pass. The native record must contain that marker
+for the confirmed commit and branch.
 Unsupported hook or command forms remain unverified.
 
 The command prints only proved head/count/provenance facts. Native prompts, commands and raw

@@ -8,6 +8,14 @@ import { fileURLToPath } from 'node:url';
 
 const execute = promisify(execFile);
 const HOOK = 'pnpm typecheck && pnpm test:tier1 && pnpm test:tier2';
+const BOUND_HOOK = String.raw`navet_push_refs="$(cat)"
+pnpm typecheck &&
+  pnpm test:tier1 &&
+  pnpm test:tier2 &&
+  printf '%s\n' "$navet_push_refs" | while read -r navet_local_ref navet_local_sha navet_remote_ref navet_remote_sha; do
+    printf 'Navet validated push: %s %s\n' "$navet_local_sha" "$navet_remote_ref"
+  done`;
+const normalizeHook = (value) => value.replace(/\s+/g, ' ').trim();
 const sha = (value) => typeof value === 'string' && /^[a-f0-9]{40}$/.test(value);
 
 async function git(root, args) {
@@ -76,7 +84,7 @@ export async function verifyValidationReceipt({ receiptFile, expectedHead, repos
     `git@github.com:${repository}`, `git@github.com:${repository}.git`];
   if (!acceptedRemotes.includes(remote)) throw new Error('Validation receipt repository mismatch.');
   const hook = await git(root, ['show', `${expectedHead}:.husky/pre-push`]);
-  if (hook.replace(/\s+/g, ' ').trim() !== HOOK) throw new Error('Unsupported commit-bound pre-push hook.');
+  if (![HOOK, normalizeHook(BOUND_HOOK)].includes(normalizeHook(hook))) throw new Error('Unsupported commit-bound pre-push hook.');
   const record = await nativeRecord(source.file, source.line, threadId, source.recordSha256);
   const item = record.payload?.item;
   if (record.type !== 'event_msg' || record.payload?.type !== 'item_completed' || record.payload.thread_id !== threadId ||
@@ -113,9 +121,12 @@ export async function verifyValidationReceipt({ receiptFile, expectedHead, repos
     if (!expectedHead.startsWith(pushed[1]) || await git(root, ['rev-parse', '--verify', `${pushed[1]}^{commit}`]) !== expectedHead) {
       throw new Error('Native receipt push abbreviation is not the confirmed commit.');
     }
-  } else if (await git(root, ['rev-parse', '--verify', `refs/remotes/origin/${branch}^{commit}`]) !== expectedHead) {
-    // A new-branch status has no SHA; the push-updated tracking ref must corroborate it.
-    throw new Error('Native receipt new branch is not the confirmed commit.');
+  } else {
+    const validated = new RegExp(`^Navet validated push: ([a-f0-9]{40}) refs/heads/${escaped}\\s*$`, 'm').exec(output);
+    if (normalizeHook(hook) !== normalizeHook(BOUND_HOOK) || !validated || validated[1] !== expectedHead ||
+        output.indexOf(validated[0]) < positions[2]) {
+      throw new Error('Native receipt new branch lacks immutable push-time commit evidence.');
+    }
   }
   // Output only the proved facts; never expose native prompts, commands or log bodies.
   return { version: 1, gate: 'local-validation', result: 'pass', head: expectedHead,

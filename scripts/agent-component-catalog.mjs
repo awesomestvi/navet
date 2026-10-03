@@ -104,6 +104,10 @@ export function generateCatalog({ root, entries, stories = [], compilerOptions =
       const imports = new Set();
       const storyExports = [];
       function visit(node) {
+        if (ast.isNamespaceImport(node)) {
+          const module = resolveSymbol(checker, checker.getSymbolAtLocation(node.name));
+          if (module) for (const exported of checker.getExportsOfModule(module)) imports.add(symbolKey(resolveSymbol(checker, exported)));
+        }
         if (ast.isImportSpecifier(node) || ast.isPropertyAccessExpression(node)) {
           imports.add(symbolKey(resolveSymbol(checker, checker.getSymbolAtLocation(node.name))));
         }
