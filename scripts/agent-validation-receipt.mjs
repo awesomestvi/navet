@@ -73,6 +73,105 @@ async function nativeRecord(file, targetLine, threadId, expectedHash) {
   throw new Error('Complete native receipt source line is missing.');
 }
 
+function nativeCall(record) {
+  const payload = record.payload;
+  if (record.type !== 'response_item' || typeof payload?.call_id !== 'string' || !payload.call_id) {
+    throw new Error('Native receipt command call identity is missing.');
+  }
+  let name;
+  let input;
+  if (payload.type === 'function_call') {
+    name = payload.name; input = payload.arguments;
+  } else if (payload.type === 'custom_tool_call' && payload.name === 'exec') {
+    // Accept one literal tool call, never evaluate arbitrary orchestration code.
+    const match = /^text\(await tools\.(exec_command|write_stdin)\((\{[\s\S]*\})\)\);?$/.exec(payload.input);
+    if (!match) throw new Error('Unsupported native command wrapper.');
+    name = match[1]; input = match[2];
+  } else if (payload.type === 'custom_tool_call') {
+    name = payload.name; input = payload.input;
+  }
+  if (!['exec_command', 'write_stdin'].includes(name) || typeof input !== 'string') {
+    throw new Error('Unsupported native command tool.');
+  }
+  let args;
+  try { args = JSON.parse(input); } catch { throw new Error('Native command arguments must be literal JSON.'); }
+  if (!args || Array.isArray(args) || typeof args !== 'object') throw new Error('Native command arguments are invalid.');
+  return { name, args, id: payload.call_id, outputType: payload.type === 'function_call' ? 'function_call_output' : 'custom_tool_call_output' };
+}
+
+function nativeOutput(record, call) {
+  const payload = record.payload;
+  if (record.type !== 'response_item' || payload?.type !== call.outputType || payload.call_id !== call.id) {
+    throw new Error('Native output belongs to another command call.');
+  }
+  const blocks = Array.isArray(payload.output) ? payload.output : [{ type: 'input_text', text: payload.output }];
+  const results = [];
+  for (const block of blocks) {
+    if (!['input_text', 'text'].includes(block?.type) || typeof block.text !== 'string') {
+      throw new Error('Unsupported native command output block.');
+    }
+    try {
+      const value = JSON.parse(block.text);
+      if (value && typeof value.output === 'string') results.push(value);
+    } catch { /* Native wrapper metadata is text, not an execution result. */ }
+  }
+  if (results.length !== 1) throw new Error('Native command output must contain one execution result.');
+  return results[0];
+}
+
+async function currentNativeExecution(record, source, threadId, root, command) {
+  const call = nativeCall(record);
+  if (call.id !== source.itemId || call.name !== 'exec_command' || call.args.cmd !== command ||
+      typeof call.args.workdir !== 'string' || await realpath(call.args.workdir) !== root ||
+      (call.args.shell !== undefined && !['/bin/zsh', '/bin/bash'].includes(call.args.shell)) || call.args.tty === true) {
+    throw new Error('Native receipt is not the matching successful commit-bound validation and ordinary push command.');
+  }
+  if (!Array.isArray(source.records) || source.records.length < 1 || source.records.length > 129) {
+    throw new Error('Native receipt requires hashed call and output records through completion.');
+  }
+  const seenCalls = new Set([call.id]);
+  let pending = call;
+  let result;
+  let output = '';
+  let lastLine = source.line;
+  let lastTime = Date.parse(record.timestamp);
+  let completedAt;
+  for (const reference of source.records) {
+    if (!Number.isSafeInteger(reference?.line) || reference.line <= lastLine ||
+        typeof reference.recordSha256 !== 'string' || !/^[a-f0-9]{64}$/.test(reference.recordSha256)) {
+      throw new Error('Native receipt continuation provenance is invalid.');
+    }
+    const next = await nativeRecord(source.file, reference.line, threadId, reference.recordSha256);
+    const time = Date.parse(next.timestamp);
+    if (!Number.isFinite(time) || time < lastTime || time > Date.now() ||
+        (next.payload?.thread_id !== undefined && next.payload.thread_id !== threadId)) {
+      throw new Error('Native receipt continuation identity or time mismatch.');
+    }
+    lastLine = reference.line; lastTime = time;
+    if (pending) {
+      result = nativeOutput(next, pending);
+      if (result.isError || (result.exit_code !== undefined && result.exit_code !== 0) ||
+          (result.exit_code === undefined && (!Number.isSafeInteger(result.session_id) || result.session_id <= 0)) ||
+          (result.exit_code === 0 && result.session_id !== undefined)) {
+        throw new Error('Native command did not complete successfully.');
+      }
+      output += result.output;
+      pending = null;
+      if (result.exit_code === 0) completedAt = next.timestamp;
+    } else {
+      if (completedAt) throw new Error('Native receipt continues after command completion.');
+      pending = nativeCall(next);
+      if (pending.name !== 'write_stdin' || seenCalls.has(pending.id) || pending.args.session_id !== result.session_id ||
+          (pending.args.chars !== undefined && pending.args.chars !== '')) {
+        throw new Error('Native command continuation targets another session or sends input.');
+      }
+      seenCalls.add(pending.id);
+    }
+  }
+  if (pending || !completedAt) throw new Error('Native command receipt is incomplete.');
+  return { aggregated_output: output, completedAt };
+}
+
 export async function verifyValidationReceipt({ receiptFile, expectedHead, repositoryRoot, repository, branch, threadId }) {
   if (!sha(expectedHead) || typeof receiptFile !== 'string' || !receiptFile ||
       typeof repositoryRoot !== 'string' || !repositoryRoot || typeof threadId !== 'string' || !threadId ||
@@ -84,7 +183,7 @@ export async function verifyValidationReceipt({ receiptFile, expectedHead, repos
   try { receipt = JSON.parse(await readFile(receiptFile, 'utf8')); }
   catch { throw new Error('Valid private receipt JSON is required.'); }
   const source = receipt.source;
-  if (receipt.version !== 2 || receipt.gate !== 'local-validation' || receipt.head !== expectedHead ||
+  if (![2, 3].includes(receipt.version) || receipt.gate !== 'local-validation' || receipt.head !== expectedHead ||
       receipt.repository !== repository || receipt.branch !== branch || receipt.threadId !== threadId ||
       !Number.isSafeInteger(receipt.tier1Tests) || receipt.tier1Tests <= 0 ||
       !Number.isSafeInteger(receipt.tier2Tests) || receipt.tier2Tests <= 0 ||
@@ -103,15 +202,23 @@ export async function verifyValidationReceipt({ receiptFile, expectedHead, repos
   const hook = await git(root, ['show', `${expectedHead}:.husky/pre-push`]);
   if (![HOOK, normalizeHook(BOUND_HOOK)].includes(normalizeHook(hook))) throw new Error('Unsupported commit-bound pre-push hook.');
   const record = await nativeRecord(source.file, source.line, threadId, source.recordSha256);
-  const item = record.payload?.item;
-  if (record.type !== 'event_msg' || record.payload?.type !== 'item_completed' || record.payload.thread_id !== threadId ||
-      record.timestamp !== source.timestamp || !Number.isFinite(Date.parse(record.timestamp)) || Date.parse(record.timestamp) > Date.now() ||
-      item?.type !== 'CommandExecution' || item.id !== source.itemId ||
-      item.status !== 'completed' || item.exit_code !== 0 || !Array.isArray(item.command) ||
-      item.command.length !== 3 || !['/bin/zsh', '/bin/bash'].includes(item.command[0]) ||
-      !['-c', '-lc'].includes(item.command[1]) || item.command[2] !== validationPushCommand({ head: expectedHead, branch }) ||
-      typeof item.cwd !== 'string' || await realpath(item.cwd.startsWith('file:') ? fileURLToPath(item.cwd) : item.cwd) !== root) {
-    throw new Error('Native receipt is not the matching successful commit-bound validation and ordinary push command.');
+  if (record.timestamp !== source.timestamp || !Number.isFinite(Date.parse(record.timestamp)) || Date.parse(record.timestamp) > Date.now()) {
+    throw new Error('Native receipt is not the matching successful ordinary push command.');
+  }
+  let item;
+  if (receipt.version === 3) {
+    item = await currentNativeExecution(record, source, threadId, root, validationPushCommand({ head: expectedHead, branch }));
+  } else {
+    item = record.payload?.item;
+    if (record.type !== 'event_msg' || record.payload?.type !== 'item_completed' || record.payload.thread_id !== threadId ||
+        record.timestamp !== source.timestamp || !Number.isFinite(Date.parse(record.timestamp)) || Date.parse(record.timestamp) > Date.now() ||
+        item?.type !== 'CommandExecution' || item.id !== source.itemId ||
+        item.status !== 'completed' || item.exit_code !== 0 || !Array.isArray(item.command) ||
+        item.command.length !== 3 || !['/bin/zsh', '/bin/bash'].includes(item.command[0]) ||
+        !['-c', '-lc'].includes(item.command[1]) || item.command[2] !== validationPushCommand({ head: expectedHead, branch }) ||
+        typeof item.cwd !== 'string' || await realpath(item.cwd.startsWith('file:') ? fileURLToPath(item.cwd) : item.cwd) !== root) {
+      throw new Error('Native receipt is not the matching successful commit-bound validation and ordinary push command.');
+    }
   }
   if (typeof item.aggregated_output !== 'string') throw new Error('Native push output is missing.');
   const output = item.aggregated_output.replace(/\u001b\[[0-9;]*m/g, '');
@@ -155,5 +262,6 @@ export async function verifyValidationReceipt({ receiptFile, expectedHead, repos
   return { version: 1, gate: 'local-validation', result: 'pass', head: expectedHead,
     threadId, tier1Tests: receipt.tier1Tests, tier2Tests: receipt.tier2Tests,
     typecheck: 'verified native chain', source: { line: source.line, timestamp: source.timestamp,
-      itemId: source.itemId, recordSha256: source.recordSha256 }, hookSourceAtHead: expectedHead };
+      itemId: source.itemId, recordSha256: source.recordSha256,
+      ...(item.completedAt ? { completedAt: item.completedAt, records: source.records.map(({ line, recordSha256 }) => ({ line, recordSha256 })) } : {}) }, hookSourceAtHead: expectedHead };
 }

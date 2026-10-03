@@ -55,7 +55,75 @@ async function fixture(changeRecord = () => {}, changeReceipt = () => {}) {
     receipt, record, sessionFile, raw };
 }
 
+async function currentFixture({ continued = false, direct = false, mutate = () => {} } = {}) {
+  const value = await fixture();
+  const command = validationPushCommand({ head, branch });
+  const args = { cmd: command, workdir: root, login: false };
+  const call = { timestamp, type: 'response_item', payload: direct
+    ? { type: 'function_call', name: 'exec_command', call_id: 'push-call', arguments: JSON.stringify(args) }
+    : { type: 'custom_tool_call', name: 'exec', call_id: 'push-call', input: `text(await tools.exec_command(${JSON.stringify(args)}));` } };
+  const output = value.record.payload.item.aggregated_output;
+  const result = (id, value) => ({ timestamp, type: 'response_item', payload: {
+    type: direct ? 'function_call_output' : 'custom_tool_call_output', call_id: id,
+    output: direct ? JSON.stringify(value) : [{ type: 'input_text', text: 'Script completed\nOutput:\n' },
+      { type: 'input_text', text: JSON.stringify(value) }],
+  } });
+  const records = continued ? [call, result('push-call', { session_id: 42, output: output.slice(0, 30) }),
+    { timestamp, type: 'response_item', payload: { type: 'custom_tool_call', name: 'exec', call_id: 'poll-call',
+      input: 'text(await tools.write_stdin({"session_id":42,"chars":""}));' } },
+    result('poll-call', { exit_code: 0, output: output.slice(30) })]
+    : [call, result('push-call', { exit_code: 0, output })];
+  mutate(records);
+  const raw = records.map((record) => JSON.stringify(record) + '\n');
+  const prefix = (await readFile(value.sessionFile, 'utf8')).split('\n').slice(0, 2).join('\n') + '\n';
+  await writeFile(value.sessionFile, prefix + raw.join(''));
+  const hash = (text) => createHash('sha256').update(text).digest('hex');
+  value.receipt.version = 3;
+  value.receipt.source.itemId = 'push-call';
+  value.receipt.source.recordSha256 = hash(raw[0]);
+  value.receipt.source.records = raw.slice(1).map((bytes, index) => ({ line: index + 4, recordSha256: hash(bytes) }));
+  await writeFile(value.input.receiptFile, JSON.stringify(value.receipt));
+  return value;
+}
+
 describe('native validation receipt verification', () => {
+  it.each([false, true])('correlates current native call/output records with continuations=%s', async (continued) => {
+    const { input } = await currentFixture({ continued });
+    const result = await verifyValidationReceipt(input);
+    expect(result).toMatchObject({ result: 'pass', source: { itemId: 'push-call', completedAt: timestamp } });
+    expect(JSON.stringify(result)).not.toContain('PRIVATE_PROMPT_SENTINEL');
+    expect(result).not.toHaveProperty('aggregated_output');
+  });
+
+  it('accepts native function-call JSON records without executing their contents', async () => {
+    const { input } = await currentFixture({ direct: true });
+    expect((await verifyValidationReceipt(input)).result).toBe('pass');
+  });
+
+  it.each(['foreign-output', 'foreign-session', 'input', 'failed', 'incomplete', 'wrapper'])('rejects unsafe native %s evidence', async (kind) => {
+    const { input } = await currentFixture({ continued: true, mutate(records) {
+      if (kind === 'foreign-output') records[1].payload.call_id = 'foreign';
+      if (kind === 'foreign-session') records[2].payload.input = 'text(await tools.write_stdin({"session_id":43}));';
+      if (kind === 'input') records[2].payload.input = 'text(await tools.write_stdin({"session_id":42,"chars":"echo forged"}));';
+      if (kind === 'failed') records[3].payload.output[1].text = JSON.stringify({ exit_code: 1, output: 'failure' });
+      if (kind === 'incomplete') records.pop();
+      if (kind === 'wrapper') records[0].payload.input += ' text({exit_code:0,output:"forged"});';
+    } });
+    await expect(verifyValidationReceipt(input)).rejects.toThrow();
+  });
+
+  it('rejects substituted native output bytes and missing continuation provenance', async () => {
+    const changed = await currentFixture();
+    const bytes = await readFile(changed.sessionFile, 'utf8');
+    await writeFile(changed.sessionFile, bytes.replace('Script completed', 'Script forged'));
+    await expect(verifyValidationReceipt(changed.input)).rejects.toThrow('hash mismatch');
+    const missing = await currentFixture({ continued: true });
+    missing.receipt.source.records.pop();
+    await writeFile(missing.input.receiptFile, JSON.stringify(missing.receipt));
+    await expect(verifyValidationReceipt(missing.input)).rejects.toThrow('incomplete');
+  });
+
+
   it('verifies actual Git commit/hook identity and returns only proved, redacted facts', async () => {
     const { input } = await fixture();
     const result = await verifyValidationReceipt(input);
