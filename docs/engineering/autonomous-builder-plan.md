@@ -98,6 +98,37 @@ label does not approve it. Capture the approving maintainer, proposal revision, 
 acceptance criteria, permitted scope, and visibility decision. Material scope changes require an
 updated approval; implementation details within that scope remain autonomous.
 
+### Approval-to-queue handoff
+
+The local `enqueuePlanningRequest` helper in
+[`agent-planning-intake.mjs`](../../scripts/agent-planning-intake.mjs) joins an independently
+verified maintainer request to its exact Linear proposal revision. It reads the trusted request,
+checks the complete current proposal, and rechecks the request before adding one idempotent queue
+record. Scope changes, withdrawal, ambiguous stages, incomplete reads and unavailable services
+block intake. The queued task requires another fresh planning observation before execution.
+
+The coordinator supplies two service adapters:
+
+- `readRequest({ source, requestId })` verifies the human decision and current permissions through
+  its owning trusted source. It returns `{ status: 'authorized', request }` only for an authorized
+  request. The request uses the task-store schema, includes `planningBinding`, and its authority
+  records `revision`, `planningRevision`, actor, stable reference and fresh `observedAt`.
+- `readIssue(issueId)` returns a complete fresh planning observation with `status`, service
+  `reference`, `observedAt` and the issue, including all attachment references, label names and
+  explicit lifecycle fields. Unavailable reads cannot reuse an earlier pass.
+
+These adapters are the authentication boundary. The helper validates their agreement and freshness;
+it does not authenticate callback output, dispatch a worker or create a public artifact. Approval
+also retains the selected option, acceptance criteria, permitted changes and visibility in the
+trusted work brief. Public delivery requires the recorded visibility decision.
+
+For Linear-native approval, agent writes need a distinct identity. Linear's
+[OAuth app actor](https://linear.app/developers/oauth-actor-authorization) attributes mutations to
+the installed application; default API authentication can attribute them to the authenticating
+human. A signed webhook alone cannot distinguish a human decision from an agent using that human's
+credentials. Live source adapters, identity separation and an observed authorized pilot remain
+activation gates for automatic approval dispatch.
+
 Every ready proposal contains:
 
 - A concrete household problem, affected journey, sources, and distinction between observations
