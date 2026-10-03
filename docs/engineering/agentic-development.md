@@ -245,7 +245,7 @@ configured for the repository:
    private queue contract above. Keep only one active queue runner so two agents cannot claim the
    same work.
 4. Connect `awesomestvi/navet` to Codex using the maintainer's ChatGPT account. In
-   [Codex code review settings](https://chatgpt.com/codex/settings/code-review), enable automatic
+   [Codex code review settings](https://chatgpt.com/settings/code-review), enable automatic
    reviews for the repository and select reviews for all PRs. Configure the review trigger to
    include new commits so updated PR heads receive fresh review. GitHub reviews use the account's
    ChatGPT plan code-review allowance. Local reviews with a ChatGPT-authenticated Codex CLI use
