@@ -33,13 +33,24 @@ export function planningAttachmentReference(value) {
   return url.href;
 }
 
+// Linear also returns storage URLs inside Markdown images, links and reference definitions.
+// Keep delimiters and all prose intact; canonicalize only complete URLs at content boundaries.
+function planningDescription(value) {
+  return value.replace(/(^|[\s(<>"'`])https:\/\/uploads\.linear\.app\/[^\s<>"'`()\[\]{}]+/g,
+    (match, boundary) => {
+      const url = match.slice(boundary.length);
+      const punctuation = url.match(/[.,;!]+$/)?.[0] ?? '';
+      return boundary + planningAttachmentReference(url.slice(0, url.length - punctuation.length)) + punctuation;
+    });
+}
+
 // Scope includes the full proposal and attachment references, never its mutable priority/stage.
 // A fingerprint verifies identity/content; it does not prove authorship, artifact access or approval.
 export function createPlanningBinding(issue) {
   const identity = { issueId: text(issue?.uuid ?? issue?.id, 'issue ID'),
     teamId: text(issue?.teamId, 'team ID'), projectId: text(issue?.projectId, 'project ID') };
   const title = text(issue?.title, 'title');
-  const description = text(issue?.description, 'description', 1_048_576);
+  const description = planningDescription(text(issue?.description, 'description', 1_048_576));
   if (!Array.isArray(issue.attachments)) throw new Error('Planning attachments must be a complete array.');
   const attachments = issue.attachments.map((item) => ({ id: text(item?.id, 'attachment ID'),
     url: planningAttachmentReference(item?.url) })).sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
@@ -67,6 +78,10 @@ export function evaluatePlanningObservation(binding, observation, now = Date.now
   }
   if (observation.status !== 'available') throw new Error('Invalid planning observation status.');
   const issue = observation.issue;
+  if (['archivedAt', 'canceledAt'].some((key) => !Object.hasOwn(issue ?? {}, key) ||
+      (issue[key] !== null && (typeof issue[key] !== 'string' || !Number.isFinite(Date.parse(issue[key])))))) {
+    throw new Error('Planning lifecycle fields must be explicit nulls or valid timestamps.');
+  }
   const current = createPlanningBinding(issue);
   if (BINDING_KEYS.some((key) => current[key] !== binding[key])) {
     return result('fail', 'planning-scope-changed', { revision: current.revision });

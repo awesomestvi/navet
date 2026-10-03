@@ -96,7 +96,7 @@ of a human decision. Preserve the existing explicit maintainer request path duri
 For a delivery selected from the planning hub, include `planningBinding` in the enqueue input.
 `createPlanningBinding(issue)` produces the issue/team/project identity and a SHA-256 revision
 from the full title, description and complete attachment references. Linear private-storage
-attachment URLs bind to the file address with temporary `signature` access parameters removed.
+URLs in attachments and Markdown descriptions bind to the file address with temporary `signature` access parameters removed.
 Other query parameters, fragments, hosts and file paths remain part of scope. This normalization
 establishes neither file access nor human approval; verify artifact permissions separately. Linear
 explains signed links in
@@ -215,7 +215,7 @@ Supply `inbox`, its `eventId`, the existing task `store`, the owning coordinator
 The inbox and task store must share the same private state directory so confirmation can inspect
 task progress atomically. The callback must enforce the service request timeout and return the issue UUID, team, project,
 full title and description, complete attachments and label names, and explicit archival/cancellation
-values. For a definitive service-confirmed missing issue, throw `LinearIssueNotFoundError(issueId)`
+values (`null` or valid timestamp strings). For a definitive service-confirmed missing issue, throw `LinearIssueNotFoundError(issueId)`
 from the refresh module. The identity-bound observation withdraws the proposal, latches revocation,
 and confirms the receipt. Permission errors and ambiguous HTTP 404 responses remain unavailable.
 Cached issue bodies and webhook payloads cannot substitute for this read.

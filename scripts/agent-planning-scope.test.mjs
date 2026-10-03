@@ -9,7 +9,7 @@ const now = 1_000_000;
 const directories = [];
 const issue = () => ({ id: 'NAV-42', uuid: 'issue-uuid', teamId: 'team', projectId: 'project',
   title: 'Improve a setting', description: 'Selected option: A. Save and reopen must preserve it.',
-  labels: ['Approved', 'type: ux'], attachments: [{ id: 'a', url: 'https://example.test/reference' }] });
+  labels: ['Approved', 'type: ux'], archivedAt: null, canceledAt: null, attachments: [{ id: 'a', url: 'https://example.test/reference' }] });
 const observation = (value = issue(), extra = {}) => ({ status: 'available', issue: value,
   reference: 'linear:verified-live-read', observedAt: now, ...extra });
 afterEach(async () => { await Promise.all(directories.splice(0).map((d) => rm(d, { recursive: true, force: true }))); });
@@ -71,6 +71,42 @@ describe('planning scope identity', () => {
     }
   });
 
+  it('preserves embedded Linear image and link scope across renewed signatures', () => {
+    const url = 'https://uploads.linear.app/workspace/file?version=1&signature=first#image';
+    const original = { ...issue(), description: `Image: ![caption](${url})\n[reference]: ${url}\n<${url}>` };
+    const binding = createPlanningBinding(original);
+    const renewed = { ...original, description: original.description.replaceAll('signature=first', 'signature=second') };
+    expect(createPlanningBinding(renewed)).toEqual(binding);
+    expect(evaluatePlanningObservation(binding, observation(renewed), now).result).toBe('pass');
+    const unsigned = { ...original, description: original.description.replaceAll('&signature=first', '') };
+    expect(createPlanningBinding(unsigned)).toEqual(binding);
+    for (const description of [original.description.replace('caption', 'new caption'),
+      original.description.replaceAll('/file?', '/other?'), original.description.replaceAll('version=1', 'version=2'),
+      original.description.replaceAll('#image', '#other'), original.description + ' New acceptance criterion.']) {
+      expect(createPlanningBinding({ ...original, description })).not.toEqual(binding);
+    }
+    const prose = { ...issue(), description: 'See https://uploads.linear.app/workspace/file?signature=first.' };
+    expect(createPlanningBinding({ ...prose, description: 'See https://uploads.linear.app/workspace/file.' }))
+      .toEqual(createPlanningBinding(prose));
+    expect(createPlanningBinding({ ...prose, description: prose.description.slice(0, -1) }))
+      .not.toEqual(createPlanningBinding(prose));
+    const external = { ...issue(), description: 'https://example.test/?redirect=https://uploads.linear.app/workspace/file?signature=first' };
+    expect(createPlanningBinding({ ...external, description: external.description.replace('first', 'second') }))
+      .not.toEqual(createPlanningBinding(external));
+  });
+
+  it.each(['archivedAt', 'canceledAt'])('rejects missing or malformed lifecycle field %s at the direct observation boundary', async (field) => {
+    const { observe, dispatch } = await setup();
+    for (const value of [undefined, '', 'not-a-timestamp', 1, false]) {
+      const incomplete = { ...issue(), [field]: value };
+      if (value === undefined) delete incomplete[field];
+      await expect(observe(incomplete)).rejects.toThrow('lifecycle fields');
+      await expect(dispatch()).rejects.toThrow('planning-observation-stale');
+    }
+    await observe({ ...issue(), [field]: new Date(now).toISOString() });
+    await expect(dispatch()).rejects.toThrow('revoked');
+  });
+
   it.each([
     'https://example.test/file?signature=first',
     'http://uploads.linear.app/file?signature=first',
@@ -88,7 +124,7 @@ describe('planning scope identity', () => {
     for (const labels of [[], ['Approved', 'Deferred'], ['Approved', 'Approved']]) {
       expect(evaluatePlanningObservation(binding, observation({ ...issue(), labels }), now).result).toBe('unverified');
     }
-    expect(evaluatePlanningObservation(binding, observation({ ...issue(), archivedAt: 'archived' }), now).result).toBe('fail');
+    expect(evaluatePlanningObservation(binding, observation({ ...issue(), archivedAt: new Date(now).toISOString() }), now).result).toBe('fail');
     expect(evaluatePlanningObservation(binding, observation(undefined, { status: 'unavailable', issue: undefined }), now).result).toBe('unverified');
     for (const observedAt of [0, now + 1, now - 60_001]) {
       expect(() => evaluatePlanningObservation(binding, observation(issue(), { observedAt }), now)).toThrow('fresh');
