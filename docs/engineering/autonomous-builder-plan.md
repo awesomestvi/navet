@@ -116,6 +116,8 @@ The coordinator supplies two service adapters:
   requires nonempty `selectedOption`, `permittedChanges` and `acceptanceCriteria`, plus explicit
   `visibility`: `private-planning` or `public-delivery-approved`. The latter records the human's
   authorization for a scoped public delivery; private planning alone does not authorize publication.
+  Implementation and stewardship intake require `public-delivery-approved`, since these delivery
+  workers produce public PRs. Private research and audit requests retain private planning scope.
 - `readIssue(issueId)` returns a complete fresh planning observation with `status`, service
   `reference`, `observedAt` and the issue, including all attachment references, label names and
   explicit lifecycle fields. Unavailable reads cannot reuse an earlier pass.
@@ -139,6 +141,12 @@ These adapters are the authentication boundary. The helper validates their agree
 it does not authenticate callback output, dispatch a worker or create a public artifact. Approval
 also retains the selected option, acceptance criteria, permitted changes and visibility in the
 trusted work brief. Public delivery requires the recorded visibility decision.
+
+The task store checks public-delivery visibility at the planning execution gate too. A private-only
+or legacy implementation/stewardship record with no visibility decision cannot start new execution,
+reserve new follow-ups or reach delivery transitions, even if it bypassed intake. Monitoring an
+existing dispatch receipt remains possible without authorizing new work. Retain private research
+and audit output in the planning hub; its visibility does not authorize public artifacts.
 
 For Linear-native approval, agent writes need a distinct identity. Linear's
 [OAuth app actor](https://linear.app/developers/oauth-actor-authorization) attributes mutations to

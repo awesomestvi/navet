@@ -115,4 +115,7 @@ export function planningStatus(task, now = Date.now()) {
 export function requirePlanningScope(task, now) {
   const status = planningStatus(task, now);
   if (status.bound && status.result !== 'pass') throw new Error(`Planning scope blocks execution: ${status.reason}.`);
+  if (status.bound && ['implement', 'steward'].includes(task.mode) && task.brief?.visibility !== 'public-delivery-approved') {
+    throw new Error('Public delivery requires explicit visibility approval for a planning-bound implementation or stewardship task.');
+  }
 }

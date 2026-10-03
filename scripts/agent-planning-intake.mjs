@@ -23,6 +23,9 @@ function acceptedRequest(observation, identity, startedAt, now) {
       !brief.acceptanceCriteria.every(scopedText)) {
     throw new Error('Trusted work brief requires a selected option, permitted changes, visibility and acceptance criteria.');
   }
+  if (['implement', 'steward'].includes(request.mode) && brief.visibility !== 'public-delivery-approved') {
+    throw new Error('Public delivery requires explicit visibility approval for implementation or stewardship.');
+  }
   const authority = request.authority;
   if (!authority || typeof authority.actor !== 'string' || !authority.actor.trim() ||
       typeof authority.reference !== 'string' || !authority.reference.trim() ||

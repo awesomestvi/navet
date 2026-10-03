@@ -26,7 +26,7 @@ async function setup() {
     authority: { actor: 'maintainer', reference: 'trusted-human-event', revision: 'option-a',
       planningRevision: binding.revision, observedAt: time },
     brief: { selectedOption: 'Option A', permittedChanges: ['Repair settings persistence and direct regression coverage.'],
-      visibility: 'private-planning', acceptanceCriteria: ['Save and reopen preserves the selected option.'] } };
+      visibility: 'public-delivery-approved', acceptanceCriteria: ['Save and reopen preserves the selected option.'] } };
   const input = { store, identity, now,
     readRequest: async () => ({ status: 'authorized', request: { ...request,
       authority: { ...request.authority, observedAt: time } } }),
@@ -176,5 +176,29 @@ describe('trusted planning request intake', () => {
       return observation;
     } })).rejects.toThrow('Trusted work brief requires');
     expect(await store.list()).toEqual([]);
+  });
+
+  it.each(['implement', 'steward'])('rejects private-only %s intake before accessing Linear', async (mode) => {
+    const { input, store } = await setup();
+    let planningReads = 0;
+    await expect(enqueuePlanningRequest({ ...input, readRequest: async () => {
+      const observation = await input.readRequest();
+      observation.request.mode = mode;
+      observation.request.brief.visibility = 'private-planning';
+      return observation;
+    }, readIssue: async () => { planningReads++; } })).rejects.toThrow('visibility approval');
+    expect(planningReads).toBe(0);
+    expect(await store.list()).toEqual([]);
+  });
+
+  it.each(['research', 'audit'])('retains private %s as planning work without a public delivery grant', async (mode) => {
+    const { input } = await setup();
+    const task = await enqueuePlanningRequest({ ...input, readRequest: async () => {
+      const observation = await input.readRequest();
+      observation.request.mode = mode;
+      observation.request.brief.visibility = 'private-planning';
+      return observation;
+    } });
+    expect(task).toMatchObject({ state: 'queued', mode, brief: { visibility: 'private-planning' }, dispatch: null });
   });
 });

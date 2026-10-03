@@ -14,15 +14,15 @@ const observation = (value = issue(), extra = {}) => ({ status: 'available', iss
   reference: 'linear:verified-live-read', observedAt: now, ...extra });
 afterEach(async () => { await Promise.all(directories.splice(0).map((d) => rm(d, { recursive: true, force: true }))); });
 
-async function setup({ bounded = false, bound = true } = {}) {
+async function setup({ bounded = false, bound = true, visibility = 'public-delivery-approved', mode = 'implement' } = {}) {
   const directory = await mkdtemp(path.join(tmpdir(), 'navet-planning-scope-'));
   directories.push(directory);
   let time = now;
   const store = new AgentTaskStore(directory, { now: () => time });
-  const request = { source: 'trusted-maintainer-request', requestId: 'human-event', mode: 'implement',
+  const request = { source: 'trusted-maintainer-request', requestId: 'human-event', mode,
     revision: 'selected-scope-v1', authority: { actor: 'maintainer', reference: 'trusted-human-event', observedAt: now,
       ...(bound ? { planningRevision: createPlanningBinding(issue()).revision } : {}) },
-    brief: { acceptanceCriteria: ['Save and reopen preserves the setting.'] },
+    brief: { visibility, acceptanceCriteria: ['Save and reopen preserves the setting.'] },
     ...(bound ? { planningBinding: createPlanningBinding(issue()) } : {}),
     ...(bounded ? { resourceLimits: { maxElapsedMs: 300_000, maxModelTokens: 1000, maxToolCalls: 10 } } : {}) };
   const task = await store.enqueue(request);
@@ -248,5 +248,41 @@ describe('planning scope lifecycle gates', () => {
   it('preserves the explicit-request path for tasks without a planning binding', async () => {
     const { dispatch } = await setup({ bound: false });
     expect((await dispatch()).nextDispatchAction).toBe('create');
+  });
+
+  it.each(['implement', 'steward'])('blocks private-only %s execution even when it bypasses planning intake', async (mode) => {
+    const { observe, dispatch, act, store } = await setup({ mode, visibility: 'private-planning' });
+    await observe();
+    await expect(dispatch()).rejects.toThrow('visibility approval');
+    await expect(act('transition', { state: 'investigating', reason: 'Attempt delivery.' })).rejects.toThrow('visibility approval');
+    expect((await store.list())[0]).toMatchObject({ state: 'queued', dispatch: null });
+  });
+
+  it('fails closed on an existing planning-bound request with no visibility decision', async () => {
+    const { directory, task, store, observe, request } = await setup();
+    // Simulate the pre-visibility record format, without changing its accepted request identity.
+    await store.transaction((state) => { delete state.tasks[0].brief.visibility; });
+    await observe();
+    const restarted = new AgentTaskStore(directory, { now: () => now });
+    await expect(restarted.mutate(task.id, 'dispatch-intent', { owner: 'coordinator',
+      authority: { ...request.authority, revision: request.revision } })).rejects.toThrow('visibility approval');
+    expect((await restarted.list())[0].dispatch).toBeNull();
+  });
+
+  it('blocks fresh follow-ups and delivery transitions for a legacy private implementation', async () => {
+    const { directory, task, store, observe, act } = await setup({ visibility: 'private-planning' });
+    await observe();
+    await store.transaction((state) => {
+      state.tasks[0].state = 'verifying';
+      state.tasks[0].dispatch = { token: 'legacy-dispatch', threadId: 'legacy-worker', clientThreadId: null };
+    });
+    await expect(act('reserve-followup', { events: ['new-review-finding'] })).rejects.toThrow('visibility approval');
+    await expect(act('transition', { state: 'delivered', reason: 'Attempt completion.' })).rejects.toThrow('visibility approval');
+    const restarted = new AgentTaskStore(directory, { now: () => now });
+    await expect(restarted.mutate(task.id, 'transition', { owner: 'coordinator', state: 'building',
+      reason: 'Attempt repair.' })).rejects.toThrow('visibility approval');
+    const unchanged = (await restarted.list())[0];
+    expect(unchanged.state).toBe('verifying');
+    expect(unchanged).not.toHaveProperty('followups');
   });
 });
