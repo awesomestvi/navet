@@ -61,10 +61,11 @@ Home Assistant credentials, or publish a production release.
 
 ## Communicate with reporters
 
-Automated issue and pull-request comments appear as `navet-nisse[bot]`. Branches, commits, pushes,
-and pull requests remain under the maintainer's GitHub identity, and your manual comments still
-appear as you. Public issue replies should sound like a thoughtful person speaking directly to the
-reporter. They acknowledge useful context or frustration when appropriate, use plain language,
+Automated issue comments and claim reactions appear as `navet-nisse[bot]`. Navet Nisse posts
+progress updates and blocking questions on the linked issue and reads pull-request feedback.
+Branches, commits, pushes, pull requests, and review-thread replies use the maintainer's GitHub
+identity. Your manual comments appear as you. Public issue replies should sound like a thoughtful
+person speaking directly to the reporter. They acknowledge useful context or frustration when appropriate, use plain language,
 lead with the user-visible finding, and end with one clear next step or question.
 
 Implementation details, test counts, and acceptance evidence belong in the pull request unless
