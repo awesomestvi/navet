@@ -112,10 +112,28 @@ The coordinator supplies two service adapters:
 - `readRequest({ source, requestId })` verifies the human decision and current permissions through
   its owning trusted source. It returns `{ status: 'authorized', request }` only for an authorized
   request. The request uses the task-store schema, includes `planningBinding`, and its authority
-  records `revision`, `planningRevision`, actor, stable reference and fresh `observedAt`.
+  records `revision`, `planningRevision`, actor, stable reference and fresh `observedAt`. The brief
+  requires nonempty `selectedOption`, `permittedChanges` and `acceptanceCriteria`, plus explicit
+  `visibility`: `private-planning` or `public-delivery-approved`. The latter records the human's
+  authorization for a scoped public delivery; private planning alone does not authorize publication.
 - `readIssue(issueId)` returns a complete fresh planning observation with `status`, service
   `reference`, `observedAt` and the issue, including all attachment references, label names and
   explicit lifecycle fields. Unavailable reads cannot reuse an earlier pass.
+
+[`createLinearIssueReader`](../../scripts/agent-linear-reader.mjs) implements the read-only Linear
+adapter. Configure the expected workspace, app user, team and project IDs in private runner state,
+and supply an OAuth access-token callback backed by secure storage and refresh. The reader checks
+the active app identity on every response, follows complete attachment and label pagination, and
+compares two complete reads before returning an observation. It uses Linear's fixed GraphQL endpoint
+with redirects disabled. Defaults bound each operation to 20 seconds and each snapshot to 20 pages;
+oversized responses, incomplete pagination, identity mismatches and service errors remain unverified.
+Permission-masked not-found errors do not establish deletion. The two-read comparison checks
+stability, not transactional isolation; execution still requires its own fresh scope check.
+
+The query follows Linear's [cursor pagination contract](https://linear.app/developers/pagination)
+and [official SDK schema](https://github.com/linear/linear/blob/master/packages/sdk/src/schema.graphql).
+Unit transport fixtures verify failure handling and identity boundaries. A live app-token read and
+the independently authenticated maintainer-request adapter remain activation work.
 
 These adapters are the authentication boundary. The helper validates their agreement and freshness;
 it does not authenticate callback output, dispatch a worker or create a public artifact. Approval

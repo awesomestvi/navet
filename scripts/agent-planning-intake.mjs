@@ -14,6 +14,15 @@ function acceptedRequest(observation, identity, startedAt, now) {
     throw new Error('Trusted request identity mismatch.');
   }
   validatePlanningBinding(request.planningBinding);
+  const brief = request.brief;
+  const scopedText = (value) => typeof value === 'string' && value.trim() && value.length <= 4096;
+  if (!brief || !scopedText(brief.selectedOption) || !Array.isArray(brief.permittedChanges) ||
+      !brief.permittedChanges.length || !brief.permittedChanges.every(scopedText) ||
+      !['private-planning', 'public-delivery-approved'].includes(brief.visibility) ||
+      !Array.isArray(brief.acceptanceCriteria) || !brief.acceptanceCriteria.length ||
+      !brief.acceptanceCriteria.every(scopedText)) {
+    throw new Error('Trusted work brief requires a selected option, permitted changes, visibility and acceptance criteria.');
+  }
   const authority = request.authority;
   if (!authority || typeof authority.actor !== 'string' || !authority.actor.trim() ||
       typeof authority.reference !== 'string' || !authority.reference.trim() ||

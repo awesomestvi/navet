@@ -25,7 +25,8 @@ async function setup() {
   const request = { ...identity, mode: 'implement', revision: 'option-a', planningBinding: binding,
     authority: { actor: 'maintainer', reference: 'trusted-human-event', revision: 'option-a',
       planningRevision: binding.revision, observedAt: time },
-    brief: { acceptanceCriteria: ['Save and reopen preserves the selected option.'] } };
+    brief: { selectedOption: 'Option A', permittedChanges: ['Repair settings persistence and direct regression coverage.'],
+      visibility: 'private-planning', acceptanceCriteria: ['Save and reopen preserves the selected option.'] } };
   const input = { store, identity, now,
     readRequest: async () => ({ status: 'authorized', request: { ...request,
       authority: { ...request.authority, observedAt: time } } }),
@@ -108,7 +109,7 @@ describe('trusted planning request intake', () => {
     let reads = 0;
     await expect(enqueuePlanningRequest({ ...input, readRequest: async () => {
       const observation = await input.readRequest();
-      if (++reads === 2) observation.request.brief = { acceptanceCriteria: ['Different outcome.'] };
+      if (++reads === 2) observation.request.brief = { ...observation.request.brief, acceptanceCriteria: ['Different outcome.'] };
       return observation;
     } })).rejects.toThrow('changed during');
     expect(await store.list()).toEqual([]);
@@ -151,6 +152,29 @@ describe('trusted planning request intake', () => {
     await expect(enqueuePlanningRequest({ ...input, readIssue: async () => {
       advance(60_001); return input.readIssue();
     } })).rejects.toThrow('fresh-read window');
+    expect(await store.list()).toEqual([]);
+  });
+
+  it.each(['selectedOption', 'permittedChanges', 'visibility', 'acceptanceCriteria'])('rejects missing work-brief %s before reading Linear', async (key) => {
+    const { input, store } = await setup();
+    let planningReads = 0;
+    await expect(enqueuePlanningRequest({ ...input, readRequest: async () => {
+      const observation = await input.readRequest();
+      delete observation.request.brief[key];
+      return observation;
+    }, readIssue: async () => { planningReads++; } })).rejects.toThrow('Trusted work brief requires');
+    expect(planningReads).toBe(0);
+    expect(await store.list()).toEqual([]);
+  });
+
+  it.each([{ selectedOption: ' ' }, { permittedChanges: [] }, { permittedChanges: [''] },
+    { visibility: 'public' }, { acceptanceCriteria: [] }])('rejects incomplete or implicit scope permission %j', async (change) => {
+    const { input, store } = await setup();
+    await expect(enqueuePlanningRequest({ ...input, readRequest: async () => {
+      const observation = await input.readRequest();
+      Object.assign(observation.request.brief, change);
+      return observation;
+    } })).rejects.toThrow('Trusted work brief requires');
     expect(await store.list()).toEqual([]);
   });
 });
