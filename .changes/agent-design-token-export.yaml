@@ -1,0 +1,3 @@
+type: internal
+audiences: []
+summary: Resolve source-derived numeric and compiled CSS dimension tokens for AI discovery with unit preservation and explicit recipe omissions.

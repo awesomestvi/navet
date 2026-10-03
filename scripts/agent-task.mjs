@@ -13,6 +13,12 @@ if (!directory || !action || !['list', 'enqueue', 'mutate'].includes(action)
   try {
     const store = new AgentTaskStore(path.resolve(directory));
     const input = action === 'list' ? null : JSON.parse(await readFile(inputFile, 'utf8'));
+    if (action === 'mutate') {
+      const owner = process.env.CODEX_THREAD_ID;
+      if (!owner || input?.input?.owner !== owner) {
+        throw new Error('Mutation owner must match CODEX_THREAD_ID.');
+      }
+    }
     const result = action === 'list' ? await store.list() : action === 'enqueue'
       ? await store.enqueue(input) : await store.mutate(input.id, input.action, input.input);
     console.log(JSON.stringify(result, null, 2));
