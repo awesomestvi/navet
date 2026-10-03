@@ -86,6 +86,8 @@
     "check:fix": "biome check --apply ./packages",
     "report:bundle": "node scripts/inspect-bundle.mjs",
     "report:ui-kit": "node scripts/check-ui-kit-usage.mjs",
+    "agent:tasks": "node scripts/agent-task.mjs",
+    "agent:components": "node scripts/agent-component-catalog.mjs",
     "test": "vitest --config vitest.unit.config.ts --project unit",
     "test:tier1": "node scripts/run-test-tier.mjs tier1",
     "test:tier2": "node scripts/run-test-tier.mjs tier2",

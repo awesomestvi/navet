@@ -103,6 +103,10 @@ empty space.
 
 ## Review Before Handoff
 
+For proactive design audits or a systematic rendered review, use
+[`navet-ux-audit`](../../.agents/skills/navet-ux-audit/SKILL.md). It defines reproducible findings,
+reference comparisons, coverage reporting, and retesting of fixes.
+
 Review the result against the named reference, not only against the request:
 
 - normal, active, unavailable, loading, empty, and error states that the feature supports

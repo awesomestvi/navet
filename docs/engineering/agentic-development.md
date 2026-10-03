@@ -157,7 +157,7 @@ Automated issue and pull-request comments and runner claim reactions use the ded
 Accepted command reactions use `github-actions[bot]`.
 Branches, commits, pushes, and pull requests continue to use the maintainer's GitHub identity.
 Manual maintainer comments also remain visibly authored by the maintainer. The App credential is
-restricted to the narrow public issue operations exposed by the repository wrapper.
+restricted to the public issue and PR-conversation operations exposed by the repository wrapper.
 
 Review CI results and Cloudflare previews directly from the pull request's checks. Responsive
 screenshots are available in the CI run's artifacts.
@@ -219,15 +219,19 @@ Repository files define the workflow, but the following live GitHub and Cloudfla
 configured for the repository:
 
 1. Create the private **Navet Nisse** GitHub App and install it only on `awesomestvi/navet`. Grant
-   Issues read/write and mandatory Metadata read. Do not grant Contents, Pull requests, Actions,
+   Issues and Pull requests read/write, plus mandatory Metadata read. Do not grant Contents, Actions,
    Administration, Environments, Secrets, Workflows, package deletion, or organization/account
-   permissions. Pull-request conversation comments use GitHub's issue-comment API.
+   permissions. Pull-request conversation comments use GitHub's issue-comment API and require
+   the installed Pull requests permission. GitHub's permission is broader than comment-only
+   access; the wrapper and agent authority restrict how it is used. Approve permission updates
+   on the existing installation as well as saving the App registration.
 2. Store the App ID, installation ID, and private-key path in the private runner environment. Use
    the repository wrapper only for automated comments, command reactions, and removal of the two
    request labels after successful dispatch. It deliberately does not expose arbitrary `gh`, Git
    push, pull-request creation, label addition, or repository-content operations.
-   Confirm that the App cannot read or write contents, create pull requests, change repository
-   settings, environments, Actions secrets, or workflows. The runner must also have no production
+   Confirm that the installation is limited to this repository and has no Contents, Administration,
+   Actions, Environments, Secrets, or Workflows permissions. Verify that the wrapper rejects
+   pull-request creation and arbitrary API operations. The runner must also have no production
    credentials or private Home Assistant access.
    Configure `NAVET_NISSE_APP_ID`, `NAVET_NISSE_INSTALLATION_ID`, and
    `NAVET_NISSE_PRIVATE_KEY_PATH`, or point `NAVET_NISSE_CONFIG_PATH` at a private JSON file with
@@ -262,8 +266,10 @@ configured for the repository:
    verifies the source release's successful run and recorded image digests.
    Add `NAVET_NISSE_CLIENT_ID` and `NAVET_NISSE_APP_PRIVATE_KEY` to the `production` environment
    for stable issue follow-up. Use the GitHub App Client ID, not its numeric App ID; the local
-   runner's `NAVET_NISSE_APP_ID` is a separate setting. The App needs only Issues read/write and
-   Metadata read; the workflow's own read token identifies merged PRs and linked issues.
+   runner's `NAVET_NISSE_APP_ID` is a separate setting. Stable issue follow-up requires Issues
+   read/write and Metadata read; the local runner also needs the installed Pull requests
+   permission for PR-conversation replies. The workflow's own read token identifies merged PRs
+   and linked issues.
 7. Keep Cloudflare preview deployments public only for repository/demo data. Preview projects must
    not receive Home Assistant URLs, tokens, provider OAuth secrets, production cookies, or private
    tunnel credentials.
