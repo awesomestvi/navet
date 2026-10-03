@@ -64,9 +64,11 @@ in the app-owned layers above.
 
 The [component maturity inventory](component-maturity.json) records inspected canonical components,
 their coupling and supporting source/story references. Run `pnpm agent:components <name>` to see
-this guidance beside the actual API. The current inventory classifies nine app-coupled components;
-other exports remain unclassified. Importability and passing isolated examples do not establish
-complete visual or accessibility coverage. Review the affected runtime states before accepting UI.
+this guidance beside the actual API. The inventory covers 28 inspected components: 26 app-coupled
+contracts and two experimental contracts. Other exports remain unclassified. App coupling describes dependencies on Navet context,
+types or helpers; it does not establish a component's readiness. Types and token helpers retain their
+source-derived APIs without inheriting the classification of a component that uses them. Importability
+and passing isolated examples do not establish complete visual or accessibility coverage. Review the affected runtime states before accepting UI.
 
 ## Card Dialog Navigation
 

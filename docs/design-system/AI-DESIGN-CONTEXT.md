@@ -33,8 +33,11 @@ inventory and evidence separately from the TypeScript `sourceFingerprint`.
 `app-coupled` identifies components that require app context or helpers. Reuse them inside Navet's
 app through their listed import surface; they are not standalone `@navet/ui` contracts. `stable`
 is reserved for an explicitly curated mature contract, and `experimental` identifies an evolving
-contract. This initial inventory makes no stable or experimental classification. A classification
-is guidance, not proof of accessibility, complete state coverage or public SemVer guarantees.
+contract. The inventory covers card/sheet foundations, form controls, typography, status and action
+primitives, with experimental entries for MessageBar and CardMetricActionLayout. No contract is
+classified stable. Read each rationale for context requirements, labeling responsibilities and
+current API limits. A classification is guidance, not proof of accessibility, complete state
+coverage or public SemVer guarantees.
 Story associations identify imports in story files, not proof that every listed story exercises
 that export. The catalog complements source and rendered review; it does not validate UI quality.
 
