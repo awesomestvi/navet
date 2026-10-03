@@ -208,6 +208,7 @@ afterEach(() => {
 });
 
 describe('NJS chore workspace store', () => {
+  // Exercises multi-megabyte storage and recovery; shared CI runners need more than 5 seconds.
   it('keeps large accounting and unfinished work durable across commands, restarts and backup recovery', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-08-10T08:00:00.000Z'));
@@ -300,7 +301,7 @@ describe('NJS chore workspace store', () => {
     const recovered = createRequest();
     choreStore.handle(recovered);
     expect(parseResponse(recovered).data.experience.pointTransactions).toHaveLength(12001);
-  });
+  }, 15_000);
 
   it('matches standby and fair rotation assignment in the packaged policy', () => {
     const timestamp = '2026-08-01T00:00:00.000Z';

@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 import { createHash } from 'node:crypto';
-import { existsSync, mkdtempSync, mkdirSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, mkdtempSync, mkdirSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import * as ast from 'typescript/unstable/ast';
 import { API, SignatureKind, SymbolFlags } from 'typescript/unstable/sync';
+import { applyComponentMaturity } from './agent-component-maturity.mjs';
 
 function storiesIn(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -23,7 +24,35 @@ function symbolKey(symbol) {
   return declaration ? `${declaration.getSourceFile().fileName}:${declaration.pos}` : null;
 }
 
-export function generateCatalog({ root, entries, stories = [], compilerOptions = {} }) {
+// The generated config's temporary path is provenance, not a compiler option.
+function canonicalOptions(value, root) {
+  if (Array.isArray(value)) return value.map((item) => canonicalOptions(item, root));
+  if (value && typeof value === 'object') return Object.fromEntries(Object.keys(value).filter((key) => key !== 'configFilePath').sort()
+    .map((key) => [key, canonicalOptions(value[key], root)]));
+  if (typeof value === 'string' && path.isAbsolute(value)) return path.relative(root, value).split(path.sep).join('/');
+  return value;
+}
+
+function storyTitle(source, checker) {
+  const assignment = source.statements.find((node) => ast.isExportAssignment(node) && !node.isExportEquals);
+  let value = assignment?.expression;
+  const seen = new Set();
+  while (value && !seen.has(value)) {
+    seen.add(value);
+    if (ast.isParenthesizedExpression(value) || ast.isAsExpression(value) || ast.isSatisfiesExpression(value)) value = value.expression;
+    else if (ast.isIdentifier(value)) {
+      const symbol = resolveSymbol(checker, checker.getSymbolAtLocation(value));
+      const declaration = (symbol?.valueDeclaration ?? symbol?.declarations?.[0])?.resolve();
+      value = declaration && ast.isVariableDeclaration(declaration) ? declaration.initializer : null;
+    } else break;
+  }
+  if (!value || !ast.isObjectLiteralExpression(value)) return null;
+  const property = value.properties.find((node) => ast.isPropertyAssignment(node) &&
+    (ast.isIdentifier(node.name) || ast.isStringLiteral(node.name)) && node.name.text === 'title');
+  return property && ast.isStringLiteral(property.initializer) ? property.initializer.text : null;
+}
+
+export function generateCatalog({ root, entries, stories = [], compilerOptions = {}, maturityInventory }) {
   root = realpathSync(path.resolve(root));
   entries = entries.map((entry) => ({ ...entry, file: realpathSync(path.resolve(root, entry.file)) }));
   stories = stories.map((file) => realpathSync(path.resolve(root, file)));
@@ -81,12 +110,18 @@ export function generateCatalog({ root, entries, stories = [], compilerOptions =
     }
     for (const file of stories) {
       const source = program.getSourceFile(file);
-      let title = null;
+      const title = storyTitle(source, checker);
       const imports = new Set();
       const storyExports = [];
       function visit(node) {
-        if (ast.isPropertyAssignment(node) && node.name.getText(source) === 'title' && ast.isStringLiteral(node.initializer)) title ??= node.initializer.text;
-        if (ast.isImportSpecifier(node) || ast.isPropertyAccessExpression(node)) {
+        if (ast.isNamespaceImport(node)) {
+          const module = resolveSymbol(checker, checker.getSymbolAtLocation(node.name));
+          if (module) for (const exported of checker.getExportsOfModule(module)) {
+            const resolved = resolveSymbol(checker, exported);
+            if (resolved?.flags & SymbolFlags.Value) imports.add(symbolKey(resolved));
+          }
+        }
+        if (ast.isImportSpecifier(node) || ast.isPropertyAccessExpression(node) || (ast.isImportClause(node) && node.name)) {
           imports.add(symbolKey(resolveSymbol(checker, checker.getSymbolAtLocation(node.name))));
         }
         if (ast.isVariableStatement(node) && node.modifiers?.some((modifier) => modifier.kind === ast.SyntaxKind.ExportKeyword)) {
@@ -100,14 +135,19 @@ export function generateCatalog({ root, entries, stories = [], compilerOptions =
       }
     }
     const fingerprint = createHash('sha256');
+    fingerprint.update(JSON.stringify(canonicalOptions(program.getCompilerOptions(), root)));
+    fingerprint.update(JSON.stringify(entries.map((entry) => ({ file: relative(entry.file), importFrom: entry.importFrom }))));
+    fingerprint.update(JSON.stringify(stories.map(relative)));
+
     for (const source of program.getSourceFileNames().filter((file) => file.startsWith(`${root}${path.sep}`) && !file.includes(`${path.sep}node_modules${path.sep}`)).sort().map((file) => program.getSourceFile(file))) {
       fingerprint.update(relative(source.fileName)).update(source.text);
     }
-    return {
+    const catalog = {
       version: 1, sourceFingerprint: fingerprint.digest('hex'),
       guidance: ['docs/design-system/README.md', 'docs/design-system/AI-DESIGN-CONTEXT.md', 'ai/skills/navet-ux.md'],
       entries: records.map(({ symbolKey: _key, ...record }) => record).sort((a, b) => a.name.localeCompare(b.name)),
     };
+    return maturityInventory ? applyComponentMaturity(catalog, { root, inventory: maturityInventory }) : catalog;
   } finally {
     snapshot?.dispose();
     api.close();
@@ -120,10 +160,11 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
   const entries = ['primitives', 'patterns', 'tokens'].map((name) => ({
     file: path.join(root, `packages/app/src/ui-kit/${name}.ts`), importFrom: `@navet/app/ui-kit/${name}`,
   }));
-  const catalog = generateCatalog({ root, entries, stories: storiesIn(path.join(root, 'packages/app/src')) });
+  const maturityInventory = JSON.parse(readFileSync(path.join(root, 'docs/design-system/component-maturity.json'), 'utf8'));
+  const catalog = generateCatalog({ root, entries, stories: storiesIn(path.join(root, 'packages/app/src')), maturityInventory });
   const query = process.argv[2];
   if (query) {
-    console.log(JSON.stringify({ sourceFingerprint: catalog.sourceFingerprint, entries: catalog.entries.filter((entry) => `${entry.name} ${entry.source} ${entry.description}`.toLowerCase().includes(query.toLowerCase())) }, null, 2));
+    console.log(JSON.stringify({ sourceFingerprint: catalog.sourceFingerprint, maturityFingerprint: catalog.maturityFingerprint, entries: catalog.entries.filter((entry) => `${entry.name} ${entry.source} ${entry.description}`.toLowerCase().includes(query.toLowerCase())) }, null, 2));
   } else {
     const output = path.join(root, '.cache/agent-design/components.json');
     await mkdir(path.dirname(output), { recursive: true });

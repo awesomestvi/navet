@@ -17,17 +17,73 @@ The full source of truth remains:
 Run `pnpm agent:components SheetSurface` to inspect matching exports, import paths, typed
 parameters, props, source locations, and associated story files. Run `pnpm agent:components`
 without a query to generate `.cache/agent-design/components.json`. Every invocation regenerates
-metadata from current source and includes a fingerprint of its local TypeScript inputs.
+metadata from current source and includes a fingerprint of its local TypeScript sources, effective compiler options, catalog entry points,
+and story inputs.
 
 For union-based props, `properties` contains the fields shared across alternatives; `variants`
 preserves each alternative's own fields, types and required/optional discriminator. Select one
 valid contract before composing a component. Props from different alternatives are not a single
 combined API.
 
-Export presence does not establish component maturity. The catalog marks stability as
-`unclassified`; use the design-system guidance and rendered stories to choose the correct recipe.
+Export presence does not establish component maturity. The [maturity inventory](component-maturity.json)
+classifies inspected canonical components and records rationale and source/story evidence. The catalog
+matches each annotation to the exact export, import surface and source; stale identities or missing
+evidence stop generation. Other exports remain `unclassified`. `maturityFingerprint` covers the
+inventory and evidence separately from the TypeScript `sourceFingerprint`.
+
+`app-coupled` identifies components that require app context or helpers. Reuse them inside Navet's
+app through their listed import surface; they are not standalone `@navet/ui` contracts. `stable`
+is reserved for an explicitly curated mature contract, and `experimental` identifies an evolving
+contract. The inventory covers card/sheet foundations, form controls, typography, status and action
+primitives, with experimental entries for MessageBar and CardMetricActionLayout. No contract is
+classified stable. Read each rationale for context requirements, labeling responsibilities and
+current API limits. A classification is guidance, not proof of accessibility, complete state
+coverage or public SemVer guarantees.
 Story associations identify imports in story files, not proof that every listed story exercises
 that export. The catalog complements source and rendered review; it does not validate UI quality.
+
+## Local Storybook Discovery
+
+Use the opt-in [Storybook MCP pilot](STORYBOOK-MCP.md) to discover actual story IDs and preview
+links. Inspect the returned API and examples for completeness; use the generated catalog and
+source recipes when extraction is incomplete. Rendered inspection remains required.
+
+Use the [agent composition recipes](AGENT-COMPOSITION-RECIPES.md) to choose card controls, overflow
+navigation, sheets, settings fields, summaries and state compositions. The examples name actual
+props and source stories; inspect current contracts before adapting them.
+
+## Source-Derived Token Exchange
+
+Run `pnpm agent:tokens` before reading `.cache/agent-design/tokens.tokens.json`. The command
+regenerates a [DTCG 2025.10](https://www.designtokens.org/tr/2025.10/format/) subset from the
+public TypeScript token exports and the app stylesheet without evaluating UI modules. Check that
+generation succeeded;
+a cached file from a failed generation is not current evidence. Use `pnpm agent:tokens controlSizePx`
+for a case-insensitive path search. It regenerates the same full export and prints only matching
+tokens and omissions, retaining values, units, source locations and the source fingerprint. An empty
+result means the query found no source path; inspect the catalog or token entry before assuming
+the design system lacks the needed recipe.
+
+The export includes finite numeric constants with explicit `Px` or `Ms` units, the `durationsMs`
+group, and unitless `fontScale` values. Imported constant references resolve through TypeScript.
+Supported spacing, inset, radius, height and width utility constants are resolved through the
+installed Tailwind compiler and Navet's actual imported CSS. Equal height/width pairs can supply
+one size dimension. The export preserves `rem` and `px`; it never assumes a browser root font size
+or a four-pixel spacing scale. Conditional, conflicting, unsupported or mixed-value utilities
+remain omissions. Each resolved utility retains its original classes and affected CSS properties.
+
+Each record carries its TypeScript source location. The root extension carries separate TypeScript
+and stylesheet fingerprints, CSS import provenance, compiler version and an omission inventory.
+Path searches include both fingerprints when CSS resolution is present. A unit-bearing value that
+cannot be resolved to a numeric constant stops generation rather than producing an invented value.
+
+This is discovery metadata, not a separately editable token source. Colors, typography, contextual
+spacing, unequal/composite class combinations, dynamic theme helpers, density selection and
+reduced-motion policy still need their source recipes and rendered stories. An omission means inspect that recipe; it does not authorize
+replacing it with a numeric approximation. Imported stylesheets must belong to the checkout or
+the installed Tailwind package; stylesheet JavaScript plugins are not evaluated. Select components
+with the catalog, read their recipe,
+resolve supported values from this export, and verify the resulting composition in Storybook.
 
 ## Product Feel
 
@@ -157,6 +213,20 @@ Avoid:
 - Using "premium," "modern," or "glass" as sufficient design direction.
 - Feature-local page shells, max-widths, spacing systems, palettes, radii, or type scales.
 - Validating only the default theme, ideal data, or one viewport.
+
+The UI-kit boundary check rejects the known centered-modal and bottom-sheet shell signatures,
+including reordered utility classes and multiline literals. Existing migration exceptions remain
+explicit in the checker. It parses static string and template values in class attributes, class properties, and recognized
+class-building calls, interpreting escapes. Plain text fixtures, comments, and prose are outside
+the class check. It does not establish equivalent computed styles, follow classes assembled
+across expressions, or replace rendered review. Structural layout markup remains
+valid when it does not reproduce a complete forbidden signature.
+
+Shared UI imports are checked through the existing package-import tokenizer. Alias and relative
+paths are normalized before checking feature ownership; static/type imports, re-exports, literal
+dynamic imports and literal require calls are covered. Comments and quoted examples are excluded.
+Computed runtime names and transitive dependencies require separate review. This supplements the
+provider/package boundary checks rather than replacing their contracts.
 
 ## Handoff Checklist
 

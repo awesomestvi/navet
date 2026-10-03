@@ -1,0 +1,3 @@
+type: internal
+audiences: []
+summary: Reconcile fresh planning reads, preserve signed receipt acknowledgements and bind stable attachment scope before agent execution.
