@@ -74,8 +74,9 @@ do not change scope.
 Use `head` to record the current implementation commit. Use `evidence` to record each required
 gate with `result` (`pass`, `fail`, or `unverified`), proposal `revision`, current `head`, artifact
 reference, and observation time. The latest result for that gate and head controls readiness;
-history retains failures. Observations cannot move backwards, and conflicting results or artifacts
-cannot share a timestamp; identical receipt retries remain idempotent. A changed head invalidates readiness until fresh evidence is recorded.
+history retains failures. Observations cannot move backwards. A failure takes precedence over a
+pass at the same timestamp; other conflicting timestamp ties are rejected, while identical
+receipt retries remain idempotent. A changed head invalidates readiness until fresh evidence is recorded.
 
 Transitions follow `queued -> investigating -> building -> verifying -> awaiting-approval ->
 delivered`, with explicit waiting and failure states. Each transition requires a reason. Returning
@@ -123,7 +124,8 @@ A matching scope in exactly one Approved or In delivery stage supplies a plannin
 Changes to content, references or identity, withdrawal, or archival revoke this request for new
 execution. A later Approved label cannot revive it; resumption requires a new trusted request.
 Ambiguous/missing stages and lost access are unverified. Observations expire after one minute
-and cannot move backwards. These checks gate first dispatch, new follow-up sends, new resource
+and cannot move backwards. At equal timestamps, failures take precedence over unverified results,
+which take precedence over passes; other conflicting ties are rejected. These checks gate first dispatch, new follow-up sends, new resource
 allocations, execution transitions and readiness/completion. The first dispatch separately
 rechecks request authority and its accepted planning revision.
 

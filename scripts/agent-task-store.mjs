@@ -284,6 +284,12 @@ export class AgentTaskStore {
           if (task.planning.observation && observation.observedAt < task.planning.observation.observedAt) {
             throw new Error('Planning observations cannot move backwards.');
           }
+          const previous = task.planning.observation;
+          const blockingRank = { pass: 0, unverified: 1, fail: 2 };
+          if (previous && observation.observedAt === previous.observedAt &&
+              !isDeepStrictEqual(observation, previous) && blockingRank[observation.result] <= blockingRank[previous.result]) {
+            throw new Error('Conflicting planning observations cannot relax or replace a timestamp tie.');
+          }
           task.planning.observation = observation;
           if (observation.result === 'fail') task.planning.revokedAt ??= now;
         } else if (action === 'resource-usage') {
@@ -424,7 +430,8 @@ export class AgentTaskStore {
           if (!Number.isFinite(item.observedAt) || item.observedAt <= 0 || item.observedAt > now) throw new Error('Invalid evidence observation time.');
           const prior = task.evidence.find((value) => value.gate === item.gate && value.head === item.head && value.revision === item.revision);
           if (prior && item.observedAt < prior.observedAt) throw new Error('Evidence observations cannot move backwards.');
-          if (prior && item.observedAt === prior.observedAt && !isDeepStrictEqual(item, prior)) {
+          if (prior && item.observedAt === prior.observedAt && !isDeepStrictEqual(item, prior) &&
+              !(prior.result === 'pass' && item.result === 'fail')) {
             throw new Error('Conflicting evidence observations cannot share a timestamp.');
           }
           // Preserve history, but use only the latest observation for a gate/head/revision.

@@ -209,14 +209,32 @@ describe('planning scope lifecycle gates', () => {
   it('latches withdrawal so a later agent-authored Approved label cannot revive old authority', async () => {
     const { observe, dispatch } = await setup();
     await observe({ ...issue(), labels: ['Deferred'] });
-    await observe();
+    await expect(observe()).rejects.toThrow('timestamp tie');
     await expect(dispatch()).rejects.toThrow('revoked');
   });
 
   it('recovers a transient access failure without inventing a new approval', async () => {
-    const { observe, dispatch } = await setup();
+    const { observe, dispatch, advance } = await setup();
     await observe(undefined, { status: 'unavailable', issue: undefined });
     await expect(dispatch()).rejects.toThrow('unverified');
+    advance(1);
+    await observe();
+    expect((await dispatch()).nextDispatchAction).toBe('create');
+  });
+
+  it('preserves blocking planning observations across tied reads and restart', async () => {
+    const { directory, task, store, observe, dispatch, advance } = await setup();
+    await observe();
+    await observe(undefined, { status: 'unavailable', issue: undefined });
+    const previous = (await store.list())[0].planning.observation;
+    const restarted = new AgentTaskStore(directory, { now: () => now });
+    await restarted.mutate(task.id, 'planning-observation', { owner: 'coordinator',
+      observation: observation(undefined, { status: 'unavailable', issue: undefined }) });
+    await expect(restarted.mutate(task.id, 'planning-observation', { owner: 'coordinator', observation: observation() }))
+      .rejects.toThrow('timestamp tie');
+    expect((await store.list())[0].planning.observation).toEqual(previous);
+    await expect(dispatch()).rejects.toThrow('unverified');
+    advance(1);
     await observe();
     expect((await dispatch()).nextDispatchAction).toBe('create');
   });

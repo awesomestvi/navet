@@ -348,7 +348,7 @@ describe('durable agent task lifecycle', () => {
     await act('head', { head: 'sha-a' });
     await act('transition', { state: 'investigating', reason: 'Start.' });
     await act('transition', { state: 'verifying', reason: 'Checks.' });
-    await evidence('ci', 'sha-a', 'fail'); await evidence('visual'); await evidence('output');
+    await evidence('ci'); await evidence('ci', 'sha-a', 'fail'); await evidence('visual'); await evidence('output');
     const prior = (await store.list())[0].evidence.find((item) => item.gate === 'ci');
     const restarted = new AgentTaskStore(directory, { now: () => 1_000_000 });
     await restarted.mutate(task.id, 'evidence', { owner, evidence: prior });
