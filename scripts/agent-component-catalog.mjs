@@ -59,6 +59,10 @@ export function generateCatalog({ root, entries, stories = [], compilerOptions =
         const signature = checker.getSignaturesOfType(type, SignatureKind.Call)[0];
         const parameter = signature?.getParameters()[0];
         const props = parameter ? checker.getTypeOfSymbolAtLocation(parameter, declaration) : null;
+        const propertiesOf = (contract) => checker.getPropertiesOfType(contract).map((prop) => ({
+          name: prop.name, optional: Boolean(prop.flags & SymbolFlags.Optional),
+          type: checker.typeToString(checker.getTypeOfSymbolAtLocation(prop, declaration), declaration),
+        }));
         records.push({
           name: exported.name, importFrom: entry.importFrom,
           kind: resolved.flags & SymbolFlags.Value ? 'value' : 'type',
@@ -66,9 +70,9 @@ export function generateCatalog({ root, entries, stories = [], compilerOptions =
           line: declarationSource.getLineAndCharacterOfPosition(declaration.getStart()).line + 1,
           description: resolved.getDocumentationComment(checker),
           parameters: props ? checker.typeToString(props, declaration) : null,
-          properties: props ? checker.getPropertiesOfType(props).map((prop) => ({
-            name: prop.name, optional: Boolean(prop.flags & SymbolFlags.Optional),
-            type: checker.typeToString(checker.getTypeOfSymbolAtLocation(prop, declaration), declaration),
+          properties: props ? propertiesOf(props) : [],
+          variants: props?.isUnionType() ? props.getTypes().map((contract) => ({
+            type: checker.typeToString(contract, declaration), properties: propertiesOf(contract),
           })) : [],
           // Export presence does not prove maturity. Curated usage docs own stability.
           stability: 'unclassified', stories: [], symbolKey: symbolKey(resolved),
