@@ -130,6 +130,38 @@ Automatic Linear approval intake, verified human provenance, remote synchronizat
 withdrawal require integration pilots. Existing explicit requests without a planning binding retain
 their request-authority workflow; this optional guard does not claim coverage for them.
 
+## Signed Linear Event Observations
+
+`verifyLinearEvent` in `scripts/agent-linear-event.mjs` accepts the exact raw request bytes,
+Linear-Signature, a private signing secret and the configured organization/webhook IDs. It verifies
+HMAC-SHA256 before parsing, checks the signed transport timestamp within one minute, restricts
+body size and nesting, and rejects a different organization or webhook. Keep the secret and raw
+payload outside repository artifacts and public logs.
+
+The returned receipt retains event identity, actor attribution, timestamps and content hashes.
+It omits proposal/comment text, actor names and email addresses, and private artifact URLs. Its
+stable event ID derives from signed logical content, excluding retry-specific transport time;
+an unsigned Linear-Delivery header cannot supply deduplication identity. Persist accepted event
+IDs atomically in the receiving integration before acknowledging a new event. Identical logical
+retries can reconcile the prior receipt without starting another task.
+
+Issue and issue-comment events request a fresh complete planning read. They do not replace that
+read, supply an approval, enqueue work or stop a worker. A deletion or changed proposal must be
+reconciled through the existing planning-scope checks. Unsupported models supply no dispatch
+intent. Issue attachment changes need an additional supported event adapter or polling.
+
+Linear's default API authentication attributes writes to the authenticating user. Therefore a
+signed event with a user actor, an Approved label or an approval-like comment does not establish
+human provenance. The verifier always returns `authority: none`; the existing trusted maintainer
+request remains required. Dedicated app-actor authorization is appropriate for service writes,
+but configuring it alone does not prove who made a particular decision.
+
+The receiver, private durable receipt storage, fresh service reads, app-actor configuration and
+human-approval bridge require an integration pilot. This library opens no listener and changes
+no Linear or task-store state. Linear documents the transport and actor contracts in
+[Webhooks](https://linear.app/developers/webhooks) and
+[OAuth actor authorization](https://linear.app/developers/oauth-actor-authorization).
+
 ## Execution Budgets
 
 Bounded requests include `resourceLimits` with three positive integers: `maxElapsedMs`,
