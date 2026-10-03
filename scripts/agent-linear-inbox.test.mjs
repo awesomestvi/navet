@@ -23,11 +23,11 @@ afterEach(async () => {
   await Promise.all(receivers.splice(0).map((receiver) => receiver.stop()));
   await Promise.all(directories.splice(0).map((directory) => rm(directory, { recursive: true, force: true })));
 });
-async function setup() {
+async function setup(options = {}) {
   const directory = await mkdtemp(path.join(tmpdir(), 'navet-linear-inbox-'));
   directories.push(directory);
   let now = time;
-  const inbox = new AgentLinearInbox(directory, { now: () => now });
+  const inbox = new AgentLinearInbox(directory, { now: () => now, ...options });
   return { directory, inbox, advance: (delta) => { now += delta; } };
 }
 const proof = () => ({ reference: `sha256:${'a'.repeat(64)}`, observedAt: time });
@@ -90,6 +90,54 @@ describe('durable Linear receipts', () => {
     expect(await inbox.accept(signed({ ...fixture(), type: 'Project' }))).toMatchObject({ decision: 'ignore' });
     expect(await inbox.pending()).toEqual([]);
   });
+  it('bounds settled history across restart while preserving pending refreshes and recent retry deduplication', async () => {
+    const { directory, inbox } = await setup({ maxSettledReceipts: 2 });
+    const pending = await inbox.accept(signed());
+    const events = Array.from({ length: 3 }, (_, index) => ({ ...fixture(), type: 'Project',
+      createdAt: `2023-11-14T22:13:0${index}.000Z` }));
+    for (const event of events) await inbox.accept(signed(event));
+    const restarted = new AgentLinearInbox(directory, { now: () => time, maxSettledReceipts: 2 });
+    const receipts = JSON.parse(await readFile(path.join(directory, 'tasks.json'), 'utf8')).linearEventInbox.receipts;
+    expect(receipts).toHaveLength(3);
+    expect((await restarted.pending()).map((record) => record.receipt.eventId)).toEqual([pending.eventId]);
+    expect(await restarted.accept(signed(events[0]))).toMatchObject({ decision: 'ignore' });
+    await restarted.confirm(pending.eventId, proof());
+    expect(await restarted.accept(signed())).toMatchObject({ decision: 'skip' });
+    expect(JSON.parse(await readFile(path.join(directory, 'tasks.json'), 'utf8')).linearEventInbox.receipts).toHaveLength(2);
+  });
+
+  it('expires settled deduplication receipts without deleting old pending work', async () => {
+    const { directory, inbox, advance } = await setup({ deduplicationMs: 1000 });
+    const confirmed = await inbox.accept(signed());
+    await inbox.confirm(confirmed.eventId, proof());
+    const pendingEvent = { ...fixture(), action: 'remove' };
+    const pending = await inbox.accept(signed(pendingEvent));
+    await inbox.accept(signed({ ...fixture(), type: 'Project' }));
+    advance(1001);
+    expect((await inbox.pending()).map((record) => record.receipt.eventId)).toEqual([pending.eventId]);
+    expect(JSON.parse(await readFile(path.join(directory, 'tasks.json'), 'utf8')).linearEventInbox.receipts).toHaveLength(1);
+    expect(await inbox.accept(signed({ ...fixture(), webhookTimestamp: time + 1001 }))).toMatchObject({ decision: 'refresh' });
+    expect(await inbox.accept(signed({ ...pendingEvent, webhookTimestamp: time + 1001 }))).toMatchObject({ decision: 'reconcile' });
+  });
+
+  it('returns retryable capacity failure without dropping pending work and accepts new events after confirmation', async () => {
+    const { directory, inbox } = await setup({ maxPendingReceipts: 1 });
+    const first = await inbox.accept(signed());
+    const second = signed({ ...fixture(), action: 'remove' });
+    await expect(inbox.accept(second)).rejects.toThrow('pending capacity exhausted');
+    const before = await readFile(path.join(directory, 'tasks.json'), 'utf8');
+    expect(await inbox.accept(signed())).toMatchObject({ decision: 'reconcile' });
+    await expect(inbox.accept(second)).rejects.toThrow('pending capacity exhausted');
+    expect((await inbox.pending()).map((record) => record.receipt.eventId)).toEqual([first.eventId]);
+    expect(JSON.parse(before).linearEventInbox.receipts).toHaveLength(1);
+    await inbox.confirm(first.eventId, proof());
+    expect(await inbox.accept(second)).toMatchObject({ decision: 'refresh' });
+  });
+
+  it.each([{ maxSettledReceipts: 0 }, { maxPendingReceipts: -1 }, { deduplicationMs: 1.5 }])('rejects invalid retention limits: %s', async (options) => {
+    await expect(setup(options)).rejects.toThrow('Positive Linear inbox');
+  });
+
   it('requires fresh hashed confirmation evidence after receipt and known event identity', async () => {
     const { inbox, advance } = await setup();
     const { eventId } = await inbox.accept(signed());

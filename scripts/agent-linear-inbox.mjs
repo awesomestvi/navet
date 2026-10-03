@@ -40,12 +40,29 @@ function inboxIn(state) {
   }
   return inbox;
 }
+function pendingReceipt(record) {
+  return record.receipt.intent === 'refresh-planning' && !record.confirmation;
+}
+function compactInbox(inbox, now, { deduplicationMs, maxSettledReceipts }) {
+  const settled = inbox.receipts.filter((record) => !pendingReceipt(record))
+    .filter((record) => Math.max(record.lastSeenAt, record.confirmation?.observedAt ?? 0) >= now - deduplicationMs)
+    .reverse().sort((a, b) => Math.max(b.lastSeenAt, b.confirmation?.observedAt ?? 0) - Math.max(a.lastSeenAt, a.confirmation?.observedAt ?? 0));
+  const retained = new Set(settled.slice(0, maxSettledReceipts));
+  inbox.receipts = inbox.receipts.filter((record) => pendingReceipt(record) || retained.has(record));
+  return inbox;
+}
 export class LinearEventInputError extends Error {}
 
 // Receipt metadata shares the existing store's process-safe atomic transaction mechanism.
 // It never enqueues a task, alters a task lease or supplies implementation authority.
 export class AgentLinearInbox {
-  constructor(directory, { now = () => Date.now(), lockTimeoutMs = 2000 } = {}) {
+  constructor(directory, { now = () => Date.now(), lockTimeoutMs = 2000,
+    deduplicationMs = 86_400_000, maxSettledReceipts = 1000, maxPendingReceipts = 1000 } = {}) {
+    if ([deduplicationMs, maxSettledReceipts, maxPendingReceipts].some((value) => !Number.isSafeInteger(value) || value <= 0)) {
+      throw new Error('Positive Linear inbox retention and capacity limits are required.');
+    }
+    this.retention = { deduplicationMs, maxSettledReceipts };
+    this.maxPendingReceipts = maxPendingReceipts;
     this.now = now;
     this.store = new AgentTaskStore(directory, { now, lockTimeoutMs });
   }
@@ -55,7 +72,7 @@ export class AgentLinearInbox {
     try { receipt = verifyLinearEvent({ ...input, now }); }
     catch { throw new LinearEventInputError('Linear event verification failed.'); }
     return this.store.transaction((state) => {
-      const inbox = inboxIn(state);
+      const inbox = compactInbox(inboxIn(state), now, this.retention);
       let record = inbox.receipts.find((entry) => entry.receipt.eventId === receipt.eventId);
       let decision;
       if (record) {
@@ -64,16 +81,19 @@ export class AgentLinearInbox {
         record.lastSeenAt = now;
         decision = record.receipt.intent !== 'refresh-planning' ? 'ignore' : record.confirmation ? 'skip' : 'reconcile';
       } else {
+        if (receipt.intent === 'refresh-planning' && inbox.receipts.filter(pendingReceipt).length >= this.maxPendingReceipts) {
+          throw new Error('Linear inbox pending capacity exhausted; retry after reconciliation.');
+        }
         record = { receipt, deliveries: 1, firstSeenAt: now, lastSeenAt: now, confirmation: null };
         inbox.receipts.push(record);
         decision = receipt.intent === 'refresh-planning' ? 'refresh' : 'ignore';
       }
+      compactInbox(inbox, now, this.retention);
       return { eventId: receipt.eventId, decision, authority: 'none' };
     });
   }
   async pending() {
-    return this.store.transaction((state) => inboxIn(state).receipts.filter((record) =>
-      record.receipt.intent === 'refresh-planning' && !record.confirmation));
+    return this.store.transaction((state) => compactInbox(inboxIn(state), this.now(), this.retention).receipts.filter(pendingReceipt));
   }
   async confirm(eventId, observation) {
     const now = this.now();
@@ -81,11 +101,14 @@ export class AgentLinearInbox {
         !Number.isSafeInteger(observation.observedAt) || observation.observedAt > now ||
         observation.observedAt < now - 60_000) throw new Error('Fresh hashed Linear refresh evidence is required.');
     return this.store.transaction((state) => {
-      const record = inboxIn(state).receipts.find((entry) => entry.receipt.eventId === eventId);
+      const inbox = compactInbox(inboxIn(state), now, this.retention);
+      const record = inbox.receipts.find((entry) => entry.receipt.eventId === eventId);
       if (!record || record.receipt.intent !== 'refresh-planning') throw new Error('Unknown Linear refresh event.');
       if (observation.observedAt < record.firstSeenAt) throw new Error('Linear refresh predates event receipt.');
       if (record.confirmation) return { eventId, decision: 'skip', authority: 'none' };
       record.confirmation = { reference: observation.reference, observedAt: observation.observedAt };
+      inbox.receipts = [...inbox.receipts.filter((entry) => entry !== record), record];
+      compactInbox(inbox, now, this.retention);
       return { eventId, decision: 'confirmed', authority: 'none' };
     });
   }

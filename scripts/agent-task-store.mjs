@@ -259,7 +259,7 @@ export class AgentTaskStore {
         if (['delivered', 'terminal-failure'].includes(task.state)) throw new Error('Terminal work cannot be claimed.');
         requireValue(input.owner, 'owner');
         if (state.tasks.filter((other) => other.id !== id && !TERMINAL.has(other.state) &&
-            (other.lease?.expiresAt > now || other.dispatch)).length >= this.maxActiveTasks) {
+            (other.lease || other.dispatch)).length >= this.maxActiveTasks) {
           throw new Error('Active task budget exhausted.');
         }
         if (!Number.isFinite(input.durationMs) || input.durationMs <= 0 || input.durationMs > 3_600_000) throw new Error('Invalid lease duration.');

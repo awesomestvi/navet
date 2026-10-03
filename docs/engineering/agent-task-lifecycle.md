@@ -46,8 +46,9 @@ Overlapping batches share event receipts so changing a batch does not resend an 
 
 An expired lease alone does not prove its owner stopped. Reclaiming another owner's lease requires
 a fresh observation naming that owner, status `missing` or `terminal`, and an `observedAt` timestamp
-within the preceding minute. The coordinator supplies this from the owning task service. An
-unfinished dispatch continues to occupy capacity after its coordinator lease expires.
+within the preceding minute. The coordinator supplies this from the owning task service. A retained
+claim or unfinished dispatch occupies capacity after its coordinator lease expires. Recover an
+expired claim with the required owner observation, then release it when no work remains.
 
 For a deliberate handoff, the current owner calls `release` with a concrete `reason` after saving
 its checkpoint and observations. This clears record ownership so the next coordinator can claim
@@ -178,6 +179,13 @@ for a separate receiving process; recording a receipt creates no delivery task.
 Unsupported signed models return `ignore`. Repeated receipt deliveries retain the original event
 and confirmation, increment a delivery count and preserve pending work across restarts. Corrupt
 inbox history fails closed. The state directory and files use the existing private permissions.
+
+Pending refresh receipts survive compaction. The inbox retains at most 1,000 confirmed or ignored
+receipts from the last 24 hours for retry deduplication. After eviction, a repeated supported
+event requests a fresh planning read, which still supplies no implementation authority. At
+1,000 pending refreshes, new supported events receive a retryable storage failure until the
+consumer reconciles work; existing pending events remain available. Constructor options
+`maxSettledReceipts`, `deduplicationMs`, and `maxPendingReceipts` configure these positive limits.
 
 `pending` returns refresh receipts that need reconciliation. The consumer fetches a complete,
 fresh issue snapshot, checks the proposal binding and trusted request authority, and updates any

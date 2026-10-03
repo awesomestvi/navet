@@ -215,6 +215,21 @@ describe('durable agent task lifecycle', () => {
     expect((await store.mutate(task.id, 'claim', { ...input, observation: { owner, status: 'terminal', observedAt: 1_100_001 } })).lease.owner).toBe(input.owner);
   });
 
+  it('keeps an expired undispatched claim occupying capacity across restart until observed recovery and release', async () => {
+    const { store, directory, task, request, owner, claim, advance } = await setup();
+    await claim();
+    const second = await store.enqueue({ ...request, requestId: 'second-queued-task' });
+    advance(100_001);
+    const restarted = new AgentTaskStore(directory, { now: () => 1_100_001 });
+    await expect(restarted.mutate(second.id, 'claim', { owner: 'parallel', durationMs: 1000 })).rejects.toThrow('Active task budget');
+    await expect(restarted.mutate(task.id, 'claim', { owner: 'recovery', durationMs: 1000 })).rejects.toThrow('fresh owner');
+    await restarted.mutate(task.id, 'claim', { owner: 'recovery', durationMs: 1000,
+      observation: { owner, status: 'missing', observedAt: 1_100_001 } });
+    await expect(restarted.mutate(second.id, 'claim', { owner: 'parallel', durationMs: 1000 })).rejects.toThrow('Active task budget');
+    await restarted.mutate(task.id, 'release', { owner: 'recovery', reason: 'Observed missing owner and recovered record.' });
+    expect((await restarted.mutate(second.id, 'claim', { owner: 'parallel', durationMs: 1000 })).lease.owner).toBe('parallel');
+  });
+
   it('hands off record ownership without freeing a live delivery or resetting its budget', async () => {
     const { store, task, owner, act, usage, request } = await boundedSetup();
     await usage(0, 0);
