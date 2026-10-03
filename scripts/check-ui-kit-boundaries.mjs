@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
+import { hasLegacyModalRecipe } from './ui-shell-recipes.mjs';
 
 const ROOT = process.cwd();
 
@@ -74,12 +75,7 @@ for (const dir of PUBLIC_EXPORT_DIRS) {
 for (const relativePath of [...walk('packages/app/src/components/layout'), ...walk('packages/app/src/features')]) {
   const source = fs.readFileSync(path.join(ROOT, relativePath), 'utf8');
 
-  const hasLegacyModalRecipe =
-    /(fixed (left-1\/2 top-1\/2|top-1\/2 left-1\/2) z-50 .*shadow-2xl backdrop-blur-xl)/.test(
-      source
-    ) || /fixed inset-x-0 bottom-0 z-50 .*rounded-\[30px\].*shadow-2xl/.test(source);
-
-  if (hasLegacyModalRecipe && !LEGACY_MODAL_ALLOWLIST.has(relativePath)) {
+  if (hasLegacyModalRecipe(source) && !LEGACY_MODAL_ALLOWLIST.has(relativePath)) {
     violations.push(
       `${relativePath}: use shared ModalSurface or SheetSurface instead of reauthoring shell recipes`
     );

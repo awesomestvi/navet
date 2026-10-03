@@ -1,0 +1,3 @@
+type: internal
+audiences: []
+summary: Detect reordered copies of known UI shell recipes in the existing UI-kit boundary gate.

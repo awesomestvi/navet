@@ -158,6 +158,12 @@ Avoid:
 - Feature-local page shells, max-widths, spacing systems, palettes, radii, or type scales.
 - Validating only the default theme, ideal data, or one viewport.
 
+The UI-kit boundary check rejects the known centered-modal and bottom-sheet shell signatures,
+including reordered utility classes and multiline literals. Existing migration exceptions remain
+explicit in the checker. This lexical check does not establish equivalent computed styles, follow
+classes assembled across expressions, or replace rendered review. Structural layout markup remains
+valid when it does not reproduce a complete forbidden signature.
+
 ## Handoff Checklist
 
 Name the reference used, then review:
