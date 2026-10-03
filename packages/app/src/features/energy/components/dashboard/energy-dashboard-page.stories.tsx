@@ -432,7 +432,7 @@ export const WeekRangeSelectedUntrackedOnly: Story = {
 
     await expect(canvas.getByRole('heading', { name: 'Selected day' })).toBeInTheDocument();
     await expect(canvas.getByTestId('energy-selected-period-details')).toHaveTextContent(
-      '1 contributor'
+      'Contributors: 1'
     );
     await expect(canvas.getByTestId('energy-selected-period-details')).toHaveTextContent(
       'Untracked'
