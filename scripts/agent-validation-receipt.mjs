@@ -11,7 +11,8 @@ const HOOK = 'pnpm typecheck && pnpm test:tier1 && pnpm test:tier2';
 const sha = (value) => typeof value === 'string' && /^[a-f0-9]{40}$/.test(value);
 
 async function git(root, args) {
-  try { return (await execute('git', ['-C', root, ...args], { maxBuffer: 1_048_576 })).stdout.trim(); }
+  try { return (await execute('git', ['-C', root, ...args], { maxBuffer: 1_048_576,
+    env: Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_'))) })).stdout.trim(); }
   catch { throw new Error('Commit-bound Git evidence is unavailable.'); }
 }
 

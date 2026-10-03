@@ -8,7 +8,8 @@ import { pathToFileURL } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { verifyValidationReceipt } from './agent-validation-receipt.mjs';
 
-const execute = promisify(execFile);
+const run = promisify(execFile);
+const execute = (file, args) => run(file, args, { env: Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_'))) });
 const directories = [];
 let root;
 let head;
@@ -133,6 +134,22 @@ describe('native validation receipt verification', () => {
     const hook = await fixture(() => {}, (receipt) => { receipt.hook.sourceAtHead = 'a'.repeat(40); });
     await expect(verifyValidationReceipt(hook.input)).rejects.toThrow('provenance mismatch');
   });
+  it('isolates inherited hook Git variables for verifier reads and temporary repository creation', async () => {
+    const value = await fixture();
+    const isolated = await mkdtemp(path.join(tmpdir(), 'navet-hook-git-env-'));directories.push(isolated);
+    const prior = process.env.GIT_DIR;
+    process.env.GIT_DIR = path.join(root, '.git');
+    try {
+      expect((await verifyValidationReceipt(value.input)).result).toBe('pass');
+      await execute('git', ['init', '--quiet', isolated]);
+      expect(await readFile(path.join(isolated, '.git/HEAD'), 'utf8')).toMatch(/^ref:/);
+      expect(await git(['config', '--get', 'core.bare'])).toBe('false');
+    } finally {
+      if (prior === undefined) delete process.env.GIT_DIR;
+      else process.env.GIT_DIR = prior;
+    }
+  });
+
   it('rejects a changed hook at the actual referenced commit despite apparently passing output', async () => {
     await writeFile(path.join(root, '.husky/pre-push'), 'pnpm typecheck\n');
     await git(['add', '.husky/pre-push']);
