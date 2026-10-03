@@ -24,6 +24,25 @@ function symbolKey(symbol) {
   return declaration ? `${declaration.getSourceFile().fileName}:${declaration.pos}` : null;
 }
 
+function storyTitle(source, checker) {
+  const assignment = source.statements.find((node) => ast.isExportAssignment(node) && !node.isExportEquals);
+  let value = assignment?.expression;
+  const seen = new Set();
+  while (value && !seen.has(value)) {
+    seen.add(value);
+    if (ast.isParenthesizedExpression(value) || ast.isAsExpression(value) || ast.isSatisfiesExpression(value)) value = value.expression;
+    else if (ast.isIdentifier(value)) {
+      const symbol = resolveSymbol(checker, checker.getSymbolAtLocation(value));
+      const declaration = (symbol?.valueDeclaration ?? symbol?.declarations?.[0])?.resolve();
+      value = declaration && ast.isVariableDeclaration(declaration) ? declaration.initializer : null;
+    } else break;
+  }
+  if (!value || !ast.isObjectLiteralExpression(value)) return null;
+  const property = value.properties.find((node) => ast.isPropertyAssignment(node) &&
+    (ast.isIdentifier(node.name) || ast.isStringLiteral(node.name)) && node.name.text === 'title');
+  return property && ast.isStringLiteral(property.initializer) ? property.initializer.text : null;
+}
+
 export function generateCatalog({ root, entries, stories = [], compilerOptions = {}, maturityInventory }) {
   root = realpathSync(path.resolve(root));
   entries = entries.map((entry) => ({ ...entry, file: realpathSync(path.resolve(root, entry.file)) }));
@@ -82,11 +101,17 @@ export function generateCatalog({ root, entries, stories = [], compilerOptions =
     }
     for (const file of stories) {
       const source = program.getSourceFile(file);
-      let title = null;
+      const title = storyTitle(source, checker);
       const imports = new Set();
       const storyExports = [];
       function visit(node) {
-        if (ast.isPropertyAssignment(node) && node.name.getText(source) === 'title' && ast.isStringLiteral(node.initializer)) title ??= node.initializer.text;
+        if (ast.isNamespaceImport(node)) {
+          const module = resolveSymbol(checker, checker.getSymbolAtLocation(node.name));
+          if (module) for (const exported of checker.getExportsOfModule(module)) {
+            const resolved = resolveSymbol(checker, exported);
+            if (resolved?.flags & SymbolFlags.Value) imports.add(symbolKey(resolved));
+          }
+        }
         if (ast.isImportSpecifier(node) || ast.isPropertyAccessExpression(node) || (ast.isImportClause(node) && node.name)) {
           imports.add(symbolKey(resolveSymbol(checker, checker.getSymbolAtLocation(node.name))));
         }

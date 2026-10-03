@@ -13,6 +13,8 @@ These suites block release-oriented workflows and should stay intentionally smal
 
 | Group | Why it exists | Status |
 |---|---|---|
+| `scripts/agent-validation-receipt.test.mjs` | Native validation receipt provenance, exact commit/hook identity and redaction | Keep |
+| `scripts/agent-codex-usage.test.mjs` | Private execution accounting verifies thread identity, cumulative counter integrity, incomplete-write handling and redacted observations | Keep |
 | `scripts/agent-task-store.test.mjs`, `scripts/agent-planning-scope.test.mjs`, `scripts/agent-linear-event.test.mjs`, `scripts/agent-linear-inbox.test.mjs`, `scripts/agent-linear-refresh.test.mjs` | Private lifecycle authority, signed planning events, durable receipt acknowledgement, fresh service-read reconciliation, scope withdrawal and duplicate/recovery boundaries | Keep |
 | `scripts/agent-design-tokens.test.mjs`, `scripts/agent-design-token-css.test.mjs` | Agent design context preserves source provenance and units; CSS discovery rejects imports outside the checkout and installed Tailwind package and prevents stylesheet JavaScript execution | Keep |
 | `assets/public/boot-i18n.test.ts`, `scripts/vite-preload-graph.test.mjs` | Low-power startup and authenticated-transition preload graph remain parseable and release-gated | Keep |

@@ -87,6 +87,8 @@
     "report:bundle": "node scripts/inspect-bundle.mjs",
     "report:ui-kit": "node scripts/check-ui-kit-usage.mjs",
     "agent:tasks": "node scripts/agent-task.mjs",
+    "agent:usage": "node scripts/agent-codex-usage-cli.mjs",
+    "agent:validation": "node scripts/agent-validation-receipt-cli.mjs",
     "agent:components": "node scripts/agent-component-catalog.mjs",
     "agent:tokens": "node scripts/agent-design-tokens.mjs",
     "test": "vitest --config vitest.unit.config.ts --project unit",
