@@ -148,6 +148,7 @@
     "babel-plugin-react-compiler": "^1.0.0",
     "husky": "^9.1.7",
     "jsdom": "^30.0.1",
+    "mockdate": "^3.0.5",
     "playwright": "^1.62.1",
     "postcss": "8.5.26",
     "sharp": "^0.35.3",
