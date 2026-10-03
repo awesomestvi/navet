@@ -14,7 +14,11 @@ const NUMBER = '-?\\d+(?:\\.\\d+)?';
 function dimensionsIn(css) {
   const tree = postcss.parse(css);
   const variables = new Map();
-  tree.walkAtRules('import', () => { throw new Error('Unresolved stylesheet import in token export.'); });
+  tree.walkAtRules('import', (rule) => {
+    // Font styles do not contribute to the scalar dimensions exported here.
+    if (/^url\(\s*["']?https:\/\/fonts\.googleapis\.com\//i.test(rule.params)) return;
+    throw new Error('Unresolved stylesheet import in token export.');
+  });
   tree.walkDecls((decl) => {
     if (!decl.prop.startsWith('--')) return;
     const record = variables.get(decl.prop) ?? { values: new Set(), global: false };

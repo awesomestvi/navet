@@ -19,6 +19,24 @@ function setup(values, css = '') {
 }
 
 describe('faithful compiled dimension discovery', () => {
+  it.each([
+    'url("https://fonts.googleapis.com/css2?family=Inter&display=swap")',
+    "url('https://fonts.googleapis.com/css2?family=Inter&display=swap')",
+    'url(https://fonts.googleapis.com/css2?family=Inter&display=swap)',
+  ])('resolves dimensions with a retained Google Fonts import %s', async (fontImport) => {
+    const { resolve } = setup("gap: 'gap-4'", `@import ${fontImport};`);
+    expect((await resolve()).tokens.gap.$value).toEqual({ value: 1, unit: 'rem' });
+  });
+
+  it.each([
+    'url("./missing.css")',
+    'url("https://example.com/styles.css")',
+    'url("https://fonts.googleapis.com.example.com/styles.css")',
+  ])('rejects an unresolved stylesheet import %s', async (stylesheetImport) => {
+    const { resolve } = setup("gap: 'gap-4'", `@import ${stylesheetImport};`);
+    await expect(resolve()).rejects.toThrow('Unresolved stylesheet import');
+  });
+
   it('resolves spacing, inset, explicit radius, control size and equal icon axes with their real units', async () => {
     const { document, resolve } = setup("gap: 'gap-1.5', inset: 'p-3', radius: 'rounded-[22px]', control: 'min-h-[42px]', icon: 'h-4 w-4'");
     const before = JSON.stringify(document);
