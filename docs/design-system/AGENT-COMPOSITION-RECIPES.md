@@ -12,7 +12,7 @@ does not establish a stable public API or complete accessibility coverage.
 | Compact device controls | `BaseCard` with its `title`, `header` or `actionRow` slots | [BaseCard](../../packages/app/src/components/primitives/base-card.stories.tsx): all supported sizes, long names, active/inactive and unavailable behavior. Keep one primary control path. |
 | Controls with secondary configuration | Card variant of `BaseCardDialog`, `navigation="overflow"`, controls tab first | [Controls-first dialog](../../packages/app/src/components/patterns/card-dialog-overflow-menu.stories.tsx): More actions, edit name/room, secondary section, Back to controls, close/reopen. |
 | Mobile detail or command sheet | `SheetSurface` directly containing `SheetSurfaceHeader` and body | [Sheet surface](../../packages/app/src/components/primitives/sheet-surface.stories.tsx): open on a phone, dismissal, scroll, long content and desktop visibility. |
-| Sidebar-to-detail navigation | `NavigationWorkspace.Frame` with its named parts | [Navigation workspace](../../packages/app/src/components/patterns/navigation-workspace.stories.tsx): frame context, labeled navigation, `aria-current`, explicit sidebar/detail grid and owned scroll regions. The namespace is a composition object. |
+| Sidebar-to-detail navigation | `NavigationWorkspace.Frame` with its named parts; catalog query: `NavigationWorkspaceFrame` | [Navigation workspace](../../packages/app/src/components/patterns/navigation-workspace.stories.tsx): frame context, labeled navigation, `aria-current`, explicit sidebar/detail grid and owned scroll regions. The namespace is a composition object. |
 | Settings form | Existing settings-dialog shell; `FieldBlock` around control primitives | [Field states](../../packages/app/src/components/patterns/field-block.stories.tsx): hint, required, error and disabled. Inspect a neighboring feature's settings dialog for save and cancellation behavior. |
 | Dashboard summary | Existing feature summary inside the shared dashboard layout | [Dashboard guidance](../product/dashboard-principles.md) and the nearest summary implementation: reading order, condensed/expanded presentation and no-data behavior. Select its actual feature composition rather than assuming a generic summary-bar component. |
 | Empty card or section | `CardEmptyState` inside `BaseCard`; `DashboardEmptyState` for sections | [Card empty states](../../packages/app/src/components/patterns/card-empty-state.stories.tsx) and [dashboard empty states](../../packages/app/src/components/patterns/dashboard-empty-state.stories.tsx): small/large sizes, optional action, no matches versus unconfigured content. |
@@ -67,7 +67,14 @@ and reopened state. Record actual findings rather than assuming the shared shell
 ## Navigation and selection contracts
 
 `NavigationWorkspace` exports named parts such as `Frame` and `Item`; render those members rather
-than the namespace object. The frame provides app theme-derived context to grouped surfaces,
+than the namespace object. Query `pnpm agent:components NavigationWorkspaceFrame` for the frame
+contract or `pnpm agent:components NavigationWorkspace` for the cataloged workspace exports.
+Catalog queries use exported names, not dotted namespace member names. `ScrollArea` is available
+only as `NavigationWorkspace.ScrollArea`; inspect its definition in
+[the workspace source](../../packages/app/src/components/patterns/navigation-workspace.tsx).
+It accepts div attributes and supplies full-height vertical scrolling, overscroll containment and
+touch panning. The caller must provide a bounded-height region; it does not create a scroll landmark
+or manage focus. The frame provides app theme-derived context to grouped surfaces,
 headers, sidebar and rows. Callers own responsive column layout, the labeled navigation landmark,
 selection callbacks and `aria-current`. `Item`'s `active` prop controls visual state; provide an
 `ItemButton` with a meaningful name and navigation behavior. `Content` renders a main region, so
