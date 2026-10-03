@@ -47,6 +47,65 @@ function completeEvidence(task) {
   ));
 }
 
+function validateResourceLimits(limits) {
+  const keys = ['maxElapsedMs', 'maxModelTokens', 'maxToolCalls'];
+  if (!limits || Object.keys(limits).length !== keys.length ||
+      keys.some((key) => !Number.isSafeInteger(limits[key]) || limits[key] <= 0)) {
+    throw new Error('Resource limits require positive integer elapsed milliseconds, model tokens and tool calls.');
+  }
+}
+
+export function resourceStatus(task, now = Date.now()) {
+  if (!task.resources) return { bounded: false };
+  const { limits, startedAt, usage, reservations } = task.resources;
+  validateResourceLimits(limits);
+  if (!Array.isArray(reservations) || (startedAt != null && (!Number.isFinite(startedAt) || startedAt <= 0 || startedAt > now)) ||
+      (usage && (!Number.isSafeInteger(usage.modelTokens) || usage.modelTokens < 0 ||
+        !Number.isSafeInteger(usage.toolCalls) || usage.toolCalls < 0 || !Number.isFinite(usage.observedAt) ||
+        usage.observedAt <= 0 || usage.observedAt > now || typeof usage.reference !== 'string' || !usage.reference.trim())) ||
+      reservations.some((item) => !Number.isSafeInteger(item.modelTokens) || item.modelTokens < 0 ||
+        !Number.isSafeInteger(item.toolCalls) || item.toolCalls < 0 || typeof item.token !== 'string' ||
+        !item.token || typeof item.event !== 'string' || !item.event || !Number.isFinite(item.reservedAt) ||
+        item.reservedAt <= 0 || item.reservedAt > now || (item.settledAt != null &&
+          (!Number.isFinite(item.settledAt) || item.settledAt < item.reservedAt || item.settledAt > now)))) {
+    throw new Error('Invalid execution resource state.');
+  }
+  const pending = reservations.filter((item) => !item.settledAt);
+  const modelTokens = (usage?.modelTokens ?? 0) + pending.reduce((total, item) => total + item.modelTokens, 0);
+  const toolCalls = (usage?.toolCalls ?? 0) + pending.reduce((total, item) => total + item.toolCalls, 0);
+  return {
+    bounded: true,
+    measurementFresh: observationIsFresh(usage, now),
+    remaining: {
+      elapsedMs: Math.max(0, limits.maxElapsedMs - (startedAt == null ? 0 : now - startedAt)),
+      modelTokens: Math.max(0, limits.maxModelTokens - modelTokens),
+      toolCalls: Math.max(0, limits.maxToolCalls - toolCalls),
+    },
+    exceeded: (startedAt != null && now - startedAt >= limits.maxElapsedMs) ||
+      (usage?.modelTokens ?? 0) >= limits.maxModelTokens || (usage?.toolCalls ?? 0) >= limits.maxToolCalls ||
+      modelTokens > limits.maxModelTokens || toolCalls > limits.maxToolCalls,
+  };
+}
+
+function requireResourceCapacity(task, now) {
+  const status = resourceStatus(task, now);
+  if (status.bounded && (!status.measurementFresh || status.exceeded)) {
+    throw new Error(status.exceeded ? 'Execution resource budget exhausted.' : 'Fresh resource usage observation is required.');
+  }
+  return status;
+}
+
+function bindResourceReservation(task, input, now, operation) {
+  const status = requireResourceCapacity(task, now);
+  if (!status.bounded) return;
+  const reservation = task.resources.reservations.find((item) => item.token === input.resourceToken);
+  if (!reservation || reservation.settledAt || reservation.toolCalls < 1 ||
+      (reservation.operation && reservation.operation !== operation)) {
+    throw new Error('An unused resource reservation for this operation is required.');
+  }
+  reservation.operation = operation;
+}
+
 // State records retain evidence; they do not grant authority. The coordinator must verify
 // actor permissions and live source/approval state through the owning service before dispatch.
 export class AgentTaskStore {
@@ -140,7 +199,7 @@ export class AgentTaskStore {
     return this.transaction((state) => state.tasks);
   }
 
-  async enqueue({ source, requestId, mode, revision, authority, brief, requiredGates = [] }) {
+  async enqueue({ source, requestId, mode, revision, authority, brief, requiredGates = [], resourceLimits }) {
     const id = taskId(source, requestId);
     if (!['research', 'implement', 'audit', 'steward'].includes(mode)) throw new Error('Unsupported task mode.');
     requireValue(revision, 'revision');
@@ -155,12 +214,14 @@ export class AgentTaskStore {
       throw new Error('Invalid required gates.');
     }
     const gates = [...new Set([...requiredGates, 'output'])];
+    if (resourceLimits !== undefined) validateResourceLimits(resourceLimits);
     return this.transaction((state) => {
       const existing = state.tasks.find((task) => task.id === id);
       if (existing) {
         if (existing.revision !== revision || existing.mode !== mode ||
             !isDeepStrictEqual(existing.brief, brief) ||
             !isDeepStrictEqual([...existing.requiredGates].sort(), [...gates].sort()) ||
+            !isDeepStrictEqual(existing.resources?.limits, resourceLimits) ||
             existing.authority.actor !== authority.actor || existing.authority.reference !== authority.reference) {
           throw new Error('Request identity was reused with different scope.');
         }
@@ -171,6 +232,7 @@ export class AgentTaskStore {
         state: 'queued', head: null, requiredGates: gates,
         evidence: [], dispatch: null, lease: null, retries: 0,
         createdAt: this.now(), updatedAt: this.now(), history: [],
+        ...(resourceLimits ? { resources: { limits: resourceLimits, startedAt: null, usage: null, reservations: [] } } : {}),
       };
       state.tasks.push(task);
       return task;
@@ -199,21 +261,71 @@ export class AgentTaskStore {
               input.observation.owner !== task.lease.owner) throw new Error('Expired lease requires a fresh owner observation.');
         }
         task.lease = { owner: input.owner, expiresAt: now + input.durationMs };
+        if (task.resources && task.resources.startedAt == null) task.resources.startedAt = now;
       } else {
         if (!task.lease || task.lease.owner !== input.owner || task.lease.expiresAt <= now) {
           throw new Error('A current owner lease is required.');
         }
-        if (action === 'dispatch-intent') {
+        if (action === 'release') {
+          requireValue(input.reason, 'release reason');
+          task.lease = null;
+        } else if (action === 'resource-usage') {
+          if (!task.resources) throw new Error('Task has no configured resource limits.');
+          const usage = input.usage;
+          if (!observationIsFresh(usage, now) ||
+              !Number.isSafeInteger(usage.modelTokens) || usage.modelTokens < 0 ||
+              !Number.isSafeInteger(usage.toolCalls) || usage.toolCalls < 0 ||
+              (task.resources.usage && (usage.modelTokens < task.resources.usage.modelTokens ||
+                usage.toolCalls < task.resources.usage.toolCalls || usage.observedAt < task.resources.usage.observedAt))) {
+            throw new Error('Resource usage must be a fresh monotonic cumulative observation.');
+          }
+          requireValue(usage.reference, 'usage reference');
+          const settled = input.settledReservations ?? [];
+          if (!Array.isArray(settled) || settled.some((token) =>
+            !task.resources.reservations.some((item) => item.token === token && item.reservedAt <= usage.observedAt))) {
+            throw new Error('Unknown resource settlement or observation preceding reservation.');
+          }
+          for (const item of task.resources.reservations.filter((item) => settled.includes(item.token))) {
+            item.settledAt = usage.observedAt;
+            item.reference = usage.reference;
+          }
+          task.resources.usage = usage;
+        } else if (action === 'reserve-resources') {
+          if (!task.resources || TERMINAL.has(task.state)) throw new Error('A bounded active task is required.');
+          requireValue(input.event, 'resource event');
+          if (!Number.isSafeInteger(input.modelTokens) || input.modelTokens < 0 ||
+              !Number.isSafeInteger(input.toolCalls) || input.toolCalls < 0 ||
+              (input.modelTokens === 0 && input.toolCalls === 0)) throw new Error('Invalid resource reservation.');
+          const existing = task.resources.reservations.find((item) => item.event === input.event);
+          if (existing) {
+            if (existing.modelTokens !== input.modelTokens || existing.toolCalls !== input.toolCalls) {
+              throw new Error('Resource event was reused with a different allocation.');
+            }
+            return { ...task, resourceDecision: { action: existing.settledAt ? 'skip' : 'reconcile', reservation: existing } };
+          }
+          const status = requireResourceCapacity(task, now);
+          if (input.modelTokens > status.remaining.modelTokens || input.toolCalls > status.remaining.toolCalls) {
+            throw new Error('Resource reservation exceeds the remaining budget.');
+          }
+          const reservation = { event: input.event, modelTokens: input.modelTokens, toolCalls: input.toolCalls,
+            token: randomUUID(), reservedAt: now };
+          task.resources.reservations.push(reservation);
+          task.updatedAt = now;
+          task.history.push({ action, owner: input.owner, at: now, reservation });
+          return { ...task, resourceDecision: { action: 'execute', reservation } };
+        } else if (action === 'dispatch-intent') {
           // Save intent before the external call. Pending outcomes require reconciliation,
           // not another create_thread call. The same token is returned on a retry.
           if (TERMINAL.has(task.state)) throw new Error('Terminal work cannot be dispatched.');
           nextDispatchAction = task.dispatch ? 'reconcile' : 'create';
           if (!task.dispatch) {
+            bindResourceReservation(task, input, now, 'dispatch');
             if (!observationIsFresh(input.authority, now) || input.authority.actor !== task.authority.actor ||
                 input.authority.reference !== task.authority.reference || input.authority.revision !== task.revision) {
               throw new Error('Dispatch requires freshly rechecked authority for this revision.');
             }
-            task.dispatch = { token: randomUUID(), intentAt: now, clientThreadId: null, threadId: null };
+            task.dispatch = { token: randomUUID(), intentAt: now, clientThreadId: null, threadId: null,
+              ...(task.resources ? { resourceToken: input.resourceToken } : {}) };
             task.authority = input.authority;
           }
         } else if (action === 'bind') {
@@ -243,9 +355,11 @@ export class AgentTaskStore {
           } else {
             const fresh = events.filter((event) => !existing.some((receipt) => receipt.event === event));
             if (fresh.length) {
+              bindResourceReservation(task, input, now, `followup:${JSON.stringify(fresh)}`);
               const token = randomUUID();
               const receipts = fresh.map((event) => ({ event, token, threadId: task.dispatch.threadId,
-                head: task.head, status: 'pending', intentAt: now }));
+                head: task.head, status: 'pending', intentAt: now,
+                ...(task.resources ? { resourceToken: input.resourceToken } : {}) }));
               task.followups.push(...receipts);
               followupDecision = { action: 'send', token, events: fresh, threadId: task.dispatch.threadId };
             } else followupDecision = { action: 'skip', events };
@@ -292,6 +406,7 @@ export class AgentTaskStore {
           task.evidence.push(item);
         } else if (action === 'transition') {
           if (!STATES[task.state]?.includes(input.state)) throw new Error(`Invalid transition ${task.state} -> ${input.state}.`);
+          if (['investigating', 'building', 'verifying'].includes(input.state)) requireResourceCapacity(task, now);
           if (['awaiting-approval', 'delivered'].includes(input.state)) {
             if (!task.dispatch?.threadId) throw new Error('Confirmed delivery handle is required.');
             if (!completeEvidence(task)) throw new Error('Current-head required evidence is incomplete.');
@@ -316,7 +431,8 @@ export class AgentTaskStore {
       task.updatedAt = now;
       task.history.push({ action, owner: input.owner, state: task.state, head: task.head, at: now,
         ...(action === 'evidence' ? { evidence: input.evidence } : {}),
-        ...(action === 'transition' ? { reason: input.reason } : {}),
+        ...(action === 'resource-usage' ? { usage: input.usage, settledReservations: input.settledReservations ?? [] } : {}),
+        ...(['transition', 'release'].includes(action) ? { reason: input.reason } : {}),
       });
       return nextDispatchAction ? { ...task, nextDispatchAction } : followupDecision ? { ...task, followupDecision } : task;
     });

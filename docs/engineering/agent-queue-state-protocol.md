@@ -22,6 +22,9 @@ if it is unavailable, report the missing owner privately before mutating state.
 4. Claim with the current coordinator's thread ID and a bounded lease. For another expired owner,
    inspect its actual task status. Only confirmed missing or terminal ownership permits recovery.
    Observation timeouts and unreachable services leave ownership unresolved.
+   A current owner can deliberately hand off record writing with `release` and a reason after
+   preserving its checkpoint. Claiming a released record resumes the existing delivery and keeps
+   its capacity occupied; it does not authorize a replacement task.
 5. Immediately recheck permission, acceptance, withdrawal, scope, source state and duplicates.
    Call `dispatch-intent` with that fresh authority observation, matching actor, reference and
    revision. The returned `nextDispatchAction` is `create` only for the first committed intent.
@@ -72,5 +75,10 @@ requires independently verifiable human-action provenance before activation.
 
 If store access, state validation, ownership, authority or output verification fails, preserve the
 record and report the concrete failure privately. Do not create a replacement task. Quiet unchanged
-state needs no extra notification. Record unresolved expenditure measurement and execution-limit
-coverage rather than treating the lease duration as a total task runtime limit.
+state needs no extra notification. For bounded intake, include the approved numerical
+`resourceLimits` and follow the [execution budget procedure](agent-task-lifecycle.md#execution-budgets):
+refresh actual cumulative usage, reserve before executing, bind operation tokens, and settle only
+verified completed usage. Inspect the real worker when a limit is reached and preserve its checkpoint.
+Identify existing unbounded records and unavailable measurements in coverage reports. Lease duration
+controls ownership; execution budgets control the task's elapsed time and resource units. Activation
+requires a verified usage source and monitored-worker pilot.
