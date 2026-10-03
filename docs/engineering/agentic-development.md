@@ -46,7 +46,7 @@ criteria. It must ask for missing reproduction information instead of speculatin
 - Forbidden: merge its own work, change foundational principles to fit a solution, weaken
   tests, publish, or report success with a failing deterministic gate.
 
-The delivery agent runs deterministic validation, then opens a non-draft PR. CodeRabbit reviews
+The delivery agent runs deterministic validation, then opens a non-draft PR. Codex reviews
 the PR while CI runs and posts findings as review comments. Verify each finding against the current
 PR head, fix valid issues, and continue until no actionable findings remain. The maintainer decides
 when to merge.
@@ -179,8 +179,8 @@ Research work ends after its useful conclusion is recorded. Implementation work 
 linked PR; the agent may push feedback-driven revisions but may not merge its own work.
 
 The private Codex runner also checks open, non-draft PRs linked to its delivery tasks for new,
-unresolved CodeRabbit review threads. It sends the comment links and IDs to the existing delivery
-task once, without creating a new task or making a public claim. The delivery task verifies each
+unresolved Codex review threads authored by `chatgpt-codex-connector[bot]`. It sends the comment
+links and IDs to the existing delivery task once, without creating a new task or making a public claim. The delivery task verifies each
 finding against the current PR head, fixes only valid issues, runs focused checks, then replies in
 the review thread and resolves it when addressed. If a finding needs a product or architecture
 decision, the task asks the maintainer instead of guessing. The runner does not dispatch comments
@@ -243,13 +243,22 @@ configured for the repository:
 3. Configure one local Codex scheduled task to poll request labels, accepted `/navet` commands,
    accepted answers, scheduled issues authored by `github-actions[bot]` with the expected
    workflow-owned issue type,
-   and unresolved CodeRabbit review threads on PRs linked to its delivery tasks. Do not authorize
-   work from issue-body markers. Dispatch no more than one issue or PR per run and follow the
+   and unresolved Codex review threads authored by `chatgpt-codex-connector[bot]` on PRs linked
+   to its delivery tasks. Do not authorize work from issue-body markers. Dispatch no more than one issue or PR per run and follow the
    private queue contract above. Keep only one active queue runner so two agents cannot claim the
    same work.
-4. Install CodeRabbit as the independent, read-only PR reviewer. Let it review non-draft PRs automatically; do not add a second general
-   reviewer until measured misses justify the duplicate cost. Reviewer comments are advisory;
-   deterministic CI and the maintainer's merge decision remain authoritative.
+4. Connect `awesomestvi/navet` to Codex using the maintainer's ChatGPT account. In
+   [Codex code review settings](https://chatgpt.com/settings/code-review), open the repository.
+   Under **Review code**, enable **Automatic review**, set **Review** to **All PRs**, and set
+   **Trigger** to **On every push** so updated PR heads receive fresh review. GitHub reviews use the account's
+   ChatGPT plan code-review allowance. Local reviews with a ChatGPT-authenticated Codex CLI use
+   the general Codex allowance.
+   Codex follows the root and applicable scoped `AGENTS.md` files, including their **Code Review
+   Rules**. To request a review of an existing PR, comment `@codex review` and verify the posted
+   result from `chatgpt-codex-connector[bot]`; an eyes reaction indicates that the request was
+   received, not that review is complete. Verify the reviewed commit against the current PR head.
+   Keep one general reviewer active. Review findings are advisory; deterministic CI and the
+   maintainer's merge decision remain authoritative.
 5. Protect `main`: require a pull request and resolved review conversations. For a solo-maintainer
    repository, set required approving reviews to zero and disable required CODEOWNER review; the
    maintainer's merge records acceptance for the current head. Require **CI / Product review gate**
