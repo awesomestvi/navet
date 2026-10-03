@@ -152,12 +152,13 @@ queue research by creating an issue as `github-actions[bot]`; the runner verifie
 the expected workflow-owned issue type instead of trusting issue-body text or generating a
 command comment.
 
-Automated issue and pull-request comments and runner claim reactions use the dedicated
+Automated issue comments and runner claim reactions use the dedicated
 `navet-nisse[bot]` GitHub App identity and should read like useful collaboration with a person.
 Accepted command reactions use `github-actions[bot]`.
-Branches, commits, pushes, and pull requests continue to use the maintainer's GitHub identity.
-Manual maintainer comments also remain visibly authored by the maintainer. The App credential is
-restricted to the public issue and PR-conversation operations exposed by the repository wrapper.
+Branches, commits, pushes, pull requests, and review-thread replies use the maintainer's GitHub
+identity. Navet Nisse posts progress updates and blocking questions on the linked issue and reads
+PR feedback through its read-only Pull requests permission. The App credential is used for issue
+comments, issue-comment reactions, and request-label removal through the repository wrapper.
 
 Review CI results and Cloudflare previews directly from the pull request's checks. Responsive
 screenshots are available in the CI run's artifacts.
@@ -182,9 +183,10 @@ The private Codex runner also checks open, non-draft PRs linked to its delivery 
 unresolved CodeRabbit review threads. It sends the comment links and IDs to the existing delivery
 task once, without creating a new task or making a public claim. The delivery task verifies each
 finding against the current PR head, fixes only valid issues, runs focused checks, then replies in
-the review thread and resolves it when addressed. If a finding needs a product or architecture
-decision, the task asks the maintainer instead of guessing. The runner does not dispatch comments
-on unrelated PRs, and review feedback never authorizes a merge.
+the review thread and resolves it when addressed using the maintainer's authenticated GitHub CLI
+or API. If a finding needs a product or architecture decision, the task asks the maintainer
+instead of guessing. The runner does not dispatch comments on unrelated PRs, and review feedback
+never authorizes a merge.
 
 ## Human Authority
 
@@ -219,16 +221,14 @@ Repository files define the workflow, but the following live GitHub and Cloudfla
 configured for the repository:
 
 1. Create the private **Navet Nisse** GitHub App and install it only on `awesomestvi/navet`. Grant
-   Issues and Pull requests read/write, plus mandatory Metadata read. Do not grant Contents, Actions,
-   Administration, Environments, Secrets, Workflows, package deletion, or organization/account
-   permissions. Pull-request conversation comments use GitHub's issue-comment API and require
-   the installed Pull requests permission. GitHub's permission is broader than comment-only
-   access; the wrapper and agent authority restrict how it is used. Approve permission updates
-   on the existing installation as well as saving the App registration.
+   Issues read/write, Pull requests read-only, and mandatory Metadata read. Do not grant Contents,
+   Actions, Administration, Environments, Secrets, Workflows, package deletion, or organization
+   and account permissions. Use the App for issue communication and read-only PR monitoring. Delivery tasks
+   use the maintainer's authenticated GitHub CLI or API for PR updates and review-thread replies.
 2. Store the App ID, installation ID, and private-key path in the private runner environment. Use
-   the repository wrapper only for automated comments, command reactions, and removal of the two
-   request labels after successful dispatch. It deliberately does not expose arbitrary `gh`, Git
-   push, pull-request creation, label addition, or repository-content operations.
+   the repository wrapper only for automated issue comments, issue-command reactions, and removal
+   of the two request labels after successful dispatch. It deliberately does not expose arbitrary
+   `gh`, Git push, pull-request creation, label addition, or repository-content operations.
    Confirm that the installation is limited to this repository and has no Contents, Administration,
    Actions, Environments, Secrets, or Workflows permissions. Verify that the wrapper rejects
    pull-request creation and arbitrary API operations. The runner must also have no production
@@ -236,7 +236,7 @@ configured for the repository:
    Configure `NAVET_NISSE_APP_ID`, `NAVET_NISSE_INSTALLATION_ID`, and
    `NAVET_NISSE_PRIVATE_KEY_PATH`, or point `NAVET_NISSE_CONFIG_PATH` at a private JSON file with
    `appId`, `installationId`, and `privateKeyPath`. Then post public replies with
-   `node scripts/run-as-navet-nisse.mjs comment <issue-or-pr-number> --body-file <path>` and manage
+   `node scripts/run-as-navet-nisse.mjs comment <issue-number> --body-file <path>` and manage
    command reactions with its `react` and `unreact` operations, and clear a dispatched request with
    `node scripts/run-as-navet-nisse.mjs remove-request-label <issue-number> <research|implement>`.
    The wrapper creates a short-lived installation token for each operation and cannot modify the
@@ -267,9 +267,8 @@ configured for the repository:
    Add `NAVET_NISSE_CLIENT_ID` and `NAVET_NISSE_APP_PRIVATE_KEY` to the `production` environment
    for stable issue follow-up. Use the GitHub App Client ID, not its numeric App ID; the local
    runner's `NAVET_NISSE_APP_ID` is a separate setting. Stable issue follow-up requires Issues
-   read/write and Metadata read; the local runner also needs the installed Pull requests
-   permission for PR-conversation replies. The workflow's own read token identifies merged PRs
-   and linked issues.
+   read/write and Metadata read. The local runner uses Pull requests read-only for monitoring.
+   The workflow's own read token identifies merged PRs and linked issues.
 7. Keep Cloudflare preview deployments public only for repository/demo data. Preview projects must
    not receive Home Assistant URLs, tokens, provider OAuth secrets, production cookies, or private
    tunnel credentials.
