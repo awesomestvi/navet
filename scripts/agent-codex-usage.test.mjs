@@ -72,9 +72,9 @@ test('rejects foreign-thread nested operations', async () => {
   const record = nested(); record.payload.thread_id = 'foreign';
   await assert.rejects(observe([meta, record, usage()]), /matching thread/);
 });
-test('missing usage is not reported as zero, including unsupported legacy-only records', async () => {
+test('missing usage is not reported as zero, including rate-limit-only current records', async () => {
   await assert.rejects(observe([meta]), /missing/);
-  await assert.rejects(observe([meta, { type: 'event_msg', payload: { type: 'token_count', info: {} } }]), /missing/);
+  await assert.rejects(observe([meta, { type: 'event_msg', payload: { type: 'token_count', info: null } }]), /missing/);
 });
 test('rejects regressing counters and observation times', async () => {
   await assert.rejects(observe([meta, usage(1300), usage(1200, 3000)]), /regressing/);
@@ -92,4 +92,34 @@ test('requires metadata and a stable tool-call identity', async () => {
 });
 test('rejects an empty evidence file', async () => {
   await assert.rejects(observe([]), /empty or unavailable/);
+});
+
+function tokenCount(total = 1200, timestamp = 2000) {
+  return { type: 'event_msg', timestamp: new Date(timestamp).toISOString(), payload: {
+    type: 'token_count', info: { total_token_usage: usage(total).payload.thread_token_usage,
+      last_token_usage: { input_tokens: 1, output_tokens: 1, total_tokens: 2 }, model_context_window: 258400 },
+    rate_limits: { private: 'PRIVATE_LIMITS' },
+  } };
+}
+test('reads current token_count cumulative totals with session identity and redacted provenance', async () => {
+  const result = await observe([meta, tokenCount(), tokenCount(1300, 3000)]);
+  assert.equal(result.modelTokens, 1300);
+  assert.equal(result.tokenUsage.cached_input_tokens, 800);
+  assert.equal(result.source.observedAt, 3000);
+  assert.doesNotMatch(JSON.stringify(result), /PRIVATE_|last_token_usage|rate_limits/);
+});
+test('ignores rate-limit-only events without making a prior measurement fresh', async () => {
+  const result = await observe([meta, tokenCount(), { type: 'event_msg', payload: { type: 'token_count', info: null } }]);
+  assert.equal(result.modelTokens, 1200);
+  assert.equal(result.source.observedAt, 2000);
+});
+test('validates current counters, timestamps and optional explicit thread identity', async () => {
+  await assert.rejects(observe([meta, tokenCount(1300), tokenCount(1200, 3000)]), /regressing/);
+  await assert.rejects(observe([meta, tokenCount(1200, 3000), tokenCount(1300, 2000)]), /observation time/);
+  await assert.rejects(observe([meta, tokenCount(1200, 6000)]), /observation time/);
+  await assert.rejects(observe([tokenCount()]), /metadata/);
+  const foreign = tokenCount(); foreign.payload.thread_id = 'foreign';
+  await assert.rejects(observe([meta, foreign]), /another thread/);
+  const malformed = tokenCount(); delete malformed.payload.info.total_token_usage.output_tokens;
+  await assert.rejects(observe([meta, malformed]), /Invalid/);
 });

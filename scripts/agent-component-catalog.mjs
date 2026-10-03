@@ -107,7 +107,10 @@ export function generateCatalog({ root, entries, stories = [], compilerOptions =
       function visit(node) {
         if (ast.isNamespaceImport(node)) {
           const module = resolveSymbol(checker, checker.getSymbolAtLocation(node.name));
-          if (module) for (const exported of checker.getExportsOfModule(module)) imports.add(symbolKey(resolveSymbol(checker, exported)));
+          if (module) for (const exported of checker.getExportsOfModule(module)) {
+            const resolved = resolveSymbol(checker, exported);
+            if (resolved?.flags & SymbolFlags.Value) imports.add(symbolKey(resolved));
+          }
         }
         if (ast.isImportSpecifier(node) || ast.isPropertyAccessExpression(node) || (ast.isImportClause(node) && node.name)) {
           imports.add(symbolKey(resolveSymbol(checker, checker.getSymbolAtLocation(node.name))));

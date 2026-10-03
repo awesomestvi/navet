@@ -104,11 +104,12 @@ it.each([
 it('associates namespace-enumerated inventory stories with the imported module exports', () => {
   const root = mkdtempSync(path.join(tmpdir(), 'navet-catalog-inventory-'));
   try {
-    writeFileSync(path.join(root, 'index.ts'), 'export function Sheet(props: { title: string }) { return props.title; }\nexport const spacing = 4;');
+    writeFileSync(path.join(root, 'index.ts'), 'export function Sheet(props: { title: string }) { return props.title; }\nexport const spacing = 4;\nexport interface SheetProps { title: string }\nexport type SheetMode = "compact";');
     writeFileSync(path.join(root, 'inventory.stories.tsx'), `import * as UI from './index';
       const meta = { title: 'Concepts/UI Kit Inventory' }; export default meta;
       export const Inventory = { render: () => Object.keys(UI) };`);
     const catalog = generateCatalog({ root, entries: [{ file: 'index.ts', importFrom: '@navet/ui' }], stories: ['inventory.stories.tsx'] });
+    for (const name of ['SheetProps', 'SheetMode']) expect(catalog.entries.find((item) => item.name === name).stories).toEqual([]);
     for (const name of ['Sheet', 'spacing']) expect(catalog.entries.find((item) => item.name === name).stories)
       .toEqual([{ source: 'inventory.stories.tsx', title: 'Concepts/UI Kit Inventory', exports: ['Inventory'] }]);
   } finally { rmSync(root, { recursive: true, force: true }); }

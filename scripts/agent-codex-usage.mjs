@@ -42,13 +42,19 @@ export async function observeCodexUsage({ sessionFile, threadId }, { now = Date.
     } else if (!metadata) {
       throw new Error('Session metadata must precede usage evidence.');
     }
-    if (record.type === 'token_usage_record') {
-      if (payload.thread_id !== threadId) throw new Error('Token usage belongs to another thread.');
+    const currentUsage = record.type === 'event_msg' && payload.type === 'token_count';
+    if (record.type === 'token_usage_record' || currentUsage) {
+      if ((!currentUsage || payload.thread_id !== undefined) && payload.thread_id !== threadId) {
+        throw new Error('Token usage belongs to another thread.');
+      }
+      // Current token_count events inherit identity from the preceding session metadata.
+      // Null info is a rate-limit-only observation, not a new cumulative measurement.
+      if (currentUsage && payload.info === null) return;
       const observedAt = Date.parse(record.timestamp);
       if (!Number.isFinite(observedAt) || observedAt > now || (source && observedAt < source.observedAt)) {
         throw new Error('Invalid token observation time.');
       }
-      totals = validateTotals(payload.thread_token_usage, totals);
+      totals = validateTotals(currentUsage ? payload.info.total_token_usage : payload.thread_token_usage, totals);
       source = { line: lineNumber, observedAt };
     }
     if (record.type === 'response_item' && ['function_call', 'custom_tool_call'].includes(payload.type)) {

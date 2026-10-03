@@ -18,14 +18,21 @@ pnpm typecheck &&
 const normalizeHook = (value) => value.replace(/\s+/g, ' ').trim();
 const sha = (value) => typeof value === 'string' && /^[a-f0-9]{40}$/.test(value);
 
-// Execute the commit's validation hook explicitly before the ordinary push. The
-// native command records which immutable hook ran even if the working hook is dirty.
+// Validate all tracked inputs and installed dependencies in a fresh checkout of
+// the recorded commit, then perform the ordinary push with its normal hooks.
 export function validationPushCommand({ head, branch }) {
   if (!sha(head) || typeof branch !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(branch)) {
     throw new Error('Valid commit and branch are required.');
   }
   const refs = `refs/heads/${branch} ${head} refs/heads/${branch} ${'0'.repeat(40)}`;
-  return `navet_hook="$(git show ${head}:.husky/pre-push)" && printf '%s\\n' '${refs}' | /bin/sh -c "$navet_hook" && git push origin ${branch}`;
+  return `navet_validation_root="$(mktemp -d /tmp/navet-validation.XXXXXX)" && ` +
+    `trap 'git worktree remove --force "$navet_validation_root" >/dev/null 2>&1; rmdir "$navet_validation_root" 2>/dev/null || true' EXIT && ` +
+    `git worktree add --detach "$navet_validation_root" ${head} && ` +
+    `(cd "$navet_validation_root" && pnpm install --frozen-lockfile && ` +
+    `git diff --exit-code HEAD -- && test -z "$(git ls-files --others --exclude-standard)" && ` +
+    `printf 'Navet validation checkout: %s\\n' '${head}' && ` +
+    `printf '%s\\n' '${refs}' | /bin/sh .husky/pre-push && ` +
+    `printf 'Navet validation complete: %s\\n' '${head}') && git push origin ${head}:refs/heads/${branch}`;
 }
 
 async function git(root, args) {
@@ -108,21 +115,27 @@ export async function verifyValidationReceipt({ receiptFile, expectedHead, repos
   }
   if (typeof item.aggregated_output !== 'string') throw new Error('Native push output is missing.');
   const output = item.aggregated_output.replace(/\u001b\[[0-9;]*m/g, '');
+  const startMarker = `Navet validation checkout: ${expectedHead}\n`;
+  const endMarker = `Navet validation complete: ${expectedHead}\n`;
+  const start = output.indexOf(startMarker);
+  const end = output.indexOf(endMarker, start + startMarker.length);
+  if (start < 0 || end < start) throw new Error('Native receipt clean-checkout validation bounds are missing.');
+  const validationOutput = output.slice(start + startMarker.length, end);
   const stages = ['$ tsc --noEmit', '$ node scripts/run-test-tier.mjs tier1', '$ node scripts/run-test-tier.mjs tier2'];
-  const positions = stages.map((stage) => output.indexOf(stage));
+  const positions = stages.map((stage) => validationOutput.indexOf(stage));
   if (positions.some((position) => position < 0) || !(positions[0] < positions[1] && positions[1] < positions[2])) {
     throw new Error('Native receipt validation chain is incomplete.');
   }
-  const tier1 = output.slice(positions[1], positions[2]);
-  const tier2 = output.slice(positions[2]);
+  const tier1 = validationOutput.slice(positions[1], positions[2]);
+  const tier2 = validationOutput.slice(positions[2]);
   for (const [section, count] of [[tier1, receipt.tier1Tests], [tier2, receipt.tier2Tests]]) {
     if (!new RegExp(`\\bTests\\s+${count} passed \\(${count}\\)`).test(section)) {
       throw new Error('Native receipt test counts are not a complete passing tier.');
     }
   }
   const escaped = branch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const pushed = new RegExp(`^\\s*[a-f0-9]{7,40}\\.\\.([a-f0-9]{7,40})\\s+${escaped} -> ${escaped}\\s*$`, 'm').exec(output);
-  const created = new RegExp(`^\\s*\\* \\[new branch\\]\\s+${escaped} -> ${escaped}\\s*$`, 'm').test(output);
+  const pushed = new RegExp(`^\\s*[a-f0-9]{7,40}\\.\\.([a-f0-9]{7,40})\\s+${expectedHead} -> ${escaped}\\s*$`, 'm').exec(output);
+  const created = new RegExp(`^\\s*\\* \\[new branch\\]\\s+${expectedHead} -> ${escaped}\\s*$`, 'm').test(output);
   if ((!pushed && !created) ||
       !output.includes(`To https://github.com/${repository}.git`) && !output.includes(`To github.com:${repository}.git`)) {
     throw new Error('Native receipt pushed head, branch or destination mismatch.');
@@ -132,9 +145,9 @@ export async function verifyValidationReceipt({ receiptFile, expectedHead, repos
       throw new Error('Native receipt push abbreviation is not the confirmed commit.');
     }
   } else {
-    const validated = new RegExp(`^Navet validated push: ([a-f0-9]{40}) refs/heads/${escaped}\\s*$`, 'm').exec(output);
+    const validated = new RegExp(`^Navet validated push: ([a-f0-9]{40}) refs/heads/${escaped}\\s*$`, 'm').exec(validationOutput);
     if (normalizeHook(hook) !== normalizeHook(BOUND_HOOK) || !validated || validated[1] !== expectedHead ||
-        output.indexOf(validated[0]) < positions[2]) {
+        validationOutput.indexOf(validated[0]) < positions[2]) {
       throw new Error('Native receipt new branch lacks immutable push-time commit evidence.');
     }
   }
