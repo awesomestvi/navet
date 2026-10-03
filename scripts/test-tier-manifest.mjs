@@ -13,6 +13,7 @@ export const TEST_TIERS = {
       'scripts/agent-planning-scope.test.mjs',
       'scripts/agent-linear-event.test.mjs',
       'scripts/agent-linear-inbox.test.mjs',
+      'scripts/agent-linear-refresh.test.mjs',
       'scripts/agent-component-catalog.test.mjs',
       'scripts/run-as-navet-nisse.test.mjs',
       'scripts/sync-github-labels.test.mjs',

@@ -21,6 +21,18 @@ export function validatePlanningBinding(binding) {
   return binding;
 }
 
+// Linear reissues temporary access signatures for the same private storage object.
+// Retain the file address and every other query/fragment; this does not verify file access.
+export function planningAttachmentReference(value) {
+  const reference = text(value, 'attachment URL');
+  let url;
+  try { url = new URL(reference); } catch { return reference; }
+  if (url.origin !== 'https://uploads.linear.app' || url.username || url.password ||
+      !url.searchParams.has('signature')) return reference;
+  url.searchParams.delete('signature');
+  return url.href;
+}
+
 // Scope includes the full proposal and attachment references, never its mutable priority/stage.
 // A fingerprint verifies identity/content; it does not prove authorship, artifact access or approval.
 export function createPlanningBinding(issue) {
@@ -30,7 +42,7 @@ export function createPlanningBinding(issue) {
   const description = text(issue?.description, 'description', 1_048_576);
   if (!Array.isArray(issue.attachments)) throw new Error('Planning attachments must be a complete array.');
   const attachments = issue.attachments.map((item) => ({ id: text(item?.id, 'attachment ID'),
-    url: text(item?.url, 'attachment URL') })).sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+    url: planningAttachmentReference(item?.url) })).sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
   if (new Set(attachments.map((item) => item.id)).size !== attachments.length) {
     throw new Error('Duplicate planning attachment identity.');
   }

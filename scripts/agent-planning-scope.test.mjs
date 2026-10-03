@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { createPlanningBinding, evaluatePlanningObservation, planningStatus } from './agent-planning-scope.mjs';
+import { createPlanningBinding, evaluatePlanningObservation, planningAttachmentReference, planningStatus } from './agent-planning-scope.mjs';
 import { AgentTaskStore } from './agent-task-store.mjs';
 
 const now = 1_000_000;
@@ -57,6 +57,30 @@ describe('planning scope identity', () => {
 
   it.each(['Deferred', 'Rejected', 'Superseded', 'Ready for prioritization', 'Validated'])('stops new work at %s', (stage) => {
     expect(evaluatePlanningObservation(createPlanningBinding(issue()), observation({ ...issue(), labels: [stage] }), now)).toMatchObject({ result: 'fail', reason: 'planning-proposal-withdrawn' });
+  });
+
+  it('preserves attachment scope across renewed Linear file access signatures', () => {
+    const file = 'https://uploads.linear.app/workspace/file?signature=first';
+    const original = { ...issue(), attachments: [{ id: 'a', url: file }] };
+    const renewed = { ...original, attachments: [{ id: 'a', url: file.replace('first', 'second') }] };
+    expect(createPlanningBinding(renewed)).toEqual(createPlanningBinding(original));
+    expect(evaluatePlanningObservation(createPlanningBinding(original), observation(renewed), now).result).toBe('pass');
+    for (const url of ['https://uploads.linear.app/workspace/other?signature=second',
+      file + '&version=2', file + '#changed', 'https://example.test/workspace/file?signature=first']) {
+      expect(createPlanningBinding({ ...original, attachments: [{ id: 'a', url }] })).not.toEqual(createPlanningBinding(original));
+    }
+  });
+
+  it.each([
+    'https://example.test/file?signature=first',
+    'http://uploads.linear.app/file?signature=first',
+    'https://uploads.linear.app:8443/file?signature=first',
+    'https://user@uploads.linear.app/file?signature=first',
+    'https://uploads.linear.app.evil.test/file?signature=first',
+    'https://uploads.linear.app/file?version=first',
+    'a private artifact reference',
+  ])('retains meaningful or unrecognized attachment reference %s', (url) => {
+    expect(planningAttachmentReference(url)).toBe(url);
   });
 
   it('fails closed for ambiguous stages, archival, inaccessible data and stale observations', () => {

@@ -93,8 +93,13 @@ of a human decision. Preserve the existing explicit maintainer request path duri
 
 For a delivery selected from the planning hub, include `planningBinding` in the enqueue input.
 `createPlanningBinding(issue)` produces the issue/team/project identity and a SHA-256 revision
-from the full title, description and complete attachment references. Use a complete fresh issue
-read; missing attachment data cannot be treated as an empty list. Priority and proposal-stage
+from the full title, description and complete attachment references. Linear private-storage
+attachment URLs bind to the file address with temporary `signature` access parameters removed.
+Other query parameters, fragments, hosts and file paths remain part of scope. This normalization
+establishes neither file access nor human approval; verify artifact permissions separately. Linear
+explains signed links in
+[File storage authentication](https://linear.app/developers/file-storage-authentication). Use a
+complete fresh issue read; missing attachment data cannot be treated as an empty list. Priority and proposal-stage
 changes do not change the scope fingerprint. Record the selected option, acceptance criteria and
 visibility decision in the proposal before the maintainer accepts its revision.
 
@@ -189,10 +194,35 @@ receipt transaction is durable. Invalid events are rejected; storage failures re
 retry. Responses omit receipt contents and private error details.
 
 The local receiver has synthetic HTTP and process-restart pilots. It needs an authorized HTTPS
-endpoint and actual Linear delivery before production use. Its service-read consumer, human
-approval bridge and task-worker interruption integration remain pending. The receiver grants
-no implementation authority and leaves automatic dispatch off. Keep signing configuration and
+endpoint and actual Linear delivery before production use. Its human approval bridge and task-worker
+interruption integration remain pending. The receiver grants no implementation authority and leaves automatic dispatch off. Keep signing configuration and
 raw payloads outside public artifacts.
+
+## Fresh Linear Planning Reconciliation
+
+`reconcileLinearRefresh` in `scripts/agent-linear-refresh.mjs` consumes one pending refresh receipt.
+Supply `inbox`, its `eventId`, the existing task `store`, the owning coordinator `owner`, and a
+`readIssue(issueId)` callback that performs a complete read through the owning Linear service.
+The callback must enforce the service request timeout and return the issue UUID, team, project,
+full title and description, complete attachments and label names, and explicit archival/cancellation
+values. Cached issue bodies and webhook payloads cannot substitute for this read.
+
+The consumer checks the returned identity, complete fields and elapsed read freshness, then
+updates nonterminal tasks bound to that issue through normal `planning-observation` mutations.
+The caller must already own their current leases; the consumer neither claims ownership nor
+creates tasks. Terminal history and unbound tasks remain intact. Scope withdrawal latches through
+the existing guard. An Approved stage does not grant authority or revive a revoked request.
+
+A failed, slow, mismatched or incomplete read records unavailable planning evidence on owned
+bound tasks and returns `retry`, leaving the receipt pending. A successful read confirms the
+receipt only after every applicable owned task update succeeds. Lease failures or interrupted
+confirmation leave pending work for reconciliation. Confirmation persists a hash of normalized
+service-read evidence and timestamps, omitting proposal contents and temporary credentials.
+
+Run this consumer from an existing coordinator with verified service access. It opens no listener,
+sends no message, changes no Linear issue and starts no worker. New execution still needs its own
+fresh planning observation and trusted maintainer request. Actual webhook-to-coordinator delivery,
+human-approval provenance and worker withdrawal require operational integration pilots.
 
 ## Execution Budgets
 
