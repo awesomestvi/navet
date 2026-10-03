@@ -61,6 +61,10 @@ export function evaluatePlanningObservation(binding, observation, now = Date.now
   const result = (value, reason, extra = {}) => ({ result: value, reason, reference,
     observedAt: observation.observedAt, ...extra });
   if (observation.status === 'unavailable') return result('unverified', 'planning-access-unverified');
+  if (observation.status === 'missing') {
+    if (observation.issueId !== binding.issueId) throw new Error('Missing planning issue identity mismatch.');
+    return result('fail', 'planning-proposal-withdrawn');
+  }
   if (observation.status !== 'available') throw new Error('Invalid planning observation status.');
   const issue = observation.issue;
   const current = createPlanningBinding(issue);

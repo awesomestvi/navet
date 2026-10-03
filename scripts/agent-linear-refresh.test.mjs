@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { AgentLinearInbox } from './agent-linear-inbox.mjs';
-import { reconcileLinearRefresh } from './agent-linear-refresh.mjs';
+import { reconcileLinearRefresh, LinearIssueNotFoundError } from './agent-linear-refresh.mjs';
 import { createPlanningBinding, planningStatus } from './agent-planning-scope.mjs';
 import { AgentTaskStore } from './agent-task-store.mjs';
 
@@ -64,6 +64,30 @@ describe('fresh Linear planning reconciliation', () => {
     expect(planningStatus((await store.list())[0], time).reason).toBe('planning-request-revoked');
     await expect(store.mutate(task.id, 'transition', { owner: 'coordinator', state: 'investigating', reason: 'Start' })).rejects.toThrow('revoked');
     expect(await inbox.pending()).toEqual([]);
+  });
+
+  it('confirms a deleted issue as withdrawal and cannot revive it on a later service read', async () => {
+    const { store, inbox, task, accept, reconcile, advance, clock } = await setup();
+    const removed = await accept({ action: 'remove' });
+    expect(await reconcile(async (id) => { throw new LinearIssueNotFoundError(id); }, { eventId: removed.eventId }))
+      .toMatchObject({ decision: 'confirmed', updatedTasks: 1 });
+    expect(planningStatus((await store.list())[0], clock()).reason).toBe('planning-request-revoked');
+    expect((await inbox.pending()).some((entry) => entry.receipt.eventId === removed.eventId)).toBe(false);
+    await expect(store.mutate(task.id, 'transition', { owner: 'coordinator', state: 'investigating', reason: 'Start' })).rejects.toThrow('revoked');
+    advance(1000);
+    const restored = await accept();
+    await reconcile(undefined, { eventId: restored.eventId });
+    expect(planningStatus((await store.list())[0], clock()).reason).toBe('planning-request-revoked');
+  });
+
+  it.each([
+    () => Object.assign(new Error('Access masked as not found'), { status: 404 }),
+    () => new LinearIssueNotFoundError('different-issue'),
+  ])('keeps ambiguous or mismatched not-found errors pending', async (failure) => {
+    const { reconcile, inbox, store } = await setup();
+    expect((await reconcile(async () => { throw failure(); })).decision).toBe('retry');
+    expect(await inbox.pending()).toHaveLength(1);
+    expect(planningStatus((await store.list())[0], time).result).toBe('unverified');
   });
 
   it('cannot revive a withdrawn request from a later Approved service event', async () => {

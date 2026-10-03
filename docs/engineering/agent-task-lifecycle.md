@@ -213,7 +213,10 @@ Supply `inbox`, its `eventId`, the existing task `store`, the owning coordinator
 `readIssue(issueId)` callback that performs a complete read through the owning Linear service.
 The callback must enforce the service request timeout and return the issue UUID, team, project,
 full title and description, complete attachments and label names, and explicit archival/cancellation
-values. Cached issue bodies and webhook payloads cannot substitute for this read.
+values. For a definitive service-confirmed missing issue, throw `LinearIssueNotFoundError(issueId)`
+from the refresh module. The identity-bound observation withdraws the proposal, latches revocation,
+and confirms the receipt. Permission errors and ambiguous HTTP 404 responses remain unavailable.
+Cached issue bodies and webhook payloads cannot substitute for this read.
 
 The consumer checks the returned identity, complete fields and elapsed read freshness, then
 updates nonterminal tasks bound to that issue through normal `planning-observation` mutations.

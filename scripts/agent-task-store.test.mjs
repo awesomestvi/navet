@@ -281,6 +281,28 @@ describe('durable agent task lifecycle', () => {
     expect(task.head).toBeNull();
   });
 
+  it('rejects delayed evidence after restart and keeps the newest gate failure blocking approval', async () => {
+    const { directory, store, task, owner, claim, act, evidence, advance } = await setup();
+    await claim();
+    const intent = await act('dispatch-intent');
+    await act('bind', { token: intent.dispatch.token, threadId: 'delivery-thread' });
+    await act('head', { head: 'sha-a' });
+    await act('transition', { state: 'investigating', reason: 'Start.' });
+    await act('transition', { state: 'verifying', reason: 'Checks.' });
+    await evidence('ci'); await evidence('visual'); await evidence('output');
+    advance(100);
+    await evidence('ci', 'sha-a', 'fail');
+    const restarted = new AgentTaskStore(directory, { now: () => 1_000_200 });
+    await expect(restarted.mutate(task.id, 'evidence', { owner, evidence: {
+      gate: 'ci', head: 'sha-a', revision: 'scope-v1', result: 'pass', artifact: 'delayed-pass', observedAt: 1_000_000,
+    } })).rejects.toThrow('cannot move backwards');
+    expect((await store.list())[0].evidence.find((item) => item.gate === 'ci')).toMatchObject({ result: 'fail', observedAt: 1_000_100 });
+    await expect(restarted.mutate(task.id, 'transition', { owner, state: 'awaiting-approval', reason: 'Review.' })).rejects.toThrow('incomplete');
+    advance(200);
+    await evidence('ci');
+    expect((await act('transition', { state: 'awaiting-approval', reason: 'New checks.' })).state).toBe('awaiting-approval');
+  });
+
   it('retains failure evidence and rejects automatic completion of implementation without acceptance', async () => {
     const { store, claim, act, evidence } = await setup();
     await claim();

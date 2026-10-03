@@ -27,6 +27,7 @@ These suites block release-oriented workflows and should stay intentionally smal
 | `packages/app/src/pwa/pwa-update-store.test.tsx`, `packages/app/src/pwa/standalone-manifest-http-config.test.ts` | Production service-worker update recovery, bounded prompts, and revalidated standalone manifest delivery | Keep |
 | `packages/app/src/stores/__tests__/integration-store.test.ts` | Core provider-to-app state wiring | Keep |
 | `packages/app/src/services/__tests__/integration-registry.service.test.ts`, `packages/app/src/commands.test.ts` | Provider registration and shared command dispatch | Keep |
+| `scripts/agent-task-store.test.mjs` | Durable task authority, ownership, dispatch recovery, and current-head evidence prevent unauthorized execution or delivery | Keep |
 
 Tier 1 companion checks:
 
@@ -61,6 +62,7 @@ workflows by default.
 | `packages/app/src/features/dashboard/**` | Largest user-facing regression surface for layout, editing, widgets, and navigation | Keep |
 | `packages/app/src/features/media/**`, `lighting/**`, `security/**`, `energy/**`, `climate/**`, `rss/**`, `tasks/**`, `settings/**`, `sensors/**`, `vacuum/**`, `calendar/**`, `notifications/**` | User-visible feature regressions and UI behavior | Keep |
 | `packages/app/src/components/**` | Shared UI and interaction regressions | Keep |
+| `scripts/agent-component-catalog.test.mjs` | Source-derived component metadata, story references, and compiler-input fingerprints for developer discovery | Keep |
 | most `packages/app/src/hooks/**` | Hook-level regression coverage for app behavior and feature composition | Keep |
 | most `packages/app/src/utils/**`, `packages/app/src/runtime/**`, `packages/app/src/navigation/**`, `packages/app/src/api/**` | Utility and runtime drift detection that is useful but not release-critical | Keep |
 | `pnpm test:storybook` | Separate visual/story regression surface | Keep |

@@ -1,6 +1,15 @@
 import { createHash } from 'node:crypto';
 import { createPlanningBinding, evaluatePlanningObservation } from './agent-planning-scope.mjs';
 
+// Service readers use this only for a definitive, identity-bound not-found observation.
+// Permission failures and ambiguous errors remain unavailable, even if they carry HTTP 404.
+export class LinearIssueNotFoundError extends Error {
+  constructor(issueId) {
+    super('Planning issue is confirmed missing.');
+    this.issueId = issueId;
+  }
+}
+
 function clock(now) {
   const value = now();
   if (!Number.isSafeInteger(value) || value <= 0) throw new Error('Invalid planning refresh clock.');
@@ -35,19 +44,19 @@ export async function reconcileLinearRefresh({ inbox, eventId, store, owner, rea
   let binding;
   let status = 'available';
   try { issue = await readIssue(record.receipt.issueId); }
-  catch { status = 'unavailable'; }
+  catch (error) { status = error instanceof LinearIssueNotFoundError && error.issueId === record.receipt.issueId ? 'missing' : 'unavailable'; }
   const observedAt = clock(now);
   if (observedAt < startedAt) throw new Error('Planning refresh clock moved backwards.');
   if (observedAt - startedAt > 60_000) status = 'unavailable';
   if (status === 'available') {
     try { binding = completeIssue(issue, record.receipt.issueId, observedAt); }
-    catch { status = 'unavailable'; }
+    catch (error) { status = error instanceof LinearIssueNotFoundError && error.issueId === record.receipt.issueId ? 'missing' : 'unavailable'; }
   }
   const reference = 'sha256:' + createHash('sha256').update(JSON.stringify({
     eventId, issueId: record.receipt.issueId, startedAt, observedAt, status,
     ...(binding ? { binding, labels: [...issue.labels].sort(), archivedAt: issue.archivedAt, canceledAt: issue.canceledAt } : {}),
   })).digest('hex');
-  const observation = { status, reference, observedAt, ...(status === 'available' ? { issue } : {}) };
+  const observation = { status, reference, observedAt, ...(status === 'available' ? { issue } : status === 'missing' ? { issueId: record.receipt.issueId } : {}) };
   const tasks = (await store.list()).filter((task) => task.planning?.binding.issueId === record.receipt.issueId &&
     !['delivered', 'terminal-failure'].includes(task.state));
   // Normal store mutations recheck leases, ordering, and latched revocation. A partial
@@ -55,7 +64,7 @@ export async function reconcileLinearRefresh({ inbox, eventId, store, owner, rea
   for (const task of tasks) {
     await store.mutate(task.id, 'planning-observation', { owner, observation });
   }
-  if (status !== 'available') return { eventId, decision: 'retry', updatedTasks: tasks.length, authority: 'none' };
+  if (status === 'unavailable') return { eventId, decision: 'retry', updatedTasks: tasks.length, authority: 'none' };
   const confirmation = await inbox.confirm(eventId, { reference, observedAt });
   return { ...confirmation, updatedTasks: tasks.length };
 }
