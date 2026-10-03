@@ -1,0 +1,3 @@
+type: internal
+audiences: []
+summary: Remove the external automated review configuration and align builder guidance with Codex review.

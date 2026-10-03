@@ -27,7 +27,7 @@ Build on the existing operating model in [Agentic Development](agentic-developme
 - GitHub issues and PRs provide the maintainer-facing control plane.
 - Nisse intake handles authorized requests and qualifying replies.
 - The private runner coordinates delivery and review continuations.
-- CodeRabbit supplies independent review; deterministic checks remain authoritative.
+- Codex supplies independent review; deterministic checks remain authoritative.
 - The maintainer accepts a current PR head by merging and separately dispatches production releases.
 
 Use GitHub for public delivery collaboration and Linear for planning. The maintainer authorized
