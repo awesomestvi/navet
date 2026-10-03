@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { createLinearIssueReader } from './agent-linear-reader.mjs';
 import { createLinearResultReader, linearResultBodyHash } from './agent-linear-result-reader.mjs';
 import { createLinearResultWriter } from './agent-linear-result-writer.mjs';
+import { runLinearPlanningResult } from './agent-linear-result-run.mjs';
 import { deliverPlanningResult } from './agent-planning-result-delivery.mjs';
 import { createPlanningBinding } from './agent-planning-scope.mjs';
 import { AgentTaskStore } from './agent-task-store.mjs';
@@ -85,7 +86,7 @@ async function setup(options = {}) {
       return createLinearResultWriter({ ...adapters, policy: writerPolicy,
         getAccessToken: async () => 'writer-token', fetchImpl, now });
     } };
-  return { input, store, task, directory, act, request, now, comments, withdraw: () => { withdrawn = true; },
+  return { input, store, task, directory, act, request, now, comments, fetchImpl, readerPolicy, writerPolicy, withdraw: () => { withdrawn = true; },
     counts: () => ({ mutations, writerCreations }) };
 }
 
@@ -196,5 +197,84 @@ describe('coordinator result handoff with durable storage and real transport ada
     expect((await deliverPlanningResult({ ...input, signal: controller.signal })).status).toBe('blocked');
     expect((await deliverPlanningResult({ ...input, maxRunMs: 50, readRequest: async () => new Promise(() => {}) })).status).toBe('blocked');
     expect(counts().mutations).toBe(0);
+  });
+});
+
+
+async function authenticatedRunFixture(options = {}) {
+  const fixture = await setup(options);
+  const grants = [];
+  const credentialReads = [];
+  const runInput = { ...fixture.input, readerPolicy: fixture.readerPolicy, writerPolicy: fixture.writerPolicy,
+    readReaderCredentials: async () => { credentialReads.push('reader'); return { clientId: 'reader-client', clientSecret: 'private-reader-secret' }; },
+    readWriterCredentials: async () => { credentialReads.push('writer'); return { clientId: 'writer-client', clientSecret: 'private-writer-secret' }; },
+    fetchImpl: async (url, init) => {
+      if (url.endsWith('/oauth/token')) {
+        const request = new URLSearchParams(init.body);
+        grants.push({ clientId: request.get('client_id'), scope: request.get('scope') });
+        const writer = request.get('client_id') === 'writer-client';
+        return Response.json({ token_type: 'Bearer', expires_in: 3600,
+          access_token: writer ? 'writer-token' : 'reader-token',
+          scope: writer ? (options.writerGrant ?? 'read,comments:create') : (options.readerGrant ?? 'read') });
+      }
+      return fixture.fetchImpl(url, init);
+    } };
+  return { ...fixture, runInput, grants, credentialReads };
+}
+
+describe('authenticated coordinator result run', () => {
+  it('uses separate minimal app grants for one result and a fresh read-only session for reconciliation', async () => {
+    const { runInput, grants, credentialReads, counts } = await authenticatedRunFixture();
+    const first = await runLinearPlanningResult(runInput);
+    expect(first.status).toBe('verified');
+    expect(grants).toEqual([{ clientId: 'reader-client', scope: 'read' },
+      { clientId: 'writer-client', scope: 'read,comments:create' }]);
+    const second = await runLinearPlanningResult({ ...runInput, body: undefined, readWriterCredentials: undefined });
+    expect(second).toMatchObject({ status: 'verified', commentId: first.commentId });
+    expect(grants).toHaveLength(3);
+    expect(grants[2]).toEqual({ clientId: 'reader-client', scope: 'read' });
+    expect(credentialReads).toEqual(['reader', 'writer', 'reader']);
+    expect(counts().mutations).toBe(1);
+    expect(JSON.stringify([first, second])).not.toMatch(/private-reader-secret|private-writer-secret|reader-token|writer-token/);
+  });
+
+  it.each([{ readerGrant: 'read,write' }, { writerGrant: 'read,write' }])('rejects broader app grants without recording a send %#', async (options) => {
+    const { runInput, counts, store } = await authenticatedRunFixture(options);
+    expect((await runLinearPlanningResult(runInput)).status).toBe('blocked');
+    expect(counts().mutations).toBe(0);
+    expect((await store.list())[0].planningResult?.attemptedAt).toBeUndefined();
+  });
+
+  it('requires human authority before loading writer credentials', async () => {
+    const { runInput, withdraw, grants, credentialReads, counts } = await authenticatedRunFixture();
+    withdraw();
+    expect((await runLinearPlanningResult(runInput)).status).toBe('blocked');
+    expect(credentialReads).toEqual(['reader']);
+    expect(grants).toEqual([{ clientId: 'reader-client', scope: 'read' }]);
+    expect(counts().mutations).toBe(0);
+  });
+
+  it('rejects app identity aliasing and destination mismatch before acquiring credentials', async () => {
+    for (const change of [{ appUserId: id(2) }, { projectId: id(99) }]) {
+      const { runInput, credentialReads } = await authenticatedRunFixture();
+      expect((await runLinearPlanningResult({ ...runInput, writerPolicy: { ...runInput.writerPolicy, ...change } })).status).toBe('blocked');
+      expect(credentialReads).toEqual([]);
+    }
+  });
+
+  it('bounds stalled credential acquisition and honors pre-cancellation without any send', async () => {
+    const { runInput, grants, counts } = await authenticatedRunFixture();
+    const controller = new AbortController(); controller.abort();
+    expect((await runLinearPlanningResult({ ...runInput, signal: controller.signal })).status).toBe('blocked');
+    expect((await runLinearPlanningResult({ ...runInput, maxRunMs: 50,
+      readReaderCredentials: async () => new Promise(() => {}) })).status).toBe('blocked');
+    expect(grants).toEqual([]);
+    expect(counts().mutations).toBe(0);
+  });
+
+  it('reconciles an acknowledgement lost after creation through the independent reader session', async () => {
+    const { runInput, counts } = await authenticatedRunFixture({ loseAcknowledgement: true });
+    expect((await runLinearPlanningResult(runInput)).status).toBe('verified');
+    expect(counts().mutations).toBe(1);
   });
 });

@@ -230,6 +230,8 @@ proof that every notification/export channel is disabled. The installed writer, 
 verified destination policy, live queue wiring and live pilot remain activation gates. The
 [coordinator result handoff](agent-task-lifecycle.md#coordinator-result-handoff) joins the adapters
 to durable result intents and observations without activating the queue or granting acceptance.
+The [authenticated result run](agent-task-lifecycle.md#authenticated-result-run) assembles those
+adapters with separate lazy app sessions under one deadline and closes every session afterward.
 Transport tests use synthetic credentials and do not establish live permissions or delivery.
 
 For Linear-native approval, agent writes need a distinct identity. Linear's

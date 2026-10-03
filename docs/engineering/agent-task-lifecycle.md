@@ -142,7 +142,7 @@ Caller-owned app sessions must close when the coordinator run ends.
 The helper checks the current owner and scope, refreshes the proposal and human request, reserves
 the result and records readback. A head changed while services are read cannot adopt the earlier
 worker output. Bounded tasks require the caller's resource reservation and fresh measured usage.
-Readback of an attempted or already observed result can proceed without a new publication request;
+Readback of an attempted or confirmed result can proceed without a new publication request;
 it uses the recorded content hash and does not need the worker Markdown or another writer session.
 An unavailable or malformed fresh probe invalidates the prior readback pass.
 
@@ -157,6 +157,34 @@ started local atomic transactions finish before the helper returns. A timeout do
 that the owning worker stopped. Recovery still requires actual ownership observations. This helper
 is not connected to the paused queue automation; live credentials, the human-request source,
 destination policy and an observed private-worker pilot remain activation gates.
+
+### Authenticated result run
+
+[`runLinearPlanningResult`](../../scripts/agent-linear-result-run.mjs) assembles the installed
+app authentication, proposal/result readers, writer and coordinator handoff for one operation.
+Supply the same leased task, exact worker head, result Markdown and resource reservation described
+above. Supply the independently authenticated `readRequest` adapter and credential-manager
+callbacks `readReaderCredentials` and `readWriterCredentials`; the owner-private file fallback can
+implement those callbacks after credential setup is authorized.
+
+Configure `readerPolicy` with workspace, reader app, writer app, team and project IDs. Configure
+`writerPolicy` with the same workspace/team/project and its distinct writer app ID. The policies
+must agree on that writer identity. Tokens are acquired lazily: reads request only `read`, while
+an authorized first send requests exactly `read,comments:create` through the separate writer app.
+An attempted or confirmed receipt needs only a fresh reader session; reconciliation may omit
+`readWriterCredentials` and the worker Markdown. A reserved result with no attempt still requires
+the writer and current publication authority for its first send.
+
+Authentication and delivery share a deadline of at most one minute and the caller's cancellation
+signal. Every started app session closes in the run's `finally` path, including sessions acquired
+while a bounded reader was interrupted. Credentials, tokens and confidential Markdown are not
+part of the returned status. The helper returns the coordinator's artifact-verification result;
+it grants neither quality acceptance nor a delivered transition.
+
+The request adapter remains an authentication boundary. Connecting this operation to live queue
+checkpoints requires installed app identities, authorized credential setup, a trusted human-request
+source, verified destination policy and an observed pilot. This helper does not activate the paused
+queue or remove the private-worker execution gate.
 
 Transitions follow `queued -> investigating -> building -> verifying -> awaiting-approval ->
 delivered`, with explicit waiting and failure states. Each transition requires a reason. Returning
