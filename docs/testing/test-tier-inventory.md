@@ -26,6 +26,7 @@ These suites block release-oriented workflows and should stay intentionally smal
 | `packages/app/src/pwa/pwa-update-store.test.tsx`, `packages/app/src/pwa/standalone-manifest-http-config.test.ts` | Production service-worker update recovery, bounded prompts, and revalidated standalone manifest delivery | Keep |
 | `packages/app/src/stores/__tests__/integration-store.test.ts` | Core provider-to-app state wiring | Keep |
 | `packages/app/src/services/__tests__/integration-registry.service.test.ts`, `packages/app/src/commands.test.ts` | Provider registration and shared command dispatch | Keep |
+| `scripts/agent-task-store.test.mjs` | Durable task authority, ownership, dispatch recovery, and current-head evidence prevent unauthorized execution or delivery | Keep |
 
 Tier 1 companion checks:
 
