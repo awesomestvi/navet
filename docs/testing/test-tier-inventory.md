@@ -57,7 +57,7 @@ workflows by default.
 
 | Group | Why it exists | Status |
 |---|---|---|
-| `scripts/ui-shell-recipes.test.mjs` | Detect known copied modal/sheet recipes independent of utility order while accepting structural layouts | Keep |
+| `scripts/ui-shell-recipes.test.mjs`, `scripts/ui-feature-imports.test.mjs` | Detect known copied shell recipes and direct feature-import escapes while accepting structural layouts and shared imports | Keep |
 | `packages/app/src/features/dashboard/**` | Largest user-facing regression surface for layout, editing, widgets, and navigation | Keep |
 | `packages/app/src/features/media/**`, `lighting/**`, `security/**`, `energy/**`, `climate/**`, `rss/**`, `tasks/**`, `settings/**`, `sensors/**`, `vacuum/**`, `calendar/**`, `notifications/**` | User-visible feature regressions and UI behavior | Keep |
 | `packages/app/src/components/**` | Shared UI and interaction regressions | Keep |

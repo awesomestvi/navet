@@ -2,18 +2,18 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { findLegacyModalRecipes } from './ui-shell-recipes.mjs';
+import { findUiFeatureImports } from './ui-feature-imports.mjs';
 
 const ROOT = process.cwd();
 
 const SHARED_DIRS = [
+  'packages/ui/src',
   'packages/app/src/components/primitives',
   'packages/app/src/components/patterns',
   'packages/app/src/components/shared',
   'packages/app/src/components/system',
   'packages/app/src/ui-kit',
 ];
-
-const PUBLIC_EXPORT_DIRS = ['packages/app/src/components/system', 'packages/app/src/ui-kit'];
 
 const LEGACY_MODAL_ALLOWLIST = new Set([
   'packages/app/src/features/security/components/camera-card/camera-settings-dialog.tsx',
@@ -56,18 +56,8 @@ for (const dir of SHARED_DIRS) {
   for (const relativePath of walk(dir)) {
     const source = fs.readFileSync(path.join(ROOT, relativePath), 'utf8');
 
-    if (source.includes(`/app/features/`)) {
-      violations.push(`${relativePath}: shared UI layers must not import from feature modules`);
-    }
-  }
-}
-
-for (const dir of PUBLIC_EXPORT_DIRS) {
-  for (const relativePath of walk(dir)) {
-    const source = fs.readFileSync(path.join(ROOT, relativePath), 'utf8');
-
-    if (/export\s+.*from\s+['"]@\/app\/features\//.test(source)) {
-      violations.push(`${relativePath}: public UI-kit surfaces must not re-export feature modules`);
+    for (const specifier of findUiFeatureImports(relativePath, source)) {
+      violations.push(`${relativePath}: shared UI layers must not depend on feature modules (${specifier})`);
     }
   }
 }

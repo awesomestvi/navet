@@ -165,6 +165,12 @@ interpreting escapes. It does not establish equivalent computed styles, follow c
 across expressions, or replace rendered review. Structural layout markup remains
 valid when it does not reproduce a complete forbidden signature.
 
+Shared UI imports are checked through the existing package-import tokenizer. Alias and relative
+paths are normalized before checking feature ownership; static/type imports, re-exports, literal
+dynamic imports and literal require calls are covered. Comments and quoted examples are excluded.
+Computed runtime names and transitive dependencies require separate review. This supplements the
+provider/package boundary checks rather than replacing their contracts.
+
 ## Handoff Checklist
 
 Name the reference used, then review:
