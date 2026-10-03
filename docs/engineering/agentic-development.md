@@ -1,7 +1,10 @@
 # Agentic Development
 
-This document defines Navet's issue-to-release operating model. GitHub is the control plane;
-deterministic checks remain authoritative over agent claims.
+This document defines Navet's issue-to-release operating model. Linear holds product proposals,
+priorities and scoped planning decisions; GitHub holds approved public delivery and review.
+Deterministic checks remain authoritative over agent claims. Read the
+[autonomous builder plan](autonomous-builder-plan.md) for proposal requirements, visibility
+decisions and the activation gates for planning automation.
 
 ## Workflow
 
@@ -155,7 +158,15 @@ dispatch; type, area, and risk labels continue to describe the issue itself.
 
 ## Private Queue And Public Communication
 
-GitHub remains the mobile control plane, but orchestration details are not public issue content.
+GitHub provides the mobile control plane for public delivery requests. Private proposal content
+stays in Linear, and orchestration details stay in the private runner. A planning-bound task needs
+an independently verified human request for its exact proposal revision and delivery scope.
+The shared delivery queue requires explicit public visibility approval for every planning-bound
+execution, including research and audits. Private research and audits remain queued until a private
+completion route is implemented and verified; their planning scope does not authorize a public
+Nisse conclusion. See the [queue state protocol](agent-queue-state-protocol.md) for dispatch and
+completion verification.
+
 Request labels and accepted answers enter the queue without assignments, prompts, or startup
 comments. Command comments use compact reactions.
 
@@ -202,12 +213,13 @@ linked PR; the agent may push feedback-driven revisions but may not merge its ow
 
 The private Codex runner also checks open, non-draft PRs linked to its delivery tasks for new,
 unresolved Codex review threads authored by `chatgpt-codex-connector[bot]`. It sends the comment
-links and IDs to the existing delivery task once, without creating a new task or making a public claim. The delivery task verifies each
-finding against the current PR head, fixes only valid issues, runs focused checks, then replies in
-the review thread and resolves it when addressed using the maintainer's authenticated GitHub CLI
-or API. If a finding needs a product or architecture decision, the task asks the maintainer
-instead of guessing. The runner does not dispatch comments on unrelated PRs, and review feedback
-never authorizes a merge.
+links and IDs to the existing delivery task once, without creating a new task or making a public
+claim. The delivery task verifies each finding against the current PR head, fixes only valid issues,
+runs focused checks, and reports the current-head evidence with any remaining findings. Authorized
+review-thread replies use the maintainer's authenticated GitHub CLI or API. Resolving review
+conversations and merging remain with the maintainer. If a finding needs a product or architecture
+decision, the task asks the maintainer instead of guessing. The runner does not dispatch comments
+on unrelated PRs, and review feedback never authorizes a merge.
 
 ## Human Authority
 
