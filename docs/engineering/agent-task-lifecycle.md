@@ -354,6 +354,29 @@ sends no message, changes no Linear issue and starts no worker. New execution st
 fresh planning observation and trusted maintainer request. Actual webhook-to-coordinator delivery,
 human-approval provenance and worker withdrawal require operational integration pilots.
 
+
+### Authenticated refresh run
+
+`runLinearPlanningRefresh` in `scripts/agent-linear-refresh-run.mjs` connects the existing inbox
+and task store to the actual scoped Linear proposal reader and a per-run read-only app session.
+Supply the existing `inbox`, `eventId`, `store`, coordinator `owner`, `readerPolicy`, and a
+`readCredentials` callback owned by the installed runner. The policy fixes the organization,
+app actor, team and project. Credentials are loaded lazily after the existing receipt and store
+checks; invalid policy or pre-cancellation loads no credentials. The session requests exactly
+`read` and closes before the operation returns.
+
+`maxRunMs` bounds remote work to at most 60 seconds; proposal reads also retain their own
+20-second limit. Parent cancellation reaches OAuth and GraphQL, including a transport that
+ignores cancellation while awaiting its response. Failed authentication, revoked access or a
+canceled read records unavailable evidence through normal reconciliation, invalidating earlier
+passes on owned tasks and preserving the pending receipt. Already-started atomic store updates
+finish before return. A setup or store failure returns a redacted `blocked` result for recovery.
+
+Successful complete reads reconcile current scope or latch withdrawal. The run neither creates
+human authority nor claims tasks, dispatches a worker or writes to Linear. Synthetic transport
+integration tests verify the actual inbox, store, app session and reader together; live app setup,
+verified credentials and an observed signed-event pilot remain activation gates.
+
 ## Execution Budgets
 
 Bounded requests include `resourceLimits` with three positive integers: `maxElapsedMs`,

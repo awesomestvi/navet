@@ -234,6 +234,12 @@ The [authenticated result run](agent-task-lifecycle.md#authenticated-result-run)
 adapters with separate lazy app sessions under one deadline and closes every session afterward.
 Transport tests use synthetic credentials and do not establish live permissions or delivery.
 
+The [authenticated refresh run](agent-task-lifecycle.md#authenticated-refresh-run) connects signed
+inbox receipts, scoped app-authenticated proposal reads and durable task reconciliation. Complete
+current reads preserve scope evidence or latch withdrawal; unavailable reads invalidate earlier
+passes and retain receipts. It grants no approval or dispatch authority. Synthetic integration
+coverage does not establish live credentials, webhook delivery or worker interruption.
+
 For Linear-native approval, agent writes need a distinct identity. Linear's
 [OAuth app actor](https://linear.app/developers/oauth-actor-authorization) attributes mutations to
 the installed application; default API authentication can attribute them to the authenticating
