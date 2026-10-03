@@ -291,6 +291,336 @@
         "packages/ui/src/card-metric-action-layout.test.tsx",
         "packages/app/src/components/primitives/card-metric-action-layout.tsx"
       ]
+    },
+    {
+      "name": "NavigationWorkspace",
+      "importFrom": "@navet/app/ui-kit/patterns",
+      "source": "packages/app/src/components/patterns/navigation-workspace.tsx",
+      "status": "app-coupled",
+      "rationale": "Namespace object of workspace parts, not a JSX component. Frame supplies app theme-derived context; compose its named members.",
+      "evidence": [
+        "packages/app/src/components/patterns/navigation-workspace.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "NavigationWorkspaceFrame",
+      "importFrom": "@navet/app/ui-kit/patterns",
+      "source": "packages/app/src/components/patterns/navigation-workspace.tsx",
+      "status": "app-coupled",
+      "rationale": "Uses app theme hooks to provide workspace surface context. Caller owns responsive layout, navigation state, headings and dimensions.",
+      "evidence": [
+        "packages/app/src/components/patterns/navigation-workspace.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "NavigationWorkspaceGroup",
+      "importFrom": "@navet/app/ui-kit/patterns",
+      "source": "packages/app/src/components/patterns/navigation-workspace.tsx",
+      "status": "app-coupled",
+      "rationale": "Requires NavigationWorkspace.Frame context for themed grouped surfaces; caller supplies navigation semantics and rows.",
+      "evidence": [
+        "packages/app/src/components/patterns/navigation-workspace.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "NavigationWorkspaceHeader",
+      "importFrom": "@navet/app/ui-kit/patterns",
+      "source": "packages/app/src/components/patterns/navigation-workspace.tsx",
+      "status": "app-coupled",
+      "rationale": "Requires frame context for its border. Caller supplies heading hierarchy, content and spacing.",
+      "evidence": [
+        "packages/app/src/components/patterns/navigation-workspace.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "NavigationWorkspaceSidebar",
+      "importFrom": "@navet/app/ui-kit/patterns",
+      "source": "packages/app/src/components/patterns/navigation-workspace.tsx",
+      "status": "app-coupled",
+      "rationale": "Requires frame context for panel and border styling. Caller owns width, responsive presentation and navigation labeling.",
+      "evidence": [
+        "packages/app/src/components/patterns/navigation-workspace.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "NavigationWorkspaceItem",
+      "importFrom": "@navet/app/ui-kit/patterns",
+      "source": "packages/app/src/components/patterns/navigation-workspace.tsx",
+      "status": "app-coupled",
+      "rationale": "Requires frame context; active and accentColor are required visual inputs. Caller supplies selected-navigation semantics and the actionable child.",
+      "evidence": [
+        "packages/app/src/components/patterns/navigation-workspace.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "NavigationWorkspaceItemButton",
+      "importFrom": "@navet/app/ui-kit/patterns",
+      "source": "packages/app/src/components/patterns/navigation-workspace.tsx",
+      "status": "app-coupled",
+      "rationale": "Uses app theme focus-ring tokens and a native button. Caller supplies an accessible name, navigation callback and aria-current where applicable.",
+      "evidence": [
+        "packages/app/src/components/patterns/navigation-workspace.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "NavigationWorkspaceItemIcon",
+      "importFrom": "@navet/app/ui-kit/patterns",
+      "source": "packages/app/src/components/patterns/navigation-workspace.tsx",
+      "status": "app-coupled",
+      "rationale": "Requires frame context and renders an aria-hidden icon span. Caller supplies the icon; the associated button/text must carry its accessible name.",
+      "evidence": [
+        "packages/app/src/components/patterns/navigation-workspace.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "NavigationWorkspaceItemText",
+      "importFrom": "@navet/app/ui-kit/patterns",
+      "source": "packages/app/src/components/patterns/navigation-workspace.tsx",
+      "status": "app-coupled",
+      "rationale": "Requires frame context and title content; description is optional. Text truncates; review long and translated names in the composed row.",
+      "evidence": [
+        "packages/app/src/components/patterns/navigation-workspace.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "NavigationWorkspaceSeparator",
+      "importFrom": "@navet/app/ui-kit/patterns",
+      "source": "packages/app/src/components/patterns/navigation-workspace.tsx",
+      "status": "app-coupled",
+      "rationale": "Requires frame context and renders an aria-hidden inset divider. Use inside the grouped row composition shown in the source story.",
+      "evidence": [
+        "packages/app/src/components/patterns/navigation-workspace.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "NavigationWorkspaceBody",
+      "importFrom": "@navet/app/ui-kit/patterns",
+      "source": "packages/app/src/components/patterns/navigation-workspace.tsx",
+      "status": "experimental",
+      "rationale": "Provider-neutral grid wrapper currently exported from the app. Caller owns column definitions, responsive transitions and scroll containment; standalone contract has not been stabilized.",
+      "evidence": [
+        "packages/app/src/components/patterns/navigation-workspace.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "NavigationWorkspaceContent",
+      "importFrom": "@navet/app/ui-kit/patterns",
+      "source": "packages/app/src/components/patterns/navigation-workspace.tsx",
+      "status": "experimental",
+      "rationale": "Provider-neutral main-region wrapper currently exported from the app. Requires children; caller owns main-landmark placement and an explicit scroll region. Standalone contract has not been stabilized.",
+      "evidence": [
+        "packages/app/src/components/patterns/navigation-workspace.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "CardDialogHeader",
+      "importFrom": "@navet/app/ui-kit/patterns",
+      "source": "packages/app/src/components/patterns/card-dialog.tsx",
+      "status": "app-coupled",
+      "rationale": "Uses app i18n, provider-session store, entity-room selector and administration service. Requires Radix dialog context for title/description/close; entityId can enable persisted renaming when no onTitleChange callback is supplied.",
+      "evidence": [
+        "packages/app/src/components/patterns/card-dialog.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "CardDialogSection",
+      "importFrom": "@navet/app/ui-kit/patterns",
+      "source": "packages/app/src/components/patterns/card-dialog.tsx",
+      "status": "app-coupled",
+      "rationale": "Uses app theme/typography tokens for visible section label and helper text. Labels are layout content; caller owns control IDs and accessible associations.",
+      "evidence": [
+        "packages/app/src/components/patterns/card-dialog.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "CardDialogTabTrigger",
+      "importFrom": "@navet/app/ui-kit/patterns",
+      "source": "packages/app/src/components/patterns/card-dialog.tsx",
+      "status": "app-coupled",
+      "rationale": "Composes app InteractivePill with explicit active/onClick inputs. Does not provide a tab context or linked tab panels; caller owns selection semantics and keyboard behavior.",
+      "evidence": [
+        "packages/app/src/components/patterns/card-dialog.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "CardDialogChoicePill",
+      "importFrom": "@navet/app/ui-kit/patterns",
+      "source": "packages/app/src/components/patterns/card-dialog.tsx",
+      "status": "app-coupled",
+      "rationale": "Composes app InteractivePill for a controlled active choice. Caller owns selection state, callback and group semantics.",
+      "evidence": [
+        "packages/app/src/components/patterns/card-dialog.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "CardDialogDoneFooter",
+      "importFrom": "@navet/app/ui-kit/patterns",
+      "source": "packages/app/src/components/patterns/card-dialog.tsx",
+      "status": "app-coupled",
+      "rationale": "Composes app Button and Radix Dialog.Close inside the card footer. Requires dialog context and a visible label; dismissing does not perform a save.",
+      "evidence": [
+        "packages/app/src/components/patterns/card-dialog.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "CardDialogBody",
+      "importFrom": "@navet/app/ui-kit/patterns",
+      "source": "packages/app/src/components/patterns/card-dialog.tsx",
+      "status": "experimental",
+      "rationale": "Provider-neutral padded layout wrapper exported from the app. It supplies responsive body spacing; caller owns dialog semantics and content.",
+      "evidence": [
+        "packages/app/src/components/patterns/card-dialog.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "CardDialogTabList",
+      "importFrom": "@navet/app/ui-kit/patterns",
+      "source": "packages/app/src/components/patterns/card-dialog.tsx",
+      "status": "experimental",
+      "rationale": "Provider-neutral inline layout wrapper exported from the app. Despite its name it does not emit tablist semantics or handle keyboard navigation.",
+      "evidence": [
+        "packages/app/src/components/patterns/card-dialog.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "CardDialogFooter",
+      "importFrom": "@navet/app/ui-kit/patterns",
+      "source": "packages/app/src/components/patterns/card-dialog.tsx",
+      "status": "experimental",
+      "rationale": "Provider-neutral action layout wrapper exported from the app with mobile safe-area padding. Caller owns actions, accessible names, callbacks and dialog context.",
+      "evidence": [
+        "packages/app/src/components/patterns/card-dialog.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "CardDialogOverflowMenu",
+      "importFrom": "@navet/app/ui-kit/patterns",
+      "source": "packages/app/src/components/patterns/card-dialog-overflow-menu.tsx",
+      "status": "app-coupled",
+      "rationale": "Uses app i18n, Button and Radix menu primitives. Requires theme, sections and onSectionChange; prioritizes room, defers name editing until menu close, and only exposes removal when supplied. Caller owns section state and destructive-action behavior.",
+      "evidence": [
+        "packages/app/src/components/patterns/card-dialog-overflow-menu.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "Tabs",
+      "importFrom": "@navet/app/ui-kit/primitives",
+      "source": "packages/app/src/components/primitives/tabs.tsx",
+      "status": "app-coupled",
+      "rationale": "App-owned tabs context marked in progress. defaultValue is required even with controlled value; owns generated IDs and selection callbacks. Keyboard navigation is not implemented by this context.",
+      "evidence": [
+        "packages/app/src/components/primitives/tabs.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "TabList",
+      "importFrom": "@navet/app/ui-kit/primitives",
+      "source": "packages/app/src/components/primitives/tabs.tsx",
+      "status": "app-coupled",
+      "rationale": "Uses app theme surface tokens and responsive overflow metrics. Emits role=tablist; requires composed TabTrigger children and caller labeling. It does not implement arrow-key navigation.",
+      "evidence": [
+        "packages/app/src/components/primitives/tabs.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "TabTrigger",
+      "importFrom": "@navet/app/ui-kit/primitives",
+      "source": "packages/app/src/components/primitives/tabs.tsx",
+      "status": "app-coupled",
+      "rationale": "Requires Tabs context and app theme/accent tokens. Emits linked tab IDs, aria-selected and active-only tabIndex; click changes selection. Arrow/Home/End navigation is not implemented.",
+      "evidence": [
+        "packages/app/src/components/primitives/tabs.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "TabPanel",
+      "importFrom": "@navet/app/ui-kit/primitives",
+      "source": "packages/app/src/components/primitives/tabs.tsx",
+      "status": "app-coupled",
+      "rationale": "Requires Tabs context to link its value to the trigger. Inactive panels are hidden, or invisible/inert with preserveLayout; caller supplies content and reviews focus behavior.",
+      "evidence": [
+        "packages/app/src/components/primitives/tabs.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "DialogDoneFooter",
+      "importFrom": "@navet/app/ui-kit/primitives",
+      "source": "packages/app/src/components/primitives/dialog-primitives.tsx",
+      "status": "app-coupled",
+      "rationale": "Composes app Button and Radix Dialog.Close with a required label. Requires dialog context; closure does not save settings.",
+      "evidence": [
+        "packages/app/src/components/primitives/dialog-primitives.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "CustomDialogDoneButton",
+      "importFrom": "@navet/app/ui-kit/primitives",
+      "source": "packages/app/src/components/primitives/dialog-primitives.tsx",
+      "status": "app-coupled",
+      "rationale": "Composes the small app Button within Radix Dialog.Close. Requires dialog context and a visible label; caller owns settings persistence.",
+      "evidence": [
+        "packages/app/src/components/primitives/dialog-primitives.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "DialogFooter",
+      "importFrom": "@navet/app/ui-kit/primitives",
+      "source": "packages/app/src/components/primitives/dialog-primitives.tsx",
+      "status": "experimental",
+      "rationale": "Provider-neutral footer layout currently exported from the app. Supplies action alignment and height rules; caller supplies buttons and behavior.",
+      "evidence": [
+        "packages/app/src/components/primitives/dialog-primitives.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "DialogDoneButton",
+      "importFrom": "@navet/app/ui-kit/primitives",
+      "source": "packages/app/src/components/primitives/dialog-primitives.tsx",
+      "status": "experimental",
+      "rationale": "App-owned Radix close wrapper with default white text classes. Requires dialog context and label; caller must inspect or supply theme-appropriate className/style in light compositions.",
+      "evidence": [
+        "packages/app/src/components/primitives/dialog-primitives.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "SettingsDialogDoneButton",
+      "importFrom": "@navet/app/ui-kit/primitives",
+      "source": "packages/app/src/components/primitives/dialog-primitives.tsx",
+      "status": "experimental",
+      "rationale": "App-owned close wrapper requiring caller-supplied textPrimary, subtleBg and hoverBg surface classes. Requires dialog context and label; dismissal does not perform persistence.",
+      "evidence": [
+        "packages/app/src/components/primitives/dialog-primitives.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
     }
   ]
 }

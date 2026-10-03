@@ -35,8 +35,9 @@ inventory and evidence separately from the TypeScript `sourceFingerprint`.
 app through their listed import surface; they are not standalone `@navet/ui` contracts. `stable`
 is reserved for an explicitly curated mature contract, and `experimental` identifies an evolving
 contract. The inventory covers card/sheet foundations, form controls, typography, status and action
-primitives, with experimental entries for MessageBar and CardMetricActionLayout. No contract is
-classified stable. Read each rationale for context requirements, labeling responsibilities and
+primitives, navigation workspace parts, dialog compositions and tabs. Read namespace entries as
+composition objects, not JSX components. Layout wrappers can have narrower contracts than their
+surrounding app-coupled composition. No contract is classified stable. Read each rationale for context requirements, labeling responsibilities and
 current API limits. A classification is guidance, not proof of accessibility, complete state
 coverage or public SemVer guarantees.
 Story associations identify imports in story files, not proof that every listed story exercises

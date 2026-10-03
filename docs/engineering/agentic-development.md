@@ -51,6 +51,24 @@ the PR while CI runs and posts findings as review comments. Verify each finding 
 PR head, fix valid issues, and continue until no actionable findings remain. The maintainer decides
 when to merge.
 
+### Pull-request delivery
+
+Use one pull request for a coordinated implementation. Keep related code, tests, design-system
+contracts and documentation together so the maintainer can review the resulting behavior on one
+current head. Update the existing delivery PR for follow-up fixes rather than opening parallel PRs
+that edit the same surfaces.
+
+When a change needs separate review stages, use an explicitly ordered stack. Record each PR's
+parent and merge order, maintain the integration branch, and resolve conflicts before requesting
+maintainer review. Validate the integrated result as well as each changed contract. Navet's required
+CI runs on PRs targeting `main`; checks against a feature base do not establish merge readiness.
+
+The delivery agent owns rebasing, conflict resolution and current-head validation. Before a parent
+merges, verify whether its branch will be retained. Retarget dependents to an available base before
+branch deletion can close them, or preserve the parent branch until they are retargeted. After each
+merge, refresh the remaining stack against `main`, resolve conflicts and require fresh CI and Codex
+review. The maintainer decides whether to merge; integration maintenance stays with the agent.
+
 ### Independent reviewer
 
 - Trigger: non-draft PR after CI begins.

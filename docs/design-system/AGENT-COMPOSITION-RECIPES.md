@@ -12,6 +12,8 @@ does not establish a stable public API or complete accessibility coverage.
 | Compact device controls | `BaseCard` with its `title`, `header` or `actionRow` slots | [BaseCard](../../packages/app/src/components/primitives/base-card.stories.tsx): all supported sizes, long names, active/inactive and unavailable behavior. Keep one primary control path. |
 | Controls with secondary configuration | Card variant of `BaseCardDialog`, `navigation="overflow"`, controls tab first | [Controls-first dialog](../../packages/app/src/components/patterns/card-dialog-overflow-menu.stories.tsx): More actions, edit name/room, secondary section, Back to controls, close/reopen. |
 | Mobile detail or command sheet | `SheetSurface` directly containing `SheetSurfaceHeader` and body | [Sheet surface](../../packages/app/src/components/primitives/sheet-surface.stories.tsx): open on a phone, dismissal, scroll, long content and desktop visibility. |
+| Sidebar-to-detail navigation | `NavigationWorkspace.Frame` with its named parts | [Navigation workspace](../../packages/app/src/components/patterns/navigation-workspace.stories.tsx): frame context, labeled navigation, `aria-current`, explicit sidebar/detail grid and owned scroll regions. The namespace is a composition object. |
+| Small view switch | `Tabs`, `TabList`, `TabTrigger` and `TabPanel` | [Tabs](../../packages/app/src/components/primitives/tabs.stories.tsx): controlled/uncontrolled selection, matching values, linked IDs, overflow and inactive-panel focus. Inspect keyboard handling in the current source before acceptance. |
 | Settings form | Existing settings-dialog shell; `FieldBlock` around control primitives | [Field states](../../packages/app/src/components/patterns/field-block.stories.tsx): hint, required, error and disabled. Inspect a neighboring feature's settings dialog for save and cancellation behavior. |
 | Dashboard summary | Existing feature summary inside the shared dashboard layout | [Dashboard guidance](../product/dashboard-principles.md) and the nearest summary implementation: reading order, condensed/expanded presentation and no-data behavior. Select its actual feature composition rather than assuming a generic summary-bar component. |
 | Empty card or section | `CardEmptyState` inside `BaseCard`; `DashboardEmptyState` for sections | [Card empty states](../../packages/app/src/components/patterns/card-empty-state.stories.tsx) and [dashboard empty states](../../packages/app/src/components/patterns/dashboard-empty-state.stories.tsx): small/large sizes, optional action, no matches versus unconfigured content. |
@@ -62,6 +64,32 @@ Connect entity controls to Navet-owned state and commands routed to their owning
 existing device editor for persisted name/room changes; this skeleton only composes supplied
 content. Verify tab order, keyboard dismissal, focus containment and return, overflow navigation,
 and reopened state. Record actual findings rather than assuming the shared shell proves them.
+
+## Navigation and selection contracts
+
+`NavigationWorkspace` exports named parts such as `Frame` and `Item`; render those members rather
+than the namespace object. The frame provides app theme-derived context to grouped surfaces,
+headers, sidebar and rows. Callers own responsive column layout, the labeled navigation landmark,
+selection callbacks and `aria-current`. `Item`'s `active` prop controls visual state; provide an
+`ItemButton` with a meaningful name and navigation behavior. `Content` renders a main region, so
+choose its placement with the page's existing main landmark in mind. The source story uses an
+explicit detail scroll region rather than relying on the frame to scroll.
+
+`Tabs` requires `defaultValue`, including in controlled compositions, and supplies selection context
+and generated IDs. Match each `TabTrigger` value to its `TabPanel`. The trigger's click updates
+selection; the source does not implement Arrow/Home/End navigation. Verify the intended keyboard
+path in the rendered composition before acceptance. `preserveLayout` retains an inactive panel's
+geometry while making it invisible and inert.
+
+`CardDialogTabList` is a layout wrapper and `CardDialogTabTrigger` is a controlled pill; they do not
+supply the `Tabs` context or linked panel semantics. Choose the actual interaction contract required
+by the composition. For controls-first device dialogs, the existing overflow recipe supplies
+secondary navigation and the return path.
+
+Dialog close actions require the surrounding Radix dialog context. Closing a dialog does not save
+settings. Keep persistence and save-error handling in the feature's existing workflow. When using
+`CardDialogHeader`, an entity ID can enable entity-name persistence through app administration;
+use its callback contract deliberately and route entities to their owning provider.
 
 ## Sheet header and body
 
