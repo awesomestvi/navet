@@ -60,7 +60,7 @@ export function createLinearResultWriter({ getAccessToken, readIssue, readReques
       const receipt = task?.planningResult;
       if (!Number.isSafeInteger(startedAt) || startedAt <= 0 || !['create', 'reconcile'].includes(decision?.action) ||
           typeof task?.id !== 'string' || !task.id.trim() || task.id.length > 4096 ||
-          !receipt || receipt.status !== 'pending' || receipt.attemptedAt || !isDeepStrictEqual(receipt, decision.receipt) ||
+          !receipt || !['pending', 'unverified'].includes(receipt.status) || receipt.attemptedAt || !isDeepStrictEqual(receipt, decision.receipt) ||
           !UUID.test(receipt.commentId) || receipt.issueId !== task.planning?.binding.issueId ||
           receipt.writerAppUserId !== policy.appUserId || receipt.bodyHash !== linearResultBodyHash(body) ||
           receipt.head !== task.head || receipt.revision !== task.revision ||

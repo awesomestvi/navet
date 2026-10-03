@@ -127,11 +127,15 @@ describe('bounded app-actor Linear result writer', () => {
     expect(acquired).toBe(0);
   });
 
-  it('can reconcile a reserved but never-attempted intent only through the durable first-send permit', async () => {
+  it.each(['pending', 'unverified'])('can obtain the first send for a reserved %s intent only through the durable permit', async (status) => {
     const { write, input } = setup();
     input.decision.action = 'reconcile';
+    input.task.planningResult.status = status;
+    input.decision.receipt.status = status;
     expect((await write(input)).status).toBe('acknowledged');
     const replay = setup();
+    replay.input.task.planningResult.status = status;
+    replay.input.decision.receipt.status = status;
     replay.input.task.planningResult.attemptedAt = time;
     replay.input.decision.receipt.attemptedAt = time;
     replay.input.decision.action = 'reconcile';

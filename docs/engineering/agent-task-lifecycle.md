@@ -108,8 +108,9 @@ an explicit destination value. Changing the destination requires a new authorize
 3. An existing pending or unverified intent returns `reconcile`. Inspect the reserved comment
    through the [Linear result reader](autonomous-builder-plan.md#private-result-readback), using its
    `intentAt` as `notBefore`. An unavailable read cannot establish that creation failed or authorize
-   a replacement comment. A reserved intent with no `attemptedAt` can obtain its first send permit
-   through the controlled writer after the current source and ownership checks pass. This requires
+   a replacement comment. A pending or unverified reserved intent with no `attemptedAt` can obtain
+   its first send permit using the same comment ID through the controlled writer after the current
+   source and ownership checks pass. This requires
    every writer to use the durable attempt protocol; an imported or unknown writer outcome requires
    investigation. A confirmed intent returns `skip` for creation; completion still needs
    fresh readback. Changed content or head requires a new scoped request.

@@ -106,9 +106,9 @@ export async function deliverPlanningResult({ store, owner, taskId, head, body, 
       if (receipt.writerAppUserId !== writerAppUserId || receipt.head !== head || receipt.revision !== task.revision ||
           receipt.planningRevision !== task.planning.binding.revision ||
           (body !== undefined && receipt.bodyHash !== linearResultBodyHash(body))) throw new Error('Reserved result scope changed.');
-      // Monitoring an attempted or already observed result needs no new publication authority.
+      // Monitoring an attempted or confirmed result needs no new publication authority.
       // It never invokes the writer, even when the source has subsequently been withdrawn.
-      if (attempted || receipt.status !== 'pending') return await observeResult(receipt);
+      if (attempted || !['pending', 'unverified'].includes(receipt.status)) return await observeResult(receipt);
     }
     const bodyHash = linearResultBodyHash(body);
     const scopeStartedAt = clock();

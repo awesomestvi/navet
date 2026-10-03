@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createLinearIssueReader } from './agent-linear-reader.mjs';
-import { createLinearResultReader } from './agent-linear-result-reader.mjs';
+import { createLinearResultReader, linearResultBodyHash } from './agent-linear-result-reader.mjs';
 import { createLinearResultWriter } from './agent-linear-result-writer.mjs';
 import { deliverPlanningResult } from './agent-planning-result-delivery.mjs';
 import { createPlanningBinding } from './agent-planning-scope.mjs';
@@ -100,6 +100,22 @@ describe('coordinator result handoff with durable storage and real transport ada
     expect(counts()).toEqual({ mutations: 1, writerCreations: 1 });
     expect(await readFile(path.join(directory, 'tasks.json'), 'utf8')).not.toContain(body);
     expect(JSON.stringify(result)).not.toMatch(/Private worker|writer-token|reader-token/);
+  });
+
+  it('performs the first send after an unavailable pre-send read without replacing the reserved identity', async () => {
+    const { input, act, request, counts, store } = await setup();
+    const reserved = await act('planning-result-intent', { head: null, bodyHash: linearResultBodyHash(body),
+      writerAppUserId: input.writerAppUserId, authority: { ...request.authority, observedAt: input.now() } });
+    await act('planning-result-observation', { commentId: reserved.planningResult.commentId, observation: { status: 'unavailable',
+      observedAt: input.now(), reference: 'linear-result-unavailable' } });
+    const before = (await store.list())[0].planningResult;
+    expect(before.status).toBe('unverified');
+    expect(before.attemptedAt).toBeUndefined();
+    const result = await deliverPlanningResult(input);
+    expect(result).toMatchObject({ status: 'verified', commentId: before.commentId });
+    expect(counts()).toEqual({ mutations: 1, writerCreations: 1 });
+    expect((await deliverPlanningResult({ ...input, body: undefined })).status).toBe('verified');
+    expect(counts()).toEqual({ mutations: 1, writerCreations: 1 });
   });
 
   it('reconciles existing output after restart without worker Markdown or another writer session', async () => {

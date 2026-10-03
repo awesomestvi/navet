@@ -460,7 +460,7 @@ export class AgentTaskStore {
               !task.dispatch?.threadId || TERMINAL.has(task.state)) {
             throw new Error('Planning result send requires the reserved active scope.');
           }
-          if (receipt.attemptedAt || receipt.status !== 'pending') {
+          if (receipt.attemptedAt || !['pending', 'unverified'].includes(receipt.status)) {
             planningResultDecision = { action: 'reconcile', receipt };
           } else {
             if (!['verifying', 'awaiting-approval'].includes(task.state)) {

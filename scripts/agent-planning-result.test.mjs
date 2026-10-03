@@ -82,6 +82,21 @@ describe('durable Linear result intent and readback', () => {
     expect(again.planningResult.attemptedAt).toBe(sent.planningResult.attemptedAt);
   });
 
+  it('grants only the first send for an unverified receipt with no durable attempt', async () => {
+    const { intent, act, authority, now } = await setup();
+    const reserved = await intent();
+    const commentId = reserved.planningResult.commentId;
+    await act('planning-result-observation', { commentId, observation: { status: 'unavailable',
+      observedAt: now(), reference: 'linear-result-unavailable' } });
+    await expect(act('planning-result-attempt', { commentId, authority: { ...authority, actor: 'other' } }))
+      .rejects.toThrow('authority rechecked');
+    const sent = await act('planning-result-attempt', { commentId, authority });
+    expect(sent.planningResultDecision.action).toBe('send');
+    expect(sent.planningResult.commentId).toBe(commentId);
+    expect(sent.planningResult.attemptedAt).toBe(now());
+    expect((await act('planning-result-attempt', { commentId })).planningResultDecision.action).toBe('reconcile');
+  });
+
   it('checks current authority and planning visibility before permitting the first send', async () => {
     const { intent, act, store, authority } = await setup();
     const pending = await intent();
