@@ -13,6 +13,7 @@ export async function runLinearPlanningResult({ store, owner, taskId, head, body
   let timer;
   let cancel;
   const sessions = [];
+  let result;
   try {
     if (typeof readReaderCredentials !== 'function' || typeof readRequest !== 'function' ||
         typeof now !== 'function' || typeof fetchImpl !== 'function' ||
@@ -37,6 +38,8 @@ export async function runLinearPlanningResult({ store, owner, taskId, head, body
           !Number.isSafeInteger(observed) || observed < startedAt || budget < 1) throw new Error('Expired result run.');
       return budget;
     };
+    const fetchForRun = (url, init) => fetchImpl(url, { ...init,
+      signal: AbortSignal.any([controller.signal, init.signal]) });
     const lazyToken = (factory, readCredentials) => {
       let pending;
       return async ({ signal: requestSignal } = {}) => {
@@ -54,25 +57,29 @@ export async function runLinearPlanningResult({ store, owner, taskId, head, body
     const readerToken = lazyToken(createLinearReadSession, readReaderCredentials);
     const writerToken = lazyToken(createLinearCommentSession, readWriterCredentials);
     const readIssue = createLinearIssueReader({ policy: readerPolicy, getAccessToken: readerToken,
-      fetchImpl, now, maxReadMs: Math.min(20_000, remaining()) });
+      fetchImpl: fetchForRun, now, maxReadMs: Math.min(20_000, remaining()) });
     const readResult = createLinearResultReader({ policy: readerPolicy, getAccessToken: readerToken,
-      fetchImpl, now, maxReadMs: Math.min(20_000, remaining()) });
+      fetchImpl: fetchForRun, now, maxReadMs: Math.min(20_000, remaining()) });
     // Validate the writer identity policy before reading credentials, while keeping its grant lazy.
     const createWriter = (adapters) => createLinearResultWriter({ ...adapters, policy: writerPolicy,
-      getAccessToken: writerToken, fetchImpl, now, maxWriteMs: Math.min(20_000, remaining()) });
+      getAccessToken: writerToken, fetchImpl: fetchForRun, now, maxWriteMs: Math.min(20_000, remaining()) });
     createWriter({ readIssue, readRequest, signal: controller.signal, beginWrite: async () => { throw new Error('No send reservation.'); } });
-    return await deliverPlanningResult({ store, owner, taskId, head, body, resourceToken,
+    result = await deliverPlanningResult({ store, owner, taskId, head, body, resourceToken,
       writerAppUserId: writerPolicy.appUserId, readIssue, readResult, readRequest, createWriter,
       now, signal: controller.signal, maxRunMs: remaining() });
   } catch {
-    return { status: 'blocked', taskId, reason: 'linear-result-run-unavailable' };
+    result = { status: 'blocked', taskId, reason: 'linear-result-run-unavailable' };
   } finally {
     clearTimeout(timer);
     if (cancel) signal?.removeEventListener('abort', cancel);
     controller?.abort();
     // Close fulfilled sessions even when a bounded reader stopped awaiting authentication.
-    for (const settled of await Promise.allSettled(sessions)) {
-      if (settled.status === 'fulfilled') settled.value.close();
+    const settled = await Promise.allSettled(sessions);
+    const cleanup = await Promise.allSettled(settled.filter((entry) => entry.status === 'fulfilled')
+      .map((entry) => entry.value.close()));
+    if (cleanup.some((entry) => entry.status !== 'fulfilled' || entry.value.status !== 'revoked')) {
+      result = { status: 'blocked', taskId, reason: 'linear-session-revocation-unverified', result };
     }
   }
+  return result;
 }

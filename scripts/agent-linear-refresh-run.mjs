@@ -10,6 +10,7 @@ export async function runLinearPlanningRefresh({ inbox, eventId, store, owner, r
   let timer;
   let cancel;
   let pendingSession;
+  let result;
   try {
     if (typeof readCredentials !== 'function' || typeof fetchImpl !== 'function' || typeof now !== 'function' ||
         !Number.isSafeInteger(maxRunMs) || maxRunMs < 1 || maxRunMs > 60_000) throw new Error('Invalid refresh run.');
@@ -44,13 +45,13 @@ export async function runLinearPlanningRefresh({ inbox, eventId, store, owner, r
     const reader = createLinearIssueReader({ policy: readerPolicy, now, fetchImpl: fetchForRun,
       maxReadMs: Math.min(20_000, remaining()), getAccessToken: async (options) => {
         remaining();
-        pendingSession ??= createLinearReadSession({ readCredentials, fetchImpl: fetchForRun,
+        pendingSession ??= createLinearReadSession({ readCredentials, fetchImpl,
           now, signal: controller.signal, timeoutMs: remaining() });
         const session = await pendingSession;
         remaining();
         return session.getAccessToken(options);
       } });
-    return await reconcileLinearRefresh({ inbox, eventId, store, owner, now, readIssue: async (issueId) => {
+    result = await reconcileLinearRefresh({ inbox, eventId, store, owner, now, readIssue: async (issueId) => {
       remaining();
       const observation = await reader(issueId);
       remaining();
@@ -58,7 +59,7 @@ export async function runLinearPlanningRefresh({ inbox, eventId, store, owner, r
       return observation.issue;
     } });
   } catch {
-    return { eventId, decision: 'blocked', authority: 'none', reason: 'linear-refresh-run-unavailable' };
+    result = { eventId, decision: 'blocked', authority: 'none', reason: 'linear-refresh-run-unavailable' };
   } finally {
     clearTimeout(timer);
     if (cancel) signal?.removeEventListener('abort', cancel);
@@ -67,7 +68,12 @@ export async function runLinearPlanningRefresh({ inbox, eventId, store, owner, r
     // Close a fulfilled authentication session even when its consumer stopped awaiting it.
     if (pendingSession) {
       const [settled] = await Promise.allSettled([pendingSession]);
-      if (settled.status === 'fulfilled') settled.value.close();
+      if (settled.status === 'fulfilled') {
+        const cleanup = await settled.value.close();
+        if (cleanup.status !== 'revoked') result = { eventId, decision: 'blocked', authority: 'none',
+          reason: 'linear-session-revocation-unverified', reconciliation: result };
+      }
     }
   }
+  return result;
 }

@@ -209,6 +209,7 @@ async function authenticatedRunFixture(options = {}) {
     readReaderCredentials: async () => { credentialReads.push('reader'); return { clientId: 'reader-client', clientSecret: 'private-reader-secret' }; },
     readWriterCredentials: async () => { credentialReads.push('writer'); return { clientId: 'writer-client', clientSecret: 'private-writer-secret' }; },
     fetchImpl: async (url, init) => {
+      if (url.endsWith('/oauth/revoke')) return new Response(null, { status: options.revokeFailure ? 500 : 200 });
       if (url.endsWith('/oauth/token')) {
         const request = new URLSearchParams(init.body);
         grants.push({ clientId: request.get('client_id'), scope: request.get('scope') });
@@ -277,4 +278,35 @@ describe('authenticated coordinator result run', () => {
     expect((await runLinearPlanningResult(runInput)).status).toBe('verified');
     expect(counts().mutations).toBe(1);
   });
+});
+
+it.each(['proposal', 'result'])('propagates parent cancellation into pending %s GraphQL reads', async (target) => {
+  const { runInput, counts } = await authenticatedRunFixture();
+  if (target === 'result') expect((await runLinearPlanningResult(runInput)).status).toBe('verified');
+  const controller = new AbortController();
+  const original = runInput.fetchImpl;
+  let requestSignal;
+  const fetchImpl = async (url, init) => {
+    if (url.endsWith('/graphql')) {
+      const query = JSON.parse(init.body).query;
+      if (query.startsWith(target === 'proposal' ? 'query NavetPlanningIssue' : 'query NavetPlanningResult')) {
+        requestSignal = init.signal;
+        controller.abort();
+        return new Promise(() => {});
+      }
+    }
+    return original(url, init);
+  };
+  const observed = await runLinearPlanningResult({ ...runInput, body: target === 'result' ? undefined : runInput.body,
+    fetchImpl, signal: controller.signal });
+  expect(['blocked', 'pending']).toContain(observed.status);
+  expect(requestSignal.aborted).toBe(true);
+  expect(counts().mutations).toBe(target === 'result' ? 1 : 0);
+});
+it('surfaces failed session revocation while retaining verified artifact history', async () => {
+  const { runInput, counts, store } = await authenticatedRunFixture({ revokeFailure: true });
+  const observed = await runLinearPlanningResult(runInput);
+  expect(observed).toMatchObject({ status: 'blocked', reason: 'linear-session-revocation-unverified', result: { status: 'verified' } });
+  expect((await store.list())[0].planningResult.status).toBe('confirmed');
+  expect(counts().mutations).toBe(1);
 });

@@ -140,8 +140,12 @@ the independently authenticated maintainer-request adapter remain activation wor
 
 For a local coordinator run, [`createLinearReadSession`](../../scripts/agent-linear-auth.mjs)
 exchanges securely loaded app credentials for a token with only `read` scope. Create a fresh session
-at run start, pass `session.getAccessToken` to the reader and call `session.close()` in the run's
-`finally` block. Expired, canceled or closed sessions cannot supply a token. Access tokens remain
+at run start, pass `session.getAccessToken` to the reader and await `session.close()` in the run's
+`finally` block. Closing immediately clears local token access and revokes the token at Linear with
+a separate five-second cleanup deadline. Repeated closes share the same cleanup result. Only an
+acknowledged revocation is verified; unavailable cleanup leaves the run blocked for recovery.
+Tokens received with an invalid grant are also revoked before authentication fails.
+Expired, canceled or closed sessions cannot supply a token. Access tokens remain
 in memory; they are not stored in runner JSON or passed in command arguments. This follows Linear's
 [client-credentials procedure](https://linear.app/developers/oauth-2-0-authentication#client-credentials-tokens).
 
@@ -218,7 +222,8 @@ A successful response is only an acknowledgement; the separate result reader ver
 
 Use a separately configured writer OAuth app restricted to Navet. The
 `createLinearCommentSession` factory requests exactly `read,comments:create`, rejects broader or
-incomplete grants and keeps its token in memory for one run. Close it in the run's `finally` block.
+incomplete grants and keeps its token in memory for one run. Await token revocation through
+`session.close()` in the run's `finally` block, using its separate bounded cleanup deadline.
 Keep the reader app on read-only scope. Linear's
 [OAuth scope contract](https://linear.app/developers/oauth-2-0-authentication) provides the targeted
 comment permission and states that changing an app's client-credentials scopes invalidates its
@@ -231,7 +236,9 @@ verified destination policy, live queue wiring and live pilot remain activation 
 [coordinator result handoff](agent-task-lifecycle.md#coordinator-result-handoff) joins the adapters
 to durable result intents and observations without activating the queue or granting acceptance.
 The [authenticated result run](agent-task-lifecycle.md#authenticated-result-run) assembles those
-adapters with separate lazy app sessions under one deadline and closes every session afterward.
+adapters with separate lazy app sessions under one operation deadline, propagates cancellation to
+reads and writes, and awaits bounded token revocation afterward. Unverified cleanup preserves
+the artifact receipt while blocking the run for recovery.
 Transport tests use synthetic credentials and do not establish live permissions or delivery.
 
 The [authenticated refresh run](agent-task-lifecycle.md#authenticated-refresh-run) connects signed

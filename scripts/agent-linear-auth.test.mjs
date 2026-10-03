@@ -1,7 +1,7 @@
 import { chmod, link, mkdir, mkdtemp, readdir, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createLinearCommentSession, createLinearReadSession, readLinearClientCredentials } from './agent-linear-auth.mjs';
 
 const directories = [];
@@ -37,7 +37,7 @@ describe('run-scoped Linear app authentication', () => {
     const session = await createLinearCommentSession(input);
     expect(new URLSearchParams(requests[0].body).get('scope')).toBe('read,comments:create');
     expect(await session.getAccessToken()).toBe('synthetic-run-token');
-    session.close();
+    await session.close();
     await expect(session.getAccessToken()).rejects.toThrow('closed or expired');
   });
 
@@ -58,7 +58,7 @@ describe('run-scoped Linear app authentication', () => {
       client_id: credentials.clientId, client_secret: credentials.clientSecret });
     expect(await session.getAccessToken()).toBe('synthetic-run-token');
     expect(JSON.stringify(session)).not.toMatch(/synthetic-run-token|synthetic-private-client-secret/);
-    session.close();
+    await session.close();
     await expect(session.getAccessToken()).rejects.toThrow('closed or expired');
   });
 
@@ -66,10 +66,11 @@ describe('run-scoped Linear app authentication', () => {
     const { file, privateDirectory } = await credentialFile();
     const { input, requests } = harness(tokenResponse(), { readCredentials: () => readLinearClientCredentials(file) });
     const first = await createLinearReadSession(input);
-    first.close();
+    await first.close();
     const second = await createLinearReadSession(input);
-    second.close();
-    expect(requests).toHaveLength(2);
+    await second.close();
+    expect(requests.filter((request) => request.url.endsWith('/oauth/token'))).toHaveLength(2);
+    expect(requests.filter((request) => request.url.endsWith('/oauth/revoke'))).toHaveLength(2);
     expect(await readdir(privateDirectory)).toEqual(['client.json']);
   });
 
@@ -87,7 +88,7 @@ describe('run-scoped Linear app authentication', () => {
     const { input } = harness(tokenResponse({ scope: ['read'] }));
     const session = await createLinearReadSession(input);
     expect(await session.getAccessToken()).toBe('synthetic-run-token');
-    session.close();
+    await session.close();
   });
 
   it('latches expiration and honors run cancellation after authentication', async () => {
@@ -177,4 +178,51 @@ describe('private credential file fallback', () => {
       await expect(readLinearClientCredentials(file)).rejects.toThrow(/^Private Linear client credentials are unavailable or invalid\.$/);
     }
   });
+});
+
+it('revokes exactly once on close and immediately denies token access', async () => {
+  const { input, requests } = harness();
+  const session = await createLinearReadSession(input);
+  const first = session.close();
+  expect(session.close()).toBe(first);
+  await expect(session.getAccessToken()).rejects.toThrow('closed or expired');
+  expect(await first).toEqual({ status: 'revoked' });
+  const revokes = requests.filter((request) => request.url.endsWith('/oauth/revoke'));
+  expect(revokes).toHaveLength(1);
+  expect(revokes[0]).toMatchObject({ method: 'POST', redirect: 'error', cache: 'no-store' });
+  expect(Object.fromEntries(new URLSearchParams(revokes[0].body))).toEqual({ token: 'synthetic-run-token', token_type_hint: 'access_token' });
+  expect(revokes[0].body).not.toContain(credentials.clientSecret);
+});
+it('reports unverified revocation without reviving the local token or retrying', async () => {
+  const { input, requests } = harness();
+  const original = input.fetchImpl;
+  input.fetchImpl = (url, init) => url.endsWith('/oauth/revoke') ? (requests.push({ url, ...init }), Promise.resolve(new Response(null, { status: 500 }))) : original(url, init);
+  const session = await createLinearReadSession(input);
+  expect(await session.close()).toEqual({ status: 'unverified' });
+  expect(await session.close()).toEqual({ status: 'unverified' });
+  expect(requests.filter((request) => request.url.endsWith('/oauth/revoke'))).toHaveLength(1);
+  await expect(session.getAccessToken()).rejects.toThrow('closed or expired');
+});
+it('bounds revocation even when transport ignores cancellation', async () => {
+  vi.useFakeTimers();
+  try {
+    let revokeSignal;
+    const { input } = harness();
+    const original = input.fetchImpl;
+    input.fetchImpl = (url, init) => {
+      if (!url.endsWith('/oauth/revoke')) return original(url, init);
+      revokeSignal = init.signal;
+      return new Promise(() => {});
+    };
+    const session = await createLinearReadSession(input);
+    const cleanup = session.close();
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(await cleanup).toEqual({ status: 'unverified' });
+    expect(revokeSignal.aborted).toBe(true);
+  } finally { vi.useRealTimers(); }
+});
+it('revokes a received token whose grant metadata is rejected', async () => {
+  const { input, requests } = harness(tokenResponse({ scope: 'read write' }));
+  await expect(createLinearReadSession(input)).rejects.toThrow('read-only app authentication failed');
+  expect(requests.filter((request) => request.url.endsWith('/oauth/revoke'))).toHaveLength(1);
 });

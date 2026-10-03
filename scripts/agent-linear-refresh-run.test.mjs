@@ -39,6 +39,7 @@ async function setup() {
   let broader = false;
   const fetchImpl = async (url, init) => {
     requests.push({ url, init });
+    if (url.endsWith('/oauth/revoke')) return new Response(null, { status: 200 });
     if (url.endsWith('/oauth/token')) return Response.json({ access_token: 'synthetic-token', token_type: 'Bearer', expires_in: 3600, scope: broader ? 'read write' : 'read' });
     const page = (nodes) => ({ nodes, pageInfo: { hasNextPage: false, endCursor: null } });
     return Response.json({ data: { organization: { id: id(1) }, viewer: { id: id(2), app: true, active: true }, issue: {
@@ -55,7 +56,7 @@ it('authenticates one minimal grant and reconciles the actual inbox without gran
   const h = await setup();
   const authority = (await h.store.list())[0].authority;
   expect(await runLinearPlanningRefresh(h.options)).toMatchObject({ decision: 'confirmed', updatedTasks: 1, authority: 'none' });
-  expect(h.requests).toHaveLength(3);
+  expect(h.requests).toHaveLength(4);
   expect(new URLSearchParams(h.requests[0].init.body).get('scope')).toBe('read');
   expect(await h.inbox.pending()).toEqual([]);
   const task = (await h.store.list())[0];
@@ -68,12 +69,25 @@ it('latches a live withdrawal from app-authenticated proposal reads', async () =
   expect(await runLinearPlanningRefresh(h.options)).toMatchObject({ decision: 'confirmed', authority: 'none' });
   expect(planningStatus((await h.store.list())[0], h.options.now()).reason).toBe('planning-request-revoked');
 });
+it('reports unverified token cleanup without undoing a confirmed reconciliation', async () => {
+  const h = await setup();
+  const fetchImpl = (url, init) => url.endsWith('/oauth/revoke')
+    ? Promise.resolve(new Response(null, { status: 500 })) : h.options.fetchImpl(url, init);
+  expect(await runLinearPlanningRefresh({ ...h.options, fetchImpl })).toMatchObject({
+    decision: 'blocked', authority: 'none', reason: 'linear-session-revocation-unverified',
+    reconciliation: { decision: 'confirmed', updatedTasks: 1 },
+  });
+  expect(await h.inbox.pending()).toEqual([]);
+  const task = (await h.store.list())[0];
+  expect(planningStatus(task, h.options.now()).result).toBe('pass');
+  expect(task.dispatch).toBeNull();
+});
 it('invalidates old read passes and retains the receipt when the grant is broader than read', async () => {
   const h = await setup(); h.broader();
   expect(await runLinearPlanningRefresh(h.options)).toMatchObject({ decision: 'retry', updatedTasks: 1 });
   expect((await h.inbox.pending())).toHaveLength(1);
   expect(planningStatus((await h.store.list())[0], h.options.now()).result).toBe('unverified');
-  expect(h.requests).toHaveLength(1);
+  expect(h.requests).toHaveLength(2);
 });
 it('validates policy and pre-cancellation before loading credentials or sending requests', async () => {
   const h = await setup(); let loads = 0;
@@ -94,7 +108,7 @@ it('cancels a stalled GraphQL transport and durably invalidates the prior pass b
   const controller = new AbortController();
   let signal;
   const fetchImpl = async (url, init) => {
-    if (url.endsWith('/oauth/token')) return h.options.fetchImpl(url, init);
+    if (url.endsWith('/oauth/token') || url.endsWith('/oauth/revoke')) return h.options.fetchImpl(url, init);
     signal = init.signal;
     controller.abort();
     return new Promise(() => {});

@@ -7,6 +7,29 @@ function secretText(value, max) {
   return typeof value === 'string' && value.trim() && value.length <= max && !/[\r\n]/.test(value);
 }
 
+// Revocation has a separate, bounded cleanup budget and must work after run cancellation.
+async function revokeLinearToken(token, fetchImpl) {
+  const controller = new AbortController();
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => { controller.abort(); reject(new Error('Revocation timed out.')); }, 5_000);
+  });
+  try {
+    const response = await Promise.race([fetchImpl('https://api.linear.app/oauth/revoke', {
+      method: 'POST', redirect: 'error', cache: 'no-store', signal: controller.signal,
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ token, token_type_hint: 'access_token' }).toString(),
+    }), timeout]);
+    void response.body?.cancel().catch(() => {});
+    return { status: response.status === 200 && !response.redirected ? 'revoked' : 'unverified' };
+  } catch {
+    return { status: 'unverified' };
+  } finally {
+    clearTimeout(timer);
+    controller.abort();
+  }
+}
+
 // Prefer a credential manager through the same callback interface when available. This file
 // fallback requires an owner-private directory and a regular, singly linked owner-private file.
 // Never pass the returned credentials in command arguments or print them.
@@ -65,6 +88,7 @@ async function createLinearAppSession({ readCredentials, fetchImpl = globalThis.
   const timer = setTimeout(cancel, timeoutMs);
   signal?.addEventListener('abort', cancel, { once: true });
   const bounded = (operation) => Promise.race([operation, aborted]);
+  let receivedToken;
   try {
     // Observe a pre-aborted signal through the same bounded path, without creating an
     // unhandled rejection before Promise.race has attached its rejection handler.
@@ -82,6 +106,7 @@ async function createLinearAppSession({ readCredentials, fetchImpl = globalThis.
         client_id: credentials.clientId, client_secret: credentials.clientSecret }).toString(),
     }));
     const result = await readLinearResponseJson(response, bounded, 16_384);
+    if (secretText(result?.access_token, 8192)) receivedToken = result.access_token;
     const scopes = Array.isArray(result?.scope) ? result.scope : typeof result?.scope === 'string' ? result.scope.trim().split(/[\s,]+/) : [];
     if (!secretText(result?.access_token, 8192) || result.token_type?.toLowerCase() !== 'bearer' ||
         !Number.isSafeInteger(result.expires_in) || result.expires_in <= 30 ||
@@ -94,6 +119,9 @@ async function createLinearAppSession({ readCredentials, fetchImpl = globalThis.
     if (!Number.isSafeInteger(finishedAt) || finishedAt < startedAt || finishedAt - startedAt > timeoutMs ||
         !Number.isSafeInteger(expiresAt)) throw new Error('Invalid token lifetime.');
     let token = result.access_token;
+    let serverToken = receivedToken;
+    receivedToken = null;
+    let cleanup;
     return {
       expiresAt,
       getAccessToken: async ({ signal: readSignal } = {}) => {
@@ -102,9 +130,18 @@ async function createLinearAppSession({ readCredentials, fetchImpl = globalThis.
         if (!token || readSignal?.aborted) throw new Error('Linear app session is closed or expired.');
         return token;
       },
-      close: () => { token = null; },
+      close: () => {
+        token = null;
+        if (!cleanup) {
+          const revoke = serverToken;
+          serverToken = null;
+          cleanup = revokeLinearToken(revoke, fetchImpl);
+        }
+        return cleanup;
+      },
     };
   } catch {
+    if (receivedToken) await revokeLinearToken(receivedToken, fetchImpl);
     throw new Error(failureMessage);
   } finally {
     clearTimeout(timer);

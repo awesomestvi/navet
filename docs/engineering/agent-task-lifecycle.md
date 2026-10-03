@@ -176,10 +176,15 @@ An attempted or confirmed receipt needs only a fresh reader session; reconciliat
 the writer and current publication authority for its first send.
 
 Authentication and delivery share a deadline of at most one minute and the caller's cancellation
-signal. Every started app session closes in the run's `finally` path, including sessions acquired
-while a bounded reader was interrupted. Credentials, tokens and confidential Markdown are not
-part of the returned status. The helper returns the coordinator's artifact-verification result;
-it grants neither quality acceptance nor a delivered transition.
+signal. Proposal reads, result reads and writes combine that signal with their request deadline.
+Every started app session closes in the run's `finally` path, including sessions acquired while a
+bounded reader was interrupted. Closing clears local access immediately and requests server
+revocation with a separate five-second deadline per token; acquired sessions close in parallel.
+Unacknowledged revocation returns `blocked` with reason `linear-session-revocation-unverified`,
+preserving the artifact-verification result in the nested `result` field and the durable receipt.
+Recovery must reconcile that receipt before attempting another write. Credentials, tokens and
+confidential Markdown are not part of the returned status. The helper grants neither quality
+acceptance nor a delivered transition.
 
 The request adapter remains an authentication boundary. Connecting this operation to live queue
 checkpoints requires installed app identities, authorized credential setup, a trusted human-request
@@ -363,7 +368,10 @@ Supply the existing `inbox`, `eventId`, `store`, coordinator `owner`, `readerPol
 `readCredentials` callback owned by the installed runner. The policy fixes the organization,
 app actor, team and project. Credentials are loaded lazily after the existing receipt and store
 checks; invalid policy or pre-cancellation loads no credentials. The session requests exactly
-`read` and closes before the operation returns.
+`read` and closes before the operation returns. Closing clears local token access immediately and
+awaits server revocation with a separate five-second cleanup deadline. Unacknowledged revocation
+returns `blocked` with reason `linear-session-revocation-unverified` and preserves the original
+outcome in `reconciliation`; the durable receipt remains available for recovery.
 
 `maxRunMs` bounds remote work to at most 60 seconds; proposal reads also retain their own
 20-second limit. Parent cancellation reaches OAuth and GraphQL, including a transport that
