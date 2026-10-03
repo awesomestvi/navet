@@ -66,7 +66,8 @@ export function generateDesignTokens({ root, file = 'packages/app/src/ui-kit/tok
       }
       if (type.isNumberLiteralType() || type.isStringLiteralType() || type.isBooleanLiteralType() ||
           !type.isObjectType() || checker.getSignaturesOfType(type, SignatureKind.Call).length) {
-        omitted.push({ path: parts.join('.'), ...location(declaration), reason: 'Requires source recipe or an explicit supported unit mapping.' });
+        omitted.push({ path: parts.join('.'), ...location(declaration), reason: 'Requires source recipe or an explicit supported unit mapping.',
+          ...(type.isStringLiteralType() ? { sourceValue: type.value } : {}) });
         return null;
       }
       const group = Object.create(null);
@@ -128,6 +129,7 @@ export function findDesignTokens(document, query) {
   const metadata = document.$extensions[EXTENSION];
   return {
     sourceFingerprint: metadata.sourceFingerprint,
+    ...(metadata.css ? { styleFingerprint: metadata.css.sourceFingerprint } : {}),
     tokens,
     omitted: metadata.omitted.filter((item) => item.path.toLowerCase().includes(normalized)),
   };
@@ -135,7 +137,8 @@ export function findDesignTokens(document, query) {
 
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
   const root = process.cwd();
-  const tokens = generateDesignTokens({ root });
+  const { resolveCssDesignTokens } = await import('./agent-design-token-css.mjs');
+  const tokens = await resolveCssDesignTokens({ root, document: generateDesignTokens({ root }) });
   const output = path.join(root, '.cache/agent-design/tokens.tokens.json');
   await mkdir(path.dirname(output), { recursive: true });
   await writeFile(output, `${JSON.stringify(tokens, null, 2)}\n`);

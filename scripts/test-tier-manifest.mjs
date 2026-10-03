@@ -12,6 +12,7 @@ export const TEST_TIERS = {
       'scripts/agent-task-store.test.mjs',
       'scripts/agent-component-catalog.test.mjs',
       'scripts/agent-design-tokens.test.mjs',
+      'scripts/agent-design-token-css.test.mjs',
       'scripts/run-as-navet-nisse.test.mjs',
       'scripts/sync-github-labels.test.mjs',
       'scripts/create-dev-release.test.mjs',
