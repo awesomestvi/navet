@@ -266,7 +266,10 @@ export class AgentTaskStore {
         if (!task.lease || task.lease.owner !== input.owner || task.lease.expiresAt <= now) {
           throw new Error('A current owner lease is required.');
         }
-        if (action === 'resource-usage') {
+        if (action === 'release') {
+          requireValue(input.reason, 'release reason');
+          task.lease = null;
+        } else if (action === 'resource-usage') {
           if (!task.resources) throw new Error('Task has no configured resource limits.');
           const usage = input.usage;
           if (!observationIsFresh(usage, now) ||
@@ -429,7 +432,7 @@ export class AgentTaskStore {
       task.history.push({ action, owner: input.owner, state: task.state, head: task.head, at: now,
         ...(action === 'evidence' ? { evidence: input.evidence } : {}),
         ...(action === 'resource-usage' ? { usage: input.usage, settledReservations: input.settledReservations ?? [] } : {}),
-        ...(action === 'transition' ? { reason: input.reason } : {}),
+        ...(['transition', 'release'].includes(action) ? { reason: input.reason } : {}),
       });
       return nextDispatchAction ? { ...task, nextDispatchAction } : followupDecision ? { ...task, followupDecision } : task;
     });

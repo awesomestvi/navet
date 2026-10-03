@@ -215,6 +215,37 @@ describe('durable agent task lifecycle', () => {
     expect((await store.mutate(task.id, 'claim', { ...input, observation: { owner, status: 'terminal', observedAt: 1_100_001 } })).lease.owner).toBe(input.owner);
   });
 
+  it('hands off record ownership without freeing a live delivery or resetting its budget', async () => {
+    const { store, task, owner, act, usage, request } = await boundedSetup();
+    await usage(0, 0);
+    const allocation = await act('reserve-resources', { event: 'tool:create', modelTokens: 0, toolCalls: 1 });
+    const intent = await act('dispatch-intent', { authority: { ...request.authority, revision: request.revision },
+      resourceToken: allocation.resourceDecision.reservation.token });
+    await act('bind', { token: intent.dispatch.token, threadId: 'live-delivery' });
+    await expect(store.mutate(task.id, 'release', { owner: 'foreign-owner', reason: 'Steal ownership.' })).rejects.toThrow('current owner');
+    await expect(act('release')).rejects.toThrow('release reason');
+    const released = await act('release', { reason: 'Transfer record writing to the scheduled coordinator.' });
+    expect(released.lease).toBeNull();
+    expect(released.dispatch.threadId).toBe('live-delivery');
+    expect(released.resources.startedAt).toBe(1_000_000);
+    expect(released.history.at(-1)).toMatchObject({ action: 'release', owner, reason: 'Transfer record writing to the scheduled coordinator.' });
+    await expect(act('context', { context: { nextAction: 'Old owner writes.' } })).rejects.toThrow('current owner');
+    const claimed = await store.mutate(task.id, 'claim', { owner: 'scheduled-coordinator', durationMs: 100_000 });
+    expect(claimed.resources).toEqual(released.resources);
+    expect((await store.mutate(task.id, 'dispatch-intent', { owner: 'scheduled-coordinator' })).nextDispatchAction).toBe('reconcile');
+    const second = await store.enqueue({ ...request, requestId: 'second-delivery' });
+    await expect(store.mutate(second.id, 'claim', { owner: 'parallel', durationMs: 1000 })).rejects.toThrow('Active task budget');
+  });
+
+  it('preserves expired ownership until observation-based recovery instead of accepting a stale release', async () => {
+    const { claim, act, advance, store, task, owner } = await setup();
+    await claim();
+    advance(100_001);
+    await expect(act('release', { reason: 'Expired owner gives permission.' })).rejects.toThrow('current owner');
+    expect((await store.list())[0].lease.owner).toBe(owner);
+    await expect(store.mutate(task.id, 'claim', { owner: 'other', durationMs: 1000 })).rejects.toThrow('fresh owner');
+  });
+
   it('invalidates readiness on a new head and prevents failing or missing evidence from passing', async () => {
     const { task, claim, act, evidence } = await setup();
     await claim();

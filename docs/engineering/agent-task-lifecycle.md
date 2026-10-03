@@ -49,6 +49,12 @@ a fresh observation naming that owner, status `missing` or `terminal`, and an `o
 within the preceding minute. The coordinator supplies this from the owning task service. An
 unfinished dispatch continues to occupy capacity after its coordinator lease expires.
 
+For a deliberate handoff, the current owner calls `release` with a concrete `reason` after saving
+its checkpoint and observations. This clears record ownership so the next coordinator can claim
+it while the delivery remains live. It preserves the dispatch binding, occupied capacity, execution
+clock, reservations and evidence. The released owner must stop writing until it acquires a new
+lease. An expired or foreign owner cannot release the record; use observation-based recovery.
+
 Transactions use an exclusive SQLite write lock and atomic JSON state replacement. A live lock is
 preserved; the operating system releases it on process exit. Corrupt or unknown state fails closed;
 inspect and preserve it before repair. Node's built-in SQLite file is coordination metadata; task

@@ -22,6 +22,9 @@ if it is unavailable, report the missing owner privately before mutating state.
 4. Claim with the current coordinator's thread ID and a bounded lease. For another expired owner,
    inspect its actual task status. Only confirmed missing or terminal ownership permits recovery.
    Observation timeouts and unreachable services leave ownership unresolved.
+   A current owner can deliberately hand off record writing with `release` and a reason after
+   preserving its checkpoint. Claiming a released record resumes the existing delivery and keeps
+   its capacity occupied; it does not authorize a replacement task.
 5. Immediately recheck permission, acceptance, withdrawal, scope, source state and duplicates.
    Call `dispatch-intent` with that fresh authority observation, matching actor, reference and
    revision. The returned `nextDispatchAction` is `create` only for the first committed intent.
