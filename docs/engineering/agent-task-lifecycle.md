@@ -133,3 +133,29 @@ apply provider limits, monitor actual worker usage and deadlines, stop new work,
 checkpoint, and present a concrete decision when a limit is reached. Numerical policy, service
 measurement and monitored-worker integration require a live pilot before operational exit gates
 pass. Local tests prove record behavior; an interrupted-delivery pilot proves operational recovery.
+
+## Observe Local Codex Usage
+
+`pnpm agent:usage <private-input.json>` reads a fixed snapshot of one local Codex session log.
+The input contains `sessionFile` and the confirmed delivery `threadId`. Keep it and its output in
+private planning storage. The observer verifies the session identity and native
+`token_usage_record` whole-thread counters before reporting usage. Unsupported formats, missing
+measurements, foreign-thread records, regressions and malformed complete records fail closed.
+A live writer's unfinished final record is ignored and identified in the result.
+
+The result reports cumulative input, cached input, output and reasoning tokens; `modelTokens`
+uses total input plus output, including cached input. These are execution units, not monetary
+charges. The original observation time remains separate from the snapshot read time: reading an
+old token record does not make its measurement fresh. Whole-thread totals include every turn in
+that thread; use a dedicated delivery thread for task-scoped accounting.
+
+Direct model tool-call IDs and recorded nested operation IDs are counted separately and deduplicated.
+`observedOperationUnits` adds both categories, so an orchestration call and its recorded children
+are distinct observed units. Recorded operations can be in flight. The result does not prove their
+completion, hidden/provider operations, all-worker totals, or reservation settlement. Prompts,
+arguments, messages, tool outputs and credentials are not returned.
+
+This observer is read-only. It neither writes task-store usage nor interrupts a worker. Integrate
+only after defining the approved operation-unit policy, verifying complete worker/coordinator
+coverage and applying provider allowances. Preserve pending reservations for uncertain execution;
+then validate monitored interruption and recovery before activating bounded intake.
