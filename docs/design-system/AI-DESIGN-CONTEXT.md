@@ -20,6 +20,17 @@ without a query to generate `.cache/agent-design/components.json`. Every invocat
 metadata from current source and includes a fingerprint of its local TypeScript sources, effective compiler options, catalog entry points,
 and story inputs.
 
+Non-callable composition objects expose one level of callable `members`. Query a dotted name,
+for example `pnpm agent:components NavigationWorkspace.ScrollArea`, to inspect that member's
+props and union alternatives. Import the parent object from `importFrom` and use the dotted
+member in JSX. Each member's source location points to its declared property; inspect its
+implementation before relying on behavior. Member story associations require references to
+that property and are not inherited from the parent object.
+
+Member maturity remains `unclassified`. The maturity inventory classifies top-level exports;
+a parent's classification does not classify every member. When the same function has a
+separate top-level export, inspect that export's explicit rationale as additional context.
+
 For union-based props, `properties` contains the fields shared across alternatives; `variants`
 preserves each alternative's own fields, types and required/optional discriminator. Select one
 valid contract before composing a component. Props from different alternatives are not a single
@@ -35,7 +46,7 @@ inventory and evidence separately from the TypeScript `sourceFingerprint`.
 `app-coupled` identifies components that require app context or helpers. Reuse them inside Navet's
 app through their listed import surface; they are not standalone `@navet/ui` contracts. `stable`
 is reserved for an explicitly curated mature contract, and `experimental` identifies an evolving
-contract. The inventory covers the current catalog's component and namespace contracts, including
+contract. The inventory covers the current catalog's top-level component and namespace contracts, including
 card/sheet foundations, form controls, typography, status and action
 primitives, navigation workspace parts, dialog compositions and tabs. Read namespace entries as
 composition objects, not JSX components. Layout wrappers can have narrower contracts than their
