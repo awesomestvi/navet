@@ -496,8 +496,10 @@ The [task lifecycle tools](agent-task-lifecycle.md) provide local state consiste
 building blocks. The [AI design context](../design-system/AI-DESIGN-CONTEXT.md) explains generated
 component discovery. Neither tool establishes that the operational exit gates have passed.
 
-Implement phases in order through small, reviewable PRs. Start Phase 3 after the lifecycle contract
-is established; advance discovery only after delivery and UI gates have been demonstrated.
+Implement phases in order within one coordinated delivery PR by default. Use an explicitly ordered
+stack only when separate review stages help; the agent owns integration maintenance and conflicts.
+Start Phase 3 after the lifecycle contract is established; advance discovery only after delivery
+and UI gates have been demonstrated.
 
 Use an initial pilot of five representative authorized tasks. Include UI work, a reproduced bug,
 documentation work, and an interrupted/recovered delivery. Exercise one planning proposal through
