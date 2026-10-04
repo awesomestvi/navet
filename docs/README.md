@@ -102,8 +102,6 @@ Git history and the linked issue retain that context without presenting it as a 
   Source-derived component and token discovery, references, and UI validation.
 - [design-system/AGENT-COMPOSITION-RECIPES.md](design-system/AGENT-COMPOSITION-RECIPES.md)
   Shared card, sheet, form, summary, and state compositions.
-- [design-system/STORYBOOK-MCP.md](design-system/STORYBOOK-MCP.md)
-  Opt-in local story discovery and focused testing, with extraction limits.
 - [STORYBOOK_WORKFLOW.md](STORYBOOK_WORKFLOW.md)
   Story placement and review workflow.
 - [testing/provider-testing-strategy.md](testing/provider-testing-strategy.md)

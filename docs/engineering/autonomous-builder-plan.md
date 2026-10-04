@@ -1,30 +1,51 @@
 # Navet Autonomous Builder Plan
 
-Status: implementation in progress. The Linear planning hub is configured. Local lifecycle and
-component-discovery tools have focused test coverage; coordinator integration, rendered pilots,
-and release-readiness evidence remain outstanding. This plan does not grant additional permissions
-or establish that Navet is ready for 1.0.0.
+Status: broader future programme. The [team workflow implementation plan](team-workflow-implementation-plan.md)
+defines the current infrastructure scope and takes precedence when deciding what to implement.
+Design-system expansion, context comparisons, recurring discovery, standing stewardship and the
+product-readiness programme require separate authorization. The
+[coordinated team workflow](agent-team-workflow.md) records implemented core contracts and their
+remaining live gates. This plan establishes neither unattended operation nor Navet 1.0.0 readiness.
 
 ## Objective
 
-Let the maintainer describe an intended outcome in ordinary language and receive a tested,
-reviewable implementation with a working preview and coherent documentation. Agents also
-investigate product opportunities and maintain the design system. The maintainer owns product
-direction, visual acceptance, merges, and production release dispatch.
+Let the maintainer suggest an idea in ordinary language. The agent team researches the problem,
+develops a plan and an appropriately scoped prototype, and posts the findings in Linear for
+prioritization. After the maintainer approves a ticket's selected option and scope, the team
+implements it, verifies the result, and opens a reviewable PR with a working preview and coherent
+documentation. Questions and decisions return to the originating Linear ticket. The maintainer
+owns priority, product direction, visual acceptance, merges, and production release dispatch.
 
 Product opportunities and design findings enter one workspace-visible planning backlog as developed proposals. The
 maintainer prioritizes and approves them from a shared review surface. A dedicated UX quality
 role continuously reduces the manual effort of finding layout and interaction defects.
 
-Target outcome: a dependable delivery process that helps Navet reach an evidence-backed 1.0.0.
+Target outcome: a dependable team that develops proposals and delivers approved features and
+products. Navet 1.0.0 is a product milestone supported by that team.
 Content production, videos, advertising, social publishing, and their integrations are deferred
 until product maturity and a separate plan.
+
+## Workflow And Product Acceptance
+
+Accept the team workflow against observable idea intake, private proposal development, human
+approval, specialist coordination, implementation, ticket questions and answers, validation and
+PR delivery. Accept each feature or product against its own approved criteria. Accept Navet 1.0.0
+against the separate release-candidate criteria in Phase 6.
+
+The six phases record future requirements and evidence obligations. They do not expand the
+current team workflow scope. Their completion is distinct from verifying the core team workflow.
+Household cohorts and production release dispatch belong
+to product acceptance; they are not prerequisites for developing a requested idea in Linear.
+Recurring discovery, standing maintenance and comparative harness experiments require their own
+accepted scope and resources. Comparative experiments are currently stopped; use the existing
+design tools during delivery without claiming a measured context improvement.
 
 ## Starting Point And Constraints
 
 Build on the existing operating model in [Agentic Development](agentic-development.md):
 
-- GitHub issues and PRs provide the maintainer-facing control plane.
+- Linear provides the idea, prioritization and ticket approval surface for planning-bound work.
+- GitHub issues retain their existing request intake; PRs provide public delivery and code review.
 - Nisse intake handles authorized requests and qualifying replies.
 - The private runner coordinates delivery and review continuations.
 - Codex supplies independent review; deterministic checks remain authoritative.
@@ -50,24 +71,34 @@ work, or publish production releases.
 
 ```text
 maintainer idea or evidence-backed opportunity
-  -> authorization and scope classification
-  -> acceptance criteria and reference selection
+  -> research, options, UX planning and scoped prototype
+  -> findings and evidence in the Linear proposal lane
+  -> maintainer prioritization and explicit ticket approval
+  -> trusted approval, selected scope and acceptance criteria
   -> implementation using Navet primitives
   -> focused checks, rendered review, and independent review
   -> bounded repair loop
-  -> maintainer approval package
+  -> PR and preview linked back to the Linear ticket
+  -> maintainer review and acceptance
   -> merge and existing release process
   -> verified outcome and follow-up evidence
 ```
 
-Use one coordinator with task-specific roles. Reuse the existing reviewer before adding another
-general-purpose agent. Each delivery task owns its implementation branch and worktree.
+Use one coordinator with task-specific specialists. Select roles according to the task's needs;
+each specialist has a concrete deliverable and shares the accepted brief and evidence. Developers,
+UX designers, testers, security reviewers and architects collaborate through the coordinator.
+Reuse the existing independent reviewer before adding another general-purpose reviewer. Each
+delivery task owns its implementation branch and worktree; its related work uses one delivery PR.
 
 | Role | Responsibility | Reviewable output |
 | --- | --- | --- |
 | Coordinator | Validate authority, select work, preserve task state, resume work, enforce limits | Accurate queue and approval inbox |
 | Delivery agent | Investigate, implement, verify, repair review findings, update affected docs | PR, preview, and evidence |
 | Product researcher | Investigate household friction and relevant ecosystem changes | Ranked opportunities with sources and experiments |
+| UX designer | Define user journeys, options, interaction design and scoped prototypes | Design rationale, prototype and acceptance criteria in Linear |
+| Test specialist | Select meaningful checks, reproduce defects and verify user journeys | Test results, rendered evidence and remaining coverage |
+| Security specialist | Assess relevant trust boundaries, authorization and data handling | Concrete risks, required mitigations and verified findings |
+| Architect | Check provider ownership, contracts, persistence and integration choices | Scope-specific technical plan and contract decisions |
 | UX quality auditor | Inspect rendered journeys, measure inconsistencies, reproduce defects, and retest fixes | Evidence-backed design findings and coverage ledger |
 | Design-system steward | Maintain shared components, recipes, discovery metadata, and visual coverage | Focused design-system PRs |
 | Documentation steward | Verify documentation against code and supported workflows | Documentation PRs and drift findings |
@@ -98,6 +129,234 @@ label does not approve it. Capture the approving maintainer, proposal revision, 
 acceptance criteria, permitted scope, and visibility decision. Material scope changes require an
 updated approval; implementation details within that scope remain autonomous.
 
+An idea submission starts proposal development within its requested research and prototype scope.
+The team records the observed problem, sources, alternatives, recommended option, prototype
+evidence, implementation slices, risks and acceptance criteria before marking the proposal Ready
+for prioritization. A prototype is a review artifact; it does not authorize production delivery.
+The maintainer chooses priority and approves the selected option on the ticket. An ordinary approval
+such as "okay to implement this option" must be bound to the exact proposal revision and verified
+through the trusted human-request path before dispatch; an agent-written comment or stage change
+cannot supply that authority.
+
+When an unresolved question prevents safe progress, post a concise comment on that Linear ticket,
+record what decision is needed, and wait for the maintainer's answer. Continue independent work
+within the accepted scope. Record the answer against the proposal or delivery brief and resume the
+same task when authority and scope remain valid. The planning integration uses its separately
+scoped comment writer; public GitHub communication follows the existing delivery policy.
+
+Keep the ticket In delivery while implementation or PR review is unfinished. Link the PR, preview,
+validation evidence and outstanding questions back to it. The Validated stage requires evidence for
+the accepted criteria and the maintainer's required acceptance; creating a PR alone is insufficient.
+Verify the core idea-to-proposal-to-approved-ticket-to-PR workflow before activating recurring
+discovery and stewardship. The six phases below remain the complete rollout and readiness scope.
+
+### Approval-to-queue handoff
+
+The local `enqueuePlanningRequest` helper in
+[`agent-planning-intake.mjs`](../../scripts/agent-planning-intake.mjs) joins an independently
+verified maintainer request to its exact Linear proposal revision. It reads the trusted request,
+checks the complete current proposal, and rechecks the request before adding one idempotent queue
+record. Scope changes, withdrawal, ambiguous stages, incomplete reads and unavailable services
+block intake. The queued task requires another fresh planning observation before execution.
+
+The coordinator supplies two service adapters:
+
+- `readRequest({ source, requestId })` verifies the human decision and current permissions through
+  its owning trusted source. It returns `{ status: 'authorized', request }` only for an authorized
+  request. The request uses the task-store schema, includes `planningBinding`, and its authority
+  records `revision`, `planningRevision`, actor, stable reference and fresh `observedAt`. The brief
+  requires nonempty `selectedOption`, `permittedChanges` and `acceptanceCriteria`, plus explicit
+  `visibility`: `private-planning` or `public-delivery-approved`. The latter records the human's
+  authorization for a scoped public delivery; private planning alone does not authorize publication.
+  Implementation and stewardship intake require `public-delivery-approved`, since these delivery
+  workers produce public PRs. Private research and audit records retain private planning scope;
+  they cannot execute through the shared public delivery queue.
+- `readIssue(issueId)` returns a complete fresh planning observation with `status`, service
+  `reference`, `observedAt` and the issue, including all attachment references, label names and
+  explicit lifecycle fields. Unavailable reads cannot reuse an earlier pass.
+
+When the coordinator has a connected Linear integration, `createLinearConnectorIssueReader` in
+[`agent-linear-connector-reader.mjs`](../../scripts/agent-linear-connector-reader.mjs) accepts only
+workspace, current-user and issue read callbacks. Pin the expected workspace, active account, team
+and project independently. Two complete reads must agree, including attachments, stage labels and
+lifecycle fields. Failed or truncated responses remain unavailable. This path loads no app
+credentials and supports interactive work while a dedicated app is being configured. Verify that
+the installed coordinator has these tools before relying on it for unattended operation. Connector
+account identity constrains reads; it cannot establish human approval or separate an agent write
+from a human decision. Supply the human-request adapter independently in either reader mode.
+
+[`createLinearIssueReader`](../../scripts/agent-linear-reader.mjs) implements the read-only Linear
+adapter. Configure the expected workspace, app user, team and project IDs in private runner state,
+and supply an OAuth access-token callback backed by secure credential storage. The reader checks
+the active app identity on every response, follows complete attachment and label pagination, and
+compares two complete reads before returning an observation. It uses Linear's fixed GraphQL endpoint
+with redirects disabled. Defaults bound each operation to 20 seconds and each snapshot to 20 pages;
+oversized responses, incomplete pagination, identity mismatches and service errors remain unverified.
+Permission-masked not-found errors do not establish deletion. The two-read comparison checks
+stability, not transactional isolation; execution still requires its own fresh scope check.
+
+The query follows Linear's [cursor pagination contract](https://linear.app/developers/pagination)
+and [official SDK schema](https://github.com/linear/linear/blob/master/packages/sdk/src/schema.graphql).
+Unit transport fixtures verify failure handling and identity boundaries. A live app-token read and
+the independently authenticated maintainer-request adapter remain activation work.
+
+The [authenticated intake run](agent-task-lifecycle.md#authenticated-intake-run) joins the scoped
+reader session to the human-request adapter and idempotent queue intake. It bounds source reads,
+rechecks authority after the complete proposal read, and awaits token revocation. It does not
+claim records or dispatch workers. A committed queue receipt survives cancellation or unavailable
+cleanup; execution still requires fresh authority and proposal observations.
+
+The [planning dispatch handoff](agent-task-lifecycle.md#dispatch-and-recovery) joins current queue
+ownership, complete proposal observations and the exact accepted human brief before reserving
+the existing dispatch intent. Source withdrawal latches separately from proposal scope, while
+receipt reconciliation remains available. Connected Linear reads support interactive operation;
+the installed coordinator still requires verified adapters and an observed delivery/recovery pilot.
+
+The [worker creation handoff](agent-task-lifecycle.md#worker-creation-handoff) connects planning
+dispatch to installed worker-create and task-service lookup adapters. Opted-in intents reserve
+first-send permission durably, recheck complete human scope immediately before creation and bind
+actual handles. An unattempted intent can resume after fresh checks; an uncertain attempt or legacy
+intent requires reconciliation. This integration does not activate the queue or establish private
+worker isolation, all-worker limits or live recovery.
+
+For a local coordinator run, [`createLinearReadSession`](../../scripts/agent-linear-auth.mjs)
+exchanges securely loaded app credentials for a token with only `read` scope. Create a fresh session
+at run start, pass `session.getAccessToken` to the reader and await `session.close()` in the run's
+`finally` block. Closing immediately clears local token access and revokes the token at Linear with
+a separate five-second cleanup deadline. Repeated closes share the same cleanup result. Only an
+acknowledged revocation is verified; unavailable cleanup leaves the run blocked for recovery.
+Tokens received with an invalid grant are also revoked before authentication fails.
+When token transport or its response body ignores cancellation, authentication still fails at its
+deadline and reports unverified revocation. A byte-limited observer retains the pending grant and
+revokes any token received later. The rejected operation exposes a redacted `cleanup` promise;
+the installed runner must remain alive to observe it. A process exit or never-settling transport
+cannot establish cleanup, and late revocation does not restore execution authority.
+Expired, canceled or closed sessions cannot supply a token. Access tokens remain
+in memory; they are not stored in runner JSON or passed in command arguments. This follows Linear's
+[client-credentials procedure](https://linear.app/developers/oauth-2-0-authentication#client-credentials-tokens).
+
+Use a dedicated private OAuth app with client credentials enabled. Restrict the app's team access
+to Navet in Linear's app settings. Its configured IDs still constrain every reader response to the
+planning project. Use a credential manager through `readCredentials` when available. The local
+`readLinearClientCredentials(file)` fallback accepts only an owner-private, regular, singly linked
+JSON file containing `clientId` and `clientSecret`, in an owner-private directory. The file must be
+outside tracked content, typically under `.cache/agent-planning`, with directory mode `0700` and
+file mode `0600`. Platforms without verifiable POSIX ownership require a credential-manager adapter.
+Store credentials through the local secure setup path; do not place them in chat, issue content,
+PRs or command arguments. App installation and a live identity-verified read remain activation gates.
+
+These adapters are the authentication boundary. The helper validates their agreement and freshness;
+it does not authenticate callback output, dispatch a worker or create a public artifact. Approval
+also retains the selected option, acceptance criteria, permitted changes and visibility in the
+trusted work brief. Public delivery requires the recorded visibility decision.
+
+The task store checks public-delivery visibility at the planning execution gate for every mode.
+A private-only or legacy record with no visibility decision cannot start new execution, reserve
+new follow-ups or reach delivery transitions, even if it bypassed intake. Monitoring an existing
+dispatch receipt remains possible without authorizing new work. The shared queue delivers research
+through public Nisse comments. A dedicated private completion route into the planning hub remains
+required before private research and audit records can dispatch. Their visibility does not authorize
+public artifacts.
+
+### Private result readback
+
+[`createLinearResultReader`](../../scripts/agent-linear-result-reader.mjs) reads an exact result
+comment using the read-only app session. Configure the expected writer app identity separately from
+the reader identity. Supply the comment and proposal IDs, the expected Markdown `bodyHash`, and
+`notBefore` from the durable result intent. Record those expectations from the owning worker and
+its accepted scope; comment contents cannot establish their own task identity or approval.
+`linearResultBodyHash` hashes the exact UTF-8 Markdown representation returned by Linear.
+
+The reader checks the workspace, active app identities, proposal team and project, explicit active
+lifecycle fields, content hash, creation time and Linear URL. Cross-system timestamp comparisons
+allow up to 30 seconds of skew between Linear and the runner. Ordering within Linear stays strict,
+and runner observation freshness and approval expiry receive no allowance. Comments written on behalf of a human
+or associated with external sync targets remain unavailable. Two bounded reads must agree. The
+result contains artifact metadata and a service reference, without the comment body or credentials.
+Permission-masked missing comments and service errors remain unverified rather than proving deletion.
+The query follows the [official Linear SDK schema](https://github.com/linear/linear/blob/master/packages/sdk/src/schema.graphql).
+
+Readback verifies the observed artifact, not its quality, proposal approval, complete attachment
+contents, access controls or the absence of other publication channels. The private worker route
+must separately verify the destination before writing, preserve an idempotent result identity,
+reconcile uncertain writes, and recheck accepted scope and human authority before completion.
+The task store's [Linear result receipts](agent-task-lifecycle.md#linear-result-receipts) reserve a
+comment UUID before creation and retain observations for reconciliation. A matching fresh readback
+and separate output evidence are required for readiness or delivery. The installed writer identity, coordinator
+integration and live readback pilot remain activation gates; these building blocks do not enable
+private dispatch or change the shared queue's public visibility requirement.
+
+### Result write adapter
+
+[`createLinearResultWriter`](../../scripts/agent-linear-result-writer.mjs) uses the reserved comment
+ID and exact result Markdown. It checks the active app identity, workspace, proposal team and project,
+explicit lifecycle fields and absence of issue sync targets. Two destination reads must agree.
+Between them it obtains a complete fresh proposal read; after them it rechecks the human request,
+selected brief, required gates and resource limits through the trusted request adapter.
+
+The coordinator supplies `beginWrite({ taskId, commentId, authority, observation })`. Record the
+planning observation and reserve the send using the task-store procedure above. Return only its
+`planningResultDecision`. The adapter accepts a creation or reconciliation intent that has never
+received a send reservation, then requires the durable first-send permit before mutation. It does
+not trust a caller timestamp to renew approval or treat an uncertain attempt as a failed write.
+
+One writer session allows one attempted send. The mutation creates an issue comment without user
+impersonation or a synced Slack-thread request. Cancellation, redirects, changed scope, expired
+credentials and mismatched identities stop the operation. A lost reservation acknowledgement or any
+failure after the reservation returns `uncertain`, requiring inspection of the reserved comment.
+A successful response is only an acknowledgement; the separate result reader verifies output.
+
+Use a separately configured writer OAuth app restricted to Navet. The
+`createLinearCommentSession` factory requests exactly `read,comments:create`, rejects broader or
+incomplete grants and keeps its token in memory for one run. Await token revocation through
+`session.close()` in the run's `finally` block, using its separate bounded cleanup deadline.
+Keep the reader app on read-only scope. Linear's
+[OAuth scope contract](https://linear.app/developers/oauth-2-0-authentication) provides the targeted
+comment permission and states that changing an app's client-credentials scopes invalidates its
+existing app tokens.
+
+The trusted readers and send callback are authentication boundaries; the adapter does not prove
+their assertions. Destination reads are stability checks, not a transaction with the mutation or
+proof that every notification/export channel is disabled. The installed writer, private worker,
+verified destination policy, live queue wiring and live pilot remain activation gates. The
+[coordinator result handoff](agent-task-lifecycle.md#coordinator-result-handoff) joins the adapters
+to durable result intents and observations without activating the queue or granting acceptance.
+The [authenticated result run](agent-task-lifecycle.md#authenticated-result-run) assembles those
+adapters with separate lazy app sessions under one operation deadline, propagates cancellation to
+reads and writes, and awaits bounded token revocation afterward. Unverified cleanup preserves
+the artifact receipt while blocking the run for recovery.
+Transport tests use synthetic credentials and do not establish live permissions or delivery.
+
+The [authenticated refresh run](agent-task-lifecycle.md#authenticated-refresh-run) connects signed
+inbox receipts, scoped app-authenticated proposal reads and durable task reconciliation. Complete
+current reads preserve scope evidence or latch withdrawal; unavailable reads invalidate earlier
+passes and retain receipts. It grants no approval or dispatch authority. Synthetic integration
+coverage does not establish live credentials, webhook delivery or worker interruption.
+
+The [bound worker monitor](agent-task-lifecycle.md#monitor-bound-workers) persists exact-run stop
+intents and bounded retry receipts when accepted scope or measured resources become unavailable.
+Confirmation requires a fresh stopped observation and saved recovery checkpoint. Its protocol
+tests do not establish installed runtime adapters, monitoring cadence, complete task-wide accounting
+or the live interruption and recovery pilot required for activation.
+The [Codex runtime adapter](agent-task-lifecycle.md#codex-runtime-adapter) connects those callbacks
+to stable latest-turn observations and exact-turn interruption through a configured existing
+app-server socket. A separate checkpoint verifier establishes saved recovery state. Protocol
+coverage does not establish an installed endpoint or replace the live recovery pilot.
+The Git-backed checkpoint service binds stopped-turn evidence to saved task context and two
+matching worktree snapshots. It verifies preserved source state after restart; installed monitoring
+and a live interruption/recovery pilot remain required.
+The [task-wide native accounting reader](agent-task-lifecycle.md#task-wide-native-accounting)
+combines complete trusted inventories with native session measurements and a durable participant
+ledger. It preserves stopped-worker totals and rejects changed coverage or per-participant rollback.
+Its unit policy and runtime inventory require independent installed verification before activation.
+
+For Linear-native approval, agent writes need a distinct identity. Linear's
+[OAuth app actor](https://linear.app/developers/oauth-actor-authorization) attributes mutations to
+the installed application; default API authentication can attribute them to the authenticating
+human. A signed webhook alone cannot distinguish a human decision from an agent using that human's
+credentials. Live source adapters, identity separation and an observed authorized pilot remain
+activation gates for automatic approval dispatch.
+
 Every ready proposal contains:
 
 - A concrete household problem, affected journey, sources, and distinction between observations
@@ -126,8 +385,8 @@ Retain a private linkage to the public result and verify the result exists befor
 
 ## UX Quality Audit Contract
 
-Use the repository [navet-ux-audit skill](../../.agents/skills/navet-ux-audit/SKILL.md) for proactive
-design audits and verification of proposed UI fixes. Start read-only; approved fixes use the normal
+Use the existing [dashboard UX guide](../../ai/skills/navet-ux.md) for reference-led rendered
+review. A separately authorized proactive audit programme should follow the contract below. Start read-only; approved fixes use the normal
 delivery workflow and update the original finding.
 
 Run audits on affected UI before a PR is presented for maintainer acceptance, after shared primitive
@@ -176,7 +435,7 @@ can detect every UX issue; show actual coverage and improve the audit from misse
    exclusions, risk, permitted actions, UI references, and documentation impact.
 4. Use the [approval package](templates/approval-package.md) to present: current commit, PR, preview links, relevant screenshots, behavior
    changes, validation results, outstanding limits, and the decision needed.
-5. Develop the [standing-authority proposal](templates/standing-authority-policy.md) with these categories:
+5. Define any separately authorized standing-authority policy with these categories:
    - Maintainer-requested implementation: execute within the requested outcome and existing rules.
    - Agent-discovered maintenance: prepare a scoped proposal; automatic implementation requires
      separately recorded maintainer authorization for the category and its limits.
@@ -217,8 +476,9 @@ Extend the existing queue and runner rather than creating a competing dispatch s
    new push. Reuse unchanged artifacts only under the existing verified-input policy.
 5. Bound repair attempts, elapsed execution, active deliveries, and model/tool expenditure.
    Escalate repeated failures with evidence and a concrete next decision.
-6. Keep one coordinator. Begin with one active implementation task and allow bounded independent
-   research only after recovery behavior is demonstrated.
+6. Keep one coordinator and begin with one active ticket. Coordinate scoped specialist work for
+   maintainer-requested proposal development or approved implementation. Activate recurring
+   independent research only after recovery behavior and its operating policy are demonstrated.
 7. Notify the maintainer for reviewable results, material failures, or decisions. Preserve quiet
    operation while state is unchanged. Keep private prompts and orchestration logs private.
 8. Reconcile planning proposal revisions, approval records, and delivery state with idempotent
@@ -270,9 +530,10 @@ pattern, inspect supported states, and run relevant checks without inventing its
    and `glass`, `dark`, `light`, and `black` themes.
 5. Audit the documented Storybook baseline failures, verify their current status, and repair valid
    assertions without weakening tests. Promote a lane to required only after its baseline is green.
-6. Use the [five-case agent UI evaluation](agent-ui-evaluation.md) from real Navet sources.
-   It covers a card dialog, settings flow, unavailable state, responsive dashboard composition
-   and shared-component extension; record controlled runs before claiming context improvements.
+6. Define a representative agent UI evaluation from real Navet sources before any separately
+   authorized comparison. Cover a card dialog, settings flow, unavailable state, responsive
+   dashboard composition and shared-component extension. Record controlled runs before claiming
+   context improvements. Their completion is separate from team workflow acceptance.
 7. Track invalid props/imports, duplicated primitives, token violations, accessibility failures,
    maintainer correction effort, runtime, and cost. Compare filesystem-only context with curated
    metadata and MCP using the same task set.
@@ -344,11 +605,17 @@ Track each phase's remaining acceptance criteria in the configured Linear projec
 IDs and links in the runner's private planning bindings rather than public repository documentation.
 
 The [task lifecycle tools](agent-task-lifecycle.md) provide local state consistency and recovery
-building blocks. The [AI design context](../design-system/AI-DESIGN-CONTEXT.md) explains generated
-component discovery. Neither tool establishes that the operational exit gates have passed.
+building blocks. The existing [AI design context](../design-system/AI-DESIGN-CONTEXT.md) supplies
+reference-led UI guidance. These resources do not establish operational acceptance.
 
-Implement phases in order through small, reviewable PRs. Start Phase 3 after the lifecycle contract
-is established; advance discovery only after delivery and UI gates have been demonstrated.
+Use the [team workflow implementation plan](team-workflow-implementation-plan.md) to connect the
+existing foundations into the core workflow. Respect each capability's authority, privacy,
+recovery and validation dependencies. Reuse available design tooling on relevant tasks. Expand
+recurring discovery and stewardship after their applicable delivery and operating gates pass.
+Phase 6 remains the separate Navet 1.0.0 acceptance programme.
+
+Keep coordinated implementation in one delivery PR. Use an explicitly ordered stack only when
+separate review stages are accepted; the agent owns integration maintenance and conflicts.
 
 Use an initial pilot of five representative authorized tasks. Include UI work, a reproduced bug,
 documentation work, and an interrupted/recovered delivery. Exercise one planning proposal through
@@ -364,6 +631,10 @@ Keep a maintainer-controlled pause mechanism and preserve unfinished task state 
 
 - [Composable agent workflows](https://www.anthropic.com/engineering/building-effective-agents)
 - [Long-running task state and verification](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents)
+- [Planner, builder and independent evaluator](https://www.anthropic.com/engineering/harness-design-long-running-apps)
+- [Agent development environments and feedback](https://openai.com/index/harness-engineering/)
+- [Planner and worker coordination](https://cursor.com/blog/scaling-agents)
+- [Relevant repository context](https://aider.chat/docs/repomap.html)
 - [DTCG 2025.10 token format](https://www.designtokens.org/tr/2025.10/format/)
 - [Storybook MCP](https://storybook.js.org/docs/ai/mcp/overview)
 - [DESIGN.md visual-intent format](https://github.com/google-labs-code/design.md)
@@ -371,5 +642,5 @@ Keep a maintainer-controlled pause mechanism and preserve unfinished task state 
 - [Linear issue templates](https://linear.app/docs/issue-templates)
 - [GitHub Project visibility and repository permissions](https://docs.github.com/en/issues/planning-and-tracking-with-projects/managing-your-project/managing-visibility-of-your-projects)
 
-These inform the planned experiments. Navet's code, constitution, and measured task outcomes
-determine the implementation; no single context format is assumed to be universally best.
+These inform workflow design and evaluation. Navet's code, constitution and observed task outcomes
+determine the implementation. No source establishes a universal model, context format or speedup.

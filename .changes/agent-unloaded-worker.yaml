@@ -1,0 +1,3 @@
+type: internal
+audiences: []
+summary: Reconcile stopped Codex workers after runtime unload while retaining stable-turn and checkpoint verification.

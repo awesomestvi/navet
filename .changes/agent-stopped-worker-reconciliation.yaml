@@ -1,0 +1,3 @@
+type: internal
+audiences: []
+summary: Reconcile authority, proposal scope and final resource counters for naturally stopped workers before allowing follow-up work.

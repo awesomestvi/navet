@@ -113,6 +113,13 @@ export function planningStatus(task, now = Date.now()) {
 }
 
 export function requirePlanningScope(task, now) {
+  if (task.requestRevocation) throw new Error('Request authority blocks execution: request-authority-revoked.');
+  if (task.workerStop && task.workerStop.status !== 'stopped') {
+    throw new Error('Worker stop blocks execution: worker-stop-unverified.');
+  }
   const status = planningStatus(task, now);
   if (status.bound && status.result !== 'pass') throw new Error(`Planning scope blocks execution: ${status.reason}.`);
+  if (status.bound && task.brief?.visibility !== 'public-delivery-approved') {
+    throw new Error('The shared delivery queue requires explicit public visibility approval for planning-bound execution.');
+  }
 }

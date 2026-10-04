@@ -1,0 +1,3 @@
+type: internal
+audiences: []
+summary: Connect accepted planning scope to worker creation with durable first-send receipts, verified handle binding and uncertainty recovery.

@@ -2,8 +2,10 @@
 
 The task store records execution and recovery observations in a private local directory. It is
 an integration building block; the existing queue remains the coordinator. The
-[queue state protocol](agent-queue-state-protocol.md) defines its integration. Automatic intake
-and Linear approval reconciliation need an integration pilot before operational exit gates pass.
+[queue state protocol](agent-queue-state-protocol.md) defines its integration. The
+[coordinated team entry point](agent-team-workflow.md) connects private proposal intake,
+specialist state and ticket conversations to this store. Authenticated live intake and Linear
+approval reconciliation need an integration pilot before operational exit gates pass.
 
 ## Use The Store
 
@@ -40,6 +42,85 @@ use `bind` with that token and the returned `clientThreadId` or confirmed `threa
 creation result needs reconciliation against existing tasks before another creation attempt.
 Pending worktree setup is distinct from a confirmed delivery handle.
 
+`preparePlanningDispatch` in `scripts/agent-planning-dispatch.mjs` connects this procedure to
+planning-bound records under an existing coordinator lease. Supply `store`, `owner`, `taskId`,
+complete fresh `readIssue` observations and the independently authenticated `readRequest` adapter.
+The proposal reader can use the connected Linear integration in an interactive session or the
+scoped read-only app in an installed runner. Both readers must preserve complete identity,
+attachments, labels and lifecycle fields; neither can establish a human decision from a stage.
+
+For a first intent, the handoff verifies the exact stored human scope, reads and records current
+planning state, then rechecks the human request before committing dispatch. Selected option,
+permitted changes, acceptance criteria, visibility, required gates, numerical limits and decision
+identity must match the accepted record. Failed, malformed, cached or canceled proposal reads
+record unavailable planning evidence under the same lease. Scope changes and withdrawal latch
+through the existing store. An independently verified human-request withdrawal records
+`request-revocation` with the exact source, request ID, accepted decision reference and fresh
+observation time. This durable latch blocks new execution, follow-ups and allocations even if
+the source later presents the old approval again. Accept changed work as a new authorized request;
+do not clear the original latch. Unavailable source reads do not establish withdrawal. The
+installed reader remains the authentication boundary; the store validates agreement and freshness,
+not source provenance. A bounded task requires its already-reserved `resourceToken`.
+
+`status: 'prepared'` returns the durable dispatch token for the coordinator's first worker
+creation. `status: 'reconcile'` returns an existing intent without renewing execution authority;
+inspect the saved task identity/token and bind its actual handle rather than creating a replacement.
+Already-started local commits are awaited. If cancellation occurs during the intent commit,
+the result is `blocked` with the retained dispatch receipt; it grants no creation permission.
+Remote adapters receive cancellation and are bounded by `maxRunMs`, at most 60 seconds.
+
+This operation neither claims leases nor starts workers, renews resource allocations or activates
+the queue. The installed coordinator owns worker calls, acknowledgement readback, checkpointing
+and release. Live source provenance, withdrawal/interruption and dispatch recovery still require
+the operational pilot.
+
+### Worker creation handoff
+
+`dispatchPlanningDelivery` in `scripts/agent-planning-delivery-dispatch.mjs` connects the planning
+handoff to the installed coordinator's `createDelivery` and `findDelivery` adapters. The caller
+owns an existing lease and resource allocation. The operation neither claims ownership nor
+changes capacity, starts a scheduler or installs a worker runtime.
+
+New intents opt into `dispatchProtocol: 'attempt-receipt-v1'`. Immediately before creation, the
+handoff verifies the complete human request again and commits `dispatch-attempt` with the exact
+intent token and fresh authority after the current planning read. Only the returned
+`dispatchDecision.action: 'send'` permits creation. The attempt receipt is durable before the
+external call. Repeated attempts return `reconcile`. Legacy intents cannot be upgraded by replaying
+`dispatch-intent`; absent attempt evidence remains uncertain.
+
+An opted-in intent without an attempt or handle can resume after fresh scope and authority checks.
+`preparePlanningDispatch` uses `resumeUnattempted: true` for that operation; its existing-intent
+result still grants no creation permission on its own. Attempted, bound or legacy intents go
+directly to service reconciliation, including after approval withdrawal. A canceled local attempt
+acknowledgement, malformed response, failed call or expired observation never permits replacement.
+
+`createDelivery({ taskId, dispatchToken, mode, revision, brief }, { signal })` must use the accepted
+public-safe brief to create the intended worker. It returns `threadId`, `clientThreadId` or both.
+The handoff passes no proposal body, private planning IDs, attachments, source request or human
+decision record. The installed adapter owns runtime/tool scope and prompt construction; this
+payload boundary does not certify those runtime permissions.
+
+`findDelivery({ taskId, dispatchToken }, { signal })` inspects the owning task service. A matching
+fresh result contains `status: 'found'`, the same task ID and token, a service `reference`,
+`observedAt` and the actual handle. It must verify the stored dispatch identity in that task's
+history. Missing, stale, mismatched or unavailable observations remain `pending`. They do not
+establish that an earlier creation failed. The store rejects conflicting handles.
+
+Confirmed handles are bound immediately; pending worktree setup retains its client handle until
+the service confirms the thread. `status: 'bound'` reports durable acknowledgement, not worker
+completion or renewed execution permission. An acknowledgement committed during cancellation is
+retained with `canceled: true`. Already-started local commits finish before return. Remote work is
+bounded by `maxRunMs`, at most 60 seconds, and receives cancellation. The result contains compact
+receipt metadata rather than the approved brief. A late or never-settling external call requires
+service reconciliation; cancellation does not prove that worker creation stopped remotely.
+
+Synthetic integration tests verify the store, scope reads, first-send reservation and worker
+adapters together. Installed tool availability, actual worker identity/isolation, live interruption,
+usage enforcement and successful recovery remain operational pilot gates. Private-only research
+and audit dispatch remain blocked by the existing shared-queue visibility contract.
+
+### Follow-ups and ownership recovery
+
 `reserve-followup` takes a batch of stable event IDs and returns a `followupDecision`: send only
 new events, reconcile an uncertain earlier send, or skip confirmed events. Include its token in
 the follow-up and confirm the receipt only after observing that message in the bound delivery task.
@@ -73,9 +154,8 @@ do not change scope.
 
 Use the [implementation work brief](templates/work-brief.md) for the accepted outcome and the
 [approval package](templates/approval-package.md) for current-head maintainer review. Keep these
-records in their existing planning/delivery home and link them from private task context. The
-[standing-authority proposal](templates/standing-authority-policy.md) records proposed categories
-and limits; completing it does not activate authority or replace the trusted request path.
+records in their existing planning/delivery home and link them from private task context. Every
+execution needs its exact trusted request and accepted scope.
 
 ## Evidence And Acceptance
 
@@ -85,6 +165,122 @@ reference, and observation time. The latest result for that gate and head contro
 history retains failures. Observations cannot move backwards. A failure takes precedence over a
 pass at the same timestamp; other conflicting timestamp ties are rejected, while identical
 receipt retries remain idempotent. A changed head invalidates readiness until fresh evidence is recorded.
+
+### Linear result receipts
+
+Planning-bound research and audits can record `brief.resultDestination: linear-planning` in the
+accepted request. Other tasks use the existing public GitHub result path; `public-github` is also
+an explicit destination value. Changing the destination requires a new authorized request.
+
+1. At a verified worker checkpoint, call `planning-result-intent` with the exact worker `head`, expected `bodyHash`,
+   `writerAppUserId` and freshly rechecked authority. A confirmed delivery handle, current planning
+   scope and `verifying` or `awaiting-approval` state are required. Bounded tasks also need an unused
+   resource reservation for the `planning-result` operation.
+2. The initial `planningResultDecision.action: create` reserves one comment UUID before a service
+   write. Use that UUID as Linear's `CommentCreateInput.id`; retain the proposal ID, content hash,
+   writer identity, head and accepted revisions. Store result Markdown in private worker storage,
+   separately from the receipt. Verify destination access and publication channels before writing.
+   The writer's `beginWrite` callback records the fresh planning observation, then calls
+   `planning-result-attempt` with the comment ID and freshly checked authority under the current
+   coordinator lease. Only its initial `send` decision permits a mutation. The saved `attemptedAt`
+   survives restarts; another attempt returns `reconcile`. Paused checkpoints cannot receive a
+   first send permission. Inspect actual ownership before recovering an expired coordinator.
+3. An existing pending or unverified intent returns `reconcile`. Inspect the reserved comment
+   through the [Linear result reader](autonomous-builder-plan.md#private-result-readback), using its
+   `intentAt` as `notBefore`. An unavailable read cannot establish that creation failed or authorize
+   a replacement comment. A pending or unverified reserved intent with no `attemptedAt` can obtain
+   its first send permit using the same comment ID through the controlled writer after the current
+   source and ownership checks pass. This requires every writer to use the durable attempt protocol; an imported or unknown writer outcome requires
+   investigation. A confirmed intent returns `skip` for creation; completion still needs
+   fresh readback. Changed content or head requires a new scoped request.
+4. Record the owning-service result using `planning-result-observation`. The reader and store allow
+   at most 30 seconds of Linear/runner clock skew for service creation and update timestamps.
+   Local observations must remain fresh, and Linear update time cannot precede creation time.
+   Available observations must match the reserved comment, destination, writer and content, with a fresh service reference.
+   For an unavailable read, include the reserved `commentId`; the receipt becomes `unverified` and
+   blocks readiness even when earlier output evidence passed. History retains prior observations.
+   Conflicting observations cannot restore a pass at the same timestamp as an unavailable result.
+5. Verify result quality and the task's other required gates separately. Record `output` evidence
+   with the exact readback reference and observation time. Readiness and delivery require matching
+   current-head, current-scope evidence and a confirmed result read within the preceding minute.
+   Include human authority rechecked after that readback in the readiness or delivery transition.
+
+These actions preserve local intent and observations; they do not write to Linear or authenticate
+caller-supplied evidence. The shared queue still requires public visibility approval at execution
+gates. The dedicated private worker, installed writer identity, coordinator integration and observed
+live pilot remain activation requirements for private research and audits.
+
+### Coordinator result handoff
+
+[`deliverPlanningResult`](../../scripts/agent-planning-result-delivery.mjs) joins the result adapters
+to these store actions under a current coordinator lease. Supply the verified worker's exact `head`
+(`null` for research with no commit), private result Markdown, expected writer app identity and the
+trusted proposal, request and result readers. Supply a `createWriter` factory that constructs the
+bounded app writer with the helper's readers, cancellation signal and durable `beginWrite` callback.
+Caller-owned app sessions must close when the coordinator run ends.
+
+The helper checks the current owner and scope, refreshes the proposal and human request, reserves
+the result and records readback. A head changed while services are read cannot adopt the earlier
+worker output. Bounded tasks require the caller's resource reservation and fresh measured usage.
+Readback of an attempted or confirmed result can proceed without a new publication request;
+it uses the recorded content hash and does not need the worker Markdown or another writer session.
+An unavailable or malformed fresh probe invalidates the prior readback pass.
+
+`verified` means the result artifact was observed, not that the task passed quality review or was
+accepted. The helper neither records output/quality evidence nor transitions the task to delivered.
+`pending` preserves uncertain write or readback receipts for investigation; `blocked` preserves a
+checkpoint whose scope or send permission could not be verified. Neither disposition authorizes a
+replacement task, comment or retry of an attempted send.
+
+Remote operations share a run deadline of up to one minute. The coordinator and writer call the
+independently authenticated `readRequest(identity, { signal })` adapter with their operation's abort
+signal. The adapter must propagate that signal to its owning-service transport so cancellation and
+deadline expiry stop the pending authority read. Cancellation stops further operations;
+started local atomic transactions finish before the helper returns. A timeout does not establish
+that the owning worker stopped. Recovery still requires actual ownership observations. This helper
+is not connected to the paused queue automation; live credentials, the human-request source,
+destination policy and an observed private-worker pilot remain activation gates.
+
+### Authenticated result run
+
+If token transport or its body outlives cancellation, the run returns blocked with
+`linear-session-revocation-unverified` and a redacted `cleanup` promise. The same observation handle
+is returned by an authenticated refresh run. Keep the runner alive to observe late token revocation;
+do not treat a pending promise, process exit or never-settling transport as verified cleanup.
+An acknowledged late revocation neither resumes the canceled run nor changes its durable receipts.
+
+[`runLinearPlanningResult`](../../scripts/agent-linear-result-run.mjs) assembles the installed
+app authentication, proposal/result readers, writer and coordinator handoff for one operation.
+Supply the same leased task, exact worker head, result Markdown and resource reservation described
+above. Supply the independently authenticated `readRequest` adapter and credential-manager
+callbacks `readReaderCredentials` and `readWriterCredentials`; the owner-private file fallback can
+implement those callbacks after credential setup is authorized.
+
+Configure `readerPolicy` with workspace, reader app, writer app, team and project IDs. Configure
+`writerPolicy` with the same workspace/team/project and its distinct writer app ID. The policies
+must agree on that writer identity. Tokens are acquired lazily: reads request only `read`, while
+an authorized first send requests exactly `read,comments:create` through the separate writer app.
+An attempted or confirmed receipt needs only a fresh reader session; reconciliation may omit
+`readWriterCredentials` and the worker Markdown. A reserved result with no attempt still requires
+the writer and current publication authority for its first send.
+
+Authentication and delivery share a deadline of at most one minute and the caller's cancellation
+signal. Proposal reads, result reads and writes combine that signal with their request deadline.
+Transport waits race cancellation even when the transport ignores its signal. Cancellation does
+not prove that a remote mutation failed; an attempted send remains pending for receipt reconciliation.
+Every started app session closes in the run's `finally` path, including sessions acquired while a
+bounded reader was interrupted. Closing clears local access immediately and requests server
+revocation with a separate five-second deadline per token; acquired sessions close in parallel.
+Unacknowledged revocation returns `blocked` with reason `linear-session-revocation-unverified`,
+preserving the artifact-verification result in the nested `result` field and the durable receipt.
+Recovery must reconcile that receipt before attempting another write. Credentials, tokens and
+confidential Markdown are not part of the returned status. The helper grants neither quality
+acceptance nor a delivered transition.
+
+The request adapter remains an authentication boundary. Connecting this operation to live queue
+checkpoints requires installed app identities, authorized credential setup, a trusted human-request
+source, verified destination policy and an observed pilot. This helper does not activate the paused
+queue or remove the private-worker execution gate.
 
 Transitions follow `queued -> investigating -> building -> verifying -> awaiting-approval ->
 delivered`, with explicit waiting and failure states. Each transition requires a reason. Returning
@@ -254,6 +450,86 @@ sends no message, changes no Linear issue and starts no worker. New execution st
 fresh planning observation and trusted maintainer request. Actual webhook-to-coordinator delivery,
 human-approval provenance and worker withdrawal require operational integration pilots.
 
+
+### Connected Linear reader
+
+`createLinearConnectorIssueReader` in `scripts/agent-linear-connector-reader.mjs` implements the
+proposal observation contract using connected read tools. Supply `getWorkspace`, `getUser` and
+`getIssue` callbacks from the coordinator's trusted tool environment, plus a pinned `policy` with
+`organizationId`, `readerUserId`, `teamId` and `projectId`. The reader accepts an exact issue UUID,
+checks the active account and workspace for each snapshot, and compares two complete issue reads.
+It validates explicit lifecycle fields, full attachment arrays, label names and source timestamps.
+Explicit pagination/truncation, oversized collections, malformed MCP JSON and service failures
+return unavailable evidence. A missing issue does not establish deletion.
+
+The callbacks receive their native tool arguments and a separate `{ signal }` option. Tool calls
+that ignore cancellation remain bounded by `maxReadMs`; parent cancellation propagates to all
+callbacks. Successful results use the existing `{ status, issue, reference, observedAt }` shape
+with a `linear-connector` service reference. The reader loads no credentials or tokens, changes no
+planning record and grants no implementation authority. Supply only the three read callbacks;
+proposal text cannot select tools or change pinned identities.
+
+Use this adapter for an interactive coordinator with a connected Linear integration. An installed
+coordinator must independently prove tool availability and account scope before adopting this
+transport. A dedicated scoped app remains available for runners without connector access. In
+either mode, independently verified human decisions, artifact access and private writer identity
+remain separate contracts. A live connector read proves its observed scope, not operational
+dispatch, complete private attachment contents or unattended recovery.
+
+### Authenticated intake run
+
+`runLinearPlanningIntake` in `scripts/agent-linear-intake-run.mjs` connects the scoped Linear
+proposal reader, a lazy read-only app session and `enqueuePlanningRequest`. Supply `store`, the
+exact request `identity`, `readerPolicy`, a credential-manager `readCredentials` callback and an
+independently authenticated `readRequest(identity, { signal })` adapter. The latter must verify
+the human decision through its owning source; proposal text, stages and agent-authored comments
+cannot establish approval. It returns the trusted observation defined in the
+[approval-to-queue contract](autonomous-builder-plan.md#approval-to-queue-handoff).
+
+The run validates policy before loading credentials or querying authority, reads the human
+request, fetches a complete stable proposal and rechecks the human request before enqueueing.
+`maxRunMs` bounds source reads to at most 60 seconds, including adapters that ignore cancellation.
+Proposal reads retain their own 20-second limit. Withdrawal, changed scope, mismatched app
+identity, incomplete reads or unavailable services return a redacted `blocked` result.
+
+A successful result contains `status: 'queued'` and `taskId`. Duplicate accepted requests retain
+the existing task ID. The task has no claim, dispatch or planning pass; execution requires fresh
+authority and proposal observations through the existing gates. An already-started atomic enqueue
+is awaited even after cancellation so its acknowledgement is preserved.
+
+The session closes before return using a separate bounded revocation deadline. Unverified cleanup
+returns `blocked` with reason `linear-session-revocation-unverified`, retaining the original result
+in `intake`, including any committed task ID. Late-grant cleanup exposes a redacted `cleanup`
+promise; keep the runner alive to observe it. Successful late cleanup cannot restore canceled
+authority. Reconcile retained task IDs before retrying or dispatching. Synthetic integration tests
+prove these local boundaries; installed human-request provenance, live app permissions and the
+authorized delivery pilot remain activation gates.
+
+### Authenticated refresh run
+
+`runLinearPlanningRefresh` in `scripts/agent-linear-refresh-run.mjs` connects the existing inbox
+and task store to the actual scoped Linear proposal reader and a per-run read-only app session.
+Supply the existing `inbox`, `eventId`, `store`, coordinator `owner`, `readerPolicy`, and a
+`readCredentials` callback owned by the installed runner. The policy fixes the organization,
+app actor, team and project. Credentials are loaded lazily after the existing receipt and store
+checks; invalid policy or pre-cancellation loads no credentials. The session requests exactly
+`read` and closes before the operation returns. Closing clears local token access immediately and
+awaits server revocation with a separate five-second cleanup deadline. Unacknowledged revocation
+returns `blocked` with reason `linear-session-revocation-unverified` and preserves the original
+outcome in `reconciliation`; the durable receipt remains available for recovery.
+
+`maxRunMs` bounds remote work to at most 60 seconds; proposal reads also retain their own
+20-second limit. Parent cancellation reaches OAuth and GraphQL, including a transport that
+ignores cancellation while awaiting its response. Failed authentication, revoked access or a
+canceled read records unavailable evidence through normal reconciliation, invalidating earlier
+passes on owned tasks and preserving the pending receipt. Already-started atomic store updates
+finish before return. A setup or store failure returns a redacted `blocked` result for recovery.
+
+Successful complete reads reconcile current scope or latch withdrawal. The run neither creates
+human authority nor claims tasks, dispatches a worker or writes to Linear. Synthetic transport
+integration tests verify the actual inbox, store, app session and reader together; live app setup,
+verified credentials and an observed signed-event pilot remain activation gates.
+
 ## Execution Budgets
 
 Bounded requests include `resourceLimits` with three positive integers: `maxElapsedMs`,
@@ -346,6 +622,130 @@ signature or independent human approval. The coordinator still verifies receipt 
 current remote checks and authority, and follows the task store's evidence/ownership contract.
 The verifier does not mutate the queue, send messages, stop workers, merge or publish.
 
+## Monitor Bound Workers
+
+`monitorPlanningWorker` in `scripts/agent-worker-monitor.mjs` observes a worker already bound to
+the task store under a current coordinator lease. Supply trusted `readWorker`, `readRequest`,
+`readIssue`, `readUsage` and `interruptWorker` callbacks, an explicit `maxStopAttempts` from 1 to
+10, and a bounded `maxRunMs`. Worker observations must identify the exact task, dispatch token,
+thread and runtime run ID, with a service reference and a timestamp from the current read.
+
+The monitor rechecks accepted human scope and the complete proposal, then reads cumulative
+task-wide usage. The usage adapter must prove coverage of the coordinator and every worker with
+`complete: true`; a single thread's counters cannot establish that coverage. A failed usage read
+persists `resource-unavailable`, invalidating the cached measurement without resetting counters or
+settling uncertain reservations. A later measurement must follow that failure and preserve
+monotonic counters. Missing configured limits require a policy decision before monitored execution.
+
+Naturally stopped workers also require current authority, proposal scope and final cumulative usage.
+The monitor closes cached planning permission before those remote reads, so a canceled or stalled
+authority check cannot admit a follow-up. An unavailable final usage read preserves counters and
+blocks new resource reservations. A successor observed during reconciliation invalidates the
+measurement. An `inactive` result describes runtime state; it does not authorize more work.
+
+For running workers, withdrawn or unverifiable scope, an unverifiable proposal, exhausted resources
+or unavailable usage lead to a durable stop intent. Pending stops block further execution. Every interruption targets
+the exact run and carries the same stop token; the installed adapter must make that operation
+idempotent. Each retry requires a fresh running observation and consumes the intent's fixed retry
+budget. An unresolved receipt cannot be replaced with another run or a larger retry policy.
+
+Command acknowledgement does not prove stopping. Confirmation requires a fresh stopped observation
+for the same run and a saved checkpoint containing a reference, explicit commit head or `null`,
+and the next recovery action. The receipt preserves only those checkpoint fields. Cancellation,
+lost acknowledgements and missing checkpoints retain uncertainty for reconciliation. Confirmation
+does not complete the task, release its dispatch binding or resume execution.
+
+This module supplies the monitoring protocol. Activation still requires installed service adapters,
+verified aggregate accounting, a monitoring cadence, accepted resource policies and live interruption
+and recovery pilots. An interactive connector read alone does not prove those operational gates.
+
+### Codex runtime adapter
+
+`createCodexWorkerAdapter` in `scripts/agent-codex-worker.mjs` implements the worker callbacks for
+the Codex app-server protocol. Pin `binding` to the task's durable `taskId`, `dispatchToken` and
+confirmed `threadId`. Supply a trusted RPC `request` callback and an independent `readCheckpoint`
+verifier. The adapter reads `thread/read` metadata and the latest descending `thread/turns/list`
+page twice with `itemsView: 'notLoaded'`. Thread and turn status must agree and remain stable.
+Older-turn pagination is expected; missing latest-turn evidence and changed runs are unavailable.
+An unloaded thread (`notLoaded`) or a thread reporting `systemError` can establish a stopped observation only when its latest persisted
+turn is terminal and its load status and turn remain stable. A running turn in an unloaded thread
+is inconsistent evidence. Independent checkpoint verification still applies before recovery confirmation.
+
+The runtime turn ID becomes the monitored `runId`. Interruption rechecks that same latest run
+before sending `turn/interrupt` with the exact thread and turn IDs. A retry can address that turn
+again or observe it already stopped; it cannot interrupt a successor. A stopped observation requires
+another stable runtime read after checkpoint verification to detect a resumed worker.
+
+`readCheckpoint` receives the exact binding and run ID. A verified response identifies all four,
+has a fresh `observedAt`, and contains `status: 'verified'`, a reference, the next recovery action,
+and a full Git commit head or explicit `null`. The installed verifier must inspect the durable
+checkpoint and actual worktree; worker prose is insufficient evidence. The adapter returns only
+the permitted checkpoint fields. Runtime completion or interruption alone does not prove that
+checkpoint exists or the task's acceptance criteria passed.
+
+`createGitWorkerCheckpointService` in `scripts/agent-worker-checkpoint.mjs` supplies a Git-backed
+checkpoint recorder and verifier under the coordinator's current lease. Save the task's worktree,
+branch and next recovery action using `context`. After a trusted native observation identifies the
+bound worker's stopped turn, pass that observation to `captureCheckpoint`. Configure the service's
+trusted `readWorker` callback with the bound native adapter's `readWorker`. Capture requires a fresh
+observation of that exact stopped turn before inspecting Git and immediately before recording the
+checkpoint. A running or successor turn, stale proof, unavailable runtime or expired read leaves
+the saved head and checkpoint unchanged. The service reads two
+matching Git snapshots and commits a `worker-checkpoint` receipt containing the exact task,
+dispatch, thread and turn identity, commit head and state fingerprint. The same atomic mutation
+records the actual head. A changed state fingerprint invalidates approval readiness and current-head
+evidence even when the commit is unchanged. A first checkpoint also requires fresh evidence because
+no prior fingerprint proves equivalence. Re-observing an identical head and fingerprint preserves
+readiness. Invalidated gate observations retain their history and block delayed passes from before
+the checkpoint; fresh verification is required before requesting approval or recording delivery.
+
+The fingerprint covers the index, staged diff, actual tracked file contents and non-ignored
+untracked files, including symlink targets. Ignored local files remain outside this source checkpoint.
+The service bounds Git output, file counts, content sizes and read time. Unresolved index entries,
+submodules and worktree flags that suppress changes require a separate recovery procedure.
+Checkpoint files stay in the existing task store; the worktree holds the preserved source contents.
+
+Pass the service's `readCheckpoint` to `createCodexWorkerAdapter`. It verifies the saved receipt
+against fresh matching Git snapshots and current recovery context, returning only the binding,
+head, opaque reference, next action and observation time. Changed files, branch, head, context or
+run identity produce unavailable evidence. It does not rewrite a failed checkpoint to match changed
+work. An already-started local checkpoint commit is awaited through cancellation; a subsequent read
+can recover its receipt after restart. A stopped native observation without a saved checkpoint
+remains insufficient to confirm monitored recovery.
+
+Runtime observations bound this check; they do not lock native turn creation. The coordinator must
+serialize capture and resume for the bound worker. Starting a turn outside that coordinator can
+race the final observation and remains outside this recovery contract.
+
+For an existing local app-server socket, `createCodexAppServerRequester` in
+`scripts/agent-codex-app-server.mjs` supplies the RPC callback. Configure absolute `codexPath` and
+`socketPath`, and pin `threadId`. The rendezvous path may be an owned managed symlink. Its resolved
+physical socket must belong to the current OS user, have private permissions, and sit beneath
+directories protected from replacement by other users. The configured endpoint and executable are
+trusted installation inputs. Each request initializes a bounded `codex app-server proxy --sock`
+connection to the physical path using the WebSocket handshake and text-message protocol. Only
+metadata reads, the single latest turn page and exact-turn interruption are permitted. Responses
+are correlated and byte-limited, including
+handshake bytes, notifications and control frames. Unexpected server requests, binary messages,
+failed upgrades and malformed frames fail closed. Diagnostics and notifications stay
+outside the returned result. Cancellation closes the proxy connection; interruption outcomes still
+require subsequent worker observation. The requester connects to an existing endpoint and leaves
+daemon setup to the installation workflow.
+
+Verify the configured executable's version and its compatibility with the installed runtime,
+account and selected model before starting delivery. A successful metadata read or cached model
+catalogue establishes neither model execution nor fresh usage measurement. Use a bounded pilot
+to verify an actual execution turn, its current native counters and its terminal outcome. A failed
+turn without a new usage measurement leaves accounting unverified; preserve the failure and pending
+reservations before correcting the installation. Elapsed limits and cumulative counters retain
+their existing values during that correction.
+
+Wire the configured requester into `createCodexWorkerAdapter`, then pass the returned
+`readWorker` and `interruptWorker` to `monitorPlanningWorker` alongside the independently verified
+request, proposal and aggregate-usage readers. Synthetic proxy tests establish protocol behavior;
+installation still requires endpoint identity, a live exact-turn interruption and recovery pilot,
+monitoring cadence and complete resource accounting before activation.
+
 ## Observe Local Codex Usage
 
 `pnpm agent:usage <private-input.json>` reads a fixed snapshot of one local Codex session log.
@@ -357,6 +757,18 @@ measurements, foreign-thread records, regressions and malformed complete records
 A live writer's unfinished final record is ignored and identified in the result. Rate-limit-only
 `token_count` events with null `info` preserve the prior measurement and its timestamp. Current
 usage events inherit the confirmed session identity; explicit thread IDs must also match.
+
+When native `task_started`, `task_complete` and `turn_aborted` markers are available, the observer
+reports the latest turn ID, start and finality metadata. A terminal marker must match its preceding
+start; reused terminal run IDs and new operations after a terminal marker fail verification.
+Marker text and agent messages remain private. Native snapshots default to a 128 MiB limit, with
+individual records limited to 16 MiB. Callers can supply a bounded `maxSnapshotBytes` and abort signal.
+
+A command completion receipt can arrive after the native interruption marker. The observer counts
+it only when its explicit thread and turn identity match, its status is completed or failed, and
+its start/end timestamps establish that it began within that turn before finality. New calls and
+unverifiable completions after finality fail verification. Counting a completion receipt neither
+changes the turn's finality nor establishes successful delivery.
 
 The result reports cumulative input, cached input, output and reasoning tokens; `modelTokens`
 uses total input plus output, including cached input. These are execution units, not monetary
@@ -374,3 +786,47 @@ This observer is read-only. It neither writes task-store usage nor interrupts a 
 only after defining the approved operation-unit policy, verifying complete worker/coordinator
 coverage and applying provider allowances. Preserve pending reservations for uncertain execution;
 then validate monitored interruption and recovery before activating bounded intake.
+
+### Task-wide native accounting
+
+`createTaskUsageReader` in `scripts/agent-task-usage.mjs` supplies the monitor's `readUsage`
+callback. Configure the existing task store, current coordinator owner and trusted `readInventory`
+callback. The inventory must independently verify the complete runtime participant set and the
+maintainer-accepted `native-observed-operations-v1` unit policy for this task revision. That policy
+counts cumulative native model tokens and direct plus recorded nested operation units; it does not
+convert them into billing or claim coverage of hidden provider operations.
+
+Inventory responses identify the exact task and dispatch, carry a fresh service reference and
+timestamp, and retain every dedicated coordinator and worker session. Each member names its role,
+thread, current turn, native session file, running/stopped status and `dedicated: true`. The
+confirmed delivery thread and turn must be present. Active inventories require one running
+coordinator; stopped historical coordinators remain participants after handoff. To record final
+totals after every participant stops, supply explicit `phase: 'stopped'`. That phase requires at
+least one retained coordinator and all participants stopped, each with matching native terminal
+evidence. An omitted phase retains the active-inventory requirements. Shared sessions cannot establish
+task-scoped totals. The current bounded protocol supports at most eight participants.
+
+The reader compares two matching inventories around the native reads. Running sessions require
+fresh measurements from the current turn. Stopped sessions require matching native completion or
+interruption markers; their cumulative totals remain in the aggregate even when the terminal
+measurement is older. Missing markers, partial record tails, changed inventory, malformed source
+files and stale active measurements produce incomplete coverage. Unknown usage is not zero.
+
+The reader commits `resource-accounting` in the existing task store before returning a complete
+aggregate. This durable ledger retains session identities, policy reference and monotonic
+per-participant counters and measurement times. It prevents dropping a closed worker or masking
+one worker's rollback behind another's rising totals. Session paths and raw logs stay private.
+An incomplete or canceled read preserves already-committed accounting references for recovery.
+For an active aggregate, `observedAt` retains the oldest running participant's measurement time.
+`verifiedAt` records completion of the fresh inventory and accounting read. The monitor checks that
+verification happened during its current probe and persists the source measurement time for budget
+freshness. Repeated reads cannot extend the counters' expiry. Final stopped aggregates use their
+fresh verification time because every participant's matching terminal marker establishes finality.
+
+Pass the resulting callback to `monitorPlanningWorker`, which persists `resource-usage` and
+invalidates older usage when coverage becomes unavailable. An accounting receipt alone neither
+updates aggregate usage nor settles reservations. Completion and interruption markers establish
+native accounting finality, not task acceptance or human authority. A stopped accounting phase
+retains every participant and does not settle reservations or complete the task. Installed inventory identity,
+dedicated-session attribution, accepted units, allowances for unobserved provider activity and live
+metering/interruption pilots remain activation gates.

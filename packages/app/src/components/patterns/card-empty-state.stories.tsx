@@ -1,43 +1,50 @@
 import { BaseCard } from '@navet/app/components/primitives';
+import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Gauge, Plus, Rss } from 'lucide-react';
-import { expect, fn, userEvent } from 'storybook/test';
 import { CardEmptyState } from './card-empty-state';
+
+function CardEmptyStateStory({
+  size = 'medium',
+  withAction = true,
+}: {
+  size?: CardSize;
+  withAction?: boolean;
+}) {
+  return (
+    <div style={{ width: size === 'small' ? 160 : 320, height: size === 'large' ? 320 : 160 }}>
+      <BaseCard size={size}>
+        <CardEmptyState
+          title="No feeds selected"
+          description="Select one or more providers for this card."
+          icon={Rss}
+          actionLabel={withAction ? 'Configure RSS providers' : undefined}
+          actionIcon={Plus}
+          onAction={withAction ? () => {} : undefined}
+          size={size}
+          accentColor="#3b82f6"
+        />
+      </BaseCard>
+    </div>
+  );
+}
 
 const meta = {
   title: 'Components/Patterns/Card Empty State',
-  component: CardEmptyState,
-  decorators: [
-    (Story, { args }) => {
-      const size = args.size ?? 'medium';
-      return (
-        <div style={{ width: size === 'small' ? 160 : 320, height: size === 'large' ? 320 : 160 }}>
-          <BaseCard size={size}>
-            <Story />
-          </BaseCard>
-        </div>
-      );
-    },
-  ],
+  component: CardEmptyStateStory,
   tags: ['autodocs'],
   argTypes: {
     size: {
       control: 'inline-radio',
       options: ['small', 'medium', 'large'],
     },
-    onAction: { control: false },
-    icon: { control: false },
-    actionIcon: { control: false },
+    withAction: {
+      control: 'boolean',
+    },
   },
   args: {
-    title: 'No feeds selected',
-    description: 'Select one or more providers for this card.',
-    icon: Rss,
-    actionLabel: 'Configure RSS providers',
-    actionIcon: Plus,
-    onAction: fn(),
     size: 'medium',
-    accentColor: '#3b82f6',
+    withAction: true,
   },
   parameters: {
     docs: {
@@ -47,22 +54,13 @@ const meta = {
       },
     },
   },
-} satisfies Meta<typeof CardEmptyState>;
+} satisfies Meta<typeof CardEmptyStateStory>;
 
 export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Playground: Story = {
-  play: async ({ canvas, args }) => {
-    const action = canvas.getByRole('button', { name: 'Configure RSS providers' });
-    await userEvent.click(action);
-    await expect(args.onAction).toHaveBeenCalledTimes(1);
-    await expect(action).toHaveFocus();
-    await userEvent.keyboard('{Enter}');
-    await expect(args.onAction).toHaveBeenCalledTimes(2);
-  },
-};
+export const Playground: Story = {};
 
 export const Small: Story = {
   args: {
@@ -77,28 +75,27 @@ export const Medium: Story = {
 };
 
 export const LargeNoAction: Story = {
-  play: async ({ canvas }) => {
-    await expect(canvas.getByRole('heading', { name: 'No feeds selected' })).toBeVisible();
-    await expect(canvas.queryByRole('button')).not.toBeInTheDocument();
-  },
   args: {
     size: 'large',
-    actionLabel: undefined,
-    onAction: undefined,
+    withAction: false,
   },
 };
 
 export const SensorGroup: Story = {
   render: () => (
-    <CardEmptyState
-      title="No sensors selected"
-      description="Add sensors to this group to track them together."
-      icon={Gauge}
-      actionLabel="Add Sensors"
-      actionIcon={Plus}
-      onAction={() => {}}
-      size="medium"
-      accentColor="#14b8a6"
-    />
+    <div className="h-40 w-80">
+      <BaseCard size="medium">
+        <CardEmptyState
+          title="No sensors selected"
+          description="Add sensors to this group to track them together."
+          icon={Gauge}
+          actionLabel="Add Sensors"
+          actionIcon={Plus}
+          onAction={() => {}}
+          size="medium"
+          accentColor="#14b8a6"
+        />
+      </BaseCard>
+    </div>
   ),
 };

@@ -5,7 +5,6 @@ import { fileURLToPath } from 'node:url';
 
 const storybookDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(storybookDir, '..', '..', '..');
-const enableAgentMcp = process.env.NAVET_STORYBOOK_MCP === '1';
 const storybookBasePath = process.env.STORYBOOK_BASE_PATH?.trim() || '/';
 
 const config: StorybookConfig = {
@@ -13,10 +12,6 @@ const config: StorybookConfig = {
   addons: [
     '@storybook/addon-docs',
     '@storybook/addon-a11y',
-    ...(enableAgentMcp ? ['@storybook/addon-vitest', {
-      name: '@storybook/addon-mcp',
-      options: { toolsets: { docs: true, dev: true, test: true } },
-    }] : []),
   ],
   framework: {
     name: '@storybook/react-vite',
@@ -28,7 +23,6 @@ const config: StorybookConfig = {
   },
   features: {
     sidebarOnboardingChecklist: false,
-    componentsManifest: enableAgentMcp,
   },
   staticDirs: [path.join(repoRoot, 'assets/public')],
   viteFinal: async (config) => {

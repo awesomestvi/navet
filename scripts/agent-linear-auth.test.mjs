@@ -1,0 +1,294 @@
+import { chmod, link, mkdir, mkdtemp, readdir, rm, symlink, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { createLinearCommentSession, createLinearReadSession, readLinearClientCredentials } from './agent-linear-auth.mjs';
+
+const directories = [];
+afterEach(async () => {
+  await Promise.all(directories.splice(0).map((directory) => rm(directory, { recursive: true, force: true })));
+});
+const credentials = { clientId: 'synthetic-client-id', clientSecret: 'synthetic-private-client-secret' };
+const tokenResponse = (changes = {}) => ({ access_token: 'synthetic-run-token', token_type: 'Bearer',
+  expires_in: 2_591_999, scope: 'read', ...changes });
+
+async function credentialFile(value = credentials) {
+  const directory = await mkdtemp(path.join(tmpdir(), 'navet-linear-auth-'));
+  directories.push(directory);
+  const privateDirectory = path.join(directory, 'private');
+  await mkdir(privateDirectory, { mode: 0o700 });
+  const file = path.join(privateDirectory, 'client.json');
+  await writeFile(file, JSON.stringify(value), { mode: 0o600 });
+  return { directory, privateDirectory, file };
+}
+
+function harness(response = tokenResponse(), changes = {}) {
+  let time = 1_700_000_000_000;
+  const requests = [];
+  const input = { now: () => time, readCredentials: async () => credentials,
+    fetchImpl: async (url, init) => { requests.push({ url, ...init });
+      return response instanceof Response ? response : new Response(JSON.stringify(response)); }, ...changes };
+  return { input, requests, advance: (duration) => { time += duration; } };
+}
+
+describe('run-scoped Linear app authentication', () => {
+  it('requests only read and comments:create for the separately configured comment app', async () => {
+    const { input, requests } = harness(tokenResponse({ scope: 'comments:create read' }));
+    const session = await createLinearCommentSession(input);
+    expect(new URLSearchParams(requests[0].body).get('scope')).toBe('read,comments:create');
+    expect(await session.getAccessToken()).toBe('synthetic-run-token');
+    await session.close();
+    await expect(session.getAccessToken()).rejects.toThrow('closed or expired');
+  });
+
+  it.each(['read write', 'read admin', 'read', 'read read', 'read comments:create issues:create'])
+    ('rejects insufficient, broader or duplicated comment grants %s', async (scope) => {
+      const { input } = harness(tokenResponse({ scope }));
+      await expect(createLinearCommentSession(input)).rejects.toThrow('comment app authentication failed');
+    });
+
+  it('requests only read scope from the fixed token endpoint with redirects disabled', async () => {
+    const { input, requests } = harness();
+    const session = await createLinearReadSession(input);
+    expect(requests).toHaveLength(1);
+    expect(requests[0]).toMatchObject({ url: 'https://api.linear.app/oauth/token', method: 'POST',
+      redirect: 'error', cache: 'no-store', headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+    const body = new URLSearchParams(requests[0].body);
+    expect(Object.fromEntries(body)).toEqual({ grant_type: 'client_credentials', scope: 'read',
+      client_id: credentials.clientId, client_secret: credentials.clientSecret });
+    expect(await session.getAccessToken()).toBe('synthetic-run-token');
+    expect(JSON.stringify(session)).not.toMatch(/synthetic-run-token|synthetic-private-client-secret/);
+    await session.close();
+    await expect(session.getAccessToken()).rejects.toThrow('closed or expired');
+  });
+
+  it('obtains a fresh token for each run without writing access tokens beside credentials', async () => {
+    const { file, privateDirectory } = await credentialFile();
+    const { input, requests } = harness(tokenResponse(), { readCredentials: () => readLinearClientCredentials(file) });
+    const first = await createLinearReadSession(input);
+    await first.close();
+    const second = await createLinearReadSession(input);
+    await second.close();
+    expect(requests.filter((request) => request.url.endsWith('/oauth/token'))).toHaveLength(2);
+    expect(requests.filter((request) => request.url.endsWith('/oauth/revoke'))).toHaveLength(2);
+    expect(await readdir(privateDirectory)).toEqual(['client.json']);
+  });
+
+  it.each([
+    { scope: 'read write' }, { scope: ['read', 'write'] }, { scope: 'read,read' },
+    { scope: '' }, { scope: undefined }, { token_type: 'Basic' }, { access_token: '' },
+    { access_token: 'token\nprivate' }, { expires_in: 0 }, { expires_in: 30 },
+    { expires_in: 1.5 }, { expires_in: Number.MAX_SAFE_INTEGER }, { refresh_token: 'unexpected' },
+  ])('rejects broader permission or invalid token metadata %j', async (change) => {
+    const { input } = harness(tokenResponse(change));
+    await expect(createLinearReadSession(input)).rejects.toThrow('read-only app authentication failed');
+  });
+
+  it('accepts the documented legacy scope-array format when it contains only read', async () => {
+    const { input } = harness(tokenResponse({ scope: ['read'] }));
+    const session = await createLinearReadSession(input);
+    expect(await session.getAccessToken()).toBe('synthetic-run-token');
+    await session.close();
+  });
+
+  it('latches expiration and honors run cancellation after authentication', async () => {
+    const controller = new AbortController();
+    const { input, advance } = harness(tokenResponse({ expires_in: 100 }), { signal: controller.signal });
+    const session = await createLinearReadSession(input);
+    advance(70_000);
+    await expect(session.getAccessToken()).rejects.toThrow('expired');
+    advance(-70_000);
+    await expect(session.getAccessToken()).rejects.toThrow('closed');
+    const next = await createLinearReadSession(input);
+    controller.abort();
+    await expect(next.getAccessToken()).rejects.toThrow('closed');
+  });
+
+  it('rejects an already-canceled run without requesting credentials or contacting Linear', async () => {
+    const controller = new AbortController();
+    controller.abort();
+    let reads = 0;
+    const { input, requests } = harness(tokenResponse(), { signal: controller.signal,
+      readCredentials: async () => { reads++; return credentials; } });
+    await expect(createLinearReadSession(input)).rejects.toThrow('authentication failed');
+    expect(reads).toBe(0);
+    expect(requests).toEqual([]);
+  });
+
+  it('bounds credential storage and transport even when they ignore cancellation', async () => {
+    for (const changes of [{ readCredentials: async () => new Promise(() => {}) },
+      { fetchImpl: async () => new Promise(() => {}) }]) {
+      const { input } = harness(tokenResponse(), { timeoutMs: 5, ...changes });
+      await expect(createLinearReadSession(input)).rejects.toThrow('authentication failed');
+    }
+  });
+
+  it.each([
+    [createLinearReadSession, 'read', 'response'],
+    [createLinearReadSession, 'read', 'body'],
+    [createLinearCommentSession, 'read,comments:create', 'response'],
+    [createLinearCommentSession, 'read,comments:create', 'body'],
+  ])('revokes a late %s grant with scope %s after delayed %s', async (factory, scope, stage) => {
+    let resolveResponse;
+    let stream;
+    const requests = [];
+    const response = stage === 'body'
+      ? new Response(new ReadableStream({ start(controller) { stream = controller; } }))
+      : undefined;
+    const error = await factory({ readCredentials: async () => credentials, timeoutMs: 5,
+      fetchImpl: (url, init) => {
+        requests.push({ url, ...init });
+        if (url.endsWith('/oauth/revoke')) return Promise.resolve(new Response(null));
+        return stage === 'body' ? Promise.resolve(response) : new Promise((resolve) => { resolveResponse = resolve; });
+      } }).catch((error) => error);
+    expect(error.code).toBe('linear-session-revocation-unverified');
+    expect(String(error)).not.toMatch(/synthetic-run-token|synthetic-private-client-secret/);
+    if (stage === 'body') {
+      stream.enqueue(new TextEncoder().encode(JSON.stringify(tokenResponse({ scope }))));
+      stream.close();
+    } else resolveResponse(new Response(JSON.stringify(tokenResponse({ scope }))));
+    await vi.waitFor(() => expect(requests.filter((request) => request.url.endsWith('/oauth/revoke'))).toHaveLength(1));
+    expect(await error.cleanup).toEqual({ status: 'revoked' });
+    expect(Object.fromEntries(new URLSearchParams(requests.at(-1).body)))
+      .toEqual({ token: 'synthetic-run-token', token_type_hint: 'access_token' });
+    expect(requests.filter((request) => request.url.endsWith('/oauth/token'))).toHaveLength(1);
+  });
+
+  it.each([200, 500])('observes late cleanup after caller cancellation with revocation status %s', async (status) => {
+    const controller = new AbortController();
+    let resolveGrant;
+    let started;
+    const contacted = new Promise((resolve) => { started = resolve; });
+    const requests = [];
+    const pending = createLinearReadSession({ readCredentials: async () => credentials, signal: controller.signal,
+      fetchImpl: (url, init) => {
+        requests.push({ url, ...init });
+        if (url.endsWith('/oauth/revoke')) return Promise.resolve(new Response(null, { status }));
+        started();
+        return new Promise((resolve) => { resolveGrant = resolve; });
+      } }).catch((error) => error);
+    await contacted;
+    controller.abort();
+    const error = await pending;
+    expect(error.code).toBe('linear-session-revocation-unverified');
+    resolveGrant(new Response(JSON.stringify(tokenResponse())));
+    expect(await error.cleanup).toEqual({ status: status === 200 ? 'revoked' : 'unverified' });
+    expect(requests.filter((request) => request.url.endsWith('/oauth/revoke'))).toHaveLength(1);
+    expect(JSON.stringify(error)).not.toMatch(/synthetic-run-token|synthetic-private-client-secret/);
+  });
+
+  it.each([new Response('private remote error', { status: 401 }), new Response('not JSON'),
+    new Response('x'.repeat(16_385))])('does not expose remote error content', async (response) => {
+    const { input } = harness(response);
+    await expect(createLinearReadSession(input)).rejects.toThrow(/^Linear read-only app authentication failed\.$/);
+  });
+
+  it('redacts credential-store failures', async () => {
+    const { input, requests } = harness(tokenResponse(), { readCredentials: async () => {
+      throw new Error('private-secret-and-path');
+    } });
+    await expect(createLinearReadSession(input)).rejects.toThrow(/^Linear read-only app authentication failed\.$/);
+    expect(requests).toEqual([]);
+  });
+});
+
+describe('private credential file fallback', () => {
+  it('reads a complete owner-private credential file', async () => {
+    const { file } = await credentialFile();
+    expect(await readLinearClientCredentials(file)).toEqual(credentials);
+  });
+
+  it.each([0o644, 0o640])('rejects file permissions %o', async (mode) => {
+    const { file } = await credentialFile();
+    await chmod(file, mode);
+    await expect(readLinearClientCredentials(file)).rejects.toThrow('unavailable or invalid');
+  });
+
+  it('rejects a directory readable by other users', async () => {
+    const { file, privateDirectory } = await credentialFile();
+    await chmod(privateDirectory, 0o755);
+    await expect(readLinearClientCredentials(file)).rejects.toThrow('unavailable or invalid');
+  });
+
+  it('rejects symbolic and hard links', async () => {
+    const { file, privateDirectory } = await credentialFile();
+    const symbolic = path.join(privateDirectory, 'symbolic.json');
+    await symlink(file, symbolic);
+    await expect(readLinearClientCredentials(symbolic)).rejects.toThrow('unavailable or invalid');
+    await link(file, path.join(privateDirectory, 'hard.json'));
+    await expect(readLinearClientCredentials(file)).rejects.toThrow('unavailable or invalid');
+  });
+
+  it.each([{ ...credentials, token: 'unexpected' }, { clientId: '', clientSecret: 'private' },
+    { clientId: credentials.clientId }, { clientId: credentials.clientId, clientSecret: 'secret\nprivate' }])('rejects malformed credential shape %j', async (value) => {
+    const { file } = await credentialFile(value);
+    await expect(readLinearClientCredentials(file)).rejects.toThrow('unavailable or invalid');
+  });
+
+  it('rejects oversized and malformed credential content without exposing it', async () => {
+    const { file } = await credentialFile();
+    for (const content of ['private-secret-not-json', 'x'.repeat(16_385)]) {
+      await writeFile(file, content);
+      await expect(readLinearClientCredentials(file)).rejects.toThrow(/^Private Linear client credentials are unavailable or invalid\.$/);
+    }
+  });
+});
+
+it('revokes exactly once on close and immediately denies token access', async () => {
+  const { input, requests } = harness();
+  const session = await createLinearReadSession(input);
+  const first = session.close();
+  expect(session.close()).toBe(first);
+  await expect(session.getAccessToken()).rejects.toThrow('closed or expired');
+  expect(await first).toEqual({ status: 'revoked' });
+  const revokes = requests.filter((request) => request.url.endsWith('/oauth/revoke'));
+  expect(revokes).toHaveLength(1);
+  expect(revokes[0]).toMatchObject({ method: 'POST', redirect: 'error', cache: 'no-store' });
+  expect(Object.fromEntries(new URLSearchParams(revokes[0].body))).toEqual({ token: 'synthetic-run-token', token_type_hint: 'access_token' });
+  expect(revokes[0].body).not.toContain(credentials.clientSecret);
+});
+it('reports unverified revocation without reviving the local token or retrying', async () => {
+  const { input, requests } = harness();
+  const original = input.fetchImpl;
+  input.fetchImpl = (url, init) => url.endsWith('/oauth/revoke') ? (requests.push({ url, ...init }), Promise.resolve(new Response(null, { status: 500 }))) : original(url, init);
+  const session = await createLinearReadSession(input);
+  expect(await session.close()).toEqual({ status: 'unverified' });
+  expect(await session.close()).toEqual({ status: 'unverified' });
+  expect(requests.filter((request) => request.url.endsWith('/oauth/revoke'))).toHaveLength(1);
+  await expect(session.getAccessToken()).rejects.toThrow('closed or expired');
+});
+it('bounds revocation even when transport ignores cancellation', async () => {
+  vi.useFakeTimers();
+  try {
+    let revokeSignal;
+    const { input } = harness();
+    const original = input.fetchImpl;
+    input.fetchImpl = (url, init) => {
+      if (!url.endsWith('/oauth/revoke')) return original(url, init);
+      revokeSignal = init.signal;
+      return new Promise(() => {});
+    };
+    const session = await createLinearReadSession(input);
+    const cleanup = session.close();
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(await cleanup).toEqual({ status: 'unverified' });
+    expect(revokeSignal.aborted).toBe(true);
+  } finally { vi.useRealTimers(); }
+});
+it('revokes a received token whose grant metadata is rejected', async () => {
+  const { input, requests } = harness(tokenResponse({ scope: 'read write' }));
+  await expect(createLinearReadSession(input)).rejects.toThrow('read-only app authentication failed');
+  expect(requests.filter((request) => request.url.endsWith('/oauth/revoke'))).toHaveLength(1);
+});
+
+it.each([createLinearReadSession, createLinearCommentSession])('reports rejected-grant cleanup failure without exposing secrets', async (factory) => {
+  const { input, requests } = harness(tokenResponse({ scope: 'read write' }));
+  const original = input.fetchImpl;
+  input.fetchImpl = (url, init) => url.endsWith('/oauth/revoke')
+    ? (requests.push({ url, ...init }), Promise.resolve(new Response(null, { status: 500 }))) : original(url, init);
+  const error = await factory(input).catch((error) => error);
+  expect(error).toBeInstanceOf(Error);
+  expect(error.code).toBe('linear-session-revocation-unverified');
+  expect(String(error)).not.toMatch(/synthetic-run-token|synthetic-private-client-secret/);
+  expect(requests.filter((request) => request.url.endsWith('/oauth/revoke'))).toHaveLength(1);
+});
