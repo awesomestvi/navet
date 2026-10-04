@@ -1852,7 +1852,20 @@ function appendWorkspaceActivities(data, activities) {
 
 function applyWorkspaceAction(data, commandId, action, timestamp) {
   if (action.type === 'occurrence_action') {
-    return applyOccurrenceAction(data, commandId, action, timestamp);
+    const next = applyOccurrenceAction(data, commandId, action, timestamp);
+    const previous = data.occurrencesById[action.occurrenceId];
+    const occurrence = next.occurrencesById[action.occurrenceId];
+    const definition = occurrence && next.definitionsById[occurrence.definitionId];
+    if (occurrence && previous.completedAt !== occurrence.completedAt &&
+      definition && definition.schedule.frequency === 'after_completion') {
+      const now = Date.parse(timestamp);
+      return applyWorkspaceAction(next, commandId + ':recurrence', {
+        type: 'materialize_occurrences',
+        rangeStart: new Date(now - 90 * 86400000).toISOString(),
+        rangeEnd: new Date(now + 45 * 86400000).toISOString(),
+      }, timestamp);
+    }
+    return next;
   }
 
   if (action.type === 'participant_create') {

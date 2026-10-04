@@ -71,7 +71,9 @@ the primary person is away. Rotation can follow a fixed order or choose the pers
 assigned or completed turns. Schedules support one-time, daily, weekly, bi-weekly, tri-weekly, monthly,
 hourly-interval, and after-completion recurrence. Calendar schedules and completion-date repeats
 keep the chosen local time; hourly intervals count elapsed hours through daylight-saving changes.
-Each person can have a later due date for their turn.
+For after-completion schedules, marking a chore done sets its next date from the day it was
+completed. A 14-day interval completed on 4 October is next due on 18 October, even when the chore
+was completed early. Each person can have a later due date for their turn.
 
 Optional approval separates “marked done” from final completion. Missed-work rules can skip an
 occurrence, carry it forward, or leave it visible for review. Pausing a chore stops new occurrences

@@ -5,7 +5,7 @@ import choreOccurrencePolicy from '@docker/njs/chore-occurrence-policy.js';
 import choreStore from '@docker/njs/chore-store.js';
 import conformanceVectors from '@navet/core/chore-conformance-vectors.json';
 import { createChoreExperienceState } from '@navet/core/chore-experience';
-import type { ApplyChoreCommandInput } from '@navet/core/chores';
+import type { ApplyChoreCommandInput, ChoreOccurrence } from '@navet/core/chores';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const WORKSPACE_PATH = '/data/navet-dashboard-workspace.json';
@@ -208,6 +208,52 @@ afterEach(() => {
 });
 
 describe('NJS chore workspace store', () => {
+  it('persists the next date fourteen days after an early completion', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-10-04T10:00:00.000Z'));
+    const mockFs = createMockFs();
+    choreStore.setChoreStoreFsForTests(mockFs);
+    choreStore.setChoreStorePrincipalResolverForTests(() => PRINCIPAL);
+    seedOccurrenceWorkspace();
+    const document = JSON.parse(mockFs.getFile(CHORE_PATH) ?? '{}');
+    document.data.definitionsById.dishes.schedule = {
+      frequency: 'after_completion',
+      startDate: '2026-10-08',
+      time: '18:00',
+      timeZone: 'Europe/Stockholm',
+      intervalDays: 14,
+    };
+    const id = 'dishes:2026-10-08T16:00:00.000Z:maya';
+    document.data.occurrencesById = {
+      [id]: {
+        ...document.data.occurrencesById[OCCURRENCE_ID],
+        id,
+        scheduledAt: '2026-10-08T16:00:00.000Z',
+        dueAt: '2026-10-08T17:00:00.000Z',
+      },
+    };
+    mockFs.writeFileSync(CHORE_PATH, JSON.stringify(document));
+    const complete = createActionRequest('early-completion', document.revision, {
+      type: 'occurrence_action',
+      occurrenceId: id,
+      action: { type: 'complete', participantId: 'maya' },
+    });
+    choreStore.handle(complete);
+    expect(complete.return).toHaveBeenCalledWith(200, expect.any(String));
+    const saved = JSON.parse(mockFs.getFile(CHORE_PATH) ?? '{}');
+    expect(
+      Object.values(saved.data.occurrencesById as Record<string, ChoreOccurrence>)
+        .filter((item: ChoreOccurrence) => item.status === 'available')
+        .map((item: ChoreOccurrence) => item.scheduledAt)
+    ).toEqual(['2026-10-18T16:00:00.000Z']);
+    choreStore.resetChoreStoreForTests();
+    choreStore.setChoreStoreFsForTests(mockFs);
+    choreStore.setChoreStorePrincipalResolverForTests(() => PRINCIPAL);
+    const reload = createRequest();
+    choreStore.handle(reload);
+    expect(parseResponse(reload).data.occurrencesById).toEqual(saved.data.occurrencesById);
+  });
+
   it('keeps large accounting and unfinished work durable across commands, restarts and backup recovery', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-08-10T08:00:00.000Z'));

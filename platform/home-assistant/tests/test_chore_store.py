@@ -893,6 +893,27 @@ class ChoreAuthorityTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("activity:expired", saved_ids)
         self.assertIn("activity:manager-create", saved_ids)
 
+    async def test_early_completion_persists_next_date_fourteen_days_later(self):
+        original_now = chores._now
+        chores._now = lambda: datetime(2026, 10, 4, 10, 0, tzinfo=timezone.utc)
+        self.addCleanup(setattr, chores, "_now", original_now)
+        await self._create_manager()
+        definition = {"id": "repeat", "title": "Repeat chore", "enabled": True,
+            "assignment": {"mode": "person", "participantIds": ["manager"]},
+            "schedule": {"frequency": "after_completion", "startDate": "2026-10-08", "time": "18:00", "timeZone": "Europe/Stockholm", "intervalDays": 14},
+            "dueWindowMinutes": 60, "approval": {"required": False, "approverIds": []},
+            "createdAt": "2026-10-04T08:00:00.000Z", "updatedAt": "2026-10-04T08:00:00.000Z"}
+        await self.authority.async_command({"commandId": "repeat-create", "baseRevision": self.authority.revision,
+            "action": {"type": "definition_create", "actorParticipantId": "manager", "definition": definition}}, "ha-user-1")
+        await self.authority.async_tick()
+        occurrence = next(iter(self.authority.data["occurrencesById"].values()))
+        result = await self.authority.async_command({"commandId": "early-complete", "baseRevision": self.authority.revision,
+            "action": {"type": "occurrence_action", "occurrenceId": occurrence["id"], "action": {"type": "complete", "participantId": "manager"}}}, "ha-user-1")
+        self.assertEqual([item["scheduledAt"] for item in result["data"]["occurrencesById"].values() if item["status"] == "available"], ["2026-10-18T16:00:00.000Z"])
+        restarted = chores.ChoreAuthority(self.hass)
+        await restarted.async_initialize()
+        self.assertEqual(restarted.data["occurrencesById"], result["data"]["occurrencesById"])
+
     async def test_missed_policy_carries_forward_once(self):
         fixed_now = datetime(2026, 8, 28, 12, 0, tzinfo=timezone.utc)
         original_now = chores._now

@@ -1893,6 +1893,42 @@ function isWorkspaceMissionComplete(workspace: ChoreWorkspaceData, mission: Chor
 export function applyChoreWorkspaceAction(
   input: ApplyChoreWorkspaceActionInput
 ): ApplyChoreWorkspaceActionResult {
+  const result = applyChoreWorkspaceActionWithoutRecurrence(input);
+  const { action, commandId, timestamp, workspace } = input;
+  if (action.type !== 'occurrence_action') return result;
+  const previous = workspace.occurrencesById[action.occurrenceId];
+  const occurrence = result.data.occurrencesById[action.occurrenceId];
+  if (
+    !occurrence ||
+    previous?.completedAt === occurrence.completedAt ||
+    result.data.definitionsById[occurrence.definitionId]?.schedule.frequency !== 'after_completion'
+  )
+    return result;
+
+  const now = Date.parse(timestamp);
+  const materialized = applyChoreWorkspaceActionWithoutRecurrence({
+    workspace: result.data,
+    commandId: `${commandId}:recurrence`,
+    timestamp,
+    action: {
+      type: 'materialize_occurrences',
+      rangeStart: new Date(now - 90 * 86_400_000).toISOString(),
+      rangeEnd: new Date(now + 45 * 86_400_000).toISOString(),
+    },
+  });
+  return {
+    ...result,
+    data: materialized.data,
+    additionalActivities: [
+      ...(result.additionalActivities ?? []),
+      ...(materialized.additionalActivities ?? []),
+    ],
+  };
+}
+
+function applyChoreWorkspaceActionWithoutRecurrence(
+  input: ApplyChoreWorkspaceActionInput
+): ApplyChoreWorkspaceActionResult {
   const { action, commandId, timestamp, workspace } = input;
   if (action.type === 'occurrence_action') {
     const previousOccurrence = workspace.occurrencesById[action.occurrenceId];

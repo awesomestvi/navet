@@ -1667,8 +1667,17 @@ class ChoreAuthority:
                 expected = action.get("expectedOccurrenceUpdatedAt")
                 if expected and data["occurrencesById"].get(str(action.get("occurrenceId", "")), {}).get("updatedAt") != expected:
                     raise ChoreAuthorityError("This chore alert is out of date")
-                data, activity = _apply_occurrence(data, str(action.get("occurrenceId", "")), action.get("action", {}), timestamp, command_id)
+                occurrence_id = str(action.get("occurrenceId", ""))
+                previous_completed_at = data["occurrencesById"].get(occurrence_id, {}).get("completedAt")
+                data, activity = _apply_occurrence(data, occurrence_id, action.get("action", {}), timestamp, command_id)
                 activities.append(activity)
+                occurrence = data["occurrencesById"][occurrence_id]
+                definition = data["definitionsById"][occurrence["definitionId"]]
+                if definition["schedule"]["frequency"] == "after_completion" and previous_completed_at != occurrence.get("completedAt"):
+                    now = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+                    data, additional = _materialize(data, _iso(now - timedelta(days=RETENTION_DAYS)),
+                        _iso(now + timedelta(days=MATERIALIZATION_DAYS)), timestamp, f"{command_id}:recurrence")
+                    activities.extend(additional)
             elif action.get("type") == "materialize_occurrences":
                 data, additional = _materialize(data, str(action.get("rangeStart")), str(action.get("rangeEnd")), timestamp, command_id)
                 activities.append(_activity(command_id, timestamp, "workspace_materialized"))
