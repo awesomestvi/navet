@@ -26,7 +26,8 @@ entities are available. See the [integration reference](/integrations/) for prov
 ## The Household workspace
 
 - **Today** puts overdue and due work before later chores. **Chores today** shows earned points,
-  streak, completion, and a **See rewards** action.
+  streak, and completion. With a motivation style enabled and at least one mission or
+  enabled reward goal, it also offers **See rewards**.
 - **Chores** is the searchable library for creating, editing, pausing, duplicating, and archiving
   recurring work.
 - **Missions** and **Rewards** appear when a motivation style is enabled and manage optional shared

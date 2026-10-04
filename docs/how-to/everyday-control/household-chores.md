@@ -89,10 +89,10 @@ Completed work appears in the shared activity history and synchronizes across co
 Chores today keeps the daily summary in one row. When work is overdue, it leads with **Needs
 attention**, the overdue count, remaining work, and completed chores. Otherwise it shows earned
 points, current streak, and completed chores.
-With a motivation style enabled, choose **See rewards** to reveal the supporting mission and reward
-cards below the banner. **Missions** and **Rewards** also appear as separate management destinations.
-To enable them, open **Household → Settings → Motivation style** and choose **Light points**,
-**Family goals**, or **Child-friendly adventure**. **Off** hides these surfaces and keeps the saved
+To use missions and rewards, open **Household → Settings → Motivation style** and choose
+**Light points**, **Family goals**, or **Child-friendly adventure**. Open **Missions** or **Rewards**
+to create at least one mission or enabled reward goal. **See rewards** then appears in Chores today;
+choose it to reveal the supporting cards below the banner. **Off** hides these surfaces and keeps the saved
 goals and completion history.
 
 Home shows a Chores summary pill when work remains. Each room has a **Chores** pill showing
