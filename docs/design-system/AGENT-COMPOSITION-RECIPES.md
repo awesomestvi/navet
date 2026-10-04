@@ -136,34 +136,38 @@ the wrapper does not set the control's native requirement.
 ```tsx
 import { FieldBlock } from '@navet/app/ui-kit/patterns';
 import { Input } from '@navet/app/ui-kit/primitives';
+import { useId } from 'react';
 
 export function NameField({ value, onChange, error }: {
   value: string;
   onChange: (value: string) => void;
   error?: string;
 }) {
+  const inputId = useId();
+  const hintId = `${inputId}-hint`;
+  const errorId = `${inputId}-error`;
   return (
     <FieldBlock
       label="Card name"
-      htmlFor="card-name"
+      htmlFor={inputId}
       required
-      hint={<span id="card-name-hint">Use a name your household recognizes.</span>}
-      error={error ? <span id="card-name-error">{error}</span> : undefined}
+      hint={<span id={hintId}>Use a name your household recognizes.</span>}
+      error={error ? <span id={errorId}>{error}</span> : undefined}
     >
       <Input
-        id="card-name"
+        id={inputId}
         value={value}
         onChange={(event) => onChange(event.currentTarget.value)}
         required
         invalid={Boolean(error)}
-        aria-describedby={error ? 'card-name-error' : 'card-name-hint'}
+        aria-describedby={error ? errorId : hintId}
       />
     </FieldBlock>
   );
 }
 ```
 
-Use unique IDs when multiple instances can coexist. The caller owns validation, save, cancellation
+`useId` gives each field instance its own label and message associations. The caller owns validation, save, cancellation
 and persistence; pair this field with the existing settings workflow rather than adding a separate
 save mechanism.
 
