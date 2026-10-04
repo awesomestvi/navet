@@ -2472,6 +2472,7 @@ export const nlMessages = {
   'cover.deviceClass.awning': 'Luifels',
   'cover.deviceClass.shutter': 'Luiken',
   'cover.deviceClass.door': 'Deuren',
+  'cover.deviceClass.window': 'Ramen',
   'scene.activate': 'Activeer',
   'scene.activating': 'Activeren...',
   'scene.tapToActivate': 'Tik om deze scène onmiddellijk toe te passen.',

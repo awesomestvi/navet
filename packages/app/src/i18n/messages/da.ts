@@ -2448,6 +2448,7 @@ export const daMessages = {
   'cover.deviceClass.awning': 'Markiser',
   'cover.deviceClass.shutter': 'Skodder',
   'cover.deviceClass.door': 'Døre',
+  'cover.deviceClass.window': 'Vinduer',
   'scene.activate': 'Aktiver',
   'scene.activating': 'Aktiverer...',
   'scene.tapToActivate': 'Tryk for at anvende denne scene med det samme.',

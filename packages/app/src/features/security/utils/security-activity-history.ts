@@ -1,5 +1,6 @@
 import type { PlatformEntityHistorySeries } from '@navet/app/platform/provider-feature-models';
 import type { DeviceWithType } from '@navet/app/types/device.types';
+import { getCoverSecurityState } from './cover-security-state';
 
 export type SecurityActivityKind =
   | 'alarm'
@@ -153,7 +154,7 @@ function readCurrentState(device: DeviceWithType) {
     case 'locks':
       return device.state ? 'locked' : 'unlocked';
     case 'covers':
-      return device.position > 0 ? 'open' : 'closed';
+      return getCoverSecurityState(device);
     case 'sensors':
       return device.value;
     default:

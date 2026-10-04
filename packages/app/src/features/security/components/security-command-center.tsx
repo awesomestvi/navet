@@ -104,7 +104,7 @@ function formatAlertTitle(device: DeviceWithType, t: ReturnType<typeof useI18n>[
     return t('security.activity.unlocked', { name: device.name });
   }
   if (
-    (device.type === 'covers' && device.position > 0) ||
+    (device.type === 'covers' && readSeverity(device) === 'warning') ||
     (['door', 'window', 'garageDoor', 'opening'].includes(device.securityKind ?? '') &&
       readSeverity(device) === 'warning')
   ) {

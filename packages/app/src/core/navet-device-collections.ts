@@ -634,6 +634,15 @@ export function mapNavetEntitiesToDeviceCollection(entities: NavetEntity[]): Dev
       case 'cover':
         collection.covers.push({
           ...base,
+          state:
+            value === 'open' ||
+            value === 'closed' ||
+            value === 'opening' ||
+            value === 'closing' ||
+            value === 'unknown' ||
+            value === 'unavailable'
+              ? value
+              : undefined,
           position: readNumber(state.position, 0),
           positionMode:
             state.positionMode === 'position' || state.positionMode === 'tilt'

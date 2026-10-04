@@ -1,5 +1,15 @@
 import { makeEntityFixtures, makeHassEntityFixture } from '../shared';
 
+export const garageDoorEntity = makeHassEntityFixture({
+  entityId: 'cover.garage_door',
+  state: 'open',
+  attributes: {
+    friendly_name: 'Garage Door',
+    device_class: 'garage',
+    supported_features: 3,
+  },
+});
+
 export const coverEntityFactory = (overrides: Record<string, unknown> = {}) =>
   makeHassEntityFixture({
     entityId: 'cover.living_room_blinds',

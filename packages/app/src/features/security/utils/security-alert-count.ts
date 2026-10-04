@@ -1,4 +1,5 @@
 import type { DeviceWithType } from '@navet/app/types/device.types';
+import { getCoverSecurityState } from './cover-security-state';
 import { collapseSecurityBatteryDevices } from './security-battery-rows';
 
 const SECURITY_OPENING_KINDS = new Set(['door', 'window', 'garageDoor', 'opening']);
@@ -38,17 +39,6 @@ const SEVERITY_ORDER = {
   unknown: 3,
   normal: 4,
 } as const;
-
-function getNumber(value: unknown): number | null {
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return value;
-  }
-  if (typeof value === 'string' && value.trim() !== '') {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-  return null;
-}
 
 function normalizeText(value: string | undefined): string {
   return (value ?? '').replace(/[_-]/g, ' ').toLowerCase();
@@ -103,10 +93,11 @@ export function getSecuritySummarySeverity(
   }
 
   if (device.type === 'covers') {
-    if (device.securitySeverity === 'unknown') return 'unknown';
-    return getNumber(device.position) !== null && getNumber(device.position) !== 0
-      ? 'warning'
-      : 'normal';
+    const state = getCoverSecurityState(device);
+    if (state === 'unknown' || state === 'unavailable' || device.securitySeverity === 'unknown') {
+      return 'unknown';
+    }
+    return state === 'closed' ? 'normal' : 'warning';
   }
   if (device.type === 'cameras' || device.securityKind === 'camera') {
     if (

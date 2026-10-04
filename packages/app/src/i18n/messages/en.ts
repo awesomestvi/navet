@@ -2449,6 +2449,7 @@ export const enMessages = {
   'cover.deviceClass.awning': 'Awnings',
   'cover.deviceClass.shutter': 'Shutters',
   'cover.deviceClass.door': 'Doors',
+  'cover.deviceClass.window': 'Windows',
   'scene.activate': 'Activate',
   'scene.activating': 'Activating...',
   'scene.tapToActivate': 'Tap to apply this scene instantly.',

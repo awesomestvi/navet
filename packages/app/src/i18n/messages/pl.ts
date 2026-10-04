@@ -2451,6 +2451,7 @@ export const plMessages = {
   'cover.deviceClass.awning': 'Markizy',
   'cover.deviceClass.shutter': 'Okiennice',
   'cover.deviceClass.door': 'Drzwi',
+  'cover.deviceClass.window': 'Okna',
   'scene.activate': 'Aktywuj',
   'scene.activating': 'Aktywowanie...',
   'scene.tapToActivate': 'Stuknij, aby natychmiast zastosować tę scenę.',

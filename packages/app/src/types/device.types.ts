@@ -207,6 +207,7 @@ export type HelperDevice = Pick<
 // Cover device
 export interface CoverDevice extends BaseDevice {
   room: string;
+  state?: 'open' | 'closed' | 'opening' | 'closing' | 'unknown' | 'unavailable';
   position: number;
   positionMode?: 'position' | 'tilt';
   deviceClass?: string;
