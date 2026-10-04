@@ -88,7 +88,10 @@ record and report the concrete failure privately. Do not create a replacement ta
 state needs no extra notification. For bounded intake, include the approved numerical
 `resourceLimits` and follow the [execution budget procedure](agent-task-lifecycle.md#execution-budgets):
 refresh actual cumulative usage, reserve before executing, bind operation tokens, and settle only
-verified completed usage. Inspect the real worker when a limit is reached and preserve its checkpoint.
+verified completed usage. Use the [bound worker monitor](agent-task-lifecycle.md#monitor-bound-workers)
+with trusted runtime adapters to persist exact-run stop intents, enforce bounded interruption retries,
+and verify a stopped worker's checkpoint. Failed aggregate measurements invalidate cached usage;
+an interruption acknowledgement alone cannot establish a stop.
 Identify existing unbounded records and unavailable measurements in coverage reports. Lease duration
 controls ownership; execution budgets control the task's elapsed time and resource units. Activation
 requires a verified usage source and monitored-worker pilot.

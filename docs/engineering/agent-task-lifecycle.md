@@ -618,6 +618,37 @@ signature or independent human approval. The coordinator still verifies receipt 
 current remote checks and authority, and follows the task store's evidence/ownership contract.
 The verifier does not mutate the queue, send messages, stop workers, merge or publish.
 
+## Monitor Bound Workers
+
+`monitorPlanningWorker` in `scripts/agent-worker-monitor.mjs` observes a worker already bound to
+the task store under a current coordinator lease. Supply trusted `readWorker`, `readRequest`,
+`readIssue`, `readUsage` and `interruptWorker` callbacks, an explicit `maxStopAttempts` from 1 to
+10, and a bounded `maxRunMs`. Worker observations must identify the exact task, dispatch token,
+thread and runtime run ID, with a service reference and a timestamp from the current read.
+
+The monitor rechecks accepted human scope and the complete proposal, then reads cumulative
+task-wide usage. The usage adapter must prove coverage of the coordinator and every worker with
+`complete: true`; a single thread's counters cannot establish that coverage. A failed usage read
+persists `resource-unavailable`, invalidating the cached measurement without resetting counters or
+settling uncertain reservations. A later measurement must follow that failure and preserve
+monotonic counters. Missing configured limits require a policy decision before monitored execution.
+
+Withdrawn or unverifiable scope, an unverifiable proposal, exhausted resources or unavailable usage
+lead to a durable stop intent. Pending stops block further execution. Every interruption targets
+the exact run and carries the same stop token; the installed adapter must make that operation
+idempotent. Each retry requires a fresh running observation and consumes the intent's fixed retry
+budget. An unresolved receipt cannot be replaced with another run or a larger retry policy.
+
+Command acknowledgement does not prove stopping. Confirmation requires a fresh stopped observation
+for the same run and a saved checkpoint containing a reference, explicit commit head or `null`,
+and the next recovery action. The receipt preserves only those checkpoint fields. Cancellation,
+lost acknowledgements and missing checkpoints retain uncertainty for reconciliation. Confirmation
+does not complete the task, release its dispatch binding or resume execution.
+
+This module supplies the monitoring protocol. Activation still requires installed service adapters,
+verified aggregate accounting, a monitoring cadence, accepted resource policies and live interruption
+and recovery pilots. An interactive connector read alone does not prove those operational gates.
+
 ## Observe Local Codex Usage
 
 `pnpm agent:usage <private-input.json>` reads a fixed snapshot of one local Codex session log.

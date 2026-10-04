@@ -84,7 +84,7 @@ export function resourceStatus(task, now = Date.now()) {
   const toolCalls = (usage?.toolCalls ?? 0) + pending.reduce((total, item) => total + item.toolCalls, 0);
   return {
     bounded: true,
-    measurementFresh: observationIsFresh(usage, now),
+    measurementFresh: observationIsFresh(usage, now) && !task.resources.unavailable,
     remaining: {
       elapsedMs: Math.max(0, limits.maxElapsedMs - (startedAt == null ? 0 : now - startedAt)),
       modelTokens: Math.max(0, limits.maxModelTokens - modelTokens),
@@ -270,6 +270,7 @@ export class AgentTaskStore {
       const now = this.now();
       let nextDispatchAction;
       let dispatchDecision;
+      let workerStopDecision;
       let followupDecision;
       let planningResultDecision;
       if (action === 'claim') {
@@ -323,6 +324,7 @@ export class AgentTaskStore {
           if (!observationIsFresh(usage, now) ||
               !Number.isSafeInteger(usage.modelTokens) || usage.modelTokens < 0 ||
               !Number.isSafeInteger(usage.toolCalls) || usage.toolCalls < 0 ||
+              (task.resources.unavailable && usage.observedAt <= task.resources.unavailable.observedAt) ||
               (task.resources.usage && (usage.modelTokens < task.resources.usage.modelTokens ||
                 usage.toolCalls < task.resources.usage.toolCalls || usage.observedAt < task.resources.usage.observedAt))) {
             throw new Error('Resource usage must be a fresh monotonic cumulative observation.');
@@ -338,6 +340,16 @@ export class AgentTaskStore {
             item.reference = usage.reference;
           }
           task.resources.usage = usage;
+          delete task.resources.unavailable;
+        } else if (action === 'resource-unavailable') {
+          const observation = input.observation;
+          if (!task.resources || !observationIsFresh(observation, now) ||
+              (task.resources.usage && observation.observedAt < task.resources.usage.observedAt) ||
+              (task.resources.unavailable && observation.observedAt < task.resources.unavailable.observedAt)) {
+            throw new Error('Unavailable resource measurement requires a fresh monotonic observation.');
+          }
+          requireValue(observation.reference, 'resource failure reference');
+          task.resources.unavailable = { reference: observation.reference, observedAt: observation.observedAt };
         } else if (action === 'reserve-resources') {
           if (!task.resources || TERMINAL.has(task.state)) throw new Error('A bounded active task is required.');
           requireValue(input.event, 'resource event');
@@ -404,6 +416,82 @@ export class AgentTaskStore {
             task.authority = input.authority;
             dispatchDecision = { action: 'send', receipt };
           }
+        } else if (action === 'worker-stop-intent') {
+          const worker = input.worker;
+          if (!task.dispatch?.threadId || TERMINAL.has(task.state) || worker?.status !== 'running' ||
+              worker.taskId !== task.id || worker.dispatchToken !== task.dispatch.token ||
+              worker.threadId !== task.dispatch.threadId || !observationIsFresh(worker, now) ||
+              !['request-withdrawn', 'request-unverified', 'planning-unverified', 'resource-exhausted', 'usage-unverified'].includes(input.reason) ||
+              !Number.isSafeInteger(input.maxAttempts) || input.maxAttempts < 1 || input.maxAttempts > 10) {
+            throw new Error('Worker stop requires fresh exact running identity and bounded policy.');
+          }
+          requireValue(worker.runId, 'worker run ID');
+          requireValue(worker.reference, 'worker reference');
+          const previous = task.workerStop;
+          if (previous && previous.status !== 'stopped') {
+            if (previous.runId !== worker.runId || previous.maxAttempts !== input.maxAttempts) {
+              throw new Error('Unfinished worker stop cannot be replaced or expand its policy.');
+            }
+          } else {
+            if (previous && worker.observedAt <= previous.observedAt) {
+              throw new Error('A new stop requires a worker observation after the stopped receipt.');
+            }
+            task.workerStop = { status: 'pending', token: randomUUID(), taskId: task.id,
+              dispatchToken: task.dispatch.token, threadId: worker.threadId, runId: worker.runId,
+              reason: input.reason, maxAttempts: input.maxAttempts, attempts: 0, intentAt: now,
+              reference: worker.reference, observedAt: worker.observedAt };
+          }
+          workerStopDecision = { action: 'observe', receipt: task.workerStop };
+        } else if (action === 'worker-stop-attempt') {
+          const receipt = task.workerStop;
+          const worker = input.worker;
+          if (!receipt || input.token !== receipt.token || receipt.threadId !== task.dispatch?.threadId ||
+              receipt.dispatchToken !== task.dispatch?.token || TERMINAL.has(task.state)) {
+            throw new Error('Worker stop attempt requires the bound active receipt.');
+          }
+          if (receipt.status === 'stopped') workerStopDecision = { action: 'skip', receipt };
+          else {
+            if (receipt.attempts >= receipt.maxAttempts || worker?.status !== 'running' ||
+                worker.taskId !== task.id || worker.dispatchToken !== receipt.dispatchToken ||
+                worker.threadId !== receipt.threadId || worker.runId !== receipt.runId ||
+                !observationIsFresh(worker, now) || worker.observedAt < receipt.intentAt ||
+                (receipt.attemptedAt && worker.observedAt <= receipt.attemptedAt)) {
+              throw new Error('Worker stop requires a fresh matching run within its retry budget.');
+            }
+            requireValue(worker.reference, 'worker reference');
+            receipt.attempts++;
+            receipt.attemptedAt = now;
+            workerStopDecision = { action: 'send', receipt };
+          }
+        } else if (action === 'worker-stop-observation') {
+          const receipt = task.workerStop;
+          const worker = input.worker;
+          if (!receipt || input.token !== receipt.token || receipt.threadId !== task.dispatch?.threadId ||
+              worker?.taskId !== task.id || worker.dispatchToken !== receipt.dispatchToken ||
+              worker.threadId !== receipt.threadId || worker.runId !== receipt.runId ||
+              !observationIsFresh(worker, now) || worker.observedAt < receipt.intentAt ||
+              worker.observedAt < receipt.observedAt ||
+              (receipt.attemptedAt && worker.observedAt < receipt.attemptedAt) ||
+              !['running', 'stopped', 'unavailable'].includes(worker.status)) {
+            throw new Error('Worker stop observation requires fresh exact run identity.');
+          }
+          requireValue(worker.reference, 'worker reference');
+          if (worker.status === 'stopped') {
+            const checkpoint = worker.checkpoint;
+            if (!checkpoint || !(checkpoint.head === null || (typeof checkpoint.head === 'string' && checkpoint.head.trim()))) {
+              throw new Error('Stopped worker requires an explicit checkpoint head.');
+            }
+            requireValue(checkpoint.reference, 'checkpoint reference');
+            requireValue(checkpoint.nextAction, 'checkpoint next action');
+            if (checkpoint.head !== null) requireValue(checkpoint.head, 'checkpoint head');
+            receipt.checkpoint = { reference: checkpoint.reference, head: checkpoint.head, nextAction: checkpoint.nextAction };
+            receipt.status = 'stopped';
+          } else {
+            receipt.status = 'unverified';
+          }
+          receipt.reference = worker.reference;
+          receipt.observedAt = worker.observedAt;
+          workerStopDecision = { action: worker.status === 'stopped' ? 'confirmed' : 'observe', receipt };
         } else if (action === 'bind') {
           if (!task.dispatch) throw new Error('Dispatch intent is required.');
           if (input.token !== task.dispatch.token) throw new Error('Wrong dispatch token.');
@@ -627,14 +715,17 @@ export class AgentTaskStore {
         ...(action === 'planning-observation' ? { planning: task.planning.observation } : {}),
         ...(action === 'request-revocation' ? { requestRevocation: task.requestRevocation } : {}),
         ...(action === 'dispatch-attempt' ? { dispatch: structuredClone(task.dispatch) } : {}),
+        ...(action.startsWith('worker-stop-') ? { workerStop: structuredClone(task.workerStop) } : {}),
         ...(['planning-result-intent', 'planning-result-attempt', 'planning-result-observation'].includes(action)
           ? { planningResult: structuredClone(task.planningResult) } : {}),
         ...(action === 'resource-usage' ? { usage: input.usage, settledReservations: input.settledReservations ?? [] } : {}),
+        ...(action === 'resource-unavailable' ? { unavailable: task.resources.unavailable } : {}),
         ...(['transition', 'release'].includes(action) ? { reason: input.reason } : {}),
       });
       return nextDispatchAction ? { ...task, nextDispatchAction } : followupDecision ? { ...task, followupDecision }
         : planningResultDecision ? { ...task, planningResultDecision }
-        : dispatchDecision ? { ...task, dispatchDecision } : task;
+        : dispatchDecision ? { ...task, dispatchDecision }
+        : workerStopDecision ? { ...task, workerStopDecision } : task;
     });
   }
 }

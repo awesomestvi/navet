@@ -281,6 +281,12 @@ current reads preserve scope evidence or latch withdrawal; unavailable reads inv
 passes and retain receipts. It grants no approval or dispatch authority. Synthetic integration
 coverage does not establish live credentials, webhook delivery or worker interruption.
 
+The [bound worker monitor](agent-task-lifecycle.md#monitor-bound-workers) persists exact-run stop
+intents and bounded retry receipts when accepted scope or measured resources become unavailable.
+Confirmation requires a fresh stopped observation and saved recovery checkpoint. Its protocol
+tests do not establish installed runtime adapters, monitoring cadence, complete task-wide accounting
+or the live interruption and recovery pilot required for activation.
+
 For Linear-native approval, agent writes need a distinct identity. Linear's
 [OAuth app actor](https://linear.app/developers/oauth-actor-authorization) attributes mutations to
 the installed application; default API authentication can attribute them to the authenticating
