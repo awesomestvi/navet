@@ -1,7 +1,10 @@
 # Agentic Development
 
-This document defines Navet's issue-to-release operating model. GitHub is the control plane;
-deterministic checks remain authoritative over agent claims.
+This document defines Navet's issue-to-release operating model. Linear holds product proposals,
+priorities and scoped planning decisions; GitHub holds approved public delivery and review.
+Deterministic checks remain authoritative over agent claims. Read the
+[autonomous builder plan](autonomous-builder-plan.md) for proposal requirements, visibility
+decisions and the activation gates for planning automation.
 
 ## Workflow
 
@@ -50,6 +53,24 @@ The delivery agent runs deterministic validation, then opens a non-draft PR. Cod
 the PR while CI runs and posts findings as review comments. Verify each finding against the current
 PR head, fix valid issues, and continue until no actionable findings remain. The maintainer decides
 when to merge.
+
+### Pull-request delivery
+
+Use one pull request for a coordinated implementation. Keep related code, tests, design-system
+contracts and documentation together so the maintainer can review the resulting behavior on one
+current head. Update the existing delivery PR for follow-up fixes rather than opening parallel PRs
+that edit the same surfaces.
+
+When a change needs separate review stages, use an explicitly ordered stack. Record each PR's
+parent and merge order, maintain the integration branch, and resolve conflicts before requesting
+maintainer review. Validate the integrated result as well as each changed contract. Navet's required
+CI runs on PRs targeting `main`; checks against a feature base do not establish merge readiness.
+
+The delivery agent owns rebasing, conflict resolution and current-head validation. Before a parent
+merges, verify whether its branch will be retained. Retarget dependents to an available base before
+branch deletion can close them, or preserve the parent branch until they are retargeted. After each
+merge, refresh the remaining stack against `main`, resolve conflicts and require fresh CI and Codex
+review. The maintainer decides whether to merge; integration maintenance stays with the agent.
 
 ### Independent reviewer
 
@@ -100,10 +121,11 @@ that exact tag.
 Linting, type checking, tests, builds, smoke checks, screenshots, and artifact verification run as
 deterministic jobs. Reviewers interpret failures; passing checks are required for acceptance.
 
-The current required UI lane builds Storybook and runs responsive demo smoke/accessibility checks.
-The complete Storybook browser interaction suite has known baseline failures and remains a visible
-local diagnostic until those assertions are repaired. It must not be represented as a passing gate
-or made required while `main` is red.
+The required UI lane builds Storybook and runs responsive demo smoke/accessibility checks.
+Use `pnpm test:storybook --run` for relevant local interaction coverage and record the source
+commit, results and rendered coverage. The complete browser suite has unresolved baseline
+failures; report them separately from the changed scope. Promote it to a required check only
+after verifying a green `main` baseline.
 
 ## Requests And State
 
@@ -135,9 +157,25 @@ reaction from `github-actions[bot]` means a command or answer was accepted. A ro
 `navet-nisse[bot]` means a command or answer was claimed. Request labels are cleared on successful
 dispatch; type, area, and risk labels continue to describe the issue itself.
 
+Label-backed replies recheck the original label actor under the same mode-specific authority
+rule. GitHub's [repository permission API](https://docs.github.com/en/rest/collaborators/collaborators#get-repository-permissions-for-a-user)
+reports a maintainer's legacy `permission` as `write`; verify `role_name: maintain` alongside it
+when applying the implementation-label rule. An ordinary write collaborator can authorize
+research labels and command requests under their respective rules.
+
 ## Private Queue And Public Communication
 
-GitHub remains the mobile control plane, but orchestration details are not public issue content.
+GitHub provides the mobile control plane for public delivery requests. Private proposal content
+stays in Linear, and orchestration details stay in the private runner. A planning-bound task needs
+an independently verified human request for its exact proposal revision and delivery scope.
+The shared delivery queue requires explicit public visibility approval for every planning-bound
+execution, including research and audits. The [coordinated team](agent-team-workflow.md) develops
+private proposals through a separate research binding with an exact Linear destination. Its scoped
+ticket adapter verifies private result readback. Live source identity and completion remain
+integration gates; private scope does not authorize a public Nisse conclusion. See the
+[queue state protocol](agent-queue-state-protocol.md) for dispatch and
+completion verification.
+
 Request labels and accepted answers enter the queue without assignments, prompts, or startup
 comments. Command comments use compact reactions.
 
@@ -184,12 +222,13 @@ linked PR; the agent may push feedback-driven revisions but may not merge its ow
 
 The private Codex runner also checks open, non-draft PRs linked to its delivery tasks for new,
 unresolved Codex review threads authored by `chatgpt-codex-connector[bot]`. It sends the comment
-links and IDs to the existing delivery task once, without creating a new task or making a public claim. The delivery task verifies each
-finding against the current PR head, fixes only valid issues, runs focused checks, then replies in
-the review thread and resolves it when addressed using the maintainer's authenticated GitHub CLI
-or API. If a finding needs a product or architecture decision, the task asks the maintainer
-instead of guessing. The runner does not dispatch comments on unrelated PRs, and review feedback
-never authorizes a merge.
+links and IDs to the existing delivery task once, without creating a new task or making a public
+claim. The delivery task verifies each finding against the current PR head, fixes only valid issues,
+runs focused checks, and reports the current-head evidence with any remaining findings. Authorized
+review-thread replies use the maintainer's authenticated GitHub CLI or API. Resolving review
+conversations and merging remain with the maintainer. If a finding needs a product or architecture
+decision, the task asks the maintainer instead of guessing. The runner does not dispatch comments
+on unrelated PRs, and review feedback never authorizes a merge.
 
 ## Human Authority
 

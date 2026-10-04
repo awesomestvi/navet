@@ -1,3 +1,0 @@
-type: internal
-audiences: []
-summary: Detect copied UI shell recipes and normalized feature-import escapes in the existing UI-kit boundary gate.

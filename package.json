@@ -15,6 +15,7 @@
   "type": "module",
   "packageManager": "pnpm@11.18.0+sha512.33d83c77da82f49fba836925c6f1b841181ec3132b670639bd012f7075f5c7cf634c5f870147c19aae7478fac01df09d8892e880454896edd23ee9b33757563c",
   "scripts": {
+    "agent:components": "node scripts/agent-component-catalog.mjs",
     "build": "pnpm --filter @navet/standalone build",
     "build:ha-panel": "node scripts/build-ha-panel.mjs",
     "push:ha-panel": "zsh scripts/push-ha-panel.sh",
@@ -89,8 +90,6 @@
     "agent:tasks": "node scripts/agent-task.mjs",
     "agent:usage": "node scripts/agent-codex-usage-cli.mjs",
     "agent:validation": "node scripts/agent-validation-receipt-cli.mjs",
-    "agent:components": "node scripts/agent-component-catalog.mjs",
-    "agent:tokens": "node scripts/agent-design-tokens.mjs",
     "test": "vitest --config vitest.unit.config.ts --project unit",
     "test:tier1": "node scripts/run-test-tier.mjs tier1",
     "test:tier2": "node scripts/run-test-tier.mjs tier2",
@@ -133,7 +132,6 @@
     "@rolldown/plugin-babel": "^0.2.3",
     "@storybook/addon-a11y": "^10.5.10",
     "@storybook/addon-docs": "10.5.10",
-    "@storybook/addon-mcp": "0.7.0",
     "@storybook/addon-vitest": "^10.5.10",
     "@storybook/react-vite": "^10.5.10",
     "@tailwindcss/vite": "4.3.3",
@@ -149,14 +147,14 @@
     "husky": "^9.1.7",
     "jsdom": "^30.0.1",
     "playwright": "^1.62.1",
-    "postcss": "8.5.26",
     "sharp": "^0.35.3",
     "storybook": "^10.5.10",
     "tailwindcss": "4.3.3",
     "typescript": "^7.0.2",
     "vite": "8.2.2",
     "vite-plugin-pwa": "^1.3.0",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.11",
+    "ws": "^8.22.0"
   },
   "peerDependencies": {
     "react": "^19.2.1",

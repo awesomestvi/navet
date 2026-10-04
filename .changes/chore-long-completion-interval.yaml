@@ -1,0 +1,3 @@
+type: fixed
+audiences: [standalone, home-assistant, hacs]
+summary: Persist the next chore date immediately for long completion-based intervals and reconcile it when a completion is reopened.

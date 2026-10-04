@@ -103,10 +103,6 @@ empty space.
 
 ## Review Before Handoff
 
-For proactive design audits or a systematic rendered review, use
-[`navet-ux-audit`](../../.agents/skills/navet-ux-audit/SKILL.md). It defines reproducible findings,
-reference comparisons, coverage reporting, and retesting of fixes.
-
 Review the result against the named reference, not only against the request:
 
 - normal, active, unavailable, loading, empty, and error states that the feature supports
@@ -123,3 +119,6 @@ For small UI-only tweaks, run the closest focused validation, usually a targeted
 `pnpm check:stories`, or `pnpm test <path>`, and inspect the rendered state. For broader or
 responsive UI work, follow `docs/agents/commands.md`, use the smallest routeable validation that
 covers the change, and run `pnpm test:visual-review` when shared layout or overflow can change.
+
+Use the [ticket UX audit](../../.agents/skills/navet-ux-audit/SKILL.md) to record reproducible
+rendered findings and retest repairs within the accepted task scope.

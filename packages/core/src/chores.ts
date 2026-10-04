@@ -1204,14 +1204,17 @@ export function getChoreTiming(occurrence: ChoreOccurrence, now = new Date()): C
   return 'due';
 }
 
-export function materializeChoreOccurrences({
-  definition,
-  participantsById,
-  rangeStart,
-  rangeEnd,
-  existingOccurrences = {},
-  latestCompletedAt,
-}: MaterializeChoreOccurrencesInput): ChoreOccurrence[] {
+export function materializeChoreOccurrences(
+  {
+    definition,
+    participantsById,
+    rangeStart,
+    rangeEnd,
+    existingOccurrences = {},
+    latestCompletedAt,
+  }: MaterializeChoreOccurrencesInput,
+  materializeNextAfterCompletion = false
+): ChoreOccurrence[] {
   if (!definition.enabled || definition.archivedAt) {
     return [];
   }
@@ -1320,8 +1323,8 @@ export function materializeChoreOccurrences({
       : schedule.startDate;
     const nextDate = latestCompletedAt ? addCalendarDays(anchor, schedule.intervalDays) : anchor;
     if (
-      nextDate >= rangeStartDateKey &&
-      nextDate <= finalDateKey &&
+      (materializeNextAfterCompletion ||
+        (nextDate >= rangeStartDateKey && nextDate <= finalDateKey)) &&
       (schedule.endDate === undefined || nextDate <= schedule.endDate) &&
       !schedule.excludedDates?.includes(nextDate)
     ) {
@@ -1362,7 +1365,11 @@ export function materializeChoreOccurrences({
           : scheduledDate;
         const scheduledAt = localDateTimeToIso(personalDate, scheduledTimeValue, schedule.timeZone);
         const scheduledTime = new Date(scheduledAt).getTime();
-        if (scheduledTime < rangeStartTime || scheduledTime > rangeEndTime) continue;
+        if (
+          !(materializeNextAfterCompletion && schedule.frequency === 'after_completion') &&
+          (scheduledTime < rangeStartTime || scheduledTime > rangeEndTime)
+        )
+          continue;
         const id = buildOccurrenceId(definition.id, scheduledAt, slot.assignmentSlot);
         if (!existingOccurrences[id] && definition.assignment.rotationStrategy === 'fair') {
           for (const participantId of slot.assigneeIds)
@@ -1892,6 +1899,47 @@ function isWorkspaceMissionComplete(workspace: ChoreWorkspaceData, mission: Chor
 /** Applies every Navet-owned household mutation against the storage authority's current data. */
 export function applyChoreWorkspaceAction(
   input: ApplyChoreWorkspaceActionInput
+): ApplyChoreWorkspaceActionResult {
+  const result = applyChoreWorkspaceActionWithoutRecurrence(input);
+  const { action, commandId, timestamp, workspace } = input;
+  if (action.type !== 'occurrence_action') return result;
+  const previous = workspace.occurrencesById[action.occurrenceId];
+  const occurrence = result.data.occurrencesById[action.occurrenceId];
+  if (
+    !occurrence ||
+    previous?.completedAt === occurrence.completedAt ||
+    result.data.definitionsById[occurrence.definitionId]?.schedule.frequency !== 'after_completion'
+  )
+    return result;
+
+  const now = Date.parse(timestamp);
+  // Materialize this definition's single next date even beyond the rolling window.
+  const materialized = applyChoreWorkspaceActionWithoutRecurrence(
+    {
+      workspace: result.data,
+      commandId: `${commandId}:recurrence`,
+      timestamp,
+      action: {
+        type: 'materialize_occurrences',
+        rangeStart: new Date(now - 90 * 86_400_000).toISOString(),
+        rangeEnd: new Date(now + 45 * 86_400_000).toISOString(),
+      },
+    },
+    occurrence.definitionId
+  );
+  return {
+    ...result,
+    data: materialized.data,
+    additionalActivities: [
+      ...(result.additionalActivities ?? []),
+      ...(materialized.additionalActivities ?? []),
+    ],
+  };
+}
+
+function applyChoreWorkspaceActionWithoutRecurrence(
+  input: ApplyChoreWorkspaceActionInput,
+  recurrenceDefinitionId?: string
 ): ApplyChoreWorkspaceActionResult {
   const { action, commandId, timestamp, workspace } = input;
   if (action.type === 'occurrence_action') {
@@ -2758,14 +2806,17 @@ export function applyChoreWorkspaceAction(
       .map((occurrence) => occurrence.completedAt as string)
       .sort()
       .at(-1);
-    const materialized = materializeChoreOccurrences({
-      definition,
-      participantsById: workspace.participantsById,
-      existingOccurrences: occurrencesById,
-      latestCompletedAt,
-      rangeStart: action.rangeStart,
-      rangeEnd: action.rangeEnd,
-    });
+    const materialized = materializeChoreOccurrences(
+      {
+        definition,
+        participantsById: workspace.participantsById,
+        existingOccurrences: occurrencesById,
+        latestCompletedAt,
+        rangeStart: action.rangeStart,
+        rangeEnd: action.rangeEnd,
+      },
+      definition.id === recurrenceDefinitionId
+    );
     scheduledOccurrenceIdsByDefinition.set(
       definition.id,
       new Set(materialized.map((occurrence) => occurrence.id))
@@ -2830,8 +2881,8 @@ export function applyChoreWorkspaceAction(
     const scheduledAt = Date.parse(occurrence.scheduledAt);
     if (
       scheduledIds &&
-      scheduledAt >= rangeStart &&
-      scheduledAt <= rangeEnd &&
+      (occurrence.definitionId === recurrenceDefinitionId ||
+        (scheduledAt >= rangeStart && scheduledAt <= rangeEnd)) &&
       scheduledAt > Date.parse(timestamp) &&
       !scheduledIds.has(id) &&
       !occurrence.assigneeIds.some((participantId) => {

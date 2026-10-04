@@ -318,6 +318,49 @@ describe('durable agent task lifecycle', () => {
     expect(task.head).toBeNull();
   });
 
+  it.each(['changed', 'first', 'identical'])('reconciles %s checkpoint state against head-keyed approval evidence across restart', async (kind) => {
+    const { directory, store, task, owner, claim, act, evidence, advance } = await setup();
+    const head = 'a'.repeat(40);
+    await claim();
+    const intent = await act('dispatch-intent');
+    await act('bind', { token: intent.dispatch.token, threadId: 'delivery-thread' });
+    await act('head', { head });
+    await act('context', { context: { worktree: directory, branch: 'feature/checkpoint', nextAction: 'Verify stopped work.' } });
+    const checkpoint = (stateHash, runId = 'stopped-1') => act('worker-checkpoint', {
+      worker: { taskId: task.id, dispatchToken: intent.dispatch.token, threadId: 'delivery-thread',
+        runId, status: 'stopped', reference: 'runtime:stopped', observedAt: kind === 'first' ? 1_000_002 : runId === 'stopped-1' ? 1_000_000 : 1_000_002 },
+      checkpoint: { worktree: directory, branch: 'feature/checkpoint', nextAction: 'Verify stopped work.',
+        head, stateHash, reference: `git-worker-checkpoint:${stateHash}` },
+    });
+    if (kind !== 'first') await checkpoint('sha256:' + 'b'.repeat(64));
+    await act('transition', { state: 'investigating', reason: 'Start.' });
+    await act('transition', { state: 'verifying', reason: 'Checks.' });
+    advance(1);
+    for (const gate of ['ci', 'visual', 'output']) await evidence(gate, head);
+    await act('transition', { state: 'awaiting-approval', reason: 'Review verified commit.' });
+    const prior = (await store.list())[0].evidence;
+    advance(1);
+    await checkpoint('sha256:' + (kind === 'identical' ? 'b' : 'c').repeat(64), 'stopped-2');
+    const restarted = new AgentTaskStore(directory, { now: () => 1_000_002 });
+    const saved = (await restarted.list())[0];
+    expect(saved.head).toBe(head);
+    expect(saved.workerCheckpoint.runId).toBe('stopped-2');
+    if (kind === 'identical') {
+      expect(saved.state).toBe('awaiting-approval');
+      expect(saved.evidence).toEqual(prior);
+    } else {
+      expect(saved.state).toBe('verifying');
+      expect(saved.evidence.every(item => item.result !== 'pass')).toBe(true);
+      await expect(restarted.mutate(task.id, 'transition', { owner, state: 'awaiting-approval', reason: 'Reuse old checks.' })).rejects.toThrow('incomplete');
+      await expect(restarted.mutate(task.id, 'transition', { owner, state: 'delivered', reason: 'Deliver old commit.',
+        acceptance: { head, revision: 'scope-v1', actor: 'maintainer', reference: 'old-commit-acceptance' } })).rejects.toThrow('incomplete');
+      await expect(restarted.mutate(task.id, 'evidence', { owner, evidence: prior[0] })).rejects.toThrow('backwards');
+      advance(1);
+      for (const gate of ['ci', 'visual', 'output']) await evidence(gate, head);
+      expect((await act('transition', { state: 'awaiting-approval', reason: 'Fresh verification.' })).state).toBe('awaiting-approval');
+    }
+  });
+
   it('rejects delayed evidence after restart and keeps the newest gate failure blocking approval', async () => {
     const { directory, store, task, owner, claim, act, evidence, advance } = await setup();
     await claim();

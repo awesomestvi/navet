@@ -135,3 +135,31 @@ it('fingerprints effective inherited and explicit compiler options with stable r
     expect(generateCatalog({ ...input, compilerOptions: { strictNullChecks: false } }).sourceFingerprint).toBe(overridden.sourceFingerprint);
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
+
+it('discovers namespace-only callable contracts without inheriting parent stories', () => {
+  const root = mkdtempSync(path.join(tmpdir(), 'navet-catalog-members-'));
+  try {
+    writeFileSync(path.join(root, 'index.ts'), `
+      function Scroll(props: { mode: 'fixed'; height: number } | { mode: 'auto'; label?: string }) { return props.mode; }
+      function Frame(props: { title: string }) { return props.title; }
+      export const Workspace = { ScrollArea: Scroll, Frame, spacing: 8 };
+    `);
+    writeFileSync(path.join(root, 'workspace.stories.tsx'), "import { Workspace } from './index'; export default { title: 'Workspace', component: Workspace.Frame }; export const Default = {};");
+    const input = { root, entries: [{ file: 'index.ts', importFrom: '@navet/ui' }], stories: ['workspace.stories.tsx'] };
+    const first = generateCatalog(input);
+    const workspace = first.entries.find((entry) => entry.name === 'Workspace');
+    expect(workspace.members.map((entry) => entry.name)).toEqual(['Workspace.ScrollArea', 'Workspace.Frame']);
+    const scroll = workspace.members[0];
+    expect(scroll).toMatchObject({ importFrom: '@navet/ui', source: 'index.ts', stability: 'unclassified', stories: [] });
+    expect(scroll.variants).toHaveLength(2);
+    expect(scroll.variants[0].properties).toEqual(expect.arrayContaining([
+      expect.objectContaining({ name: 'height', optional: false, type: 'number' }),
+    ]));
+    expect(workspace.members[1].stories).toHaveLength(1);
+    writeFileSync(path.join(root, 'index.ts'), 'function Scroll(props: { disabled: boolean }) { return props.disabled; } export const Workspace = { ScrollArea: Scroll };');
+    const next = generateCatalog(input);
+    expect(next.sourceFingerprint).not.toBe(first.sourceFingerprint);
+    expect(next.entries[0].members[0].properties.map((prop) => prop.name)).toEqual(['disabled']);
+    expect(JSON.stringify(next)).not.toContain('symbolKey');
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});

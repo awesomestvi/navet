@@ -12,6 +12,7 @@ does not establish a stable public API or complete accessibility coverage.
 | Compact device controls | `BaseCard` with its `title`, `header` or `actionRow` slots | [BaseCard](../../packages/app/src/components/primitives/base-card.stories.tsx): all supported sizes, long names, active/inactive and unavailable behavior. Keep one primary control path. |
 | Controls with secondary configuration | Card variant of `BaseCardDialog`, `navigation="overflow"`, controls tab first | [Controls-first dialog](../../packages/app/src/components/patterns/card-dialog-overflow-menu.stories.tsx): More actions, edit name/room, secondary section, Back to controls, close/reopen. |
 | Mobile detail or command sheet | `SheetSurface` directly containing `SheetSurfaceHeader` and body | [Sheet surface](../../packages/app/src/components/primitives/sheet-surface.stories.tsx): open on a phone, dismissal, scroll, long content and desktop visibility. |
+| Sidebar-to-detail navigation | `NavigationWorkspace.Frame` with its named parts; catalog query: `NavigationWorkspace.Frame` | [Navigation workspace](../../packages/app/src/components/patterns/navigation-workspace.stories.tsx): frame context, labeled navigation, `aria-current`, explicit sidebar/detail grid and owned scroll regions. The namespace is a composition object. |
 | Settings form | Existing settings-dialog shell; `FieldBlock` around control primitives | [Field states](../../packages/app/src/components/patterns/field-block.stories.tsx): hint, required, error and disabled. Inspect a neighboring feature's settings dialog for save and cancellation behavior. |
 | Dashboard summary | Existing feature summary inside the shared dashboard layout | [Dashboard guidance](../product/dashboard-principles.md) and the nearest summary implementation: reading order, condensed/expanded presentation and no-data behavior. Select its actual feature composition rather than assuming a generic summary-bar component. |
 | Empty card or section | `CardEmptyState` inside `BaseCard`; `DashboardEmptyState` for sections | [Card empty states](../../packages/app/src/components/patterns/card-empty-state.stories.tsx) and [dashboard empty states](../../packages/app/src/components/patterns/dashboard-empty-state.stories.tsx): small/large sizes, optional action, no matches versus unconfigured content. |
@@ -19,7 +20,7 @@ does not establish a stable public API or complete accessibility coverage.
 
 Use `@navet/app/ui-kit/primitives` and `@navet/app/ui-kit/patterns` for these imports. The
 source-derived catalog records the import actually exported by each entrypoint. Source links
-describe the composition; the running Storybook index or MCP discovery supplies current story IDs.
+describe the composition; the running Storybook index supplies current story IDs.
 
 ## Controls-first dialog
 
@@ -63,6 +64,41 @@ existing device editor for persisted name/room changes; this skeleton only compo
 content. Verify tab order, keyboard dismissal, focus containment and return, overflow navigation,
 and reopened state. Record actual findings rather than assuming the shared shell proves them.
 
+## Navigation and selection contracts
+
+`NavigationWorkspace` exports named parts such as `Frame` and `Item`; render those members rather
+than the namespace object. Query `pnpm agent:components NavigationWorkspace.Frame` for the frame
+contract or `pnpm agent:components NavigationWorkspace` for the cataloged workspace exports.
+Query `pnpm agent:components NavigationWorkspace.ScrollArea` for the member props, source and
+story references. `ScrollArea` is available as `NavigationWorkspace.ScrollArea`; inspect its definition in
+[the workspace source](../../packages/app/src/components/patterns/navigation-workspace.tsx).
+It accepts div attributes and supplies full-height vertical scrolling, overscroll containment and
+touch panning. The caller must provide a bounded-height region; it does not create a scroll landmark
+or manage focus. The frame provides app theme-derived context to grouped surfaces,
+headers, sidebar and rows. Callers own responsive column layout, the labeled navigation landmark,
+selection callbacks and `aria-current`. `Item`'s `active` prop controls visual state; provide an
+`ItemButton` with a meaningful name and navigation behavior. `Content` renders a main region, so
+choose its placement with the page's existing main landmark in mind. The source story uses an
+explicit detail scroll region rather than relying on the frame to scroll.
+
+The existing `Tabs` contract requires `defaultValue`, including in controlled compositions, and
+supplies selection context and generated IDs. Each `TabTrigger` value links to its `TabPanel`.
+The current primitive leaves inactive triggers outside the Tab sequence and supplies no arrow-key
+navigation, which blocks keyboard-only view switching. A new view-switch composition must provide
+and verify a complete keyboard selection path before it can use this primitive. Inspection alone
+cannot satisfy that requirement. Include any shared repair in the accepted ticket scope.
+`preserveLayout` retains an inactive panel's geometry while making it invisible and inert.
+
+`CardDialogTabList` is a layout wrapper and `CardDialogTabTrigger` is a controlled pill; they do not
+supply the `Tabs` context or linked panel semantics. Choose the actual interaction contract required
+by the composition. For controls-first device dialogs, the existing overflow recipe supplies
+secondary navigation and the return path.
+
+Dialog close actions require the surrounding Radix dialog context. Closing a dialog does not save
+settings. Keep persistence and save-error handling in the feature's existing workflow. When using
+`CardDialogHeader`, an entity ID can enable entity-name persistence through app administration;
+use its callback contract deliberately and route entities to their owning provider.
+
 ## Sheet header and body
 
 ```tsx
@@ -100,34 +136,38 @@ the wrapper does not set the control's native requirement.
 ```tsx
 import { FieldBlock } from '@navet/app/ui-kit/patterns';
 import { Input } from '@navet/app/ui-kit/primitives';
+import { useId } from 'react';
 
 export function NameField({ value, onChange, error }: {
   value: string;
   onChange: (value: string) => void;
   error?: string;
 }) {
+  const inputId = useId();
+  const hintId = `${inputId}-hint`;
+  const errorId = `${inputId}-error`;
   return (
     <FieldBlock
       label="Card name"
-      htmlFor="card-name"
+      htmlFor={inputId}
       required
-      hint={<span id="card-name-hint">Use a name your household recognizes.</span>}
-      error={error ? <span id="card-name-error">{error}</span> : undefined}
+      hint={<span id={hintId}>Use a name your household recognizes.</span>}
+      error={error ? <span id={errorId}>{error}</span> : undefined}
     >
       <Input
-        id="card-name"
+        id={inputId}
         value={value}
         onChange={(event) => onChange(event.currentTarget.value)}
         required
         invalid={Boolean(error)}
-        aria-describedby={error ? 'card-name-error' : 'card-name-hint'}
+        aria-describedby={error ? errorId : hintId}
       />
     </FieldBlock>
   );
 }
 ```
 
-Use unique IDs when multiple instances can coexist. The caller owns validation, save, cancellation
+`useId` gives each field instance its own label and message associations. The caller owns validation, save, cancellation
 and persistence; pair this field with the existing settings workflow rather than adding a separate
 save mechanism.
 
