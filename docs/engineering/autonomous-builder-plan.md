@@ -138,6 +138,12 @@ and [official SDK schema](https://github.com/linear/linear/blob/master/packages/
 Unit transport fixtures verify failure handling and identity boundaries. A live app-token read and
 the independently authenticated maintainer-request adapter remain activation work.
 
+The [authenticated intake run](agent-task-lifecycle.md#authenticated-intake-run) joins the scoped
+reader session to the human-request adapter and idempotent queue intake. It bounds source reads,
+rechecks authority after the complete proposal read, and awaits token revocation. It does not
+claim records or dispatch workers. A committed queue receipt survives cancellation or unavailable
+cleanup; execution still requires fresh authority and proposal observations.
+
 For a local coordinator run, [`createLinearReadSession`](../../scripts/agent-linear-auth.mjs)
 exchanges securely loaded app credentials for a token with only `read` scope. Create a fresh session
 at run start, pass `session.getAccessToken` to the reader and await `session.close()` in the run's

@@ -368,6 +368,35 @@ fresh planning observation and trusted maintainer request. Actual webhook-to-coo
 human-approval provenance and worker withdrawal require operational integration pilots.
 
 
+### Authenticated intake run
+
+`runLinearPlanningIntake` in `scripts/agent-linear-intake-run.mjs` connects the scoped Linear
+proposal reader, a lazy read-only app session and `enqueuePlanningRequest`. Supply `store`, the
+exact request `identity`, `readerPolicy`, a credential-manager `readCredentials` callback and an
+independently authenticated `readRequest(identity, { signal })` adapter. The latter must verify
+the human decision through its owning source; proposal text, stages and agent-authored comments
+cannot establish approval. It returns the trusted observation defined in the
+[approval-to-queue contract](autonomous-builder-plan.md#approval-to-queue-handoff).
+
+The run validates policy before loading credentials or querying authority, reads the human
+request, fetches a complete stable proposal and rechecks the human request before enqueueing.
+`maxRunMs` bounds source reads to at most 60 seconds, including adapters that ignore cancellation.
+Proposal reads retain their own 20-second limit. Withdrawal, changed scope, mismatched app
+identity, incomplete reads or unavailable services return a redacted `blocked` result.
+
+A successful result contains `status: 'queued'` and `taskId`. Duplicate accepted requests retain
+the existing task ID. The task has no claim, dispatch or planning pass; execution requires fresh
+authority and proposal observations through the existing gates. An already-started atomic enqueue
+is awaited even after cancellation so its acknowledgement is preserved.
+
+The session closes before return using a separate bounded revocation deadline. Unverified cleanup
+returns `blocked` with reason `linear-session-revocation-unverified`, retaining the original result
+in `intake`, including any committed task ID. Late-grant cleanup exposes a redacted `cleanup`
+promise; keep the runner alive to observe it. Successful late cleanup cannot restore canceled
+authority. Reconcile retained task IDs before retrying or dispatching. Synthetic integration tests
+prove these local boundaries; installed human-request provenance, live app permissions and the
+authorized delivery pilot remain activation gates.
+
 ### Authenticated refresh run
 
 `runLinearPlanningRefresh` in `scripts/agent-linear-refresh-run.mjs` connects the existing inbox
