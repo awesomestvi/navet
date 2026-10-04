@@ -1,8 +1,41 @@
 import { spawn } from 'node:child_process';
-import { lstat } from 'node:fs/promises';
+import { lstat, realpath } from 'node:fs/promises';
+import { Duplex } from 'node:stream';
+import WebSocket from 'ws';
 import path from 'node:path';
 
 const scopedText = (value) => typeof value === 'string' && value.trim() && value.length <= 4096;
+
+// Resolve the rendezvous alias before launch; the proxy receives only its protected physical path.
+async function ownedSocket(socketPath) {
+  const uid = process.getuid?.();
+  if (!Number.isInteger(uid)) throw new Error('Owned local app-server socket required.');
+  const validateDirectories = async (directory) => {
+    for (;;) {
+      const entry = await lstat(directory);
+      const trustedOwner = entry.uid === uid || entry.uid === 0;
+      const stickyRoot = entry.uid === 0 && (entry.mode & 0o1000) !== 0;
+      if (!entry.isDirectory() || !trustedOwner || ((entry.mode & 0o022) !== 0 && !stickyRoot)) {
+        throw new Error('Protected local app-server path required.');
+      }
+      const parent = path.dirname(directory);
+      if (parent === directory) return;
+      directory = parent;
+    }
+  };
+  const alias = await lstat(socketPath);
+  if (alias.uid !== uid || (!alias.isSocket() && !alias.isSymbolicLink())) {
+    throw new Error('Owned local app-server socket required.');
+  }
+  await validateDirectories(await realpath(path.dirname(socketPath)));
+  const physicalPath = await realpath(socketPath);
+  await validateDirectories(path.dirname(physicalPath));
+  const socket = await lstat(physicalPath);
+  if (!socket.isSocket() || socket.uid !== uid || (socket.mode & 0o077) !== 0) {
+    throw new Error('Owned private app-server socket required.');
+  }
+  return physicalPath;
+}
 
 // Explicitly configured existing socket only. This never starts a daemon or changes its settings.
 export function createCodexAppServerRequester({ codexPath, socketPath, threadId, maxRunMs = 15_000,
@@ -23,21 +56,21 @@ export function createCodexAppServerRequester({ codexPath, socketPath, threadId,
         (method === 'turn/interrupt' && !scopedText(params.turnId))) throw new Error('Unscoped app-server request.');
     const payload = structuredClone(params);
     if (signal?.aborted) throw new Error('Canceled app-server request.');
-    const socket = await lstat(socketPath);
-    if (!socket.isSocket() || socket.uid !== process.getuid?.()) throw new Error('Owned local app-server socket required.');
+    const physicalPath = await ownedSocket(socketPath);
     if (signal?.aborted) throw new Error('Canceled app-server request.');
     return new Promise((resolve, reject) => {
       let child;
+      let websocket;
       let timer;
       let finished = false;
       let initialized = false;
       let bytes = 0;
-      let buffer = '';
       const complete = (error, result) => {
         if (finished) return;
         finished = true;
         clearTimeout(timer);
         signal?.removeEventListener('abort', cancel);
+        websocket?.terminate();
         child?.stdin.end();
         if (child && child.exitCode === null && child.signalCode === null) {
           child.kill('SIGTERM');
@@ -50,46 +83,56 @@ export function createCodexAppServerRequester({ codexPath, socketPath, threadId,
         else resolve(result);
       };
       const cancel = () => complete(true);
-      const send = (message) => child.stdin.write(JSON.stringify(message) + '\n');
+      const send = (message) => websocket.send(JSON.stringify(message), (error) => { if (error) complete(true); });
       try {
-        child = spawn(codexPath, ['app-server', 'proxy', '--sock', socketPath], {
+        child = spawn(codexPath, ['app-server', 'proxy', '--sock', physicalPath], {
           shell: false, stdio: ['pipe', 'pipe', 'ignore'],
         });
         child.on('error', () => complete(true));
         child.stdin.on('error', () => complete(true));
         child.on('close', () => complete(true));
-        child.stdout.setEncoding('utf8');
+        // Count handshake, control frames, notifications and fragmented messages together.
         child.stdout.on('data', (chunk) => {
+          bytes += chunk.length;
+          if (bytes > maxResponseBytes) complete(true);
+        });
+        websocket = new WebSocket('ws://localhost/', {
+          createConnection: () => Duplex.from({ readable: child.stdout, writable: child.stdin }),
+          perMessageDeflate: false, followRedirects: false,
+          maxPayload: maxResponseBytes,
+        });
+        websocket.on('unexpected-response', (request, response) => {
+          response.destroy(); request.destroy(); complete(true);
+        });
+        websocket.on('error', () => complete(true));
+        websocket.on('close', () => complete(true));
+        websocket.on('message', (data, isBinary) => {
           if (finished) return;
-          bytes += Buffer.byteLength(chunk);
-          if (bytes > maxResponseBytes) return complete(true);
-          buffer += chunk;
-          let newline;
-          while (!finished && (newline = buffer.indexOf('\n')) !== -1) {
-            const line = buffer.slice(0, newline);
-            buffer = buffer.slice(newline + 1);
-            let message;
-            try { message = JSON.parse(line); } catch { return complete(true); }
-            if (!message || typeof message !== 'object' || Array.isArray(message)) return complete(true);
-            if (message.method) {
-              // No server-initiated approvals, commands or interaction is authorized by this client.
-              if ('id' in message) return complete(true);
-              continue;
-            }
-            if (message.error || !Object.hasOwn(message, 'result')) return complete(true);
-            if (!initialized && message.id === 1 && message.result && typeof message.result === 'object') {
-              initialized = true;
-              send({ method: 'initialized', params: {} });
-              send({ id: 2, method, params: payload });
-            } else if (initialized && message.id === 2) complete(false, message.result);
-            else return complete(true);
+          if (isBinary) return complete(true);
+          let message;
+          try { message = JSON.parse(data.toString('utf8')); } catch { return complete(true); }
+          if (!message || typeof message !== 'object' || Array.isArray(message)) return complete(true);
+          if (message.method) {
+            // No server-initiated approvals, commands or interaction is authorized by this client.
+            if ('id' in message) return complete(true);
+            return;
           }
+          if (message.error || !Object.hasOwn(message, 'result')) return complete(true);
+          if (!initialized && message.id === 1 && message.result && typeof message.result === 'object') {
+            initialized = true;
+            send({ method: 'initialized', params: {} });
+            send({ id: 2, method, params: payload });
+          } else if (initialized && message.id === 2) complete(false, message.result);
+          else complete(true);
+        });
+        websocket.on('open', () => {
+          if (finished) return;
+          send({ id: 1, method: 'initialize', params: { clientInfo: { name: 'navet_worker_monitor', version: '1.0.0' },
+            capabilities: { experimentalApi: true } } });
         });
         signal?.addEventListener('abort', cancel, { once: true });
         timer = setTimeout(cancel, maxRunMs);
         if (signal?.aborted) return cancel();
-        send({ id: 1, method: 'initialize', params: { clientInfo: { name: 'navet_worker_monitor', version: '1.0.0' },
-          capabilities: { experimentalApi: true } } });
       } catch { complete(true); }
     });
   };

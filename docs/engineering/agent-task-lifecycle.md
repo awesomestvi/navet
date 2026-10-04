@@ -697,11 +697,15 @@ remains insufficient to confirm monitored recovery.
 
 For an existing local app-server socket, `createCodexAppServerRequester` in
 `scripts/agent-codex-app-server.mjs` supplies the RPC callback. Configure absolute `codexPath` and
-`socketPath`, and pin `threadId`. The socket must belong to the current OS user. The configured
-endpoint and executable are trusted installation inputs. Each request initializes a bounded
-`codex app-server proxy --sock` connection to that socket. Only metadata reads, the single latest
-turn page and exact-turn interruption are permitted. Responses are correlated and byte-limited;
-unexpected server requests and malformed frames fail closed. Diagnostics and notifications stay
+`socketPath`, and pin `threadId`. The rendezvous path may be an owned managed symlink. Its resolved
+physical socket must belong to the current OS user, have private permissions, and sit beneath
+directories protected from replacement by other users. The configured endpoint and executable are
+trusted installation inputs. Each request initializes a bounded `codex app-server proxy --sock`
+connection to the physical path using the WebSocket handshake and text-message protocol. Only
+metadata reads, the single latest turn page and exact-turn interruption are permitted. Responses
+are correlated and byte-limited, including
+handshake bytes, notifications and control frames. Unexpected server requests, binary messages,
+failed upgrades and malformed frames fail closed. Diagnostics and notifications stay
 outside the returned result. Cancellation closes the proxy connection; interruption outcomes still
 require subsequent worker observation. The requester connects to an existing endpoint and leaves
 daemon setup to the installation workflow.
