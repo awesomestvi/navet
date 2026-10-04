@@ -318,6 +318,37 @@ export class AgentTaskStore {
           }
           task.planning.observation = observation;
           if (observation.result === 'fail') task.planning.revokedAt ??= now;
+        } else if (action === 'resource-accounting') {
+          const accounting = input.accounting;
+          const members = accounting?.members;
+          if (!task.resources || !observationIsFresh(accounting, now) || !task.dispatch?.threadId ||
+              accounting.unitPolicy !== 'native-observed-operations-v1' || !Array.isArray(members) || !members.length || members.length > 8 ||
+              members.filter((item) => item.role === 'coordinator' && item.status === 'running').length !== 1 ||
+              !members.some((item) => item.role === 'worker' && item.threadId === task.dispatch.threadId) ||
+              new Set(members.map((item) => item.threadId)).size !== members.length) {
+            throw new Error('Accounting requires complete bound participant coverage and an explicit unit policy.');
+          }
+          requireValue(accounting.reference, 'accounting reference');
+          requireValue(accounting.policyReference, 'unit policy reference');
+          for (const member of members) {
+            if (!['coordinator', 'worker'].includes(member.role) || !['running', 'stopped'].includes(member.status) || !path.isAbsolute(member.sessionFile ?? '') ||
+                !['modelTokens', 'toolCalls'].every((key) => Number.isSafeInteger(member[key]) && member[key] >= 0) ||
+                !Number.isSafeInteger(member.measurementAt) || member.measurementAt <= 0 || member.measurementAt > now ||
+                (member.status === 'running' && member.measurementAt < now - 60_000)) {
+              throw new Error('Invalid native accounting member.');
+            }
+            for (const key of ['threadId', 'runId', 'sessionFile']) requireValue(member[key], key);
+          }
+          const previous = task.resources.accounting;
+          if (previous && (previous.policyReference !== accounting.policyReference || previous.observedAt > accounting.observedAt ||
+              previous.members.some((old) => {
+                const next = members.find((member) => member.threadId === old.threadId);
+                return !next || next.role !== old.role || next.sessionFile !== old.sessionFile ||
+                  next.modelTokens < old.modelTokens || next.toolCalls < old.toolCalls || next.measurementAt < old.measurementAt;
+              }))) throw new Error('Accounting cannot drop participants, change policy or regress cumulative counters.');
+          task.resources.accounting = { unitPolicy: accounting.unitPolicy, policyReference: accounting.policyReference,
+            reference: accounting.reference, observedAt: accounting.observedAt,
+            members: members.map((member) => Object.fromEntries(['role', 'threadId', 'runId', 'status', 'sessionFile', 'modelTokens', 'toolCalls', 'measurementAt'].map((key) => [key, member[key]]))) };
         } else if (action === 'resource-usage') {
           if (!task.resources) throw new Error('Task has no configured resource limits.');
           const usage = input.usage;
@@ -747,6 +778,7 @@ export class AgentTaskStore {
           ? { planningResult: structuredClone(task.planningResult) } : {}),
         ...(action === 'resource-usage' ? { usage: input.usage, settledReservations: input.settledReservations ?? [] } : {}),
         ...(action === 'resource-unavailable' ? { unavailable: task.resources.unavailable } : {}),
+        ...(action === 'resource-accounting' ? { accounting: structuredClone(task.resources.accounting) } : {}),
         ...(['transition', 'release'].includes(action) ? { reason: input.reason } : {}),
       });
       return nextDispatchAction ? { ...task, nextDispatchAction } : followupDecision ? { ...task, followupDecision }

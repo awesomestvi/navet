@@ -293,6 +293,10 @@ coverage does not establish an installed endpoint or replace the live recovery p
 The Git-backed checkpoint service binds stopped-turn evidence to saved task context and two
 matching worktree snapshots. It verifies preserved source state after restart; installed monitoring
 and a live interruption/recovery pilot remain required.
+The [task-wide native accounting reader](agent-task-lifecycle.md#task-wide-native-accounting)
+combines complete trusted inventories with native session measurements and a durable participant
+ledger. It preserves stopped-worker totals and rejects changed coverage or per-participant rollback.
+Its unit policy and runtime inventory require independent installed verification before activation.
 
 For Linear-native approval, agent writes need a distinct identity. Linear's
 [OAuth app actor](https://linear.app/developers/oauth-actor-authorization) attributes mutations to

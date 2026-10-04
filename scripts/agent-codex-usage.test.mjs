@@ -20,6 +20,10 @@ function nested(id = 'operation-1', status = 'completed') {
   return { type: 'event_msg', payload: { type: 'item_completed', thread_id: threadId,
     item: { type: 'McpToolCall', id, status, arguments: { credential: 'PRIVATE_ARGUMENT' }, result: 'PRIVATE_OUTPUT' } } };
 }
+function turn(type, timestamp, runId = 'native-turn') {
+  return { type: 'event_msg', timestamp: new Date(timestamp).toISOString(), payload: { type, turn_id: runId,
+    last_agent_message: 'PRIVATE_FINAL_MESSAGE' } };
+}
 async function observe(records, tail = '', identity = threadId) {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'navet-usage-test-'));
   const sessionFile = path.join(directory, 'session.jsonl');
@@ -39,6 +43,33 @@ test('reports whole-thread totals, cached input and distinct operation counters 
   assert.equal(result.source.observedAt, 2000);
   assert.equal(result.snapshotAt, 5000);
   assert.doesNotMatch(JSON.stringify(result), /PRIVATE_/);
+});
+test.each(['task_complete', 'turn_aborted'])('binds %s finality to native turn start without exposing private messages', async (type) => {
+  const result = await observe([meta, turn('task_started', 1000), usage(), turn(type, 3000)]);
+  assert.deepEqual(result.nativeTurn, { runId: 'native-turn', status: type === 'task_complete' ? 'completed' : 'interrupted',
+    observedAt: 3000, line: 4, startedAt: 1000, startLine: 2 });
+  assert.doesNotMatch(JSON.stringify(result), /PRIVATE_/);
+});
+test('does not preserve terminal finality when a successor turn starts', async () => {
+  const result = await observe([meta, turn('task_started', 1000), usage(), turn('task_complete', 3000), turn('task_started', 4000, 'successor')]);
+  assert.equal(result.nativeTurn.status, 'running'); assert.equal(result.nativeTurn.runId, 'successor');
+  assert.ok(result.source.line < result.nativeTurn.startLine);
+});
+test('rejects foreign terminal markers, reused run IDs and operations after terminal markers', async () => {
+  await assert.rejects(observe([meta, turn('task_started', 1000), usage(), turn('task_complete', 3000, 'foreign')]), /preceding/);
+  await assert.rejects(observe([meta, usage(), turn('task_complete', 3000)]), /preceding/);
+  await assert.rejects(observe([meta, turn('task_started', 1000), usage(), turn('task_complete', 3000), turn('task_started', 4000)]), /cannot restart/);
+  await assert.rejects(observe([meta, turn('task_started', 1000), usage(), turn('task_complete', 3000), direct()]), /terminal native/);
+});
+test('rejects pre-cancellation and oversized source snapshots', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'navet-usage-bound-'));
+  const sessionFile = path.join(directory, 'session.jsonl');
+  try {
+    await writeFile(sessionFile, JSON.stringify(meta) + '\n');
+    const controller = new AbortController(); controller.abort();
+    await assert.rejects(observeCodexUsage({ sessionFile, threadId }, { now: 5000, signal: controller.signal }), /Canceled/);
+    await assert.rejects(observeCodexUsage({ sessionFile, threadId }, { now: 5000, maxSnapshotBytes: 1 }), /oversized/);
+  } finally { await rm(directory, { recursive: true, force: true }); }
 });
 test('deduplicates replayed call and operation identities', async () => {
   const result = await observe([meta, direct(), direct(), nested(), nested(), usage(), usage()]);

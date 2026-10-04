@@ -721,6 +721,12 @@ A live writer's unfinished final record is ignored and identified in the result.
 `token_count` events with null `info` preserve the prior measurement and its timestamp. Current
 usage events inherit the confirmed session identity; explicit thread IDs must also match.
 
+When native `task_started`, `task_complete` and `turn_aborted` markers are available, the observer
+reports the latest turn ID, start and finality metadata. A terminal marker must match its preceding
+start; reused terminal run IDs and operations recorded after a terminal marker fail verification.
+Marker text and agent messages remain private. Native snapshots default to a 128 MiB limit, with
+individual records limited to 16 MiB. Callers can supply a bounded `maxSnapshotBytes` and abort signal.
+
 The result reports cumulative input, cached input, output and reasoning tokens; `modelTokens`
 uses total input plus output, including cached input. These are execution units, not monetary
 charges. The original observation time remains separate from the snapshot read time: reading an
@@ -737,3 +743,38 @@ This observer is read-only. It neither writes task-store usage nor interrupts a 
 only after defining the approved operation-unit policy, verifying complete worker/coordinator
 coverage and applying provider allowances. Preserve pending reservations for uncertain execution;
 then validate monitored interruption and recovery before activating bounded intake.
+
+### Task-wide native accounting
+
+`createTaskUsageReader` in `scripts/agent-task-usage.mjs` supplies the monitor's `readUsage`
+callback. Configure the existing task store, current coordinator owner and trusted `readInventory`
+callback. The inventory must independently verify the complete runtime participant set and the
+maintainer-accepted `native-observed-operations-v1` unit policy for this task revision. That policy
+counts cumulative native model tokens and direct plus recorded nested operation units; it does not
+convert them into billing or claim coverage of hidden provider operations.
+
+Inventory responses identify the exact task and dispatch, carry a fresh service reference and
+timestamp, and retain every dedicated coordinator and worker session. Each member names its role,
+thread, current turn, native session file, running/stopped status and `dedicated: true`. The
+confirmed delivery thread and turn must be present. There is one running coordinator; stopped
+historical coordinators remain participants after handoff. Shared sessions cannot establish
+task-scoped totals. The current bounded protocol supports at most eight participants.
+
+The reader compares two matching inventories around the native reads. Running sessions require
+fresh measurements from the current turn. Stopped sessions require matching native completion or
+interruption markers; their cumulative totals remain in the aggregate even when the terminal
+measurement is older. Missing markers, partial record tails, changed inventory, malformed source
+files and stale active measurements produce incomplete coverage. Unknown usage is not zero.
+
+The reader commits `resource-accounting` in the existing task store before returning a complete
+aggregate. This durable ledger retains session identities, policy reference and monotonic
+per-participant counters and measurement times. It prevents dropping a closed worker or masking
+one worker's rollback behind another's rising totals. Session paths and raw logs stay private.
+An incomplete or canceled read preserves already-committed accounting references for recovery.
+
+Pass the resulting callback to `monitorPlanningWorker`, which persists `resource-usage` and
+invalidates older usage when coverage becomes unavailable. An accounting receipt alone neither
+updates aggregate usage nor settles reservations. Completion and interruption markers establish
+native accounting finality, not task acceptance or human authority. Installed inventory identity,
+dedicated-session attribution, accepted units, allowances for unobserved provider activity and live
+metering/interruption pilots remain activation gates.
