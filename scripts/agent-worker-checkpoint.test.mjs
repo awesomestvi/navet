@@ -91,11 +91,11 @@ it('bounds stalled store reads and rejects cancellation before reading Git', asy
   const service = createGitWorkerCheckpointService({ store: { list: async () => new Promise(() => {}), mutate: () => h.act('context') }, owner: 'coordinator', maxReadMs: 20 });
   expect(await service.readCheckpoint(h.worker())).toEqual({ status: 'unavailable' });
 });
-it('connects a native stopped observation to captured Git recovery and the runtime checkpoint reader', async () => {
+it.each(['idle', 'notLoaded'])('connects a native %s stopped observation to captured Git recovery and the runtime checkpoint reader', async (runtimeStatus) => {
   const h = await setup(); const identity = h.worker();
   const adapter = createCodexWorkerAdapter({ binding: identity, now: h.now, readCheckpoint: h.service.readCheckpoint,
     request: async (method) => { h.tick(); return method === 'thread/read'
-      ? { thread: { id: identity.threadId, status: { type: 'idle' } } }
+      ? { thread: { id: identity.threadId, status: { type: runtimeStatus } } }
       : { data: [{ id: identity.runId, status: 'interrupted', items: [], itemsView: 'notLoaded' }] }; } });
   const stopped = await adapter.readWorker(identity);
   expect(stopped).not.toHaveProperty('checkpoint');

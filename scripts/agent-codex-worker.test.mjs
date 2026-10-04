@@ -40,6 +40,38 @@ it.each(['completed', 'interrupted', 'failed'])('verifies checkpoint separately 
     checkpoint: { reference: 'checkpoint-service', head: 'a'.repeat(40), nextAction: 'Review worktree' } });
   expect(h.calls).toHaveLength(8);
 });
+it.each(['completed', 'interrupted', 'failed'])('reconciles a persisted %s turn after its runtime thread unloads', async (status) => {
+  const h = setup(); h.setTurn({ status });
+  const request = async (...args) => {
+    const result = await h.options.request(...args);
+    if (args[0] === 'thread/read') result.thread.status.type = 'notLoaded';
+    return result;
+  };
+  const adapter = createCodexWorkerAdapter({ ...h.options, request });
+  expect(await adapter.readWorker(binding)).toMatchObject({ status: 'stopped', runId: 'turn-a', checkpoint: {
+    reference: 'checkpoint-service', head: 'a'.repeat(40), nextAction: 'Review worktree' } });
+  expect(await adapter.interruptWorker({ ...binding, runId: 'turn-a', stopToken: 'stop-receipt' })).toEqual({ status: 'already-stopped' });
+  expect(h.calls.some((call) => call.method === 'turn/interrupt')).toBe(false);
+});
+it('withholds stopped proof when runtime load status changes during observation', async () => {
+  const h = setup(); h.setTurn({ status: 'interrupted' }); let reads = 0;
+  const request = async (...args) => {
+    const result = await h.options.request(...args);
+    if (args[0] === 'thread/read' && ++reads === 1) result.thread.status.type = 'notLoaded';
+    return result;
+  };
+  await expect(createCodexWorkerAdapter({ ...h.options, request }).readWorker(binding)).rejects.toThrow('changed');
+});
+it('preserves checkpoint uncertainty for an unloaded terminal turn', async () => {
+  const h = setup(); h.setTurn({ status: 'interrupted' });
+  const request = async (...args) => {
+    const result = await h.options.request(...args);
+    if (args[0] === 'thread/read') result.thread.status.type = 'notLoaded';
+    return result;
+  };
+  const result = await createCodexWorkerAdapter({ ...h.options, request, readCheckpoint: async () => ({ status: 'unavailable' }) }).readWorker(binding);
+  expect(result).toMatchObject({ status: 'stopped' }); expect(result).not.toHaveProperty('checkpoint');
+});
 it('targets native interruption by exact turn and makes retries unable to interrupt a successor', async () => {
   const h = setup(); const adapter = createCodexWorkerAdapter(h.options);
   const stop = { ...binding, runId: 'turn-a', stopToken: 'receipt' };
@@ -123,11 +155,25 @@ it('connects native exact-turn interruption to the durable monitor and verified 
     await act('bind', { token: dispatched.dispatch.token, threadId: 'thread' });
     await act('request-revocation', { observation: { status: 'withdrawn', source: 'human-source', requestId: 'request',
       reference: authority.reference, observedAt: h.tick() } });
-    const adapter = createCodexWorkerAdapter({ ...h.options, binding: { taskId: task.id, dispatchToken: dispatched.dispatch.token, threadId: 'thread' } });
-    const result = await monitorPlanningWorker({ ...adapter, store, owner: 'coordinator', taskId: task.id,
+    let unloaded = false; let checkpointAvailable = false;
+    const request = async (...args) => {
+      const result = await h.options.request(...args);
+      if (args[0] === 'turn/interrupt') unloaded = true;
+      if (args[0] === 'thread/read' && unloaded) result.thread.status.type = 'notLoaded';
+      return result;
+    };
+    const adapter = createCodexWorkerAdapter({ ...h.options, request,
+      readCheckpoint: async (...args) => checkpointAvailable ? h.options.readCheckpoint(...args) : { status: 'unavailable' },
+      binding: { taskId: task.id, dispatchToken: dispatched.dispatch.token, threadId: 'thread' } });
+    const options = { ...adapter, store, owner: 'coordinator', taskId: task.id,
       now: h.options.now, maxStopAttempts: 2, readRequest: async () => { throw new Error('Not needed after revocation'); },
-      readIssue: async () => { throw new Error('Not needed after revocation'); }, readUsage: async () => { throw new Error('Not needed after revocation'); } });
+      readIssue: async () => { throw new Error('Not needed after revocation'); }, readUsage: async () => { throw new Error('Not needed after revocation'); } };
+    const pending = await monitorPlanningWorker(options);
+    expect(pending).toMatchObject({ status: 'pending', stop: { attempts: 1 } });
+    checkpointAvailable = true;
+    const result = await monitorPlanningWorker({ ...options, store: new AgentTaskStore(directory, { now: h.options.now }) });
     expect(result).toMatchObject({ status: 'stopped', stop: { runId: 'turn-a', reason: 'request-withdrawn', attempts: 1,
+      token: pending.stop.token,
       checkpoint: { reference: 'checkpoint-service', head: 'a'.repeat(40), nextAction: 'Review worktree' } } });
     expect((await store.list())[0].workerStop).toEqual(result.stop);
     expect(h.calls.filter((call) => call.method === 'turn/interrupt')).toHaveLength(1);

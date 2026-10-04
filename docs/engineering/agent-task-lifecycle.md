@@ -657,6 +657,9 @@ confirmed `threadId`. Supply a trusted RPC `request` callback and an independent
 verifier. The adapter reads `thread/read` metadata and the latest descending `thread/turns/list`
 page twice with `itemsView: 'notLoaded'`. Thread and turn status must agree and remain stable.
 Older-turn pagination is expected; missing latest-turn evidence and changed runs are unavailable.
+An unloaded thread (`notLoaded`) can establish a stopped observation only when its latest persisted
+turn is terminal and its load status and turn remain stable. A running turn in an unloaded thread
+is inconsistent evidence. Independent checkpoint verification still applies before recovery confirmation.
 
 The runtime turn ID becomes the monitored `runId`. Interruption rechecks that same latest run
 before sending `turn/interrupt` with the exact thread and turn IDs. A retry can address that turn

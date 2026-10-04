@@ -45,8 +45,8 @@ export function createCodexWorkerAdapter({ binding, request, readCheckpoint, now
   const snapshot = async ({ bounded }) => {
     const metadata = await bounded((options) => request('thread/read', { threadId: identity.threadId, includeTurns: false }, options));
     const thread = metadata?.thread;
-    if (thread?.id !== identity.threadId || !['active', 'idle'].includes(thread.status?.type)) {
-      throw new Error('Loaded exact runtime thread required.');
+    if (thread?.id !== identity.threadId || !['active', 'idle', 'notLoaded'].includes(thread.status?.type)) {
+      throw new Error('Exact runtime thread status required.');
     }
     const page = await bounded((options) => request('thread/turns/list', {
       threadId: identity.threadId, sortDirection: 'desc', limit: 1, itemsView: 'notLoaded',
@@ -59,7 +59,8 @@ export function createCodexWorkerAdapter({ binding, request, readCheckpoint, now
       throw new Error('Runtime thread and latest turn disagree.');
     }
     // Pagination of older turns is expected: only the latest descending turn defines this run.
-    return { runId: turn.id, status: turn.status === 'inProgress' ? 'running' : 'stopped', turnStatus: turn.status };
+    return { runId: turn.id, status: turn.status === 'inProgress' ? 'running' : 'stopped', turnStatus: turn.status,
+      runtimeStatus: thread.status.type };
   };
   const stable = async (context) => {
     const first = await snapshot(context);
