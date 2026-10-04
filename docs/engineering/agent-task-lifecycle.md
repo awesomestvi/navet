@@ -636,8 +636,14 @@ persists `resource-unavailable`, invalidating the cached measurement without res
 settling uncertain reservations. A later measurement must follow that failure and preserve
 monotonic counters. Missing configured limits require a policy decision before monitored execution.
 
-Withdrawn or unverifiable scope, an unverifiable proposal, exhausted resources or unavailable usage
-lead to a durable stop intent. Pending stops block further execution. Every interruption targets
+Naturally stopped workers also require current authority, proposal scope and final cumulative usage.
+The monitor closes cached planning permission before those remote reads, so a canceled or stalled
+authority check cannot admit a follow-up. An unavailable final usage read preserves counters and
+blocks new resource reservations. A successor observed during reconciliation invalidates the
+measurement. An `inactive` result describes runtime state; it does not authorize more work.
+
+For running workers, withdrawn or unverifiable scope, an unverifiable proposal, exhausted resources
+or unavailable usage lead to a durable stop intent. Pending stops block further execution. Every interruption targets
 the exact run and carries the same stop token; the installed adapter must make that operation
 idempotent. Each retry requires a fresh running observation and consumes the intent's fixed retry
 budget. An unresolved receipt cannot be replaced with another run or a larger retry policy.

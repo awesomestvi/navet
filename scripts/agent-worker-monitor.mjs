@@ -76,48 +76,54 @@ export async function monitorPlanningWorker({ store, owner, taskId, readWorker, 
       stop = saved.workerStop;
       return { status: stop.status === 'stopped' ? 'stopped' : 'pending', taskId, stop: structuredClone(stop) };
     };
-    let worker = await observeWorker();
-    if (worker.status === 'stopped') {
-      if (stop && stop.runId === worker.runId) return await saveObservation(worker);
-      return { status: 'inactive', taskId, reference: worker.reference, observedAt: worker.observedAt };
-    }
-    if (stop && stop.status !== 'stopped' && stop.runId !== worker.runId) throw new Error('Unresolved stop belongs to another run.');
-    let reason = stop?.status !== 'stopped' ? stop?.reason : undefined;
-    if (!reason) {
-      if (task.requestRevocation) reason = 'request-withdrawn';
+    const checkPolicy = async ({ final = false } = {}) => {
+      const current = await currentTask();
+      if (current.dispatch.token !== identity.dispatchToken || current.dispatch.threadId !== identity.threadId) {
+        throw new Error('Worker binding changed during monitoring.');
+      }
+      if (final) {
+        // Close cached execution permission before remote reads can stall or be canceled.
+        await mutate('planning-observation', { observation: {
+          status: 'unavailable', reference: 'worker-monitor-planning-unavailable', observedAt: clock(),
+        } });
+      }
+      let reason;
+      if (current.requestRevocation) reason = 'request-withdrawn';
       else {
         try {
           const authorityStartedAt = clock();
-          const requestIdentity = { source: task.source, requestId: task.requestId };
+          const requestIdentity = { source: current.source, requestId: current.requestId };
           const observation = await bounded(() => readRequest(requestIdentity, { signal: controller.signal }));
           if (observation?.status === 'withdrawn') {
             await mutate('request-revocation', { observation: { ...requestIdentity, status: 'withdrawn',
-              reference: task.authority.reference, observedAt: clock() } });
+              reference: current.authority.reference, observedAt: clock() } });
             reason = 'request-withdrawn';
           } else {
             const request = validatePlanningRequestObservation(observation, requestIdentity, authorityStartedAt, clock());
-            if (!planningRequestMatchesTask(task, request)) throw new Error('Accepted scope unavailable.');
+            if (!planningRequestMatchesTask(current, request)) throw new Error('Accepted scope unavailable.');
           }
-        } catch { reason ??= 'request-unverified'; }
+        } catch { reason = 'request-unverified'; }
       }
-      if (!reason) {
-        const planningStartedAt = clock();
+      if (!reason || final) {
         let observation;
         try {
-          observation = await bounded(() => readIssue(task.planning.binding.issueId, { signal: controller.signal }));
+          const planningStartedAt = clock();
+          observation = await bounded(() => readIssue(current.planning.binding.issueId, { signal: controller.signal }));
           if (!Number.isSafeInteger(observation?.observedAt) || observation.observedAt < planningStartedAt ||
               observation.observedAt > clock()) throw new Error('Cached planning read.');
-          evaluatePlanningObservation(task.planning.binding, observation, clock());
+          const evaluated = evaluatePlanningObservation(current.planning.binding, observation, clock());
+          // A current proposal alone cannot reopen permission when human authority is unknown.
+          if (reason === 'request-unverified' && evaluated.result === 'pass') throw new Error('Authority unavailable.');
         } catch {
           observation = { status: 'unavailable', reference: 'worker-monitor-planning-unavailable', observedAt: now() };
         }
         const saved = await store.mutate(taskId, 'planning-observation', { owner, observation });
-        if (planningStatus(saved, clock()).result !== 'pass') reason = 'planning-unverified';
+        if (planningStatus(saved, clock()).result !== 'pass') reason ??= 'planning-unverified';
       }
-      if (!reason) {
-        if (!task.resources) return { status: 'blocked', taskId, reason: 'worker-resource-limits-unconfigured' };
-        const usageStartedAt = clock();
+      if (!reason || final) {
+        if (!current.resources) return reason ?? 'worker-resource-limits-unconfigured';
         try {
+          const usageStartedAt = clock();
           const usage = await bounded(() => readUsage({ ...identity, runId: worker.runId }, { signal: controller.signal }));
           const verifiedAt = usage?.verifiedAt ?? usage?.observedAt;
           if (usage?.taskId !== taskId || usage.complete !== true || !Number.isSafeInteger(usage.observedAt) ||
@@ -125,25 +131,47 @@ export async function monitorPlanningWorker({ store, owner, taskId, readWorker, 
               usage.observedAt > verifiedAt || usage.observedAt < clock() - 60_000) throw new Error('Incomplete task-wide usage.');
           const saved = await mutate('resource-usage', { usage: { modelTokens: usage.modelTokens, toolCalls: usage.toolCalls,
             observedAt: usage.observedAt, reference: usage.reference }, settledReservations: usage.settledReservations ?? [] });
-          if (resourceStatus(saved, clock()).exceeded) reason = 'resource-exhausted';
+          if (resourceStatus(saved, clock()).exceeded) reason ??= 'resource-exhausted';
         } catch {
           await store.mutate(taskId, 'resource-unavailable', { owner, observation: {
             reference: 'worker-monitor-usage-unavailable', observedAt: now(),
           } });
-          reason = 'usage-unverified';
+          reason ??= 'usage-unverified';
         }
       }
+      return reason;
+    };
+    const reconcileStopped = async (stoppedWorker) => {
+      const reason = await checkPolicy({ final: true });
+      const latest = await observeWorker();
+      if (latest.status !== 'stopped' || latest.runId !== stoppedWorker.runId) {
+        await mutate('resource-unavailable', { observation: {
+          reference: 'worker-monitor-final-run-changed', observedAt: clock(),
+        } });
+        throw new Error('Worker changed during stopped reconciliation.');
+      }
+      if (stop && stop.runId === latest.runId) return await saveObservation(latest);
+      return { status: 'inactive', taskId, reference: latest.reference, observedAt: latest.observedAt,
+        ...(reason ? { reason } : {}) };
+    };
+    let worker = await observeWorker();
+    if (worker.status === 'stopped') return await reconcileStopped(worker);
+    if (stop && stop.status !== 'stopped' && stop.runId !== worker.runId) throw new Error('Unresolved stop belongs to another run.');
+    let reason = stop?.status !== 'stopped' ? stop?.reason : undefined;
+    if (!reason) {
+      reason = await checkPolicy();
+      if (reason === 'worker-resource-limits-unconfigured') return { status: 'blocked', taskId, reason };
       if (!reason) return { status: 'within-policy', taskId, runId: worker.runId, observedAt: clock() };
       // Re-observe immediately before reserving a stop; earlier running evidence may have changed.
       worker = await observeWorker();
-      if (worker.status === 'stopped') return { status: 'inactive', taskId, reference: worker.reference, observedAt: worker.observedAt };
+      if (worker.status === 'stopped') return await reconcileStopped(worker);
       const saved = await mutate('worker-stop-intent', { worker, reason, maxAttempts: maxStopAttempts });
       stop = saved.workerStop;
     }
     // A fresh read after intent distinguishes an already-stopped run from one needing interruption.
     worker = await observeWorker();
     if (worker.runId !== stop.runId) throw new Error('Worker incarnation changed before interruption.');
-    if (worker.status === 'stopped') return await saveObservation(worker);
+    if (worker.status === 'stopped') return await reconcileStopped(worker);
     const attempt = await mutate('worker-stop-attempt', { token: stop.token, worker });
     stop = attempt.workerStop;
     if (attempt.workerStopDecision.action === 'send') {
@@ -155,7 +183,7 @@ export async function monitorPlanningWorker({ store, owner, taskId, readWorker, 
       }
     }
     worker = await observeWorker();
-    return await saveObservation(worker);
+    return worker.status === 'stopped' ? await reconcileStopped(worker) : await saveObservation(worker);
   } catch {
     return { status: stop ? 'pending' : 'blocked', taskId, reason: 'worker-monitor-unverified',
       ...(stop ? { stop: structuredClone(stop) } : {}) };

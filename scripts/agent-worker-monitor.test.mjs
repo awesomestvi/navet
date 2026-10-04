@@ -122,9 +122,8 @@ it.each(['foreign', 'stale', 'unknown'])('rejects %s worker evidence without int
 });
 it('retains an unresolved stop when the service cannot prove a saved checkpoint', async () => {
   const h = await setup();
-  let reads = 0;
   expect(await monitorPlanningWorker({ ...h.options, readRequest: async () => ({ status: 'withdrawn' }),
-    readWorker: async () => { const worker = h.worker(); if (++reads === 4) delete worker.checkpoint; return worker; } }))
+    readWorker: async () => { const worker = h.worker(); if (worker.status === 'stopped') delete worker.checkpoint; return worker; } }))
     .toMatchObject({ status: 'pending' });
   expect((await h.snapshot()).workerStop.status).toBe('pending');
 });
@@ -207,4 +206,70 @@ it('stops after the elapsed execution limit despite a still-valid ownership leas
   h.advance(100_000);
   expect(await monitorPlanningWorker(h.options)).toMatchObject({ status: 'stopped', stop: { reason: 'resource-exhausted' } });
   expect((await h.snapshot()).lease.expiresAt).toBeGreaterThan(h.now());
+});
+
+it.each(['withdrawn', 'unavailable'])('rechecks %s authority for a naturally stopped worker and blocks fresh follow-ups', async (status) => {
+  const h = await setup(); h.stop();
+  expect(await monitorPlanningWorker({...h.options, readRequest: async () => ({status})})).toMatchObject({status:'inactive'});
+  const saved = await h.snapshot();
+  if(status==='withdrawn') expect(saved.requestRevocation).toBeDefined();
+  else expect(saved.planning.observation.result).toBe('unverified');
+  await expect(h.act('reserve-resources',{event:'stopped-followup',modelTokens:1,toolCalls:1})).rejects.toThrow();
+  expect(h.commands).toEqual([]);
+  expect(saved.resources.usage.modelTokens).toBe(20);
+});
+it('rechecks withdrawn proposal scope after natural completion without interrupting', async () => {
+  const h = await setup(); h.stop();
+  expect(await monitorPlanningWorker({...h.options,readIssue:async()=>{
+    const observation=await h.options.readIssue();return {...observation,issue:{...observation.issue,labels:['Deferred']}};
+  }})).toMatchObject({status:'inactive'});
+  expect((await h.snapshot()).planning.revokedAt).toBeDefined();
+  await expect(h.act('reserve-resources',{event:'stopped-followup',modelTokens:1,toolCalls:1})).rejects.toThrow();
+  expect(h.commands).toEqual([]);
+});
+it('persists the complete final aggregate for a naturally stopped worker', async () => {
+  const h = await setup(); h.stop();
+  expect(await monitorPlanningWorker(h.options)).toMatchObject({status:'inactive'});
+  const saved=await h.snapshot();
+  expect(saved.resources.usage).toMatchObject({modelTokens:20,toolCalls:2,reference:'aggregate-usage'});
+  expect(saved.resources.reservations.every(r=>!r.settledAt)).toBe(true);
+  expect(saved.state).not.toBe('delivered');
+  expect(h.commands).toEqual([]);
+});
+it('denies a follow-up when final stopped usage exhausts the token limit', async () => {
+  const h = await setup(); h.stop();
+  expect(await monitorPlanningWorker({...h.options,readUsage:async()=>({taskId:h.task.id,complete:true,
+    modelTokens:1000,toolCalls:2,reference:'final-aggregate',observedAt:h.tick()})})).toMatchObject({status:'inactive'});
+  expect((await h.snapshot()).resources.usage.modelTokens).toBe(1000);
+  await expect(h.act('reserve-resources',{event:'stopped-followup',modelTokens:1,toolCalls:1})).rejects.toThrow();
+  expect(h.commands).toEqual([]);
+});
+it.each(['throw','incomplete','rollback','stale'])('invalidates cached capacity when final stopped accounting is %s', async (kind) => {
+  const h = await setup(); h.stop();
+  expect(await monitorPlanningWorker({...h.options,readUsage:async()=>{
+    if(kind==='throw')throw new Error('unavailable');
+    return {taskId:h.task.id,complete:kind!=='incomplete',modelTokens:kind==='rollback'?0:20,toolCalls:2,
+      reference:'final-aggregate',observedAt:kind==='stale'?h.now()-1:h.tick()};
+  }})).toMatchObject({status:'inactive'});
+  const saved=await h.snapshot();expect(saved.resources.usage.modelTokens).toBe(10);
+  expect(resourceStatus(saved,h.now()).measurementFresh).toBe(false);
+  await expect(h.act('reserve-resources',{event:'stopped-followup',modelTokens:1,toolCalls:1})).rejects.toThrow();
+  expect(h.commands).toEqual([]);
+});
+it('closes cached planning permission before a stopped authority check can be canceled', async () => {
+  const h=await setup();h.stop();const controller=new AbortController();let authorityEntered=false;
+  expect(await monitorPlanningWorker({...h.options,signal:controller.signal,readRequest:async()=>{
+    authorityEntered=true;controller.abort();return new Promise(()=>{});
+  }})).toMatchObject({status:'blocked'});
+  expect(authorityEntered).toBe(true);
+  expect((await h.snapshot()).planning.observation.result).toBe('unverified');
+  await expect(h.act('reserve-resources',{event:'stopped-followup',modelTokens:1,toolCalls:1})).rejects.toThrow();
+  expect(h.commands).toEqual([]);
+});
+it('rejects a successor observed during final stopped reconciliation without interrupting it', async () => {
+  const h=await setup();h.stop();let reads=0;
+  expect(await monitorPlanningWorker({...h.options,readWorker:async()=>({...h.worker(),
+    ...(++reads===1?{}:{runId:'successor',status:'running'})})})).toMatchObject({status:'blocked'});
+  expect(resourceStatus(await h.snapshot(),h.now()).measurementFresh).toBe(false);
+  expect(h.commands).toEqual([]);
 });
