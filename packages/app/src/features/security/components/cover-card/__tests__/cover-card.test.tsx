@@ -136,10 +136,13 @@ describe('CoverCard', () => {
   it('renders window covers from their initial and live provider class', async () => {
     renderCoverCard({ initialDeviceClass: 'window', size: 'small' });
     expect(screen.getByText('Living Room Blind')).toBeVisible();
+    expect(screen.getByText('Windows')).toBeVisible();
+    expect(screen.queryByText('Doors')).not.toBeInTheDocument();
     const entity = createCoverEntity(100);
     entity.attributes.device_class = 'window';
     act(() => homeAssistantStore.setState({ entities: { [entity.entity_id]: entity } }));
     await waitFor(() => expect(screen.getByText('Open')).toBeVisible());
+    expect(screen.getByText('Windows')).toBeVisible();
   });
 
   it.each(['unknown', 'unavailable'] as const)(
@@ -155,8 +158,19 @@ describe('CoverCard', () => {
       expect(screen.queryByText('Closed')).not.toBeInTheDocument();
       expect(screen.queryByText('0%')).not.toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Open' })).toBeDisabled();
-      fireEvent.click(screen.getByRole('button', { name: 'Living Room Blind cover' }));
+      const cardToggle = screen.getByRole('button', { name: 'Living Room Blind cover' });
+      expect(cardToggle).toHaveAttribute('aria-disabled', 'true');
+      expect(cardToggle).toHaveAttribute('tabindex', '-1');
+      expect(screen.getByRole('button', { name: 'Toggle Living Room Blind cover' })).toBeDisabled();
+      fireEvent.keyDown(cardToggle, { key: 'Enter' });
+      fireEvent.click(cardToggle);
       expect(openCoverMock).not.toHaveBeenCalled();
+      const settings = screen.getByRole('button', {
+        name: 'Open settings for Living Room Blind cover',
+      });
+      expect(settings).toBeEnabled();
+      fireEvent.click(settings);
+      expect(screen.getByRole('dialog')).toBeVisible();
     }
   );
 
@@ -170,6 +184,11 @@ describe('CoverCard', () => {
       act(() => setLiveCoverStateWithoutPosition('open'));
       expect(await screen.findByText('Open')).toBeVisible();
       expect(screen.queryByText('Unavailable')).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Toggle Living Room Blind cover' })).toBeEnabled();
+      expect(screen.getByRole('button', { name: 'Living Room Blind cover' })).toHaveAttribute(
+        'aria-disabled',
+        'false'
+      );
     }
   );
 

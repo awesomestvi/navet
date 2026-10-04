@@ -13,7 +13,8 @@ export type DeviceClass =
   | 'gate'
   | 'awning'
   | 'shutter'
-  | 'door';
+  | 'door'
+  | 'window';
 
 export interface CoverCardProps {
   id: string;
@@ -37,5 +38,5 @@ export interface DeviceClassConfig {
 
 export type CoverIconButtonProps = Pick<
   ButtonHTMLAttributes<HTMLButtonElement>,
-  'aria-label' | 'onClick' | 'onPointerDown'
+  'aria-label' | 'onClick' | 'onPointerDown' | 'disabled'
 >;

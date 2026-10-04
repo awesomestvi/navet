@@ -332,6 +332,7 @@ function CoverCardHeader({
           size={isExtraSmall ? 'tiny' : size}
           tone={tone}
           ariaLabel={iconButtonProps['aria-label']}
+          disabled={iconButtonProps.disabled}
           onClick={iconButtonProps.onClick}
           onPointerDown={iconButtonProps.onPointerDown}
         />

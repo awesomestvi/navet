@@ -1,4 +1,4 @@
-import { Blinds, DoorOpen, Fence, Home, ShieldCheck, SunDim } from 'lucide-react';
+import { Blinds, DoorOpen, Fence, Home, PanelsTopLeft, ShieldCheck, SunDim } from 'lucide-react';
 import type { DeviceClass, DeviceClassConfig } from './types';
 
 export const DEVICE_CLASS_CONFIG: Record<DeviceClass, DeviceClassConfig> = {
@@ -10,9 +10,9 @@ export const DEVICE_CLASS_CONFIG: Record<DeviceClass, DeviceClassConfig> = {
   awning: { labelKey: 'cover.deviceClass.awning', icon: SunDim },
   shutter: { labelKey: 'cover.deviceClass.shutter', icon: ShieldCheck },
   door: { labelKey: 'cover.deviceClass.door', icon: DoorOpen },
+  window: { labelKey: 'cover.deviceClass.window', icon: PanelsTopLeft },
 };
 
 export function resolveCoverDeviceClass(value: string | undefined): DeviceClass {
-  if (value === 'window') return 'door';
   return value && Object.hasOwn(DEVICE_CLASS_CONFIG, value) ? (value as DeviceClass) : 'blind';
 }

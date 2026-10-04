@@ -2480,6 +2480,7 @@ export const itMessages = {
   'cover.deviceClass.awning': 'Tenda da sole',
   'cover.deviceClass.shutter': 'Persiana',
   'cover.deviceClass.door': 'Porta',
+  'cover.deviceClass.window': 'Finestre',
   'scene.activate': 'Attiva',
   'scene.activating': 'Attivazione...',
   'scene.tapToActivate': 'Tocca per attivare',

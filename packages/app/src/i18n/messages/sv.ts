@@ -2439,6 +2439,7 @@ export const svMessages = {
   'cover.deviceClass.awning': 'Markiser',
   'cover.deviceClass.shutter': 'Luckor',
   'cover.deviceClass.door': 'Dörrar',
+  'cover.deviceClass.window': 'Fönster',
   'scene.activate': 'Aktivera',
   'scene.activating': 'Aktiverar...',
   'scene.tapToActivate': 'Tryck för att använda scenen direkt.',

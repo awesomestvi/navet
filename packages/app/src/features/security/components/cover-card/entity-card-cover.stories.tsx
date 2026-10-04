@@ -182,5 +182,10 @@ export const Unavailable: Story = {
     const canvas = within(canvasElement);
     await expect(canvas.getByText('Unavailable')).toBeVisible();
     await expect(canvas.getByRole('button', { name: 'Open' })).toBeDisabled();
+    await expect(canvas.getByRole('button', { name: 'Toggle Garage Door cover' })).toBeDisabled();
+    await expect(canvas.getByRole('button', { name: 'Garage Door cover' })).toHaveAttribute(
+      'aria-disabled',
+      'true'
+    );
   },
 };

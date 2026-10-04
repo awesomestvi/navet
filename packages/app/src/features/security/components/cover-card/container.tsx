@@ -293,13 +293,15 @@ export const CoverCardContainer = memo(function CoverCardContainer({
     ariaLabel: t('cover.ariaLabel', { name }),
     ariaPressed: !isUnavailable && position > 0,
     isEditMode,
-    onToggle: () => {
-      if (position > 0) {
-        handleClose();
-        return;
-      }
-      handleOpen();
-    },
+    onToggle: isUnavailable
+      ? undefined
+      : () => {
+          if (position > 0) {
+            handleClose();
+            return;
+          }
+          handleOpen();
+        },
     onOpenSettings: () => setIsSettingsOpen(true),
   });
   useEditModeSettingsRequest(id, () => setIsSettingsOpen(true), isEditMode);
@@ -318,7 +320,7 @@ export const CoverCardContainer = memo(function CoverCardContainer({
       openColors={colors.cover.open}
       closedColors={colors.cover.closed}
       cardProps={cardInteraction.cardProps}
-      iconButtonProps={cardInteraction.iconButtonProps}
+      iconButtonProps={{ ...cardInteraction.iconButtonProps, disabled: isUnavailable }}
       settingsButtonProps={cardInteraction.settingsButtonProps}
       theme={theme}
       stateDisplay={stateDisplay}
