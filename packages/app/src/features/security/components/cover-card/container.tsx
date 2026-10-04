@@ -10,7 +10,7 @@ import {
 } from '@navet/app/hooks';
 import { integrationSecurityFeatureService } from '@navet/app/services/integration-security-feature.service';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
-import { DEVICE_CLASS_CONFIG } from './constants';
+import { DEVICE_CLASS_CONFIG, resolveCoverDeviceClass } from './constants';
 import type { CoverCardProps, CoverState, DeviceClass } from './types';
 import { CoverCardView } from './view';
 
@@ -53,6 +53,7 @@ export const CoverCardContainer = memo(function CoverCardContainer({
   id,
   name,
   room,
+  initialState,
   initialPosition,
   initialPositionMode,
   supportedFeatures: initialSupportedFeatures,
@@ -67,9 +68,11 @@ export const CoverCardContainer = memo(function CoverCardContainer({
   const optimisticPositionRef = useRef<number | null>(null);
   const optimisticPositionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestLivePositionRef = useRef<number | null>(null);
-  const [deviceClass, setDeviceClass] = useState<DeviceClass>(initialDeviceClass);
+  const [deviceClass, setDeviceClass] = useState<DeviceClass>(
+    resolveCoverDeviceClass(initialDeviceClass)
+  );
   const [coverState, setCoverState] = useState<CoverState>(
-    resolvedInitialPosition === 100 ? 'open' : resolvedInitialPosition === 0 ? 'closed' : 'open'
+    initialState ?? (resolvedInitialPosition === 0 ? 'closed' : 'open')
   );
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const { t } = useI18n();
@@ -83,22 +86,31 @@ export const CoverCardContainer = memo(function CoverCardContainer({
   const hasLivePosition = livePosition !== null;
   const hasPosition =
     hasLivePosition || providerState?.hasPosition === true || Boolean(initialHasPosition);
-  const canOpen = supportsCoverFeature(
-    resolvedSupportedFeatures,
-    positionMode === 'tilt' ? COVER_FEATURE_OPEN_TILT : COVER_FEATURE_OPEN,
-    true
-  );
-  const canClose = supportsCoverFeature(
-    resolvedSupportedFeatures,
-    positionMode === 'tilt' ? COVER_FEATURE_CLOSE_TILT : COVER_FEATURE_CLOSE,
-    true
-  );
-  const canStop = supportsCoverFeature(
-    resolvedSupportedFeatures,
-    positionMode === 'tilt' ? COVER_FEATURE_STOP_TILT : COVER_FEATURE_STOP,
-    true
-  );
+  const liveState = providerState?.value ?? initialState ?? coverState;
+  const isUnavailable = liveState === 'unknown' || liveState === 'unavailable';
+  const canOpen =
+    !isUnavailable &&
+    supportsCoverFeature(
+      resolvedSupportedFeatures,
+      positionMode === 'tilt' ? COVER_FEATURE_OPEN_TILT : COVER_FEATURE_OPEN,
+      true
+    );
+  const canClose =
+    !isUnavailable &&
+    supportsCoverFeature(
+      resolvedSupportedFeatures,
+      positionMode === 'tilt' ? COVER_FEATURE_CLOSE_TILT : COVER_FEATURE_CLOSE,
+      true
+    );
+  const canStop =
+    !isUnavailable &&
+    supportsCoverFeature(
+      resolvedSupportedFeatures,
+      positionMode === 'tilt' ? COVER_FEATURE_STOP_TILT : COVER_FEATURE_STOP,
+      true
+    );
   const canSetPosition =
+    !isUnavailable &&
     hasPosition &&
     supportsCoverFeature(
       resolvedSupportedFeatures,
@@ -145,8 +157,13 @@ export const CoverCardContainer = memo(function CoverCardContainer({
       }
     }
     const liveState = providerState.value as CoverState;
-    if (['open', 'closed', 'opening', 'closing'].includes(liveState)) {
+    if (['open', 'closed', 'opening', 'closing', 'unknown', 'unavailable'].includes(liveState)) {
       setCoverState(liveState);
+      if (liveState === 'unknown' || liveState === 'unavailable') {
+        clearOptimisticPosition();
+        setPosition(0);
+        return;
+      }
       if (nextPosition === null) {
         const statePosition = resolveCoverStatePosition(liveState);
         latestLivePositionRef.current = statePosition;
@@ -255,7 +272,10 @@ export const CoverCardContainer = memo(function CoverCardContainer({
 
   // Get state text and color — active states use the accent color, inactive use muted
   const getStateDisplay = () => {
-    switch (coverState) {
+    switch (isUnavailable ? 'unavailable' : coverState) {
+      case 'unknown':
+      case 'unavailable':
+        return { text: t('common.unavailable'), color: surface.textSecondary, unavailable: true };
       case 'open':
         return { text: t('cover.state.open'), color: colors.cover.open.accent };
       case 'opening':
@@ -271,7 +291,7 @@ export const CoverCardContainer = memo(function CoverCardContainer({
   const cardId = `cover-${name.toLowerCase().replace(/ /g, '-')}`;
   const cardInteraction = useEntityCardInteractionController({
     ariaLabel: t('cover.ariaLabel', { name }),
-    ariaPressed: position > 0,
+    ariaPressed: !isUnavailable && position > 0,
     isEditMode,
     onToggle: () => {
       if (position > 0) {
@@ -290,7 +310,7 @@ export const CoverCardContainer = memo(function CoverCardContainer({
       name={name}
       room={room}
       position={position}
-      deviceClass={(providerState?.deviceClass as DeviceClass | undefined) ?? deviceClass}
+      deviceClass={resolveCoverDeviceClass(providerState?.deviceClass ?? deviceClass)}
       deviceClassConfig={DEVICE_CLASS_CONFIG}
       size={size}
       isEditMode={isEditMode}

@@ -11,3 +11,8 @@ export const DEVICE_CLASS_CONFIG: Record<DeviceClass, DeviceClassConfig> = {
   shutter: { labelKey: 'cover.deviceClass.shutter', icon: ShieldCheck },
   door: { labelKey: 'cover.deviceClass.door', icon: DoorOpen },
 };
+
+export function resolveCoverDeviceClass(value: string | undefined): DeviceClass {
+  if (value === 'window') return 'door';
+  return value && Object.hasOwn(DEVICE_CLASS_CONFIG, value) ? (value as DeviceClass) : 'blind';
+}

@@ -12,6 +12,7 @@ import {
   readNavetSensorState,
 } from '@navet/app/core/navet-device-state';
 import type { MediaDialogMediaStackSettings } from '@navet/app/features/media/components/media/media-dialog.types';
+import type { CoverState } from '@navet/app/features/security/components/cover-card/types';
 import type { SensorReading } from '@navet/app/features/sensors/components/sensors';
 import type { VacuumStatus } from '@navet/app/features/vacuum/components/vacuum/vacuum-utils';
 import { isLawnMowerEntityId } from '@navet/app/features/vacuum/components/vacuum/vacuum-utils';
@@ -576,20 +577,10 @@ const cardRegistry: Partial<Record<string, CardRenderFn>> = {
       id={device.id as string}
       name={device.name as string}
       room={device.room as string}
+      initialState={device.state as CoverState | undefined}
       initialPosition={device.position as number | undefined}
       initialPositionMode={device.positionMode as 'position' | 'tilt' | undefined}
-      initialDeviceClass={
-        device.deviceClass as
-          | 'blind'
-          | 'shade'
-          | 'curtain'
-          | 'garage'
-          | 'gate'
-          | 'awning'
-          | 'shutter'
-          | 'door'
-          | undefined
-      }
+      initialDeviceClass={device.deviceClass as string | undefined}
       supportedFeatures={device.supportedFeatures as number | undefined}
       hasPosition={device.hasPosition as boolean | undefined}
       size={size}

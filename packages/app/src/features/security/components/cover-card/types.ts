@@ -3,7 +3,7 @@ import type { TranslationKey } from '@navet/app/i18n';
 import type { LucideIcon } from 'lucide-react';
 import type { ButtonHTMLAttributes } from 'react';
 
-export type CoverState = 'open' | 'closed' | 'opening' | 'closing';
+export type CoverState = 'open' | 'closed' | 'opening' | 'closing' | 'unknown' | 'unavailable';
 
 export type DeviceClass =
   | 'blind'
@@ -19,11 +19,12 @@ export interface CoverCardProps {
   id: string;
   name: string;
   room: string;
+  initialState?: CoverState;
   initialPosition?: number;
   initialPositionMode?: 'position' | 'tilt';
   supportedFeatures?: number;
   hasPosition?: boolean;
-  initialDeviceClass?: DeviceClass;
+  initialDeviceClass?: string;
   size: CardSize;
   onSizeChange: (id: string, size: CardSize) => void;
   isEditMode: boolean;

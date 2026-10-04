@@ -132,6 +132,47 @@ describe('CoverCard', () => {
     });
   });
 
+  // Keep: these cases verify visible state and supported actions on real cards.
+  it('renders window covers from their initial and live provider class', async () => {
+    renderCoverCard({ initialDeviceClass: 'window', size: 'small' });
+    expect(screen.getByText('Living Room Blind')).toBeVisible();
+    const entity = createCoverEntity(100);
+    entity.attributes.device_class = 'window';
+    act(() => homeAssistantStore.setState({ entities: { [entity.entity_id]: entity } }));
+    await waitFor(() => expect(screen.getByText('Open')).toBeVisible());
+  });
+
+  it.each(['unknown', 'unavailable'] as const)(
+    'renders initial %s without a false closed state',
+    (state) => {
+      renderCoverCard({
+        initialState: state,
+        initialPosition: 0,
+        hasPosition: false,
+        size: 'small',
+      });
+      expect(screen.getByText('Unavailable')).toBeVisible();
+      expect(screen.queryByText('Closed')).not.toBeInTheDocument();
+      expect(screen.queryByText('0%')).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Open' })).toBeDisabled();
+      fireEvent.click(screen.getByRole('button', { name: 'Living Room Blind cover' }));
+      expect(openCoverMock).not.toHaveBeenCalled();
+    }
+  );
+
+  it.each(['unknown', 'unavailable'] as const)(
+    'reflects live %s and recovers to open',
+    async (state) => {
+      setLiveCoverStateWithoutPosition(state);
+      renderCoverCard({ initialPosition: 0, hasPosition: false, size: 'medium' });
+      expect(await screen.findByText('Unavailable')).toBeVisible();
+      expect(screen.queryByText('Closed')).not.toBeInTheDocument();
+      act(() => setLiveCoverStateWithoutPosition('open'));
+      expect(await screen.findByText('Open')).toBeVisible();
+      expect(screen.queryByText('Unavailable')).not.toBeInTheDocument();
+    }
+  );
+
   it('opens with position controls and sends dialog actions to the provider', async () => {
     renderCoverCard({ size: 'medium' });
     fireEvent.click(
