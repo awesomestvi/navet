@@ -117,7 +117,9 @@ provider-neutral card when the entity type has meaningful controls or domain-spe
 ## Household And Routines
 
 The chores feature owns provider-neutral participants, definitions, occurrences, scheduling,
-workflow, activity, and the Today and Chores surfaces. Household participants are attribution and
+workflow, activity, and the Today, Chores, Progress, and Settings surfaces. It also owns optional
+motivation, point history, missions, reward requests, badges, and achievements. Missions and
+Rewards appear when a motivation style is enabled. Household participants are attribution and
 workflow profiles, not authenticated accounts. Shared chores use revisioned installation storage
 provided by standalone Docker, the add-on, or the Navet custom integration for the custom panel.
 

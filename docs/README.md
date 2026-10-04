@@ -80,6 +80,12 @@ Git history and the linked issue retain that context without presenting it as a 
   Shared provider contract and responsibilities.
 - [architecture/provider-neutral-ui.md](architecture/provider-neutral-ui.md)
   Shared UI boundary rules.
+- [architecture/dashboard-runtime.md](architecture/dashboard-runtime.md)
+  Dashboard composition, provider queries, synchronization, room editing, and media catalog ownership.
+- [architecture/household-chores.md](architecture/household-chores.md)
+  Provider-neutral household scheduling, workflow, storage, rewards, and optional provider projections.
+- [architecture/rss-transport.md](architecture/rss-transport.md)
+  Authenticated feed access and the public-resource network boundary.
 - [architecture/dashboard-profile-ownership.md](architecture/dashboard-profile-ownership.md)
   Multi-dashboard settings ownership, revision sync, recovery, and credential-session boundaries.
 - [architecture/persisted-data-migrations.md](architecture/persisted-data-migrations.md)
@@ -92,6 +98,10 @@ Git history and the linked issue retain that context without presenting it as a 
   Shared UI layers, import surfaces, and review model.
 - [design-system/UI-GUIDELINES.md](design-system/UI-GUIDELINES.md)
   Visual and interaction rules.
+- [design-system/AI-DESIGN-CONTEXT.md](design-system/AI-DESIGN-CONTEXT.md)
+  Source-derived component and token discovery, references, and UI validation.
+- [design-system/AGENT-COMPOSITION-RECIPES.md](design-system/AGENT-COMPOSITION-RECIPES.md)
+  Shared card, sheet, form, summary, and state compositions.
 - [STORYBOOK_WORKFLOW.md](STORYBOOK_WORKFLOW.md)
   Story placement and review workflow.
 - [testing/provider-testing-strategy.md](testing/provider-testing-strategy.md)
@@ -103,6 +113,12 @@ Git history and the linked issue retain that context without presenting it as a 
 
 - [engineering/agentic-development.md](engineering/agentic-development.md)
   Issue-to-preview workflow, agent roles, permissions, approval gates, and stewardship.
+- [engineering/agent-task-lifecycle.md](engineering/agent-task-lifecycle.md)
+  Private task records, ownership, authority, recovery, and execution evidence.
+- [engineering/agent-queue-state-protocol.md](engineering/agent-queue-state-protocol.md)
+  Queue reconciliation, dispatch receipts, follow-ups, and verified completion.
+- [engineering/autonomous-builder-plan.md](engineering/autonomous-builder-plan.md)
+  Open delivery, discovery, and maturity work with explicit operational exit gates.
 - [engineering/private-home-testing.md](engineering/private-home-testing.md)
   Secure branch testing against a private Home Assistant installation.
 
