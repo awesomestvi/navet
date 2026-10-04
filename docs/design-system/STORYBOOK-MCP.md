@@ -43,11 +43,10 @@ preferred:
 url = "http://127.0.0.1:6017/mcp"
 ```
 
-Use one configuration location for the connection. The native Codex app-server pilot successfully
-initialized this HTTP endpoint and discovered all eight tools and the preview-app resource without
-starting a model or delivery task. OAuth status discovery returned unknown, and session cleanup
-reported an unsupported DELETE response; these did not prevent tool inventory. Actual tool calls in this delivery session verified live discovery, documentation, changed-story
-selection, preview resolution and focused tests. Broader task evaluation needs its own evidence.
+Use one configuration location for the connection. Verify live tool discovery after loading it in
+Codex. A saved connection entry or a successful server initialization does not establish that
+preview and test calls work. Keep the server running and check the actual tool result before
+using it as evidence.
 
 Remove an unwanted global registration with `codex mcp remove navet-storybook`. Configuration
 behavior is documented in the [official Codex MCP guide](https://learn.chatgpt.com/docs/extend/mcp?surface=cli).
@@ -77,37 +76,27 @@ Inspect the returned passing/failing stories and accessibility reports. Run the 
 validation commands as defined by the repository guide. A preview URL proves that the story
 resolves; test results apply to the selected stories, their assertions and tested rendering state.
 
-## Observed extraction limits
+## Extraction and validation limits
 
-The pilot discovered the real sheet, form-field and BaseCardDialog story IDs. Sheet documentation
-returned source-matching props including `isOpen`, `onOpenChange`, `title` and `responsive`.
-Form-field documentation returned only a heading and Stories section. BaseCardDialog returned
-story names and wrapper snippets without its discriminated props. Generated snippets may show
-`@navet/app` imports and local wrapper components; select the stable UI-kit entrypoint and read
-the [agent composition recipes](AGENT-COMPOSITION-RECIPES.md) before using them as implementation examples.
+Documentation extraction can return only a heading, story names, or wrapper snippets rather than
+the component's full API. This affects form-field and BaseCardDialog discovery. Inspect the
+source-derived catalog for discriminated props, required fields, and valid alternatives.
 
-The discovered form error-state preview displayed its validation message and an input with
-`aria-invalid=true`. The vacuum unavailable preview displayed its unavailable state. The sheet
-preview opened at 390 × 844; at desktop width the mobile sheet remains hidden. The focused MCP test tool also returned passing
-results for these three story IDs with accessibility enabled. Its Vitest runner reported four tests passed and fourteen skipped across
-three story files. The default sheet test uses its default rendering state; phone interaction,
-additional themes and the full product journey still need their own coverage. These checks verify
-three preview and test targets, not a product-wide UX audit.
+Generated snippets can use broad `@navet/app` imports, local wrappers, or args that reference icons
+and test helpers without their imports. Select the stable UI-kit entrypoint and use the source
+story or [composition recipes](AGENT-COMPOSITION-RECIPES.md) for complete dependencies. Verify an
+example against the current TypeScript contract before adapting it.
 
-CardEmptyState's story metadata identifies the real shared component; the card frame belongs in a
-Storybook decorator. MCP examples expose the required title and description and the actual
-`actionLabel`/`onAction` contract. Action and no-action stories verify pointer/keyboard callback delivery and absence
-of an action. Five focused stories pass through the native MCP test tool with accessibility enabled.
-Small and large/no-action previews were inspected at 390 × 844 across all four themes; light-theme
-text, action count and control geometry match their baseline. This is bounded Storybook evidence,
-not provider delivery or a complete responsive product audit.
+When changed-story discovery reports a file as unreachable while also returning its modified story
+IDs, select those IDs explicitly and inspect their consumers. A clipped or contradictory coverage
+report cannot establish complete affected-story coverage.
 
-Generated CardEmptyState snippets still omit the icon and test-helper imports referenced in args.
-They describe component usage but are not self-contained compilable examples. Use the source story
-or compiled composition recipes for those dependencies. Changed-story discovery also reports the
-modified story file as unreachable while listing its five modified story IDs; explicit focused
-selection and rendered inspection are required when its coverage report contradicts itself.
+Focused tests apply to the selected stories, their assertions, and the rendered state they exercise.
+Inspect passed and skipped counts alongside accessibility results. Test phone interactions at the
+phone viewport when a sheet is hidden at desktop width. Additional themes, input methods, and full
+product journeys need their own coverage under the repository's UI review rules.
 
-Keep filesystem access as an operational fallback. Current MCP extraction does not establish
-the design-system discovery exit gate. Broader component coverage, complete examples and
-comparison on representative delivery tasks remain evaluation work.
+Keep filesystem access as an operational fallback. Component discovery, complete examples, and
+comparison on representative delivery tasks are separate
+[evaluation gates](../engineering/agent-ui-evaluation.md); a preview URL or passing isolated story
+does not establish product-wide UI quality.

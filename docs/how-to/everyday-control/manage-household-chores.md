@@ -83,8 +83,11 @@ pause, leave it unchanged.
 
 ## Manage missions and rewards
 
-Open **Missions** or **Rewards** to create and edit supporting goals. From Today, choose
-**See rewards** in Chores today to reveal the current mission and reward cards for that visit.
+In **Household → Settings → Motivation style**, choose **Light points**, **Family goals**, or
+**Child-friendly adventure** to show the **Missions** and **Rewards** tabs. Open either tab to create
+and edit supporting goals. From Today, choose **See rewards** in Chores today to reveal the current
+mission and reward cards for that visit. Choosing **Off** hides these surfaces and preserves their
+saved goals and household history.
 
 To use a reward, open **Rewards**, choose the person under **Request reward for**, and select
 **Request reward** on a goal. The person needs enough points for its cost. The request holds the

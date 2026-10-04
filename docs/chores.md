@@ -29,8 +29,9 @@ entities are available. See the [integration reference](/integrations/) for prov
   streak, completion, and a **See rewards** action.
 - **Chores** is the searchable library for creating, editing, pausing, duplicating, and archiving
   recurring work.
-- **Missions** and **Rewards** manage optional shared goals without changing the underlying chore
-  workflow. Their supporting cards stay out of Today until **See rewards** is opened.
+- **Missions** and **Rewards** appear when a motivation style is enabled and manage optional shared
+  goals without changing the underlying chore workflow. Their supporting cards stay out of Today
+  until **See rewards** is opened.
 - **Progress** shows contributions and a weekly review.
 - **Settings** manages people, motivation style, backups, restore, and recovery.
 - **Routines** keeps provider automations, scenes, and scripts available beside native chores.
@@ -88,7 +89,9 @@ the return. Claimed work stays available for review.
 Core chores work with motivation turned off. **Light points**, **Family goals**, and
 **Child-friendly adventure** add progressively more feedback while keeping assignments and
 completion history unchanged. Missions and rewards are supporting surfaces, not prerequisites for
-using Today.
+using Today. Choose **Household → Settings → Motivation style**, then **Light points**,
+**Family goals**, or **Child-friendly adventure** to show Missions and Rewards. **Off** hides those
+surfaces while retaining their saved goals and household history.
 
 Progress cards open an individual points view with the person's current balance and point history.
 Balances may be negative when points have been reversed or removed. Household managers can add or
