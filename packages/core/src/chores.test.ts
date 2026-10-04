@@ -2109,74 +2109,83 @@ describe('chores domain', () => {
 });
 
 describe('completion-based recurrence updates', () => {
-  it('moves the next occurrence to October 18 when completed early on October 4', () => {
-    const definition = makeDefinition({
-      assignment: { mode: 'person', participantIds: ['alice'] },
-      schedule: {
-        frequency: 'after_completion',
-        startDate: '2026-10-08',
-        time: '18:00',
-        timeZone: 'Europe/Stockholm',
-        intervalDays: 14,
-      },
-    });
-    const occurrence = materializeChoreOccurrences({
-      definition,
-      participantsById: { alice },
-      rangeStart: '2026-10-01T00:00:00.000Z',
-      rangeEnd: '2026-11-01T00:00:00.000Z',
-    })[0];
-    const workspace = {
-      ...createEmptyChoreWorkspace(),
-      participantsById: { alice },
-      definitionsById: { [definition.id]: definition },
-      occurrencesById: { [occurrence.id]: occurrence },
-    };
-    const result = applyChoreWorkspaceAction({
-      workspace,
-      commandId: 'early-completion',
-      timestamp: '2026-10-04T10:00:00.000Z',
-      action: {
-        type: 'occurrence_action',
-        occurrenceId: occurrence.id,
-        action: { type: 'complete', participantId: 'alice' },
-      },
-    });
-    expect(result.data.occurrencesById[occurrence.id].completedAt).toBe('2026-10-04T10:00:00.000Z');
-    expect(
-      Object.values(result.data.occurrencesById)
-        .filter((item) => item.status === 'available')
-        .map((item) => item.scheduledAt)
-    ).toEqual(['2026-10-18T16:00:00.000Z']);
-    const reopened = applyChoreWorkspaceAction({
-      workspace: result.data,
-      commandId: 'reopen-early-completion',
-      timestamp: '2026-10-04T11:00:00.000Z',
-      action: {
-        type: 'occurrence_action',
-        occurrenceId: occurrence.id,
-        action: { type: 'reopen', participantId: 'alice', reason: 'Completed by mistake' },
-      },
-    });
-    expect(
-      Object.values(reopened.data.occurrencesById)
-        .filter((item) => item.status === 'available')
-        .map((item) => item.scheduledAt)
-    ).toEqual(['2026-10-08T16:00:00.000Z']);
-    const completedAgain = applyChoreWorkspaceAction({
-      workspace: reopened.data,
-      commandId: 'complete-again',
-      timestamp: '2026-10-05T10:00:00.000Z',
-      action: {
-        type: 'occurrence_action',
-        occurrenceId: occurrence.id,
-        action: { type: 'complete', participantId: 'alice' },
-      },
-    });
-    expect(
-      Object.values(completedAgain.data.occurrencesById)
-        .filter((item) => item.status === 'available')
-        .map((item) => item.scheduledAt)
-    ).toEqual(['2026-10-19T16:00:00.000Z']);
-  });
+  it.each([
+    [14, '2026-10-18T16:00:00.000Z', '2026-10-19T16:00:00.000Z'],
+    [365, '2027-10-04T16:00:00.000Z', '2027-10-05T16:00:00.000Z'],
+    [3650, '2036-10-01T16:00:00.000Z', '2036-10-02T16:00:00.000Z'],
+  ])(
+    'persists and reconciles the next occurrence for a %i-day completion interval',
+    (intervalDays, nextDate, repeatedDate) => {
+      const definition = makeDefinition({
+        assignment: { mode: 'person', participantIds: ['alice'] },
+        schedule: {
+          frequency: 'after_completion',
+          startDate: '2026-10-08',
+          time: '18:00',
+          timeZone: 'Europe/Stockholm',
+          intervalDays,
+        },
+      });
+      const occurrence = materializeChoreOccurrences({
+        definition,
+        participantsById: { alice },
+        rangeStart: '2026-10-01T00:00:00.000Z',
+        rangeEnd: '2026-11-01T00:00:00.000Z',
+      })[0];
+      const workspace = {
+        ...createEmptyChoreWorkspace(),
+        participantsById: { alice },
+        definitionsById: { [definition.id]: definition },
+        occurrencesById: { [occurrence.id]: occurrence },
+      };
+      const result = applyChoreWorkspaceAction({
+        workspace,
+        commandId: 'early-completion',
+        timestamp: '2026-10-04T10:00:00.000Z',
+        action: {
+          type: 'occurrence_action',
+          occurrenceId: occurrence.id,
+          action: { type: 'complete', participantId: 'alice' },
+        },
+      });
+      expect(result.data.occurrencesById[occurrence.id].completedAt).toBe(
+        '2026-10-04T10:00:00.000Z'
+      );
+      expect(
+        Object.values(result.data.occurrencesById)
+          .filter((item) => item.status === 'available')
+          .map((item) => item.scheduledAt)
+      ).toEqual([nextDate]);
+      const reopened = applyChoreWorkspaceAction({
+        workspace: result.data,
+        commandId: 'reopen-early-completion',
+        timestamp: '2026-10-04T11:00:00.000Z',
+        action: {
+          type: 'occurrence_action',
+          occurrenceId: occurrence.id,
+          action: { type: 'reopen', participantId: 'alice', reason: 'Completed by mistake' },
+        },
+      });
+      expect(
+        Object.values(reopened.data.occurrencesById)
+          .filter((item) => item.status === 'available')
+          .map((item) => item.scheduledAt)
+      ).toEqual(['2026-10-08T16:00:00.000Z']);
+      const completedAgain = applyChoreWorkspaceAction({
+        workspace: reopened.data,
+        commandId: 'complete-again',
+        timestamp: '2026-10-05T10:00:00.000Z',
+        action: {
+          type: 'occurrence_action',
+          occurrenceId: occurrence.id,
+          action: { type: 'complete', participantId: 'alice' },
+        },
+      });
+      expect(
+        Object.values(completedAgain.data.occurrencesById)
+          .filter((item) => item.status === 'available')
+          .map((item) => item.scheduledAt)
+      ).toEqual([repeatedDate]);
+    }
+  );
 });

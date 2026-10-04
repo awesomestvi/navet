@@ -803,7 +803,7 @@ def _vacation_reschedule(data: dict[str, Any], action: Mapping[str, Any], timest
     return data, activities
 
 
-def _materialize(data: dict[str, Any], range_start: str, range_end: str, timestamp: str, command_id: str) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+def _materialize(data: dict[str, Any], range_start: str, range_end: str, timestamp: str, command_id: str, recurrence_definition_id: str | None = None) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     start = _parse_iso(range_start)
     end = _parse_iso(range_end)
     if end < start or end - start > timedelta(days=180):
@@ -811,6 +811,7 @@ def _materialize(data: dict[str, Any], range_start: str, range_end: str, timesta
     occurrences = dict(data["occurrencesById"])
     past_occurrences = list(occurrences.values())
     additions: list[dict[str, Any]] = []
+    recurrence_ids: set[str] = set()
     for definition in data["definitionsById"].values():
         if not definition.get("enabled") or definition.get("archivedAt"):
             continue
@@ -852,7 +853,7 @@ def _materialize(data: dict[str, Any], range_start: str, range_end: str, timesta
             local_end = end.astimezone(_zone(time_zone)).date()
             end_date = date.fromisoformat(str(schedule["endDate"])) if schedule.get("endDate") else None
             dates = [candidate] if (
-                local_start <= candidate <= local_end
+                (definition["id"] == recurrence_definition_id or local_start <= candidate <= local_end)
                 and (end_date is None or candidate <= end_date)
                 and candidate.isoformat() not in schedule.get("excludedDates", [])
             ) else []
@@ -897,10 +898,12 @@ def _materialize(data: dict[str, Any], range_start: str, range_end: str, timesta
                     ) for time_value in times_for_slot
                 ]
                 for scheduled in scheduled_values:
-                    if not (start <= scheduled <= end):
+                    if definition["id"] != recurrence_definition_id and not (start <= scheduled <= end):
                         continue
                     scheduled_iso = _iso(scheduled)
                     occurrence_id = _occurrence_id(str(definition["id"]), scheduled_iso, slot)
+                    if definition["id"] == recurrence_definition_id:
+                        recurrence_ids.add(occurrence_id)
                     if occurrence_id in occurrences:
                         continue
                     if scheduled <= _parse_iso(timestamp) and any(
@@ -927,13 +930,23 @@ def _materialize(data: dict[str, Any], range_start: str, range_end: str, timesta
                         "updatedAt": scheduled_iso,
                     }
                     additions.append(_activity(f"{command_id}:created:{occurrence_id}", timestamp, "occurrence_created", occurrenceId=occurrence_id, definitionId=definition["id"], assigneeIds=assignees))
+    removed_ids = {
+        key for key, item in occurrences.items()
+        if item.get("definitionId") == recurrence_definition_id and key not in recurrence_ids
+        and item.get("status") == "available" and not item.get("carriedForwardFrom")
+        and _parse_iso(item["scheduledAt"]) > _parse_iso(timestamp)
+        and not any(_participant_paused(data["participantsById"][participant_id], _parse_iso(item["scheduledAt"]))
+                    for participant_id in item.get("assigneeIds", []) if participant_id in data["participantsById"])
+    }
+    occurrences = {key: item for key, item in occurrences.items() if key not in removed_ids}
+    outbox = [item for item in data["outbox"] if item.get("status") == "delivered" or item.get("occurrenceId") not in removed_ids]
     retention = _now() - timedelta(days=RETENTION_DAYS)
     occurrences = {
         key: value
         for key, value in occurrences.items()
         if not (value.get("status") in {"done", "skipped"} and _parse_iso(value.get("scheduledAt", timestamp)) < retention)
     }
-    return {**data, "occurrencesById": occurrences}, additions
+    return {**data, "occurrencesById": occurrences, "outbox": outbox}, additions
 
 
 def _experience_point_balances(data: Mapping[str, Any], experience: Mapping[str, Any]) -> dict[str, int]:
@@ -1676,7 +1689,7 @@ class ChoreAuthority:
                 if definition["schedule"]["frequency"] == "after_completion" and previous_completed_at != occurrence.get("completedAt"):
                     now = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
                     data, additional = _materialize(data, _iso(now - timedelta(days=RETENTION_DAYS)),
-                        _iso(now + timedelta(days=MATERIALIZATION_DAYS)), timestamp, f"{command_id}:recurrence")
+                        _iso(now + timedelta(days=MATERIALIZATION_DAYS)), timestamp, f"{command_id}:recurrence", occurrence["definitionId"])
                     activities.extend(additional)
             elif action.get("type") == "materialize_occurrences":
                 data, additional = _materialize(data, str(action.get("rangeStart")), str(action.get("rangeEnd")), timestamp, command_id)

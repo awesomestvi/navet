@@ -914,6 +914,37 @@ class ChoreAuthorityTests(unittest.IsolatedAsyncioTestCase):
         await restarted.async_initialize()
         self.assertEqual(restarted.data["occurrencesById"], result["data"]["occurrencesById"])
 
+    async def _assert_completion_interval(self, interval_days, expected):
+        original_now = chores._now
+        chores._now = lambda: datetime(2026, 10, 4, 10, 0, tzinfo=timezone.utc)
+        self.addCleanup(setattr, chores, "_now", original_now)
+        await self._create_manager()
+        definition = {"id": "repeat", "title": "Repeat chore", "enabled": True,
+            "assignment": {"mode": "person", "participantIds": ["manager"]},
+            "schedule": {"frequency": "after_completion", "startDate": "2026-10-08", "time": "18:00", "timeZone": "Europe/Stockholm", "intervalDays": interval_days},
+            "dueWindowMinutes": 60, "approval": {"required": False, "approverIds": []},
+            "createdAt": "2026-10-04T08:00:00.000Z", "updatedAt": "2026-10-04T08:00:00.000Z"}
+        await self.authority.async_command({"commandId": "repeat-create", "baseRevision": self.authority.revision,
+            "action": {"type": "definition_create", "actorParticipantId": "manager", "definition": definition}}, "ha-user-1")
+        await self.authority.async_tick()
+        occurrence = next(iter(self.authority.data["occurrencesById"].values()))
+        result = await self.authority.async_command({"commandId": "early-complete", "baseRevision": self.authority.revision,
+            "action": {"type": "occurrence_action", "occurrenceId": occurrence["id"], "action": {"type": "complete", "participantId": "manager"}}}, "ha-user-1")
+        self.assertEqual([item["scheduledAt"] for item in result["data"]["occurrencesById"].values() if item["status"] == "available"], [expected])
+        restarted = chores.ChoreAuthority(self.hass)
+        await restarted.async_initialize()
+        self.assertEqual(restarted.data["occurrencesById"], result["data"]["occurrencesById"])
+
+        reopened = await restarted.async_command({"commandId": "reopen-completion", "baseRevision": restarted.revision,
+            "action": {"type": "occurrence_action", "occurrenceId": occurrence["id"], "action": {"type": "reopen", "participantId": "manager", "reason": "Completed by mistake"}}}, "ha-user-1")
+        self.assertEqual([item["scheduledAt"] for item in reopened["data"]["occurrencesById"].values() if item["status"] == "available"], ["2026-10-08T16:00:00.000Z"])
+
+    async def test_yearly_completion_persists_and_reloads_next_date(self):
+        await self._assert_completion_interval(365, "2027-10-04T16:00:00.000Z")
+
+    async def test_ten_year_completion_persists_and_reloads_next_date(self):
+        await self._assert_completion_interval(3650, "2036-10-01T16:00:00.000Z")
+
     async def test_missed_policy_carries_forward_once(self):
         fixed_now = datetime(2026, 8, 28, 12, 0, tzinfo=timezone.utc)
         original_now = chores._now

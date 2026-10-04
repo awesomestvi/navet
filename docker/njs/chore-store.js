@@ -1189,7 +1189,7 @@ function getZonedDateKey(timestamp, timeZone) {
   return parts.year + '-' + parts.month + '-' + parts.day;
 }
 
-function materializeDefinition(definition, participantsById, rangeStart, rangeEnd, existing, latestCompletedAt) {
+function materializeDefinition(definition, participantsById, rangeStart, rangeEnd, existing, latestCompletedAt, materializeNextAfterCompletion) {
   if (!definition.enabled || definition.archivedAt !== undefined) return [];
   const startTime = Date.parse(rangeStart);
   const endTime = Date.parse(rangeEnd);
@@ -1255,8 +1255,7 @@ function materializeDefinition(definition, participantsById, rangeStart, rangeEn
     const anchor = latestCompletedAt ? getZonedDateKey(latestCompletedAt, schedule.timeZone) : schedule.startDate;
     const nextDate = latestCompletedAt ? choreCalendarPolicy.addCalendarDays(anchor, schedule.intervalDays) : anchor;
     if (
-      nextDate >= rangeStartDate &&
-      nextDate <= finalDate &&
+      (materializeNextAfterCompletion || (nextDate >= rangeStartDate && nextDate <= finalDate)) &&
       (schedule.endDate === undefined || nextDate <= schedule.endDate) &&
       !includesValue(schedule.excludedDates, nextDate)
     ) dates.push(nextDate);
@@ -1293,7 +1292,8 @@ function materializeDefinition(definition, participantsById, rangeStart, rangeEn
           : dates[dateIndex];
         const scheduledAt = localDateTimeToIso(personalDate, times[timeIndex], schedule.timeZone);
         const scheduledTime = Date.parse(scheduledAt);
-        if (scheduledTime < startTime || scheduledTime > endTime) continue;
+        if (!(materializeNextAfterCompletion && schedule.frequency === 'after_completion') &&
+          (scheduledTime < startTime || scheduledTime > endTime)) continue;
         const id = definition.id + ':' + scheduledAt + ':' + slot.assignmentSlot;
         countAssignment(id, slot.assigneeIds);
         results.push(
@@ -1850,7 +1850,7 @@ function appendWorkspaceActivities(data, activities) {
   return next;
 }
 
-function applyWorkspaceAction(data, commandId, action, timestamp) {
+function applyWorkspaceAction(data, commandId, action, timestamp, recurrenceDefinitionId) {
   if (action.type === 'occurrence_action') {
     const next = applyOccurrenceAction(data, commandId, action, timestamp);
     const previous = data.occurrencesById[action.occurrenceId];
@@ -1863,7 +1863,7 @@ function applyWorkspaceAction(data, commandId, action, timestamp) {
         type: 'materialize_occurrences',
         rangeStart: new Date(now - 90 * 86400000).toISOString(),
         rangeEnd: new Date(now + 45 * 86400000).toISOString(),
-      }, timestamp);
+      }, timestamp, occurrence.definitionId);
     }
     return next;
   }
@@ -2416,6 +2416,7 @@ function applyWorkspaceAction(data, commandId, action, timestamp) {
   }
   const occurrencesById = Object.assign({}, data.occurrencesById);
   const occurrenceCreatedActivities = [];
+  const recurrenceIds = {};
   const definitionIds = Object.keys(data.definitionsById);
   for (let definitionIndex = 0; definitionIndex < definitionIds.length; definitionIndex += 1) {
     const definition = data.definitionsById[definitionIds[definitionIndex]];
@@ -2431,8 +2432,12 @@ function applyWorkspaceAction(data, commandId, action, timestamp) {
       action.rangeStart,
       action.rangeEnd,
       occurrencesById,
-      completed.length > 0 ? completed[completed.length - 1] : undefined
+      completed.length > 0 ? completed[completed.length - 1] : undefined,
+      definition.id === recurrenceDefinitionId
     );
+    if (definition.id === recurrenceDefinitionId) {
+      for (let index = 0; index < materialized.length; index += 1) recurrenceIds[materialized[index].id] = true;
+    }
     if (materialized.filter(function (item) { return !occurrencesById[item.id]; }).length > 5000) {
       throw new Error('Too many chore occurrences');
     }
@@ -2481,6 +2486,21 @@ function applyWorkspaceAction(data, commandId, action, timestamp) {
       }
     }
   }
+  const removedRecurrenceIds = {};
+  for (const id in occurrencesById) {
+    const item = occurrencesById[id];
+    if (item.definitionId === recurrenceDefinitionId && !recurrenceIds[id] &&
+        item.status === 'available' && !item.carriedForwardFrom && Date.parse(item.scheduledAt) > Date.parse(timestamp) &&
+        !item.assigneeIds.some(function (participantId) {
+          const participant = data.participantsById[participantId];
+          return participant && isParticipantPausedAt(participant, item.scheduledAt);
+        })) {
+      delete occurrencesById[id]; removedRecurrenceIds[id] = true;
+    }
+  }
+  const outbox = data.outbox.filter(function (item) {
+    return item.status === 'delivered' || !item.occurrenceId || !removedRecurrenceIds[item.occurrenceId];
+  });
   const retentionBoundary = Date.parse(timestamp) - 90 * 86400000;
   for (const occurrenceId in occurrencesById) {
     if (!Object.prototype.hasOwnProperty.call(occurrencesById, occurrenceId)) continue;
@@ -2493,7 +2513,7 @@ function applyWorkspaceAction(data, commandId, action, timestamp) {
     }
   }
   return appendWorkspaceActivities(
-    Object.assign({}, data, { occurrencesById }),
+    Object.assign({}, data, { occurrencesById, outbox }),
     occurrenceCreatedActivities.concat([
       buildWorkspaceActivity(commandId, timestamp, 'workspace_materialized'),
     ])
