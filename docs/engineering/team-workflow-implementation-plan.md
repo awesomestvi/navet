@@ -154,6 +154,15 @@ evidence and checkpoints. Expand standing discovery or maintenance only after it
 operational gates pass. The broader pilot and comparative evidence requirements belong to that
 separately authorized programme; they do not expand core workflow acceptance.
 
+## UI Quality Support
+
+The team workflow includes a source-derived primitive and pattern catalog, composition recipes,
+focused shared-UI import and shell checks, and a ticket-scoped rendered UX audit skill. These
+support approved UI delivery and its existing acceptance evidence. Select checks according to the
+changed surface and direct consumers; tool output alone does not establish visual acceptance.
+Broader catalog classification, token tooling, Storybook MCP, comparative experiments and standing
+policy remain part of the separately authorized future programme.
+
 ## Workflow Completion Evidence
 
 Record passed, failed and unverified criteria against the actual source and owning-service receipts:

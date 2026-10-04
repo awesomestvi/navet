@@ -39,6 +39,21 @@ Home is the canonical dashboard reference for outer spacing, section rhythm, sum
 card-grid density, and responsive behavior. A more specific neighboring feature surface wins for
 the component family it already establishes.
 
+## Ticket support tools
+
+Use [composition recipes](AGENT-COMPOSITION-RECIPES.md) to select a shared composition, then
+inspect its current props, source and linked stories with `pnpm agent:components <name>`.
+Without a query, the command writes a generated catalog to `.cache/agent-design/components.json`.
+It covers primitive and pattern entrypoints, including callable namespace members and union props.
+The source fingerprint identifies the inspected contracts; export presence does not establish
+maturity, accessibility or rendered quality. Regenerate it after source changes.
+
+`pnpm check:ui-kit` detects feature imports into shared UI and known duplicated modal shell
+recipes, including supported aliases and reordered class lists. These focused source checks do
+not establish layout, keyboard or theme correctness. Use the
+[ticket UX audit](../../.agents/skills/navet-ux-audit/SKILL.md) for rendered evidence on the affected
+surface and direct consumers of changed shared components.
+
 ## Theme Model
 
 Supported themes are:

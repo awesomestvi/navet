@@ -119,3 +119,6 @@ For small UI-only tweaks, run the closest focused validation, usually a targeted
 `pnpm check:stories`, or `pnpm test <path>`, and inspect the rendered state. For broader or
 responsive UI work, follow `docs/agents/commands.md`, use the smallest routeable validation that
 covers the change, and run `pnpm test:visual-review` when shared layout or overflow can change.
+
+Use the [ticket UX audit](../../.agents/skills/navet-ux-audit/SKILL.md) to record reproducible
+rendered findings and retest repairs within the accepted task scope.

@@ -112,3 +112,14 @@ Default rule:
 - New Tier 2 tests need a stable store/service/platform contract justification.
 - New Tier 3 tests are acceptable for useful regression coverage.
 - New Tier 4 tests are not acceptable; rewrite the fixture model or do not add the test.
+
+### UI ticket support (Tier 3, Keep)
+
+- `scripts/agent-component-catalog.test.mjs`: source contracts, union props, namespace members,
+  story association and compiler/source fingerprint freshness.
+- `scripts/ui-feature-imports.test.mjs`: shared-layer feature dependencies through relative paths,
+  aliases and supported import forms, with comments and quoted examples excluded.
+- `scripts/ui-shell-recipes.test.mjs`: duplicated shell signatures across class order and syntax,
+  with ordinary layout classes excluded.
+
+Run these focused suites when their tools change; `pnpm check:ui-kit` applies the source guardrails.

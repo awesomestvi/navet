@@ -4,6 +4,17 @@ The team develops private proposals and delivers explicitly approved scope throu
 private task store. Linear holds proposals, questions and decisions; one GitHub PR holds approved
 public delivery. Maintainer acceptance, merge and release remain separate decisions.
 
+## UI ticket support
+
+For UI tickets, design and implementation specialists use the
+[composition recipes](../design-system/AGENT-COMPOSITION-RECIPES.md) and
+`pnpm agent:components <name>` to inspect current shared contracts. Test and review specialists
+use the [ticket UX audit](../../.agents/skills/navet-ux-audit/SKILL.md) for reproducible rendered
+evidence and `pnpm check:ui-kit` for focused source guardrails. Attach findings and retest evidence
+to the existing ticket and approval package. Choose coverage from the changed surface, its direct
+consumers and acceptance criteria; these tools do not require an additional audit programme or
+specialist for every task.
+
 ## Source Ownership
 
 | Module | Responsibility |
