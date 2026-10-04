@@ -42,6 +42,10 @@ Pinning keeps the card in the device list. To restore a hidden device first, use
 
 ## Control a lock or cover
 
+Home Assistant covers with the **Garage door**, **Gate**, **Door**, or **Window** device type
+appear in Security. Their reported state determines whether they need attention, including when
+they do not report an opening percentage. A moving cover needs attention until it reports closed.
+
 For a lock, open the card, confirm the target, then use the supported action. Slide or swipe
 confirmation can be required for lock state changes.
 
@@ -51,6 +55,10 @@ in its dialog, then release to apply the change. The shaded fill shows the close
 
 The three-dot menu provides **Edit room**, **Edit card name**, and **Customize**. Choose
 **Customize** to set the cover's device type, such as blind, curtain, or garage door.
+Garage doors and covers without position data show **Open**, **Closed**, **Opening**, or
+**Closing** as their main status. For covers with position data, choose **Simple controls**
+to use state-only controls or **Position controls** to show percentages, handles, and supported
+position presets. Navet remembers this choice for each cover on this device.
 Select **Back to controls** to return, and **Done** when finished.
 
 ## Arm or disarm an alarm

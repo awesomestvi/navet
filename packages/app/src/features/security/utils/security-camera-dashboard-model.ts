@@ -8,6 +8,7 @@ import type {
 } from '@navet/app/types/device.types';
 import { getDeviceRoomLabel, UNKNOWN_ROOM_LABEL } from '@navet/app/utils/device-location';
 import { groupByRoomName } from '@navet/app/utils/room-name';
+import { getCoverSecurityState } from './cover-security-state';
 import {
   collapseOverlappingSecurityDevices,
   getSecurityAlertCount,
@@ -448,7 +449,11 @@ function getHighestSeverity(entities: DeviceWithType[]): SecuritySeverity {
 function readStateLabel(device: DeviceWithType, t: TranslateFn): string {
   switch (device.type) {
     case 'covers':
-      return device.position > 0 ? t('common.open') : t('security.status.closed');
+      return getCoverSecurityState(device) === 'closed'
+        ? t('security.status.closed')
+        : getSecuritySeverity(device) === 'unknown'
+          ? t('common.unavailable')
+          : t('common.open');
     case 'locks':
       return device.state ? t('security.status.locked') : t('security.status.unlocked');
     case 'cameras':
