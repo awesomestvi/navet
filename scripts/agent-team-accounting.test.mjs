@@ -63,14 +63,14 @@ it('allows coordinator-only accounting before any worker is dispatched', async (
   const h = await setup(); h.task.team.workers = []; h.members.pop();
   expect(await runTeamAccounting(h.options)).toMatchObject({ status: 'verified', modelTokens: 100, toolCalls: 1 });
 });
-it('settles only terminal owning workers with both native and runtime stopped evidence', async () => {
-  const h = await setup(); h.members[1].status = 'stopped'; await h.writeSession(h.members[1]);
-  h.task.team.workers[0].status = 'completed'; h.task.team.workers[0].observation = { observedAt: h.tick() };
-  expect(await runTeamAccounting(h.options)).toMatchObject({ status: 'verified', settledReservations: ['worker-reservation', 'ticket-reservation'] });
-});
-it.each(['missing', 'running'])('retains %s worker reservation even when a native turn stopped', async (status) => {
+it.each(['completed', 'failed', 'missing', 'stopped'])('settles %s owning workers with both native and runtime stopped evidence', async (status) => {
   const h = await setup(); h.members[1].status = 'stopped'; await h.writeSession(h.members[1]);
   h.task.team.workers[0].status = status; h.task.team.workers[0].observation = { observedAt: h.tick() };
+  expect(await runTeamAccounting(h.options)).toMatchObject({ status: 'verified', settledReservations: ['worker-reservation', 'ticket-reservation'] });
+});
+it('retains a running worker reservation even when a native turn stopped', async () => {
+  const h = await setup(); h.members[1].status = 'stopped'; await h.writeSession(h.members[1]);
+  h.task.team.workers[0].status = 'running'; h.task.team.workers[0].observation = { observedAt: h.tick() };
   expect(await runTeamAccounting(h.options)).toMatchObject({ status: 'verified', settledReservations: ['ticket-reservation'] });
 });
 it('does not settle worker reservations preceding no owning native measurement', async () => {

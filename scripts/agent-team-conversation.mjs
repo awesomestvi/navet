@@ -86,7 +86,7 @@ export async function resumeTeamTicketAnswer({ store, owner, taskId, updateId, a
     const request = validate(await operation.remote((signal) => adapters.readRequest(identity, { signal })), identity, requestStarted, operation.clock());
     if (!match(task, request)) throw new Error('Answer authority changed.');
     operation.clock();
-    await store.mutate(taskId, 'team-event', { owner, event: { eventId: `answer:${answerId}`, type: 'answer',
+    await store.mutate(taskId, 'team-event', { owner, humanActorIds: policy.humanActorIds, event: { eventId: `answer:${answerId}`, type: 'answer',
       questionId: update.receipt.questionId, answer: { actor: result.answer.actorId, text: result.answer.text,
         reference: result.answer.reference, observedAt: result.answer.observedAt, verified: true,
         planningRevision: result.answer.scopeRevision } } });

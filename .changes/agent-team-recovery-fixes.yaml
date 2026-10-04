@@ -1,0 +1,3 @@
+type: internal
+audiences: []
+summary: Repair coordinated delivery acceptance, authorized maintainer replies, terminal worker recovery and accounting, and CLI question continuation.

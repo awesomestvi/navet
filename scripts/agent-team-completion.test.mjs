@@ -119,7 +119,7 @@ async function prepared(proposal, settleWorkers = true) {
   let stageUpdateId = output.stageUpdateId;
   if (!proposal) {
     const resourceToken = await h.reserve();
-    const accepted = await acceptTeamDelivery({ ...h.options, resourceToken });
+    const accepted = await acceptTeamDelivery({ ...h.options, stageResourceToken: resourceToken });
     expect(accepted.status).toBe('acceptance-recorded');
     stageUpdateId = accepted.stageUpdateId;
   }

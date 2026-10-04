@@ -151,7 +151,7 @@ export function teamAccountingSettlements(task, members, owner, observedAt) {
         item.resumes?.some((resume) => reservation.operation === `team-resume:${resume.resumeId}`));
       const member = worker && members.find((item) => item.role === 'worker' && item.intentId === worker.intentId && item.workerId === worker.workerId);
       const resume = worker?.resumes?.find((item) => reservation.operation === `team-resume:${item.resumeId}`);
-      if (member) return (!resume || (resume.status === 'running' && resume.runId === member.runId)) && ['completed', 'failed', 'stopped'].includes(worker.status) && member.status === 'stopped' &&
+      if (member) return (!resume || (resume.status === 'running' && resume.runId === member.runId)) && terminal.has(worker.status) && member.status === 'stopped' &&
         worker.observation?.observedAt >= reservation.reservedAt && member.measurementAt >= reservation.reservedAt &&
         member.nativeObservedAt >= reservation.reservedAt;
       const update = task.team.updates?.find((item) => reservation.operation === `team-ticket:${item.updateId}`);

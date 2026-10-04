@@ -132,7 +132,7 @@ export async function acceptTeamDelivery(options) {
     const expected = { ...identity, prUrl: task.team.pr.url };
     const startedAt = clock();
     const acceptance = await remote((signal) => adapters.readAcceptance(expected, { signal }));
-    if (!fresh(acceptance, startedAt, clock()) || !exact(acceptance, expected) || acceptance.actor !== task.authority.actor ||
+    if (!fresh(acceptance, startedAt, clock()) || !exact(acceptance, expected) || !Array.isArray(options.policy?.humanActorIds) || !options.policy.humanActorIds.includes(acceptance.actor) ||
         acceptance.actorIsApp !== false || acceptance.result !== 'accepted' || acceptance.kind !== 'merge' ||
         acceptance.merged !== true || acceptance.checks !== 'pass' || acceptance.review !== 'pass' || acceptance.unresolvedThreads !== 0) {
       return { status: 'blocked', reason: 'maintainer-acceptance-unverified' };
@@ -144,7 +144,7 @@ export async function acceptTeamDelivery(options) {
     if (latest.team.acceptance?.reference !== acceptance.reference) await store.mutate(taskId, 'team-event', { owner,
       event: { ...acceptance, eventId: `accepted:${acceptance.reference}`, type: 'acceptance', verified: true } });
     clock();
-    const linked = await remote(() => runTeamTicketUpdate({ ...options, signal, now, kind: 'stage', stage: 'Validated',
+    const linked = await remote(() => runTeamTicketUpdate({ ...options, signal, now, resourceToken: options.stageResourceToken ?? options.resourceToken, kind: 'stage', stage: 'Validated',
       body: 'The maintainer accepted the current delivery against its approved criteria.' }));
     return linked.status === 'verified' ? { status: 'acceptance-recorded', taskId, reference: acceptance.reference, stage: linked.reference, stageUpdateId: linked.updateId } : linked;
   });

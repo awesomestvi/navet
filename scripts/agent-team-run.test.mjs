@@ -10,26 +10,48 @@ const execute = promisify(execFile);
 const directories = [];
 afterEach(async () => { await Promise.all(directories.splice(0).map((directory) => rm(directory, { recursive: true, force: true }))); });
 const entrypoint = path.resolve('scripts/agent-team-run.mjs');
-async function setup({ resources = true, stop = true } = {}) {
+const id = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
+async function setup({ resources = true, stop = true, tickets = false } = {}) {
   const directory = await mkdtemp(path.join(tmpdir(), 'navet-team-cli-')); directories.push(directory);
   const stateDirectory = path.join(directory, 'state');
   const moduleFile = path.join(directory, 'installed-adapter.mjs');
   const markerFile = path.join(directory, 'worker-created');
   const sessionFile = path.join(directory, 'native-coordinator.jsonl');
-  const issue = { uuid: 'private-issue', teamId: 'private-team', projectId: 'private-project', title: 'PRIVATE_IDEA_TITLE', description: 'PRIVATE_IDEA_DESCRIPTION',
+  const issue = { uuid: id(7), teamId: id(2), projectId: id(3), title: 'PRIVATE_IDEA_TITLE', description: 'PRIVATE_IDEA_DESCRIPTION',
     attachments: [], labels: ['Captured'], archivedAt: null, canceledAt: null };
   const binding = createPlanningBinding(issue);
   const request = { source: 'human', requestId: 'idea', revision: 'scope', mode: 'research', proposalBinding: binding,
     ...(resources ? { resourceLimits: { maxElapsedMs: 100_000, maxModelTokens: 10_000, maxToolCalls: 100 } } : {}),
-    authority: { actor: 'maintainer', reference: 'PRIVATE_HUMAN_REQUEST', revision: 'scope', observedAt: Date.now(), kind: 'maintainer-idea-request', proposalRevision: binding.revision },
+    authority: { actor: id(6), reference: 'PRIVATE_HUMAN_REQUEST', revision: 'scope', observedAt: Date.now(), kind: 'maintainer-idea-request', proposalRevision: binding.revision },
     brief: { selectedOption: 'PRIVATE_SELECTED_OPTION', permittedChanges: ['Private planning artifacts'], acceptanceCriteria: ['Sourced options'], visibility: 'private-planning',
       purpose: 'proposal-development', resultDestination: 'linear-proposal', destination: { kind: 'linear', issueId: binding.issueId, teamId: binding.teamId, projectId: binding.projectId } } };
-  await writeFile(moduleFile, `import { writeFile } from 'node:fs/promises';
+  await writeFile(moduleFile, `import { readFile, writeFile } from 'node:fs/promises';
+import { linearResultBodyHash } from ${JSON.stringify(path.resolve('scripts/agent-linear-result-reader.mjs'))};
 const request = ${JSON.stringify(request)};
 const issue = ${JSON.stringify(issue)};
+const ticketPolicy = ${JSON.stringify({ organizationId: id(1), teamId: id(2), projectId: id(3), readerAppUserId: id(4), writerAppUserId: id(5), humanActorIds: [id(6)] })};
+const ticketFile = ${JSON.stringify(path.join(directory, 'ticket-update.json'))};
+const destination = () => ({ ...ticketPolicy, status: 'available', issueId: issue.uuid, readerIsApp: true, private: true, active: true, synced: false, observedAt: Date.now() });
 export async function createTeamAdapters() {
  return {
   leaseDurationMs: 100000,
+  ${tickets ? `ticketPolicy,
+  readDestination: async () => destination(),
+  readAuthority: async (receipt) => ({ status: 'available', taskId: receipt.taskId, issueId: receipt.issueId, scopeRevision: receipt.scopeRevision,
+    active: true, kind: 'discovery', actorIsApp: false, actorId: ticketPolicy.humanActorIds[0], reference: request.authority.reference, expiresAt: Date.now() + 100000, observedAt: Date.now() }),
+  writeUpdate: async (update) => writeFile(ticketFile, JSON.stringify(update)),
+  readUpdate: async (receipt) => {
+    let saved; try { saved = JSON.parse(await readFile(ticketFile, 'utf8')); } catch (error) { if (error.code !== 'ENOENT') throw error; }
+    return saved?.receipt.updateId === receipt.updateId ? { ...destination(), ...saved.receipt, status: 'available', writerIsApp: true, onBehalfOf: null, url: 'https://linear.app/navet/issue/NAV-1', observedAt: Date.now() }
+      : { status: 'absent', observedAt: Date.now() };
+  },
+  readAnswer: async ({ receipt, answerId }) => {
+    await new Promise(resolve => setTimeout(resolve, 2));
+    const text = 'PRIVATE_VERIFIED_ANSWER';
+    return { ...destination(), answerId, questionId: receipt.questionId, questionUpdateId: receipt.updateId, taskId: receipt.taskId,
+      scopeRevision: receipt.scopeRevision, actorIsApp: false, actorId: ticketPolicy.humanActorIds[0], onBehalfOf: null,
+      scopeChanged: false, reference: 'private:answer', createdAt: Date.now(), observedAt: Date.now(), text, bodyHash: linearResultBodyHash(text) };
+  },` : ''}
   ${stop ? 'maxStopAttempts: 1, interruptWorker: async () => ({ status: "requested" }),' : ''}
   readIssue: async () => ({ status: 'available', issue, reference: 'private:issue', observedAt: Date.now() }),
   readRequest: async () => ({ status: 'authorized', request: { ...request, authority: { ...request.authority, observedAt: Date.now() } } }),
@@ -103,4 +125,20 @@ it.each(['resources', 'recovery', 'stop'])('rejects missing accepted %s configur
   expect(result.stderr).toContain('Team operation unavailable');
   await expect(readFile(h.markerFile, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' });
   expect((await h.store.list())[0].team?.workers ?? []).toHaveLength(0);
+});
+
+it('returns the question update ID for a subsequent CLI answer without exposing ticket contents', async () => {
+  const h = await setup({ tickets: true });
+  expect((await h.invoke({ operation: 'plan', taskId: h.taskId, event: plan })).code).toBe(0);
+  await h.writeSession();
+  expect((await h.invoke({ operation: 'usage', taskId: h.taskId })).value.status).toBe('verified');
+  const reservation = await h.invoke({ operation: 'reserve', taskId: h.taskId, eventId: 'ticket:question', modelTokens: 0, toolCalls: 1 });
+  const question = await h.invoke({ operation: 'ticket-update', taskId: h.taskId, kind: 'question', questionId: 'question-a',
+    body: 'PRIVATE_QUESTION', resourceToken: reservation.value.resourceToken });
+  expect(question.code).toBe(0);
+  expect(question.value).toMatchObject({ status: 'verified', updateId: expect.any(String) });
+  const answer = await h.invoke({ operation: 'ticket-answer', taskId: h.taskId, updateId: question.value.updateId, answerId: id(9) });
+  expect(answer.code).toBe(0);
+  expect(answer.value).toMatchObject({ status: 'resumed', taskId: h.taskId });
+  expect((await h.store.list())[0].team.questions[0].answer.text).toBe('PRIVATE_VERIFIED_ANSWER');
 });

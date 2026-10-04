@@ -99,3 +99,20 @@ it('a stalled post-answer scope read is bounded and cannot record the answer lat
   expect(await pending).toMatchObject({ status: 'pending' });
   expect((await h.store.list())[0].team.status).toBe('awaiting-input');
 });
+
+it('accepts a second installed human answer without changing the original request authority', async () => {
+  const h = await setup();
+  const linked = await runTeamTicketUpdate(h.options);
+  const { linearResultBodyHash } = await import('./agent-linear-result-reader.mjs');
+  const policy = { ...h.policy, humanActorIds: [id(6), id(8)] };
+  const answerFrom = (actorId, actorIsApp = false) => ({ ...h.options, policy, updateId: linked.updateId, answerId: id(9),
+    adapters: { ...h.adapters, readAnswer: async (input) => { const answer = await h.adapters.readAnswer(input);
+      return { ...answer, actorId, actorIsApp, bodyHash: linearResultBodyHash(answer.text) }; } } });
+  expect(await resumeTeamTicketAnswer(answerFrom(id(10)))).toMatchObject({ status: 'blocked' });
+  expect(await resumeTeamTicketAnswer(answerFrom(id(8), true))).toMatchObject({ status: 'blocked' });
+  expect((await h.store.list())[0].team.status).toBe('awaiting-input');
+  expect(await resumeTeamTicketAnswer(answerFrom(id(8)))).toMatchObject({ status: 'resumed', taskId: h.task.id });
+  const saved = (await h.store.list())[0];
+  expect(saved.team.questions[0].answer.actor).toBe(id(8));
+  expect(saved.authority.actor).toBe(id(6));
+});

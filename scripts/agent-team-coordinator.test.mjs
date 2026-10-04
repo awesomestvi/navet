@@ -257,3 +257,25 @@ it('hands scoped research through a real developer commit to current-head testin
   expect(await runTeamStep({ ...h.options, adapters })).toMatchObject({ status: 'blocked', reason: 'team-replan-required' });
   expect(h.calls).toHaveLength(4);
 });
+
+it.each(['failed', 'missing'])('reconciles a %s specialist after interruption and permits deliberate replanning', async (status) => {
+  const h = await setup();
+  await runTeamStep(h.options);
+  let interrupted = false;
+  const adapters = { ...h.adapters, maxStopAttempts: 1,
+    readRequest: async () => ({ status: 'withdrawn' }),
+    readWorker: async (identity) => ({ ...identity, status: interrupted ? status : 'running', runId: 'run-a',
+      reference: 'runtime:exact-run', observedAt: h.tick() }),
+    interruptWorker: async () => { interrupted = true; throw new Error('Worker exited before acknowledgement'); } };
+  expect(await runTeamStep({ ...h.options, adapters })).toMatchObject({ status });
+  const saved = (await h.store.list())[0];
+  expect(saved.team.workers[0]).toMatchObject({ status, evidence: [], stop: { status: 'stopped', runId: 'run-a' } });
+  expect(saved.team.workers[0].checkpoint).toBeUndefined();
+  expect(await runTeamStep({ ...h.options, adapters })).toMatchObject({ status: 'blocked', reason: 'team-replan-required' });
+  // A withdrawn request still blocks execution; the reducer permits a fresh authorized plan.
+  const { applyTeamEvent } = await import('./agent-team-state.mjs');
+  applyTeamEvent(saved, { eventId: 'replan', type: 'plan', revision: 'plan-b', phase: saved.team.plan.phase,
+    assignments: saved.team.plan.assignments }, h.tick());
+  expect(saved.team.plan.revision).toBe('plan-b');
+  expect(h.calls).toHaveLength(1);
+});

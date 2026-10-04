@@ -362,7 +362,7 @@ export class AgentTaskStore {
             if (!task.requiredGates.filter((gate) => gate !== 'output').every((gate) => task.team.workers.some((worker) =>
               worker.evidence.some((item) => item.gate === gate && item.result === 'pass' && item.head === task.head && item.revision === task.revision)))) throw new Error('Current required team gates are incomplete.');
           }
-          teamDecision = applyTeamEvent(task, input.event, now);
+          teamDecision = applyTeamEvent(task, input.event, now, { humanActorIds: input.humanActorIds });
           if (input.event?.type === 'finish') { task.state = 'delivered'; task.lease = null; }
 
         } else if (action === 'team-checkpoint') {

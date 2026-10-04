@@ -70,7 +70,7 @@ try {
       : input.operation === 'monitor' ? await monitorTeamWorker({ ...options, intentId: input.intentId, maxStopAttempts: adapters.maxStopAttempts }) : await runTeamStep(options);
   }
   // Ticket contents and adapter errors stay private; console output only reports operation status.
-  console.log(JSON.stringify({ status: result.status ?? 'queued', taskId: result.taskId ?? result.id, reason: result.reason, resourceToken: result.resourceDecision?.reservation.token, outputUpdateId: result.outputUpdateId, stageUpdateId: result.stageUpdateId }));
+  console.log(JSON.stringify({ status: result.status ?? 'queued', taskId: result.taskId ?? result.id, reason: result.reason, resourceToken: result.resourceDecision?.reservation.token, updateId: result.updateId, outputUpdateId: result.outputUpdateId, stageUpdateId: result.stageUpdateId }));
 } catch {
   console.error('Team operation unavailable; inspect private configuration and retained task receipts.');
   process.exitCode = 1;

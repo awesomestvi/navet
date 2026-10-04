@@ -87,8 +87,8 @@ Inputs select one operation:
   requires actual PR/head/preview/validation readback covering every accepted criterion. Publication uses `resourceToken`; the stage update uses a separate `stageResourceToken`.
   Reruns reconcile retained receipts without resending.
 - `acceptance`: `taskId`, `stageResourceToken`. `readAcceptance` observes a human merge of the
-  exact PR/head/scope, with passing checks and review. It records that receipt and verifies the
-  Validated ticket update.
+  exact PR/head/scope by a human in the installed maintainer policy, with passing checks and
+  review. It records that receipt and verifies the Validated ticket update.
 - `monitor`: `taskId`, `intentId`. Rechecks authorization/resources and interrupts the exact run
   within the accepted stop-attempt bound, retaining checkpoint and acknowledgement uncertainty.
 - `resume-worker`: `taskId`, `intentId`, `questionId`, `resourceToken`. Continues the same
@@ -110,11 +110,16 @@ Worker creation and ticket writes persist an attempt before sending. Lost acknow
 owning-service lookup/readback with the same identity. An absent, unavailable or timed-out read
 never authorizes replacement. Failed or missing workers require a deliberately revised plan;
 restarts retain evidence and next actions. Reservations bind distinct worker/update identities.
-Observed accounting must include all specialists before unused capacity can be relied on.
+A failed or missing observation for the exact interrupted run settles its pending stop and
+retains the terminal outcome for replanning. Its reservation settles only after complete
+native accounting verifies that its owning session stopped. Observed accounting must include
+all specialists before unused capacity can be relied on.
 
 A blocking question enters local awaiting-input before publication. Uncertain publication retains
-that wait. Only readback of the exact question followed by a distinct human answer with unchanged
-scope resumes work. Changed scope requires a new decision; elapsed time is never an answer.
+that wait. Only readback of the exact question followed by a distinct answer from a human in
+the installed maintainer policy with unchanged scope resumes work. Answers and merges may come
+from any configured maintainer; the original request authority remains bound to its author.
+Changed scope requires a new decision; elapsed time is never an answer.
 Waiting and review are local team statuses. Keep proposal stage In delivery during unfinished PR
 review; Captured/Developing proposal remain private discovery stages.
 

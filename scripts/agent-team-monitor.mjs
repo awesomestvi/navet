@@ -46,7 +46,7 @@ export async function monitorTeamWorker({ store, owner, taskId, intentId, adapte
       const observedAfter = clock();
       const observed = await remote(() => adapters.readWorker(identity, { signal: controller.signal }));
       if (observed?.taskId !== taskId || observed.intentId !== intentId || observed.workerId !== identity.workerId ||
-          !['running', 'stopped', 'completed'].includes(observed.status) || !observed.runId || !observed.reference ||
+          !['running', 'stopped', 'completed', 'failed', 'missing'].includes(observed.status) || !observed.runId || !observed.reference ||
           !Number.isSafeInteger(observed.observedAt) || observed.observedAt < observedAfter || observed.observedAt > clock()) throw new Error('Exact live incarnation unavailable.');
       return observed;
     };
@@ -71,14 +71,14 @@ export async function monitorTeamWorker({ store, owner, taskId, intentId, adapte
       return { status: currentWorker.stop.status === 'stopped' ? currentWorker.status : 'pending', taskId, intentId };
     };
     const saveNaturalTerminal = async () => {
-      await capture();
+      if (['stopped', 'completed'].includes(observed.status)) await capture();
       // A naturally stopped run is recovery evidence; completed output still needs
       // exact passing/failing evidence through the store's completion boundary.
       await event({ eventId: `${observed.status}:${intentId}:${observed.reference}:${observed.observedAt}`, type: 'worker-observation', intentId,
         observation: observed, evidence: observed.status === 'completed' ? observed.evidence ?? [] : [] });
       return { status: observed.status, taskId, intentId };
     };
-    if (['stopped', 'completed'].includes(observed.status)) {
+    if (['stopped', 'completed', 'failed', 'missing'].includes(observed.status)) {
       if (stop) return await saveStop();
       return await saveNaturalTerminal();
     }
@@ -117,14 +117,14 @@ export async function monitorTeamWorker({ store, owner, taskId, intentId, adapte
       else if (resources.exceeded) reason ??= 'resource-exhausted';
       if (!reason) return { status: 'within-policy', taskId, intentId, runId: observed.runId };
       observed = await observe();
-      if (['stopped', 'completed'].includes(observed.status)) return await saveNaturalTerminal();
+      if (['stopped', 'completed', 'failed', 'missing'].includes(observed.status)) return await saveNaturalTerminal();
       const saved = await event({ eventId: `stop-intent:${intentId}:${observed.runId}`, type: 'worker-stop-intent', intentId,
         worker: observed, reason, maxAttempts: maxStopAttempts, stopToken: randomUUID() });
       stop = saved.team.workers.find((item) => item.intentId === intentId).stop;
     }
     observed = await observe();
     if (observed.runId !== stop.runId) throw new Error('Worker changed before interruption.');
-    if (['stopped', 'completed'].includes(observed.status)) return await saveStop();
+    if (['stopped', 'completed', 'failed', 'missing'].includes(observed.status)) return await saveStop();
     const attempt = await event({ eventId: `stop-attempt:${stop.token}:${stop.attempts}`, type: 'worker-stop-attempt',
       intentId, stopToken: stop.token, worker: observed });
     if (attempt.teamDecision.action === 'send') {

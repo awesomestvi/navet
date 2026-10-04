@@ -156,3 +156,17 @@ it('rechecks the durable head after an owning-service read before saving its art
   expect(await finishTeamArtifact({ ...h.options, adapters })).toMatchObject({ status: 'blocked', reason: 'delivery-snapshot-changed' });
   expect(h.writes).toHaveLength(0);
 });
+
+it('accepts a merge by another installed maintainer while rejecting outsiders and app actors', async () => {
+  const h = await setup();
+  expect(await finishTeamArtifact(h.options)).toMatchObject({ status: 'verified' });
+  const readAcceptance = h.adapters.readAcceptance;
+  const policy = { ...h.options.policy, humanActorIds: [id(6), id(8)] };
+  const mergedBy = (actor, actorIsApp = false) => ({ ...h.options, policy, adapters: { ...h.adapters,
+    readAcceptance: async () => ({ ...await readAcceptance(), actor, actorIsApp }) } });
+  expect(await acceptTeamDelivery(mergedBy(id(9)))).toMatchObject({ status: 'blocked', reason: 'maintainer-acceptance-unverified' });
+  expect(await acceptTeamDelivery(mergedBy(id(8), true))).toMatchObject({ status: 'blocked', reason: 'maintainer-acceptance-unverified' });
+  expect((await h.store.list())[0].team.acceptance).toBeNull();
+  expect(await acceptTeamDelivery(mergedBy(id(8)))).toMatchObject({ status: 'acceptance-recorded' });
+  expect((await h.store.list())[0].team.acceptance.actor).toBe(id(8));
+});

@@ -66,7 +66,7 @@ function receipt(input, now) {
 
 // The owning coordinator verifies source identity, approval, scope and resource reservations.
 // This reducer persists only observations and never grants execution authority.
-export function applyTeamEvent(task, input, now = Date.now()) {
+export function applyTeamEvent(task, input, now = Date.now(), { humanActorIds = [task.authority?.actor] } = {}) {
   value(input.eventId, 'event ID');
   const team = structuredClone(task.team ?? {
     version: 1, status: 'planning', workers: [], questions: [], events: [], updates: [],
@@ -256,13 +256,17 @@ export function applyTeamEvent(task, input, now = Date.now()) {
       const observed = input.worker;
       receipt(observed, now);
       if (!worker.stop || observed.workerId !== worker.workerId || observed.runId !== worker.stop.runId ||
-          !['running', 'stopped', 'completed'].includes(observed.status)) throw new Error('Exact worker stop observation required.');
+          !['running', ...TERMINAL].includes(observed.status)) throw new Error('Exact worker stop observation required.');
       if (worker.stop.observation && observed.observedAt < worker.stop.observation.observedAt) throw new Error('Worker stop observation regressed.');
       worker.stop.observation = structuredClone(observed);
-      if (['stopped', 'completed'].includes(observed.status)) {
+      if (TERMINAL.has(observed.status)) {
+        worker.stop.status = 'stopped'; worker.status = observed.status; worker.observation = structuredClone(observed);
+        if (['failed', 'missing'].includes(observed.status)) {
+          worker.evidence = [];
+          break;
+        }
         if (!observed.checkpoint || !observed.checkpoint.reference || !observed.checkpoint.nextAction ||
             observed.checkpoint.head !== task.head) throw new Error('Stopped worker requires durable current recovery checkpoint.');
-        worker.stop.status = 'stopped'; worker.status = observed.status; worker.observation = structuredClone(observed);
         if (observed.status === 'completed') {
           validateCompletionEvidence(view, worker, observed, observed.evidence, now);
           worker.evidence = structuredClone(observed.evidence);
@@ -315,7 +319,7 @@ export function applyTeamEvent(task, input, now = Date.now()) {
       if (!question || question.answer) throw new Error('Unknown or already answered ticket question.');
       const answer = input.answer;
       receipt(answer, now); value(answer.actor, 'answer actor'); value(answer.text, 'answer text');
-      if (answer.verified !== true || answer.actor !== task.authority?.actor || answer.observedAt < question.observedAt ||
+      if (answer.verified !== true || !Array.isArray(humanActorIds) || !humanActorIds.includes(answer.actor) || answer.observedAt < question.observedAt ||
           answer.planningRevision !== (task.proposal?.binding ?? task.planning?.binding)?.revision || question.planningRevision !== answer.planningRevision) {
         throw new Error('Verified answer must preserve the current planning scope.');
       }
