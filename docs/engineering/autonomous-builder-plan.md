@@ -160,6 +160,13 @@ the existing dispatch intent. Source withdrawal latches separately from proposal
 receipt reconciliation remains available. Connected Linear reads support interactive operation;
 the installed coordinator still requires verified adapters and an observed delivery/recovery pilot.
 
+The [worker creation handoff](agent-task-lifecycle.md#worker-creation-handoff) connects planning
+dispatch to installed worker-create and task-service lookup adapters. Opted-in intents reserve
+first-send permission durably, recheck complete human scope immediately before creation and bind
+actual handles. An unattempted intent can resume after fresh checks; an uncertain attempt or legacy
+intent requires reconciliation. This integration does not activate the queue or establish private
+worker isolation, all-worker limits or live recovery.
+
 For a local coordinator run, [`createLinearReadSession`](../../scripts/agent-linear-auth.mjs)
 exchanges securely loaded app credentials for a token with only `read` scope. Create a fresh session
 at run start, pass `session.getAccessToken` to the reader and await `session.close()` in the run's

@@ -72,6 +72,53 @@ the queue. The installed coordinator owns worker calls, acknowledgement readback
 and release. Live source provenance, withdrawal/interruption and dispatch recovery still require
 the operational pilot.
 
+### Worker creation handoff
+
+`dispatchPlanningDelivery` in `scripts/agent-planning-delivery-dispatch.mjs` connects the planning
+handoff to the installed coordinator's `createDelivery` and `findDelivery` adapters. The caller
+owns an existing lease and resource allocation. The operation neither claims ownership nor
+changes capacity, starts a scheduler or installs a worker runtime.
+
+New intents opt into `dispatchProtocol: 'attempt-receipt-v1'`. Immediately before creation, the
+handoff verifies the complete human request again and commits `dispatch-attempt` with the exact
+intent token and fresh authority after the current planning read. Only the returned
+`dispatchDecision.action: 'send'` permits creation. The attempt receipt is durable before the
+external call. Repeated attempts return `reconcile`. Legacy intents cannot be upgraded by replaying
+`dispatch-intent`; absent attempt evidence remains uncertain.
+
+An opted-in intent without an attempt or handle can resume after fresh scope and authority checks.
+`preparePlanningDispatch` uses `resumeUnattempted: true` for that operation; its existing-intent
+result still grants no creation permission on its own. Attempted, bound or legacy intents go
+directly to service reconciliation, including after approval withdrawal. A canceled local attempt
+acknowledgement, malformed response, failed call or expired observation never permits replacement.
+
+`createDelivery({ taskId, dispatchToken, mode, revision, brief }, { signal })` must use the accepted
+public-safe brief to create the intended worker. It returns `threadId`, `clientThreadId` or both.
+The handoff passes no proposal body, private planning IDs, attachments, source request or human
+decision record. The installed adapter owns runtime/tool scope and prompt construction; this
+payload boundary does not certify those runtime permissions.
+
+`findDelivery({ taskId, dispatchToken }, { signal })` inspects the owning task service. A matching
+fresh result contains `status: 'found'`, the same task ID and token, a service `reference`,
+`observedAt` and the actual handle. It must verify the stored dispatch identity in that task's
+history. Missing, stale, mismatched or unavailable observations remain `pending`. They do not
+establish that an earlier creation failed. The store rejects conflicting handles.
+
+Confirmed handles are bound immediately; pending worktree setup retains its client handle until
+the service confirms the thread. `status: 'bound'` reports durable acknowledgement, not worker
+completion or renewed execution permission. An acknowledgement committed during cancellation is
+retained with `canceled: true`. Already-started local commits finish before return. Remote work is
+bounded by `maxRunMs`, at most 60 seconds, and receives cancellation. The result contains compact
+receipt metadata rather than the approved brief. A late or never-settling external call requires
+service reconciliation; cancellation does not prove that worker creation stopped remotely.
+
+Synthetic integration tests verify the store, scope reads, first-send reservation and worker
+adapters together. Installed tool availability, actual worker identity/isolation, live interruption,
+usage enforcement and successful recovery remain operational pilot gates. Private-only research
+and audit dispatch remain blocked by the existing shared-queue visibility contract.
+
+### Follow-ups and ownership recovery
+
 `reserve-followup` takes a batch of stable event IDs and returns a `followupDecision`: send only
 new events, reconcile an uncertain earlier send, or skip confirmed events. Include its token in
 the follow-up and confirm the receipt only after observing that message in the bound delivery task.

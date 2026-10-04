@@ -170,7 +170,11 @@ it('requires the existing resource reservation and preserves it on dispatch', as
 });
 it('bounds a source adapter that ignores cancellation and creates no intent', async () => {
   const h = await setup(); let observedSignal;
-  expect(await preparePlanningDispatch({ ...h.options, maxRunMs: 20,
+  // Capture real ownership before the short remote deadline, so filesystem scheduling cannot
+  // consume the entire window before the adapter this regression is intended to exercise.
+  const task = (await h.store.list())[0];
+  const store = { list: async () => [task], mutate: h.store.mutate.bind(h.store) };
+  expect(await preparePlanningDispatch({ ...h.options, store, maxRunMs: 20,
     readRequest: (_identity, { signal }) => { observedSignal = signal; return new Promise(() => {}); } })).toMatchObject({ status: 'blocked' });
   expect(observedSignal.aborted).toBe(true);
   expect((await h.store.list())[0].dispatch).toBeNull();

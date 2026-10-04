@@ -4,7 +4,7 @@ import { evaluatePlanningObservation } from './agent-planning-scope.mjs';
 // Connect existing queue ownership, complete planning reads and independently verified human
 // decisions to the existing durable dispatch intent. Worker creation belongs to the coordinator.
 export async function preparePlanningDispatch({ store, owner, taskId, resourceToken, readIssue,
-  readRequest, now = () => Date.now(), maxRunMs = 60_000, signal }) {
+  readRequest, dispatchProtocol, resumeUnattempted = false, now = () => Date.now(), maxRunMs = 60_000, signal }) {
   let controller;
   let cancel;
   let timer;
@@ -13,7 +13,9 @@ export async function preparePlanningDispatch({ store, owner, taskId, resourceTo
     if (!store || typeof store.list !== 'function' || typeof store.mutate !== 'function' ||
         [readIssue, readRequest, now].some((value) => typeof value !== 'function') ||
         [owner, taskId].some((value) => typeof value !== 'string' || !value.trim()) ||
-        !Number.isSafeInteger(maxRunMs) || maxRunMs < 1 || maxRunMs > 60_000) throw new Error('Invalid dispatch handoff.');
+        !Number.isSafeInteger(maxRunMs) || maxRunMs < 1 || maxRunMs > 60_000 ||
+        typeof resumeUnattempted !== 'boolean' ||
+        (dispatchProtocol !== undefined && dispatchProtocol !== 'attempt-receipt-v1')) throw new Error('Invalid dispatch handoff.');
     const startedAt = now();
     controller = new AbortController();
     cancel = () => controller.abort();
@@ -48,7 +50,8 @@ export async function preparePlanningDispatch({ store, owner, taskId, resourceTo
     const task = (await store.list()).find((item) => item.id === taskId);
     if (!task?.planning || task.lease?.owner !== owner || task.lease.expiresAt <= clock() ||
         ['delivered', 'terminal-failure'].includes(task.state)) throw new Error('Planning dispatch requires current ownership.');
-    if (task.dispatch) {
+    if (task.dispatch && !(resumeUnattempted && task.dispatch.protocol === 'attempt-receipt-v1' &&
+        !task.dispatch.attemptedAt && !task.dispatch.threadId && !task.dispatch.clientThreadId)) {
       return { status: 'reconcile', taskId, dispatch: structuredClone(task.dispatch) };
     }
     if (task.requestRevocation) throw new Error('Request authority was withdrawn.');
@@ -85,7 +88,8 @@ export async function preparePlanningDispatch({ store, owner, taskId, resourceTo
     const current = await currentRequest();
     if (!planningRequestMatchesTask(task, current)) throw new Error('Accepted task scope changed.');
     clock();
-    intent = await store.mutate(taskId, 'dispatch-intent', { owner, authority: current.authority, resourceToken });
+    intent = await store.mutate(taskId, 'dispatch-intent', { owner, authority: current.authority,
+      resourceToken, dispatchProtocol });
     clock();
     return { status: intent.nextDispatchAction === 'create' ? 'prepared' : 'reconcile', taskId,
       dispatch: structuredClone(intent.dispatch) };

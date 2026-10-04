@@ -269,6 +269,7 @@ export class AgentTaskStore {
       if (!task) throw new Error('Unknown task.');
       const now = this.now();
       let nextDispatchAction;
+      let dispatchDecision;
       let followupDecision;
       let planningResultDecision;
       if (action === 'claim') {
@@ -367,6 +368,9 @@ export class AgentTaskStore {
           if (TERMINAL.has(task.state)) throw new Error('Terminal work cannot be dispatched.');
           nextDispatchAction = task.dispatch ? 'reconcile' : 'create';
           if (!task.dispatch) {
+            if (input.dispatchProtocol !== undefined && input.dispatchProtocol !== 'attempt-receipt-v1') {
+              throw new Error('Unsupported dispatch receipt protocol.');
+            }
             requirePlanningScope(task, now);
             bindResourceReservation(task, input, now, 'dispatch');
             if (!observationIsFresh(input.authority, now) || input.authority.actor !== task.authority.actor ||
@@ -375,8 +379,30 @@ export class AgentTaskStore {
               throw new Error('Dispatch requires freshly rechecked authority for this revision.');
             }
             task.dispatch = { token: randomUUID(), intentAt: now, clientThreadId: null, threadId: null,
+              ...(input.dispatchProtocol ? { protocol: input.dispatchProtocol } : {}),
               ...(task.resources ? { resourceToken: input.resourceToken } : {}) };
             task.authority = input.authority;
+          }
+        } else if (action === 'dispatch-attempt') {
+          const receipt = task.dispatch;
+          if (!receipt || input.token !== receipt.token || TERMINAL.has(task.state)) {
+            throw new Error('Dispatch send requires the reserved active intent.');
+          }
+          if (receipt.protocol !== 'attempt-receipt-v1' || receipt.attemptedAt || receipt.threadId || receipt.clientThreadId) {
+            dispatchDecision = { action: 'reconcile', receipt };
+          } else {
+            requirePlanningScope(task, now);
+            bindResourceReservation(task, { resourceToken: receipt.resourceToken }, now, 'dispatch');
+            if (!observationIsFresh(input.authority, now) || input.authority.observedAt < receipt.intentAt ||
+                input.authority.actor !== task.authority.actor || input.authority.reference !== task.authority.reference ||
+                input.authority.revision !== task.revision ||
+                (task.planning && (input.authority.planningRevision !== task.planning.binding.revision ||
+                  input.authority.observedAt < task.planning.observation.observedAt))) {
+              throw new Error('Dispatch send requires authority rechecked after current planning scope.');
+            }
+            receipt.attemptedAt = now;
+            task.authority = input.authority;
+            dispatchDecision = { action: 'send', receipt };
           }
         } else if (action === 'bind') {
           if (!task.dispatch) throw new Error('Dispatch intent is required.');
@@ -600,13 +626,15 @@ export class AgentTaskStore {
         ...(action === 'evidence' ? { evidence: input.evidence } : {}),
         ...(action === 'planning-observation' ? { planning: task.planning.observation } : {}),
         ...(action === 'request-revocation' ? { requestRevocation: task.requestRevocation } : {}),
+        ...(action === 'dispatch-attempt' ? { dispatch: structuredClone(task.dispatch) } : {}),
         ...(['planning-result-intent', 'planning-result-attempt', 'planning-result-observation'].includes(action)
           ? { planningResult: structuredClone(task.planningResult) } : {}),
         ...(action === 'resource-usage' ? { usage: input.usage, settledReservations: input.settledReservations ?? [] } : {}),
         ...(['transition', 'release'].includes(action) ? { reason: input.reason } : {}),
       });
       return nextDispatchAction ? { ...task, nextDispatchAction } : followupDecision ? { ...task, followupDecision }
-        : planningResultDecision ? { ...task, planningResultDecision } : task;
+        : planningResultDecision ? { ...task, planningResultDecision }
+        : dispatchDecision ? { ...task, dispatchDecision } : task;
     });
   }
 }

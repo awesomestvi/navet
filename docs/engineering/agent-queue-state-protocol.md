@@ -38,6 +38,10 @@ if it is unavailable, report the missing owner privately before mutating state.
    interrupted, locate the task using its saved request ID/token and bind that existing task.
    If no task can be found and the creation outcome is uncertain, report the uncertainty. A
    missing observation does not establish that creation failed.
+   The [worker creation handoff](agent-task-lifecycle.md#worker-creation-handoff) connects these
+   calls to an explicit first-send receipt. Adopt its protocol only with an adapter that obeys
+   `dispatch-attempt`; preserve legacy intent uncertainty and verify handles through their owning
+   service. Its bound result is an acknowledgement, not product delivery or acceptance.
 7. Save worktree, branch, PR/proposal URL, next action and unresolved questions using `context`.
    The coordinator remains the record writer. It reads delivery-task progress instead of requiring
    simultaneous writers or giving the delivery task access to private automation storage.
