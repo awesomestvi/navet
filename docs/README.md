@@ -119,8 +119,6 @@ Git history and the linked issue retain that context without presenting it as a 
   Queue reconciliation, dispatch receipts, follow-ups, and verified completion.
 - [engineering/autonomous-builder-plan.md](engineering/autonomous-builder-plan.md)
   Open delivery, discovery, and maturity work with explicit operational exit gates.
-- [engineering/agent-ui-evaluation.md](engineering/agent-ui-evaluation.md)
-  Controlled evaluation of agent UI context against representative source-backed tasks.
 - [engineering/private-home-testing.md](engineering/private-home-testing.md)
   Secure branch testing against a private Home Assistant installation.
 
