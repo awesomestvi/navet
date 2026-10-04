@@ -64,8 +64,9 @@ in the app-owned layers above.
 
 The [component maturity inventory](component-maturity.json) records inspected canonical components,
 their coupling and supporting source/story references. Run `pnpm agent:components <name>` to see
-this guidance beside the actual API. The inventory covers all 87 component and namespace contracts
-in the current generated catalog: 73 app-coupled and 14 experimental. The catalog also contains
+this guidance beside the actual API. The inventory covers 99 component and namespace contracts:
+87 top-level entries and 12 callable namespace members. Of these contracts, 82 are app-coupled
+and 17 are experimental. The catalog also contains
 65 type exports and 45 token/helper values; these retain source-derived APIs without component
 maturity labels. App coupling describes dependencies on Navet context, types or helpers; it does not establish a component's readiness. Types and token helpers retain their
 source-derived APIs without inheriting the classification of a component that uses them. Importability
