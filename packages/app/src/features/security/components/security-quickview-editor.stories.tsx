@@ -96,8 +96,10 @@ type Story = StoryObj<typeof meta>;
 
 export const DragIntoQuickview: Story = {
   play: async ({ canvasElement }) => {
-    const page = within(canvasElement.ownerDocument.body);
-    const handle = page.getByRole('button', { name: /Garden gate/ });
+    const devices = canvasElement.querySelector(
+      '[data-security-drop-zone="devices"]'
+    ) as HTMLElement;
+    const handle = within(devices).getByRole('button', { name: /^Garden gate\b/ });
     const target = canvasElement.querySelector(
       '[data-security-drop-zone="quickview"]'
     ) as HTMLElement;
@@ -138,7 +140,9 @@ export const DragIntoQuickview: Story = {
       clientX: destination.right - 30,
       clientY: destination.top + 35,
     });
-    await expect(within(target).getByRole('button', { name: /Garden gate/ })).toBeInTheDocument();
+    await expect(
+      within(target).getByRole('button', { name: /^Garden gate\b/ })
+    ).toBeInTheDocument();
   },
 };
 export const EmptyQuickview: Story = { args: { initiallyEmpty: true } };
@@ -151,7 +155,7 @@ export const KeyboardDrag: Story = {
     const devices = canvasElement.querySelector(
       '[data-security-drop-zone="devices"]'
     ) as HTMLElement;
-    const handle = within(devices).getByRole('button', { name: /Garden gate/ });
+    const handle = within(devices).getByRole('button', { name: /^Garden gate\b/ });
     (handle.closest('[data-card-drag-surface]') as HTMLElement).focus();
     await userEvent.keyboard(' {ArrowUp}{Escape}');
     await expect(within(quickview).queryByText('Garden gate')).not.toBeInTheDocument();
@@ -160,16 +164,16 @@ export const KeyboardDrag: Story = {
     await expect(within(quickview).getByText('Garden gate')).toBeInTheDocument();
     (
       within(quickview)
-        .getByRole('button', { name: /Garden gate/ })
+        .getByRole('button', { name: /^Garden gate\b/ })
         .closest('[data-card-drag-surface]') as HTMLElement
     ).focus();
     await userEvent.keyboard(' {ArrowLeft} ');
     await expect(
-      within(quickview).getAllByRole('button', { name: /Front door|Garden gate/ })[0]
+      within(quickview).getAllByRole('button', { name: /^(?:Front door|Garden gate)\b/ })[0]
     ).toHaveTextContent('Garden gate');
     (
       within(quickview)
-        .getByRole('button', { name: /Garden gate/ })
+        .getByRole('button', { name: /^Garden gate\b/ })
         .closest('[data-card-drag-surface]') as HTMLElement
     ).focus();
     await userEvent.keyboard(' {ArrowDown} ');

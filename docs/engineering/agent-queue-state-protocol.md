@@ -29,11 +29,19 @@ if it is unavailable, report the missing owner privately before mutating state.
    Call `dispatch-intent` with that fresh authority observation, matching actor, reference and
    revision. The returned `nextDispatchAction` is `create` only for the first committed intent.
    `reconcile` means inspect existing tasks; it does not permit another task-creation call.
+   For planning-bound records, use the
+   [planning dispatch handoff](agent-task-lifecycle.md#dispatch-and-recovery) to join fresh source
+   reads and exact accepted scope to this intent. Its `prepared` result permits the initial worker
+   call; `reconcile` and `blocked` never permit creation.
 6. Include the task ID and dispatch token in the delivery prompt. Save the returned handle with
    `bind` immediately. A pending client handle is not a confirmed thread. If acknowledgement is
    interrupted, locate the task using its saved request ID/token and bind that existing task.
    If no task can be found and the creation outcome is uncertain, report the uncertainty. A
    missing observation does not establish that creation failed.
+   The [worker creation handoff](agent-task-lifecycle.md#worker-creation-handoff) connects these
+   calls to an explicit first-send receipt. Adopt its protocol only with an adapter that obeys
+   `dispatch-attempt`; preserve legacy intent uncertainty and verify handles through their owning
+   service. Its bound result is an acknowledgement, not product delivery or acceptance.
 7. Save worktree, branch, PR/proposal URL, next action and unresolved questions using `context`.
    The coordinator remains the record writer. It reads delivery-task progress instead of requiring
    simultaneous writers or giving the delivery task access to private automation storage.
@@ -42,8 +50,10 @@ if it is unavailable, report the missing owner privately before mutating state.
    observations. After a push, record the new head before evaluating readiness.
 9. Present one current-head approval package when applicable gates pass. A completed Codex turn
    is not merge, public research delivery, or acceptance. For implementation, verify the
-   maintainer's merge and exact accepted head before recording `delivered`. For research, verify
-   the actual Nisse comment author and URL. Preserve cleanup work independently.
+   maintainer's merge and exact accepted head before recording `delivered`. For public research,
+   verify the actual Nisse comment author and URL. Private planning results require the separate
+   [Linear result readback](autonomous-builder-plan.md#private-result-readback) contract; its writer,
+   queue integration and live pilot remain activation gates. Preserve cleanup work independently.
 
 The default capacity is one unfinished claimed or dispatched task. Lease expiration does not
 free dispatched capacity. Reconcile existing work before creating another delivery. Do not mark a
@@ -78,7 +88,10 @@ record and report the concrete failure privately. Do not create a replacement ta
 state needs no extra notification. For bounded intake, include the approved numerical
 `resourceLimits` and follow the [execution budget procedure](agent-task-lifecycle.md#execution-budgets):
 refresh actual cumulative usage, reserve before executing, bind operation tokens, and settle only
-verified completed usage. Inspect the real worker when a limit is reached and preserve its checkpoint.
+verified completed usage. Use the [bound worker monitor](agent-task-lifecycle.md#monitor-bound-workers)
+with trusted runtime adapters to persist exact-run stop intents, enforce bounded interruption retries,
+and verify a stopped worker's checkpoint. Failed aggregate measurements invalidate cached usage;
+an interruption acknowledgement alone cannot establish a stop.
 Identify existing unbounded records and unavailable measurements in coverage reports. Lease duration
 controls ownership; execution budgets control the task's elapsed time and resource units. Activation
 requires a verified usage source and monitored-worker pilot.

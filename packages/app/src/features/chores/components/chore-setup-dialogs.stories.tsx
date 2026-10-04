@@ -4,7 +4,7 @@ import type { ChorePresentationMetadata } from '@navet/core/chore-experience';
 import type { ChoreDefinition } from '@navet/core/chores';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
-import { expect, fireEvent, fn, userEvent, within } from 'storybook/test';
+import { expect, fireEvent, fn, userEvent, waitFor, within } from 'storybook/test';
 import {
   AddChoreDialog,
   AddPersonDialog,
@@ -365,7 +365,7 @@ export const MobileStepperEditor: Story = {
       'Water the plants'
     );
     await expect(within(dialog).getByRole('heading', { name: 'More options' })).toBeInTheDocument();
-    await expect(within(dialog).getByLabelText('Instructions')).toBeVisible();
+    await waitFor(() => expect(within(dialog).getByLabelText('Instructions')).toBeVisible());
     await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
     await expect(within(dialog).getByLabelText('Assignment')).toBeInTheDocument();
     await expect(within(dialog).queryByLabelText('Chore name')).toBeNull();
@@ -512,7 +512,9 @@ export const NumericAndScheduleValidation: Story = {
     const estimated = within(dialog).getByLabelText('Estimated minutes');
     fireEvent.change(estimated, { target: { value: '1.5' } });
     await expect(estimated).toHaveAttribute('aria-invalid', 'true');
-    await expect(within(dialog).getByText(/Enter a whole number from 0 to 1,?440\./)).toBeVisible();
+    await waitFor(() =>
+      expect(within(dialog).getByText(/Enter a whole number from 0 to 1,?440\./)).toBeVisible()
+    );
     await expect(within(dialog).getByRole('button', { name: 'Next' })).toBeDisabled();
     fireEvent.change(estimated, { target: { value: '5' } });
 

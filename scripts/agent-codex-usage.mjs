@@ -16,21 +16,27 @@ function validateTotals(value, previous) {
 }
 
 // Observe a fixed complete-record prefix. A live writer's unfinished trailing record is not evidence.
-export async function observeCodexUsage({ sessionFile, threadId }, { now = Date.now() } = {}) {
+export async function observeCodexUsage({ sessionFile, threadId }, { now = Date.now(), signal, maxSnapshotBytes = 134_217_728 } = {}) {
   if (typeof sessionFile !== 'string' || !sessionFile || typeof threadId !== 'string' || !threadId ||
-    !Number.isFinite(now)) throw new Error('A session file and confirmed thread ID are required.');
+    !Number.isFinite(now) || !Number.isSafeInteger(maxSnapshotBytes) || maxSnapshotBytes < 1 || maxSnapshotBytes > 536_870_912) {
+    throw new Error('A session file, confirmed thread ID and bounded snapshot policy are required.');
+  }
+  if (signal?.aborted) throw new Error('Canceled native usage read.');
   const file = path.resolve(sessionFile);
   const snapshot = await stat(file);
   if (!snapshot.isFile() || snapshot.size === 0) throw new Error('Codex session evidence is empty or unavailable.');
+  if (snapshot.size > maxSnapshotBytes) throw new Error('Codex session evidence is oversized.');
   const direct = new Set();
   const nested = new Set();
   let metadata = false;
   let totals = null;
   let source = null;
+  let nativeTurn = null;
   let buffer = '';
   let lineNumber = 0;
 
   function accept(line) {
+    if (Buffer.byteLength(line) > 16 * 1024 * 1024) throw new Error('Session record exceeds the observation size limit.');
     lineNumber += 1;
     let record;
     try { record = JSON.parse(line); } catch { throw new Error(`Malformed complete session record at line ${lineNumber}.`); }
@@ -41,6 +47,24 @@ export async function observeCodexUsage({ sessionFile, threadId }, { now = Date.
       metadata = true;
     } else if (!metadata) {
       throw new Error('Session metadata must precede usage evidence.');
+    }
+    if (record.type === 'event_msg' && ['task_started', 'task_complete', 'turn_aborted'].includes(payload.type)) {
+      const observedAt = Date.parse(record.timestamp);
+      if (typeof payload.turn_id !== 'string' || !payload.turn_id || !Number.isSafeInteger(observedAt) ||
+          observedAt > now || (nativeTurn && observedAt < nativeTurn.observedAt) ||
+          (payload.thread_id !== undefined && payload.thread_id !== threadId)) {
+        throw new Error('Invalid native turn identity or observation time.');
+      }
+      if (payload.type !== 'task_started' && nativeTurn?.runId !== payload.turn_id) {
+        throw new Error('Terminal usage marker requires its preceding native turn start.');
+      }
+      if (payload.type === 'task_started' && nativeTurn?.runId === payload.turn_id && nativeTurn.status !== 'running') {
+        throw new Error('A terminal native turn ID cannot restart.');
+      }
+      nativeTurn = { runId: payload.turn_id, status: payload.type === 'task_started' ? 'running'
+        : payload.type === 'task_complete' ? 'completed' : 'interrupted', observedAt, line: lineNumber,
+        startedAt: payload.type === 'task_started' ? observedAt : nativeTurn.startedAt,
+        startLine: payload.type === 'task_started' ? lineNumber : nativeTurn.startLine };
     }
     const currentUsage = record.type === 'event_msg' && payload.type === 'token_count';
     if (record.type === 'token_usage_record' || currentUsage) {
@@ -58,10 +82,12 @@ export async function observeCodexUsage({ sessionFile, threadId }, { now = Date.
       source = { line: lineNumber, observedAt };
     }
     if (record.type === 'response_item' && ['function_call', 'custom_tool_call'].includes(payload.type)) {
+      if (nativeTurn && nativeTurn.status !== 'running') throw new Error('Operation follows a terminal native turn.');
       if (typeof payload.call_id !== 'string' || !payload.call_id) throw new Error('Tool call has no stable identity.');
       direct.add(payload.call_id);
     }
     if (record.type === 'event_msg' && payload.type === 'item_completed' && operationTypes.has(payload.item?.type)) {
+      if (nativeTurn && nativeTurn.status !== 'running') throw new Error('Operation follows a terminal native turn.');
       if (payload.thread_id !== threadId || typeof payload.item.id !== 'string' || !payload.item.id) {
         throw new Error('Nested operation has no matching thread or stable identity.');
       }
@@ -69,14 +95,14 @@ export async function observeCodexUsage({ sessionFile, threadId }, { now = Date.
     }
   }
 
-  for await (const chunk of createReadStream(file, { encoding: 'utf8', start: 0, end: snapshot.size - 1 })) {
+  for await (const chunk of createReadStream(file, { encoding: 'utf8', start: 0, end: snapshot.size - 1, signal })) {
     buffer += chunk;
     let newline;
     while ((newline = buffer.indexOf('\n')) !== -1) {
       accept(buffer.slice(0, newline));
       buffer = buffer.slice(newline + 1);
     }
-    if (buffer.length > 16 * 1024 * 1024) throw new Error('Session record exceeds the observation size limit.');
+    if (Buffer.byteLength(buffer) > 16 * 1024 * 1024) throw new Error('Session record exceeds the observation size limit.');
   }
   if (!metadata || !totals || !source) throw new Error('Verified cumulative token usage is missing; it is not zero usage.');
   return {
@@ -89,6 +115,7 @@ export async function observeCodexUsage({ sessionFile, threadId }, { now = Date.
     recordedNestedOperations: nested.size,
     observedOperationUnits: direct.size + nested.size,
     source: { file, ...source, completeLines: lineNumber, snapshotBytes: snapshot.size, ignoredPartialTail: buffer.length > 0 },
+    ...(nativeTurn ? { nativeTurn } : {}),
     coverage: 'Whole-thread token totals including cached input; direct tool calls plus recorded nested operation units. In-flight completion, hidden operations and provider-enforced limits are not established.',
   };
 }

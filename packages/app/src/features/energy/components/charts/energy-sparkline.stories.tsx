@@ -66,7 +66,9 @@ export const RecordedPowerPeaks: Story = {
     ],
   },
   play: async ({ canvas, canvasElement }) => {
-    await expect(canvas.getByText('2,279')).toBeVisible();
+    // Axis guides use rounded power values; the hovered interval retains exact statistics.
+    await expect(canvas.getByText('2,000')).toBeVisible();
+    await expect(canvas.getByText('1,000')).toBeVisible();
     await expect(canvas.queryByText('5,287')).not.toBeInTheDocument();
     await expect(canvas.queryByText('Average', { exact: true })).not.toBeInTheDocument();
     await expect(canvasElement.querySelectorAll('svg line')).toHaveLength(0);

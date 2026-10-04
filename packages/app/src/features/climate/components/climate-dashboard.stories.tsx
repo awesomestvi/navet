@@ -1,4 +1,5 @@
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
+import { InfoCard } from '@navet/app/features/sensors/components/sensor-card';
 import type {
   PlatformEntitySnapshotMap,
   PlatformMessageClient,
@@ -10,10 +11,11 @@ import type {
 import { getProviderRuntimeRegistration } from '@navet/app/provider-runtime-registry';
 import { integrationStore } from '@navet/app/stores/integration-store';
 import { useThemeStore } from '@navet/app/stores/theme-store';
+import { EntityCardStoryFrame, noopCardSizeChange } from '@navet/app/storybook/story-frames';
 import type { DeviceWithType } from '@navet/app/types/device.types';
 import type { NavetEntity } from '@navet/core/types';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { type ComponentProps, type ReactNode, useEffect, useMemo } from 'react';
+import { type ComponentProps, type ReactNode, useEffect, useMemo, useState } from 'react';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { ClimateDashboard } from './climate-dashboard';
 
@@ -198,6 +200,9 @@ function createDeviceMap(
 }
 
 function ClimateFixture({ devices, children }: { devices: DeviceWithType[]; children: ReactNode }) {
+  const [installedRuntime, setInstalledRuntime] = useState<ProviderEntityRuntimeService | null>(
+    null
+  );
   const theme = useThemeStore((state) => state.theme);
   const surface = getThemeSurfaceTokens(theme);
   const entitySnapshots = useMemo<PlatformEntitySnapshotMap>(
@@ -278,6 +283,7 @@ function ClimateFixture({ devices, children }: { devices: DeviceWithType[]; chil
         })
       ),
     });
+    setInstalledRuntime(entityRuntimeService);
     return () => {
       integrationStore.setState(previousIntegration);
       registration.entityRuntimeService = previousEntityRuntimeService;
@@ -285,7 +291,12 @@ function ClimateFixture({ devices, children }: { devices: DeviceWithType[]; chil
     };
   }, [devices, entityRuntimeService, historyFeatureService]);
 
-  return <div className={`min-h-screen p-3 md:p-6 ${surface.appBg}`}>{children}</div>;
+  // Snapshot hooks capture their runtime on mount; install the fixture before rendering them.
+  return (
+    <div className={`min-h-screen p-3 md:p-6 ${surface.appBg}`}>
+      {installedRuntime === entityRuntimeService ? children : null}
+    </div>
+  );
 }
 
 function ClimateDashboardStory(props: ComponentProps<typeof ClimateDashboard>) {
@@ -322,11 +333,8 @@ export const Comfortable: Story = {
     const canvas = within(canvasElement);
 
     await userEvent.click(canvas.getByRole('tab', { name: /Temperature/ }));
-    await waitFor(() => {
-      expect(canvas.getByTestId('sensor-history-sparkline')).toBeInTheDocument();
-    });
-    const sparkline = canvas.getByTestId('sensor-history-sparkline').querySelector('svg');
-    expect(sparkline?.getBoundingClientRect().height).toBeGreaterThan(0);
+    await canvas.findByTitle('21.4 °C');
+    await expect(canvas.queryByTestId('sensor-history-sparkline')).not.toBeInTheDocument();
 
     await userEvent.click(canvas.getByRole('tab', { name: /Humidity/ }));
     await waitFor(() => {
@@ -339,6 +347,37 @@ export const Comfortable: Story = {
     });
     const qualityFill = canvasElement.querySelector<HTMLElement>('[data-quality-bar-fill]');
     expect(qualityFill?.getBoundingClientRect().height).toBeGreaterThan(0);
+  },
+};
+
+export const TemperatureHistoryCard: Story = {
+  render: () => {
+    const sensor = comfortableDevices.find((device) => device.id === 'sensor.living_temperature');
+    if (!sensor) throw new Error('Temperature history fixture is incomplete');
+    return (
+      <ClimateFixture devices={[sensor]}>
+        <EntityCardStoryFrame size="medium">
+          <InfoCard
+            id={sensor.id}
+            name="Living room temperature"
+            room="Living room"
+            value="21.4"
+            unit="°C"
+            deviceClass="temperature"
+            status="measurement"
+            size="medium"
+            onSizeChange={noopCardSizeChange}
+            isEditMode={false}
+          />
+        </EntityCardStoryFrame>
+      </ClimateFixture>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const history = await canvas.findByTestId('sensor-history-sparkline');
+    await expect(history).toBeVisible();
+    await expect(history.querySelector('svg')?.getBoundingClientRect().height).toBeGreaterThan(0);
   },
 };
 

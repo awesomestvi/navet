@@ -7,6 +7,7 @@ import { normalizeChoreExperienceState } from '@navet/core/chore-experience';
 import { createChoreInterchangeDocument } from '@navet/core/chore-interchange';
 import { applyChoreWorkspaceAction } from '@navet/core/chores';
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import MockDate from 'mockdate';
 import { act, useEffect, useState } from 'react';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { AllChoresView } from './chore-management-views';
@@ -283,6 +284,7 @@ function HouseholdPointsStory() {
     const store = useChoreWorkspaceStore.getState();
     const originalExecute = store.execute;
     const originalUnlockManagement = store.unlockManagement;
+    let commandSequence = 0;
     const workspace = createChoreDemoWorkspace({ copy: DEMO_COPY });
     const experience = normalizeChoreExperienceState(workspace.experience);
     const data = {
@@ -332,7 +334,7 @@ function HouseholdPointsStory() {
         try {
           const result = applyChoreWorkspaceAction({
             action,
-            commandId: `story:${Date.now()}`,
+            commandId: `story:${++commandSequence}`,
             timestamp: new Date().toISOString(),
             workspace: current.data,
           });
@@ -387,6 +389,11 @@ const meta = {
   title: 'Pages/Household/Today',
   component: HouseholdStory,
   tags: ['autodocs'],
+  beforeEach: () => {
+    // Keep the real overdue-state assertions independent of the machine's time of day.
+    MockDate.set(new Date(2026, 8, 1, 12));
+    return () => MockDate.reset();
+  },
   parameters: {
     layout: 'fullscreen',
     docs: {

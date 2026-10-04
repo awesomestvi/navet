@@ -98,6 +98,213 @@ label does not approve it. Capture the approving maintainer, proposal revision, 
 acceptance criteria, permitted scope, and visibility decision. Material scope changes require an
 updated approval; implementation details within that scope remain autonomous.
 
+### Approval-to-queue handoff
+
+The local `enqueuePlanningRequest` helper in
+[`agent-planning-intake.mjs`](../../scripts/agent-planning-intake.mjs) joins an independently
+verified maintainer request to its exact Linear proposal revision. It reads the trusted request,
+checks the complete current proposal, and rechecks the request before adding one idempotent queue
+record. Scope changes, withdrawal, ambiguous stages, incomplete reads and unavailable services
+block intake. The queued task requires another fresh planning observation before execution.
+
+The coordinator supplies two service adapters:
+
+- `readRequest({ source, requestId })` verifies the human decision and current permissions through
+  its owning trusted source. It returns `{ status: 'authorized', request }` only for an authorized
+  request. The request uses the task-store schema, includes `planningBinding`, and its authority
+  records `revision`, `planningRevision`, actor, stable reference and fresh `observedAt`. The brief
+  requires nonempty `selectedOption`, `permittedChanges` and `acceptanceCriteria`, plus explicit
+  `visibility`: `private-planning` or `public-delivery-approved`. The latter records the human's
+  authorization for a scoped public delivery; private planning alone does not authorize publication.
+  Implementation and stewardship intake require `public-delivery-approved`, since these delivery
+  workers produce public PRs. Private research and audit records retain private planning scope;
+  they cannot execute through the shared public delivery queue.
+- `readIssue(issueId)` returns a complete fresh planning observation with `status`, service
+  `reference`, `observedAt` and the issue, including all attachment references, label names and
+  explicit lifecycle fields. Unavailable reads cannot reuse an earlier pass.
+
+When the coordinator has a connected Linear integration, `createLinearConnectorIssueReader` in
+[`agent-linear-connector-reader.mjs`](../../scripts/agent-linear-connector-reader.mjs) accepts only
+workspace, current-user and issue read callbacks. Pin the expected workspace, active account, team
+and project independently. Two complete reads must agree, including attachments, stage labels and
+lifecycle fields. Failed or truncated responses remain unavailable. This path loads no app
+credentials and supports interactive work while a dedicated app is being configured. Verify that
+the installed coordinator has these tools before relying on it for unattended operation. Connector
+account identity constrains reads; it cannot establish human approval or separate an agent write
+from a human decision. Supply the human-request adapter independently in either reader mode.
+
+[`createLinearIssueReader`](../../scripts/agent-linear-reader.mjs) implements the read-only Linear
+adapter. Configure the expected workspace, app user, team and project IDs in private runner state,
+and supply an OAuth access-token callback backed by secure credential storage. The reader checks
+the active app identity on every response, follows complete attachment and label pagination, and
+compares two complete reads before returning an observation. It uses Linear's fixed GraphQL endpoint
+with redirects disabled. Defaults bound each operation to 20 seconds and each snapshot to 20 pages;
+oversized responses, incomplete pagination, identity mismatches and service errors remain unverified.
+Permission-masked not-found errors do not establish deletion. The two-read comparison checks
+stability, not transactional isolation; execution still requires its own fresh scope check.
+
+The query follows Linear's [cursor pagination contract](https://linear.app/developers/pagination)
+and [official SDK schema](https://github.com/linear/linear/blob/master/packages/sdk/src/schema.graphql).
+Unit transport fixtures verify failure handling and identity boundaries. A live app-token read and
+the independently authenticated maintainer-request adapter remain activation work.
+
+The [authenticated intake run](agent-task-lifecycle.md#authenticated-intake-run) joins the scoped
+reader session to the human-request adapter and idempotent queue intake. It bounds source reads,
+rechecks authority after the complete proposal read, and awaits token revocation. It does not
+claim records or dispatch workers. A committed queue receipt survives cancellation or unavailable
+cleanup; execution still requires fresh authority and proposal observations.
+
+The [planning dispatch handoff](agent-task-lifecycle.md#dispatch-and-recovery) joins current queue
+ownership, complete proposal observations and the exact accepted human brief before reserving
+the existing dispatch intent. Source withdrawal latches separately from proposal scope, while
+receipt reconciliation remains available. Connected Linear reads support interactive operation;
+the installed coordinator still requires verified adapters and an observed delivery/recovery pilot.
+
+The [worker creation handoff](agent-task-lifecycle.md#worker-creation-handoff) connects planning
+dispatch to installed worker-create and task-service lookup adapters. Opted-in intents reserve
+first-send permission durably, recheck complete human scope immediately before creation and bind
+actual handles. An unattempted intent can resume after fresh checks; an uncertain attempt or legacy
+intent requires reconciliation. This integration does not activate the queue or establish private
+worker isolation, all-worker limits or live recovery.
+
+For a local coordinator run, [`createLinearReadSession`](../../scripts/agent-linear-auth.mjs)
+exchanges securely loaded app credentials for a token with only `read` scope. Create a fresh session
+at run start, pass `session.getAccessToken` to the reader and await `session.close()` in the run's
+`finally` block. Closing immediately clears local token access and revokes the token at Linear with
+a separate five-second cleanup deadline. Repeated closes share the same cleanup result. Only an
+acknowledged revocation is verified; unavailable cleanup leaves the run blocked for recovery.
+Tokens received with an invalid grant are also revoked before authentication fails.
+When token transport or its response body ignores cancellation, authentication still fails at its
+deadline and reports unverified revocation. A byte-limited observer retains the pending grant and
+revokes any token received later. The rejected operation exposes a redacted `cleanup` promise;
+the installed runner must remain alive to observe it. A process exit or never-settling transport
+cannot establish cleanup, and late revocation does not restore execution authority.
+Expired, canceled or closed sessions cannot supply a token. Access tokens remain
+in memory; they are not stored in runner JSON or passed in command arguments. This follows Linear's
+[client-credentials procedure](https://linear.app/developers/oauth-2-0-authentication#client-credentials-tokens).
+
+Use a dedicated private OAuth app with client credentials enabled. Restrict the app's team access
+to Navet in Linear's app settings. Its configured IDs still constrain every reader response to the
+planning project. Use a credential manager through `readCredentials` when available. The local
+`readLinearClientCredentials(file)` fallback accepts only an owner-private, regular, singly linked
+JSON file containing `clientId` and `clientSecret`, in an owner-private directory. The file must be
+outside tracked content, typically under `.cache/agent-planning`, with directory mode `0700` and
+file mode `0600`. Platforms without verifiable POSIX ownership require a credential-manager adapter.
+Store credentials through the local secure setup path; do not place them in chat, issue content,
+PRs or command arguments. App installation and a live identity-verified read remain activation gates.
+
+These adapters are the authentication boundary. The helper validates their agreement and freshness;
+it does not authenticate callback output, dispatch a worker or create a public artifact. Approval
+also retains the selected option, acceptance criteria, permitted changes and visibility in the
+trusted work brief. Public delivery requires the recorded visibility decision.
+
+The task store checks public-delivery visibility at the planning execution gate for every mode.
+A private-only or legacy record with no visibility decision cannot start new execution, reserve
+new follow-ups or reach delivery transitions, even if it bypassed intake. Monitoring an existing
+dispatch receipt remains possible without authorizing new work. The shared queue delivers research
+through public Nisse comments. A dedicated private completion route into the planning hub remains
+required before private research and audit records can dispatch. Their visibility does not authorize
+public artifacts.
+
+### Private result readback
+
+[`createLinearResultReader`](../../scripts/agent-linear-result-reader.mjs) reads an exact result
+comment using the read-only app session. Configure the expected writer app identity separately from
+the reader identity. Supply the comment and proposal IDs, the expected Markdown `bodyHash`, and
+`notBefore` from the durable result intent. Record those expectations from the owning worker and
+its accepted scope; comment contents cannot establish their own task identity or approval.
+`linearResultBodyHash` hashes the exact UTF-8 Markdown representation returned by Linear.
+
+The reader checks the workspace, active app identities, proposal team and project, explicit active
+lifecycle fields, content hash, creation time and Linear URL. Cross-system timestamp comparisons
+allow up to 30 seconds of skew between Linear and the runner. Ordering within Linear stays strict,
+and runner observation freshness and approval expiry receive no allowance. Comments written on behalf of a human
+or associated with external sync targets remain unavailable. Two bounded reads must agree. The
+result contains artifact metadata and a service reference, without the comment body or credentials.
+Permission-masked missing comments and service errors remain unverified rather than proving deletion.
+The query follows the [official Linear SDK schema](https://github.com/linear/linear/blob/master/packages/sdk/src/schema.graphql).
+
+Readback verifies the observed artifact, not its quality, proposal approval, complete attachment
+contents, access controls or the absence of other publication channels. The private worker route
+must separately verify the destination before writing, preserve an idempotent result identity,
+reconcile uncertain writes, and recheck accepted scope and human authority before completion.
+The task store's [Linear result receipts](agent-task-lifecycle.md#linear-result-receipts) reserve a
+comment UUID before creation and retain observations for reconciliation. A matching fresh readback
+and separate output evidence are required for readiness or delivery. The installed writer identity, coordinator
+integration and live readback pilot remain activation gates; these building blocks do not enable
+private dispatch or change the shared queue's public visibility requirement.
+
+### Result write adapter
+
+[`createLinearResultWriter`](../../scripts/agent-linear-result-writer.mjs) uses the reserved comment
+ID and exact result Markdown. It checks the active app identity, workspace, proposal team and project,
+explicit lifecycle fields and absence of issue sync targets. Two destination reads must agree.
+Between them it obtains a complete fresh proposal read; after them it rechecks the human request,
+selected brief, required gates and resource limits through the trusted request adapter.
+
+The coordinator supplies `beginWrite({ taskId, commentId, authority, observation })`. Record the
+planning observation and reserve the send using the task-store procedure above. Return only its
+`planningResultDecision`. The adapter accepts a creation or reconciliation intent that has never
+received a send reservation, then requires the durable first-send permit before mutation. It does
+not trust a caller timestamp to renew approval or treat an uncertain attempt as a failed write.
+
+One writer session allows one attempted send. The mutation creates an issue comment without user
+impersonation or a synced Slack-thread request. Cancellation, redirects, changed scope, expired
+credentials and mismatched identities stop the operation. A lost reservation acknowledgement or any
+failure after the reservation returns `uncertain`, requiring inspection of the reserved comment.
+A successful response is only an acknowledgement; the separate result reader verifies output.
+
+Use a separately configured writer OAuth app restricted to Navet. The
+`createLinearCommentSession` factory requests exactly `read,comments:create`, rejects broader or
+incomplete grants and keeps its token in memory for one run. Await token revocation through
+`session.close()` in the run's `finally` block, using its separate bounded cleanup deadline.
+Keep the reader app on read-only scope. Linear's
+[OAuth scope contract](https://linear.app/developers/oauth-2-0-authentication) provides the targeted
+comment permission and states that changing an app's client-credentials scopes invalidates its
+existing app tokens.
+
+The trusted readers and send callback are authentication boundaries; the adapter does not prove
+their assertions. Destination reads are stability checks, not a transaction with the mutation or
+proof that every notification/export channel is disabled. The installed writer, private worker,
+verified destination policy, live queue wiring and live pilot remain activation gates. The
+[coordinator result handoff](agent-task-lifecycle.md#coordinator-result-handoff) joins the adapters
+to durable result intents and observations without activating the queue or granting acceptance.
+The [authenticated result run](agent-task-lifecycle.md#authenticated-result-run) assembles those
+adapters with separate lazy app sessions under one operation deadline, propagates cancellation to
+reads and writes, and awaits bounded token revocation afterward. Unverified cleanup preserves
+the artifact receipt while blocking the run for recovery.
+Transport tests use synthetic credentials and do not establish live permissions or delivery.
+
+The [authenticated refresh run](agent-task-lifecycle.md#authenticated-refresh-run) connects signed
+inbox receipts, scoped app-authenticated proposal reads and durable task reconciliation. Complete
+current reads preserve scope evidence or latch withdrawal; unavailable reads invalidate earlier
+passes and retain receipts. It grants no approval or dispatch authority. Synthetic integration
+coverage does not establish live credentials, webhook delivery or worker interruption.
+
+The [bound worker monitor](agent-task-lifecycle.md#monitor-bound-workers) persists exact-run stop
+intents and bounded retry receipts when accepted scope or measured resources become unavailable.
+Confirmation requires a fresh stopped observation and saved recovery checkpoint. Its protocol
+tests do not establish installed runtime adapters, monitoring cadence, complete task-wide accounting
+or the live interruption and recovery pilot required for activation.
+The [Codex runtime adapter](agent-task-lifecycle.md#codex-runtime-adapter) connects those callbacks
+to stable latest-turn observations and exact-turn interruption through a configured existing
+app-server socket. A separate checkpoint verifier establishes saved recovery state. Protocol
+coverage does not establish an installed endpoint or replace the live recovery pilot.
+The Git-backed checkpoint service binds stopped-turn evidence to saved task context and two
+matching worktree snapshots. It verifies preserved source state after restart; installed monitoring
+and a live interruption/recovery pilot remain required.
+The [task-wide native accounting reader](agent-task-lifecycle.md#task-wide-native-accounting)
+combines complete trusted inventories with native session measurements and a durable participant
+ledger. It preserves stopped-worker totals and rejects changed coverage or per-participant rollback.
+Its unit policy and runtime inventory require independent installed verification before activation.
+
+For Linear-native approval, agent writes need a distinct identity. Linear's
+[OAuth app actor](https://linear.app/developers/oauth-actor-authorization) attributes mutations to
+the installed application; default API authentication can attribute them to the authenticating
+human. A signed webhook alone cannot distinguish a human decision from an agent using that human's
+credentials. Live source adapters, identity separation and an observed authorized pilot remain
+activation gates for automatic approval dispatch.
+
 Every ready proposal contains:
 
 - A concrete household problem, affected journey, sources, and distinction between observations
@@ -347,8 +554,10 @@ The [task lifecycle tools](agent-task-lifecycle.md) provide local state consiste
 building blocks. The [AI design context](../design-system/AI-DESIGN-CONTEXT.md) explains generated
 component discovery. Neither tool establishes that the operational exit gates have passed.
 
-Implement phases in order through small, reviewable PRs. Start Phase 3 after the lifecycle contract
-is established; advance discovery only after delivery and UI gates have been demonstrated.
+Implement phases in order within one coordinated delivery PR by default. Use an explicitly ordered
+stack only when separate review stages help; the agent owns integration maintenance and conflicts.
+Start Phase 3 after the lifecycle contract is established; advance discovery only after delivery
+and UI gates have been demonstrated.
 
 Use an initial pilot of five representative authorized tasks. Include UI work, a reproduced bug,
 documentation work, and an interrupted/recovered delivery. Exercise one planning proposal through
