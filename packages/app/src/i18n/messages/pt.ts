@@ -2452,6 +2452,7 @@ export const ptMessages = {
   'cover.deviceClass.awning': 'Toldos',
   'cover.deviceClass.shutter': 'Venezianas',
   'cover.deviceClass.door': 'Portas',
+  'cover.deviceClass.window': 'Janelas',
   'scene.activate': 'Ativar',
   'scene.activating': 'Ativando...',
   'scene.tapToActivate': 'Toque para aplicar esta cena na hora.',

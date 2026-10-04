@@ -28,7 +28,7 @@ async function setup({ bound = true } = {}) {
   const binding = createPlanningBinding(issue());
   const request = { source: 'trusted-maintainer-request', requestId: 'human-event', mode: 'implement', revision: 'scope',
     authority: { actor: 'maintainer', reference: 'trusted-human-request', observedAt: time, ...(bound ? { planningRevision: binding.revision } : {}) },
-    brief: { acceptanceCriteria: ['Verify selected option.'] }, ...(bound ? { planningBinding: binding } : {}) };
+    brief: { visibility: 'public-delivery-approved', acceptanceCriteria: ['Verify selected option.'] }, ...(bound ? { planningBinding: binding } : {}) };
   const task = await store.enqueue(request);
   await store.mutate(task.id, 'claim', { owner: 'coordinator', durationMs: 300_000 });
   async function accept(extra = {}) {

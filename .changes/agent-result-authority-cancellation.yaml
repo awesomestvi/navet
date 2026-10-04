@@ -1,0 +1,3 @@
+type: internal
+audiences: []
+summary: Forward result-delivery cancellation and deadlines to independently authenticated authority readers.

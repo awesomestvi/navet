@@ -2482,6 +2482,7 @@ export const frMessages = {
   'cover.deviceClass.awning': 'Stores bannes',
   'cover.deviceClass.shutter': 'Volets',
   'cover.deviceClass.door': 'Portes',
+  'cover.deviceClass.window': 'Fenêtres',
   'scene.activate': 'Activer',
   'scene.activating': 'Activation...',
   'scene.tapToActivate': 'Touchez pour appliquer cette scène instantanément.',

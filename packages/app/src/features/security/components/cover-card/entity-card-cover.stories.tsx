@@ -183,3 +183,33 @@ export const Positionless: Story = {
     supportedFeatures: 3,
   },
 };
+
+export const WindowCover: Story = {
+  args: {
+    id: 'cover.window_fixture',
+    initialDeviceClass: 'window',
+    name: 'Kitchen Window',
+    initialState: 'open',
+  },
+};
+
+export const Unavailable: Story = {
+  args: {
+    id: 'cover.unavailable_garage_fixture',
+    initialDeviceClass: 'garage',
+    name: 'Garage Door',
+    initialState: 'unavailable',
+    initialPosition: 0,
+    hasPosition: false,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText('Unavailable')).toBeVisible();
+    await expect(canvas.getByRole('button', { name: 'Open' })).toBeDisabled();
+    await expect(canvas.getByRole('button', { name: 'Toggle Garage Door cover' })).toBeDisabled();
+    await expect(canvas.getByRole('button', { name: 'Garage Door cover' })).toHaveAttribute(
+      'aria-disabled',
+      'true'
+    );
+  },
+};

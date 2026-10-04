@@ -111,6 +111,26 @@ describe('agent issue intake', () => {
     }
   });
 
+  it.each([
+    ['maintainer', 'write', 'write', false],
+    ['maintainer', 'write', 'maintain', true],
+    ['maintainer', 'admin', 'admin', true],
+    ['navet-nisse[bot]', 'admin', 'admin', false],
+    ['maintainer', 'write', undefined, false],
+    ['maintainer', 'read', 'maintain', false],
+    ['maintainer', 'write', 'custom-role', false],
+    ['maintainer', 'write', 'admin', false],
+  ])('checks implementation-label authority for replies: %s with %s/%s', async (actor, permission, role_name, acceptedReply) => {
+    const input = harness({
+      comments: [comment(2, 'navet-nisse[bot]', 'Which Navet version are you using?')],
+      events: [{ event: 'labeled', label: { name: 'navet: implement' }, actor: { login: actor },
+        created_at: comment(1, actor, '').created_at }],
+    });
+    input.github.rest.repos.getCollaboratorPermissionLevel.mockResolvedValue({ data: { permission, role_name } });
+    await acceptAgentComment(input);
+    expect(input.createForIssueComment).toHaveBeenCalledTimes(acceptedReply ? 1 : 0);
+  });
+
   it('ignores URL query marks in a conclusion', async () => {
     const input = harness({
       comments: [

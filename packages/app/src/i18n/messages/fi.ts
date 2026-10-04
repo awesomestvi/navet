@@ -2456,6 +2456,7 @@ export const fiMessages = {
   'cover.deviceClass.awning': 'Markiisit',
   'cover.deviceClass.shutter': 'Ikkunaluukut',
   'cover.deviceClass.door': 'Ovet',
+  'cover.deviceClass.window': 'Ikkunat',
   'scene.activate': 'Aktivoi',
   'scene.activating': 'Aktivoidaan...',
   'scene.tapToActivate': 'Napauta ottaaksesi tämän kohtauksen käyttöön välittömästi.',

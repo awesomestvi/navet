@@ -2281,6 +2281,7 @@ export const zhMessages = {
   'cover.deviceClass.awning': '遮阳篷',
   'cover.deviceClass.shutter': '卷帘门',
   'cover.deviceClass.door': '门',
+  'cover.deviceClass.window': '窗户',
   'scene.tapToActivate': '场景',
   'entityCardInteraction.toggle': '交互 {name}',
   'entityCardInteraction.openSettings': '交互打开设置 {name}',

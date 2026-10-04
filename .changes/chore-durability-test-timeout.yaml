@@ -1,3 +1,0 @@
-type: internal
-audiences: []
-summary: Allow the large chore-storage durability regression to complete on slower CI runners.

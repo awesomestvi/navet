@@ -2482,6 +2482,7 @@ export const deMessages = {
   'cover.deviceClass.awning': 'Markisen',
   'cover.deviceClass.shutter': 'Fensterladen',
   'cover.deviceClass.door': 'Türen',
+  'cover.deviceClass.window': 'Fenster',
   'scene.activate': 'Aktivieren',
   'scene.activating': 'Wird aktiviert...',
   'scene.tapToActivate': 'Tippen, um diese Szene sofort anzuwenden.',

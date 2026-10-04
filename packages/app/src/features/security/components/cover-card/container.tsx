@@ -12,7 +12,7 @@ import { integrationSecurityFeatureService } from '@navet/app/services/integrati
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { ensureCanonicalEntityId } from '@navet/app/utils/provider-entity-id';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
-import { DEVICE_CLASS_CONFIG } from './constants';
+import { DEVICE_CLASS_CONFIG, resolveCoverDeviceClass } from './constants';
 import type { CoverCardProps, CoverState, DeviceClass } from './types';
 import { CoverCardView } from './view';
 
@@ -55,6 +55,7 @@ export const CoverCardContainer = memo(function CoverCardContainer({
   id,
   name,
   room,
+  initialState,
   initialPosition,
   initialPositionMode,
   supportedFeatures: initialSupportedFeatures,
@@ -69,9 +70,11 @@ export const CoverCardContainer = memo(function CoverCardContainer({
   const optimisticPositionRef = useRef<number | null>(null);
   const optimisticPositionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestLivePositionRef = useRef<number | null>(null);
-  const [deviceClass, setDeviceClass] = useState<DeviceClass>(initialDeviceClass);
+  const [deviceClass, setDeviceClass] = useState<DeviceClass>(
+    resolveCoverDeviceClass(initialDeviceClass)
+  );
   const [coverState, setCoverState] = useState<CoverState>(
-    resolvedInitialPosition === 100 ? 'open' : resolvedInitialPosition === 0 ? 'closed' : 'open'
+    initialState ?? (resolvedInitialPosition === 0 ? 'closed' : 'open')
   );
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const { t } = useI18n();
@@ -85,22 +88,31 @@ export const CoverCardContainer = memo(function CoverCardContainer({
   const hasLivePosition = livePosition !== null;
   const hasPosition =
     hasLivePosition || providerState?.hasPosition === true || Boolean(initialHasPosition);
-  const canOpen = supportsCoverFeature(
-    resolvedSupportedFeatures,
-    positionMode === 'tilt' ? COVER_FEATURE_OPEN_TILT : COVER_FEATURE_OPEN,
-    true
-  );
-  const canClose = supportsCoverFeature(
-    resolvedSupportedFeatures,
-    positionMode === 'tilt' ? COVER_FEATURE_CLOSE_TILT : COVER_FEATURE_CLOSE,
-    true
-  );
-  const canStop = supportsCoverFeature(
-    resolvedSupportedFeatures,
-    positionMode === 'tilt' ? COVER_FEATURE_STOP_TILT : COVER_FEATURE_STOP,
-    true
-  );
+  const liveState = providerState?.value ?? initialState ?? coverState;
+  const isUnavailable = liveState === 'unknown' || liveState === 'unavailable';
+  const canOpen =
+    !isUnavailable &&
+    supportsCoverFeature(
+      resolvedSupportedFeatures,
+      positionMode === 'tilt' ? COVER_FEATURE_OPEN_TILT : COVER_FEATURE_OPEN,
+      true
+    );
+  const canClose =
+    !isUnavailable &&
+    supportsCoverFeature(
+      resolvedSupportedFeatures,
+      positionMode === 'tilt' ? COVER_FEATURE_CLOSE_TILT : COVER_FEATURE_CLOSE,
+      true
+    );
+  const canStop =
+    !isUnavailable &&
+    supportsCoverFeature(
+      resolvedSupportedFeatures,
+      positionMode === 'tilt' ? COVER_FEATURE_STOP_TILT : COVER_FEATURE_STOP,
+      true
+    );
   const canSetPosition =
+    !isUnavailable &&
     hasPosition &&
     supportsCoverFeature(
       resolvedSupportedFeatures,
@@ -108,8 +120,7 @@ export const CoverCardContainer = memo(function CoverCardContainer({
       false
     );
 
-  const resolvedDeviceClass =
-    (providerState?.deviceClass as DeviceClass | undefined) ?? deviceClass;
+  const resolvedDeviceClass = resolveCoverDeviceClass(providerState?.deviceClass ?? deviceClass);
   const controlMode = useSettingsStore(
     (state) => state.coverControlModes[ensureCanonicalEntityId(id)]
   );
@@ -158,8 +169,13 @@ export const CoverCardContainer = memo(function CoverCardContainer({
       }
     }
     const liveState = providerState.value as CoverState;
-    if (['open', 'closed', 'opening', 'closing'].includes(liveState)) {
+    if (['open', 'closed', 'opening', 'closing', 'unknown', 'unavailable'].includes(liveState)) {
       setCoverState(liveState);
+      if (liveState === 'unknown' || liveState === 'unavailable') {
+        clearOptimisticPosition();
+        setPosition(0);
+        return;
+      }
       if (nextPosition === null) {
         const statePosition = resolveCoverStatePosition(liveState);
         latestLivePositionRef.current = statePosition;
@@ -268,7 +284,10 @@ export const CoverCardContainer = memo(function CoverCardContainer({
 
   // Get state text and color — active states use the accent color, inactive use muted
   const getStateDisplay = () => {
-    switch (coverState) {
+    switch (isUnavailable ? 'unavailable' : coverState) {
+      case 'unknown':
+      case 'unavailable':
+        return { text: t('common.unavailable'), color: surface.textSecondary, unavailable: true };
       case 'open':
         return { text: t('cover.state.open'), color: colors.cover.open.accent };
       case 'opening':
@@ -284,15 +303,17 @@ export const CoverCardContainer = memo(function CoverCardContainer({
   const cardId = `cover-${name.toLowerCase().replace(/ /g, '-')}`;
   const cardInteraction = useEntityCardInteractionController({
     ariaLabel: t('cover.ariaLabel', { name }),
-    ariaPressed: displayPosition > 0,
+    ariaPressed: !isUnavailable && displayPosition > 0,
     isEditMode,
-    onToggle: () => {
-      if (displayPosition > 0) {
-        handleClose();
-        return;
-      }
-      handleOpen();
-    },
+    onToggle: isUnavailable
+      ? undefined
+      : () => {
+          if (displayPosition > 0) {
+            handleClose();
+            return;
+          }
+          handleOpen();
+        },
     onOpenSettings: () => setIsSettingsOpen(true),
   });
   useEditModeSettingsRequest(id, () => setIsSettingsOpen(true), isEditMode);
@@ -315,7 +336,7 @@ export const CoverCardContainer = memo(function CoverCardContainer({
       openColors={colors.cover.open}
       closedColors={colors.cover.closed}
       cardProps={cardInteraction.cardProps}
-      iconButtonProps={cardInteraction.iconButtonProps}
+      iconButtonProps={{ ...cardInteraction.iconButtonProps, disabled: isUnavailable }}
       settingsButtonProps={cardInteraction.settingsButtonProps}
       theme={theme}
       stateDisplay={stateDisplay}

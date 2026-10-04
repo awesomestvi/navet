@@ -60,16 +60,6 @@ Target package boundary for provider-neutral shared UI exports.
 Today this package remains intentionally small, so many shared UI authoring decisions still happen
 in the app-owned layers above.
 
-## Component Maturity
-
-The [component maturity inventory](component-maturity.json) records inspected canonical components,
-their coupling and supporting source/story references. Run `pnpm agent:components <name>` to see
-this guidance beside the actual API. The inventory covers 28 inspected components: 26 app-coupled
-contracts and two experimental contracts. Other exports remain unclassified. App coupling describes dependencies on Navet context,
-types or helpers; it does not establish a component's readiness. Types and token helpers retain their
-source-derived APIs without inheriting the classification of a component that uses them. Importability
-and passing isolated examples do not establish complete visual or accessibility coverage. Review the affected runtime states before accepting UI.
-
 ## Card Dialog Navigation
 
 Card settings use `BaseCardDialog`, whose card variant defaults to overflow navigation. The first entry in `tabs`

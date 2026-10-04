@@ -1,0 +1,3 @@
+type: internal
+audiences: []
+summary: Preserve native usage accounting when an interrupted command's verified completion receipt arrives after its turn's terminal marker.

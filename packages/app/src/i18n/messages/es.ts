@@ -2466,6 +2466,7 @@ export const esMessages = {
   'cover.deviceClass.awning': 'Toldos',
   'cover.deviceClass.shutter': 'Contraventanas',
   'cover.deviceClass.door': 'Puertas',
+  'cover.deviceClass.window': 'Ventanas',
   'scene.activate': 'Activar',
   'scene.activating': 'Activando...',
   'scene.tapToActivate': 'Toca para aplicar esta escena al instante.',

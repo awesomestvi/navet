@@ -1219,6 +1219,7 @@ function createHomeAssistantState(
       ...commonState,
       value: entity.state,
       position: position ?? tiltPosition,
+      ...securityState,
       positionMode: position != null ? 'position' : tiltPosition != null ? 'tilt' : undefined,
       deviceClass,
       supportedFeatures: readNumberish(entity.attributes?.supported_features),

@@ -1,12 +1,11 @@
 #!/usr/bin/env node
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync, mkdtempSync, mkdirSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import * as ast from 'typescript/unstable/ast';
 import { API, SignatureKind, SymbolFlags } from 'typescript/unstable/sync';
-import { applyComponentMaturity } from './agent-component-maturity.mjs';
 
 function storiesIn(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -52,7 +51,7 @@ function storyTitle(source, checker) {
   return property && ast.isStringLiteral(property.initializer) ? property.initializer.text : null;
 }
 
-export function generateCatalog({ root, entries, stories = [], compilerOptions = {}, maturityInventory }) {
+export function generateCatalog({ root, entries, stories = [], compilerOptions = {} }) {
   root = realpathSync(path.resolve(root));
   entries = entries.map((entry) => ({ ...entry, file: realpathSync(path.resolve(root, entry.file)) }));
   stories = stories.map((file) => realpathSync(path.resolve(root, file)));
@@ -74,38 +73,60 @@ export function generateCatalog({ root, entries, stories = [], compilerOptions =
     const checker = project.checker;
     const relative = (file) => path.relative(root, file).split(path.sep).join('/');
     const records = [];
+    function contractRecord(resolved, name, importFrom) {
+      const declaration = (resolved?.valueDeclaration ?? resolved?.declarations?.[0])?.resolve();
+      if (!declaration) return null;
+      const declarationSource = declaration.getSourceFile();
+      if (!declarationSource.fileName.startsWith(`${root}${path.sep}`) || declarationSource.isDeclarationFile) return null;
+      const type = checker.getTypeOfSymbolAtLocation(resolved, declaration);
+      const signature = checker.getSignaturesOfType(type, SignatureKind.Call)[0];
+      const parameter = signature?.getParameters()[0];
+      const props = parameter ? checker.getTypeOfSymbolAtLocation(parameter, declaration) : null;
+      const propertiesOf = (contract) => checker.getPropertiesOfType(contract).map((prop) => ({
+        name: prop.name, optional: Boolean(prop.flags & SymbolFlags.Optional),
+        type: checker.typeToString(checker.getTypeOfSymbolAtLocation(prop, declaration), declaration),
+      }));
+      return {
+        name, importFrom,
+        kind: resolved.flags & SymbolFlags.Value ? 'value' : 'type',
+        source: relative(declarationSource.fileName),
+        line: declarationSource.getLineAndCharacterOfPosition(declaration.getStart()).line + 1,
+        description: resolved.getDocumentationComment(checker),
+        parameters: props ? checker.typeToString(props, declaration) : null,
+        properties: props ? propertiesOf(props) : [],
+        variants: props?.isUnionType() ? props.getTypes().map((contract) => ({
+          type: checker.typeToString(contract, declaration), properties: propertiesOf(contract),
+        })) : [],
+        // Export presence does not prove maturity. Curated usage docs own stability.
+        stability: 'unclassified', stories: [], symbolKey: symbolKey(resolved),
+      };
+    }
     for (const entry of entries) {
       const source = program.getSourceFile(entry.file);
       const module = source && checker.getSymbolAtLocation(source);
       if (!module) throw new Error(`No module metadata for ${entry.file}.`);
       for (const exported of checker.getExportsOfModule(module)) {
         const resolved = resolveSymbol(checker, exported);
-        const declaration = (resolved?.valueDeclaration ?? resolved?.declarations?.[0])?.resolve();
-        if (!declaration) continue;
-        const declarationSource = declaration.getSourceFile();
-        if (!declarationSource.fileName.startsWith(`${root}${path.sep}`) || declarationSource.isDeclarationFile) continue;
-        const type = checker.getTypeOfSymbolAtLocation(resolved, declaration);
-        const signature = checker.getSignaturesOfType(type, SignatureKind.Call)[0];
-        const parameter = signature?.getParameters()[0];
-        const props = parameter ? checker.getTypeOfSymbolAtLocation(parameter, declaration) : null;
-        const propertiesOf = (contract) => checker.getPropertiesOfType(contract).map((prop) => ({
-          name: prop.name, optional: Boolean(prop.flags & SymbolFlags.Optional),
-          type: checker.typeToString(checker.getTypeOfSymbolAtLocation(prop, declaration), declaration),
-        }));
-        records.push({
-          name: exported.name, importFrom: entry.importFrom,
-          kind: resolved.flags & SymbolFlags.Value ? 'value' : 'type',
-          source: relative(declarationSource.fileName),
-          line: declarationSource.getLineAndCharacterOfPosition(declaration.getStart()).line + 1,
-          description: resolved.getDocumentationComment(checker),
-          parameters: props ? checker.typeToString(props, declaration) : null,
-          properties: props ? propertiesOf(props) : [],
-          variants: props?.isUnionType() ? props.getTypes().map((contract) => ({
-            type: checker.typeToString(contract, declaration), properties: propertiesOf(contract),
-          })) : [],
-          // Export presence does not prove maturity. Curated usage docs own stability.
-          stability: 'unclassified', stories: [], symbolKey: symbolKey(resolved),
-        });
+        const record = contractRecord(resolved, exported.name, entry.importFrom);
+        if (!record) continue;
+        // Discover one level of callable namespace members, without expanding
+        // type exports, scalar tokens, or callable components' static fields.
+        if (record.kind === 'value' && record.parameters === null) {
+          const declaration = resolved.valueDeclaration?.resolve();
+          if (declaration) {
+            const type = checker.getTypeOfSymbolAtLocation(resolved, declaration);
+            if (!checker.getSignaturesOfType(type, SignatureKind.Call).length) {
+              record.members = checker.getPropertiesOfType(type).flatMap((member) => {
+                const memberDeclaration = (member.valueDeclaration ?? member.declarations?.[0])?.resolve();
+                if (!memberDeclaration || !checker.getSignaturesOfType(
+                  checker.getTypeOfSymbolAtLocation(member, memberDeclaration), SignatureKind.Call).length) return [];
+                const contract = contractRecord(member, `${exported.name}.${member.name}`, entry.importFrom);
+                return contract ? [contract] : [];
+              });
+            }
+          }
+        }
+        records.push(record);
       }
     }
     for (const file of stories) {
@@ -130,7 +151,7 @@ export function generateCatalog({ root, entries, stories = [], compilerOptions =
         node.forEachChild(visit);
       }
       visit(source);
-      for (const record of records) {
+      for (const record of records.flatMap((record) => [record, ...(record.members ?? [])])) {
         if (imports.has(record.symbolKey)) record.stories.push({ source: relative(file), title, exports: storyExports });
       }
     }
@@ -145,9 +166,11 @@ export function generateCatalog({ root, entries, stories = [], compilerOptions =
     const catalog = {
       version: 1, sourceFingerprint: fingerprint.digest('hex'),
       guidance: ['docs/design-system/README.md', 'docs/design-system/AI-DESIGN-CONTEXT.md', 'ai/skills/navet-ux.md'],
-      entries: records.map(({ symbolKey: _key, ...record }) => record).sort((a, b) => a.name.localeCompare(b.name)),
+      entries: records.map(({ symbolKey: _key, members, ...record }) => ({ ...record,
+        ...(members ? { members: members.map(({ symbolKey: _memberKey, ...member }) => member) } : {}),
+      })).sort((a, b) => a.name.localeCompare(b.name)),
     };
-    return maturityInventory ? applyComponentMaturity(catalog, { root, inventory: maturityInventory }) : catalog;
+    return catalog;
   } finally {
     snapshot?.dispose();
     api.close();
@@ -157,14 +180,13 @@ export function generateCatalog({ root, entries, stories = [], compilerOptions =
 
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
   const root = process.cwd();
-  const entries = ['primitives', 'patterns', 'tokens'].map((name) => ({
+  const entries = ['primitives', 'patterns'].map((name) => ({
     file: path.join(root, `packages/app/src/ui-kit/${name}.ts`), importFrom: `@navet/app/ui-kit/${name}`,
   }));
-  const maturityInventory = JSON.parse(readFileSync(path.join(root, 'docs/design-system/component-maturity.json'), 'utf8'));
-  const catalog = generateCatalog({ root, entries, stories: storiesIn(path.join(root, 'packages/app/src')), maturityInventory });
+  const catalog = generateCatalog({ root, entries, stories: storiesIn(path.join(root, 'packages/app/src')) });
   const query = process.argv[2];
   if (query) {
-    console.log(JSON.stringify({ sourceFingerprint: catalog.sourceFingerprint, maturityFingerprint: catalog.maturityFingerprint, entries: catalog.entries.filter((entry) => `${entry.name} ${entry.source} ${entry.description}`.toLowerCase().includes(query.toLowerCase())) }, null, 2));
+    console.log(JSON.stringify({ sourceFingerprint: catalog.sourceFingerprint, entries: catalog.entries.flatMap((entry) => [entry, ...(entry.members ?? [])]).filter((entry) => `${entry.name} ${entry.source} ${entry.description}`.toLowerCase().includes(query.toLowerCase())) }, null, 2));
   } else {
     const output = path.join(root, '.cache/agent-design/components.json');
     await mkdir(path.dirname(output), { recursive: true });

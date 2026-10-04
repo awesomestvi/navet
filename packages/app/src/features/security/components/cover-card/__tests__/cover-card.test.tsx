@@ -133,6 +133,66 @@ describe('CoverCard', () => {
     });
   });
 
+  // Keep: these cases verify visible state and supported actions on real cards.
+  it('renders window covers from their initial and live provider class', async () => {
+    renderCoverCard({ initialDeviceClass: 'window', size: 'small' });
+    expect(screen.getByText('Living Room Blind')).toBeVisible();
+    expect(screen.getByText('Windows')).toBeVisible();
+    expect(screen.queryByText('Doors')).not.toBeInTheDocument();
+    const entity = createCoverEntity(100);
+    entity.attributes.device_class = 'window';
+    act(() => homeAssistantStore.setState({ entities: { [entity.entity_id]: entity } }));
+    await waitFor(() => expect(screen.getByText('Open')).toBeVisible());
+    expect(screen.getByText('Windows')).toBeVisible();
+  });
+
+  it.each(['unknown', 'unavailable'] as const)(
+    'renders initial %s without a false closed state',
+    (state) => {
+      renderCoverCard({
+        initialState: state,
+        initialPosition: 0,
+        hasPosition: false,
+        size: 'small',
+      });
+      expect(screen.getByText('Unavailable')).toBeVisible();
+      expect(screen.queryByText('Closed')).not.toBeInTheDocument();
+      expect(screen.queryByText('0%')).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Open' })).toBeDisabled();
+      const cardToggle = screen.getByRole('button', { name: 'Living Room Blind cover' });
+      expect(cardToggle).toHaveAttribute('aria-disabled', 'true');
+      expect(cardToggle).toHaveAttribute('tabindex', '-1');
+      expect(screen.getByRole('button', { name: 'Toggle Living Room Blind cover' })).toBeDisabled();
+      fireEvent.keyDown(cardToggle, { key: 'Enter' });
+      fireEvent.click(cardToggle);
+      expect(openCoverMock).not.toHaveBeenCalled();
+      const settings = screen.getByRole('button', {
+        name: 'Open settings for Living Room Blind cover',
+      });
+      expect(settings).toBeEnabled();
+      fireEvent.click(settings);
+      expect(screen.getByRole('dialog')).toBeVisible();
+    }
+  );
+
+  it.each(['unknown', 'unavailable'] as const)(
+    'reflects live %s and recovers to open',
+    async (state) => {
+      setLiveCoverStateWithoutPosition(state);
+      renderCoverCard({ initialPosition: 0, hasPosition: false, size: 'medium' });
+      expect(await screen.findByText('Unavailable')).toBeVisible();
+      expect(screen.queryByText('Closed')).not.toBeInTheDocument();
+      act(() => setLiveCoverStateWithoutPosition('open'));
+      expect(await screen.findByText('Open')).toBeVisible();
+      expect(screen.queryByText('Unavailable')).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Toggle Living Room Blind cover' })).toBeEnabled();
+      expect(screen.getByRole('button', { name: 'Living Room Blind cover' })).toHaveAttribute(
+        'aria-disabled',
+        'false'
+      );
+    }
+  );
+
   it('opens with position controls and sends dialog actions to the provider', async () => {
     renderCoverCard({ size: 'medium' });
     fireEvent.click(

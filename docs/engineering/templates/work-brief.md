@@ -45,3 +45,10 @@ Link the owning task, worktree, branch and PR. Record resource policy, retry lim
 questions requiring input. Missing usage measurements are unknown, not zero. Preserve the request
 identity and unfinished state across interruption. Prepare the [approval package](approval-package.md)
 from current-head evidence when implementation and review are complete.
+
+Record the accepted request time and its owning-service reference before execution. Preserve native
+dispatch, progress, waiting, interruption and resume receipts under that request identity. Define
+the stall threshold and what counts as a duplicate dispatch before measuring them. Capture the
+first submitted result separately from repairs and the accepted result. Record maintainer
+interventions and review time only from independently observed human activity; commit counts,
+review comments and agent estimates cannot establish those measurements.

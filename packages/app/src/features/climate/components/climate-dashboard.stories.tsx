@@ -178,7 +178,7 @@ function toEntity(device: DeviceWithType): NavetEntity {
       device.type === 'climate' || device.type === 'hvac'
         ? device.mode
         : 'state' in device
-          ? device.state
+          ? (device.state ?? 'unknown')
           : 'value' in device
             ? device.value
             : 'unknown',

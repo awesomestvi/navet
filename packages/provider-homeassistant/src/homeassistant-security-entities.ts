@@ -221,6 +221,14 @@ export function classifySecurityEntity(entity: HassEntity): SecurityEntityKind |
       return 'person';
     case 'device_tracker':
       return 'deviceTracker';
+    case 'cover': {
+      const deviceClass = normalizeString(attributes?.device_class);
+      if (deviceClass === 'garage') return 'garageDoor';
+      if (deviceClass === 'door') return 'door';
+      if (deviceClass === 'window') return 'window';
+      if (deviceClass === 'gate') return 'opening';
+      return null;
+    }
     case 'button':
     case 'input_button':
       return looksSecurityRelatedButtonOrEvent(entity) ? 'button' : null;
@@ -311,6 +319,9 @@ export function getSecuritySeverity(
     case 'window':
     case 'garageDoor':
     case 'opening':
+      if (domain === 'cover') {
+        return state === 'closed' ? 'normal' : 'warning';
+      }
       return isBinarySensorActiveState(state) ? 'warning' : 'normal';
     case 'motion':
     case 'occupancy':

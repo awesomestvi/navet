@@ -50,7 +50,7 @@ interface CoverCardViewProps {
   openColors: CoverColorSet;
   closedColors: CoverColorSet;
   theme: ThemeType;
-  stateDisplay: { text: string; color: string };
+  stateDisplay: { text: string; color: string; unavailable?: boolean };
   iconButtonProps: CoverIconButtonProps;
   settingsButtonProps: CoverIconButtonProps;
   isSettingsOpen: boolean;
@@ -106,7 +106,7 @@ export function CoverCardView({
   const { t } = useI18n();
   const isSmall = isCompactCardSize(size);
   const isMedium = size === 'medium';
-  const clampedPosition = Math.max(0, Math.min(100, position));
+  const clampedPosition = stateDisplay.unavailable ? 0 : Math.max(0, Math.min(100, position));
 
   const cardShell = getCardShellSurfaceTokens(theme);
   const securitySurface = getSecurityCardSurfaceTokens(theme);
@@ -305,7 +305,7 @@ interface SharedCoverLayoutProps {
   deviceLabel: string;
   positionAriaLabel: string;
   position: number;
-  stateDisplay: { text: string; color: string };
+  stateDisplay: { text: string; color: string; unavailable?: boolean };
   openColors: CoverColorSet;
   theme: ThemeType;
   onOpen: () => void;
@@ -351,6 +351,7 @@ function CoverCardHeader({
           size={isExtraSmall ? 'tiny' : size}
           tone={tone}
           ariaLabel={iconButtonProps['aria-label']}
+          disabled={iconButtonProps.disabled}
           onClick={iconButtonProps.onClick}
           onPointerDown={iconButtonProps.onPointerDown}
         />
@@ -377,7 +378,7 @@ function CoverPositionMetric({
   return (
     <CardMetric
       value={
-        !showPosition ? (
+        !showPosition || stateDisplay.unavailable ? (
           stateDisplay.text
         ) : inlineState ? (
           <span className="flex min-w-0 items-baseline gap-1.5">
@@ -390,9 +391,11 @@ function CoverPositionMetric({
           `${position}%`
         )
       }
-      label={!showPosition || inlineState ? undefined : stateDisplay.text}
+      label={
+        !showPosition || inlineState || stateDisplay.unavailable ? undefined : stateDisplay.text
+      }
       size={size}
-      isActive={position > 0}
+      isActive={!stateDisplay.unavailable && position > 0}
       accentClassName={openColors.accent}
       theme={theme}
       labelClassName={stateDisplay.color}

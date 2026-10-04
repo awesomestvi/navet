@@ -1,0 +1,6 @@
+type: fixed
+audiences:
+  - standalone
+  - home-assistant
+  - hacs
+summary: Garage doors, gates, doors, and window covers appear in Security and report open states even without position data.

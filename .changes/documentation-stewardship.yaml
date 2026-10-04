@@ -1,0 +1,3 @@
+type: fixed
+audiences: [standalone, home-assistant, hacs]
+summary: Clarify where to find card entity IDs and how to enable household missions and rewards.

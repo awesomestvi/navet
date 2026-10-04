@@ -2450,6 +2450,7 @@ export const noMessages = {
   'cover.deviceClass.awning': 'Markiser',
   'cover.deviceClass.shutter': 'Skodder',
   'cover.deviceClass.door': 'Dører',
+  'cover.deviceClass.window': 'Vinduer',
   'scene.activate': 'Aktiver',
   'scene.activating': 'Aktiverer...',
   'scene.tapToActivate': 'Trykk for å bruke denne scenen umiddelbart.',

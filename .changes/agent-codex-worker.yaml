@@ -1,0 +1,3 @@
+type: internal
+audiences: []
+summary: Connect worker monitoring to scoped Codex app-server reads and exact-turn interruption with separately verified recovery checkpoints.

@@ -13,14 +13,16 @@ async function hasReaction(github, owner, repo, commentId, content, actor) {
   return reactions.some((reaction) => reaction.content === content && reaction.user.login === actor);
 }
 
-async function hasWritePermission(github, owner, repo, actor) {
+async function hasWritePermission(github, owner, repo, actor, permissions = ['admin', 'maintain', 'write']) {
   try {
     const { data } = await github.rest.repos.getCollaboratorPermissionLevel({
       owner,
       repo,
       username: actor,
     });
-    return new Set(['admin', 'maintain', 'write']).has(data.permission);
+    // GitHub maps the maintain role to legacy write permission.
+    return permissions.includes(data.permission) ||
+      (permissions.includes('maintain') && data.permission === 'write' && data.role_name === 'maintain');
   } catch (error) {
     if (error.status === 403 || error.status === 404) return false;
     throw error;
@@ -67,12 +69,15 @@ async function isRequestedAnswer(github, owner, repo, issue, comment, actor) {
       per_page: 100,
     });
     for (const event of events) {
+      const label = event.label?.name?.toLowerCase();
       if (
         event.event === 'labeled' &&
-        REQUEST_LABELS.has(event.label?.name?.toLowerCase()) &&
+        REQUEST_LABELS.has(label) &&
         event.created_at < lastNisse.created_at &&
         event.actor?.login &&
-        (await hasWritePermission(github, owner, repo, event.actor.login))
+        !(label === 'navet: implement' && event.actor.login === NISSE) &&
+        (await hasWritePermission(github, owner, repo, event.actor.login,
+          label === 'navet: implement' ? ['admin', 'maintain'] : undefined))
       ) {
         hasAcceptedCommand = true;
         break;
