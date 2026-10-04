@@ -121,10 +121,11 @@ that exact tag.
 Linting, type checking, tests, builds, smoke checks, screenshots, and artifact verification run as
 deterministic jobs. Reviewers interpret failures; passing checks are required for acceptance.
 
-The current required UI lane builds Storybook and runs responsive demo smoke/accessibility checks.
-The complete Storybook browser interaction suite has known baseline failures and remains a visible
-local diagnostic until those assertions are repaired. It must not be represented as a passing gate
-or made required while `main` is red.
+The required UI lane builds Storybook and runs responsive demo smoke/accessibility checks.
+Run the complete Storybook browser interaction suite locally with `pnpm test:storybook --run` when
+changed component behavior needs broader interaction coverage. Record its source commit, results
+and relevant rendered coverage in the approval package. This local suite is separate from the
+required hosted UI lane; promote it to a required check only after verifying a green `main` baseline.
 
 ## Requests And State
 

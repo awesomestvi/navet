@@ -33,6 +33,21 @@ Use pass, fail or unverified explicitly. State fixture, story and real-runtime c
 Do not call the package ready while required current-head checks, review or output verification are
 pending or failing. Retain historical failures without presenting them as the current result.
 
+## Delivery Measurements
+
+| Measurement | Value and scope | Source and coverage |
+| --- | --- | --- |
+| Accepted request to reviewable result | Elapsed, active and waiting time separately | Exact request, dispatch and result receipts |
+| Maintainer interventions and review effort | Observed count and review minutes | Independently observed human activity |
+| Duplicate dispatches and stalled work | Count under the brief's definitions | Complete native task and dispatch history |
+| Review rework | First submission, confirmed findings, repairs and final acceptance | Matching source revisions and review evidence |
+| Preview availability | Observed time, endpoint and deployed revision | Owning deployment output and endpoint probe |
+| Execution usage | Cumulative coordinator and all-worker tokens and observed operations | Native participant inventory, measurements and limits |
+
+Mark missing measurements unknown and explain incomplete coverage. PR-open-to-merge time includes
+waiting and does not establish request-to-delivery time. Commits after a review record activity,
+not verified repairs. Distinguish provider-reported cost from tokens and observed operations.
+
 ## Maintainer Acceptance
 
 Record the actor, accepted revision/head, decision, time and owning-service reference. For ordinary
