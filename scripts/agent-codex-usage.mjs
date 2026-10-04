@@ -87,7 +87,19 @@ export async function observeCodexUsage({ sessionFile, threadId }, { now = Date.
       direct.add(payload.call_id);
     }
     if (record.type === 'event_msg' && payload.type === 'item_completed' && operationTypes.has(payload.item?.type)) {
-      if (nativeTurn && nativeTurn.status !== 'running') throw new Error('Operation follows a terminal native turn.');
+      // Native cancellation can precede the final command receipt. This is evidence for an
+      // already-started operation, never permission for a new operation after interruption.
+      if (nativeTurn && nativeTurn.status !== 'running') {
+        const recordedAt = Date.parse(record.timestamp);
+        if (payload.turn_id !== nativeTurn.runId ||
+            !['completed', 'failed'].includes(payload.item.status) ||
+            !Number.isSafeInteger(payload.started_at_ms) || !Number.isSafeInteger(payload.completed_at_ms) ||
+            payload.started_at_ms < nativeTurn.startedAt || payload.started_at_ms > nativeTurn.observedAt ||
+            payload.completed_at_ms < payload.started_at_ms || payload.completed_at_ms > now ||
+            !Number.isSafeInteger(recordedAt) || recordedAt < payload.completed_at_ms || recordedAt > now) {
+          throw new Error('Operation follows a terminal native turn without a verified completion receipt.');
+        }
+      }
       if (payload.thread_id !== threadId || typeof payload.item.id !== 'string' || !payload.item.id) {
         throw new Error('Nested operation has no matching thread or stable identity.');
       }

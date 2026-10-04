@@ -738,9 +738,15 @@ usage events inherit the confirmed session identity; explicit thread IDs must al
 
 When native `task_started`, `task_complete` and `turn_aborted` markers are available, the observer
 reports the latest turn ID, start and finality metadata. A terminal marker must match its preceding
-start; reused terminal run IDs and operations recorded after a terminal marker fail verification.
+start; reused terminal run IDs and new operations after a terminal marker fail verification.
 Marker text and agent messages remain private. Native snapshots default to a 128 MiB limit, with
 individual records limited to 16 MiB. Callers can supply a bounded `maxSnapshotBytes` and abort signal.
+
+A command completion receipt can arrive after the native interruption marker. The observer counts
+it only when its explicit thread and turn identity match, its status is completed or failed, and
+its start/end timestamps establish that it began within that turn before finality. New calls and
+unverifiable completions after finality fail verification. Counting a completion receipt neither
+changes the turn's finality nor establishes successful delivery.
 
 The result reports cumulative input, cached input, output and reasoning tokens; `modelTokens`
 uses total input plus output, including cached input. These are execution units, not monetary

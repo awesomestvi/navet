@@ -61,6 +61,37 @@ test('rejects foreign terminal markers, reused run IDs and operations after term
   await assert.rejects(observe([meta, turn('task_started', 1000), usage(), turn('task_complete', 3000), turn('task_started', 4000)]), /cannot restart/);
   await assert.rejects(observe([meta, turn('task_started', 1000), usage(), turn('task_complete', 3000), direct()]), /terminal native/);
 });
+// Keep the existing post-terminal rejection checks; add the native cancellation receipt shape
+// observed in the live pilot without relaxing new-operation or foreign-identity rejection.
+function canceledCommandReceipt(overrides = {}) {
+  return { type: 'event_msg', timestamp: new Date(3500).toISOString(), payload: {
+    type: 'item_completed', thread_id: threadId, turn_id: 'native-turn',
+    started_at_ms: 1500, completed_at_ms: 3400,
+    item: { type: 'CommandExecution', id: 'exec-canceled', status: 'failed', exit_code: -1,
+      command: 'PRIVATE_ARGUMENT', aggregated_output: 'PRIVATE_OUTPUT' }, ...overrides,
+  } };
+}
+test('counts a canceled command completion recorded after its matching turn interruption', async () => {
+  const receipt = canceledCommandReceipt();
+  const result = await observe([meta, turn('task_started', 1000), direct(), usage(), turn('turn_aborted', 3000), receipt, receipt]);
+  assert.equal(result.observedOperationUnits, 2);
+  assert.equal(result.nativeTurn.status, 'interrupted');
+  assert.equal(result.modelTokens, 1200);
+  assert.doesNotMatch(JSON.stringify(result), /PRIVATE_|exit_code|command/);
+});
+test.each([
+  { turn_id: 'successor' }, { thread_id: 'foreign' }, { started_at_ms: 3100 },
+  { started_at_ms: 900 }, { completed_at_ms: 1400 }, { completed_at_ms: 6000 },
+  { started_at_ms: undefined }, { completed_at_ms: undefined },
+  { item: { type: 'CommandExecution', id: 'pending', status: 'inProgress' } },
+])('rejects unverifiable post-terminal completion %j', async (overrides) => {
+  await assert.rejects(observe([meta, turn('task_started', 1000), usage(), turn('turn_aborted', 3000),
+    canceledCommandReceipt(overrides)]), /terminal native|matching thread/);
+});
+test('does not attribute an old command completion to a stopped successor', async () => {
+  await assert.rejects(observe([meta, turn('task_started', 1000), usage(), turn('turn_aborted', 2500),
+    turn('task_started', 2600, 'successor'), turn('turn_aborted', 3000, 'successor'), canceledCommandReceipt()]), /terminal native/);
+});
 test('rejects pre-cancellation and oversized source snapshots', async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'navet-usage-bound-'));
   const sessionFile = path.join(directory, 'session.jsonl');
