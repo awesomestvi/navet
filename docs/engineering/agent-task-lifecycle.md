@@ -177,6 +177,8 @@ the writer and current publication authority for its first send.
 
 Authentication and delivery share a deadline of at most one minute and the caller's cancellation
 signal. Proposal reads, result reads and writes combine that signal with their request deadline.
+Transport waits race cancellation even when the transport ignores its signal. Cancellation does
+not prove that a remote mutation failed; an attempted send remains pending for receipt reconciliation.
 Every started app session closes in the run's `finally` path, including sessions acquired while a
 bounded reader was interrupted. Closing clears local access immediately and requests server
 revocation with a separate five-second deadline per token; acquired sessions close in parallel.

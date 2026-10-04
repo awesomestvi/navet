@@ -297,8 +297,13 @@ it.each(['proposal', 'result'])('propagates parent cancellation into pending %s 
     }
     return original(url, init);
   };
-  const observed = await runLinearPlanningResult({ ...runInput, body: target === 'result' ? undefined : runInput.body,
-    fetchImpl, signal: controller.signal });
+  let timer;
+  let observed;
+  try {
+    observed = await Promise.race([runLinearPlanningResult({ ...runInput, body: target === 'result' ? undefined : runInput.body,
+      fetchImpl, signal: controller.signal }),
+    new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('Canceled run kept awaiting transport.')), 2_000); })]);
+  } finally { clearTimeout(timer); }
   expect(['blocked', 'pending']).toContain(observed.status);
   expect(requestSignal.aborted).toBe(true);
   expect(counts().mutations).toBe(target === 'result' ? 1 : 0);
@@ -315,4 +320,38 @@ it.each([{ readerGrant: 'read,write' }, { writerGrant: 'read,write' }])('surface
   const { runInput, counts } = await authenticatedRunFixture({ ...options, revokeFailure: true });
   expect(await runLinearPlanningResult(runInput)).toMatchObject({ status: 'blocked', reason: 'linear-session-revocation-unverified' });
   expect(counts().mutations).toBe(0);
+});
+
+it('returns promptly on canceled mutation and reconciles a late acknowledgement without resending', async () => {
+  const { runInput, counts, store } = await authenticatedRunFixture();
+  const controller = new AbortController();
+  const original = runInput.fetchImpl;
+  let lateRequest;
+  let resolveTransport;
+  const fetchImpl = (url, init) => {
+    if (url.endsWith('/graphql') && JSON.parse(init.body).query.startsWith('mutation')) {
+      lateRequest = { url, init };
+      controller.abort();
+      return new Promise((resolve) => { resolveTransport = resolve; });
+    }
+    return original(url, init);
+  };
+  let timer;
+  try {
+    const observed = await Promise.race([
+      runLinearPlanningResult({ ...runInput, fetchImpl, signal: controller.signal }),
+      new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('Canceled mutation kept awaiting transport.')), 2_000); }),
+    ]);
+    expect(observed.status).toBe('pending');
+  } finally { clearTimeout(timer); }
+  expect(lateRequest.init.signal.aborted).toBe(true);
+  const pending = (await store.list())[0].planningResult;
+  expect(pending.attemptedAt).toBeGreaterThan(0);
+  expect(pending.status).not.toBe('confirmed');
+  // A transport that ignores cancellation may still commit remotely. Preserve that uncertainty.
+  resolveTransport(await original(lateRequest.url, lateRequest.init));
+  expect(counts().mutations).toBe(1);
+  expect(await runLinearPlanningResult({ ...runInput, body: undefined, readWriterCredentials: undefined }))
+    .toMatchObject({ status: 'verified', commentId: pending.commentId });
+  expect(counts().mutations).toBe(1);
 });

@@ -38,8 +38,19 @@ export async function runLinearPlanningResult({ store, owner, taskId, head, body
           !Number.isSafeInteger(observed) || observed < startedAt || budget < 1) throw new Error('Expired result run.');
       return budget;
     };
-    const fetchForRun = (url, init) => fetchImpl(url, { ...init,
-      signal: AbortSignal.any([controller.signal, init.signal]) });
+    const fetchForRun = async (url, init) => {
+      const requestSignal = AbortSignal.any([controller.signal, init.signal]);
+      let rejectAbort;
+      const aborted = new Promise((_, reject) => { rejectAbort = reject; });
+      const onAbort = () => rejectAbort(new Error('Canceled result transport.'));
+      requestSignal.addEventListener('abort', onAbort, { once: true });
+      try {
+        if (requestSignal.aborted) throw new Error('Canceled result transport.');
+        return await Promise.race([fetchImpl(url, { ...init, signal: requestSignal }), aborted]);
+      } finally {
+        requestSignal.removeEventListener('abort', onAbort);
+      }
+    };
     const lazyToken = (factory, readCredentials) => {
       let pending;
       return async ({ signal: requestSignal } = {}) => {
