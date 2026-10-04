@@ -1,0 +1,3 @@
+type: internal
+audiences: []
+summary: Persist verified final native accounting after all task participants stop while retaining active coordinator requirements and monotonic participant history.

@@ -78,6 +78,43 @@ it('retains terminal workers and historical coordinators across coordinator rest
   expect(await createTaskUsageReader(h.options)(h.identity)).toMatchObject({ complete: false });
   expect((await h.snapshot()).resources.accounting.members).toHaveLength(3);
 });
+it('persists final participant totals after all participants stop and the store reopens', async () => {
+  const h = await setup();
+  await createTaskUsageReader(h.options)(h.identity);
+  for (const member of h.members) {
+    member.status = 'stopped';
+    await h.writeSession(member, member.role === 'coordinator' ? 125 : 225);
+  }
+  h.advance(120_000); await h.act('claim', { durationMs: 100_000 });
+  const readInventory = async () => ({ ...await h.readInventory(), phase: 'stopped' });
+  const restarted = new AgentTaskStore(h.store.directory, { now: h.now });
+  const result = await createTaskUsageReader({ ...h.options, store: restarted, readInventory })(h.identity);
+  expect(result).toMatchObject({ complete: true, modelTokens: 350, toolCalls: 4 });
+  const task = (await restarted.list())[0];
+  expect(task.resources.accounting.phase).toBe('stopped');
+  expect(task.resources.accounting.members).toHaveLength(2);
+  expect(task.resources.accounting.members.every((member) => member.status === 'stopped')).toBe(true);
+  expect(task.resources.reservations[0].settledAt).toBeUndefined();
+  expect(task.state).toBe('queued');
+});
+it.each(['implicit-active', 'running-worker', 'missing-terminal', 'unknown-phase'])('rejects invalid final inventory: %s', async (kind) => {
+  const h = await setup();
+  for (const member of h.members) { member.status = 'stopped'; await h.writeSession(member); }
+  if (kind === 'running-worker') { h.members[1].status = 'running'; await h.writeSession(h.members[1]); }
+  if (kind === 'missing-terminal') await h.writeSession({ ...h.members[1], status: 'running' });
+  const readInventory = async () => ({ ...await h.readInventory(),
+    ...(kind === 'implicit-active' ? {} : { phase: kind === 'unknown-phase' ? 'unknown' : 'stopped' }) });
+  expect(await createTaskUsageReader({ ...h.options, readInventory })(h.identity)).toMatchObject({ complete: false });
+  expect((await h.snapshot()).resources.accounting).toBeUndefined();
+});
+it('does not let a caller mark a running participant ledger as stopped', async () => {
+  const h = await setup();
+  await createTaskUsageReader(h.options)(h.identity);
+  const accounting = (await h.snapshot()).resources.accounting;
+  await expect(h.act('resource-accounting', { accounting: { ...accounting, phase: 'stopped', observedAt: h.tick() } }))
+    .rejects.toThrow(/complete bound participant/);
+  expect((await h.snapshot()).resources.accounting.phase).toBe('active');
+});
 it.each(['missing-worker', 'duplicate', 'shared', 'wrong-run', 'unaccepted', 'unknown-unit', 'incomplete', 'stale'])('rejects %s inventory', async (kind) => {
   const h = await setup();
   const readInventory = async () => {

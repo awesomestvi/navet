@@ -48,7 +48,11 @@ export function createTaskUsageReader({ store, owner, readInventory, now = Date.
             value.observedAt < readStartedAt || value.observedAt > clock() || value.policy?.status !== 'accepted' ||
             value.policy.unit !== unitPolicy || value.policy.taskRevision !== task.revision || !text(value.policy.reference) ||
             !Array.isArray(value.members) || value.members.length < 2 || value.members.length > 8 ||
-            value.members.filter((member) => member.role === 'coordinator' && member.status === 'running').length !== 1 ||
+            !['active', 'stopped'].includes(value.phase ?? 'active') ||
+            !value.members.some((member) => member.role === 'coordinator') ||
+            ((value.phase ?? 'active') === 'stopped'
+              ? !value.members.every((member) => member.status === 'stopped')
+              : value.members.filter((member) => member.role === 'coordinator' && member.status === 'running').length !== 1) ||
             !value.members.some((member) => member.role === 'worker' && member.threadId === identity.threadId && member.runId === identity.runId) ||
             new Set(value.members.map((member) => member.threadId)).size !== value.members.length) throw new Error('Complete authenticated inventory and accepted units required.');
         const members = value.members.map((member) => {
@@ -58,7 +62,7 @@ export function createTaskUsageReader({ store, owner, readInventory, now = Date.
           return { role: member.role, threadId: member.threadId, runId: member.runId, status: member.status,
             sessionFile: path.resolve(member.sessionFile) };
         }).sort((a, b) => a.threadId.localeCompare(b.threadId));
-        return { policyReference: value.policy.reference, members };
+        return { phase: value.phase ?? 'active', policyReference: value.policy.reference, members };
       };
       const first = await inventory();
       const measurements = [];
@@ -84,7 +88,7 @@ export function createTaskUsageReader({ store, owner, readInventory, now = Date.
       const reference = 'task-native-usage:sha256:' + createHash('sha256').update(JSON.stringify({ ...identity, ...first, measurements })).digest('hex');
       clock();
       const saved = await store.mutate(identity.taskId, 'resource-accounting', { owner, accounting: {
-        unitPolicy, policyReference: first.policyReference, members: measurements, reference, observedAt: now(),
+        phase: first.phase, unitPolicy, policyReference: first.policyReference, members: measurements, reference, observedAt: now(),
       } });
       receipt = saved.resources.accounting;
       // Accounting commit alone does not consume usage or settle any execution reservation.

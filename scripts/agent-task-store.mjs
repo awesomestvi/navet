@@ -322,8 +322,12 @@ export class AgentTaskStore {
           const accounting = input.accounting;
           const members = accounting?.members;
           if (!task.resources || !observationIsFresh(accounting, now) || !task.dispatch?.threadId ||
-              accounting.unitPolicy !== 'native-observed-operations-v1' || !Array.isArray(members) || !members.length || members.length > 8 ||
-              members.filter((item) => item.role === 'coordinator' && item.status === 'running').length !== 1 ||
+              accounting.unitPolicy !== 'native-observed-operations-v1' || !Array.isArray(members) || members.length < 2 || members.length > 8 ||
+              !['active', 'stopped'].includes(accounting.phase ?? 'active') ||
+              !members.some((item) => item.role === 'coordinator') ||
+              ((accounting.phase ?? 'active') === 'stopped'
+                ? !members.every((item) => item.status === 'stopped')
+                : members.filter((item) => item.role === 'coordinator' && item.status === 'running').length !== 1) ||
               !members.some((item) => item.role === 'worker' && item.threadId === task.dispatch.threadId) ||
               new Set(members.map((item) => item.threadId)).size !== members.length) {
             throw new Error('Accounting requires complete bound participant coverage and an explicit unit policy.');
@@ -346,7 +350,7 @@ export class AgentTaskStore {
                 return !next || next.role !== old.role || next.sessionFile !== old.sessionFile ||
                   next.modelTokens < old.modelTokens || next.toolCalls < old.toolCalls || next.measurementAt < old.measurementAt;
               }))) throw new Error('Accounting cannot drop participants, change policy or regress cumulative counters.');
-          task.resources.accounting = { unitPolicy: accounting.unitPolicy, policyReference: accounting.policyReference,
+          task.resources.accounting = { phase: accounting.phase ?? 'active', unitPolicy: accounting.unitPolicy, policyReference: accounting.policyReference,
             reference: accounting.reference, observedAt: accounting.observedAt,
             members: members.map((member) => Object.fromEntries(['role', 'threadId', 'runId', 'status', 'sessionFile', 'modelTokens', 'toolCalls', 'measurementAt'].map((key) => [key, member[key]]))) };
         } else if (action === 'resource-usage') {

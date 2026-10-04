@@ -777,8 +777,11 @@ convert them into billing or claim coverage of hidden provider operations.
 Inventory responses identify the exact task and dispatch, carry a fresh service reference and
 timestamp, and retain every dedicated coordinator and worker session. Each member names its role,
 thread, current turn, native session file, running/stopped status and `dedicated: true`. The
-confirmed delivery thread and turn must be present. There is one running coordinator; stopped
-historical coordinators remain participants after handoff. Shared sessions cannot establish
+confirmed delivery thread and turn must be present. Active inventories require one running
+coordinator; stopped historical coordinators remain participants after handoff. To record final
+totals after every participant stops, supply explicit `phase: 'stopped'`. That phase requires at
+least one retained coordinator and all participants stopped, each with matching native terminal
+evidence. An omitted phase retains the active-inventory requirements. Shared sessions cannot establish
 task-scoped totals. The current bounded protocol supports at most eight participants.
 
 The reader compares two matching inventories around the native reads. Running sessions require
@@ -796,6 +799,7 @@ An incomplete or canceled read preserves already-committed accounting references
 Pass the resulting callback to `monitorPlanningWorker`, which persists `resource-usage` and
 invalidates older usage when coverage becomes unavailable. An accounting receipt alone neither
 updates aggregate usage nor settles reservations. Completion and interruption markers establish
-native accounting finality, not task acceptance or human authority. Installed inventory identity,
+native accounting finality, not task acceptance or human authority. A stopped accounting phase
+retains every participant and does not settle reservations or complete the task. Installed inventory identity,
 dedicated-session attribution, accepted units, allowances for unobserved provider activity and live
 metering/interruption pilots remain activation gates.
