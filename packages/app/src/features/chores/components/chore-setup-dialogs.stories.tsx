@@ -365,7 +365,7 @@ export const MobileStepperEditor: Story = {
       'Water the plants'
     );
     await expect(within(dialog).getByRole('heading', { name: 'More options' })).toBeInTheDocument();
-    await expect(within(dialog).getByLabelText('Instructions')).toBeVisible();
+    await waitFor(() => expect(within(dialog).getByLabelText('Instructions')).toBeVisible());
     await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
     await expect(within(dialog).getByLabelText('Assignment')).toBeInTheDocument();
     await expect(within(dialog).queryByLabelText('Chore name')).toBeNull();
