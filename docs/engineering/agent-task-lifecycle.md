@@ -649,6 +649,44 @@ This module supplies the monitoring protocol. Activation still requires installe
 verified aggregate accounting, a monitoring cadence, accepted resource policies and live interruption
 and recovery pilots. An interactive connector read alone does not prove those operational gates.
 
+### Codex runtime adapter
+
+`createCodexWorkerAdapter` in `scripts/agent-codex-worker.mjs` implements the worker callbacks for
+the Codex app-server protocol. Pin `binding` to the task's durable `taskId`, `dispatchToken` and
+confirmed `threadId`. Supply a trusted RPC `request` callback and an independent `readCheckpoint`
+verifier. The adapter reads `thread/read` metadata and the latest descending `thread/turns/list`
+page twice with `itemsView: 'notLoaded'`. Thread and turn status must agree and remain stable.
+Older-turn pagination is expected; missing latest-turn evidence and changed runs are unavailable.
+
+The runtime turn ID becomes the monitored `runId`. Interruption rechecks that same latest run
+before sending `turn/interrupt` with the exact thread and turn IDs. A retry can address that turn
+again or observe it already stopped; it cannot interrupt a successor. A stopped observation requires
+another stable runtime read after checkpoint verification to detect a resumed worker.
+
+`readCheckpoint` receives the exact binding and run ID. A verified response identifies all four,
+has a fresh `observedAt`, and contains `status: 'verified'`, a reference, the next recovery action,
+and a full Git commit head or explicit `null`. The installed verifier must inspect the durable
+checkpoint and actual worktree; worker prose is insufficient evidence. The adapter returns only
+the permitted checkpoint fields. Runtime completion or interruption alone does not prove that
+checkpoint exists or the task's acceptance criteria passed.
+
+For an existing local app-server socket, `createCodexAppServerRequester` in
+`scripts/agent-codex-app-server.mjs` supplies the RPC callback. Configure absolute `codexPath` and
+`socketPath`, and pin `threadId`. The socket must belong to the current OS user. The configured
+endpoint and executable are trusted installation inputs. Each request initializes a bounded
+`codex app-server proxy --sock` connection to that socket. Only metadata reads, the single latest
+turn page and exact-turn interruption are permitted. Responses are correlated and byte-limited;
+unexpected server requests and malformed frames fail closed. Diagnostics and notifications stay
+outside the returned result. Cancellation closes the proxy connection; interruption outcomes still
+require subsequent worker observation. The requester connects to an existing endpoint and leaves
+daemon setup to the installation workflow.
+
+Wire the configured requester into `createCodexWorkerAdapter`, then pass the returned
+`readWorker` and `interruptWorker` to `monitorPlanningWorker` alongside the independently verified
+request, proposal and aggregate-usage readers. Synthetic proxy tests establish protocol behavior;
+installation still requires endpoint identity, a live exact-turn interruption and recovery pilot,
+monitoring cadence and complete resource accounting before activation.
+
 ## Observe Local Codex Usage
 
 `pnpm agent:usage <private-input.json>` reads a fixed snapshot of one local Codex session log.

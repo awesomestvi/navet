@@ -11,6 +11,8 @@ export const TEST_TIERS = {
       'scripts/agent-dispatch-workflow.test.mjs',
       'scripts/agent-task-store.test.mjs',
       'scripts/agent-codex-usage.test.mjs',
+      'scripts/agent-codex-worker.test.mjs',
+      'scripts/agent-codex-app-server.test.mjs',
       'scripts/agent-validation-receipt.test.mjs',
       'scripts/agent-planning-scope.test.mjs',
       'scripts/agent-linear-event.test.mjs',

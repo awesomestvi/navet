@@ -286,6 +286,10 @@ intents and bounded retry receipts when accepted scope or measured resources bec
 Confirmation requires a fresh stopped observation and saved recovery checkpoint. Its protocol
 tests do not establish installed runtime adapters, monitoring cadence, complete task-wide accounting
 or the live interruption and recovery pilot required for activation.
+The [Codex runtime adapter](agent-task-lifecycle.md#codex-runtime-adapter) connects those callbacks
+to stable latest-turn observations and exact-turn interruption through a configured existing
+app-server socket. A separate checkpoint verifier establishes saved recovery state. Protocol
+coverage does not establish an installed endpoint or replace the live recovery pilot.
 
 For Linear-native approval, agent writes need a distinct identity. Linear's
 [OAuth app actor](https://linear.app/developers/oauth-actor-authorization) attributes mutations to
