@@ -133,8 +133,6 @@ describe('EnergyDashboardPage', () => {
       value: EnergyIntersectionObserver,
     });
     useSettingsStore.getState().resetSettings();
-    // Rich-rendering fixtures must not depend on the runner's detected device tier.
-    useSettingsStore.getState().updateSettings({ effectsQuality: 'high' });
     useThemeStore.setState({
       ...useThemeStore.getState(),
       theme: 'dark',

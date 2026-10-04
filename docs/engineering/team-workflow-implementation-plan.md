@@ -83,8 +83,9 @@ source references and prior evidence, rather than the entire conversation histor
 
 Inspect the current branch, PR, task store and planning/dispatch/result adapters. Classify existing
 modules as reusable, requiring integration, or requiring a scoped change. Verify callback ownership
-and installed capabilities. Keep valid security boundaries and separately authorized repository
-changes. No blanket revert, replacement runtime or extra PR.
+and installed capabilities. Keep valid security boundaries and changes that implement these
+workflow requirements or the autonomous builder plan. Remove unrelated additions from commit
+`c9abf84001518fe83ed0db1909fda4466d13c099` onward. No blanket revert, replacement runtime or extra PR.
 
 Deliverable: a current source map with concrete gaps and the narrow validation path for each change.
 
@@ -172,8 +173,8 @@ Maintain a separate ledger for broader rollout requirements and product release 
 
 Implement the workflow infrastructure, not the candidate product ideas. Keep all related changes in
 PR #232 if it remains open; if its state changes, establish the delivery target before publishing.
-Preserve unrelated work. Do not activate automation, start live model trials, raise limits, access
-private installations, merge or release without the applicable maintainer authorization. Stop
+Keep the delivery scoped to these requirements and the autonomous builder plan. Do not activate
+automation, start live model trials, raise limits, access private installations, merge or release without the applicable maintainer authorization. Stop
 repeated unproductive work with a concrete diagnosis and checkpoint instead of automatic retries.
 
 ## New Session Prompt
@@ -186,5 +187,6 @@ repeated unproductive work with a concrete diagnosis and checkpoint instead of a
 > delivery. Keep the full broader rollout requirements visible and distinguish workflow acceptance
 > from Navet 1.0.0 release acceptance. Work on the infrastructure only; do not implement product
 > ideas, restart stopped experiments or activate unattended operation. Keep related delivery in
-> the existing PR and preserve unrelated changes. Run focused deterministic checks and report
+> the existing PR and remove unrelated additions from
+> `c9abf84001518fe83ed0db1909fda4466d13c099` onward. Run focused deterministic checks and report
 > exact remaining live setup/authorization gates before any model pilot.
