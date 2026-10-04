@@ -1,0 +1,3 @@
+type: internal
+audiences: []
+summary: Verify stopped-worker recovery checkpoints against durable task identity and actual Git worktree state.

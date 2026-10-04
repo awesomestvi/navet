@@ -290,6 +290,9 @@ The [Codex runtime adapter](agent-task-lifecycle.md#codex-runtime-adapter) conne
 to stable latest-turn observations and exact-turn interruption through a configured existing
 app-server socket. A separate checkpoint verifier establishes saved recovery state. Protocol
 coverage does not establish an installed endpoint or replace the live recovery pilot.
+The Git-backed checkpoint service binds stopped-turn evidence to saved task context and two
+matching worktree snapshots. It verifies preserved source state after restart; installed monitoring
+and a live interruption/recovery pilot remain required.
 
 For Linear-native approval, agent writes need a distinct identity. Linear's
 [OAuth app actor](https://linear.app/developers/oauth-actor-authorization) attributes mutations to

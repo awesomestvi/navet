@@ -30,6 +30,7 @@ export const TEST_TIERS = {
       'scripts/agent-planning-dispatch.test.mjs',
       'scripts/agent-planning-delivery-dispatch.test.mjs',
       'scripts/agent-worker-monitor.test.mjs',
+      'scripts/agent-worker-checkpoint.test.mjs',
       'scripts/agent-linear-connector-reader.test.mjs',
       'scripts/agent-design-tokens.test.mjs',
       'scripts/agent-design-token-css.test.mjs',

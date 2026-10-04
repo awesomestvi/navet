@@ -670,6 +670,28 @@ checkpoint and actual worktree; worker prose is insufficient evidence. The adapt
 the permitted checkpoint fields. Runtime completion or interruption alone does not prove that
 checkpoint exists or the task's acceptance criteria passed.
 
+`createGitWorkerCheckpointService` in `scripts/agent-worker-checkpoint.mjs` supplies a Git-backed
+checkpoint recorder and verifier under the coordinator's current lease. Save the task's worktree,
+branch and next recovery action using `context`. After a trusted native observation identifies the
+bound worker's stopped turn, pass that observation to `captureCheckpoint`. The service reads two
+matching Git snapshots and commits a `worker-checkpoint` receipt containing the exact task,
+dispatch, thread and turn identity, commit head and state fingerprint. The same atomic mutation
+records the actual head, invalidating approval readiness when that head changes.
+
+The fingerprint covers the index, staged diff, actual tracked file contents and non-ignored
+untracked files, including symlink targets. Ignored local files remain outside this source checkpoint.
+The service bounds Git output, file counts, content sizes and read time. Unresolved index entries,
+submodules and worktree flags that suppress changes require a separate recovery procedure.
+Checkpoint files stay in the existing task store; the worktree holds the preserved source contents.
+
+Pass the service's `readCheckpoint` to `createCodexWorkerAdapter`. It verifies the saved receipt
+against fresh matching Git snapshots and current recovery context, returning only the binding,
+head, opaque reference, next action and observation time. Changed files, branch, head, context or
+run identity produce unavailable evidence. It does not rewrite a failed checkpoint to match changed
+work. An already-started local checkpoint commit is awaited through cancellation; a subsequent read
+can recover its receipt after restart. A stopped native observation without a saved checkpoint
+remains insufficient to confirm monitored recovery.
+
 For an existing local app-server socket, `createCodexAppServerRequester` in
 `scripts/agent-codex-app-server.mjs` supplies the RPC callback. Configure absolute `codexPath` and
 `socketPath`, and pin `threadId`. The socket must belong to the current OS user. The configured

@@ -639,6 +639,32 @@ export class AgentTaskStore {
             receipt.observedAt = observation.observedAt;
             receipt.url = result.url;
           }
+        } else if (action === 'worker-checkpoint') {
+          const worker = input.worker;
+          const checkpoint = input.checkpoint;
+          if (TERMINAL.has(task.state) || !task.dispatch?.threadId || worker?.status !== 'stopped' ||
+              worker.taskId !== task.id || worker.dispatchToken !== task.dispatch.token ||
+              worker.threadId !== task.dispatch.threadId || !observationIsFresh(worker, now)) {
+            throw new Error('Checkpoint requires a fresh stopped observation for the bound worker.');
+          }
+          requireValue(worker.runId, 'checkpoint run ID');
+          requireValue(worker.reference, 'worker reference');
+          if (!checkpoint || checkpoint.worktree !== task.context?.worktree || checkpoint.branch !== task.context?.branch ||
+              checkpoint.nextAction !== task.context?.nextAction || !/^[a-f0-9]{40}$/.test(checkpoint.head ?? '') ||
+              !/^sha256:[a-f0-9]{64}$/.test(checkpoint.stateHash ?? '')) {
+            throw new Error('Checkpoint must match saved recovery context and a complete Git snapshot.');
+          }
+          for (const key of ['worktree', 'branch', 'nextAction', 'reference']) requireValue(checkpoint[key], key);
+          if (task.workerStop && task.workerStop.status !== 'stopped' && task.workerStop.runId !== worker.runId) {
+            throw new Error('Checkpoint cannot replace an unresolved stop for another run.');
+          }
+          task.workerCheckpoint = { taskId: task.id, dispatchToken: task.dispatch.token, threadId: worker.threadId,
+            runId: worker.runId, workerReference: worker.reference, recordedAt: now,
+            ...Object.fromEntries(['worktree', 'branch', 'head', 'stateHash', 'nextAction', 'reference'].map((key) => [key, checkpoint[key]])) };
+          if (task.head !== checkpoint.head) {
+            task.head = checkpoint.head;
+            if (task.state === 'awaiting-approval') task.state = 'verifying';
+          }
         } else if (action === 'context') {
           const context = input.context;
           if (!context || typeof context !== 'object' || Array.isArray(context)) throw new Error('Invalid task context.');
@@ -716,6 +742,7 @@ export class AgentTaskStore {
         ...(action === 'request-revocation' ? { requestRevocation: task.requestRevocation } : {}),
         ...(action === 'dispatch-attempt' ? { dispatch: structuredClone(task.dispatch) } : {}),
         ...(action.startsWith('worker-stop-') ? { workerStop: structuredClone(task.workerStop) } : {}),
+        ...(action === 'worker-checkpoint' ? { workerCheckpoint: structuredClone(task.workerCheckpoint) } : {}),
         ...(['planning-result-intent', 'planning-result-attempt', 'planning-result-observation'].includes(action)
           ? { planningResult: structuredClone(task.planningResult) } : {}),
         ...(action === 'resource-usage' ? { usage: input.usage, settledReservations: input.settledReservations ?? [] } : {}),
