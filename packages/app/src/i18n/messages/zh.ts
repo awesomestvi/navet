@@ -2269,6 +2269,8 @@ export const zhMessages = {
   'errorDisplay.connectionInterruptedDescription':
     'Navet 无法完成提供商会话或加载仪表板。请重试连接。',
   'cover.ariaLabel': '覆盖设备 {name}',
+  'cover.settings.simple': '简易控制',
+  'cover.settings.position': '位置控制',
   'cover.settings.deviceType': '设备类型',
   'cover.settings.description': '覆盖设备设置说明 {name}',
   'cover.deviceClass.blind': '百叶窗',

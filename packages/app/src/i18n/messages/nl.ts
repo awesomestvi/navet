@@ -2462,6 +2462,8 @@ export const nlMessages = {
   'cover.state.opening': 'Openen...',
   'cover.state.closing': 'Sluiten...',
   'cover.ariaLabel': '{name}-afdekking',
+  'cover.settings.simple': 'Eenvoudige bediening',
+  'cover.settings.position': 'Positiebediening',
   'cover.settings.deviceType': 'Apparaattype',
   'cover.settings.description': 'Selecteer het type dekking voor {name}',
   'cover.deviceClass.blind': 'Jaloezieën',

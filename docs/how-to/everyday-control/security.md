@@ -51,6 +51,10 @@ in its dialog, then release to apply the change. The shaded fill shows the close
 
 The three-dot menu provides **Edit room**, **Edit card name**, and **Customize**. Choose
 **Customize** to set the cover's device type, such as blind, curtain, or garage door.
+Garage doors and covers without position data show **Open**, **Closed**, **Opening**, or
+**Closing** as their main status. For covers with position data, choose **Simple controls**
+to use state-only controls or **Position controls** to show percentages, handles, and supported
+position presets. Navet remembers this choice for each cover on this device.
 Select **Back to controls** to return, and **Done** when finished.
 
 ## Arm or disarm an alarm

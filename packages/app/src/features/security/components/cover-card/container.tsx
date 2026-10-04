@@ -9,6 +9,8 @@ import {
   useTheme,
 } from '@navet/app/hooks';
 import { integrationSecurityFeatureService } from '@navet/app/services/integration-security-feature.service';
+import { useSettingsStore } from '@navet/app/stores/settings-store';
+import { ensureCanonicalEntityId } from '@navet/app/utils/provider-entity-id';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { DEVICE_CLASS_CONFIG } from './constants';
 import type { CoverCardProps, CoverState, DeviceClass } from './types';
@@ -105,6 +107,17 @@ export const CoverCardContainer = memo(function CoverCardContainer({
       positionMode === 'tilt' ? COVER_FEATURE_SET_TILT_POSITION : COVER_FEATURE_SET_POSITION,
       false
     );
+
+  const resolvedDeviceClass =
+    (providerState?.deviceClass as DeviceClass | undefined) ?? deviceClass;
+  const controlMode = useSettingsStore(
+    (state) => state.coverControlModes[ensureCanonicalEntityId(id)]
+  );
+  const updateControlMode = useSettingsStore((state) => state.updateCoverControlMode);
+  const showPosition =
+    hasPosition &&
+    (controlMode ?? (resolvedDeviceClass === 'garage' ? 'simple' : 'position')) === 'position';
+  const displayPosition = showPosition ? position : resolveCoverStatePosition(coverState);
 
   const clearOptimisticPosition = useCallback(() => {
     optimisticPositionRef.current = null;
@@ -271,10 +284,10 @@ export const CoverCardContainer = memo(function CoverCardContainer({
   const cardId = `cover-${name.toLowerCase().replace(/ /g, '-')}`;
   const cardInteraction = useEntityCardInteractionController({
     ariaLabel: t('cover.ariaLabel', { name }),
-    ariaPressed: position > 0,
+    ariaPressed: displayPosition > 0,
     isEditMode,
     onToggle: () => {
-      if (position > 0) {
+      if (displayPosition > 0) {
         handleClose();
         return;
       }
@@ -289,8 +302,12 @@ export const CoverCardContainer = memo(function CoverCardContainer({
       entityId={id}
       name={name}
       room={room}
-      position={position}
-      deviceClass={(providerState?.deviceClass as DeviceClass | undefined) ?? deviceClass}
+      position={displayPosition}
+      showPosition={showPosition}
+      controlMode={showPosition ? 'position' : 'simple'}
+      onControlModeChange={(mode) => updateControlMode(id, mode)}
+      hasPosition={hasPosition}
+      deviceClass={resolvedDeviceClass}
       deviceClassConfig={DEVICE_CLASS_CONFIG}
       size={size}
       isEditMode={isEditMode}
@@ -313,7 +330,7 @@ export const CoverCardContainer = memo(function CoverCardContainer({
       canOpen={canOpen}
       canClose={canClose}
       canStop={canStop}
-      canSetPosition={canSetPosition}
+      canSetPosition={showPosition && canSetPosition}
       setDeviceClass={setDeviceClass}
     />
   );

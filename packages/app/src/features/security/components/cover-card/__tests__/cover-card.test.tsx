@@ -1,5 +1,6 @@
 import { I18nProvider } from '@navet/app/i18n/i18n-provider';
 import { homeAssistantStore } from '@navet/app/stores/home-assistant-store';
+import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { coverEntityFactory } from '@navet/app/test/fixtures/home-assistant/entities/cover';
 import { resetAppStores } from '@navet/app/test/store-reset';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
@@ -217,11 +218,64 @@ describe('CoverCard', () => {
     );
   });
 
-  it('shows open fill for covers that report state without current position', () => {
+  it('shows live state without percentages for covers without position data', () => {
     act(() => setLiveCoverStateWithoutPosition('open'));
     renderCoverCard({ hasPosition: false, initialPosition: 0 });
 
-    expect(screen.getAllByText('100%').length).toBeGreaterThan(0);
+    expect(screen.getByText('Open')).toBeInTheDocument();
+    expect(screen.queryByText('100%')).not.toBeInTheDocument();
+    expect(screen.queryByRole('slider')).not.toBeInTheDocument();
+  });
+
+  it.each(['extra-small', 'small', 'medium', 'large'] as const)(
+    'uses simple garage controls at %s size',
+    (size) => {
+      renderCoverCard({ size, initialDeviceClass: 'garage', initialPosition: 100 });
+      expect(screen.getByText('Open')).toBeInTheDocument();
+      expect(screen.queryByText('100%')).not.toBeInTheDocument();
+      expect(screen.queryByRole('slider')).not.toBeInTheDocument();
+    }
+  );
+
+  it('persists the selected controls through closing and remounting the card', async () => {
+    const card = renderCoverCard({ size: 'medium' });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Open settings for Living Room Blind cover' })
+    );
+    fireEvent.keyDown(screen.getAllByRole('button', { name: 'More actions' })[0], { key: 'Enter' });
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Customize' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Simple controls' }));
+    expect(
+      useSettingsStore.getState().coverControlModes['home_assistant:cover.living_room_blind']
+    ).toBe('simple');
+    fireEvent.click(screen.getByRole('button', { name: 'Back to controls' }));
+    const dialog = within(screen.getByRole('dialog'));
+    expect(dialog.queryByRole('slider')).not.toBeInTheDocument();
+    expect(dialog.queryByRole('button', { name: '25%' })).not.toBeInTheDocument();
+    fireEvent.click(dialog.getByRole('button', { name: 'Open' }));
+    await waitFor(() => expect(openCoverMock).toHaveBeenCalled());
+    card.unmount();
+    renderCoverCard({ size: 'medium' });
+    expect(screen.queryByText('50%')).not.toBeInTheDocument();
+    expect(screen.queryByRole('slider')).not.toBeInTheDocument();
+  });
+
+  it('allows position controls for a garage and keeps preferences provider scoped', () => {
+    useSettingsStore.getState().updateCoverControlMode('homey:garage', 'simple');
+    useSettingsStore.getState().updateCoverControlMode('cover.living_room_blind', 'position');
+    renderCoverCard({ size: 'medium', initialDeviceClass: 'garage' });
+    expect(screen.getByText('50%')).toBeInTheDocument();
+    expect(screen.getByRole('slider')).toBeInTheDocument();
+    expect(useSettingsStore.getState().coverControlModes['homey:garage']).toBe('simple');
+  });
+
+  it('keeps movement states visible in simple mode', () => {
+    act(() => setLiveCoverStateWithoutPosition('opening'));
+    renderCoverCard({ size: 'medium', hasPosition: false });
+    expect(screen.getByText('Opening...')).toBeInTheDocument();
+    act(() => setLiveCoverStateWithoutPosition('closing'));
+    expect(screen.getByText('Closing...')).toBeInTheDocument();
+    expect(screen.queryByRole('slider')).not.toBeInTheDocument();
   });
 
   it('opens positionless covers from the card', async () => {

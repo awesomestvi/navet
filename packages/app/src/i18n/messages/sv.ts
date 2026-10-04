@@ -2429,6 +2429,8 @@ export const svMessages = {
   'cover.state.opening': 'Öppnar...',
   'cover.state.closing': 'Stänger...',
   'cover.ariaLabel': '{name} skydd',
+  'cover.settings.simple': 'Enkla kontroller',
+  'cover.settings.position': 'Positionskontroller',
   'cover.settings.deviceType': 'Enhetstyp',
   'cover.settings.description': 'Välj typ av cover för {name}',
   'cover.deviceClass.blind': 'Fönsterpersienner',

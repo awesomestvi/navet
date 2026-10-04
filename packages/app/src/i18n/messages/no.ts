@@ -2438,6 +2438,8 @@ export const noMessages = {
   'cover.state.opening': 'Åpner...',
   'cover.state.closing': 'Lukker...',
   'cover.ariaLabel': '{name} gardin',
+  'cover.settings.simple': 'Enkle kontroller',
+  'cover.settings.position': 'Posisjonskontroller',
   'cover.settings.deviceType': 'Enhetstype',
   'cover.settings.description': 'Velg type omslag for {name}',
   'cover.deviceClass.blind': 'Persienner',

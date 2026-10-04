@@ -2470,6 +2470,8 @@ export const deMessages = {
   'cover.state.opening': 'Öffnet...',
   'cover.state.closing': 'Schließt...',
   'cover.ariaLabel': '{name} Abdeckung',
+  'cover.settings.simple': 'Einfache Steuerung',
+  'cover.settings.position': 'Positionssteuerung',
   'cover.settings.deviceType': 'Gerätetyp',
   'cover.settings.description': 'Wählen Sie den Cover-Typ für {name}',
   'cover.deviceClass.blind': 'Jalousien',

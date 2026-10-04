@@ -30,6 +30,7 @@ export type CameraViewMode = 'live' | 'auto' | 'snapshot';
 export type CameraDashboardViewMode = CameraViewMode;
 export type CameraStreamPreference = 'auto' | PlatformCameraTransport;
 export type CameraWebRtcStreamSource = 'provider' | 'direct';
+export type CoverControlMode = 'simple' | 'position';
 export type CameraFitMode = 'cover' | 'contain';
 export type WeatherForecastMode = 'weekly' | 'hourly';
 export type WeatherMetricId =
@@ -76,6 +77,7 @@ export interface UserSettings {
   cameraDirectStreamUrls: Record<string, string>;
   cameraFitMode: CameraFitMode;
   cameraFitModes: Record<string, CameraFitMode>;
+  coverControlModes: Record<string, CoverControlMode>;
   cameraFullscreenHiddenAccessoryIds: Record<string, string[]>;
   cameraFullscreenVisibleAccessoryIds: Record<string, string[]>;
   ambientLightBleed: boolean;
@@ -93,6 +95,7 @@ export interface SettingsState extends UserSettings {
   updateCameraWebRtcStreamSource: (entityId: string, source: CameraWebRtcStreamSource) => void;
   updateCameraDirectStreamUrl: (entityId: string, url: string) => void;
   updateCameraFitMode: (entityId: string, mode: CameraFitMode) => void;
+  updateCoverControlMode: (entityId: string, mode: CoverControlMode) => void;
   updateCameraFullscreenAccessoryVisibility: (
     cameraEntityId: string,
     accessoryEntityId: string,
@@ -136,6 +139,7 @@ export const defaultSettings: UserSettings = {
   cameraDirectStreamUrls: {},
   cameraFitMode: 'cover',
   cameraFitModes: {},
+  coverControlModes: {},
   cameraFullscreenHiddenAccessoryIds: {},
   cameraFullscreenVisibleAccessoryIds: {},
   ambientLightBleed: true,
@@ -182,6 +186,15 @@ function normalizeCameraWebRtcStreamSource(value: unknown): CameraWebRtcStreamSo
 
 export function isDirectCameraStreamSource(source: CameraWebRtcStreamSource) {
   return source === 'direct';
+}
+
+function normalizeCoverControlModes(value: unknown): Record<string, CoverControlMode> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  return normalizePersistedEntityRecord(
+    Object.fromEntries(
+      Object.entries(value).filter(([, mode]) => mode === 'simple' || mode === 'position')
+    )
+  ) as Record<string, CoverControlMode>;
 }
 
 function isCameraFitMode(value: unknown): value is CameraFitMode {
@@ -422,6 +435,10 @@ export const useSettingsStore = create<SettingsState>()(
             newSettings.cameraFitMode !== undefined && isCameraFitMode(newSettings.cameraFitMode)
               ? newSettings.cameraFitMode
               : state.cameraFitMode,
+          coverControlModes:
+            newSettings.coverControlModes !== undefined
+              ? normalizeCoverControlModes(newSettings.coverControlModes)
+              : state.coverControlModes,
           cameraFitModes:
             newSettings.cameraFitModes !== undefined
               ? normalizeCameraFitModes(newSettings.cameraFitModes)
@@ -484,6 +501,13 @@ export const useSettingsStore = create<SettingsState>()(
           }
           return { cameraDirectStreamUrls: nextUrls };
         }),
+      updateCoverControlMode: (entityId, mode) =>
+        set((state) => ({
+          coverControlModes: {
+            ...state.coverControlModes,
+            [ensureCanonicalEntityId(entityId)]: mode,
+          },
+        })),
       updateCameraFitMode: (entityId, mode) =>
         set((state) => ({
           cameraFitModes: {
@@ -548,6 +572,7 @@ export const useSettingsStore = create<SettingsState>()(
             ? supportedSettings.cameraFitMode
             : defaultSettings.cameraFitMode,
           cameraFitModes: normalizeCameraFitModes(supportedSettings.cameraFitModes),
+          coverControlModes: normalizeCoverControlModes(supportedSettings.coverControlModes),
           cameraFullscreenHiddenAccessoryIds: normalizeCameraFullscreenHiddenAccessoryIds(
             supportedSettings.cameraFullscreenHiddenAccessoryIds
           ),
@@ -621,6 +646,7 @@ export const useSettingsStore = create<SettingsState>()(
             ? next.cameraFitMode
             : current.cameraFitMode,
           cameraFitModes: normalizeCameraFitModes(next.cameraFitModes),
+          coverControlModes: normalizeCoverControlModes(next.coverControlModes),
           cameraFullscreenHiddenAccessoryIds: normalizeCameraFullscreenHiddenAccessoryIds(
             next.cameraFullscreenHiddenAccessoryIds
           ),

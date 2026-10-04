@@ -2444,6 +2444,8 @@ export const fiMessages = {
   'cover.state.opening': 'Avataan...',
   'cover.state.closing': 'Suljetaan...',
   'cover.ariaLabel': '{name} kansi',
+  'cover.settings.simple': 'Yksinkertaiset ohjaimet',
+  'cover.settings.position': 'Asennon ohjaimet',
   'cover.settings.deviceType': 'Laitteen tyyppi',
   'cover.settings.description': 'Valitse kansityyppi kohteelle {name}',
   'cover.deviceClass.blind': 'Ikkunan kaihtimet',

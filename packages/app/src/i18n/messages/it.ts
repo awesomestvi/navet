@@ -2470,6 +2470,8 @@ export const itMessages = {
   'cover.state.opening': 'Apertura',
   'cover.state.closing': 'Chiusura',
   'cover.ariaLabel': 'Controllo copertura {name}',
+  'cover.settings.simple': 'Controlli semplici',
+  'cover.settings.position': 'Controlli di posizione',
   'cover.settings.deviceType': 'Tipo dispositivo',
   'cover.settings.description': 'Seleziona il tipo di copertura per {name}',
   'cover.deviceClass.blind': 'Tapparella',

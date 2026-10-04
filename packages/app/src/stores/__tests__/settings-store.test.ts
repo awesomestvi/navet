@@ -10,6 +10,34 @@ describe('useSettingsStore', () => {
     await resetAppStores();
   });
 
+  it('persists cover control choices and filters invalid saved modes', async () => {
+    useSettingsStore.getState().updateCoverControlMode('cover.garage', 'simple');
+    useSettingsStore.getState().updateCoverControlMode('homey:garage', 'position');
+    const saved = localStorage.getItem(STORE_STORAGE_KEYS.settings);
+    expect(saved).toContain('coverControlModes');
+    useSettingsStore.setState({ coverControlModes: {} });
+    if (!saved) throw new Error('Settings were not persisted');
+    localStorage.setItem(STORE_STORAGE_KEYS.settings, saved);
+    await useSettingsStore.persist.rehydrate();
+    expect(useSettingsStore.getState().coverControlModes).toEqual({
+      'home_assistant:cover.garage': 'simple',
+      'homey:garage': 'position',
+    });
+    localStorage.setItem(
+      STORE_STORAGE_KEYS.settings,
+      JSON.stringify({
+        state: {
+          coverControlModes: { 'cover.garage': 'simple', 'homey:garage': 'invalid' },
+        },
+        version: 0,
+      })
+    );
+    await useSettingsStore.persist.rehydrate();
+    expect(useSettingsStore.getState().coverControlModes).toEqual({
+      'home_assistant:cover.garage': 'simple',
+    });
+  });
+
   it('updates partial settings', () => {
     useSettingsStore.getState().updateSettings({
       dashboardSpaceMode: 'more_space',

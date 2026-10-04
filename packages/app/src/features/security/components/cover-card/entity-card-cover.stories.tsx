@@ -159,3 +159,27 @@ export const HandleSizes: Story = {
     </div>
   ),
 };
+
+export const Garage: Story = {
+  args: {
+    id: 'cover.issue_235_garage',
+    initialDeviceClass: 'garage',
+    name: 'Garage door',
+    initialPosition: 0,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText('Closed')).toBeVisible();
+    await expect(canvas.queryByText('0%')).toBeNull();
+    await expect(canvas.queryByRole('slider')).toBeNull();
+  },
+};
+
+export const Positionless: Story = {
+  args: {
+    id: 'cover.issue_235_positionless',
+    hasPosition: false,
+    initialPosition: 0,
+    supportedFeatures: 3,
+  },
+};
