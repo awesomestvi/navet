@@ -27,7 +27,6 @@ These suites block release-oriented workflows and should stay intentionally smal
 | `scripts/agent-planning-intake.test.mjs`, `scripts/agent-planning-result.test.mjs`, `scripts/agent-planning-result-delivery.test.mjs` | Scope and visibility authorization, durable result publication and acknowledgement recovery protect private planning at delivery boundaries | Keep |
 | `scripts/agent-linear-auth.test.mjs`, `scripts/agent-linear-reader.test.mjs`, `scripts/agent-linear-result-reader.test.mjs`, `scripts/agent-linear-result-writer.test.mjs`, `scripts/agent-linear-refresh-run.test.mjs` | Credential isolation and cleanup, scoped service reads and writes, private result publication and refreshed authority belong in release-critical validation | Keep |
 | `scripts/agent-linear-connector-reader.test.mjs` | Connected read tools preserve workspace/account/team/project identity, complete stable proposal scope and cancellation without inferring human approval | Keep |
-| `scripts/agent-design-tokens.test.mjs`, `scripts/agent-design-token-css.test.mjs` | Agent design context preserves source provenance and units; CSS discovery rejects imports outside the checkout and installed Tailwind package and prevents stylesheet JavaScript execution | Keep |
 | `assets/public/boot-i18n.test.ts`, `scripts/vite-preload-graph.test.mjs` | Low-power startup and authenticated-transition preload graph remain parseable and release-gated | Keep |
 | `packages/provider-*/src/*.test.*` | Provider contract conformance for Home Assistant, Homey, openHAB, and planned-provider boundaries | Keep |
 | `packages/app/src/auth/__tests__/adapters.test.ts`, `runtime.test.ts`, `homeAssistantDiscovery.test.ts`, `homey-oauth-auth.test.ts` | Auth/runtime bootstrap and provider login flows | Keep |
@@ -72,12 +71,9 @@ workflows by default.
 
 | Group | Why it exists | Status |
 |---|---|---|
-| `scripts/ui-shell-recipes.test.mjs`, `scripts/ui-feature-imports.test.mjs` | Detect known copied shell recipes and direct feature-import escapes while accepting structural layouts and shared imports | Keep |
-| `scripts/agent-component-maturity.test.mjs` | Source-bound maturity guidance rejects moved exports, missing evidence and conflicting classifications | Keep |
 | `packages/app/src/features/dashboard/**` | Largest user-facing regression surface for layout, editing, widgets, and navigation | Keep |
 | `packages/app/src/features/media/**`, `lighting/**`, `security/**`, `energy/**`, `climate/**`, `rss/**`, `tasks/**`, `settings/**`, `sensors/**`, `vacuum/**`, `calendar/**`, `notifications/**` | User-visible feature regressions and UI behavior | Keep |
 | `packages/app/src/components/**` | Shared UI and interaction regressions | Keep |
-| `scripts/agent-component-catalog.test.mjs` | Source-derived component metadata, story references, and compiler-input fingerprints for developer discovery | Keep |
 | most `packages/app/src/hooks/**` | Hook-level regression coverage for app behavior and feature composition | Keep |
 | most `packages/app/src/utils/**`, `packages/app/src/runtime/**`, `packages/app/src/navigation/**`, `packages/app/src/api/**` | Utility and runtime drift detection that is useful but not release-critical | Keep |
 | `pnpm test:storybook` | Separate visual/story regression surface | Keep |

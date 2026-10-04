@@ -1,3 +1,0 @@
-type: internal
-audiences: []
-summary: Bind interactive lighting stories to one synthetic runtime so brightness reads and acknowledged edits remain consistent across reopening.

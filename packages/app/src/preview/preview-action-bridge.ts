@@ -2,7 +2,6 @@ import { homeAssistantStore } from '@navet/app/stores/home-assistant-store';
 import { getProviderNativeId } from '@navet/app/utils/provider-ids';
 import type { CommandResult, NavetCommand } from '@navet/core/types';
 import type { HassEntities, HassEntity } from 'home-assistant-js-websocket';
-import { tryExecutePreviewRuntimeLightCommand } from './runtime';
 
 type PreviewRuntimeKind = 'storybook' | 'demo';
 
@@ -434,7 +433,7 @@ export async function maybeDispatchPreviewCommand(
     return null;
   }
 
-  if (!(await tryExecutePreviewRuntimeLightCommand(command))) applyPreviewCommand(command);
+  applyPreviewCommand(command);
   return PREVIEW_COMMAND_RESULT;
 }
 

@@ -154,9 +154,8 @@ do not change scope.
 
 Use the [implementation work brief](templates/work-brief.md) for the accepted outcome and the
 [approval package](templates/approval-package.md) for current-head maintainer review. Keep these
-records in their existing planning/delivery home and link them from private task context. The
-[standing-authority proposal](templates/standing-authority-policy.md) records proposed categories
-and limits; completing it does not activate authority or replace the trusted request path.
+records in their existing planning/delivery home and link them from private task context. Every
+execution needs its exact trusted request and accepted scope.
 
 ## Evidence And Acceptance
 

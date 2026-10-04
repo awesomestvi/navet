@@ -29,9 +29,8 @@ const copy = {
   hallwayRoom: 'Hallway',
   livingRoom: 'Living room',
 };
-const now = new Date(2026, 7, 18, 12);
-const workspace = createChoreDemoWorkspace({ copy, now });
-const mission = getMissionProgressList(workspace, now)[0];
+const workspace = createChoreDemoWorkspace({ copy });
+const mission = getMissionProgressList(workspace)[0];
 const reward = getRewardProgressList(workspace)[0];
 if (!mission || !reward) throw new Error('Chore support story fixture is incomplete');
 
@@ -39,7 +38,7 @@ const meta = {
   title: 'Cards/Household/Support',
   component: HousePulse,
   tags: ['autodocs'],
-  args: { pulse: getHousePulse(workspace, now) },
+  args: { pulse: getHousePulse(workspace) },
   parameters: {
     layout: 'padded',
     docs: {
@@ -104,7 +103,7 @@ export const Pulse: Story = {
 export const PulseCurrent: Story = {
   args: {
     pulse: {
-      ...getHousePulse(workspace, now),
+      ...getHousePulse(workspace),
       overdue: 0,
     },
   },
@@ -164,9 +163,7 @@ export const PortraitTablet: Story = {
 };
 
 export const PulseComplete: Story = {
-  args: {
-    pulse: getHousePulse(createChoreDemoWorkspace({ copy, mode: 'complete', now }), now),
-  },
+  args: { pulse: getHousePulse(createChoreDemoWorkspace({ copy, mode: 'complete' })) },
 };
 
 export const Mission: Story = {

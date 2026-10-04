@@ -1,14 +1,10 @@
 import { getProviderRuntimeRegistration } from '@navet/app/provider-runtime-registry';
 import { integrationStore } from '@navet/app/stores/integration-store';
 import { afterEach, describe, expect, it } from 'vitest';
-import { maybeDispatchPreviewCommand } from './preview-action-bridge';
 import {
-  createPreviewLightEntity,
-  createPreviewStoryScenario,
   getPreviewDeviceCollection,
   getPreviewRuntimeScenario,
   installPreviewRuntime,
-  replacePreviewEntity,
   resetPreviewRuntime,
 } from './runtime';
 
@@ -51,60 +47,6 @@ describe('preview runtime', () => {
 
     expect(nextEntity?.primaryState).toBe('off');
     expect(nextEntity?.attributes.value).toBe('off');
-  });
-
-  it('shares normalized light brightness with compatibility reads after an acknowledged edit', async () => {
-    const light = createPreviewLightEntity('light.living_room', { brightnessPct: 72 });
-    installPreviewRuntime(replacePreviewEntity(createPreviewStoryScenario(), light));
-    const registration = getProviderRuntimeRegistration('home_assistant');
-    const snapshots = registration.entityRuntimeService;
-    expect(snapshots?.getEntitySnapshot?.('light.living_room')?.attributes.brightness_pct).toBe(72);
-    let notifications = 0;
-    const unsubscribe = snapshots?.subscribeEntitySnapshot?.(
-      'light.living_room',
-      () => notifications++
-    );
-    const previousRuntime = document.documentElement.dataset.navetPreviewRuntime;
-    document.documentElement.dataset.navetPreviewRuntime = 'storybook';
-    try {
-      expect(
-        await maybeDispatchPreviewCommand({
-          type: 'set_brightness',
-          entityId: light.canonicalId,
-          brightness: 71,
-        })
-      ).toMatchObject({ accepted: true });
-    } finally {
-      if (previousRuntime === undefined)
-        delete document.documentElement.dataset.navetPreviewRuntime;
-      else document.documentElement.dataset.navetPreviewRuntime = previousRuntime;
-    }
-    expect(notifications).toBeGreaterThan(0);
-    expect(snapshots?.getEntitySnapshot?.('light.living_room')?.attributes.brightness_pct).toBe(71);
-    expect(
-      integrationStore.getState().providerEntitiesByCanonicalId[light.canonicalId]?.attributes
-        .brightnessPct
-    ).toBe(71);
-    unsubscribe?.();
-    installPreviewRuntime(replacePreviewEntity(createPreviewStoryScenario(), light));
-    expect(
-      getProviderRuntimeRegistration('home_assistant').entityRuntimeService?.getEntitySnapshot?.(
-        'light.living_room'
-      )?.attributes.brightness_pct
-    ).toBe(72);
-  });
-
-  it('retains the on/off-only preview light capability without synthetic dimming attributes', () => {
-    const light = createPreviewLightEntity('light.living_room');
-    light.attributes = { supportedColorModes: ['onoff'] };
-    light.capabilities = ['toggle'];
-    installPreviewRuntime(replacePreviewEntity(createPreviewStoryScenario(), light));
-    const snapshot = getProviderRuntimeRegistration(
-      'home_assistant'
-    ).entityRuntimeService?.getEntitySnapshot?.(light.externalId);
-    expect(snapshot?.attributes.supported_color_modes).toEqual(['onoff']);
-    expect(snapshot?.attributes.brightness_pct).toBeUndefined();
-    expect(snapshot?.attributes.color_temp_kelvin).toBeUndefined();
   });
 
   it('provides deterministic media browsing for isolated previews', async () => {

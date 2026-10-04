@@ -10,9 +10,12 @@ appropriate prototype evidence in Linear. The maintainer prioritizes there and a
 selected scope. The team implements approved work, tests and reviews it, opens one PR, and links
 the result back to Linear. Questions and answers stay on the originating ticket.
 
-The [autonomous builder plan](autonomous-builder-plan.md) supplies the broader requirements,
-privacy rules and six-phase rollout. This document defines the implementation sequence for the
-core team workflow. Its acceptance does not complete the broader rollout or Navet 1.0.0 release gate.
+This document defines the implementation scope for the core team workflow. The
+[autonomous builder plan](autonomous-builder-plan.md) records a broader future programme. Its
+design-system expansion, comparison experiments, recurring discovery, standing stewardship and
+product-readiness programme require separate authorization. Retain a broader foundation only
+when the core workflow directly depends on it; general usefulness is insufficient. Team workflow
+acceptance remains separate from live operation and Navet 1.0.0 release acceptance.
 
 ## Maintainer Experience
 
@@ -83,8 +86,8 @@ source references and prior evidence, rather than the entire conversation histor
 
 Inspect the current branch, PR, task store and planning/dispatch/result adapters. Classify existing
 modules as reusable, requiring integration, or requiring a scoped change. Verify callback ownership
-and installed capabilities. Keep valid security boundaries and changes that implement these
-workflow requirements or the autonomous builder plan. Remove unrelated additions from commit
+and installed capabilities. Keep valid security boundaries and changes that implement this
+workflow or are verified direct dependencies of it. Remove unrelated additions from commit
 `c9abf84001518fe83ed0db1909fda4466d13c099` onward. No blanket revert, replacement runtime or extra PR.
 
 Deliverable: a current source map with concrete gaps and the narrow validation path for each change.
@@ -148,8 +151,8 @@ do not authorize new pilots. Do not infer an answer from elapsed time.
 Start with one authorized real idea-to-proposal path, then its approved delivery. Measure actual
 interventions, accepted outcomes, elapsed/waiting time and observed allowance. Preserve failed
 evidence and checkpoints. Expand standing discovery or maintenance only after its own policy and
-operational gates pass. The broader five-delivery pilot and comparative evidence requirements
-remain outstanding until separately satisfied.
+operational gates pass. The broader pilot and comparative evidence requirements belong to that
+separately authorized programme; they do not expand core workflow acceptance.
 
 ## Workflow Completion Evidence
 
@@ -173,7 +176,7 @@ Maintain a separate ledger for broader rollout requirements and product release 
 
 Implement the workflow infrastructure, not the candidate product ideas. Keep all related changes in
 PR #232 if it remains open; if its state changes, establish the delivery target before publishing.
-Keep the delivery scoped to these requirements and the autonomous builder plan. Do not activate
+Keep the delivery scoped to this workflow and its verified direct dependencies. Do not activate
 automation, start live model trials, raise limits, access private installations, merge or release without the applicable maintainer authorization. Stop
 repeated unproductive work with a concrete diagnosis and checkpoint instead of automatic retries.
 
@@ -184,7 +187,8 @@ repeated unproductive work with a concrete diagnosis and checkpoint instead of a
 > `docs/engineering/autonomous-builder-plan.md`. Revalidate the current source and PR #232, then
 > reuse the existing foundations to implement private idea development, specialist coordination,
 > verified Linear approval, ticket questions/answer resumption, independent acceptance and PR
-> delivery. Keep the full broader rollout requirements visible and distinguish workflow acceptance
+> delivery. Keep the broader rollout as a separately authorized future programme and distinguish
+> workflow acceptance
 > from Navet 1.0.0 release acceptance. Work on the infrastructure only; do not implement product
 > ideas, restart stopped experiments or activate unattended operation. Keep related delivery in
 > the existing PR and remove unrelated additions from

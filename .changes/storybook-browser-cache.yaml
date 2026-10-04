@@ -1,3 +1,0 @@
-type: internal
-audiences: []
-summary: Use the installed Playwright browser cache for local Storybook MCP fixture tests while preserving explicit browser-path overrides.

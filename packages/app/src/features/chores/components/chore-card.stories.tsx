@@ -78,7 +78,6 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const DueNow: Story = {
-  globals: { theme: 'glass' },
   args: {
     now: new Date(Date.parse(occurrence.dueAt) + 1),
   },
@@ -250,7 +249,6 @@ export const ScheduledOnAnotherDay: Story = {
 };
 
 export const ColorOverride: Story = {
-  globals: { theme: 'glass' },
   args: {
     occurrence: {
       ...occurrence,

@@ -122,10 +122,10 @@ Linting, type checking, tests, builds, smoke checks, screenshots, and artifact v
 deterministic jobs. Reviewers interpret failures; passing checks are required for acceptance.
 
 The required UI lane builds Storybook and runs responsive demo smoke/accessibility checks.
-Run the complete Storybook browser interaction suite locally with `pnpm test:storybook --run` when
-changed component behavior needs broader interaction coverage. Record its source commit, results
-and relevant rendered coverage in the approval package. This local suite is separate from the
-required hosted UI lane; promote it to a required check only after verifying a green `main` baseline.
+Use `pnpm test:storybook --run` for relevant local interaction coverage and record the source
+commit, results and rendered coverage. The complete browser suite has unresolved baseline
+failures; report them separately from the changed scope. Promote it to a required check only
+after verifying a green `main` baseline.
 
 ## Requests And State
 

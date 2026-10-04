@@ -1,3 +1,0 @@
-type: internal
-audiences: []
-summary: Give each form recipe instance unique label and validation-message associations.

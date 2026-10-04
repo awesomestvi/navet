@@ -1,10 +1,11 @@
 # Navet Autonomous Builder Plan
 
-Status: local workflow infrastructure has deterministic coverage for private proposals,
-specialist coordination, ticket conversation, recovery, accounting and completion. See the
-[coordinated team workflow](agent-team-workflow.md) for source ownership and the infrastructure
-acceptance ledger. Live operational integration and the broader rollout remain unverified. This
-plan does not activate unattended work or establish that Navet is ready for 1.0.0.
+Status: broader future programme. The [team workflow implementation plan](team-workflow-implementation-plan.md)
+defines the current infrastructure scope and takes precedence when deciding what to implement.
+Design-system expansion, context comparisons, recurring discovery, standing stewardship and the
+product-readiness programme require separate authorization. The
+[coordinated team workflow](agent-team-workflow.md) records implemented core contracts and their
+remaining live gates. This plan establishes neither unattended operation nor Navet 1.0.0 readiness.
 
 ## Objective
 
@@ -31,8 +32,9 @@ approval, specialist coordination, implementation, ticket questions and answers,
 PR delivery. Accept each feature or product against its own approved criteria. Accept Navet 1.0.0
 against the separate release-candidate criteria in Phase 6.
 
-The six phases retain their requirements and evidence obligations. Their completion is distinct
-from verifying the core team workflow. Household cohorts and production release dispatch belong
+The six phases record future requirements and evidence obligations. They do not expand the
+current team workflow scope. Their completion is distinct from verifying the core team workflow.
+Household cohorts and production release dispatch belong
 to product acceptance; they are not prerequisites for developing a requested idea in Linear.
 Recurring discovery, standing maintenance and comparative harness experiments require their own
 accepted scope and resources. Comparative experiments are currently stopped; use the existing
@@ -383,8 +385,8 @@ Retain a private linkage to the public result and verify the result exists befor
 
 ## UX Quality Audit Contract
 
-Use the repository [navet-ux-audit skill](../../.agents/skills/navet-ux-audit/SKILL.md) for proactive
-design audits and verification of proposed UI fixes. Start read-only; approved fixes use the normal
+Use the existing [dashboard UX guide](../../ai/skills/navet-ux.md) for reference-led rendered
+review. A separately authorized proactive audit programme should follow the contract below. Start read-only; approved fixes use the normal
 delivery workflow and update the original finding.
 
 Run audits on affected UI before a PR is presented for maintainer acceptance, after shared primitive
@@ -433,7 +435,7 @@ can detect every UX issue; show actual coverage and improve the audit from misse
    exclusions, risk, permitted actions, UI references, and documentation impact.
 4. Use the [approval package](templates/approval-package.md) to present: current commit, PR, preview links, relevant screenshots, behavior
    changes, validation results, outstanding limits, and the decision needed.
-5. Develop the [standing-authority proposal](templates/standing-authority-policy.md) with these categories:
+5. Define any separately authorized standing-authority policy with these categories:
    - Maintainer-requested implementation: execute within the requested outcome and existing rules.
    - Agent-discovered maintenance: prepare a scoped proposal; automatic implementation requires
      separately recorded maintainer authorization for the category and its limits.
@@ -528,10 +530,10 @@ pattern, inspect supported states, and run relevant checks without inventing its
    and `glass`, `dark`, `light`, and `black` themes.
 5. Audit the documented Storybook baseline failures, verify their current status, and repair valid
    assertions without weakening tests. Promote a lane to required only after its baseline is green.
-6. Use the [five-case agent UI evaluation](agent-ui-evaluation.md) from real Navet sources.
-   It covers a card dialog, settings flow, unavailable state, responsive dashboard composition
-   and shared-component extension. Controlled runs require separate authorization; record them
-   before claiming context improvements. Their completion is separate from team workflow acceptance.
+6. Define a representative agent UI evaluation from real Navet sources before any separately
+   authorized comparison. Cover a card dialog, settings flow, unavailable state, responsive
+   dashboard composition and shared-component extension. Record controlled runs before claiming
+   context improvements. Their completion is separate from team workflow acceptance.
 7. Track invalid props/imports, duplicated primitives, token violations, accessibility failures,
    maintainer correction effort, runtime, and cost. Compare filesystem-only context with curated
    metadata and MCP using the same task set.
@@ -603,8 +605,8 @@ Track each phase's remaining acceptance criteria in the configured Linear projec
 IDs and links in the runner's private planning bindings rather than public repository documentation.
 
 The [task lifecycle tools](agent-task-lifecycle.md) provide local state consistency and recovery
-building blocks. The [AI design context](../design-system/AI-DESIGN-CONTEXT.md) explains generated
-component discovery. Neither tool establishes that the operational exit gates have passed.
+building blocks. The existing [AI design context](../design-system/AI-DESIGN-CONTEXT.md) supplies
+reference-led UI guidance. These resources do not establish operational acceptance.
 
 Use the [team workflow implementation plan](team-workflow-implementation-plan.md) to connect the
 existing foundations into the core workflow. Respect each capability's authority, privacy,
