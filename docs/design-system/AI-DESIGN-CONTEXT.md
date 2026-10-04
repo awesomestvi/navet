@@ -27,9 +27,9 @@ member in JSX. Each member's source location points to its declared property; in
 implementation before relying on behavior. Member story associations require references to
 that property and are not inherited from the parent object.
 
-Member maturity remains `unclassified`. The maturity inventory classifies top-level exports;
-a parent's classification does not classify every member. When the same function has a
-separate top-level export, inspect that export's explicit rationale as additional context.
+The maturity inventory records inspected members by their dotted name, import surface and source.
+A parent's classification does not classify its members; a member without its own annotation stays
+`unclassified`. Read the member's rationale for its context and composition requirements.
 
 For union-based props, `properties` contains the fields shared across alternatives; `variants`
 preserves each alternative's own fields, types and required/optional discriminator. Select one
@@ -46,7 +46,7 @@ inventory and evidence separately from the TypeScript `sourceFingerprint`.
 `app-coupled` identifies components that require app context or helpers. Reuse them inside Navet's
 app through their listed import surface; they are not standalone `@navet/ui` contracts. `stable`
 is reserved for an explicitly curated mature contract, and `experimental` identifies an evolving
-contract. The inventory covers the current catalog's top-level component and namespace contracts, including
+contract. The inventory covers inspected top-level component, namespace and member contracts, including
 card/sheet foundations, form controls, typography, status and action
 primitives, navigation workspace parts, dialog compositions and tabs. Read namespace entries as
 composition objects, not JSX components. Layout wrappers can have narrower contracts than their

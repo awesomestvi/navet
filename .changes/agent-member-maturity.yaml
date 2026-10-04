@@ -1,0 +1,3 @@
+type: internal
+audiences: []
+summary: Include explicitly inspected namespace member maturity in source-derived component queries.

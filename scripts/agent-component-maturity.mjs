@@ -12,7 +12,7 @@ export function applyComponentMaturity(catalog, { root, inventory }) {
   root = realpathSync(root);
   const annotations = new Map();
   const fingerprint = createHash('sha256').update(JSON.stringify(inventory));
-  const available = new Set(catalog.entries.map(key));
+  const available = new Set(catalog.entries.flatMap((entry) => [entry, ...(entry.members ?? [])]).map(key));
   for (const entry of inventory.components) {
     if (![entry.name, entry.importFrom, entry.source, entry.rationale].every((value) => typeof value === 'string' && value.trim()) ||
         !STATUSES.has(entry.status) || !Array.isArray(entry.evidence) || entry.evidence.length === 0) {
@@ -29,15 +29,19 @@ export function applyComponentMaturity(catalog, { root, inventory }) {
     }
     annotations.set(identity, entry);
   }
+  const annotate = (entry) => {
+    const annotation = annotations.get(key(entry));
+    return annotation ? {
+      ...entry, stability: annotation.status,
+      maturity: { rationale: annotation.rationale, evidence: annotation.evidence },
+    } : entry;
+  };
   return {
     ...catalog,
     maturityFingerprint: fingerprint.digest('hex'),
     entries: catalog.entries.map((entry) => {
-      const annotation = annotations.get(key(entry));
-      return annotation ? {
-        ...entry, stability: annotation.status,
-        maturity: { rationale: annotation.rationale, evidence: annotation.evidence },
-      } : entry;
+      const result = annotate(entry);
+      return entry.members ? { ...result, members: entry.members.map(annotate) } : result;
     }),
   };
 }

@@ -928,6 +928,138 @@
       "evidence": [
         "packages/app/src/components/primitives/tooltip.stories.tsx"
       ]
+    },
+    {
+      "name": "NavigationWorkspace.Frame",
+      "importFrom": "@navet/app/ui-kit/patterns",
+      "source": "packages/app/src/components/patterns/navigation-workspace.tsx",
+      "status": "app-coupled",
+      "rationale": "Uses app theme hooks to provide workspace surface context. Caller owns responsive layout, navigation state, headings and dimensions.",
+      "evidence": [
+        "packages/app/src/components/patterns/navigation-workspace.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "NavigationWorkspace.Group",
+      "importFrom": "@navet/app/ui-kit/patterns",
+      "source": "packages/app/src/components/patterns/navigation-workspace.tsx",
+      "status": "app-coupled",
+      "rationale": "Requires NavigationWorkspace.Frame context for themed grouped surfaces; caller supplies navigation semantics and rows.",
+      "evidence": [
+        "packages/app/src/components/patterns/navigation-workspace.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "NavigationWorkspace.Header",
+      "importFrom": "@navet/app/ui-kit/patterns",
+      "source": "packages/app/src/components/patterns/navigation-workspace.tsx",
+      "status": "app-coupled",
+      "rationale": "Requires frame context for its border. Caller supplies heading hierarchy, content and spacing.",
+      "evidence": [
+        "packages/app/src/components/patterns/navigation-workspace.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "NavigationWorkspace.Item",
+      "importFrom": "@navet/app/ui-kit/patterns",
+      "source": "packages/app/src/components/patterns/navigation-workspace.tsx",
+      "status": "app-coupled",
+      "rationale": "Requires frame context; active and accentColor are required visual inputs. Caller supplies selected-navigation semantics and the actionable child.",
+      "evidence": [
+        "packages/app/src/components/patterns/navigation-workspace.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "NavigationWorkspace.ItemButton",
+      "importFrom": "@navet/app/ui-kit/patterns",
+      "source": "packages/app/src/components/patterns/navigation-workspace.tsx",
+      "status": "app-coupled",
+      "rationale": "Uses app theme focus-ring tokens and a native button. Caller supplies an accessible name, navigation callback and aria-current where applicable.",
+      "evidence": [
+        "packages/app/src/components/patterns/navigation-workspace.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "NavigationWorkspace.ItemIcon",
+      "importFrom": "@navet/app/ui-kit/patterns",
+      "source": "packages/app/src/components/patterns/navigation-workspace.tsx",
+      "status": "app-coupled",
+      "rationale": "Requires frame context and renders an aria-hidden icon span. Caller supplies the icon; the associated button/text must carry its accessible name.",
+      "evidence": [
+        "packages/app/src/components/patterns/navigation-workspace.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "NavigationWorkspace.ItemText",
+      "importFrom": "@navet/app/ui-kit/patterns",
+      "source": "packages/app/src/components/patterns/navigation-workspace.tsx",
+      "status": "app-coupled",
+      "rationale": "Requires frame context and title content; description is optional. Text truncates; review long and translated names in the composed row.",
+      "evidence": [
+        "packages/app/src/components/patterns/navigation-workspace.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "NavigationWorkspace.Separator",
+      "importFrom": "@navet/app/ui-kit/patterns",
+      "source": "packages/app/src/components/patterns/navigation-workspace.tsx",
+      "status": "app-coupled",
+      "rationale": "Requires frame context and renders an aria-hidden inset divider. Use inside the grouped row composition shown in the source story.",
+      "evidence": [
+        "packages/app/src/components/patterns/navigation-workspace.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "NavigationWorkspace.Body",
+      "importFrom": "@navet/app/ui-kit/patterns",
+      "source": "packages/app/src/components/patterns/navigation-workspace.tsx",
+      "status": "experimental",
+      "rationale": "Provider-neutral grid wrapper currently exported from the app. Caller owns column definitions, responsive transitions and scroll containment; standalone contract has not been stabilized.",
+      "evidence": [
+        "packages/app/src/components/patterns/navigation-workspace.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "NavigationWorkspace.Sidebar",
+      "importFrom": "@navet/app/ui-kit/patterns",
+      "source": "packages/app/src/components/patterns/navigation-workspace.tsx",
+      "status": "app-coupled",
+      "rationale": "Requires frame context for panel and border styling. Caller owns width, responsive presentation and navigation labeling.",
+      "evidence": [
+        "packages/app/src/components/patterns/navigation-workspace.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "NavigationWorkspace.Content",
+      "importFrom": "@navet/app/ui-kit/patterns",
+      "source": "packages/app/src/components/patterns/navigation-workspace.tsx",
+      "status": "experimental",
+      "rationale": "Provider-neutral main-region wrapper currently exported from the app. Requires children; caller owns main-landmark placement and an explicit scroll region. Standalone contract has not been stabilized.",
+      "evidence": [
+        "packages/app/src/components/patterns/navigation-workspace.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
+    },
+    {
+      "name": "NavigationWorkspace.ScrollArea",
+      "importFrom": "@navet/app/ui-kit/patterns",
+      "source": "packages/app/src/components/patterns/navigation-workspace.tsx",
+      "status": "experimental",
+      "rationale": "Provider-neutral scroll wrapper exported as a namespace member from the app. Caller supplies bounded height; it supplies no landmark or focus management. Standalone contract has not been stabilized.",
+      "evidence": [
+        "packages/app/src/components/patterns/navigation-workspace.stories.tsx",
+        "docs/design-system/AGENT-COMPOSITION-RECIPES.md"
+      ]
     }
   ]
 }

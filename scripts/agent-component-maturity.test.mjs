@@ -60,3 +60,27 @@ it('rejects evidence outside the repository', () => {
   inventory.components[0].evidence = [path.join(root, 'sheet.stories.tsx')];
   expect(() => applyComponentMaturity(catalog, { root, inventory })).toThrow('repository-relative');
 });
+
+it('classifies an explicitly inspected namespace member without inheriting parent maturity', () => {
+  writeFileSync(path.join(root, 'sheet.ts'), `
+    function Body(props: { title: string }) { return props.title; }
+    function Footer(props: { label: string }) { return props.label; }
+    export const Sheet = { Body, Footer };
+  `);
+  inventory.components.push({ ...inventory.components[0], name: 'Sheet.Body', status: 'experimental',
+    rationale: 'Body contract is evolving independently of the themed frame.' });
+  const actual = generateCatalog({ root, entries: [{ file: 'sheet.ts', importFrom: '@navet/ui' }], maturityInventory: inventory });
+  const sheet = actual.entries.find((item) => item.name === 'Sheet');
+  expect(sheet.stability).toBe('app-coupled');
+  expect(sheet.members.find((item) => item.name === 'Sheet.Body')).toMatchObject({
+    stability: 'experimental', maturity: { rationale: 'Body contract is evolving independently of the themed frame.' },
+  });
+  expect(sheet.members.find((item) => item.name === 'Sheet.Footer')).toMatchObject({ stability: 'unclassified' });
+});
+it.each(['name', 'source', 'importFrom'])('rejects stale namespace member identity when %s changes', (field) => {
+  const member = { ...entry, name: 'Sheet.Body' };
+  catalog.entries[0] = { ...entry, members: [member] };
+  inventory.components.push({ ...inventory.components[0], name: member.name });
+  catalog.entries[0].members[0] = { ...member, [field]: 'changed' };
+  expect(() => applyComponentMaturity(catalog, { root, inventory })).toThrow('export/source changed');
+});
