@@ -710,6 +710,14 @@ outside the returned result. Cancellation closes the proxy connection; interrupt
 require subsequent worker observation. The requester connects to an existing endpoint and leaves
 daemon setup to the installation workflow.
 
+Verify the configured executable's version and its compatibility with the installed runtime,
+account and selected model before starting delivery. A successful metadata read or cached model
+catalogue establishes neither model execution nor fresh usage measurement. Use a bounded pilot
+to verify an actual execution turn, its current native counters and its terminal outcome. A failed
+turn without a new usage measurement leaves accounting unverified; preserve the failure and pending
+reservations before correcting the installation. Elapsed limits and cumulative counters retain
+their existing values during that correction.
+
 Wire the configured requester into `createCodexWorkerAdapter`, then pass the returned
 `readWorker` and `interruptWorker` to `monitorPlanningWorker` alongside the independently verified
 request, proposal and aggregate-usage readers. Synthetic proxy tests establish protocol behavior;
