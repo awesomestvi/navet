@@ -231,3 +231,25 @@ it('settles only a resumed operation covered by its owning final native incarnat
   expect(await runTeamAccounting(h.options)).toMatchObject({ complete: true,
     settledReservations: ['worker-reservation', 'ticket-reservation', 'resume-reservation'] });
 });
+
+it('accounts for eight historical workers and retained coordinators without dropping usage', async () => {
+  const h = await setup();
+  for (let index = 2; index <= 8; index++) {
+    const workerId = `worker-${index}`;
+    const intentId = `intent-${index}`;
+    h.task.team.workers.push({ workerId, intentId, status: 'failed', observation: { observedAt: h.tick() } });
+    const member = { ...h.members[1], workerId, intentId, threadId: workerId, runId: `${workerId}-turn`,
+      status: 'stopped', sessionFile: path.join(path.dirname(h.members[0].sessionFile), `${workerId}.jsonl`) };
+    h.members.push(member);
+    await h.writeSession(member, 200);
+  }
+  expect(await runTeamAccounting(h.options)).toMatchObject({ status: 'verified', modelTokens: 1700, toolCalls: 9 });
+  expect(h.task.resources.accounting.members).toHaveLength(9);
+  h.members[0].status = 'stopped'; await h.writeSession(h.members[0]);
+  const successor = { ...h.members[0], threadId: 'successor', runId: 'successor-turn', status: 'running',
+    sessionFile: path.join(path.dirname(h.members[0].sessionFile), 'successor.jsonl') };
+  h.members.push(successor); await h.writeSession(successor, 100);
+  h.task.lease.owner = 'successor';
+  expect(await runTeamAccounting({ ...h.options, owner: 'successor' })).toMatchObject({ status: 'verified', modelTokens: 1800, toolCalls: 10 });
+  expect(h.task.resources.accounting.members).toHaveLength(10);
+});

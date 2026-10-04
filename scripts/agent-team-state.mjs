@@ -36,6 +36,29 @@ export function teamPlanComplete(task) {
   return Boolean(task.team?.plan && task.team.plan.assignments.every((item) => teamAssignmentComplete(task, item.id)));
 }
 
+export function requireTeamTicketOutput(task, receipt) {
+  if (receipt.taskRevision !== undefined && (receipt.deliveryHead !== task.head || receipt.taskRevision !== task.revision ||
+      receipt.planRevision !== (task.team?.plan?.revision ?? null) ||
+      receipt.scopeRevision !== (task.proposal?.binding ?? task.planning?.binding)?.revision)) {
+    throw new Error('Ticket snapshot changed.');
+  }
+  const current = (artifact) => artifact && artifact.head === task.head && artifact.revision === task.revision;
+  const completed = () => task.team?.status !== 'awaiting-input' && teamPlanComplete(task);
+  if (receipt.kind === 'pr-evidence' &&
+      (task.team?.plan?.phase !== 'delivery' || !current(task.team.pr) || !completed())) {
+    throw new Error('PR ticket evidence requires current independently reviewed delivery.');
+  }
+  if ((receipt.kind === 'proposal' || (receipt.kind === 'stage' && receipt.stage === 'Ready for prioritization')) &&
+      (task.team?.plan?.phase !== 'proposal' || !current(task.team.proposal) ||
+        task.team.proposal.planRevision !== task.team.plan.revision || !completed())) {
+    throw new Error('Ready proposal requires integrated evidence.');
+  }
+  if (receipt.kind === 'stage' && receipt.stage === 'Validated' &&
+      (task.team?.plan?.phase !== 'delivery' || !current(task.team.pr) || !current(task.team.acceptance) || !completed())) {
+    throw new Error('Validated requires current maintainer acceptance.');
+  }
+}
+
 function validateCompletionEvidence(task, worker, observation, evidence, now) {
   if ((task.team?.checkpoint ?? task.workerCheckpoint) && observation.stateHash !== (task.team?.checkpoint ?? task.workerCheckpoint).stateHash) throw new Error('Team completion requires the current worktree checkpoint.');
   if (!Array.isArray(evidence) || !evidence.length) throw new Error('Completed team worker requires evidence.');
@@ -288,6 +311,7 @@ export function applyTeamEvent(task, input, now = Date.now(), { humanActorIds = 
       const update = team.updates.find((entry) => entry.updateId === input.updateId);
       if (!update) throw new Error('Unknown ticket update intent.');
       if (update.status !== 'pending' || update.receipt.attemptedAt != null) { action = 'reconcile'; break; }
+      requireTeamTicketOutput(view, update.receipt);
       update.receipt.attemptedAt = now; update.status = 'uncertain'; action = 'send';
       break;
     }

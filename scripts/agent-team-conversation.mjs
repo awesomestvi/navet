@@ -1,5 +1,5 @@
 import { createTeamOperation } from './agent-team-operation.mjs';
-import { teamPlanComplete } from './agent-team-state.mjs';
+import { requireTeamTicketOutput } from './agent-team-state.mjs';
 import { validatePlanningRequestObservation, planningRequestMatchesTask } from './agent-planning-intake.mjs';
 import { validateProposalRequestObservation, proposalRequestMatchesTask } from './agent-proposal-scope.mjs';
 import { createTeamTicketUpdate, createTeamTicketAdapter } from './agent-team-ticket.mjs';
@@ -11,9 +11,7 @@ export async function runTeamTicketUpdate({ store, owner, taskId, kind, body, st
   const task = (await store.list()).find((item) => item.id === taskId);
   const binding = task?.proposal?.binding ?? task?.planning?.binding;
   if (!binding || task.lease?.owner !== owner || task.lease.expiresAt <= now()) throw new Error('Owned ticket scope required.');
-  if (kind === 'pr-evidence' && (!task.team?.pr || task.team.pr.head !== task.head || !teamPlanComplete(task))) throw new Error('PR ticket evidence requires current independently reviewed delivery.');
-  if (kind === 'stage' && stage === 'Ready for prioritization' && (!task.team?.proposal || !teamPlanComplete(task))) throw new Error('Ready proposal requires integrated evidence.');
-  if (kind === 'stage' && stage === 'Validated' && (!task.team?.acceptance || task.team.acceptance.head !== task.head || !teamPlanComplete(task))) throw new Error('Validated requires current maintainer acceptance.');
+  requireTeamTicketOutput(task, { kind, stage });
   const event = (input, authority) => store.mutate(taskId, 'team-event', { owner, event: input, authority, resourceToken });
   const intended = createTeamTicketUpdate({ taskId, issueId: binding.issueId, scopeRevision: binding.revision,
     kind, body, stage, questionId, taskRevision: task.revision, planRevision: task.team?.plan?.revision ?? null, deliveryHead: task.head, intentAt: now(), writerAppUserId: policy.writerAppUserId });

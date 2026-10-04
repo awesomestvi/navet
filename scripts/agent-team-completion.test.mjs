@@ -7,6 +7,7 @@ import { runTeamAccounting } from './agent-team-accounting.mjs';
 import { AgentTaskStore } from './agent-task-store.mjs';
 import { createPlanningBinding } from './agent-planning-scope.mjs';
 import { linearResultBodyHash } from './agent-linear-result-reader.mjs';
+import { invalidateTeamHeadEvidence } from './agent-team-state.mjs';
 import { finishTeamArtifact, acceptTeamDelivery } from './agent-team-delivery.mjs';
 const directories = [];
 afterEach(async () => { await Promise.all(directories.splice(0).map((directory) => rm(directory, { recursive: true, force: true }))); });
@@ -240,4 +241,39 @@ it('records the final authority read before native whole-team accounting', async
     readTeamInventory: async (...args) => { reads.push('accounting'); return h.adapters.readTeamInventory(...args); } };
   expect(await completeTeamTask({ ...h.completion, adapters })).toMatchObject({ status: 'delivered' });
   expect(reads).toEqual(['authority', 'accounting', 'accounting']);
+});
+
+it.each(['pr-evidence', 'Validated', 'Ready for prioritization'])('atomically rejects %s publication after same-head evidence invalidation', async (kind) => {
+  const proposal = kind === 'Ready for prioritization';
+  const h = await setup(proposal);
+  const originalMutate = h.store.mutate.bind(h.store);
+  let fenced = false;
+  h.store.mutate = async (taskId, action, input) => {
+    if (action === 'team-event' && input.event.type === 'ticket-attempt') {
+      const saved = (await h.store.list())[0];
+      const update = saved.team.updates.find(item => item.updateId === input.event.updateId);
+      if (update.receipt.kind === kind || update.receipt.stage === kind) {
+        await h.store.transaction(state => {
+          const current = state.tasks.find(item => item.id === taskId);
+          // The checkpoint transaction uses this same invalidation when stateHash changes.
+          invalidateTeamHeadEvidence(current);
+        });
+        fenced = true;
+      }
+    }
+    return originalMutate(taskId, action, input);
+  };
+  if (kind === 'Validated') {
+    expect(await finishTeamArtifact(h.options)).toMatchObject({ status: 'verified' });
+    const token = await h.reserve();
+    expect(await acceptTeamDelivery({ ...h.options, stageResourceToken: token })).not.toMatchObject({ status: 'acceptance-recorded' });
+  } else {
+    expect(await finishTeamArtifact(h.options)).not.toMatchObject({ status: 'verified' });
+  }
+  expect(fenced).toBe(true);
+  const saved = (await h.store.list())[0];
+  const rejected = saved.team.updates.find(item => item.receipt.kind === kind || item.receipt.stage === kind);
+  expect(rejected.receipt.attemptedAt).toBeNull();
+  expect(h.writes.some(item => item.receipt.updateId === rejected.updateId)).toBe(false);
+  expect(saved.resources.reservations.some(item => item.operation === `team-ticket:${rejected.updateId}`)).toBe(false);
 });

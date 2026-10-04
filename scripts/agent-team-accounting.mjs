@@ -59,7 +59,7 @@ export async function runTeamAccounting({ store, owner, taskId, adapters, now = 
           value.observedAt > clock() || value.policy?.status !== 'accepted' || value.policy.unit !== unitPolicy ||
           value.policy.taskRevision !== task.revision || !text(value.policy.reference) ||
           !['active', 'stopped'].includes(value.phase) || !Array.isArray(value.members) ||
-          value.members.length < 1 || value.members.length > 8) throw new Error('Complete authenticated team inventory required.');
+          value.members.length < 1) throw new Error('Complete authenticated team inventory required.');
       const members = value.members.map((member) => {
         if (!['coordinator', 'worker'].includes(member.role) || !['running', 'stopped'].includes(member.status) ||
             member.dedicated !== true || !text(member.threadId) || !text(member.runId) ||
@@ -170,7 +170,7 @@ export function validateTeamAccounting(task, input, now) {
       accounting.taskId !== task.id || accounting.revision !== task.revision ||
       accounting.planRevision !== task.team.plan.revision || accounting.complete !== true ||
       accounting.unitPolicy !== unitPolicy || !text(accounting.policyReference) || !text(accounting.reference) ||
-      !['active', 'stopped'].includes(accounting.phase) || !Array.isArray(members) || members.length < 1 || members.length > 8 ||
+      !['active', 'stopped'].includes(accounting.phase) || !Array.isArray(members) || members.length < 1 ||
       task.team.workers.some((worker) => worker.attemptedAt && !worker.workerId)) throw new Error('Exact complete team accounting required.');
   for (const member of members) {
     if (!['coordinator', 'worker'].includes(member.role) || !['running', 'stopped'].includes(member.status) ||

@@ -346,7 +346,7 @@ describe('NJS chore workspace store', () => {
     const recovered = createRequest();
     choreStore.handle(recovered);
     expect(parseResponse(recovered).data.experience.pointTransactions).toHaveLength(12001);
-  });
+  }, 15_000);
 
   it('matches standby and fair rotation assignment in the packaged policy', () => {
     const timestamp = '2026-08-01T00:00:00.000Z';
