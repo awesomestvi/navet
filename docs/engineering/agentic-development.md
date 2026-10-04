@@ -156,6 +156,12 @@ reaction from `github-actions[bot]` means a command or answer was accepted. A ro
 `navet-nisse[bot]` means a command or answer was claimed. Request labels are cleared on successful
 dispatch; type, area, and risk labels continue to describe the issue itself.
 
+Label-backed replies recheck the original label actor under the same mode-specific authority
+rule. GitHub's [repository permission API](https://docs.github.com/en/rest/collaborators/collaborators#get-repository-permissions-for-a-user)
+reports a maintainer's legacy `permission` as `write`; verify `role_name: maintain` alongside it
+when applying the implementation-label rule. An ordinary write collaborator can authorize
+research labels and command requests under their respective rules.
+
 ## Private Queue And Public Communication
 
 GitHub provides the mobile control plane for public delivery requests. Private proposal content
