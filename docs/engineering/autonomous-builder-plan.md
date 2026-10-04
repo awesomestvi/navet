@@ -123,6 +123,16 @@ The coordinator supplies two service adapters:
   `reference`, `observedAt` and the issue, including all attachment references, label names and
   explicit lifecycle fields. Unavailable reads cannot reuse an earlier pass.
 
+When the coordinator has a connected Linear integration, `createLinearConnectorIssueReader` in
+[`agent-linear-connector-reader.mjs`](../../scripts/agent-linear-connector-reader.mjs) accepts only
+workspace, current-user and issue read callbacks. Pin the expected workspace, active account, team
+and project independently. Two complete reads must agree, including attachments, stage labels and
+lifecycle fields. Failed or truncated responses remain unavailable. This path loads no app
+credentials and supports interactive work while a dedicated app is being configured. Verify that
+the installed coordinator has these tools before relying on it for unattended operation. Connector
+account identity constrains reads; it cannot establish human approval or separate an agent write
+from a human decision. Supply the human-request adapter independently in either reader mode.
+
 [`createLinearIssueReader`](../../scripts/agent-linear-reader.mjs) implements the read-only Linear
 adapter. Configure the expected workspace, app user, team and project IDs in private runner state,
 and supply an OAuth access-token callback backed by secure credential storage. The reader checks
@@ -143,6 +153,12 @@ reader session to the human-request adapter and idempotent queue intake. It boun
 rechecks authority after the complete proposal read, and awaits token revocation. It does not
 claim records or dispatch workers. A committed queue receipt survives cancellation or unavailable
 cleanup; execution still requires fresh authority and proposal observations.
+
+The [planning dispatch handoff](agent-task-lifecycle.md#dispatch-and-recovery) joins current queue
+ownership, complete proposal observations and the exact accepted human brief before reserving
+the existing dispatch intent. Source withdrawal latches separately from proposal scope, while
+receipt reconciliation remains available. Connected Linear reads support interactive operation;
+the installed coordinator still requires verified adapters and an observed delivery/recovery pilot.
 
 For a local coordinator run, [`createLinearReadSession`](../../scripts/agent-linear-auth.mjs)
 exchanges securely loaded app credentials for a token with only `read` scope. Create a fresh session

@@ -1,14 +1,5 @@
-import { isDeepStrictEqual } from 'node:util';
 import { linearResultBodyHash } from './agent-linear-result-reader.mjs';
-import { validatePlanningRequestObservation } from './agent-planning-intake.mjs';
-
-function matchesRequest(task, request) {
-  return request.mode === task.mode && request.revision === task.revision &&
-    isDeepStrictEqual(request.planningBinding, task.planning.binding) && isDeepStrictEqual(request.brief, task.brief) &&
-    isDeepStrictEqual(request.resourceLimits, task.resources?.limits) &&
-    isDeepStrictEqual([...new Set([...(request.requiredGates ?? []), 'output'])].sort(), [...task.requiredGates].sort()) &&
-    request.authority.actor === task.authority.actor && request.authority.reference === task.authority.reference;
-}
+import { planningRequestMatchesTask, validatePlanningRequestObservation } from './agent-planning-intake.mjs';
 
 // A coordinator handoff, not an activation switch or quality/acceptance decision. Supply live,
 // independently authenticated readers and a writer factory using the installed app policy.
@@ -121,7 +112,7 @@ export async function deliverPlanningResult({ store, owner, taskId, head, body, 
     const authorityStartedAt = clock();
     const request = validatePlanningRequestObservation(await bounded(readRequest({ source: task.source, requestId: task.requestId })),
       { source: task.source, requestId: task.requestId }, authorityStartedAt, clock());
-    if (!matchesRequest(task, request)) throw new Error('Result handoff authority changed.');
+    if (!planningRequestMatchesTask(task, request)) throw new Error('Result handoff authority changed.');
     const reserved = await mutate('planning-result-intent', { head, bodyHash, writerAppUserId, resourceToken, authority: request.authority });
     commentId = reserved.planningResult.commentId;
     const writer = createWriter({ readIssue, readRequest, signal: controller.signal,

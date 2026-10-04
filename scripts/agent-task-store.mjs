@@ -294,6 +294,14 @@ export class AgentTaskStore {
         if (action === 'release') {
           requireValue(input.reason, 'release reason');
           task.lease = null;
+        } else if (action === 'request-revocation') {
+          const observation = input.observation;
+          if (observation?.status !== 'withdrawn' || !observationIsFresh(observation, now) ||
+              observation.source !== task.source || observation.requestId !== task.requestId ||
+              observation.reference !== task.authority.reference) {
+            throw new Error('Request revocation requires a fresh exact source observation.');
+          }
+          task.requestRevocation ??= structuredClone(observation);
         } else if (action === 'planning-observation') {
           if (!task.planning) throw new Error('Task has no planning binding.');
           const observation = evaluatePlanningObservation(task.planning.binding, input.observation, now);
@@ -591,6 +599,7 @@ export class AgentTaskStore {
       task.history.push({ action, owner: input.owner, state: task.state, head: task.head, at: now,
         ...(action === 'evidence' ? { evidence: input.evidence } : {}),
         ...(action === 'planning-observation' ? { planning: task.planning.observation } : {}),
+        ...(action === 'request-revocation' ? { requestRevocation: task.requestRevocation } : {}),
         ...(['planning-result-intent', 'planning-result-attempt', 'planning-result-observation'].includes(action)
           ? { planningResult: structuredClone(task.planningResult) } : {}),
         ...(action === 'resource-usage' ? { usage: input.usage, settledReservations: input.settledReservations ?? [] } : {}),

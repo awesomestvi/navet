@@ -7,6 +7,14 @@ function clock(now) {
   return value;
 }
 
+export function planningRequestMatchesTask(task, request) {
+  return request.mode === task.mode && request.revision === task.revision &&
+    isDeepStrictEqual(request.planningBinding, task.planning?.binding) && isDeepStrictEqual(request.brief, task.brief) &&
+    isDeepStrictEqual(request.resourceLimits, task.resources?.limits) &&
+    isDeepStrictEqual([...new Set([...(request.requiredGates ?? []), 'output'])].sort(), [...task.requiredGates].sort()) &&
+    request.authority.actor === task.authority.actor && request.authority.reference === task.authority.reference;
+}
+
 export function validatePlanningRequestObservation(observation, identity, startedAt, now) {
   if (!identity || ['source', 'requestId'].some((key) => typeof identity[key] !== 'string' ||
       !identity[key].trim() || identity[key].length > 4096) ||

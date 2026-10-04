@@ -29,6 +29,10 @@ if it is unavailable, report the missing owner privately before mutating state.
    Call `dispatch-intent` with that fresh authority observation, matching actor, reference and
    revision. The returned `nextDispatchAction` is `create` only for the first committed intent.
    `reconcile` means inspect existing tasks; it does not permit another task-creation call.
+   For planning-bound records, use the
+   [planning dispatch handoff](agent-task-lifecycle.md#dispatch-and-recovery) to join fresh source
+   reads and exact accepted scope to this intent. Its `prepared` result permits the initial worker
+   call; `reconcile` and `blocked` never permit creation.
 6. Include the task ID and dispatch token in the delivery prompt. Save the returned handle with
    `bind` immediately. A pending client handle is not a confirmed thread. If acknowledgement is
    interrupted, locate the task using its saved request ID/token and bind that existing task.

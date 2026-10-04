@@ -40,6 +40,38 @@ use `bind` with that token and the returned `clientThreadId` or confirmed `threa
 creation result needs reconciliation against existing tasks before another creation attempt.
 Pending worktree setup is distinct from a confirmed delivery handle.
 
+`preparePlanningDispatch` in `scripts/agent-planning-dispatch.mjs` connects this procedure to
+planning-bound records under an existing coordinator lease. Supply `store`, `owner`, `taskId`,
+complete fresh `readIssue` observations and the independently authenticated `readRequest` adapter.
+The proposal reader can use the connected Linear integration in an interactive session or the
+scoped read-only app in an installed runner. Both readers must preserve complete identity,
+attachments, labels and lifecycle fields; neither can establish a human decision from a stage.
+
+For a first intent, the handoff verifies the exact stored human scope, reads and records current
+planning state, then rechecks the human request before committing dispatch. Selected option,
+permitted changes, acceptance criteria, visibility, required gates, numerical limits and decision
+identity must match the accepted record. Failed, malformed, cached or canceled proposal reads
+record unavailable planning evidence under the same lease. Scope changes and withdrawal latch
+through the existing store. An independently verified human-request withdrawal records
+`request-revocation` with the exact source, request ID, accepted decision reference and fresh
+observation time. This durable latch blocks new execution, follow-ups and allocations even if
+the source later presents the old approval again. Accept changed work as a new authorized request;
+do not clear the original latch. Unavailable source reads do not establish withdrawal. The
+installed reader remains the authentication boundary; the store validates agreement and freshness,
+not source provenance. A bounded task requires its already-reserved `resourceToken`.
+
+`status: 'prepared'` returns the durable dispatch token for the coordinator's first worker
+creation. `status: 'reconcile'` returns an existing intent without renewing execution authority;
+inspect the saved task identity/token and bind its actual handle rather than creating a replacement.
+Already-started local commits are awaited. If cancellation occurs during the intent commit,
+the result is `blocked` with the retained dispatch receipt; it grants no creation permission.
+Remote adapters receive cancellation and are bounded by `maxRunMs`, at most 60 seconds.
+
+This operation neither claims leases nor starts workers, renews resource allocations or activates
+the queue. The installed coordinator owns worker calls, acknowledgement readback, checkpointing
+and release. Live source provenance, withdrawal/interruption and dispatch recovery still require
+the operational pilot.
+
 `reserve-followup` takes a batch of stable event IDs and returns a `followupDecision`: send only
 new events, reconcile an uncertain earlier send, or skip confirmed events. Include its token in
 the follow-up and confirm the receipt only after observing that message in the bound delivery task.
@@ -367,6 +399,31 @@ sends no message, changes no Linear issue and starts no worker. New execution st
 fresh planning observation and trusted maintainer request. Actual webhook-to-coordinator delivery,
 human-approval provenance and worker withdrawal require operational integration pilots.
 
+
+### Connected Linear reader
+
+`createLinearConnectorIssueReader` in `scripts/agent-linear-connector-reader.mjs` implements the
+proposal observation contract using connected read tools. Supply `getWorkspace`, `getUser` and
+`getIssue` callbacks from the coordinator's trusted tool environment, plus a pinned `policy` with
+`organizationId`, `readerUserId`, `teamId` and `projectId`. The reader accepts an exact issue UUID,
+checks the active account and workspace for each snapshot, and compares two complete issue reads.
+It validates explicit lifecycle fields, full attachment arrays, label names and source timestamps.
+Explicit pagination/truncation, oversized collections, malformed MCP JSON and service failures
+return unavailable evidence. A missing issue does not establish deletion.
+
+The callbacks receive their native tool arguments and a separate `{ signal }` option. Tool calls
+that ignore cancellation remain bounded by `maxReadMs`; parent cancellation propagates to all
+callbacks. Successful results use the existing `{ status, issue, reference, observedAt }` shape
+with a `linear-connector` service reference. The reader loads no credentials or tokens, changes no
+planning record and grants no implementation authority. Supply only the three read callbacks;
+proposal text cannot select tools or change pinned identities.
+
+Use this adapter for an interactive coordinator with a connected Linear integration. An installed
+coordinator must independently prove tool availability and account scope before adopting this
+transport. A dedicated scoped app remains available for runners without connector access. In
+either mode, independently verified human decisions, artifact access and private writer identity
+remain separate contracts. A live connector read proves its observed scope, not operational
+dispatch, complete private attachment contents or unattended recovery.
 
 ### Authenticated intake run
 
