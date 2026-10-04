@@ -64,7 +64,7 @@
     "provider-lab:homey": "node scripts/install-provider-lab.mjs homey",
     "clean:root": "node scripts/clean-root-artifacts.mjs",
     "clean:all": "node scripts/clean-root-artifacts.mjs --all",
-    "storybook": "STORYBOOK=1 HOME=$PWD/.cache/storybook/home XDG_CONFIG_HOME=$PWD/.cache/storybook STORYBOOK_DISABLE_TELEMETRY=1 pnpm --filter @navet/storybook run storybook",
+    "storybook": "PLAYWRIGHT_BROWSERS_PATH=\"${PLAYWRIGHT_BROWSERS_PATH:-$(node scripts/playwright-browser-cache.mjs)}\" STORYBOOK=1 HOME=$PWD/.cache/storybook/home XDG_CONFIG_HOME=$PWD/.cache/storybook STORYBOOK_DISABLE_TELEMETRY=1 pnpm --filter @navet/storybook run storybook",
     "storybook:build": "STORYBOOK=1 STORYBOOK_BASE_PATH=/ HOME=$PWD/.cache/storybook/home XDG_CONFIG_HOME=$PWD/.cache/storybook STORYBOOK_DISABLE_TELEMETRY=1 pnpm --filter @navet/storybook run build",
     "build-storybook": "pnpm storybook:build",
     "lint": "biome lint ./packages",

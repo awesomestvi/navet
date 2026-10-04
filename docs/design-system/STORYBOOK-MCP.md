@@ -9,12 +9,19 @@ currently has gaps; the presence of a component in discovery does not establish 
 From the checkout root, run:
 
 ```bash
-NAVET_STORYBOOK_MCP=1 STORYBOOK=1 STORYBOOK_DISABLE_TELEMETRY=1 pnpm --filter @navet/storybook exec storybook dev --ci --host 127.0.0.1 --port 6017 -c ./.storybook
+NAVET_STORYBOOK_MCP=1 pnpm storybook --host 127.0.0.1 --port 6017 --ci
 ```
 
 Connect an HTTP MCP client to `http://127.0.0.1:6017/mcp`. Keep the development server on loopback
 and use synthetic Storybook data. The addon and component manifest are enabled only when
 `NAVET_STORYBOOK_MCP=1`; ordinary Storybook runs and builds retain their existing configuration.
+
+The root launcher keeps Storybook configuration in the checkout and uses Playwright's existing
+user browser cache for fixture tests. An explicit `PLAYWRIGHT_BROWSERS_PATH` takes precedence,
+including `0` for a package-local browser installation. If the required browser is missing, install
+Chromium with `pnpm exec playwright install chromium` using the same browser-path setting before
+starting the server. Check focused test output separately from accessibility findings: passing
+story interactions do not establish an accessibility pass.
 
 Navet pins the official addon to 0.7.0, compatible with the installed Storybook 10.5.10. The
 schema converter is pinned within its supported dependency range to match the addon's Valibot
