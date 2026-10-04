@@ -46,6 +46,32 @@ it('saves a durable checkpoint from actual Git and verifies it after restart wit
   expect(JSON.stringify(verified)).not.toContain(h.worktree);
   expect(JSON.stringify(verified)).not.toContain('private');
 });
+it.each(['unstaged', 'staged', 'untracked'])('invalidates approval after capturing actual %s changes at the same Git head', async (kind) => {
+  const h = await setup();
+  const original = await h.service.captureCheckpoint(h.worker());
+  expect(original.status).toBe('saved');
+  await h.act('transition', { state: 'investigating', reason: 'Start.' });
+  await h.act('transition', { state: 'verifying', reason: 'Verify commit.' });
+  for (const gate of ['quality', 'output']) await h.act('evidence', { evidence: {
+    gate, head: original.checkpoint.head, revision: 'scope', result: 'pass',
+    artifact: `verified:${gate}`, observedAt: h.tick(),
+  } });
+  await h.act('transition', { state: 'awaiting-approval', reason: 'Review commit.' });
+  await writeFile(path.join(h.worktree, kind === 'untracked' ? 'new.txt' : 'tracked.txt'), 'unfinished follow-up\n');
+  if (kind === 'staged') h.git('add', '.');
+  const changed = await h.service.captureCheckpoint(h.worker());
+  expect(changed.status).toBe('saved');
+  expect(changed.checkpoint.head).toBe(original.checkpoint.head);
+  expect(changed.checkpoint.stateHash).not.toBe(original.checkpoint.stateHash);
+  const restarted = new AgentTaskStore(path.join(h.directory, 'store'), { now: h.now });
+  const saved = (await restarted.list())[0];
+  expect(saved.state).toBe('verifying');
+  expect(saved.evidence.every(item => item.result === 'unverified')).toBe(true);
+  await expect(restarted.mutate(saved.id, 'transition', { owner: 'coordinator', state: 'delivered', reason: 'Old commit approved.',
+    acceptance: { head: original.checkpoint.head, revision: 'scope', actor: 'human', reference: 'old-commit' },
+  })).rejects.toThrow('incomplete');
+});
+
 it.each(['unstaged', 'staged', 'untracked', 'deleted', 'branch', 'head', 'next-action', 'run'])('rejects a changed %s recovery snapshot', async (kind) => {
   const h = await setup(); await h.service.captureCheckpoint(h.worker());
   if (kind === 'unstaged' || kind === 'staged') { await writeFile(path.join(h.worktree, 'tracked.txt'), 'changed'); if (kind === 'staged') h.git('add', '.'); }

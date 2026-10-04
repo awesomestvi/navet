@@ -692,7 +692,11 @@ checkpoint. A running or successor turn, stale proof, unavailable runtime or exp
 the saved head and checkpoint unchanged. The service reads two
 matching Git snapshots and commits a `worker-checkpoint` receipt containing the exact task,
 dispatch, thread and turn identity, commit head and state fingerprint. The same atomic mutation
-records the actual head, invalidating approval readiness when that head changes.
+records the actual head. A changed state fingerprint invalidates approval readiness and current-head
+evidence even when the commit is unchanged. A first checkpoint also requires fresh evidence because
+no prior fingerprint proves equivalence. Re-observing an identical head and fingerprint preserves
+readiness. Invalidated gate observations retain their history and block delayed passes from before
+the checkpoint; fresh verification is required before requesting approval or recording delivery.
 
 The fingerprint covers the index, staged diff, actual tracked file contents and non-ignored
 untracked files, including symlink targets. Ignored local files remain outside this source checkpoint.

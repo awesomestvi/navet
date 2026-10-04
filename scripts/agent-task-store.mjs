@@ -693,12 +693,18 @@ export class AgentTaskStore {
           if (task.workerStop && task.workerStop.status !== 'stopped' && task.workerStop.runId !== worker.runId) {
             throw new Error('Checkpoint cannot replace an unresolved stop for another run.');
           }
+          const stateChanged = task.head !== checkpoint.head || task.workerCheckpoint?.stateHash !== checkpoint.stateHash;
           task.workerCheckpoint = { taskId: task.id, dispatchToken: task.dispatch.token, threadId: worker.threadId,
             runId: worker.runId, workerReference: worker.reference, recordedAt: now,
             ...Object.fromEntries(['worktree', 'branch', 'head', 'stateHash', 'nextAction', 'reference'].map((key) => [key, checkpoint[key]])) };
-          if (task.head !== checkpoint.head) {
-            task.head = checkpoint.head;
+          task.head = checkpoint.head;
+          if (stateChanged) {
             if (task.state === 'awaiting-approval') task.state = 'verifying';
+            // A commit hash alone cannot attest the newly captured index and worktree.
+            // Retain prior observations in history while fencing delayed head-keyed passes.
+            task.evidence = task.evidence.map((item) => item.head === task.head && item.revision === task.revision
+              ? { ...item, result: item.result === 'fail' ? 'fail' : 'unverified',
+                artifact: checkpoint.reference, observedAt: now } : item);
           }
         } else if (action === 'context') {
           const context = input.context;

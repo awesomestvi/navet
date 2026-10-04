@@ -1,0 +1,3 @@
+type: internal
+audiences: []
+summary: Invalidate approval readiness and prior gate evidence when checkpointed worktree state changes without a new commit.
