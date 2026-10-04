@@ -38,7 +38,7 @@ export const Default: Story = {
     await expect(canvasElement.querySelectorAll('[data-settings-detail-group]')).toHaveLength(2);
     await expect(canvas.getByRole('link', { name: 'Join Discord' })).toHaveAttribute(
       'href',
-      'https://discord.com/channels/1540491864325623892'
+      'https://discord.gg/fJWZwSyfVf'
     );
     await expect(canvas.getByRole('link', { name: 'Visit r/navet' })).toHaveAttribute(
       'href',

@@ -1,0 +1,7 @@
+type: fixed
+audiences:
+  - standalone
+  - home-assistant
+  - hacs
+  - docs
+summary: Discord community links now open a permanent invite so new members can join.

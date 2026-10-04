@@ -53,7 +53,7 @@ describe('MarketingWebsiteShell', () => {
     const communityLinks = screen.getByRole('navigation', { name: 'Community' });
     expect(within(communityLinks).getByRole('link', { name: 'Navet on Discord' })).toHaveAttribute(
       'href',
-      'https://discord.com/channels/1540491864325623892'
+      'https://discord.gg/fJWZwSyfVf'
     );
     expect(within(communityLinks).getByRole('link', { name: 'Navet on Reddit' })).toHaveAttribute(
       'href',
