@@ -676,7 +676,11 @@ checkpoint exists or the task's acceptance criteria passed.
 `createGitWorkerCheckpointService` in `scripts/agent-worker-checkpoint.mjs` supplies a Git-backed
 checkpoint recorder and verifier under the coordinator's current lease. Save the task's worktree,
 branch and next recovery action using `context`. After a trusted native observation identifies the
-bound worker's stopped turn, pass that observation to `captureCheckpoint`. The service reads two
+bound worker's stopped turn, pass that observation to `captureCheckpoint`. Configure the service's
+trusted `readWorker` callback with the bound native adapter's `readWorker`. Capture requires a fresh
+observation of that exact stopped turn before inspecting Git and immediately before recording the
+checkpoint. A running or successor turn, stale proof, unavailable runtime or expired read leaves
+the saved head and checkpoint unchanged. The service reads two
 matching Git snapshots and commits a `worker-checkpoint` receipt containing the exact task,
 dispatch, thread and turn identity, commit head and state fingerprint. The same atomic mutation
 records the actual head, invalidating approval readiness when that head changes.
@@ -694,6 +698,10 @@ run identity produce unavailable evidence. It does not rewrite a failed checkpoi
 work. An already-started local checkpoint commit is awaited through cancellation; a subsequent read
 can recover its receipt after restart. A stopped native observation without a saved checkpoint
 remains insufficient to confirm monitored recovery.
+
+Runtime observations bound this check; they do not lock native turn creation. The coordinator must
+serialize capture and resume for the bound worker. Starting a turn outside that coordinator can
+race the final observation and remains outside this recovery contract.
 
 For an existing local app-server socket, `createCodexAppServerRequester` in
 `scripts/agent-codex-app-server.mjs` supplies the RPC callback. Configure absolute `codexPath` and

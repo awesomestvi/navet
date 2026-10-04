@@ -68,7 +68,7 @@ async function gitSnapshot(worktree, { signal, clock }) {
   return { head, branch, stateHash: 'sha256:' + digest.digest('hex') };
 }
 
-export function createGitWorkerCheckpointService({ store, owner, now = Date.now, maxReadMs = 15_000 }) {
+export function createGitWorkerCheckpointService({ store, owner, readWorker, now = Date.now, maxReadMs = 15_000 }) {
   if (!store || typeof store.list !== 'function' || typeof store.mutate !== 'function' || !text(owner) ||
       typeof now !== 'function' || !Number.isSafeInteger(maxReadMs) || maxReadMs < 1 || maxReadMs > 60_000) {
     throw new Error('Invalid checkpoint service.');
@@ -109,18 +109,43 @@ export function createGitWorkerCheckpointService({ store, owner, now = Date.now,
             !text(task.context?.nextAction) || !text(task.context?.branch)) throw new Error('Owned recovery context required.');
         return task;
       };
+      const stoppedWorker = async () => {
+        if (typeof readWorker !== 'function' || !matches(worker, identity) || worker.status !== 'stopped') {
+          throw new Error('Trusted runtime checkpoint reader required.');
+        }
+        const observedAfter = now();
+        clock();
+        let rejectAbort;
+        const aborted = new Promise((_, reject) => { rejectAbort = reject; });
+        const onAbort = () => rejectAbort(new Error('Canceled checkpoint runtime read.'));
+        signal.addEventListener('abort', onAbort, { once: true });
+        let current;
+        try { current = await Promise.race([readWorker(identity, { signal }), aborted]); }
+        finally { signal.removeEventListener('abort', onAbort); }
+        clock();
+        if (!matches(current, identity) || current.status !== 'stopped' || !text(current.reference) ||
+            !Number.isSafeInteger(current.observedAt) || current.observedAt < observedAfter || current.observedAt > now()) {
+          throw new Error('Stopped checkpoint run changed.');
+        }
+        return structuredClone(current);
+      };
       const task = await getTask();
+      if (capture && (!Number.isSafeInteger(worker?.observedAt) || worker.observedAt > now() ||
+          worker.observedAt < now() - 60_000 || !text(worker.reference))) throw new Error('Fresh initial stopped proof required.');
       if (!capture && !matches(task.workerCheckpoint, identity)) throw new Error('Saved checkpoint unavailable.');
+      if (capture) await stoppedWorker();
       const first = await gitSnapshot(task.context.worktree, { signal, clock });
       const second = await gitSnapshot(task.context.worktree, { signal, clock });
       if (JSON.stringify(first) !== JSON.stringify(second) || first.branch !== task.context.branch) throw new Error('Changed Git recovery state.');
       const current = await getTask();
       if (JSON.stringify(current.context) !== JSON.stringify(task.context)) throw new Error('Recovery context changed.');
       if (capture) {
-        if (!matches(worker, identity) || worker.status !== 'stopped') throw new Error('Exact stopped proof required.');
         const checkpoint = { ...first, worktree: task.context.worktree, nextAction: task.context.nextAction };
         checkpoint.reference = 'git-worker-checkpoint:' + hash(JSON.stringify({ ...identity, ...checkpoint }));
         clock();
+        // Git/store reads can outlive a stop observation. Fence the exact latest turn
+        // again immediately before the local mutation and persist this fresh proof.
+        worker = await stoppedWorker();
         // Await an already-started local commit even if cancellation arrives during acknowledgement.
         const saved = await store.mutate(identity.taskId, 'worker-checkpoint', { owner, worker, checkpoint });
         receipt = saved.workerCheckpoint;

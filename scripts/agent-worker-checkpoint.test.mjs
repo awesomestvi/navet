@@ -30,7 +30,7 @@ async function setup() {
   await act('context', { context: { worktree, branch: 'feature/worker', nextAction: 'Review preserved changes' } });
   const worker = () => ({ taskId: task.id, dispatchToken: dispatched.dispatch.token, threadId: 'worker', runId: 'turn',
     status: 'stopped', reference: 'native-stop-observation', observedAt: tick() });
-  const service = createGitWorkerCheckpointService({ store, owner: 'coordinator', now });
+  const service = createGitWorkerCheckpointService({ store, owner: 'coordinator', now, readWorker: async () => worker() });
   return { directory, worktree, git, store, act, worker, service, now, tick, snapshot: async () => (await store.list())[0] };
 }
 it('saves a durable checkpoint from actual Git and verifies it after restart without returning local paths or contents', async () => {
@@ -81,7 +81,7 @@ it('preserves a local checkpoint committed during cancellation for later verific
   const store = { list: () => h.store.list(), mutate: async (...args) => {
     const saved = await h.store.mutate(...args); controller.abort(); return saved;
   } };
-  const service = createGitWorkerCheckpointService({ store, owner: 'coordinator', now: h.now });
+  const service = createGitWorkerCheckpointService({ store, owner: 'coordinator', now: h.now, readWorker: async () => h.worker() });
   expect(await service.captureCheckpoint(h.worker(), { signal: controller.signal })).toMatchObject({ status: 'saved' });
   expect(await h.service.readCheckpoint(h.worker())).toMatchObject({ status: 'verified' });
 });
@@ -99,7 +99,8 @@ it.each(['idle', 'notLoaded'])('connects a native %s stopped observation to capt
       : { data: [{ id: identity.runId, status: 'interrupted', items: [], itemsView: 'notLoaded' }] }; } });
   const stopped = await adapter.readWorker(identity);
   expect(stopped).not.toHaveProperty('checkpoint');
-  expect(await h.service.captureCheckpoint(stopped)).toMatchObject({ status: 'saved' });
+  const recorder = createGitWorkerCheckpointService({ store: h.store, owner: 'coordinator', now: h.now, readWorker: adapter.readWorker });
+  expect(await recorder.captureCheckpoint(stopped)).toMatchObject({ status: 'saved' });
   expect(await adapter.readWorker(identity)).toMatchObject({ status: 'stopped', checkpoint: {
     head: h.git('rev-parse', 'HEAD'), nextAction: 'Review preserved changes' } });
 });
@@ -117,4 +118,37 @@ it('does not execute worktree clean filters while reading recovery state', async
   expect(await h.service.captureCheckpoint(h.worker())).toMatchObject({ status: 'saved' });
   const { access } = await import('node:fs/promises');
   await expect(access(marker)).rejects.toMatchObject({ code: 'ENOENT' });
+});
+
+it.each(['running', 'successor', 'stale', 'unavailable'])('does not mutate recovery state when the stopped run becomes %s during Git capture', async (change) => {
+  const h = await setup();
+  const prior = await h.service.captureCheckpoint(h.worker());
+  const before = await h.snapshot();
+  h.git('commit', '--allow-empty', '-qm', 'successor work');
+  let reads = 0;
+  const service = createGitWorkerCheckpointService({ store: h.store, owner: 'coordinator', now: h.now,
+    readWorker: async () => {
+      const current = h.worker();
+      if (++reads === 1) return current;
+      if (change === 'unavailable') throw new Error('runtime unavailable');
+      return { ...current, ...(change === 'running' ? {status: 'running'} : change === 'successor' ? {runId: 'successor'} : {observedAt: h.now() - 2}) };
+    } });
+  expect(await service.captureCheckpoint(h.worker())).toEqual({status: 'unavailable'});
+  expect(reads).toBe(2);
+  const after = await h.snapshot();
+  expect(after.head).toBe(before.head);
+  expect(after.workerCheckpoint).toEqual(prior.checkpoint);
+});
+it('refuses checkpoint capture without a trusted runtime reader', async () => {
+  const h = await setup();
+  const service = createGitWorkerCheckpointService({store: h.store, owner: 'coordinator', now: h.now});
+  expect(await service.captureCheckpoint(h.worker())).toEqual({status: 'unavailable'});
+  expect((await h.snapshot()).workerCheckpoint).toBeUndefined();
+});
+it('bounds an unavailable fresh runtime observation without committing a checkpoint', async () => {
+  const h = await setup();
+  const service = createGitWorkerCheckpointService({store: h.store, owner: 'coordinator', now: h.now, maxReadMs: 20,
+    readWorker: async () => new Promise(() => {})});
+  expect(await service.captureCheckpoint(h.worker())).toEqual({status: 'unavailable'});
+  expect((await h.snapshot()).workerCheckpoint).toBeUndefined();
 });
