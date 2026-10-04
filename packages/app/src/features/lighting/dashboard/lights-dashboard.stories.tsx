@@ -1,6 +1,9 @@
 import {
   createPreviewLightEntity,
   createPreviewStoryScenario,
+  getPreviewHomeAssistantCompatibilityState,
+  installPreviewRuntime,
+  type PreviewRuntimeScenario,
   replacePreviewEntity,
 } from '@navet/app/preview/runtime';
 import { integrationStore } from '@navet/app/stores/integration-store';
@@ -9,8 +12,8 @@ import type { DeviceWithType } from '@navet/app/types/device.types';
 import type { NavetEntity } from '@navet/core/types';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { ComponentProps, ReactNode } from 'react';
-import { useEffect } from 'react';
-import { expect, userEvent, within } from 'storybook/test';
+import { useEffect, useMemo, useState } from 'react';
+import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { LightsDashboard } from './lights-dashboard';
 
 function device(
@@ -93,8 +96,10 @@ function LightDashboardFixture({
   nonDimmableIds = [],
   theme = 'glass',
   wallpaper = 'dark',
+  runtimeScenario,
   children,
 }: {
+  runtimeScenario?: PreviewRuntimeScenario;
   lights?: DeviceWithType[];
   unavailableIds?: string[];
   nonDimmableIds?: string[];
@@ -102,50 +107,58 @@ function LightDashboardFixture({
   wallpaper?: 'dark' | 'light';
   children: ReactNode;
 }) {
+  const [defaultScenario] = useState(() => createPreviewStoryScenario());
+  const baselineScenario = runtimeScenario ?? defaultScenario;
+  const scenario = useMemo(() => {
+    const fixtureEntities = lights.map((light) => {
+      const runtimeEntity = runtimeScenario?.entities.find((next) => next.externalId === light.id);
+      const next = entity(light, {
+        availability: unavailableIds.includes(light.id) ? 'unavailable' : 'available',
+        capabilities: nonDimmableIds.includes(light.id)
+          ? ['toggle']
+          : ['toggle', 'brightness', 'color_temperature'],
+        lastUpdated: '2026-07-14T18:30:00.000Z',
+      });
+      return {
+        ...next,
+        attributes: nonDimmableIds.includes(light.id)
+          ? { supportedColorModes: ['onoff'] }
+          : {
+              ...next.attributes,
+              supportedColorModes: ['brightness', 'color_temp'],
+              ...runtimeEntity?.attributes,
+            },
+      };
+    });
+    const entities = [
+      ...baselineScenario.entities.filter((next) => next.type !== 'light'),
+      ...fixtureEntities,
+    ];
+    const next = { ...baselineScenario, entities };
+    // Rebuild the compatibility view from the same entities through the shared scenario helper.
+    return entities[0] ? replacePreviewEntity(next, entities[0]) : next;
+  }, [baselineScenario, lights, nonDimmableIds, runtimeScenario, unavailableIds]);
+  const [installedScenario, setInstalledScenario] = useState<PreviewRuntimeScenario | null>(null);
+
   useEffect(() => {
     const previousIntegration = integrationStore.getState();
     const previousTheme = useThemeStore.getState();
-    const entities = Object.fromEntries(
-      lights.map((light) => {
-        const next = entity(light, {
-          availability: unavailableIds.includes(light.id) ? 'unavailable' : 'available',
-          capabilities: nonDimmableIds.includes(light.id)
-            ? ['toggle']
-            : ['toggle', 'brightness', 'color_temperature'],
-          lastUpdated: '2026-07-14T18:30:00.000Z',
-        });
-        return [next.canonicalId, next];
-      })
-    );
-    const entityLookup = Object.fromEntries(
-      Object.values(entities).flatMap((next) => [
-        [next.id, next.canonicalId],
-        [next.externalId, next.canonicalId],
-      ])
-    );
-    integrationStore.setState({
-      ...previousIntegration,
-      providerEntitiesByProviderId: {
-        ...previousIntegration.providerEntitiesByProviderId,
-        home_assistant: entities,
-      },
-      providerEntityLookupByProviderId: {
-        ...previousIntegration.providerEntityLookupByProviderId,
-        home_assistant: entityLookup,
-      },
-      providerEntitiesByCanonicalId: entities,
-    });
+    installPreviewRuntime(scenario);
     useThemeStore.setState({
       ...previousTheme,
       theme,
       followSystemTheme: false,
       wallpaper: null,
     });
+    // Runtime snapshot hooks capture the service on mount, so install before mounting consumers.
+    setInstalledScenario(scenario);
     return () => {
+      // The outer Storybook boundary may already have reset its runtime during unmount.
+      if (getPreviewHomeAssistantCompatibilityState()) installPreviewRuntime(baselineScenario);
       integrationStore.setState(previousIntegration);
       useThemeStore.setState(previousTheme);
     };
-  }, [lights, nonDimmableIds, theme, unavailableIds]);
+  }, [baselineScenario, scenario, theme]);
 
   return (
     <div
@@ -157,7 +170,7 @@ function LightDashboardFixture({
             : 'linear-gradient(145deg, #111827, #07111f 55%, #172033)',
       }}
     >
-      {children}
+      {installedScenario === scenario ? children : null}
     </div>
   );
 }
@@ -166,10 +179,11 @@ function DashboardStory(
   args: ComponentProps<typeof LightsDashboard> &
     Pick<
       ComponentProps<typeof LightDashboardFixture>,
-      'unavailableIds' | 'nonDimmableIds' | 'theme' | 'wallpaper'
+      'unavailableIds' | 'nonDimmableIds' | 'theme' | 'wallpaper' | 'runtimeScenario'
     >
 ) {
-  const { unavailableIds, nonDimmableIds, theme, wallpaper, ...dashboardProps } = args;
+  const { unavailableIds, nonDimmableIds, theme, wallpaper, runtimeScenario, ...dashboardProps } =
+    args;
   return (
     <LightDashboardFixture
       lights={Array.from(dashboardProps.deviceMap.values())}
@@ -177,6 +191,7 @@ function DashboardStory(
       nonDimmableIds={nonDimmableIds}
       theme={theme}
       wallpaper={wallpaper}
+      runtimeScenario={runtimeScenario}
     >
       <LightsDashboard {...dashboardProps} />
     </LightDashboardFixture>
@@ -211,6 +226,9 @@ const baseArgs = {
 const meta = {
   title: 'Pages/Lights/Room first',
   component: DashboardStory,
+  render: (args, context) => (
+    <DashboardStory {...args} runtimeScenario={context.parameters.previewRuntime?.scenario} />
+  ),
   args: baseArgs,
   parameters: { layout: 'fullscreen' },
 } satisfies Meta<typeof DashboardStory>;
@@ -470,4 +488,36 @@ export const BlackTheme: Story = {
 
 export const ReducedMotion: Story = {
   parameters: { reducedMotion: 'reduce' },
+};
+
+export const KeyboardBrightnessReopen: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const disclosure = canvas.getByRole('button', {
+      name: 'Detailed controls and status for Kitchen',
+    });
+    await userEvent.click(disclosure);
+    const row = canvas.getByRole('button', { name: 'Kitchen island' });
+    const slider = within(row).getByRole('slider', { name: 'Brightness' });
+    await expect(slider).toHaveAttribute('aria-valuenow', '72');
+    slider.focus();
+    await expect(slider).toHaveFocus();
+    await userEvent.keyboard('{ArrowLeft}');
+    await expect(slider).toHaveAttribute('aria-valuenow', '71');
+    await waitFor(() => {
+      expect(
+        integrationStore.getState().providerEntitiesByCanonicalId[
+          'home_assistant:light.kitchen_island'
+        ]?.attributes.brightnessPct
+      ).toBe(71);
+    });
+    await userEvent.click(disclosure);
+    await expect(disclosure).toHaveAttribute('aria-expanded', 'false');
+    await userEvent.click(disclosure);
+    const reopenedRow = canvas.getByRole('button', { name: 'Kitchen island' });
+    await expect(within(reopenedRow).getByRole('slider', { name: 'Brightness' })).toHaveAttribute(
+      'aria-valuenow',
+      '71'
+    );
+  },
 };

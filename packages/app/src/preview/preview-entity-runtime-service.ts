@@ -50,7 +50,19 @@ function buildEntitySnapshotMap(
             : typeof entity.primaryState === 'string'
               ? entity.primaryState
               : String(entity.primaryState),
-        attributes: entity.attributes,
+        attributes:
+          entity.type === 'light'
+            ? {
+                ...entity.attributes,
+                brightness_pct: entity.attributes.brightnessPct,
+                color_temp_kelvin: entity.attributes.colorTemperatureKelvin,
+                supported_color_modes: entity.attributes.supportedColorModes,
+                color_mode: entity.attributes.colorMode,
+                hs_color: entity.attributes.hsColor,
+                rgb_color: entity.attributes.rgbColor,
+                effect_list: entity.attributes.effectList,
+              }
+            : entity.attributes,
         lastChanged: timestamp,
         lastUpdated: entity.lastUpdated ?? timestamp,
       },

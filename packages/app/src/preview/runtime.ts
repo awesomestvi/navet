@@ -1244,6 +1244,20 @@ async function executePreviewCommand(entity: NavetEntity, command: NavetCommand)
   );
 }
 
+export async function tryExecutePreviewRuntimeLightCommand(
+  command: NavetCommand
+): Promise<boolean> {
+  if (!['turn_on', 'turn_off', 'set_brightness', 'set_color_temperature'].includes(command.type)) {
+    return false;
+  }
+  const entity = await previewProviderPackageRegistration.providerContractAdapter?.getEntity(
+    command.entityId
+  );
+  if (!getActiveScenario() || entity?.type !== 'light') return false;
+  await executePreviewCommand(entity, command);
+  return true;
+}
+
 const previewLightFeatureService: ProviderLightFeatureService = {
   updateLight: async (entityId, options) => {
     updatePreviewEntity(entityId, (entity) => ({
