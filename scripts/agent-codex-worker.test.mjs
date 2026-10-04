@@ -62,6 +62,28 @@ it('withholds stopped proof when runtime load status changes during observation'
   };
   await expect(createCodexWorkerAdapter({ ...h.options, request }).readWorker(binding)).rejects.toThrow('changed');
 });
+it.each(['completed', 'interrupted', 'failed'])('reconciles a terminal %s turn in a system-error thread', async (status) => {
+  const h = setup(); h.setTurn({ status });
+  const request = async (...args) => {
+    const result = await h.options.request(...args);
+    if (args[0] === 'thread/read') result.thread.status.type = 'systemError';
+    return result;
+  };
+  const adapter = createCodexWorkerAdapter({ ...h.options, request });
+  expect(await adapter.readWorker(binding)).toMatchObject({ status: 'stopped', runId: 'turn-a',
+    checkpoint: { reference: 'checkpoint-service', head: 'a'.repeat(40), nextAction: 'Review worktree' } });
+  expect(await adapter.interruptWorker({ ...binding, runId: 'turn-a', stopToken: 'receipt' })).toEqual({ status: 'already-stopped' });
+  expect(h.calls.some((call) => call.method === 'turn/interrupt')).toBe(false);
+});
+it('withholds a system-error terminal observation that changes during the stable read', async () => {
+  const h = setup(); h.setTurn({ status: 'failed' }); let reads = 0;
+  const request = async (...args) => {
+    const result = await h.options.request(...args);
+    if (args[0] === 'thread/read' && ++reads === 1) result.thread.status.type = 'systemError';
+    return result;
+  };
+  await expect(createCodexWorkerAdapter({ ...h.options, request }).readWorker(binding)).rejects.toThrow('changed');
+});
 it('preserves checkpoint uncertainty for an unloaded terminal turn', async () => {
   const h = setup(); h.setTurn({ status: 'interrupted' });
   const request = async (...args) => {

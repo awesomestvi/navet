@@ -119,8 +119,10 @@ export async function monitorPlanningWorker({ store, owner, taskId, readWorker, 
         const usageStartedAt = clock();
         try {
           const usage = await bounded(() => readUsage({ ...identity, runId: worker.runId }, { signal: controller.signal }));
+          const verifiedAt = usage?.verifiedAt ?? usage?.observedAt;
           if (usage?.taskId !== taskId || usage.complete !== true || !Number.isSafeInteger(usage.observedAt) ||
-              usage.observedAt < usageStartedAt || usage.observedAt > clock()) throw new Error('Incomplete task-wide usage.');
+              !Number.isSafeInteger(verifiedAt) || verifiedAt < usageStartedAt || verifiedAt > clock() ||
+              usage.observedAt > verifiedAt || usage.observedAt < clock() - 60_000) throw new Error('Incomplete task-wide usage.');
           const saved = await mutate('resource-usage', { usage: { modelTokens: usage.modelTokens, toolCalls: usage.toolCalls,
             observedAt: usage.observedAt, reference: usage.reference }, settledReservations: usage.settledReservations ?? [] });
           if (resourceStatus(saved, clock()).exceeded) reason = 'resource-exhausted';

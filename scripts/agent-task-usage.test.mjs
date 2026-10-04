@@ -2,7 +2,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, expect, it } from 'vitest';
-import { AgentTaskStore } from './agent-task-store.mjs';
+import { AgentTaskStore, resourceStatus } from './agent-task-store.mjs';
 import { createTaskUsageReader } from './agent-task-usage.mjs';
 import { createPlanningBinding } from './agent-planning-scope.mjs';
 import { monitorPlanningWorker } from './agent-worker-monitor.mjs';
@@ -77,6 +77,24 @@ it('retains terminal workers and historical coordinators across coordinator rest
   h.members.splice(0, 1);
   expect(await createTaskUsageReader(h.options)(h.identity)).toMatchObject({ complete: false });
   expect((await h.snapshot()).resources.accounting.members).toHaveLength(3);
+});
+it('keeps the oldest active source timestamp when rereading almost-expired counters', async () => {
+  const h = await setup();
+  const sourceAt = h.now() - 1;
+  h.advance(59_000);
+  const result = await createTaskUsageReader(h.options)(h.identity);
+  expect(result).toMatchObject({ complete: true, observedAt: sourceAt, verifiedAt: h.now() });
+  await h.act('resource-usage', { usage: result });
+  expect(resourceStatus(await h.snapshot(), h.now()).measurementFresh).toBe(true);
+  h.advance(1_001);
+  expect(resourceStatus(await h.snapshot(), h.now()).measurementFresh).toBe(false);
+});
+it('does not let an older stopped member shorten a current active measurement', async () => {
+  const h = await setup(); h.members[1].status = 'stopped'; await h.writeSession(h.members[1]);
+  h.advance(59_000); await h.writeSession(h.members[0]);
+  const sourceAt = h.now() - 1;
+  const result = await createTaskUsageReader(h.options)(h.identity);
+  expect(result).toMatchObject({ complete: true, observedAt: sourceAt });
 });
 it('persists final participant totals after all participants stop and the store reopens', async () => {
   const h = await setup();
@@ -165,6 +183,8 @@ it('rejects foreign leases and pre-cancellation and bounds an unresponsive inven
 });
 it('feeds real native totals to the durable worker monitor and invalidates cached usage on coverage loss', async () => {
   const h = await setup(); let stopped = false;
+  const sourceAt = h.now() - 1;
+  h.advance(59_000);
   const readUsage = createTaskUsageReader(h.options);
   const options = { store: h.store, owner: 'coordinator', taskId: h.identity.taskId, now: h.now, maxStopAttempts: 2, readUsage,
     readRequest: async () => ({ status: 'authorized', request: { ...h.request, authority: { ...h.request.authority, observedAt: h.tick() } } }),
@@ -173,7 +193,9 @@ it('feeds real native totals to the durable worker monitor and invalidates cache
       ...(stopped ? { checkpoint: { reference: 'saved', head: null, nextAction: 'Review inventory' } } : {}) }),
     interruptWorker: async () => { stopped = true; } };
   expect(await monitorPlanningWorker(options)).toMatchObject({ status: 'within-policy' });
-  expect((await h.snapshot()).resources.usage).toMatchObject({ modelTokens: 300, toolCalls: 4 });
+  expect((await h.snapshot()).resources.usage).toMatchObject({ modelTokens: 300, toolCalls: 4, observedAt: sourceAt });
+  h.advance(1_001);
+  expect(resourceStatus(await h.snapshot(), h.now()).measurementFresh).toBe(false);
   h.members.pop();
   expect(await monitorPlanningWorker(options)).toMatchObject({ status: 'stopped', stop: { reason: 'usage-unverified' } });
   expect((await h.snapshot()).resources.unavailable).toBeDefined();

@@ -657,7 +657,7 @@ confirmed `threadId`. Supply a trusted RPC `request` callback and an independent
 verifier. The adapter reads `thread/read` metadata and the latest descending `thread/turns/list`
 page twice with `itemsView: 'notLoaded'`. Thread and turn status must agree and remain stable.
 Older-turn pagination is expected; missing latest-turn evidence and changed runs are unavailable.
-An unloaded thread (`notLoaded`) can establish a stopped observation only when its latest persisted
+An unloaded thread (`notLoaded`) or a thread reporting `systemError` can establish a stopped observation only when its latest persisted
 turn is terminal and its load status and turn remain stable. A running turn in an unloaded thread
 is inconsistent evidence. Independent checkpoint verification still applies before recovery confirmation.
 
@@ -795,6 +795,11 @@ aggregate. This durable ledger retains session identities, policy reference and 
 per-participant counters and measurement times. It prevents dropping a closed worker or masking
 one worker's rollback behind another's rising totals. Session paths and raw logs stay private.
 An incomplete or canceled read preserves already-committed accounting references for recovery.
+For an active aggregate, `observedAt` retains the oldest running participant's measurement time.
+`verifiedAt` records completion of the fresh inventory and accounting read. The monitor checks that
+verification happened during its current probe and persists the source measurement time for budget
+freshness. Repeated reads cannot extend the counters' expiry. Final stopped aggregates use their
+fresh verification time because every participant's matching terminal marker establishes finality.
 
 Pass the resulting callback to `monitorPlanningWorker`, which persists `resource-usage` and
 invalidates older usage when coverage becomes unavailable. An accounting receipt alone neither

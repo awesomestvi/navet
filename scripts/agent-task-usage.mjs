@@ -96,7 +96,11 @@ export function createTaskUsageReader({ store, owner, readInventory, now = Date.
       if (measurements.some((member) => member.status === 'running' && member.measurementAt < clock() - 60_000)) {
         throw new Error('Measurements aged during accounting acknowledgement.');
       }
-      return { taskId: identity.taskId, complete: true, modelTokens, toolCalls, reference, observedAt: now() };
+      const verifiedAt = clock();
+      const active = measurements.filter((member) => member.status === 'running');
+      // Re-reading an old counter cannot extend its budget-freshness window.
+      const observedAt = active.length ? Math.min(...active.map((member) => member.measurementAt)) : verifiedAt;
+      return { taskId: identity.taskId, complete: true, modelTokens, toolCalls, reference, observedAt, verifiedAt };
     } catch {
       return { taskId: identity?.taskId, complete: false, reason: 'task-native-usage-unverified',
         ...(receipt ? { accountingReference: receipt.reference } : {}) };

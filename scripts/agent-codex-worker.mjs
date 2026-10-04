@@ -45,7 +45,7 @@ export function createCodexWorkerAdapter({ binding, request, readCheckpoint, now
   const snapshot = async ({ bounded }) => {
     const metadata = await bounded((options) => request('thread/read', { threadId: identity.threadId, includeTurns: false }, options));
     const thread = metadata?.thread;
-    if (thread?.id !== identity.threadId || !['active', 'idle', 'notLoaded'].includes(thread.status?.type)) {
+    if (thread?.id !== identity.threadId || !['active', 'idle', 'notLoaded', 'systemError'].includes(thread.status?.type)) {
       throw new Error('Exact runtime thread status required.');
     }
     const page = await bounded((options) => request('thread/turns/list', {
