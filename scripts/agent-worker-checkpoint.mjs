@@ -68,6 +68,8 @@ async function gitSnapshot(worktree, { signal, clock }) {
   return { head, branch, stateHash: 'sha256:' + digest.digest('hex') };
 }
 
+export { gitSnapshot as readGitWorkerSnapshot };
+
 export function createGitWorkerCheckpointService({ store, owner, readWorker, now = Date.now, maxReadMs = 15_000 }) {
   if (!store || typeof store.list !== 'function' || typeof store.mutate !== 'function' || !text(owner) ||
       typeof now !== 'function' || !Number.isSafeInteger(maxReadMs) || maxReadMs < 1 || maxReadMs > 60_000) {

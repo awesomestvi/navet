@@ -1,30 +1,49 @@
 # Navet Autonomous Builder Plan
 
-Status: implementation in progress. The Linear planning hub is configured. Local lifecycle and
-component-discovery tools have focused test coverage; coordinator integration, rendered pilots,
-and release-readiness evidence remain outstanding. This plan does not grant additional permissions
-or establish that Navet is ready for 1.0.0.
+Status: local workflow infrastructure has deterministic coverage for private proposals,
+specialist coordination, ticket conversation, recovery, accounting and completion. See the
+[coordinated team workflow](agent-team-workflow.md) for source ownership and the infrastructure
+acceptance ledger. Live operational integration and the broader rollout remain unverified. This
+plan does not activate unattended work or establish that Navet is ready for 1.0.0.
 
 ## Objective
 
-Let the maintainer describe an intended outcome in ordinary language and receive a tested,
-reviewable implementation with a working preview and coherent documentation. Agents also
-investigate product opportunities and maintain the design system. The maintainer owns product
-direction, visual acceptance, merges, and production release dispatch.
+Let the maintainer suggest an idea in ordinary language. The agent team researches the problem,
+develops a plan and an appropriately scoped prototype, and posts the findings in Linear for
+prioritization. After the maintainer approves a ticket's selected option and scope, the team
+implements it, verifies the result, and opens a reviewable PR with a working preview and coherent
+documentation. Questions and decisions return to the originating Linear ticket. The maintainer
+owns priority, product direction, visual acceptance, merges, and production release dispatch.
 
 Product opportunities and design findings enter one workspace-visible planning backlog as developed proposals. The
 maintainer prioritizes and approves them from a shared review surface. A dedicated UX quality
 role continuously reduces the manual effort of finding layout and interaction defects.
 
-Target outcome: a dependable delivery process that helps Navet reach an evidence-backed 1.0.0.
+Target outcome: a dependable team that develops proposals and delivers approved features and
+products. Navet 1.0.0 is a product milestone supported by that team.
 Content production, videos, advertising, social publishing, and their integrations are deferred
 until product maturity and a separate plan.
+
+## Workflow And Product Acceptance
+
+Accept the team workflow against observable idea intake, private proposal development, human
+approval, specialist coordination, implementation, ticket questions and answers, validation and
+PR delivery. Accept each feature or product against its own approved criteria. Accept Navet 1.0.0
+against the separate release-candidate criteria in Phase 6.
+
+The six phases retain their requirements and evidence obligations. Their completion is distinct
+from verifying the core team workflow. Household cohorts and production release dispatch belong
+to product acceptance; they are not prerequisites for developing a requested idea in Linear.
+Recurring discovery, standing maintenance and comparative harness experiments require their own
+accepted scope and resources. Comparative experiments are currently stopped; use the existing
+design tools during delivery without claiming a measured context improvement.
 
 ## Starting Point And Constraints
 
 Build on the existing operating model in [Agentic Development](agentic-development.md):
 
-- GitHub issues and PRs provide the maintainer-facing control plane.
+- Linear provides the idea, prioritization and ticket approval surface for planning-bound work.
+- GitHub issues retain their existing request intake; PRs provide public delivery and code review.
 - Nisse intake handles authorized requests and qualifying replies.
 - The private runner coordinates delivery and review continuations.
 - Codex supplies independent review; deterministic checks remain authoritative.
@@ -50,24 +69,34 @@ work, or publish production releases.
 
 ```text
 maintainer idea or evidence-backed opportunity
-  -> authorization and scope classification
-  -> acceptance criteria and reference selection
+  -> research, options, UX planning and scoped prototype
+  -> findings and evidence in the Linear proposal lane
+  -> maintainer prioritization and explicit ticket approval
+  -> trusted approval, selected scope and acceptance criteria
   -> implementation using Navet primitives
   -> focused checks, rendered review, and independent review
   -> bounded repair loop
-  -> maintainer approval package
+  -> PR and preview linked back to the Linear ticket
+  -> maintainer review and acceptance
   -> merge and existing release process
   -> verified outcome and follow-up evidence
 ```
 
-Use one coordinator with task-specific roles. Reuse the existing reviewer before adding another
-general-purpose agent. Each delivery task owns its implementation branch and worktree.
+Use one coordinator with task-specific specialists. Select roles according to the task's needs;
+each specialist has a concrete deliverable and shares the accepted brief and evidence. Developers,
+UX designers, testers, security reviewers and architects collaborate through the coordinator.
+Reuse the existing independent reviewer before adding another general-purpose reviewer. Each
+delivery task owns its implementation branch and worktree; its related work uses one delivery PR.
 
 | Role | Responsibility | Reviewable output |
 | --- | --- | --- |
 | Coordinator | Validate authority, select work, preserve task state, resume work, enforce limits | Accurate queue and approval inbox |
 | Delivery agent | Investigate, implement, verify, repair review findings, update affected docs | PR, preview, and evidence |
 | Product researcher | Investigate household friction and relevant ecosystem changes | Ranked opportunities with sources and experiments |
+| UX designer | Define user journeys, options, interaction design and scoped prototypes | Design rationale, prototype and acceptance criteria in Linear |
+| Test specialist | Select meaningful checks, reproduce defects and verify user journeys | Test results, rendered evidence and remaining coverage |
+| Security specialist | Assess relevant trust boundaries, authorization and data handling | Concrete risks, required mitigations and verified findings |
+| Architect | Check provider ownership, contracts, persistence and integration choices | Scope-specific technical plan and contract decisions |
 | UX quality auditor | Inspect rendered journeys, measure inconsistencies, reproduce defects, and retest fixes | Evidence-backed design findings and coverage ledger |
 | Design-system steward | Maintain shared components, recipes, discovery metadata, and visual coverage | Focused design-system PRs |
 | Documentation steward | Verify documentation against code and supported workflows | Documentation PRs and drift findings |
@@ -97,6 +126,27 @@ Support Needs evidence, Deferred, Rejected, and Superseded dispositions. Ranking
 label does not approve it. Capture the approving maintainer, proposal revision, selected option,
 acceptance criteria, permitted scope, and visibility decision. Material scope changes require an
 updated approval; implementation details within that scope remain autonomous.
+
+An idea submission starts proposal development within its requested research and prototype scope.
+The team records the observed problem, sources, alternatives, recommended option, prototype
+evidence, implementation slices, risks and acceptance criteria before marking the proposal Ready
+for prioritization. A prototype is a review artifact; it does not authorize production delivery.
+The maintainer chooses priority and approves the selected option on the ticket. An ordinary approval
+such as "okay to implement this option" must be bound to the exact proposal revision and verified
+through the trusted human-request path before dispatch; an agent-written comment or stage change
+cannot supply that authority.
+
+When an unresolved question prevents safe progress, post a concise comment on that Linear ticket,
+record what decision is needed, and wait for the maintainer's answer. Continue independent work
+within the accepted scope. Record the answer against the proposal or delivery brief and resume the
+same task when authority and scope remain valid. The planning integration uses its separately
+scoped comment writer; public GitHub communication follows the existing delivery policy.
+
+Keep the ticket In delivery while implementation or PR review is unfinished. Link the PR, preview,
+validation evidence and outstanding questions back to it. The Validated stage requires evidence for
+the accepted criteria and the maintainer's required acceptance; creating a PR alone is insufficient.
+Verify the core idea-to-proposal-to-approved-ticket-to-PR workflow before activating recurring
+discovery and stewardship. The six phases below remain the complete rollout and readiness scope.
 
 ### Approval-to-queue handoff
 
@@ -424,8 +474,9 @@ Extend the existing queue and runner rather than creating a competing dispatch s
    new push. Reuse unchanged artifacts only under the existing verified-input policy.
 5. Bound repair attempts, elapsed execution, active deliveries, and model/tool expenditure.
    Escalate repeated failures with evidence and a concrete next decision.
-6. Keep one coordinator. Begin with one active implementation task and allow bounded independent
-   research only after recovery behavior is demonstrated.
+6. Keep one coordinator and begin with one active ticket. Coordinate scoped specialist work for
+   maintainer-requested proposal development or approved implementation. Activate recurring
+   independent research only after recovery behavior and its operating policy are demonstrated.
 7. Notify the maintainer for reviewable results, material failures, or decisions. Preserve quiet
    operation while state is unchanged. Keep private prompts and orchestration logs private.
 8. Reconcile planning proposal revisions, approval records, and delivery state with idempotent
@@ -479,7 +530,8 @@ pattern, inspect supported states, and run relevant checks without inventing its
    assertions without weakening tests. Promote a lane to required only after its baseline is green.
 6. Use the [five-case agent UI evaluation](agent-ui-evaluation.md) from real Navet sources.
    It covers a card dialog, settings flow, unavailable state, responsive dashboard composition
-   and shared-component extension; record controlled runs before claiming context improvements.
+   and shared-component extension. Controlled runs require separate authorization; record them
+   before claiming context improvements. Their completion is separate from team workflow acceptance.
 7. Track invalid props/imports, duplicated primitives, token violations, accessibility failures,
    maintainer correction effort, runtime, and cost. Compare filesystem-only context with curated
    metadata and MCP using the same task set.
@@ -554,10 +606,14 @@ The [task lifecycle tools](agent-task-lifecycle.md) provide local state consiste
 building blocks. The [AI design context](../design-system/AI-DESIGN-CONTEXT.md) explains generated
 component discovery. Neither tool establishes that the operational exit gates have passed.
 
-Implement phases in order within one coordinated delivery PR by default. Use an explicitly ordered
-stack only when separate review stages help; the agent owns integration maintenance and conflicts.
-Start Phase 3 after the lifecycle contract is established; advance discovery only after delivery
-and UI gates have been demonstrated.
+Use the [team workflow implementation plan](team-workflow-implementation-plan.md) to connect the
+existing foundations into the core workflow. Respect each capability's authority, privacy,
+recovery and validation dependencies. Reuse available design tooling on relevant tasks. Expand
+recurring discovery and stewardship after their applicable delivery and operating gates pass.
+Phase 6 remains the separate Navet 1.0.0 acceptance programme.
+
+Keep coordinated implementation in one delivery PR. Use an explicitly ordered stack only when
+separate review stages are accepted; the agent owns integration maintenance and conflicts.
 
 Use an initial pilot of five representative authorized tasks. Include UI work, a reproduced bug,
 documentation work, and an interrupted/recovered delivery. Exercise one planning proposal through
@@ -573,6 +629,10 @@ Keep a maintainer-controlled pause mechanism and preserve unfinished task state 
 
 - [Composable agent workflows](https://www.anthropic.com/engineering/building-effective-agents)
 - [Long-running task state and verification](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents)
+- [Planner, builder and independent evaluator](https://www.anthropic.com/engineering/harness-design-long-running-apps)
+- [Agent development environments and feedback](https://openai.com/index/harness-engineering/)
+- [Planner and worker coordination](https://cursor.com/blog/scaling-agents)
+- [Relevant repository context](https://aider.chat/docs/repomap.html)
 - [DTCG 2025.10 token format](https://www.designtokens.org/tr/2025.10/format/)
 - [Storybook MCP](https://storybook.js.org/docs/ai/mcp/overview)
 - [DESIGN.md visual-intent format](https://github.com/google-labs-code/design.md)
@@ -580,5 +640,5 @@ Keep a maintainer-controlled pause mechanism and preserve unfinished task state 
 - [Linear issue templates](https://linear.app/docs/issue-templates)
 - [GitHub Project visibility and repository permissions](https://docs.github.com/en/issues/planning-and-tracking-with-projects/managing-your-project/managing-visibility-of-your-projects)
 
-These inform the planned experiments. Navet's code, constitution, and measured task outcomes
-determine the implementation; no single context format is assumed to be universally best.
+These inform workflow design and evaluation. Navet's code, constitution and observed task outcomes
+determine the implementation. No source establishes a universal model, context format or speedup.

@@ -6,6 +6,16 @@ import { isDeepStrictEqual } from 'node:util';
 import { linearResultTimesMatch } from './agent-linear-result-time.mjs';
 import { evaluatePlanningObservation, requirePlanningScope, validatePlanningBinding } from './agent-planning-scope.mjs';
 
+import { evaluateProposalObservation, requireProposalScope, validateProposalDestination } from './agent-proposal-scope.mjs';
+import { validateTeamAccounting } from './agent-team-accounting.mjs';
+import { applyTeamEvent, invalidateTeamHeadEvidence } from './agent-team-state.mjs';
+
+function requireExecutionScope(task, now) {
+  requirePlanningScope(task, now);
+  requireProposalScope(task, now);
+  if (task.team?.workers.some((worker) => worker.stop && worker.stop.status !== 'stopped')) throw new Error('Unresolved specialist interruption blocks execution.');
+}
+
 // Load through Node so browser-oriented test bundlers do not bundle this native module.
 const sqlite = process.getBuiltinModule?.('node:sqlite');
 if (!sqlite) throw new Error('Agent task storage requires Node 22.16 or later with SQLite support.');
@@ -112,6 +122,7 @@ function bindResourceReservation(task, input, now, operation) {
       (reservation.operation && reservation.operation !== operation)) {
     throw new Error('An unused resource reservation for this operation is required.');
   }
+  if (task.resources.reservations.some((item) => item.token !== reservation.token && item.operation === operation)) throw new Error('Execution operation already owns a different reservation.');
   reservation.operation = operation;
 }
 
@@ -208,7 +219,7 @@ export class AgentTaskStore {
     return this.transaction((state) => state.tasks);
   }
 
-  async enqueue({ source, requestId, mode, revision, authority, brief, requiredGates = [], resourceLimits, planningBinding }) {
+  async enqueue({ source, requestId, mode, revision, authority, brief, requiredGates = [], resourceLimits, planningBinding, proposalBinding }) {
     const id = taskId(source, requestId);
     if (!['research', 'implement', 'audit', 'steward'].includes(mode)) throw new Error('Unsupported task mode.');
     requireValue(revision, 'revision');
@@ -224,13 +235,22 @@ export class AgentTaskStore {
     }
     const gates = [...new Set([...requiredGates, 'output'])];
     if (resourceLimits !== undefined) validateResourceLimits(resourceLimits);
-    if (brief.resultDestination !== undefined && !['public-github', 'linear-planning'].includes(brief.resultDestination)) {
+    if (brief.resultDestination !== undefined && !['public-github', 'linear-planning', 'linear-proposal'].includes(brief.resultDestination)) {
       throw new Error('Unsupported result destination.');
     }
     if (brief.resultDestination === 'linear-planning' &&
         (!planningBinding || !['research', 'audit'].includes(mode))) {
       throw new Error('Linear result destination requires planning-bound research or audit.');
     }
+    if (proposalBinding !== undefined) {
+      validatePlanningBinding(proposalBinding);
+      validateProposalDestination(brief, proposalBinding);
+      if (planningBinding || mode !== 'research' || brief.purpose !== 'proposal-development' ||
+          brief.visibility !== 'private-planning' || brief.resultDestination !== 'linear-proposal' ||
+          authority.kind !== 'maintainer-idea-request' || authority.proposalRevision !== proposalBinding.revision ||
+          brief.destination?.kind !== 'linear' || ['issueId', 'teamId', 'projectId'].some((key) =>
+            brief.destination[key] !== proposalBinding[key])) throw new Error('Private proposal authority and destination required.');
+    } else if (brief.resultDestination === 'linear-proposal') throw new Error('Proposal binding required.');
     if (planningBinding !== undefined) {
       validatePlanningBinding(planningBinding);
       if (authority.planningRevision !== planningBinding.revision) {
@@ -245,7 +265,8 @@ export class AgentTaskStore {
             !isDeepStrictEqual([...existing.requiredGates].sort(), [...gates].sort()) ||
             !isDeepStrictEqual(existing.resources?.limits, resourceLimits) ||
             !isDeepStrictEqual(existing.planning?.binding, planningBinding) ||
-            existing.authority.actor !== authority.actor || existing.authority.reference !== authority.reference) {
+            !isDeepStrictEqual(existing.proposal?.binding, proposalBinding) ||
+            existing.authority.kind !== authority.kind || existing.authority.actor !== authority.actor || existing.authority.reference !== authority.reference) {
           throw new Error('Request identity was reused with different scope.');
         }
         return existing;
@@ -254,6 +275,7 @@ export class AgentTaskStore {
         id, source, requestId, mode, revision, authority, brief,
         state: 'queued', head: null, requiredGates: gates,
         ...(planningBinding ? { planning: { binding: structuredClone(planningBinding), observation: null } } : {}),
+        ...(proposalBinding ? { proposal: { binding: structuredClone(proposalBinding), observation: null } } : {}),
         evidence: [], dispatch: null, lease: null, retries: 0,
         createdAt: this.now(), updatedAt: this.now(), history: [],
         ...(resourceLimits ? { resources: { limits: resourceLimits, startedAt: null, usage: null, reservations: [] } } : {}),
@@ -273,11 +295,12 @@ export class AgentTaskStore {
       let workerStopDecision;
       let followupDecision;
       let planningResultDecision;
+      let teamDecision;
       if (action === 'claim') {
         if (['delivered', 'terminal-failure'].includes(task.state)) throw new Error('Terminal work cannot be claimed.');
         requireValue(input.owner, 'owner');
         if (state.tasks.filter((other) => other.id !== id && !TERMINAL.has(other.state) &&
-            (other.lease || other.dispatch)).length >= this.maxActiveTasks) {
+            (other.lease || other.dispatch || other.team?.workers.some((worker) => ['uncertain', 'running'].includes(worker.status)))).length >= this.maxActiveTasks) {
           throw new Error('Active task budget exhausted.');
         }
         if (!Number.isFinite(input.durationMs) || input.durationMs <= 0 || input.durationMs > 3_600_000) throw new Error('Invalid lease duration.');
@@ -304,6 +327,71 @@ export class AgentTaskStore {
             throw new Error('Request revocation requires a fresh exact source observation.');
           }
           task.requestRevocation ??= structuredClone(observation);
+        } else if (action === 'team-event') {
+          if (TERMINAL.has(task.state)) throw new Error('Terminal team work cannot change.');
+          if (input.event?.type === 'plan' && ((input.event.phase === 'proposal') !== Boolean(task.proposal) ||
+              (input.event.phase === 'delivery' && task.mode !== 'implement'))) throw new Error('Team plan phase must match authorized task mode.');
+          if (['plan', 'worker-intent', 'worker-attempt', 'worker-resume-intent', 'worker-resume-attempt', 'ticket-attempt', 'answer', 'pr', 'proposal', 'acceptance'].includes(input.event?.type)) {
+            requireExecutionScope(task, now);
+            if (['worker-intent', 'worker-attempt', 'worker-resume-intent', 'worker-resume-attempt', 'ticket-attempt'].includes(input.event.type)) requireResourceCapacity(task, now);
+          }
+          if (['worker-intent', 'worker-attempt', 'worker-resume-intent', 'worker-resume-attempt', 'ticket-attempt'].includes(input.event?.type)) {
+            bindResourceReservation(task, input, now, input.event.type === 'ticket-attempt' ? `team-ticket:${input.event.updateId}` : input.event.type.startsWith('worker-resume-') ? `team-resume:${input.event.resumeId}` : `team-worker:${input.event.intentId}`);
+            if (!observationIsFresh(input.authority, now) || input.authority.actor !== task.authority.actor ||
+                input.authority.reference !== task.authority.reference || input.authority.revision !== task.revision ||
+                (task.planning && input.authority.planningRevision !== task.planning.binding.revision) ||
+                (task.proposal && (input.authority.kind !== task.authority.kind || input.authority.proposalRevision !== task.proposal.binding.revision))) {
+              throw new Error('Team execution requires fresh accepted authority.');
+            }
+          }
+          if (input.event?.type === 'ticket-intent') {
+            const receipt = input.event.receipt;
+            const binding = task.proposal?.binding ?? task.planning?.binding;
+            if (receipt?.taskId !== task.id || receipt.issueId !== binding?.issueId || receipt.scopeRevision !== binding?.revision ||
+                receipt.taskRevision !== task.revision || receipt.planRevision !== (task.team?.plan?.revision ?? null) ||
+                receipt.deliveryHead !== task.head) throw new Error('Ticket intent requires exact current team snapshot.');
+          }
+          if (input.event?.type === 'finish') {
+            if (task.requestRevocation || task.proposal?.revokedAt || task.planning?.revokedAt) throw new Error('Withdrawn team work cannot be completed.');
+            const accounting = task.resources?.accounting;
+            const usage = task.resources?.usage;
+            if (!accounting?.complete || accounting.planRevision !== task.team?.plan?.revision || !observationIsFresh(usage, now) ||
+                task.resources.unavailable || usage.reference !== accounting.reference ||
+                accounting.members.some((member) => member.role === 'worker' && member.status !== 'stopped') ||
+                task.resources.reservations.some((item) => item.operation && !item.settledAt)) throw new Error('Team completion requires complete native accounting and reconciled reservations.');
+            if (!task.requiredGates.filter((gate) => gate !== 'output').every((gate) => task.team.workers.some((worker) =>
+              worker.evidence.some((item) => item.gate === gate && item.result === 'pass' && item.head === task.head && item.revision === task.revision)))) throw new Error('Current required team gates are incomplete.');
+          }
+          teamDecision = applyTeamEvent(task, input.event, now);
+          if (input.event?.type === 'finish') { task.state = 'delivered'; task.lease = null; }
+
+        } else if (action === 'team-checkpoint') {
+          const checkpoint = input.checkpoint;
+          const worker = task.team?.workers.find((item) => item.intentId === checkpoint?.intentId);
+          if (TERMINAL.has(task.state) || !worker?.workerId || checkpoint.status !== 'verified' ||
+              checkpoint.taskId !== task.id || checkpoint.workerId !== worker.workerId || !checkpoint.runId ||
+              !observationIsFresh(checkpoint, now) || checkpoint.worktree !== task.context?.worktree ||
+              checkpoint.branch !== task.context?.branch || checkpoint.nextAction !== task.context?.nextAction ||
+              !/^[a-f0-9]{40}$/.test(checkpoint.head ?? '') || !/^sha256:[a-f0-9]{64}$/.test(checkpoint.stateHash ?? '')) throw new Error('Exact current team Git checkpoint required.');
+          requireValue(checkpoint.reference, 'team checkpoint reference');
+          const prior = task.team.checkpoint;
+          if (prior && prior.observedAt > checkpoint.observedAt) throw new Error('Team checkpoint cannot regress.');
+          if (task.head !== checkpoint.head || prior?.stateHash !== checkpoint.stateHash) {
+            invalidateTeamHeadEvidence(task);
+          }
+          task.head = checkpoint.head;
+          task.team.checkpoint = structuredClone(checkpoint);
+          worker.checkpoint = structuredClone(checkpoint);
+        } else if (action === 'proposal-observation') {
+          if (!task.proposal) throw new Error('Task has no proposal binding.');
+          const observation = evaluateProposalObservation(task.proposal.binding, input.observation, now);
+          const previous = task.proposal.observation;
+          const rank = { pass: 0, unverified: 1, fail: 2 };
+          if (previous && (observation.observedAt < previous.observedAt ||
+              (observation.observedAt === previous.observedAt && !isDeepStrictEqual(previous, observation) &&
+                rank[observation.result] <= rank[previous.result]))) throw new Error('Proposal observation cannot relax stale evidence.');
+          task.proposal.observation = observation;
+          if (observation.result === 'fail') task.proposal.revokedAt ??= now;
         } else if (action === 'planning-observation') {
           if (!task.planning) throw new Error('Task has no planning binding.');
           const observation = evaluatePlanningObservation(task.planning.binding, input.observation, now);
@@ -318,6 +406,14 @@ export class AgentTaskStore {
           }
           task.planning.observation = observation;
           if (observation.result === 'fail') task.planning.revokedAt ??= now;
+        } else if (action === 'team-accounting') {
+          const verified = validateTeamAccounting(task, input, now);
+          task.resources.accounting = verified.accounting;
+          task.resources.usage = verified.usage;
+          for (const item of task.resources.reservations) if (verified.settledReservations.includes(item.token)) {
+            item.settledAt = verified.usage.observedAt; item.reference = verified.usage.reference;
+          }
+          delete task.resources.unavailable;
         } else if (action === 'resource-accounting') {
           const accounting = input.accounting;
           const members = accounting?.members;
@@ -398,7 +494,7 @@ export class AgentTaskStore {
             }
             return { ...task, resourceDecision: { action: existing.settledAt ? 'skip' : 'reconcile', reservation: existing } };
           }
-          requirePlanningScope(task, now);
+          requireExecutionScope(task, now);
           const status = requireResourceCapacity(task, now);
           if (input.modelTokens > status.remaining.modelTokens || input.toolCalls > status.remaining.toolCalls) {
             throw new Error('Resource reservation exceeds the remaining budget.');
@@ -418,11 +514,12 @@ export class AgentTaskStore {
             if (input.dispatchProtocol !== undefined && input.dispatchProtocol !== 'attempt-receipt-v1') {
               throw new Error('Unsupported dispatch receipt protocol.');
             }
-            requirePlanningScope(task, now);
+            requireExecutionScope(task, now);
             bindResourceReservation(task, input, now, 'dispatch');
             if (!observationIsFresh(input.authority, now) || input.authority.actor !== task.authority.actor ||
                 input.authority.reference !== task.authority.reference || input.authority.revision !== task.revision ||
-                (task.planning && input.authority.planningRevision !== task.planning.binding.revision)) {
+                (task.planning && input.authority.planningRevision !== task.planning.binding.revision) ||
+                (task.proposal && (input.authority.kind !== task.authority.kind || input.authority.proposalRevision !== task.proposal.binding.revision))) {
               throw new Error('Dispatch requires freshly rechecked authority for this revision.');
             }
             task.dispatch = { token: randomUUID(), intentAt: now, clientThreadId: null, threadId: null,
@@ -438,13 +535,15 @@ export class AgentTaskStore {
           if (receipt.protocol !== 'attempt-receipt-v1' || receipt.attemptedAt || receipt.threadId || receipt.clientThreadId) {
             dispatchDecision = { action: 'reconcile', receipt };
           } else {
-            requirePlanningScope(task, now);
+            requireExecutionScope(task, now);
             bindResourceReservation(task, { resourceToken: receipt.resourceToken }, now, 'dispatch');
             if (!observationIsFresh(input.authority, now) || input.authority.observedAt < receipt.intentAt ||
                 input.authority.actor !== task.authority.actor || input.authority.reference !== task.authority.reference ||
                 input.authority.revision !== task.revision ||
                 (task.planning && (input.authority.planningRevision !== task.planning.binding.revision ||
-                  input.authority.observedAt < task.planning.observation.observedAt))) {
+                  input.authority.observedAt < task.planning.observation.observedAt)) ||
+                (task.proposal && (input.authority.kind !== task.authority.kind || input.authority.proposalRevision !== task.proposal.binding.revision ||
+                  input.authority.observedAt < task.proposal.observation.observedAt))) {
               throw new Error('Dispatch send requires authority rechecked after current planning scope.');
             }
             receipt.attemptedAt = now;
@@ -554,7 +653,7 @@ export class AgentTaskStore {
           } else {
             const fresh = events.filter((event) => !existing.some((receipt) => receipt.event === event));
             if (fresh.length) {
-              requirePlanningScope(task, now);
+              requireExecutionScope(task, now);
               bindResourceReservation(task, input, now, `followup:${JSON.stringify(fresh)}`);
               const token = randomUUID();
               const receipts = fresh.map((event) => ({ event, token, threadId: task.dispatch.threadId,
@@ -597,7 +696,7 @@ export class AgentTaskStore {
             planningResultDecision = { action: existing.status === 'confirmed' ? 'skip' : 'reconcile', receipt: existing };
           } else {
             if (!['verifying', 'awaiting-approval'].includes(task.state)) throw new Error('Planning result needs a verified worker checkpoint.');
-            requirePlanningScope(task, now);
+            requireExecutionScope(task, now);
             bindResourceReservation(task, input, now, 'planning-result');
             if (!observationIsFresh(input.authority, now) || input.authority.actor !== task.authority.actor ||
                 input.authority.reference !== task.authority.reference || input.authority.revision !== task.revision ||
@@ -624,7 +723,7 @@ export class AgentTaskStore {
             if (!['verifying', 'awaiting-approval'].includes(task.state)) {
               throw new Error('Planning result send requires a current worker checkpoint.');
             }
-            requirePlanningScope(task, now);
+            requireExecutionScope(task, now);
             bindResourceReservation(task, { resourceToken: receipt.resourceToken }, now, 'planning-result');
             if (!observationIsFresh(input.authority, now) || input.authority.observedAt < receipt.intentAt ||
                 input.authority.actor !== task.authority.actor || input.authority.reference !== task.authority.reference ||
@@ -699,6 +798,10 @@ export class AgentTaskStore {
             ...Object.fromEntries(['worktree', 'branch', 'head', 'stateHash', 'nextAction', 'reference'].map((key) => [key, checkpoint[key]])) };
           task.head = checkpoint.head;
           if (stateChanged) {
+            if (task.team) {
+              task.team.status = 'verifying'; task.team.acceptance = null;
+              invalidateTeamHeadEvidence(task);
+            }
             if (task.state === 'awaiting-approval') task.state = 'verifying';
             // A commit hash alone cannot attest the newly captured index and worktree.
             // Retain prior observations in history while fencing delayed head-keyed passes.
@@ -722,6 +825,10 @@ export class AgentTaskStore {
           requireValue(input.head, 'head');
           if (task.head !== input.head) {
             task.head = input.head;
+            if (task.team) {
+              task.team.status = 'verifying'; task.team.acceptance = null;
+              invalidateTeamHeadEvidence(task);
+            }
             if (task.state === 'delivered') throw new Error('Delivered work requires a new request.');
             if (task.state === 'awaiting-approval') task.state = 'verifying';
           }
@@ -743,7 +850,7 @@ export class AgentTaskStore {
         } else if (action === 'transition') {
           if (!STATES[task.state]?.includes(input.state)) throw new Error(`Invalid transition ${task.state} -> ${input.state}.`);
           if (['investigating', 'building', 'verifying', 'awaiting-approval', 'delivered'].includes(input.state)) {
-            requirePlanningScope(task, now);
+            requireExecutionScope(task, now);
           }
           if (['investigating', 'building', 'verifying'].includes(input.state)) requireResourceCapacity(task, now);
           if (['awaiting-approval', 'delivered'].includes(input.state)) {
@@ -778,6 +885,9 @@ export class AgentTaskStore {
       }
       task.updatedAt = now;
       task.history.push({ action, owner: input.owner, state: task.state, head: task.head, at: now,
+        ...(action === 'team-checkpoint' ? { checkpoint: structuredClone(task.team.checkpoint) } : {}),
+        ...(action === 'team-event' ? { team: structuredClone(task.team) } : {}),
+        ...(action === 'proposal-observation' ? { proposal: structuredClone(task.proposal) } : {}),
         ...(action === 'evidence' ? { evidence: input.evidence } : {}),
         ...(action === 'planning-observation' ? { planning: task.planning.observation } : {}),
         ...(action === 'request-revocation' ? { requestRevocation: task.requestRevocation } : {}),
@@ -788,10 +898,11 @@ export class AgentTaskStore {
           ? { planningResult: structuredClone(task.planningResult) } : {}),
         ...(action === 'resource-usage' ? { usage: input.usage, settledReservations: input.settledReservations ?? [] } : {}),
         ...(action === 'resource-unavailable' ? { unavailable: task.resources.unavailable } : {}),
+        ...(action === 'team-accounting' ? { accounting: structuredClone(task.resources.accounting), usage: structuredClone(task.resources.usage), settledReservations: input.settledReservations } : {}),
         ...(action === 'resource-accounting' ? { accounting: structuredClone(task.resources.accounting) } : {}),
         ...(['transition', 'release'].includes(action) ? { reason: input.reason } : {}),
       });
-      return nextDispatchAction ? { ...task, nextDispatchAction } : followupDecision ? { ...task, followupDecision }
+      return teamDecision ? { ...task, teamDecision } : nextDispatchAction ? { ...task, nextDispatchAction } : followupDecision ? { ...task, followupDecision }
         : planningResultDecision ? { ...task, planningResultDecision }
         : dispatchDecision ? { ...task, dispatchDecision }
         : workerStopDecision ? { ...task, workerStopDecision } : task;

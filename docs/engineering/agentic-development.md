@@ -169,9 +169,11 @@ GitHub provides the mobile control plane for public delivery requests. Private p
 stays in Linear, and orchestration details stay in the private runner. A planning-bound task needs
 an independently verified human request for its exact proposal revision and delivery scope.
 The shared delivery queue requires explicit public visibility approval for every planning-bound
-execution, including research and audits. Private research and audits remain queued until a private
-completion route is implemented and verified; their planning scope does not authorize a public
-Nisse conclusion. See the [queue state protocol](agent-queue-state-protocol.md) for dispatch and
+execution, including research and audits. The [coordinated team](agent-team-workflow.md) develops
+private proposals through a separate research binding with an exact Linear destination. Its scoped
+ticket adapter verifies private result readback. Live source identity and completion remain
+integration gates; private scope does not authorize a public Nisse conclusion. See the
+[queue state protocol](agent-queue-state-protocol.md) for dispatch and
 completion verification.
 
 Request labels and accepted answers enter the queue without assignments, prompts, or startup

@@ -2,8 +2,10 @@
 
 The task store records execution and recovery observations in a private local directory. It is
 an integration building block; the existing queue remains the coordinator. The
-[queue state protocol](agent-queue-state-protocol.md) defines its integration. Automatic intake
-and Linear approval reconciliation need an integration pilot before operational exit gates pass.
+[queue state protocol](agent-queue-state-protocol.md) defines its integration. The
+[coordinated team entry point](agent-team-workflow.md) connects private proposal intake,
+specialist state and ticket conversations to this store. Authenticated live intake and Linear
+approval reconciliation need an integration pilot before operational exit gates pass.
 
 ## Use The Store
 
