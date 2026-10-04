@@ -94,9 +94,11 @@ Inputs select one operation:
 - `resume-worker`: `taskId`, `intentId`, `questionId`, `resourceToken`. Continues the same
   stopped worker after its matching verified answer and a fresh unchanged Git checkpoint.
   `step` also performs this continuation when appropriate.
-- `complete`: `taskId`, `outputUpdateId`, `stageUpdateId`. Fresh output/stage readback and complete
-  native accounting release ownership. Proposal completion requires Ready; delivery completion
-  requires the recorded human merge and Validated. This operation grants no merge authority.
+- `complete`: `taskId`, `outputUpdateId`, `stageUpdateId`. Fresh output/stage readback, current
+  issue scope and human request verification, and complete native accounting release ownership.
+  The final store transaction rechecks the exact issue revision, lifecycle and completion stage.
+  Proposal completion requires Ready for prioritization; delivery completion requires the recorded
+  human merge and Validated. Completion stages permit ownership release without authorizing new work.
 
 A plan needs a researcher for proposal development. Delivery needs an independent reviewer after
 builders and testers; each assignment binds a distinct worker. UX, security and architecture roles

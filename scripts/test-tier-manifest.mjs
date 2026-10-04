@@ -26,6 +26,7 @@ export const TEST_TIERS = {
       'scripts/agent-codex-app-server.test.mjs',
       'scripts/agent-validation-receipt.test.mjs',
       'scripts/agent-planning-scope.test.mjs',
+      'scripts/agent-proposal-scope.test.mjs',
       'scripts/agent-planning-intake.test.mjs',
       'scripts/agent-planning-result.test.mjs',
       'scripts/agent-planning-result-delivery.test.mjs',

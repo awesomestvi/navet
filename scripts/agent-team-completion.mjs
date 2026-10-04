@@ -4,6 +4,7 @@ import { validateProposalRequestObservation, proposalRequestMatchesTask } from '
 import { createTeamOperation } from './agent-team-operation.mjs';
 import { teamTicketReadbackMatches } from './agent-team-ticket.mjs';
 import { runTeamAccounting } from './agent-team-accounting.mjs';
+import { requireTeamCompletionScope } from './agent-team-state.mjs';
 
 const completionSnapshot = (task) => ({ source: task.source, requestId: task.requestId, mode: task.mode,
   revision: task.revision, head: task.head, context: task.context, team: task.team,
@@ -33,6 +34,13 @@ export async function completeTeamTask({ store, owner, taskId, outputUpdateId, s
     operation.clock();
     if (!task || task.lease?.owner !== owner || task.lease.expiresAt <= operation.clock()) throw new Error('Completion ownership changed.');
     const snapshot = completionSnapshot(task);
+    const binding = task.proposal?.binding ?? task.planning?.binding;
+    const scopeStarted = operation.clock();
+    const scopeObservation = await operation.remote((signal) => adapters.readIssue(binding.issueId, { signal }));
+    if (!Number.isSafeInteger(scopeObservation?.observedAt) || scopeObservation.observedAt < scopeStarted) {
+      throw new Error('Completion requires a fresh issue scope read.');
+    }
+    requireTeamCompletionScope(task, scopeObservation, operation.clock());
     const requestStarted = operation.clock();
     const identity = { source: task.source, requestId: task.requestId };
     const observed = await operation.remote((signal) => adapters.readRequest(identity, { signal }));
@@ -43,7 +51,7 @@ export async function completeTeamTask({ store, owner, taskId, outputUpdateId, s
     const matches = task.proposal ? proposalRequestMatchesTask : planningRequestMatchesTask;
     const request = validate(observed, identity, requestStarted, operation.clock());
     if (!matches(task, request)) throw new Error('Completion accepted request changed.');
-    // Meter after the authority read so that final whole-team usage includes that read.
+    // Meter after scope and authority reads so final whole-team usage includes both.
     const accounting = await runTeamAccounting({ store, owner, taskId, adapters, now, maxRunMs, signal: operation.signal });
     if (accounting.status !== 'verified') return accounting;
     operation.clock();
@@ -52,7 +60,7 @@ export async function completeTeamTask({ store, owner, taskId, outputUpdateId, s
         !isDeepStrictEqual(snapshot, completionSnapshot(latest)) || !matches(latest, request) || latest.requestRevocation) {
       throw new Error('Completion snapshot changed during final verification.');
     }
-    await store.mutate(taskId, 'team-event', { owner, event: { eventId: `finish:${outputUpdateId}:${stageUpdateId}`, type: 'finish', outputUpdateId, stageUpdateId } });
+    await store.mutate(taskId, 'team-event', { owner, event: { eventId: `finish:${outputUpdateId}:${stageUpdateId}`, type: 'finish', outputUpdateId, stageUpdateId, scopeObservation } });
     return { status: 'delivered', taskId };
   } catch { return { status: 'pending', taskId, reason: 'team-completion-unverified' }; }
   finally { operation.close(); }

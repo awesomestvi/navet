@@ -1,4 +1,5 @@
 import { isDeepStrictEqual } from 'node:util';
+import { evaluatePlanningObservation } from './agent-planning-scope.mjs';
 
 export const TEAM_ROLES = Object.freeze([
   'researcher', 'ux-designer', 'developer', 'tester', 'security-specialist', 'architect', 'independent-reviewer',
@@ -34,6 +35,16 @@ export function teamAssignmentComplete(task, assignmentId) {
 }
 export function teamPlanComplete(task) {
   return Boolean(task.team?.plan && task.team.plan.assignments.every((item) => teamAssignmentComplete(task, item.id)));
+}
+
+// Final stages permit terminal release only; they do not authorize new execution.
+export function requireTeamCompletionScope(task, observation, now) {
+  const binding = task.proposal?.binding ?? task.planning?.binding;
+  const scope = evaluatePlanningObservation(binding, observation, now);
+  const stage = task.team?.plan?.phase === 'proposal' ? 'Ready for prioritization' : 'Validated';
+  if (scope.revision !== binding.revision || scope.stage !== stage) {
+    throw new Error('Team completion requires the exact current issue scope and final stage.');
+  }
 }
 
 export function requireTeamTicketOutput(task, receipt) {

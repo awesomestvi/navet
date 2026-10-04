@@ -64,7 +64,10 @@ async function setup(proposal = false, settleWorkers = true) {
     readDestination: async () => destination(),
     readAuthority: async () => ({ ...receipt(), active: true, kind: proposal ? 'discovery' : 'implementation',
       actorIsApp: false, actorId: id(6), reference: 'human:request', expiresAt: time + 1000 }),
-    writeUpdate: async (value) => { writes.push(value); },
+    writeUpdate: async (value) => {
+      writes.push(value);
+      if (value.receipt.kind === 'stage') issue.labels = [value.receipt.stage];
+    },
     readUpdate: async (update) => {
       const value = writes.some((item) => item.receipt.updateId === update.updateId) && available
         ? { ...destination(), ...update, status: 'available', writerIsApp: true, onBehalfOf: null, url: 'https://linear.app/navet/issue/NAV-1', observedAt: tick() }
@@ -237,10 +240,11 @@ it('blocks final completion if the authoritative head changes during accepted re
 });
 it('records the final authority read before native whole-team accounting', async () => {
   const h = await prepared(true); const reads = [];
-  const adapters = { ...h.adapters, readRequest: async (...args) => { reads.push('authority'); return h.adapters.readRequest(...args); },
+  const adapters = { ...h.adapters, readIssue: async (...args) => { reads.push('scope'); return h.adapters.readIssue(...args); },
+    readRequest: async (...args) => { reads.push('authority'); return h.adapters.readRequest(...args); },
     readTeamInventory: async (...args) => { reads.push('accounting'); return h.adapters.readTeamInventory(...args); } };
   expect(await completeTeamTask({ ...h.completion, adapters })).toMatchObject({ status: 'delivered' });
-  expect(reads).toEqual(['authority', 'accounting', 'accounting']);
+  expect(reads).toEqual(['scope', 'authority', 'accounting', 'accounting']);
 });
 
 it.each(['pr-evidence', 'Validated', 'Ready for prioritization'])('atomically rejects %s publication after same-head evidence invalidation', async (kind) => {
@@ -276,4 +280,32 @@ it.each(['pr-evidence', 'Validated', 'Ready for prioritization'])('atomically re
   expect(rejected.receipt.attemptedAt).toBeNull();
   expect(h.writes.some(item => item.receipt.updateId === rejected.updateId)).toBe(false);
   expect(saved.resources.reservations.some(item => item.operation === `team-ticket:${rejected.updateId}`)).toBe(false);
+});
+
+it.each([true, false].flatMap(proposal => ['archived', 'canceled', 'edited', 'stage', 'unavailable', 'stale'].map(change => [proposal, change])))('rechecks issue scope before terminal ownership release (proposal=%s, change=%s)', async (proposal, change) => {
+    const h = await prepared(proposal);
+    const adapters = { ...h.adapters, readIssue: async () => {
+      const observed = await h.adapters.readIssue();
+      if (change === 'archived') observed.issue.archivedAt = new Date(h.now()).toISOString();
+      if (change === 'canceled') observed.issue.canceledAt = new Date(h.now()).toISOString();
+      if (change === 'edited') observed.issue.description += ' Changed scope';
+      if (change === 'stage') observed.issue.labels = ['Rejected'];
+      if (change === 'unavailable') return { status: 'unavailable', reference: 'linear:unavailable', observedAt: h.tick() };
+      if (change === 'stale') observed.observedAt -= 60_001;
+      return observed;
+    } };
+    expect(await completeTeamTask({ ...h.completion, adapters })).toMatchObject({ status: 'pending' });
+    const saved = (await h.store.list())[0];
+    expect(saved.state).not.toBe('delivered');
+    expect(saved.lease.owner).toBe('coordinator');
+});
+it.each([true, false])('requires a current exact issue observation in the finish transaction (proposal=%s)', async (proposal) => {
+  const h = await prepared(proposal);
+  await expect(h.act('team-event', { event: { eventId: 'unsafe-finish', type: 'finish',
+    outputUpdateId: h.completion.outputUpdateId, stageUpdateId: h.completion.stageUpdateId } })).rejects.toThrow(/scope|observation/i);
+  const scopeObservation = await h.adapters.readIssue();
+  scopeObservation.issue.labels = ['Rejected'];
+  await expect(h.act('team-event', { event: { eventId: 'unsafe-finish', type: 'finish', scopeObservation,
+    outputUpdateId: h.completion.outputUpdateId, stageUpdateId: h.completion.stageUpdateId } })).rejects.toThrow(/scope/i);
+  expect((await h.store.list())[0].lease.owner).toBe('coordinator');
 });

@@ -8,7 +8,7 @@ import { evaluatePlanningObservation, requirePlanningScope, validatePlanningBind
 
 import { evaluateProposalObservation, requireProposalScope, validateProposalDestination } from './agent-proposal-scope.mjs';
 import { validateTeamAccounting } from './agent-team-accounting.mjs';
-import { applyTeamEvent, invalidateTeamHeadEvidence } from './agent-team-state.mjs';
+import { applyTeamEvent, invalidateTeamHeadEvidence, requireTeamCompletionScope } from './agent-team-state.mjs';
 
 function requireExecutionScope(task, now) {
   requirePlanningScope(task, now);
@@ -352,6 +352,7 @@ export class AgentTaskStore {
                 receipt.deliveryHead !== task.head) throw new Error('Ticket intent requires exact current team snapshot.');
           }
           if (input.event?.type === 'finish') {
+            requireTeamCompletionScope(task, input.event.scopeObservation, now);
             if (task.requestRevocation || task.proposal?.revokedAt || task.planning?.revokedAt) throw new Error('Withdrawn team work cannot be completed.');
             const accounting = task.resources?.accounting;
             const usage = task.resources?.usage;
