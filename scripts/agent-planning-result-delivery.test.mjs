@@ -376,3 +376,23 @@ it('returns promptly on canceled mutation and reconciles a late acknowledgement 
     .toMatchObject({ status: 'verified', commentId: pending.commentId });
   expect(counts().mutations).toBe(1);
 });
+
+it.each(['parent', 'deadline'])('cancels the independent result authority transport on %s abort', async (kind) => {
+  const h = await setup(); const parent = new AbortController();
+  let authoritySignal; let aborts = 0; let reads = 0;
+  const readRequest = (_identity, { signal } = {}) => {
+    reads++; authoritySignal = signal;
+    return new Promise((_, reject) => {
+      signal?.addEventListener('abort', () => { aborts++; reject(new Error('transport canceled')); }, {once: true});
+      if (kind === 'parent') parent.abort();
+    });
+  };
+  const result = await deliverPlanningResult({...h.input, readRequest, signal: parent.signal, maxRunMs: 500});
+  expect(result.status).toBe('blocked');
+  expect(reads).toBe(1);
+  expect(authoritySignal).toBeDefined();
+  expect(authoritySignal.aborted).toBe(true);
+  expect(aborts).toBe(1);
+  expect(h.counts()).toEqual({mutations: 0, writerCreations: 0});
+  expect((await h.store.list())[0].planningResult).toBeUndefined();
+});

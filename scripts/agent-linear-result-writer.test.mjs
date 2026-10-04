@@ -255,3 +255,21 @@ describe('bounded app-actor Linear result writer', () => {
     expect(calls.every((call) => !call.payload.query.startsWith('mutation'))).toBe(true);
   });
 });
+
+it.each(['parent', 'deadline'])('cancels the writer authority transport on %s abort before reserving a send', async (kind) => {
+  const parent = new AbortController(); let authoritySignal; let aborts = 0; let reads = 0;
+  const h = setup({signal: parent.signal, maxWriteMs: 500, readRequest: (_identity, {signal} = {}) => {
+    reads++; authoritySignal = signal;
+    return new Promise((_, reject) => {
+      signal?.addEventListener('abort', () => {aborts++; reject(new Error('transport canceled'));}, {once: true});
+      if (kind === 'parent') parent.abort();
+    });
+  }});
+  expect((await h.write(h.input)).status).toBe('blocked');
+  expect(reads).toBe(1);
+  expect(authoritySignal).toBeDefined();
+  expect(authoritySignal.aborted).toBe(true);
+  expect(aborts).toBe(1);
+  expect(h.order).not.toContain('reserve');
+  expect(h.calls.every(call => !call.payload.query.startsWith('mutation'))).toBe(true);
+});

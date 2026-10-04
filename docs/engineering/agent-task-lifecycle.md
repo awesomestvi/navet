@@ -231,7 +231,10 @@ accepted. The helper neither records output/quality evidence nor transitions the
 checkpoint whose scope or send permission could not be verified. Neither disposition authorizes a
 replacement task, comment or retry of an attempted send.
 
-Remote operations share a run deadline of up to one minute. Cancellation stops further operations;
+Remote operations share a run deadline of up to one minute. The coordinator and writer call the
+independently authenticated `readRequest(identity, { signal })` adapter with their operation's abort
+signal. The adapter must propagate that signal to its owning-service transport so cancellation and
+deadline expiry stop the pending authority read. Cancellation stops further operations;
 started local atomic transactions finish before the helper returns. A timeout does not establish
 that the owning worker stopped. Recovery still requires actual ownership observations. This helper
 is not connected to the paused queue automation; live credentials, the human-request source,

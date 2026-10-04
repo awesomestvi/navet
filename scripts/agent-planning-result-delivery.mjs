@@ -110,7 +110,8 @@ export async function deliverPlanningResult({ store, owner, taskId, head, body, 
     await mutate('planning-observation', { observation: scope });
     task = await currentTask();
     const authorityStartedAt = clock();
-    const request = validatePlanningRequestObservation(await bounded(readRequest({ source: task.source, requestId: task.requestId })),
+    const request = validatePlanningRequestObservation(await bounded(readRequest({ source: task.source, requestId: task.requestId },
+      { signal: controller.signal })),
       { source: task.source, requestId: task.requestId }, authorityStartedAt, clock());
     if (!planningRequestMatchesTask(task, request)) throw new Error('Result handoff authority changed.');
     const reserved = await mutate('planning-result-intent', { head, bodyHash, writerAppUserId, resourceToken, authority: request.authority });

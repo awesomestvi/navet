@@ -114,7 +114,7 @@ export function createLinearResultWriter({ getAccessToken, readIssue, readReques
       if (!isDeepStrictEqual(first, await destination())) throw new Error('Result write destination changed.');
       const identity = { source: task.source, requestId: task.requestId };
       const authorityStartedAt = clock();
-      const accepted = validatePlanningRequestObservation(await bounded(readRequest(identity)), identity, authorityStartedAt, clock());
+      const accepted = validatePlanningRequestObservation(await bounded(readRequest(identity, { signal: controller.signal })), identity, authorityStartedAt, clock());
       if (accepted.mode !== task.mode || accepted.revision !== task.revision ||
           !isDeepStrictEqual(accepted.planningBinding, task.planning.binding) || !isDeepStrictEqual(accepted.brief, task.brief) ||
           !isDeepStrictEqual(accepted.resourceLimits, task.resources?.limits) ||
