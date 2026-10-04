@@ -43,11 +43,10 @@ preferred:
 url = "http://127.0.0.1:6017/mcp"
 ```
 
-Use one configuration location for the connection. The native Codex app-server pilot successfully
-initialized this HTTP endpoint and discovered all eight tools and the preview-app resource without
-starting a model or delivery task. OAuth status discovery returned unknown, and session cleanup
-reported an unsupported DELETE response; these did not prevent tool inventory. Actual tool calls in this delivery session verified live discovery, documentation, changed-story
-selection, preview resolution and focused tests. Broader task evaluation needs its own evidence.
+Use one configuration location for the connection. Inspect the running server's tool inventory
+and verify actual documentation, preview and focused-test calls. OAuth status discovery and
+session cleanup metadata do not establish whether these operations work. Record connection and
+task-evaluation results with the source revision in the authorized evidence store.
 
 Remove an unwanted global registration with `codex mcp remove navet-storybook`. Configuration
 behavior is documented in the [official Codex MCP guide](https://learn.chatgpt.com/docs/extend/mcp?surface=cli).
@@ -86,26 +85,23 @@ story names and wrapper snippets without its discriminated props. Generated snip
 `@navet/app` imports and local wrapper components; select the stable UI-kit entrypoint and read
 the [agent composition recipes](AGENT-COMPOSITION-RECIPES.md) before using them as implementation examples.
 
-The discovered form error-state preview displayed its validation message and an input with
-`aria-invalid=true`. The vacuum unavailable preview displayed its unavailable state. The sheet
-preview opened at 390 × 844; at desktop width the mobile sheet remains hidden. The focused MCP test tool also returned passing
-results for these three story IDs with accessibility enabled. Its Vitest runner reported four tests passed and fourteen skipped across
-three story files. The default sheet test uses its default rendering state; phone interaction,
-additional themes and the full product journey still need their own coverage. These checks verify
-three preview and test targets, not a product-wide UX audit.
+Inspect form error associations and unavailable states in their rendered previews. A mobile sheet
+is hidden at unsupported desktop widths; select its supported phone viewport before reviewing
+open/close behavior. Focused tests apply to their selected assertions and rendering state.
+Phone interaction, themes and complete product journeys need their own coverage. Record actual
+results and skipped stories separately from this lasting usage guidance.
 
 CardEmptyState's story metadata identifies the real shared component; the card frame belongs in a
 Storybook decorator. MCP examples expose the required title and description and the actual
-`actionLabel`/`onAction` contract. Action and no-action stories verify pointer/keyboard callback delivery and absence
-of an action. Five focused stories pass through the native MCP test tool with accessibility enabled.
-Small and large/no-action previews were inspected at 390 × 844 across all four themes; light-theme
-text, action count and control geometry match their baseline. This is bounded Storybook evidence,
-not provider delivery or a complete responsive product audit.
+`actionLabel`/`onAction` contract. Use action and no-action stories to check pointer/keyboard
+callback delivery and the absence of an action. Inspect supported sizes in all four themes,
+including light-theme text, action count and control geometry. Isolated Storybook checks do not
+establish provider delivery or a complete responsive product audit.
 
 Generated CardEmptyState snippets still omit the icon and test-helper imports referenced in args.
 They describe component usage but are not self-contained compilable examples. Use the source story
 or compiled composition recipes for those dependencies. Changed-story discovery also reports the
-modified story file as unreachable while listing its five modified story IDs; explicit focused
+modified story file as unreachable while listing modified story IDs; explicit focused
 selection and rendered inspection are required when its coverage report contradicts itself.
 
 ## Composition discovery limits
@@ -119,15 +115,12 @@ complete compositions. These targets have different extraction limits:
 | Card action row | Props include required `theme`, size and overflow items. Generated size examples omit `theme` and action fixtures. | Supply the source-backed required props and read the action-row story for actual overflow actions. |
 | Summary bar | Props include items, navigation, labeling and single-row behavior. Generated examples reference `items` without declaring the fixture. | Read the summary source story for item types, fixture definitions and wrapper context. |
 
-Focused MCP tests with accessibility enabled pass for navigation default, card-action medium and
-summary default: three tests pass and eleven other stories are skipped. Preview links resolve
-for all three; link resolution is not rendered inspection. These selected tests do not establish
-keyboard focus containment in the card action dock, responsive overflow across themes, or
-complete summary navigation behavior. The mobile-grouped navigation story separately passes its
-four-row equal-height and two-separator assertions with accessibility enabled (one test passes,
-one story is skipped). This verifies the grouped composition in the test browser; it does not
-establish a phone viewport or a theme matrix. An agent must include those interaction and state checks
-when they form part of the accepted scope.
+Select navigation, card-action and summary stories through live discovery and run their focused
+tests with accessibility enabled. Inspect rendered keyboard focus containment in the action dock,
+responsive overflow across themes and summary navigation separately. The grouped navigation
+story's equal-height rows and separators need inspection at the actual supported phone viewport;
+a default test-browser rendering does not establish a phone or theme matrix. Include relevant
+interaction and state checks in the accepted scope and retain run-specific evidence privately.
 
 Keep filesystem access as an operational fallback. Current MCP extraction does not establish
 the design-system discovery exit gate. Broader component coverage, complete examples and

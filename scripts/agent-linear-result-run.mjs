@@ -90,7 +90,15 @@ export async function runLinearPlanningResult({ store, owner, taskId, head, body
       .map((entry) => entry.value.close()));
     if (settled.some((entry) => entry.status === 'rejected' && entry.reason?.code === 'linear-session-revocation-unverified') ||
         cleanup.some((entry) => entry.status !== 'fulfilled' || entry.value.status !== 'revoked')) {
-      result = { status: 'blocked', taskId, reason: 'linear-session-revocation-unverified', result };
+      const lateCleanup = settled.filter((entry) => entry.status === 'rejected' && entry.reason?.cleanup instanceof Promise)
+        .map((entry) => entry.reason.cleanup);
+      result = { status: 'blocked', taskId, reason: 'linear-session-revocation-unverified', result,
+        ...(lateCleanup.length ? { cleanup: Promise.allSettled(lateCleanup).then((observations) => ({
+          status: [...cleanup, ...observations].every((entry) => entry.status === 'fulfilled' && entry.value.status === 'revoked') &&
+            !settled.some((entry) => entry.status === 'rejected' && entry.reason?.code === 'linear-session-revocation-unverified' &&
+              !(entry.reason.cleanup instanceof Promise))
+            ? 'revoked' : 'unverified',
+        })) } : {}) };
     }
   }
   return result;

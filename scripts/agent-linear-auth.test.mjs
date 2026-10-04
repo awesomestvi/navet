@@ -123,6 +123,60 @@ describe('run-scoped Linear app authentication', () => {
     }
   });
 
+  it.each([
+    [createLinearReadSession, 'read', 'response'],
+    [createLinearReadSession, 'read', 'body'],
+    [createLinearCommentSession, 'read,comments:create', 'response'],
+    [createLinearCommentSession, 'read,comments:create', 'body'],
+  ])('revokes a late %s grant with scope %s after delayed %s', async (factory, scope, stage) => {
+    let resolveResponse;
+    let stream;
+    const requests = [];
+    const response = stage === 'body'
+      ? new Response(new ReadableStream({ start(controller) { stream = controller; } }))
+      : undefined;
+    const error = await factory({ readCredentials: async () => credentials, timeoutMs: 5,
+      fetchImpl: (url, init) => {
+        requests.push({ url, ...init });
+        if (url.endsWith('/oauth/revoke')) return Promise.resolve(new Response(null));
+        return stage === 'body' ? Promise.resolve(response) : new Promise((resolve) => { resolveResponse = resolve; });
+      } }).catch((error) => error);
+    expect(error.code).toBe('linear-session-revocation-unverified');
+    expect(String(error)).not.toMatch(/synthetic-run-token|synthetic-private-client-secret/);
+    if (stage === 'body') {
+      stream.enqueue(new TextEncoder().encode(JSON.stringify(tokenResponse({ scope }))));
+      stream.close();
+    } else resolveResponse(new Response(JSON.stringify(tokenResponse({ scope }))));
+    await vi.waitFor(() => expect(requests.filter((request) => request.url.endsWith('/oauth/revoke'))).toHaveLength(1));
+    expect(await error.cleanup).toEqual({ status: 'revoked' });
+    expect(Object.fromEntries(new URLSearchParams(requests.at(-1).body)))
+      .toEqual({ token: 'synthetic-run-token', token_type_hint: 'access_token' });
+    expect(requests.filter((request) => request.url.endsWith('/oauth/token'))).toHaveLength(1);
+  });
+
+  it.each([200, 500])('observes late cleanup after caller cancellation with revocation status %s', async (status) => {
+    const controller = new AbortController();
+    let resolveGrant;
+    let started;
+    const contacted = new Promise((resolve) => { started = resolve; });
+    const requests = [];
+    const pending = createLinearReadSession({ readCredentials: async () => credentials, signal: controller.signal,
+      fetchImpl: (url, init) => {
+        requests.push({ url, ...init });
+        if (url.endsWith('/oauth/revoke')) return Promise.resolve(new Response(null, { status }));
+        started();
+        return new Promise((resolve) => { resolveGrant = resolve; });
+      } }).catch((error) => error);
+    await contacted;
+    controller.abort();
+    const error = await pending;
+    expect(error.code).toBe('linear-session-revocation-unverified');
+    resolveGrant(new Response(JSON.stringify(tokenResponse())));
+    expect(await error.cleanup).toEqual({ status: status === 200 ? 'revoked' : 'unverified' });
+    expect(requests.filter((request) => request.url.endsWith('/oauth/revoke'))).toHaveLength(1);
+    expect(JSON.stringify(error)).not.toMatch(/synthetic-run-token|synthetic-private-client-secret/);
+  });
+
   it.each([new Response('private remote error', { status: 401 }), new Response('not JSON'),
     new Response('x'.repeat(16_385))])('does not expose remote error content', async (response) => {
     const { input } = harness(response);

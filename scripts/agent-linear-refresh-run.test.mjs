@@ -103,6 +103,28 @@ it('bounds stalled credential loading and keeps reconciliation pending', async (
   expect(await h.inbox.pending()).toHaveLength(1);
   expect(planningStatus((await h.store.list())[0], h.options.now()).result).toBe('unverified');
 });
+
+it('preserves the inbox receipt and exposes late grant cleanup after run cancellation', async () => {
+  const h = await setup();
+  const controller = new AbortController();
+  let resolveGrant;
+  let revokes = 0;
+  const fetchImpl = (url) => {
+    if (url.endsWith('/oauth/revoke')) { revokes++; return Promise.resolve(new Response(null)); }
+    controller.abort();
+    return new Promise((resolve) => { resolveGrant = resolve; });
+  };
+  const result = await runLinearPlanningRefresh({ ...h.options, fetchImpl, signal: controller.signal });
+  expect(result).toMatchObject({ decision: 'blocked', authority: 'none', reason: 'linear-session-revocation-unverified' });
+  expect(result.cleanup).toBeInstanceOf(Promise);
+  expect(await h.inbox.pending()).toHaveLength(1);
+  expect(planningStatus((await h.store.list())[0], h.options.now()).result).toBe('unverified');
+  resolveGrant(Response.json({ access_token: 'late-reader-token', token_type: 'Bearer', expires_in: 3600, scope: 'read' }));
+  expect(await result.cleanup).toEqual({ status: 'revoked' });
+  expect(revokes).toBe(1);
+  expect(result.decision).toBe('blocked');
+  expect(JSON.stringify(result)).not.toContain('late-reader-token');
+});
 it('cancels a stalled GraphQL transport and durably invalidates the prior pass before returning', async () => {
   const h = await setup();
   const controller = new AbortController();

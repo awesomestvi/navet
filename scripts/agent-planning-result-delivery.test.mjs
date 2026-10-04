@@ -322,6 +322,27 @@ it.each([{ readerGrant: 'read,write' }, { writerGrant: 'read,write' }])('surface
   expect(counts().mutations).toBe(0);
 });
 
+it('retains late grant cleanup after the authenticated result run is canceled', async () => {
+  const { runInput, counts } = await authenticatedRunFixture();
+  const controller = new AbortController();
+  let resolveGrant;
+  let revokes = 0;
+  const fetchImpl = (url) => {
+    if (url.endsWith('/oauth/revoke')) { revokes++; return Promise.resolve(new Response(null)); }
+    controller.abort();
+    return new Promise((resolve) => { resolveGrant = resolve; });
+  };
+  const result = await runLinearPlanningResult({ ...runInput, fetchImpl, signal: controller.signal });
+  expect(result).toMatchObject({ status: 'blocked', reason: 'linear-session-revocation-unverified' });
+  expect(result.cleanup).toBeInstanceOf(Promise);
+  expect(counts().mutations).toBe(0);
+  resolveGrant(Response.json({ access_token: 'late-reader-token', token_type: 'Bearer', expires_in: 3600, scope: 'read' }));
+  expect(await result.cleanup).toEqual({ status: 'revoked' });
+  expect(revokes).toBe(1);
+  expect(result.status).toBe('blocked');
+  expect(JSON.stringify(result)).not.toContain('late-reader-token');
+});
+
 it('returns promptly on canceled mutation and reconciles a late acknowledgement without resending', async () => {
   const { runInput, counts, store } = await authenticatedRunFixture();
   const controller = new AbortController();

@@ -74,7 +74,8 @@ export async function runLinearPlanningRefresh({ inbox, eventId, store, owner, r
           reason: 'linear-session-revocation-unverified', reconciliation: result };
       } else if (settled.reason?.code === 'linear-session-revocation-unverified') {
         result = { eventId, decision: 'blocked', authority: 'none',
-          reason: 'linear-session-revocation-unverified', reconciliation: result };
+          reason: 'linear-session-revocation-unverified', reconciliation: result,
+          ...(settled.reason.cleanup instanceof Promise ? { cleanup: settled.reason.cleanup } : {}) };
       }
     }
   }

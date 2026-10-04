@@ -160,6 +160,12 @@ destination policy and an observed private-worker pilot remain activation gates.
 
 ### Authenticated result run
 
+If token transport or its body outlives cancellation, the run returns blocked with
+`linear-session-revocation-unverified` and a redacted `cleanup` promise. The same observation handle
+is returned by an authenticated refresh run. Keep the runner alive to observe late token revocation;
+do not treat a pending promise, process exit or never-settling transport as verified cleanup.
+An acknowledged late revocation neither resumes the canceled run nor changes its durable receipts.
+
 [`runLinearPlanningResult`](../../scripts/agent-linear-result-run.mjs) assembles the installed
 app authentication, proposal/result readers, writer and coordinator handoff for one operation.
 Supply the same leased task, exact worker head, result Markdown and resource reservation described

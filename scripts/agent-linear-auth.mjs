@@ -89,6 +89,14 @@ async function createLinearAppSession({ readCredentials, fetchImpl = globalThis.
   signal?.addEventListener('abort', cancel, { once: true });
   const bounded = (operation) => Promise.race([operation, aborted]);
   let receivedToken;
+  let grant;
+  let grantSettled = false;
+  let failed = false;
+  let rejectedGrantCleanup;
+  const revokeReceived = () => {
+    if (!rejectedGrantCleanup) rejectedGrantCleanup = revokeLinearToken(receivedToken, fetchImpl);
+    return rejectedGrantCleanup;
+  };
   try {
     // Observe a pre-aborted signal through the same bounded path, without creating an
     // unhandled rejection before Promise.race has attached its rejection handler.
@@ -99,14 +107,24 @@ async function createLinearAppSession({ readCredentials, fetchImpl = globalThis.
     if (!secretText(credentials?.clientId, 256) || !secretText(credentials?.clientSecret, 8192)) {
       throw new Error('Incomplete credentials.');
     }
-    const response = await bounded(fetchImpl('https://api.linear.app/oauth/token', {
-      method: 'POST', redirect: 'error', cache: 'no-store', signal: controller.signal,
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ grant_type: 'client_credentials', scope: requestedScopes.join(','),
-        client_id: credentials.clientId, client_secret: credentials.clientSecret }).toString(),
-    }));
-    const result = await readLinearResponseJson(response, bounded, 16_384);
-    if (secretText(result?.access_token, 8192)) receivedToken = result.access_token;
+    // Observe the complete response independently of the caller's deadline. Abandoning the
+    // wait must not abandon cleanup if a transport or response body ignores cancellation.
+    // The observer retains the existing byte cap and exposes no token or remote error.
+    grant = (async () => {
+      try {
+        const response = await fetchImpl('https://api.linear.app/oauth/token', {
+          method: 'POST', redirect: 'error', cache: 'no-store', signal: controller.signal,
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({ grant_type: 'client_credentials', scope: requestedScopes.join(','),
+            client_id: credentials.clientId, client_secret: credentials.clientSecret }).toString(),
+        });
+        const result = await readLinearResponseJson(response, (operation) => operation, 16_384);
+        if (secretText(result?.access_token, 8192)) receivedToken = result.access_token;
+        return result;
+      } finally { grantSettled = true; }
+    })();
+    void grant.then(() => failed && receivedToken ? revokeReceived() : undefined, () => {}).catch(() => {});
+    const result = await bounded(grant);
     const scopes = Array.isArray(result?.scope) ? result.scope : typeof result?.scope === 'string' ? result.scope.trim().split(/[\s,]+/) : [];
     if (!secretText(result?.access_token, 8192) || result.token_type?.toLowerCase() !== 'bearer' ||
         !Number.isSafeInteger(result.expires_in) || result.expires_in <= 30 ||
@@ -116,7 +134,7 @@ async function createLinearAppSession({ readCredentials, fetchImpl = globalThis.
     }
     const finishedAt = now();
     const expiresAt = startedAt + result.expires_in * 1000;
-    if (!Number.isSafeInteger(finishedAt) || finishedAt < startedAt || finishedAt - startedAt > timeoutMs ||
+    if (controller.signal.aborted || !Number.isSafeInteger(finishedAt) || finishedAt < startedAt || finishedAt - startedAt > timeoutMs ||
         !Number.isSafeInteger(expiresAt)) throw new Error('Invalid token lifetime.');
     let token = result.access_token;
     let serverToken = receivedToken;
@@ -141,9 +159,17 @@ async function createLinearAppSession({ readCredentials, fetchImpl = globalThis.
       },
     };
   } catch {
-    const cleanup = receivedToken ? await revokeLinearToken(receivedToken, fetchImpl) : null;
+    failed = true;
+    const pendingGrant = grant && !grantSettled;
+    const cleanup = receivedToken ? await revokeReceived() : null;
     const error = new Error(failureMessage);
-    if (cleanup?.status === 'unverified') error.code = 'linear-session-revocation-unverified';
+    if (pendingGrant || cleanup?.status === 'unverified') error.code = 'linear-session-revocation-unverified';
+    if (pendingGrant) {
+      // A still-pending transport cannot establish revocation. Keep a redacted observation
+      // handle for the installed runner; it must stay alive to observe late cleanup.
+      error.cleanup = grant.then(() => receivedToken ? revokeReceived() : { status: 'unverified' },
+        () => ({ status: 'unverified' }));
+    }
     throw error;
   } finally {
     clearTimeout(timer);

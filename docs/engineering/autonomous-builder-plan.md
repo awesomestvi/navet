@@ -145,6 +145,11 @@ at run start, pass `session.getAccessToken` to the reader and await `session.clo
 a separate five-second cleanup deadline. Repeated closes share the same cleanup result. Only an
 acknowledged revocation is verified; unavailable cleanup leaves the run blocked for recovery.
 Tokens received with an invalid grant are also revoked before authentication fails.
+When token transport or its response body ignores cancellation, authentication still fails at its
+deadline and reports unverified revocation. A byte-limited observer retains the pending grant and
+revokes any token received later. The rejected operation exposes a redacted `cleanup` promise;
+the installed runner must remain alive to observe it. A process exit or never-settling transport
+cannot establish cleanup, and late revocation does not restore execution authority.
 Expired, canceled or closed sessions cannot supply a token. Access tokens remain
 in memory; they are not stored in runner JSON or passed in command arguments. This follows Linear's
 [client-credentials procedure](https://linear.app/developers/oauth-2-0-authentication#client-credentials-tokens).
