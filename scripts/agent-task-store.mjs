@@ -507,7 +507,7 @@ export class AgentTaskStore {
             requireValue(result.url, 'planning result URL');
             const url = new URL(result.url);
             if (url.origin !== 'https://linear.app' || url.username || url.password ||
-                !/^\/[^/]+\/issue\/[^/]+(?:\/.*)?$/.test(url.pathname) ||
+                !/^\/(?:[^/]+\/)?issue\/[^/]+(?:\/.*)?$/.test(url.pathname) ||
                 (receipt.observedAt && (observation.observedAt < receipt.observedAt ||
                   (observation.observedAt === receipt.observedAt && receipt.reference !== observation.reference)))) {
               throw new Error('Planning result readback cannot change destination or move backwards.');

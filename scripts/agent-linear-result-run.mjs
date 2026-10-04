@@ -77,7 +77,8 @@ export async function runLinearPlanningResult({ store, owner, taskId, head, body
     const settled = await Promise.allSettled(sessions);
     const cleanup = await Promise.allSettled(settled.filter((entry) => entry.status === 'fulfilled')
       .map((entry) => entry.value.close()));
-    if (cleanup.some((entry) => entry.status !== 'fulfilled' || entry.value.status !== 'revoked')) {
+    if (settled.some((entry) => entry.status === 'rejected' && entry.reason?.code === 'linear-session-revocation-unverified') ||
+        cleanup.some((entry) => entry.status !== 'fulfilled' || entry.value.status !== 'revoked')) {
       result = { status: 'blocked', taskId, reason: 'linear-session-revocation-unverified', result };
     }
   }

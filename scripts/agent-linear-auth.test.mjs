@@ -226,3 +226,15 @@ it('revokes a received token whose grant metadata is rejected', async () => {
   await expect(createLinearReadSession(input)).rejects.toThrow('read-only app authentication failed');
   expect(requests.filter((request) => request.url.endsWith('/oauth/revoke'))).toHaveLength(1);
 });
+
+it.each([createLinearReadSession, createLinearCommentSession])('reports rejected-grant cleanup failure without exposing secrets', async (factory) => {
+  const { input, requests } = harness(tokenResponse({ scope: 'read write' }));
+  const original = input.fetchImpl;
+  input.fetchImpl = (url, init) => url.endsWith('/oauth/revoke')
+    ? (requests.push({ url, ...init }), Promise.resolve(new Response(null, { status: 500 }))) : original(url, init);
+  const error = await factory(input).catch((error) => error);
+  expect(error).toBeInstanceOf(Error);
+  expect(error.code).toBe('linear-session-revocation-unverified');
+  expect(String(error)).not.toMatch(/synthetic-run-token|synthetic-private-client-secret/);
+  expect(requests.filter((request) => request.url.endsWith('/oauth/revoke'))).toHaveLength(1);
+});

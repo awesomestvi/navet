@@ -72,6 +72,9 @@ export async function runLinearPlanningRefresh({ inbox, eventId, store, owner, r
         const cleanup = await settled.value.close();
         if (cleanup.status !== 'revoked') result = { eventId, decision: 'blocked', authority: 'none',
           reason: 'linear-session-revocation-unverified', reconciliation: result };
+      } else if (settled.reason?.code === 'linear-session-revocation-unverified') {
+        result = { eventId, decision: 'blocked', authority: 'none',
+          reason: 'linear-session-revocation-unverified', reconciliation: result };
       }
     }
   }

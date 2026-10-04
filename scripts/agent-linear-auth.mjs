@@ -141,8 +141,10 @@ async function createLinearAppSession({ readCredentials, fetchImpl = globalThis.
       },
     };
   } catch {
-    if (receivedToken) await revokeLinearToken(receivedToken, fetchImpl);
-    throw new Error(failureMessage);
+    const cleanup = receivedToken ? await revokeLinearToken(receivedToken, fetchImpl) : null;
+    const error = new Error(failureMessage);
+    if (cleanup?.status === 'unverified') error.code = 'linear-session-revocation-unverified';
+    throw error;
   } finally {
     clearTimeout(timer);
     signal?.removeEventListener('abort', cancel);

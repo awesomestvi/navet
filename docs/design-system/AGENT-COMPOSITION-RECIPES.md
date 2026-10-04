@@ -69,8 +69,8 @@ and reopened state. Record actual findings rather than assuming the shared shell
 `NavigationWorkspace` exports named parts such as `Frame` and `Item`; render those members rather
 than the namespace object. Query `pnpm agent:components NavigationWorkspaceFrame` for the frame
 contract or `pnpm agent:components NavigationWorkspace` for the cataloged workspace exports.
-Catalog queries use exported names, not dotted namespace member names. `ScrollArea` is available
-only as `NavigationWorkspace.ScrollArea`; inspect its definition in
+Query `pnpm agent:components NavigationWorkspace.ScrollArea` for the member props, source and
+story references. `ScrollArea` is available as `NavigationWorkspace.ScrollArea`; inspect its definition in
 [the workspace source](../../packages/app/src/components/patterns/navigation-workspace.tsx).
 It accepts div attributes and supplies full-height vertical scrolling, overscroll containment and
 touch panning. The caller must provide a bounded-height region; it does not create a scroll landmark

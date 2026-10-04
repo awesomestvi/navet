@@ -118,3 +118,15 @@ it('cancels a stalled GraphQL transport and durably invalidates the prior pass b
   expect(planningStatus((await h.store.list())[0], h.options.now()).reason).toBe('planning-access-unverified');
   expect(await h.inbox.pending()).toHaveLength(1);
 });
+
+it('surfaces failed cleanup of a rejected grant while retaining retry state', async () => {
+  const h = await setup(); h.broader();
+  const fetchImpl = (url, init) => url.endsWith('/oauth/revoke')
+    ? Promise.resolve(new Response(null, { status: 500 })) : h.options.fetchImpl(url, init);
+  expect(await runLinearPlanningRefresh({ ...h.options, fetchImpl })).toMatchObject({
+    decision: 'blocked', authority: 'none', reason: 'linear-session-revocation-unverified',
+    reconciliation: { decision: 'retry', updatedTasks: 1 },
+  });
+  expect(await h.inbox.pending()).toHaveLength(1);
+  expect(planningStatus((await h.store.list())[0], h.options.now()).result).toBe('unverified');
+});

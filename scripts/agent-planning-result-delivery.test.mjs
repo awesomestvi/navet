@@ -310,3 +310,9 @@ it('surfaces failed session revocation while retaining verified artifact history
   expect((await store.list())[0].planningResult.status).toBe('confirmed');
   expect(counts().mutations).toBe(1);
 });
+
+it.each([{ readerGrant: 'read,write' }, { writerGrant: 'read,write' }])('surfaces rejected grant cleanup failure before sending %#', async (options) => {
+  const { runInput, counts } = await authenticatedRunFixture({ ...options, revokeFailure: true });
+  expect(await runLinearPlanningResult(runInput)).toMatchObject({ status: 'blocked', reason: 'linear-session-revocation-unverified' });
+  expect(counts().mutations).toBe(0);
+});

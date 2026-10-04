@@ -86,7 +86,7 @@ export function createLinearResultReader({ getAccessToken, policy, fetchImpl = g
         if (bodyHash !== expected.bodyHash) throw new Error('Result content mismatch.');
         const url = new URL(comment.url);
         if (url.origin !== 'https://linear.app' || url.username || url.password ||
-            !/^\/[^/]+\/issue\/[^/]+(?:\/.*)?$/.test(url.pathname)) throw new Error('Invalid result URL.');
+            !/^\/(?:[^/]+\/)?issue\/[^/]+(?:\/.*)?$/.test(url.pathname)) throw new Error('Invalid result URL.');
         return { commentId: comment.id, issueId: issue.id, authorId: comment.user.id,
           bodyHash, url: url.href, createdAt: comment.createdAt, updatedAt: comment.updatedAt };
       };

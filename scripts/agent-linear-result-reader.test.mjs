@@ -155,3 +155,11 @@ describe('read-only planning result verification', () => {
     expect((await reader(expected)).status).toBe('available');
   });
 });
+
+it('accepts the documented workspace-less Linear comment URL', async () => {
+  const url = `https://linear.app/issue/NAV-42/test#comment-${expected.commentId}`;
+  const { reader } = setup({ response: () => {
+    const value = data(); value.comment.url = url; return Response.json({ data: value });
+  } });
+  expect(await reader(expected)).toMatchObject({ status: 'available', result: { url } });
+});

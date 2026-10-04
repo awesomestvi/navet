@@ -251,3 +251,11 @@ describe('durable Linear result intent and readback', () => {
       brief: { ...request.brief, resultDestination: 'linear-planning' } })).rejects.toThrow('planning-bound research or audit');
   });
 });
+
+it('records workspace-less Linear comment readback in the durable store', async () => {
+  const { act, intent, readback } = await setup();
+  const pending = await intent();
+  const url = `https://linear.app/issue/NAV-42/research#comment-${pending.planningResult.commentId}`;
+  const confirmed = await act('planning-result-observation', { observation: readback(pending.planningResult, { url }) });
+  expect(confirmed.planningResult).toMatchObject({ status: 'confirmed', url });
+});
