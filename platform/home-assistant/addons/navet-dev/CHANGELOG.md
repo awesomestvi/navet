@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.17.7-beta.1
+
+## Improvements and bug fixes
+
+- Update the next occurrence immediately when a chore that repeats after completion is marked done or reopened.
+- Persist the next chore date immediately for long completion-based intervals and reconcile it when a completion is reopened.
+- Discord community links now open a permanent invite so new members can join.
+- Clarify where to find card entity IDs and how to enable household missions and rewards.
+- Garage doors, gates, doors, and window covers appear in Security and report open states even without position data.
+- Show clear open and closed states for garage doors and let each cover use simple controls without percentages.
+
 ## 0.17.6-beta.1
 
 ## Improvements and bug fixes
