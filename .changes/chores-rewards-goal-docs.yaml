@@ -1,0 +1,6 @@
+type: fixed
+audiences:
+  - standalone
+  - home-assistant
+  - hacs
+summary: Household guides explain that See rewards appears after creating a mission or enabled reward goal.
