@@ -24,6 +24,12 @@ describe the composition; the running Storybook index supplies current story IDs
 
 ## Controls-first dialog
 
+`BaseCardDialog` moves focus inside on opening and restores its connected opener on dismissal.
+With `disableOpenAutoFocus`, focus lands on the dialog container so form inputs are not selected
+automatically. Tab and Shift+Tab remain within the modal; Escape closes it. A caller-supplied close
+focus handler takes precedence, and a downstream dialog retains focus.
+
+
 Choose one `BaseCardDialog` union variant. The card variant takes `tabs`; the modal, sheet and
 fullscreen variants have different contracts. The overflow menu is owned by the card dialog.
 
