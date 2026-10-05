@@ -789,6 +789,56 @@ describe('CoverCard', () => {
     expect(setCoverPositionMock).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ['Open', 'closed', 'Closed', 'Opening...', openCoverMock],
+    ['Close', 'open', 'Open', 'Closing...', closeCoverMock],
+  ] as const)(
+    'restores simple-mode state after a failed %s command',
+    async (action, state, label, pendingLabel, command) => {
+      let rejectCommand: (reason: Error) => void = () => {};
+      command.mockImplementationOnce(
+        () =>
+          new Promise((_, reject) => {
+            rejectCommand = reject;
+          })
+      );
+      renderCoverCard({
+        size: 'medium',
+        initialDeviceClass: 'garage',
+        initialState: state,
+        initialPosition: state === 'open' ? 100 : 0,
+        hasPosition: false,
+      });
+      fireEvent.click(screen.getByRole('button', { name: action }));
+      expect(screen.getByText(pendingLabel)).toBeInTheDocument();
+      await act(async () => rejectCommand(new Error('failed')));
+      await waitFor(() => expect(toastErrorMock).toHaveBeenCalledWith('failed'));
+      expect(screen.getByText(label)).toBeInTheDocument();
+      expect(screen.queryByText(pendingLabel)).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Living Room Blind cover' })).toHaveAttribute(
+        'aria-pressed',
+        state === 'open' ? 'true' : 'false'
+      );
+    }
+  );
+
+  it('keeps newer provider state when an earlier open command fails', async () => {
+    let rejectCommand: (reason: Error) => void = () => {};
+    openCoverMock.mockImplementationOnce(
+      () =>
+        new Promise((_, reject) => {
+          rejectCommand = reject;
+        })
+    );
+    act(() => setLiveCoverStateWithoutPosition('closed'));
+    renderCoverCard({ size: 'medium', initialDeviceClass: 'garage', hasPosition: false });
+    fireEvent.click(screen.getByRole('button', { name: 'Open' }));
+    act(() => setLiveCoverStateWithoutPosition('open'));
+    await act(async () => rejectCommand(new Error('failed')));
+    expect(screen.getByText('Open')).toBeInTheDocument();
+    expect(screen.queryByText('Opening...')).not.toBeInTheDocument();
+  });
+
   it('shows service action failures through the shared handler', async () => {
     openCoverMock.mockRejectedValue('failed');
     renderCoverCard();

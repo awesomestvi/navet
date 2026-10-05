@@ -70,6 +70,7 @@ export const CoverCardContainer = memo(function CoverCardContainer({
   const optimisticPositionRef = useRef<number | null>(null);
   const optimisticPositionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestLivePositionRef = useRef<number | null>(null);
+  const latestLiveStateRef = useRef<CoverState | null>(null);
   const [deviceClass, setDeviceClass] = useState<DeviceClass>(
     resolveCoverDeviceClass(initialDeviceClass)
   );
@@ -170,6 +171,7 @@ export const CoverCardContainer = memo(function CoverCardContainer({
     }
     const liveState = providerState.value as CoverState;
     if (['open', 'closed', 'opening', 'closing', 'unknown', 'unavailable'].includes(liveState)) {
+      latestLiveStateRef.current = liveState;
       setCoverState(liveState);
       if (liveState === 'unknown' || liveState === 'unavailable') {
         clearOptimisticPosition();
@@ -233,6 +235,8 @@ export const CoverCardContainer = memo(function CoverCardContainer({
       return;
     }
 
+    const previousState = coverState;
+    const previousPosition = position;
     setCoverState('opening');
     if (!hasPosition) {
       setPosition(100);
@@ -241,8 +245,14 @@ export const CoverCardContainer = memo(function CoverCardContainer({
       () => integrationSecurityFeatureService.openCover(id, positionMode),
       t('cover.feedback.updateFailed'),
       {
-        onError: () =>
-          setPosition((currentPosition) => latestLivePositionRef.current ?? currentPosition),
+        onError: () => {
+          setCoverState((currentState) =>
+            currentState === 'opening'
+              ? (latestLiveStateRef.current ?? previousState)
+              : currentState
+          );
+          setPosition(latestLivePositionRef.current ?? previousPosition);
+        },
       }
     );
   };
@@ -252,6 +262,8 @@ export const CoverCardContainer = memo(function CoverCardContainer({
       return;
     }
 
+    const previousState = coverState;
+    const previousPosition = position;
     setCoverState('closing');
     if (!hasPosition) {
       setPosition(0);
@@ -260,8 +272,14 @@ export const CoverCardContainer = memo(function CoverCardContainer({
       () => integrationSecurityFeatureService.closeCover(id, positionMode),
       t('cover.feedback.updateFailed'),
       {
-        onError: () =>
-          setPosition((currentPosition) => latestLivePositionRef.current ?? currentPosition),
+        onError: () => {
+          setCoverState((currentState) =>
+            currentState === 'closing'
+              ? (latestLiveStateRef.current ?? previousState)
+              : currentState
+          );
+          setPosition(latestLivePositionRef.current ?? previousPosition);
+        },
       }
     );
   };
