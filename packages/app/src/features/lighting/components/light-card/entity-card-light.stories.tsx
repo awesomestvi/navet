@@ -194,6 +194,32 @@ export const WithEffects: Story = {
   },
 };
 
+export const PrismClipping: Story = {
+  parameters: {
+    previewRuntime: {
+      scenario: replacePreviewEntity(
+        createPreviewStoryScenario(),
+        createPreviewLightEntity('light.living_room', {
+          supportedColorModes: ['brightness'],
+          effect: 'Prism',
+          effectList: ['Prism', 'Fire', 'Twinkle'],
+        })
+      ),
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const layer = canvasElement.querySelector<HTMLElement>(
+      '[data-light-color-cycle-effect="true"]'
+    );
+    if (!layer?.parentElement) throw new Error('Expected the Prism color layer.');
+    const view = canvasElement.ownerDocument.defaultView;
+    if (!view) throw new Error('Expected a browser window.');
+    await expect(view.getComputedStyle(layer).borderRadius).toBe(
+      view.getComputedStyle(layer.parentElement).borderRadius
+    );
+  },
+};
+
 export const KelvinPicker: Story = {
   ...Medium,
   play: async ({ canvasElement }) => {

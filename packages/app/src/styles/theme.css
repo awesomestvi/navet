@@ -900,6 +900,7 @@
   }
 
   .navet-light-card-color-cycle-effect {
+    border-radius: inherit;
     overflow: hidden;
     opacity: 0.42;
     mix-blend-mode: color;
