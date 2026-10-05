@@ -2441,6 +2441,8 @@ export const plMessages = {
   'cover.state.opening': 'Otwieranie...',
   'cover.state.closing': 'Zamykanie...',
   'cover.ariaLabel': 'Osłona — {name}',
+  'cover.settings.simple': 'Proste sterowanie',
+  'cover.settings.position': 'Sterowanie pozycją',
   'cover.settings.deviceType': 'Typ urządzenia',
   'cover.settings.description': 'Wybierz typ osłony — {name}',
   'cover.deviceClass.blind': 'Żaluzje okienne',

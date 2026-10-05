@@ -2439,6 +2439,8 @@ export const enMessages = {
   'cover.state.opening': 'Opening...',
   'cover.state.closing': 'Closing...',
   'cover.ariaLabel': '{name} cover',
+  'cover.settings.simple': 'Simple controls',
+  'cover.settings.position': 'Position controls',
   'cover.settings.deviceType': 'Device Type',
   'cover.settings.description': 'Select the type of cover for {name}',
   'cover.deviceClass.blind': 'Window Blinds',

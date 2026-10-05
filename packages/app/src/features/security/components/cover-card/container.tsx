@@ -9,6 +9,8 @@ import {
   useTheme,
 } from '@navet/app/hooks';
 import { integrationSecurityFeatureService } from '@navet/app/services/integration-security-feature.service';
+import { useSettingsStore } from '@navet/app/stores/settings-store';
+import { ensureCanonicalEntityId } from '@navet/app/utils/provider-entity-id';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { DEVICE_CLASS_CONFIG, resolveCoverDeviceClass } from './constants';
 import type { CoverCardProps, CoverState, DeviceClass } from './types';
@@ -68,6 +70,7 @@ export const CoverCardContainer = memo(function CoverCardContainer({
   const optimisticPositionRef = useRef<number | null>(null);
   const optimisticPositionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestLivePositionRef = useRef<number | null>(null);
+  const latestLiveStateRef = useRef<CoverState | null>(null);
   const [deviceClass, setDeviceClass] = useState<DeviceClass>(
     resolveCoverDeviceClass(initialDeviceClass)
   );
@@ -118,6 +121,16 @@ export const CoverCardContainer = memo(function CoverCardContainer({
       false
     );
 
+  const resolvedDeviceClass = resolveCoverDeviceClass(providerState?.deviceClass ?? deviceClass);
+  const controlMode = useSettingsStore(
+    (state) => state.coverControlModes[ensureCanonicalEntityId(id)]
+  );
+  const updateControlMode = useSettingsStore((state) => state.updateCoverControlMode);
+  const showPosition =
+    hasPosition &&
+    (controlMode ?? (resolvedDeviceClass === 'garage' ? 'simple' : 'position')) === 'position';
+  const displayPosition = showPosition ? position : resolveCoverStatePosition(coverState);
+
   const clearOptimisticPosition = useCallback(() => {
     optimisticPositionRef.current = null;
     if (optimisticPositionTimerRef.current !== null) {
@@ -158,6 +171,7 @@ export const CoverCardContainer = memo(function CoverCardContainer({
     }
     const liveState = providerState.value as CoverState;
     if (['open', 'closed', 'opening', 'closing', 'unknown', 'unavailable'].includes(liveState)) {
+      latestLiveStateRef.current = liveState;
       setCoverState(liveState);
       if (liveState === 'unknown' || liveState === 'unavailable') {
         clearOptimisticPosition();
@@ -221,6 +235,8 @@ export const CoverCardContainer = memo(function CoverCardContainer({
       return;
     }
 
+    const previousState = coverState;
+    const previousPosition = position;
     setCoverState('opening');
     if (!hasPosition) {
       setPosition(100);
@@ -229,8 +245,14 @@ export const CoverCardContainer = memo(function CoverCardContainer({
       () => integrationSecurityFeatureService.openCover(id, positionMode),
       t('cover.feedback.updateFailed'),
       {
-        onError: () =>
-          setPosition((currentPosition) => latestLivePositionRef.current ?? currentPosition),
+        onError: () => {
+          setCoverState((currentState) =>
+            currentState === 'opening'
+              ? (latestLiveStateRef.current ?? previousState)
+              : currentState
+          );
+          setPosition(latestLivePositionRef.current ?? previousPosition);
+        },
       }
     );
   };
@@ -240,6 +262,8 @@ export const CoverCardContainer = memo(function CoverCardContainer({
       return;
     }
 
+    const previousState = coverState;
+    const previousPosition = position;
     setCoverState('closing');
     if (!hasPosition) {
       setPosition(0);
@@ -248,8 +272,14 @@ export const CoverCardContainer = memo(function CoverCardContainer({
       () => integrationSecurityFeatureService.closeCover(id, positionMode),
       t('cover.feedback.updateFailed'),
       {
-        onError: () =>
-          setPosition((currentPosition) => latestLivePositionRef.current ?? currentPosition),
+        onError: () => {
+          setCoverState((currentState) =>
+            currentState === 'closing'
+              ? (latestLiveStateRef.current ?? previousState)
+              : currentState
+          );
+          setPosition(latestLivePositionRef.current ?? previousPosition);
+        },
       }
     );
   };
@@ -291,12 +321,12 @@ export const CoverCardContainer = memo(function CoverCardContainer({
   const cardId = `cover-${name.toLowerCase().replace(/ /g, '-')}`;
   const cardInteraction = useEntityCardInteractionController({
     ariaLabel: t('cover.ariaLabel', { name }),
-    ariaPressed: !isUnavailable && position > 0,
+    ariaPressed: !isUnavailable && displayPosition > 0,
     isEditMode,
     onToggle: isUnavailable
       ? undefined
       : () => {
-          if (position > 0) {
+          if (displayPosition > 0) {
             handleClose();
             return;
           }
@@ -311,8 +341,12 @@ export const CoverCardContainer = memo(function CoverCardContainer({
       entityId={id}
       name={name}
       room={room}
-      position={position}
-      deviceClass={resolveCoverDeviceClass(providerState?.deviceClass ?? deviceClass)}
+      position={displayPosition}
+      showPosition={showPosition}
+      controlMode={showPosition ? 'position' : 'simple'}
+      onControlModeChange={(mode) => updateControlMode(id, mode)}
+      hasPosition={hasPosition}
+      deviceClass={resolvedDeviceClass}
       deviceClassConfig={DEVICE_CLASS_CONFIG}
       size={size}
       isEditMode={isEditMode}
@@ -335,7 +369,7 @@ export const CoverCardContainer = memo(function CoverCardContainer({
       canOpen={canOpen}
       canClose={canClose}
       canStop={canStop}
-      canSetPosition={canSetPosition}
+      canSetPosition={showPosition && canSetPosition}
       setDeviceClass={setDeviceClass}
     />
   );

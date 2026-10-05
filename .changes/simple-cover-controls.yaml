@@ -1,0 +1,3 @@
+type: improved
+audiences: [standalone, home-assistant, hacs]
+summary: Show clear open and closed states for garage doors and let each cover use simple controls without percentages.

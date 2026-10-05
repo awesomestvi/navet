@@ -2440,6 +2440,8 @@ export const ptMessages = {
   'cover.state.opening': 'Abrindo...',
   'cover.state.closing': 'Fechando...',
   'cover.ariaLabel': 'Cobertura {name}',
+  'cover.settings.simple': 'Controlos simples',
+  'cover.settings.position': 'Controlos de posição',
   'cover.settings.deviceType': 'Tipo de dispositivo',
   'cover.settings.description': 'Selecione o tipo de cobertura para {name}',
   'cover.deviceClass.blind': 'Persianas',

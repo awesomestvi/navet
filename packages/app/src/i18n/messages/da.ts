@@ -2438,6 +2438,8 @@ export const daMessages = {
   'cover.state.opening': 'Åbner...',
   'cover.state.closing': 'Lukker...',
   'cover.ariaLabel': '{name} afdækning',
+  'cover.settings.simple': 'Enkle kontroller',
+  'cover.settings.position': 'Positionskontroller',
   'cover.settings.deviceType': 'Enhedstype',
   'cover.settings.description': 'Vælg typen af omslag til {name}',
   'cover.deviceClass.blind': 'Rudegardiner',

@@ -2470,6 +2470,8 @@ export const frMessages = {
   'cover.state.opening': 'Ouverture...',
   'cover.state.closing': 'Fermeture...',
   'cover.ariaLabel': 'volet {name}',
+  'cover.settings.simple': 'Commandes simples',
+  'cover.settings.position': 'Commandes de position',
   'cover.settings.deviceType': 'Type d’appareil',
   'cover.settings.description': 'Selectionnez le type de volet pour {name}',
   'cover.deviceClass.blind': 'Stores',

@@ -2454,6 +2454,8 @@ export const esMessages = {
   'cover.state.opening': 'Abriendo...',
   'cover.state.closing': 'Cerrando...',
   'cover.ariaLabel': 'cubierta {name}',
+  'cover.settings.simple': 'Controles simples',
+  'cover.settings.position': 'Controles de posición',
   'cover.settings.deviceType': 'Tipo de dispositivo',
   'cover.settings.description': 'Selecciona el tipo de cubierta para {name}',
   'cover.deviceClass.blind': 'Persianas',

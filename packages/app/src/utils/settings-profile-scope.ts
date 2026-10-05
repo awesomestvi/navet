@@ -58,6 +58,7 @@ export const SETTINGS_PROFILE_CLASSIFICATION = {
   cameraDirectStreamUrls: 'secret',
   cameraFitMode: 'device',
   cameraFitModes: 'device',
+  coverControlModes: 'device',
   cameraFullscreenHiddenAccessoryIds: 'device',
   cameraFullscreenVisibleAccessoryIds: 'device',
   ambientLightBleed: 'device',
@@ -211,6 +212,10 @@ function sanitizeSettingValue(key: keyof UserSettings, value: unknown): unknown 
   }
   if (key === 'cameraWebRtcStreamSources') {
     const sanitized = sanitizeRecordValues(value, CAMERA_WEBRTC_SOURCES);
+    return sanitized ? normalizePersistedEntityRecord(sanitized) : undefined;
+  }
+  if (key === 'coverControlModes') {
+    const sanitized = sanitizeRecordValues(value, new Set(['simple', 'position']));
     return sanitized ? normalizePersistedEntityRecord(sanitized) : undefined;
   }
   if (key === 'cameraFitModes') {
