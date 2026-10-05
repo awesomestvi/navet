@@ -6,6 +6,7 @@ import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-
 import { useTheme } from '@navet/app/hooks';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Moon, Sparkles, SunMedium, Trash2 } from 'lucide-react';
+import { expect, userEvent, within } from 'storybook/test';
 import { CardActionRow } from './card-action-row';
 
 function resolveStoryCardActionRowSize(size: 'small' | 'default' | 'medium' | 'large') {
@@ -112,6 +113,22 @@ export const Small: Story = {
 
 export const Medium: Story = {
   args: { size: 'default' },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const body = within(canvasElement.ownerDocument.body);
+    const opener = canvas.getAllByRole('button', { name: 'More actions' })[0];
+    opener.focus();
+    await userEvent.keyboard('{Enter}');
+    const dialog = await body.findByRole('dialog', { name: 'More actions' });
+    const actions = within(dialog);
+    await expect(actions.getByRole('button', { name: 'Rename' })).toHaveFocus();
+    await userEvent.tab({ shift: true });
+    await expect(actions.getByRole('button', { name: 'Close action dock' })).toHaveFocus();
+    await userEvent.tab();
+    await expect(actions.getByRole('button', { name: 'Rename' })).toHaveFocus();
+    await userEvent.keyboard('{Escape}');
+    await expect(opener).toHaveFocus();
+  },
   parameters: {
     docs: {
       description: {

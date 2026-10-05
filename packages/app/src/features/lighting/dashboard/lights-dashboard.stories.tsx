@@ -1,7 +1,12 @@
 import {
   createPreviewLightEntity,
   createPreviewStoryScenario,
+  getInstalledPreviewRuntimeScenario,
+  installPreviewRuntime,
+  type PreviewRuntimeScenario,
   replacePreviewEntity,
+  resetPreviewRuntime,
+  withPreviewEntities,
 } from '@navet/app/preview/runtime';
 import { integrationStore } from '@navet/app/stores/integration-store';
 import { type ThemeMode, useThemeStore } from '@navet/app/stores/theme-store';
@@ -9,8 +14,8 @@ import type { DeviceWithType } from '@navet/app/types/device.types';
 import type { NavetEntity } from '@navet/core/types';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { ComponentProps, ReactNode } from 'react';
-import { useEffect } from 'react';
-import { expect, userEvent, within } from 'storybook/test';
+import { useEffect, useMemo, useState } from 'react';
+import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { LightsDashboard } from './lights-dashboard';
 
 function device(
@@ -87,13 +92,16 @@ const largeHomeLights = Object.entries(largeHomeRoomLights).flatMap(([room, name
   )
 );
 
+const emptyIds: string[] = [];
+
 function LightDashboardFixture({
   lights = baseLights,
-  unavailableIds = [],
-  nonDimmableIds = [],
+  unavailableIds = emptyIds,
+  nonDimmableIds = emptyIds,
   theme = 'glass',
   wallpaper = 'dark',
   children,
+  previewScenario,
 }: {
   lights?: DeviceWithType[];
   unavailableIds?: string[];
@@ -101,40 +109,38 @@ function LightDashboardFixture({
   theme?: ThemeMode;
   wallpaper?: 'dark' | 'light';
   children: ReactNode;
+  previewScenario?: PreviewRuntimeScenario;
 }) {
+  const scenario = useMemo(() => {
+    const base = previewScenario ?? createPreviewStoryScenario();
+    const lightsForRuntime = lights.map((light) => {
+      const variant = previewScenario?.entities.find((entry) => entry.externalId === light.id);
+      const next = entity(light, {
+        availability: unavailableIds.includes(light.id) ? 'unavailable' : 'available',
+        capabilities: nonDimmableIds.includes(light.id)
+          ? ['toggle']
+          : ['toggle', 'brightness', 'color_temperature'],
+      });
+      next.attributes = { ...next.attributes, ...variant?.attributes };
+      if (nonDimmableIds.includes(light.id)) {
+        delete next.attributes.brightnessPct;
+        delete next.attributes.colorTemperatureKelvin;
+        next.attributes.supportedColorModes = ['onoff'];
+      }
+      return next;
+    });
+    return withPreviewEntities(base, [
+      ...base.entities.filter((entry) => entry.type !== 'light'),
+      ...lightsForRuntime,
+    ]);
+  }, [lights, unavailableIds, nonDimmableIds, previewScenario]);
+  const [installedScenario, setInstalledScenario] = useState<PreviewRuntimeScenario | null>(null);
   useEffect(() => {
     const previousIntegration = integrationStore.getState();
     const previousTheme = useThemeStore.getState();
-    const entities = Object.fromEntries(
-      lights.map((light) => {
-        const next = entity(light, {
-          availability: unavailableIds.includes(light.id) ? 'unavailable' : 'available',
-          capabilities: nonDimmableIds.includes(light.id)
-            ? ['toggle']
-            : ['toggle', 'brightness', 'color_temperature'],
-          lastUpdated: '2026-07-14T18:30:00.000Z',
-        });
-        return [next.canonicalId, next];
-      })
-    );
-    const entityLookup = Object.fromEntries(
-      Object.values(entities).flatMap((next) => [
-        [next.id, next.canonicalId],
-        [next.externalId, next.canonicalId],
-      ])
-    );
-    integrationStore.setState({
-      ...previousIntegration,
-      providerEntitiesByProviderId: {
-        ...previousIntegration.providerEntitiesByProviderId,
-        home_assistant: entities,
-      },
-      providerEntityLookupByProviderId: {
-        ...previousIntegration.providerEntityLookupByProviderId,
-        home_assistant: entityLookup,
-      },
-      providerEntitiesByCanonicalId: entities,
-    });
+    const previousRuntime = getInstalledPreviewRuntimeScenario();
+    installPreviewRuntime(scenario);
+    setInstalledScenario(scenario);
     useThemeStore.setState({
       ...previousTheme,
       theme,
@@ -142,10 +148,12 @@ function LightDashboardFixture({
       wallpaper: null,
     });
     return () => {
+      if (previousRuntime) installPreviewRuntime(previousRuntime);
+      else resetPreviewRuntime();
       integrationStore.setState(previousIntegration);
       useThemeStore.setState(previousTheme);
     };
-  }, [lights, nonDimmableIds, theme, unavailableIds]);
+  }, [scenario, theme]);
 
   return (
     <div
@@ -157,7 +165,7 @@ function LightDashboardFixture({
             : 'linear-gradient(145deg, #111827, #07111f 55%, #172033)',
       }}
     >
-      {children}
+      {installedScenario === scenario ? children : null}
     </div>
   );
 }
@@ -167,9 +175,10 @@ function DashboardStory(
     Pick<
       ComponentProps<typeof LightDashboardFixture>,
       'unavailableIds' | 'nonDimmableIds' | 'theme' | 'wallpaper'
-    >
+    > & { previewScenario?: PreviewRuntimeScenario }
 ) {
-  const { unavailableIds, nonDimmableIds, theme, wallpaper, ...dashboardProps } = args;
+  const { unavailableIds, nonDimmableIds, theme, wallpaper, previewScenario, ...dashboardProps } =
+    args;
   return (
     <LightDashboardFixture
       lights={Array.from(dashboardProps.deviceMap.values())}
@@ -177,6 +186,7 @@ function DashboardStory(
       nonDimmableIds={nonDimmableIds}
       theme={theme}
       wallpaper={wallpaper}
+      previewScenario={previewScenario}
     >
       <LightsDashboard {...dashboardProps} />
     </LightDashboardFixture>
@@ -211,6 +221,9 @@ const baseArgs = {
 const meta = {
   title: 'Pages/Lights/Room first',
   component: DashboardStory,
+  render: (args, context) => (
+    <DashboardStory {...args} previewScenario={context.parameters.previewRuntime?.scenario} />
+  ),
   args: baseArgs,
   parameters: { layout: 'fullscreen' },
 } satisfies Meta<typeof DashboardStory>;
@@ -240,6 +253,30 @@ export const SeveralActiveRooms: Story = {
     await expect(
       roomSections[0]?.querySelectorAll('[data-light-row-icon-pill]').length
     ).toBeGreaterThan(0);
+    const canvas = within(canvasElement);
+    const island = canvas.getByRole('button', { name: 'Open settings for Kitchen island' });
+    await expect(island).not.toHaveAttribute('aria-pressed');
+    const islandRow = island.closest('[data-light-table-row]');
+    await expect(islandRow).not.toHaveAttribute('role');
+    await expect(
+      canvas.getByRole('slider', { name: 'Brightness: Kitchen island' })
+    ).toHaveAttribute('aria-valuenow', '72');
+    const plant = canvas.getByRole('slider', { name: 'Brightness: Plant light' });
+    plant.focus();
+    await userEvent.keyboard('{ArrowLeft}');
+    await waitFor(() =>
+      expect(
+        integrationStore.getState().providerEntitiesByCanonicalId[
+          'home_assistant:light.kitchen_plants'
+        ]?.attributes.brightnessPct
+      ).toBe(47)
+    );
+    await userEvent.click(firstToggle);
+    await userEvent.click(firstToggle);
+    await expect(canvas.getByRole('slider', { name: 'Brightness: Plant light' })).toHaveAttribute(
+      'aria-valuenow',
+      '47'
+    );
   },
 };
 

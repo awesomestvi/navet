@@ -1,8 +1,8 @@
 import { withTintAlpha } from '@navet/app/components/shared/theme/custom-card-tint-surface';
 import { useI18n } from '@navet/app/hooks';
 import type { ThemeType } from '@navet/app/hooks/use-theme';
-import { type ReactNode, useEffect } from 'react';
-import { createPortal } from 'react-dom';
+import * as Dialog from '@radix-ui/react-dialog';
+import { type ReactNode, useState } from 'react';
 
 export interface PortalActionDockAnchorRect {
   top: number;
@@ -19,6 +19,7 @@ interface PortalActionDockProps {
   theme?: ThemeType;
   title: string;
   subtitle?: string;
+  returnFocusTo?: HTMLElement | null;
 }
 
 export function PortalActionDock({
@@ -29,20 +30,16 @@ export function PortalActionDock({
   theme,
   title,
   subtitle,
+  returnFocusTo,
 }: PortalActionDockProps) {
   const { t } = useI18n();
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [onClose]);
+  const [opener] = useState(
+    () =>
+      returnFocusTo ??
+      (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null)
+  );
 
   if (typeof document === 'undefined') {
     return null;
@@ -80,47 +77,56 @@ export function PortalActionDock({
           padding: '10px',
         };
 
-  return createPortal(
-    <div className="fixed inset-0 z-[900]" data-card-edit-dock="true">
-      <button
-        type="button"
-        className="absolute inset-0 bg-black/58"
-        aria-label={t('common.closeActionDock')}
-        onClick={(event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          onClose();
-        }}
-      />
-      <div
-        className="absolute z-1"
-        style={{
-          left: `${overlayLeft}px`,
-          top: `${overlayTop}px`,
-          width: `${overlayWidth}px`,
-        }}
-      >
-        <div
-          className="pointer-events-auto flex w-full flex-col items-center rounded-[28px]"
-          style={shellStyle}
-        >
-          <div className="px-3 pt-1 pb-2 text-center">
-            {subtitle ? (
-              <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-white/58">
-                {subtitle}
-              </div>
-            ) : null}
+  return (
+    <Dialog.Root
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <Dialog.Portal>
+        <div className="fixed inset-0 z-[900]" data-card-edit-dock="true">
+          <Dialog.Overlay className="absolute inset-0 bg-black/58" />
+          <Dialog.Content
+            aria-modal="true"
+            className="absolute z-1"
+            aria-describedby={undefined}
+            onCloseAutoFocus={(event) => {
+              event.preventDefault();
+              // A selected action may already have focused its next dialog or destination.
+              if (document.activeElement !== document.body && document.activeElement !== opener)
+                return;
+              if (opener?.isConnected) opener.focus();
+            }}
+            style={{
+              left: `${overlayLeft}px`,
+              top: `${overlayTop}px`,
+              width: `${overlayWidth}px`,
+            }}
+          >
             <div
-              className={`${subtitle ? 'mt-1' : ''} text-sm font-semibold leading-tight text-white`}
+              className="pointer-events-auto flex w-full flex-col items-center rounded-[28px]"
+              style={shellStyle}
             >
-              {title}
+              <div className="px-3 pt-1 pb-2 text-center">
+                {subtitle ? (
+                  <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-white/58">
+                    {subtitle}
+                  </div>
+                ) : null}
+                <Dialog.Title
+                  className={`${subtitle ? 'mt-1' : ''} text-sm font-semibold leading-tight text-white`}
+                >
+                  {title}
+                </Dialog.Title>
+              </div>
+              {children}
+              <Dialog.Close className="sr-only" aria-label={t('common.closeActionDock')} />
             </div>
-          </div>
-          {children}
+          </Dialog.Content>
         </div>
-      </div>
-    </div>,
-    document.body
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }
 

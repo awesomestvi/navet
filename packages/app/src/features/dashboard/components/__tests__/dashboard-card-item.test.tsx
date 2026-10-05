@@ -1,7 +1,7 @@
 import { useDashboardEntitiesStore } from '@navet/app/features/dashboard/stores/dashboard-entities-store';
 import { renderWithProviders } from '@navet/app/test/render';
 import type { DeviceWithType } from '@navet/app/types/device.types';
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DashboardCardItem } from '../dashboard-card-item';
 import { HomeCardSlot } from '../home-dashboard-overview-card-slot';
@@ -646,6 +646,25 @@ describe('DashboardCardItem card locking', () => {
     expect(
       screen.getByRole('button', { name: 'Open settings for Espresso Machine' })
     ).toBeInTheDocument();
+  });
+
+  it('keeps the tiny launcher mounted and restores focus after Escape', async () => {
+    renderWithProviders(
+      <DashboardCardItem
+        id="switch.espresso_machine"
+        size="tiny"
+        isEditMode
+        handleSizeChange={vi.fn()}
+        device={{ ...createSwitchDevice(), size: 'tiny' }}
+      />
+    );
+    const launcher = screen.getByRole('button', { name: /more actions/i });
+    launcher.focus();
+    fireEvent.click(launcher);
+    expect(launcher.isConnected).toBe(true);
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+    await waitFor(() => expect(launcher).toHaveFocus());
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   it('uses the custom action label in the tiny edit dock overlay title', () => {

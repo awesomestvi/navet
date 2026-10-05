@@ -20,6 +20,14 @@ const PREVIEW_COMMAND_RESULT: CommandResult = {
   requiresEventConfirmation: false,
 };
 
+type PreviewCommandHandler = (command: NavetCommand) => Promise<CommandResult | null>;
+let installedPreviewCommandHandler: PreviewCommandHandler | null = null;
+
+// Runtime registration keeps preview fixtures out of the production command import graph.
+export function setInstalledPreviewCommandHandler(handler: PreviewCommandHandler | null) {
+  installedPreviewCommandHandler = handler;
+}
+
 function getPreviewRuntimeKind(): PreviewRuntimeKind | null {
   if (typeof document === 'undefined') {
     return null;
@@ -432,6 +440,9 @@ export async function maybeDispatchPreviewCommand(
   if (!isPreviewRuntime()) {
     return null;
   }
+
+  const installedResult = await installedPreviewCommandHandler?.(command);
+  if (installedResult) return installedResult;
 
   applyPreviewCommand(command);
   return PREVIEW_COMMAND_RESULT;

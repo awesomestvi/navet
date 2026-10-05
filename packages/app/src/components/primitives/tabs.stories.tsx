@@ -1,6 +1,7 @@
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Hand, Languages, Layers2, Palette, Sparkles } from 'lucide-react';
+import { expect, userEvent, within } from 'storybook/test';
 import { Heading } from './heading';
 import { Panel } from './panel';
 import { TabList, type TabListSize, TabPanel, Tabs, TabTrigger, type TabTriggerSize } from './tabs';
@@ -180,7 +181,22 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Playground: Story = {};
+export const Playground: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const tabs = canvas.getAllByRole('tab');
+    tabs[0].focus();
+    await userEvent.keyboard('{ArrowRight}');
+    await expect(tabs[1]).toHaveFocus();
+    await expect(tabs[1]).toHaveAttribute('aria-selected', 'true');
+    await userEvent.keyboard('{ArrowLeft}');
+    await expect(tabs[0]).toHaveFocus();
+    await userEvent.keyboard('{ArrowLeft}');
+    await expect(tabs[tabs.length - 1]).toHaveFocus();
+    await userEvent.tab();
+    await expect(tabs[tabs.length - 1]).not.toHaveFocus();
+  },
+};
 
 export const Default: Story = {
   args: {

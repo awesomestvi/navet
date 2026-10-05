@@ -1,16 +1,20 @@
+import { dispatchEntityCommand } from '@navet/app/commands';
 import { getProviderRuntimeRegistration } from '@navet/app/provider-runtime-registry';
 import { integrationStore } from '@navet/app/stores/integration-store';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
+  createPreviewLightEntity,
   getPreviewDeviceCollection,
   getPreviewRuntimeScenario,
   installPreviewRuntime,
   resetPreviewRuntime,
+  withPreviewEntities,
 } from './runtime';
 
 describe('preview runtime', () => {
   afterEach(() => {
     resetPreviewRuntime();
+    delete document.documentElement.dataset.navetPreviewRuntime;
   });
 
   it('hydrates the integration store from the preview scenario', () => {
@@ -47,6 +51,41 @@ describe('preview runtime', () => {
 
     expect(nextEntity?.primaryState).toBe('off');
     expect(nextEntity?.attributes.value).toBe('off');
+  });
+
+  it('keeps normalized brightness and compatibility snapshots aligned after acknowledged edits', async () => {
+    document.documentElement.dataset.navetPreviewRuntime = 'storybook';
+    const base = getPreviewRuntimeScenario('default');
+    const plant = createPreviewLightEntity('light.kitchen_plants', { brightnessPct: 48 });
+    installPreviewRuntime(withPreviewEntities(base, [...base.entities, plant]));
+    const runtime = getProviderRuntimeRegistration('home_assistant');
+    expect(
+      runtime.entityRuntimeService?.getEntitySnapshot?.('light.kitchen_island')?.attributes
+        .brightness_pct
+    ).toBe(72);
+    const result = await dispatchEntityCommand({
+      type: 'set_brightness',
+      entityId: 'home_assistant:light.kitchen_plants',
+      brightness: 47,
+    });
+    expect(result.accepted).toBe(true);
+    expect(
+      integrationStore.getState().providerEntitiesByCanonicalId[
+        'home_assistant:light.kitchen_plants'
+      ]?.attributes.brightnessPct
+    ).toBe(47);
+    expect(
+      runtime.entityRuntimeService?.getEntitySnapshot?.('light.kitchen_plants')?.attributes
+        .brightness_pct
+    ).toBe(47);
+    expect(plant.attributes.brightnessPct).toBe(48);
+    resetPreviewRuntime();
+    installPreviewRuntime(base);
+    expect(
+      getProviderRuntimeRegistration('home_assistant').entityRuntimeService?.getEntitySnapshot?.(
+        'light.kitchen_plants'
+      )
+    ).toBeUndefined();
   });
 
   it('provides deterministic media browsing for isolated previews', async () => {
