@@ -86,6 +86,19 @@ merge records human acceptance for ordinary, foundational, and security-sensitiv
 Merging runtime changes to `main` automatically publishes a Navet Dev release. Production releases
 and public release communication require maintainer approval.
 
+## Requests in the Codex workspace
+
+Maintainers can request release announcements, researched ideas in private Linear, or delivery of
+a selected scope directly in the Navet workspace. The matching repository skill applies Navet's
+brand, voice and UX standards and retains checked evidence. Before publication, the maintainer
+reviews one package containing final copy, screenshot and all destinations/variants. One approval
+covers that package; changed content requires fresh approval. Idea proposals may include private prototypes and
+targeted feasibility POCs; product implementation needs selected-scope approval.
+
+See [direct request workflows](https://github.com/awesomestvi/navet/blob/main/docs/engineering/request-workflows.md)
+for setup, recovery and live acceptance evidence. PR merge and production release decisions remain
+with the maintainer.
+
 ## Develop manually
 
 Create a branch, make the change, run focused validation, and open a pull request by following the

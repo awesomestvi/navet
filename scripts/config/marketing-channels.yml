@@ -1,6 +1,8 @@
 schemaVersion: 1
 
 allowedLinkHosts:
+  - discord.gg
+  - www.reddit.com
   - navet.app
   - demo.navet.app
   - docs.navet.app
@@ -15,10 +17,11 @@ channels:
     maxCharacters: 12000
     maxTitleCharacters: 80
     maxBodyCharacters: 700
+    maxSharedBodyCharacters: 1000
     destinationUrl: https://www.reddit.com/r/navet/
     requiresAffiliationDisclosure: false
     requiresRulePreflight: false
-    publishing: manual
+    publishing: request-authorized-browser
   navet-discord:
     label: Navet Discord
     kind: owned-community
@@ -27,10 +30,11 @@ channels:
     maxCharacters: 2000
     maxTitleCharacters: 60
     maxBodyCharacters: 450
+    maxSharedBodyCharacters: 1000
     destinationUrl: https://discord.com/channels/1540491864325623892
     requiresAffiliationDisclosure: false
     requiresRulePreflight: false
-    publishing: manual
+    publishing: request-authorized-webhook
   youtube:
     label: Navet YouTube
     kind: owned-video
@@ -69,12 +73,11 @@ channels:
     maxTitleCharacters: 120
     maxBodyCharacters: 1800
     destinationUrl: https://community.home-assistant.io/t/navet-a-smart-home-dashboard-for-wall-panels-tablets-and-phones/1010760
-    requiresAffiliationDisclosure: true
-    requiredDisclosure: I work on Navet
+    requiresAffiliationDisclosure: false
     requiresRulePreflight: true
     rulesUrl: https://community.home-assistant.io/guidelines
-    rulesCheckedOn: 2026-09-02
-    publishing: manual
+    rulesCheckedOn: 2026-10-05
+    publishing: request-authorized-browser
   homey-reddit:
     label: Homey subreddit
     kind: external-community

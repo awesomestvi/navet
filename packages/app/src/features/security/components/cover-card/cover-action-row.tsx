@@ -16,6 +16,7 @@ interface CoverActionRowProps {
   onStop: () => void;
   onClose: () => void;
   canOpen: boolean;
+  supportsStop: boolean;
   canStop: boolean;
   canClose: boolean;
 }
@@ -29,6 +30,7 @@ export function CoverActionRow({
   onStop,
   onClose,
   canOpen,
+  supportsStop,
   canStop,
   canClose,
 }: CoverActionRowProps) {
@@ -49,15 +51,17 @@ export function CoverActionRow({
           >
             <ChevronUp className="h-3.5 w-3.5" />
           </CoverControlButton>
-          <CoverControlButton
-            theme={theme}
-            size={size}
-            label={t('cover.stop')}
-            onClick={onStop}
-            disabled={!canStop}
-          >
-            <CoverPauseIcon />
-          </CoverControlButton>
+          {supportsStop && (
+            <CoverControlButton
+              theme={theme}
+              size={size}
+              label={t('cover.stop')}
+              onClick={onStop}
+              disabled={!canStop}
+            >
+              <CoverPauseIcon />
+            </CoverControlButton>
+          )}
           <CoverControlButton
             theme={theme}
             size={size}

@@ -63,6 +63,7 @@ interface CoverCardViewProps {
   handleStop: () => void;
   canOpen: boolean;
   canClose: boolean;
+  supportsStop: boolean;
   canStop: boolean;
   canSetPosition: boolean;
   setDeviceClass: (deviceClass: DeviceClass) => void;
@@ -99,6 +100,7 @@ export function CoverCardView({
   handleStop,
   canOpen,
   canClose,
+  supportsStop,
   canStop,
   canSetPosition,
   setDeviceClass,
@@ -142,23 +144,27 @@ export function CoverCardView({
       size={size}
       {...coverCardProps}
       data-cover-card-root="true"
-      frameClassName={`bg-linear-to-br ${closedColors.gradient} ${cardShell.rootFrameClassName} ${isCoverOpenTone(clampedPosition) ? openColors.border : closedColors.border} ${securitySurface.containerShadowClassName}`}
-      disableDefaultSheen
+      frameClassName={
+        showPosition
+          ? `bg-linear-to-br ${closedColors.gradient} ${cardShell.rootFrameClassName} ${isCoverOpenTone(clampedPosition) ? openColors.border : closedColors.border} ${securitySurface.containerShadowClassName}`
+          : undefined
+      }
+      disableDefaultSheen={showPosition}
       overlay={
-        <>
-          {showPosition && (
+        showPosition ? (
+          <>
             <CoverPositionFill
               position={clampedPosition}
               theme={theme}
               coverageGradient={openColors.gradient}
               cardSize={size}
             />
-          )}
-          <div className={`absolute inset-0 bg-linear-to-br ${openColors.glow} to-transparent`} />
-          {securitySurface.overlayClassName ? (
-            <div className={`absolute inset-0 ${securitySurface.overlayClassName}`} />
-          ) : null}
-        </>
+            <div className={`absolute inset-0 bg-linear-to-br ${openColors.glow} to-transparent`} />
+            {securitySurface.overlayClassName ? (
+              <div className={`absolute inset-0 ${securitySurface.overlayClassName}`} />
+            ) : null}
+          </>
+        ) : undefined
       }
       contentClassName="h-full"
     >
@@ -203,6 +209,7 @@ export function CoverCardView({
             onPreviewPosition={onPreviewPosition}
             onCommitPosition={onCommitPosition}
             canOpen={canOpen}
+            supportsStop={supportsStop}
             canStop={canStop}
             canClose={canClose}
             canSetPosition={canSetPosition}
@@ -229,6 +236,7 @@ export function CoverCardView({
             onPreviewPosition={onPreviewPosition}
             onCommitPosition={onCommitPosition}
             canOpen={canOpen}
+            supportsStop={supportsStop}
             canStop={canStop}
             canClose={canClose}
             canSetPosition={canSetPosition}
@@ -255,6 +263,7 @@ export function CoverCardView({
             onPreviewPosition={onPreviewPosition}
             onCommitPosition={onCommitPosition}
             canOpen={canOpen}
+            supportsStop={supportsStop}
             canStop={canStop}
             canClose={canClose}
             canSetPosition={canSetPosition}
@@ -286,6 +295,7 @@ export function CoverCardView({
           onStop={handleStop}
           onClose={handleClose}
           canOpen={canOpen}
+          supportsStop={supportsStop}
           canStop={canStop}
           canClose={canClose}
           canSetPosition={canSetPosition}
@@ -314,6 +324,7 @@ interface SharedCoverLayoutProps {
   onPreviewPosition: (newPosition: number) => void;
   onCommitPosition: (newPosition: number) => void;
   canOpen: boolean;
+  supportsStop: boolean;
   canStop: boolean;
   canClose: boolean;
   canSetPosition: boolean;
@@ -427,6 +438,7 @@ function CompactCoverLayout({
   onStop,
   onClose,
   canOpen,
+  supportsStop,
   canStop,
   canClose,
 }: SharedCoverLayoutProps) {
@@ -478,6 +490,7 @@ function CompactCoverLayout({
               onStop={onStop}
               onClose={onClose}
               canOpen={canOpen}
+              supportsStop={supportsStop}
               canStop={canStop}
               canClose={canClose}
             />
@@ -505,6 +518,7 @@ function MediumCoverLayout({
   onStop,
   onClose,
   canOpen,
+  supportsStop,
   canStop,
   canClose,
 }: SharedCoverLayoutProps) {
@@ -541,6 +555,7 @@ function MediumCoverLayout({
             onStop={onStop}
             onClose={onClose}
             canOpen={canOpen}
+            supportsStop={supportsStop}
             canStop={canStop}
             canClose={canClose}
           />
@@ -570,6 +585,7 @@ function LargeCoverLayout({
   onStop,
   onClose,
   canOpen,
+  supportsStop,
   canStop,
   canClose,
   canSetPosition,
@@ -629,6 +645,7 @@ function LargeCoverLayout({
           onStop={onStop}
           onClose={onClose}
           canOpen={canOpen}
+          supportsStop={supportsStop}
           canStop={canStop}
           canClose={canClose}
         />

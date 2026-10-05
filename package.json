@@ -38,6 +38,8 @@
     "marketing:content:new": "node scripts/content-cli.mjs new",
     "marketing:content:generate": "node scripts/content-cli.mjs generate",
     "marketing:content:check": "node scripts/content-cli.mjs check",
+    "marketing:content:prepare": "node scripts/content-cli.mjs prepare",
+    "marketing:content:attempt": "node scripts/content-cli.mjs attempt",
     "marketing:content:record": "node scripts/content-cli.mjs record",
     "marketing:wip:clean": "node scripts/marketing-wip.mjs clean",
     "brand:generate": "node scripts/generate-brand-reference-visuals.mjs && node scripts/brand-assets.mjs generate && node apps/website/scripts/generate-social-card.mjs",
