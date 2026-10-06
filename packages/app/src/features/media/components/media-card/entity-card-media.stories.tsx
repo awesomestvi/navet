@@ -1,4 +1,5 @@
 import artworksOriginal from '@assets/reference/media/artworks-original.avif';
+import { EMPTY_NAVET_MEDIA_CAPABILITIES } from '@navet/app/core/navet-device-state';
 import { MediaCard } from '@navet/app/features/media';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import { EntityCardStoryFrame, noopCardSizeChange } from '@navet/app/storybook/story-frames';
@@ -100,6 +101,102 @@ export const SpeakerDialog: Story = {
       ).toBeInTheDocument();
       await expect(inDialog.getByRole('button', { name: /pause playback/i })).toBeInTheDocument();
     });
+  },
+};
+
+export const UnsupportedPlaybackOptions: Story = {
+  ...SpeakerDialog,
+  args: {
+    ...SpeakerDialog.args,
+    id: 'media_player.story_unsupportedplaybackoptions',
+    mediaCapabilities: {
+      ...EMPTY_NAVET_MEDIA_CAPABILITIES,
+      canPlay: true,
+      canPause: true,
+      canShuffle: false,
+      canRepeat: false,
+    },
+  },
+  play: async (context) => {
+    await SpeakerDialog.play?.(context);
+    const dialog = within(document.body).getByRole('dialog');
+    const controls = within(dialog);
+    await expect(
+      Boolean(controls.queryByRole('button', { name: /shuffle|linear playback/i }))
+    ).toBe(false);
+    await expect(Boolean(controls.queryByRole('button', { name: /repeat off/i }))).toBe(false);
+  },
+};
+
+export const ShuffleOnly: Story = {
+  ...SpeakerDialog,
+  args: {
+    ...SpeakerDialog.args,
+    id: 'media_player.story_shuffleonly',
+    mediaCapabilities: {
+      ...EMPTY_NAVET_MEDIA_CAPABILITIES,
+      canPlay: true,
+      canPause: true,
+      canShuffle: true,
+      canRepeat: false,
+    },
+  },
+  play: async (context) => {
+    await SpeakerDialog.play?.(context);
+    const dialog = within(document.body).getByRole('dialog');
+    const controls = within(dialog);
+    await expect(
+      Boolean(controls.queryByRole('button', { name: /shuffle|linear playback/i }))
+    ).toBe(true);
+    await expect(Boolean(controls.queryByRole('button', { name: /repeat off/i }))).toBe(false);
+  },
+};
+
+export const RepeatOnly: Story = {
+  ...SpeakerDialog,
+  args: {
+    ...SpeakerDialog.args,
+    id: 'media_player.story_repeatonly',
+    mediaCapabilities: {
+      ...EMPTY_NAVET_MEDIA_CAPABILITIES,
+      canPlay: true,
+      canPause: true,
+      canShuffle: false,
+      canRepeat: true,
+    },
+  },
+  play: async (context) => {
+    await SpeakerDialog.play?.(context);
+    const dialog = within(document.body).getByRole('dialog');
+    const controls = within(dialog);
+    await expect(
+      Boolean(controls.queryByRole('button', { name: /shuffle|linear playback/i }))
+    ).toBe(false);
+    await expect(Boolean(controls.queryByRole('button', { name: /repeat off/i }))).toBe(true);
+  },
+};
+
+export const FullPlaybackOptions: Story = {
+  ...SpeakerDialog,
+  args: {
+    ...SpeakerDialog.args,
+    id: 'media_player.story_fullplaybackoptions',
+    mediaCapabilities: {
+      ...EMPTY_NAVET_MEDIA_CAPABILITIES,
+      canPlay: true,
+      canPause: true,
+      canShuffle: true,
+      canRepeat: true,
+    },
+  },
+  play: async (context) => {
+    await SpeakerDialog.play?.(context);
+    const dialog = within(document.body).getByRole('dialog');
+    const controls = within(dialog);
+    await expect(
+      Boolean(controls.queryByRole('button', { name: /shuffle|linear playback/i }))
+    ).toBe(true);
+    await expect(Boolean(controls.queryByRole('button', { name: /repeat off/i }))).toBe(true);
   },
 };
 

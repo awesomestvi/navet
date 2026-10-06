@@ -227,6 +227,8 @@ export function MediaDialogContent({
         isPlaying={isPlaying}
         canNextTrack={canNextTrack}
         canPreviousTrack={canPreviousTrack}
+        canShuffle={capabilities.canShuffle}
+        canRepeat={capabilities.canRepeat}
         canSeek={canSeek ?? capabilities.canSeek}
         canTogglePlayback={canTogglePlayback}
         durationSeconds={durationSeconds}

@@ -1,0 +1,6 @@
+type: fixed
+audiences:
+  - standalone
+  - home-assistant
+  - hacs
+summary: Improve search touch targets and keyboard focus, hide unsupported speaker actions, and retain failed chore imports for retry.

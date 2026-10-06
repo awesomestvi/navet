@@ -414,6 +414,8 @@ export const itMessages = {
   'household.data.importTitle': 'Ripristinare il backup delle faccende?',
   'household.data.importDescription':
     'Unisci mantiene le faccende attuali e rinomina i conflitti. Sostituisci rimuove prima lo spazio corrente.',
+  'household.data.importFailed':
+    'Impossibile ripristinare il backup. Riprova a unire o sostituire.',
   'household.data.imported': 'Backup delle faccende ripristinato.',
   'household.data.merge': 'Unisci',
   'household.data.replace': 'Sostituisci',

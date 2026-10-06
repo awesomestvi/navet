@@ -35,6 +35,8 @@ describe('useMediaPlayback', () => {
         entityId: 'media_player.living_room',
         canPreviousTrack: true,
         canNextTrack: true,
+        canShuffle: true,
+        canRepeat: true,
         shuffleEnabled: false,
         repeatMode: 'off',
         t: (key) => key,
@@ -55,6 +57,8 @@ describe('useMediaPlayback', () => {
         entityId: 'media_player.living_room',
         canPreviousTrack: true,
         canNextTrack: true,
+        canShuffle: true,
+        canRepeat: true,
         shuffleEnabled: false,
         repeatMode: 'off',
         t: (key) => key,
@@ -83,6 +87,8 @@ describe('useMediaPlayback', () => {
           entityId: 'media_player.living_room',
           canPreviousTrack: true,
           canNextTrack: true,
+          canShuffle: true,
+          canRepeat: true,
           shuffleEnabled: false,
           repeatMode,
           t: (key) => key,
@@ -112,6 +118,8 @@ describe('useMediaPlayback', () => {
         entityId: 'media_player.office',
         canPreviousTrack: true,
         canNextTrack: true,
+        canShuffle: true,
+        canRepeat: true,
         shuffleEnabled: true,
         repeatMode: 'off',
         t: (key) => key,
@@ -133,6 +141,8 @@ describe('useMediaPlayback', () => {
         entityId: 'media_player.office',
         canPreviousTrack: true,
         canNextTrack: true,
+        canShuffle: true,
+        canRepeat: true,
         shuffleEnabled: false,
         repeatMode: 'off',
         t: (key) => key,
@@ -152,6 +162,8 @@ describe('useMediaPlayback', () => {
         entityId: 'media_player.bedroom',
         canPreviousTrack: false,
         canNextTrack: false,
+        canShuffle: true,
+        canRepeat: true,
         shuffleEnabled: false,
         repeatMode: 'off',
         t: (key) => key,
@@ -165,5 +177,32 @@ describe('useMediaPlayback', () => {
 
     expect(dispatchEntityCommandMock).not.toHaveBeenCalled();
     expect(runActionMock).not.toHaveBeenCalled();
+  });
+  it.each([
+    [false, false],
+    [true, false],
+    [false, true],
+    [true, true],
+  ])('dispatches only supported shuffle/repeat commands (%s, %s)', (canShuffle, canRepeat) => {
+    const { result } = renderHookWithProviders(() =>
+      useMediaPlayback({
+        entityId: 'media_player.speaker',
+        canPreviousTrack: false,
+        canNextTrack: false,
+        canShuffle,
+        canRepeat,
+        shuffleEnabled: false,
+        repeatMode: 'off',
+        t: (key) => key,
+      })
+    );
+    act(() => {
+      result.current.toggleShuffle();
+      result.current.cycleRepeat();
+    });
+    expect(dispatchEntityCommandMock.mock.calls.map(([command]) => command.type)).toEqual([
+      ...(canShuffle ? ['set_shuffle'] : []),
+      ...(canRepeat ? ['set_repeat_mode'] : []),
+    ]);
   });
 });

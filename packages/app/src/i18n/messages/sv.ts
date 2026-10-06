@@ -407,6 +407,8 @@ export const svMessages = {
   'household.data.importTitle': 'Återställa säkerhetskopian?',
   'household.data.importDescription':
     'Sammanfoga behåller nuvarande sysslor och byter namn vid konflikter. Ersätt tar först bort den nuvarande arbetsytan.',
+  'household.data.importFailed':
+    'Säkerhetskopian kunde inte återställas. Försök slå ihop eller ersätta igen.',
   'household.data.imported': 'Säkerhetskopian har återställts.',
   'household.data.merge': 'Sammanfoga',
   'household.data.replace': 'Ersätt',

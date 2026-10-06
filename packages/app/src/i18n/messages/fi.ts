@@ -407,6 +407,8 @@ export const fiMessages = {
   'household.data.importTitle': 'Palautetaanko kotitöiden varmuuskopio?',
   'household.data.importDescription':
     'Yhdistä säilyttää nykyiset kotityöt ja nimeää ristiriidat uudelleen. Korvaa poistaa ensin nykyisen työtilan.',
+  'household.data.importFailed':
+    'Varmuuskopiota ei voitu palauttaa. Yritä yhdistämistä tai korvaamista uudelleen.',
   'household.data.imported': 'Kotitöiden varmuuskopio palautettu.',
   'household.data.merge': 'Yhdistä',
   'household.data.replace': 'Korvaa',

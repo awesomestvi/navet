@@ -39,6 +39,9 @@ export function ChoreDataRecovery({
   const [pendingImport, setPendingImport] = useState<ReturnType<
     typeof parseChoreInterchangeDocument
   > | null>(null);
+  const importInFlightRef = useRef(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
   const [resetOpen, setResetOpen] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
 
@@ -64,6 +67,7 @@ export function ChoreDataRecovery({
   const readBackup = async (file: File | undefined) => {
     if (!file) return;
     setFeedback(null);
+    setImportError(null);
     try {
       const value: unknown = JSON.parse(await file.text());
       try {
@@ -122,6 +126,32 @@ export function ChoreDataRecovery({
     }
   };
 
+  const importBackup = async (mode: 'merge' | 'replace') => {
+    if (!pendingImport || importInFlightRef.current) return;
+    importInFlightRef.current = true;
+    setIsImporting(true);
+    setImportError(null);
+    try {
+      const saved = await restoreBackup({
+        actorParticipantId: managerActorId,
+        document: pendingImport,
+        mode,
+      });
+      if (!saved) {
+        setImportError(t('household.data.importFailed'));
+        return;
+      }
+      setPendingImport(null);
+      setFeedback(t('household.data.imported'));
+      onImportComplete();
+    } catch {
+      setImportError(t('household.data.importFailed'));
+    } finally {
+      importInFlightRef.current = false;
+      setIsImporting(false);
+    }
+  };
+
   return (
     <>
       <div>
@@ -173,49 +203,39 @@ export function ChoreDataRecovery({
 
       <AlertDialog
         open={pendingImport !== null}
-        onOpenChange={(open) => !open && setPendingImport(null)}
+        onOpenChange={(open) => {
+          if (!open && !importInFlightRef.current) {
+            setPendingImport(null);
+            setImportError(null);
+          }
+        }}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t('household.data.importTitle')}</AlertDialogTitle>
             <AlertDialogDescription>{t('household.data.importDescription')}</AlertDialogDescription>
           </AlertDialogHeader>
+          {importError ? (
+            <p role="alert" className={`text-sm ${surface.textPrimary}`}>
+              {importError}
+            </p>
+          ) : null}
           <AlertDialogFooter>
-            <AlertDialogCancel className="min-h-10">{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogCancel className="min-h-10" disabled={isImporting}>
+              {t('common.cancel')}
+            </AlertDialogCancel>
             <Button
               variant="secondary"
               className="min-h-10"
-              onClick={async () => {
-                if (!pendingImport) return;
-                const saved = await restoreBackup({
-                  actorParticipantId: managerActorId,
-                  document: pendingImport,
-                  mode: 'merge',
-                });
-                setPendingImport(null);
-                if (saved) {
-                  setFeedback(t('household.data.imported'));
-                  onImportComplete();
-                }
-              }}
+              disabled={isImporting}
+              onClick={() => void importBackup('merge')}
             >
               {t('household.data.merge')}
             </Button>
             <Button
               className="min-h-10"
-              onClick={async () => {
-                if (!pendingImport) return;
-                const saved = await restoreBackup({
-                  actorParticipantId: managerActorId,
-                  document: pendingImport,
-                  mode: 'replace',
-                });
-                setPendingImport(null);
-                if (saved) {
-                  setFeedback(t('household.data.imported'));
-                  onImportComplete();
-                }
-              }}
+              disabled={isImporting}
+              onClick={() => void importBackup('replace')}
             >
               {t('household.data.replace')}
             </Button>

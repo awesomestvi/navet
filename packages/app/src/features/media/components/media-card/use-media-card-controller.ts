@@ -247,6 +247,8 @@ export function useMediaCardController({
     entityId,
     canPreviousTrack,
     canNextTrack,
+    canShuffle: mediaCapabilities.canShuffle,
+    canRepeat: mediaCapabilities.canRepeat,
     shuffleEnabled,
     repeatMode,
     t,

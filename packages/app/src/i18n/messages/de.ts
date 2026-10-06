@@ -410,6 +410,8 @@ export const deMessages = {
   'household.data.importTitle': 'Aufgabensicherung wiederherstellen?',
   'household.data.importDescription':
     'Zusammenführen behält aktuelle Aufgaben und benennt Konflikte um. Ersetzen entfernt zuerst den aktuellen Bereich.',
+  'household.data.importFailed':
+    'Die Sicherung konnte nicht wiederhergestellt werden. Versuche erneut, sie zusammenzuführen oder zu ersetzen.',
   'household.data.imported': 'Aufgabensicherung wiederhergestellt.',
   'household.data.merge': 'Zusammenführen',
   'household.data.replace': 'Ersetzen',

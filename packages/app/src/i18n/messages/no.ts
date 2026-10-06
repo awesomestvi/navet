@@ -406,6 +406,8 @@ export const noMessages = {
   'household.data.importTitle': 'Gjenopprette sikkerhetskopien?',
   'household.data.importDescription':
     'Slå sammen beholder nåværende oppgaver og gir konflikter nye navn. Erstatt fjerner først dagens område.',
+  'household.data.importFailed':
+    'Sikkerhetskopien kunne ikke gjenopprettes. Prøv å slå sammen eller erstatte igjen.',
   'household.data.imported': 'Sikkerhetskopien er gjenopprettet.',
   'household.data.merge': 'Slå sammen',
   'household.data.replace': 'Erstatt',

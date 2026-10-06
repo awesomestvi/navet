@@ -390,6 +390,7 @@ export const zhMessages = {
   'household.data.invalidBackup': '这不是有效的 Navet 家务备份。',
   'household.data.importTitle': '恢复家务备份？',
   'household.data.importDescription': '合并会保留当前家务并重命名冲突项；替换会先删除当前空间。',
+  'household.data.importFailed': '无法恢复家务备份。请再次尝试合并或替换。',
   'household.data.imported': '家务备份已恢复。',
   'household.data.merge': '合并',
   'household.data.replace': '替换',

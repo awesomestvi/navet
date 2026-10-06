@@ -408,6 +408,8 @@ export const daMessages = {
   'household.data.importTitle': 'Gendan sikkerhedskopien?',
   'household.data.importDescription':
     'Flet beholder aktuelle opgaver og omdøber konflikter. Erstat fjerner først det nuværende område.',
+  'household.data.importFailed':
+    'Sikkerhedskopien kunne ikke gendannes. Prøv at flette eller erstatte igen.',
   'household.data.imported': 'Sikkerhedskopien er gendannet.',
   'household.data.merge': 'Flet',
   'household.data.replace': 'Erstat',

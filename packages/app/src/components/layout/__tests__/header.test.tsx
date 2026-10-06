@@ -1,6 +1,6 @@
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { renderWithProviders } from '@navet/app/test/render';
-import { screen } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { createRef } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Header } from '../header';
@@ -99,5 +99,35 @@ describe('Header', () => {
 
     expect(screen.getAllByText('May 30 · 12:00')).toHaveLength(2);
     expect(screen.getAllByText('Welcome back, Jane! · Week 22')).toHaveLength(2);
+  });
+  it('returns focus to the launcher after Clear or Escape without stealing outside focus', async () => {
+    const controller = createController({ isSearchActive: true, searchQuery: 'kitchen' });
+    renderWithProviders(
+      <>
+        <Header controller={controller} />
+        <button type="button">Outside</button>
+      </>
+    );
+    const launcher = screen.getByRole('button', { name: 'Search devices' });
+    fireEvent.click(launcher);
+    await waitFor(() => expect(screen.getByRole('textbox')).toHaveFocus());
+    const clear = screen.getByRole('button', { name: 'Clear search' });
+    clear.focus();
+    fireEvent.click(clear);
+    expect(controller.handleClearSearch).toHaveBeenCalledOnce();
+    expect(screen.getByRole('button', { name: 'Search devices' })).toHaveFocus();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Search devices' }));
+    await waitFor(() => expect(screen.getByRole('textbox')).toHaveFocus());
+    fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Escape' });
+    expect(screen.getByRole('button', { name: 'Search devices' })).toHaveFocus();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Search devices' }));
+    await waitFor(() => expect(screen.getByRole('textbox')).toHaveFocus());
+    const outside = screen.getByRole('button', { name: 'Outside' });
+    outside.focus();
+    fireEvent.click(outside);
+    expect(outside).toHaveFocus();
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
   });
 });

@@ -1,7 +1,7 @@
 import { Input } from '@navet/app/components/primitives';
 import { useI18n } from '@navet/app/hooks';
 import { Search, X } from 'lucide-react';
-import type { RefObject } from 'react';
+import type { KeyboardEventHandler, RefObject } from 'react';
 
 interface HeaderSearchInputProps {
   activeColorValue: string;
@@ -14,6 +14,7 @@ interface HeaderSearchInputProps {
   onChange: (value: string) => void;
   onClear: () => void;
   onFocus: () => void;
+  onKeyDown?: KeyboardEventHandler<HTMLInputElement | HTMLButtonElement>;
   placeholder: string;
   query: string;
   textPrimary: string;
@@ -32,6 +33,7 @@ export function HeaderSearchInput({
   onChange,
   onClear,
   onFocus,
+  onKeyDown,
   placeholder,
   query,
   textPrimary,
@@ -50,20 +52,22 @@ export function HeaderSearchInput({
       onChange={(event) => onChange(event.target.value)}
       onFocus={onFocus}
       onBlur={onBlur}
+      onKeyDown={onKeyDown}
       leading={<Search className={`h-4 w-4 ${textSecondary}`} />}
       trailing={
         isSearchActive ? (
           <button
             type="button"
             onClick={onClear}
-            className={`rounded p-0.5 ${hoverBg} transition-colors`}
+            onKeyDown={onKeyDown}
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded ${hoverBg} transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current`}
             aria-label={t('header.clearSearch')}
           >
             <X className={`h-4 w-4 ${textSecondary}`} />
           </button>
         ) : null
       }
-      inputClassName={`${inputBg} ${widthClassName} ${textPrimary}`}
+      inputClassName={`${inputBg} ${widthClassName} ${textPrimary} ${isSearchActive ? 'pr-14' : ''}`}
       containerClassName="relative"
       style={{
         borderColor: isSearchFocused ? activeColorValue : undefined,

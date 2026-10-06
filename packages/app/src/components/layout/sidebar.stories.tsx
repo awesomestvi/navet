@@ -3,14 +3,27 @@ import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-
 import { useTheme } from '@navet/app/hooks';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { useState } from 'react';
 
 function SidebarStory() {
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
+  const [query, setQuery] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [focused, setFocused] = useState(false);
 
   return (
     <div className={`min-h-screen ${surface.appBg}`}>
-      <Sidebar />
+      <Sidebar
+        isMobileSearchOpen={searchOpen}
+        isSearchActive={Boolean(query)}
+        isSearchFocused={focused}
+        searchQuery={query}
+        handleSearchChange={setQuery}
+        handleClearSearch={() => setQuery('')}
+        handleToggleMobileSearch={() => setSearchOpen((open) => !open)}
+        setIsSearchFocused={setFocused}
+      />
       <div className="pl-16 md:pl-16">
         <div className="min-h-screen px-8 py-8">
           <div
