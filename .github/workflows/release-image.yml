@@ -19,6 +19,10 @@ on:
         default: edge
         type: string
 
+    secrets:
+      NAVET_GHCR_TOKEN:
+        required: true
+
 permissions:
   contents: read
   packages: write

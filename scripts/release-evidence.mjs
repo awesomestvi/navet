@@ -71,10 +71,10 @@ export function assertSameArtifactIdentity(previous, next) {
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const {
     GITHUB_REPOSITORY: repo,
-    NAVET_IMAGE_OWNER: owner = 'awesomestvi',
     SOURCE_TAG: tag,
     RELEASE_SHA: sha,
   } = process.env;
+  const owner = 'awesomestvi';
   if (process.argv[2] === 'verify-source') {
     if (tag.startsWith('navet-dev-')) {
       const runs = JSON.parse(

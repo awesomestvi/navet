@@ -189,6 +189,8 @@ jobs:
       packages: write
     needs: [release-context, source-evidence]
     uses: ./.github/workflows/release-image.yml
+    secrets:
+      NAVET_GHCR_TOKEN: ${{ secrets.NAVET_GHCR_TOKEN }}
     with:
       sha: ${{ needs.release-context.outputs.release_sha }}
       version: ${{ needs.release-context.outputs.package_version }}

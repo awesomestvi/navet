@@ -112,6 +112,8 @@ jobs:
       packages: write
     needs: [release-context, tier-1-release-critical]
     uses: ./.github/workflows/release-image.yml
+    secrets:
+      NAVET_GHCR_TOKEN: ${{ secrets.NAVET_GHCR_TOKEN }}
     with:
       sha: ${{ needs.release-context.outputs.release_sha }}
       version: ${{ needs.release-context.outputs.dev_version }}

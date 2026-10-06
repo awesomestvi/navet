@@ -11,7 +11,7 @@ const images = ['navet', `${arch}-navet-addon`].map((name) => {
   const record = JSON.parse(readFileSync(`release-images/${name}.json`, 'utf8'));
   if (
     !digestPattern.test(record.digest) ||
-    record.image !== `ghcr.io/${process.env.GITHUB_REPOSITORY_OWNER}/${name}`
+    record.image !== `ghcr.io/awesomestvi/${name}`
   ) {
     throw new Error('Invalid artifact identity.');
   }

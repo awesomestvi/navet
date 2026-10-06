@@ -35,7 +35,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   validateEvidence(evidence, {
     tag: process.env.RELEASE_TAG,
     sha: process.env.RELEASE_SHA,
-    owner: process.env.GITHUB_REPOSITORY_OWNER,
+    owner: 'awesomestvi',
   });
   if (evidence.runId !== Number(process.env.GITHUB_RUN_ID))
     throw new Error('This run did not verify the recorded artifacts.');
