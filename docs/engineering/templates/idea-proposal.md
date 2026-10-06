@@ -4,6 +4,30 @@ Use this template in the authorized idea hub. Fill only relevant sections, mark 
 and keep confidential evidence in access-controlled storage. This repository copy is a schema,
 not a storage location for confidential proposals.
 
+## Choose The Detail Level
+
+Keep the ticket readable in one pass. Detail follows uncertainty, user impact and the decision
+needed. The sections below are available for fuller proposals, not mandatory fields in every
+description. Keep execution IDs, receipts and agent progress in the existing private task record.
+
+- **Small bug:** a short description of the user impact, reproduction steps or exact source
+  evidence, actual and expected behavior, the smallest proposed repair and an acceptance check.
+  Usually 100–200 words is enough. Add a risk or unknown only when it affects the fix. A known
+  defect with an obvious repair does not need external research, alternatives or a prototype.
+- **Bounded UX improvement:** explain the friction, evidence, recommended change and acceptance
+  checks. Usually 200–400 words is enough. Include an alternative, sketch or effort estimate
+  only when it helps the maintainer decide.
+- **Exploratory or cross-cutting proposal:** use the relevant fuller sections below for options,
+  research, interaction design, dependencies and compatibility risks. Lead with a short decision
+  summary; link detailed research or retained artifacts when they would overwhelm the ticket.
+
+These lengths are guides, not truncation limits. Keep essential reproduction and safety evidence.
+Separate source-backed findings from rendered reproduction; name any missing verification.
+Omit empty headings and repeated boilerplate. Updates state only a useful new result, blocker,
+decision or delivery link rather than repeating the description or narrating agent activity.
+Preserve human-authored context and decisions when updating an existing ticket. Any later
+implementation approval must still identify the exact revision, selected scope and criteria.
+
 ## Record
 
 - Stable ID and revision:

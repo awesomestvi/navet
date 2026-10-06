@@ -6,18 +6,26 @@ its checked deliverable. These workflows run interactively using available conne
 | Request | Result | Authority |
 | --- | --- | --- |
 | Post about Navet, promote a feature, or share release updates | One checked post and screenshot published to Navet Reddit, Discord and the existing Home Assistant topic | One approval of the shared master post and screenshot covers all three destinations |
-| Suggest ideas for Navet | Researched private Linear proposals with plans and proportionate prototypes | Includes isolated feasibility POCs; prioritization remains with the maintainer |
-| Implement this approved idea | One PR, previews, current-head checks and UX evidence linked to Linear | Requires selected scope and public visibility; maintainer merges |
+| Suggest ideas for Navet | Researched private GitHub Project proposals with plans and proportionate prototypes | Includes isolated feasibility POCs; prioritization remains with the maintainer |
+| Scan Navet for UX bugs and improvements | Luna high code inspection with concise, deduplicated GitHub Project findings and explicit coverage | On demand; findings do not authorize implementation |
+| Implement this approved idea | One PR, previews, current-head checks and UX evidence linked to GitHub Project | Requires selected scope and public visibility; maintainer merges |
 
 ## Use the matching skill
 
 - [Community communication](../../.agents/skills/navet-release-communication/SKILL.md) resolves the
   requested topic or feature, applies Navet voice and design standards, and verifies all three
   publications. Release posts also read the full changelog and ask which news should lead.
-- [Idea proposals](../../.agents/skills/navet-idea-proposals/SKILL.md) uses the existing **Navet 1.0
-  readiness and idea backlog** project, checks duplicates and develops decision-ready proposals.
+- [Idea proposals](../../.agents/skills/navet-idea-proposals/SKILL.md) uses the existing private **Navet planning** Project, checks duplicates and develops decision-ready proposals.
 - [Approved delivery](../../.agents/skills/navet-approved-delivery/SKILL.md) implements selected
   scope using the existing work brief, UX audit and approval package.
+- [UX discovery scan](../../.agents/skills/navet-ux-scan/SKILL.md) delegates close code and journey
+  inspection to `gpt-6-luna` with high reasoning effort. It separates defects from improvements
+  and reports source evidence and actual rendered coverage.
+
+Project draft detail follows the [proposal template](templates/idea-proposal.md). Small bugs use
+short reproduction, expected behavior, suggested repair and acceptance checks. Research, options
+and prototypes support decisions that need them. Detailed logs and execution records remain in
+private task artifacts; draft history carries useful new results, questions and delivery links.
 
 For a release announcement, the agent first reads and retains the entire published changelog.
 It presents a brief digest and asks **“What should be the headline news for this release?”**
@@ -41,7 +49,7 @@ New identity, templates and foundational product/design choices keep their exist
 
 ## Setup and recovery
 
-Linear must be connected with access to the private Navet project and intended attachments.
+GitHub must be authenticated with Projects access to the private Navet planning Project. Drafts need no repository and have no comment threads. Retain research, questions and verified answers in the draft body. Use a separately authored public issue for the approved delivery brief.
 The agent verifies destination privacy and owning-service readback before completing a proposal.
 Public delivery requires a separate selected-scope decision; prioritization does not grant it.
 
@@ -77,7 +85,7 @@ by actual evidence; the scripts cannot authenticate a human conversation or insp
 The local shared ledger deduplicates within this workspace; multiple machines require shared
 durable history. Local ignored files and caches are not backups.
 
-Idea and delivery tasks retain request identity, ticket revision, artifact locations, completed
+Idea and delivery tasks retain request identity, draft revision, artifact locations, completed
 steps, blockers and next action. A human answer resumes the same task within accepted scope.
 Head-sensitive validation becomes unverified after another commit. A pending preview, unresolved
 valid finding or missing UX evidence stays visible in the approval package.
@@ -88,7 +96,7 @@ valid finding or missing UX evidence stays visible in the approval package.
 | --- | --- | --- |
 | Community post | Actual human request, verified source, one master approval, reviewed image/copy, identities/destinations and three permalinks | v0.17.7 published to all three; Reddit and forum visually verified, Discord verified through API readback |
 | Idea development | Requested ideas, verified private destination, readable proposals and attachment/prototype readback | Live proposal development unverified |
-| Approved delivery | Selected scope, one PR, current previews/checks, rendered UX review and Linear readback | Live delivery through these skills unverified |
+| Approved delivery | Selected scope, one PR, current previews/checks, rendered UX review and GitHub Project readback | Live delivery through these skills unverified |
 
 Deterministic tests cover agent-authored content, clean tagged evidence, request scope, reviewed
 payloads, wrong destinations/readbacks, retained attempts and partial-channel recovery. Isolated
