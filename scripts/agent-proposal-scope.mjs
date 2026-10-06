@@ -6,10 +6,11 @@ const DISCOVERY_STAGES = new Set(['Captured', 'Developing proposal']);
 
 export function validateProposalDestination(brief, binding) {
   validatePlanningBinding(binding);
-  const expected = { kind: 'linear', issueId: binding.issueId, teamId: binding.teamId, projectId: binding.projectId };
+  const kind = brief?.resultDestination === 'github-project-proposal' ? 'github-project' : 'linear';
+  const expected = { kind, issueId: binding.issueId, teamId: binding.teamId, projectId: binding.projectId };
   if (brief?.purpose !== 'proposal-development' || brief.visibility !== 'private-planning' ||
-      brief.resultDestination !== 'linear-proposal' || !isDeepStrictEqual(brief.destination, expected)) {
-    throw new Error('Proposal development requires its exact private Linear destination.');
+      !['linear-proposal', 'github-project-proposal'].includes(brief.resultDestination) || !isDeepStrictEqual(brief.destination, expected)) {
+    throw new Error('Proposal development requires its exact private planning destination.');
   }
 }
 

@@ -6,9 +6,9 @@ this plan authorizes no product implementation, live experiment or unattended ac
 ## Goal
 
 Build a coordinated agent team that turns a maintainer's idea into researched options, a plan and
-appropriate prototype evidence in Linear. The maintainer prioritizes there and approves a ticket's
+appropriate prototype evidence in the private Project. The maintainer prioritizes there and approves a ticket's
 selected scope. The team implements approved work, tests and reviews it, opens one PR, and links
-the result back to Linear. Questions and answers stay on the originating ticket.
+the result back to the private Project. Questions and verified answers stay in the originating draft history; authenticate decisions in the active Codex conversation.
 
 This document defines the implementation scope for the core team workflow. The
 [autonomous builder plan](autonomous-builder-plan.md) records a broader future programme. Its
@@ -22,45 +22,28 @@ acceptance remains separate from live operation and Navet 1.0.0 release acceptan
 ```text
 suggest an idea
   -> research + UX planning + appropriate prototype
-  -> Ready for prioritization in Linear
+  -> Ready for prioritization in the private Project
   -> maintainer chooses priority and approves selected scope
   -> specialist implementation + tests + independent review
-  -> PR + preview + evidence linked to Linear
+  -> PR + preview + evidence linked to the private Project
   -> maintainer acceptance and merge
 ```
 
-A material unanswered question produces a ticket comment and a waiting state. A verified answer
+A material unanswered question is retained in draft history and asked in the active Codex conversation, with a waiting state. A verified answer
 resumes the same work within its accepted scope. Priority and agent-written stage changes never
 substitute for the maintainer's approval.
 
-## Starting Evidence To Revalidate
+## Current infrastructure and live integration
 
-The scope audit covers 67 commits from `c9abf84001518fe83ed0db1909fda4466d13c099` through
-`eab3591679db05657e75bf5a37e1f293890b185d`. GitHub observations on 2026-10-04 showed nine on
-`main` and 58 in [PR #232](https://github.com/awesomestvi/navet/pull/232), using
-`feature/autonomous-builder-followup`. Recheck these refs and preserve any local edits before work.
-The audit is a scope/integration assessment, not blanket correctness approval of every commit.
+The [team workflow](agent-team-workflow.md) maps existing intake, ownership, specialist, recovery,
+accounting and completion contracts. The private Project reader supplies stable scope observations.
+Private discovery uses an exact Project destination and verified maintainer idea request; approved
+public delivery requires its separate visibility decision and authenticated exact-scope request.
 
-Relevant verified gaps at that source:
-
-- `agent-planning-scope.mjs` admits only Approved/In delivery stages and requires public visibility
-  for planning-bound execution. A direct probe rejected private research aimed at Linear. The
-  public queue's privacy guard is appropriate; a private pre-approval discovery route is missing.
-- `agent-planning-delivery-dispatch.mjs` requires installed authority and worker-create/lookup
-  callbacks. It is a handoff building block, not a complete specialist coordinator.
-- `agent-codex-worker.mjs` supplies bound observation/interruption, not team creation.
-- Linear result delivery supports research/audit completion. Implementation questions, answer
-  resumption, PR links and stage updates need an integrated conversation contract.
-- Identity, cancellation, duplicate suppression, checkpoints and accounting safeguards exist.
-  Reuse them rather than creating a second execution system.
-
-The last observed queue automation was PAUSED, and dedicated reader credentials failed validation.
-Live private completion and human approval provenance remain unverified. Inspect current private
-configuration without printing credentials. Connected reads may support interactive work; they do
-not prove unattended access or distinct human approval identity.
-
-Synthetic UI comparison and sizing trials are stopped. Their partial outputs and failed receipts
-are retained privately. Do not restart them or increase their caps as an implementation step.
+Historical transport helpers preserve existing receipts and records. Project draft writes,
+question/answer history, human provenance and unattended completion still need installed adapters
+and a live pilot. The queue remains paused. Synthetic comparison experiments remain stopped;
+retained partial outputs do not establish operational acceptance.
 
 ## Team Responsibilities
 
@@ -87,8 +70,7 @@ source references and prior evidence, rather than the entire conversation histor
 Inspect the current branch, PR, task store and planning/dispatch/result adapters. Classify existing
 modules as reusable, requiring integration, or requiring a scoped change. Verify callback ownership
 and installed capabilities. Keep valid security boundaries and changes that implement this
-workflow or are verified direct dependencies of it. Remove unrelated additions from commit
-`c9abf84001518fe83ed0db1909fda4466d13c099` onward. No blanket revert, replacement runtime or extra PR.
+workflow or are verified direct dependencies of it. Preserve unrelated changes and use one scoped reviewable delivery.
 
 Deliverable: a current source map with concrete gaps and the narrow validation path for each change.
 
@@ -96,7 +78,7 @@ Deliverable: a current source map with concrete gaps and the narrow validation p
 
 Define discovery authority from the maintainer's idea request separately from implementation
 approval. Support Captured/Developing proposal work that may research and produce review artifacts
-in the authorized Linear project. Reuse task ownership, recovery and deduplication while giving
+in the authorized private Project. Reuse task ownership, recovery and deduplication while giving
 private work an explicit destination. Preserve the public queue's visibility guard.
 
 Use the [proposal template](templates/idea-proposal.md). Record evidence, options, recommended
@@ -123,7 +105,7 @@ Verify a maintainer approval for the exact selected proposal revision and delive
 the owning trusted source. Keep human decisions distinguishable from agent writes. Bound and
 recheck authority before dispatch; changes and withdrawal stop new execution.
 
-Extend scoped Linear updates to proposal findings, blocking questions, accepted answers, PR links
+Extend scoped Project draft updates to proposal findings, blocking questions, accepted answers, PR links
 and delivery evidence. Preserve idempotent update identities and reconcile uncertain writes.
 Waiting must not poll repeatedly or create replacement tasks. A response resumes existing work;
 material scope changes require a revised decision.
@@ -137,7 +119,7 @@ specialists assess relevant risks. Reuse Navet primitives, focused tests, actual
 current-head CI. UX/test review drives the running behavior; passing static checks alone cannot
 establish interaction quality. The independent reviewer verifies findings at the current head.
 
-Prepare one PR and the [approval package](templates/approval-package.md), then link them to Linear.
+Prepare one PR and the [approval package](templates/approval-package.md), then link them to the private Project.
 Do not mark work Validated merely because a PR exists. Preserve the maintainer's merge and release
 authority and separate feature acceptance from Navet 1.0.0 readiness.
 
@@ -167,14 +149,14 @@ policy remain part of the separately authorized future programme.
 
 Record passed, failed and unverified criteria against the actual source and owning-service receipts:
 
-- A maintainer idea reaches a sourced, planned proposal with appropriate design evidence in Linear.
+- A maintainer idea reaches a sourced, planned proposal with appropriate design evidence in the private Project.
 - Proposal development performs no unapproved production implementation or public publication.
 - Priority changes and agent-authored comments cannot trigger implementation approval.
 - A verified approval starts the selected scope once; duplicates and restarts preserve ownership.
 - Specialist assignments produce integrated deliverables and an independent assessment.
 - A ticket question waits for input; a verified answer resumes the same task.
 - Withdrawal, stale scope, unavailable access and exhausted resources prevent new work.
-- Approved implementation reaches one PR, usable preview, truthful validation and Linear links.
+- Approved implementation reaches one PR, usable preview, truthful validation and the private Project links.
 - Current-head changes invalidate dependent evidence; actual acceptance controls completion.
 - Observed account usage and intervention are recorded without claiming unknown billing or effort.
 
@@ -183,23 +165,7 @@ Maintain a separate ledger for broader rollout requirements and product release 
 
 ## Execution Boundaries
 
-Implement the workflow infrastructure, not the candidate product ideas. Keep all related changes in
-PR #232 if it remains open; if its state changes, establish the delivery target before publishing.
+Implement the workflow infrastructure, not the candidate product ideas. Keep related changes in one reviewable PR.
 Keep the delivery scoped to this workflow and its verified direct dependencies. Do not activate
 automation, start live model trials, raise limits, access private installations, merge or release without the applicable maintainer authorization. Stop
 repeated unproductive work with a concrete diagnosis and checkpoint instead of automatic retries.
-
-## New Session Prompt
-
-> Implement Navet's coordinated agent team workflow using
-> `docs/engineering/team-workflow-implementation-plan.md` and the broader
-> `docs/engineering/autonomous-builder-plan.md`. Revalidate the current source and PR #232, then
-> reuse the existing foundations to implement private idea development, specialist coordination,
-> verified Linear approval, ticket questions/answer resumption, independent acceptance and PR
-> delivery. Keep the broader rollout as a separately authorized future programme and distinguish
-> workflow acceptance
-> from Navet 1.0.0 release acceptance. Work on the infrastructure only; do not implement product
-> ideas, restart stopped experiments or activate unattended operation. Keep related delivery in
-> the existing PR and remove unrelated additions from
-> `c9abf84001518fe83ed0db1909fda4466d13c099` onward. Run focused deterministic checks and report
-> exact remaining live setup/authorization gates before any model pilot.

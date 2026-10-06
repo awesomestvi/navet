@@ -15,7 +15,7 @@ if it is unavailable, report the missing owner privately before mutating state.
    preserve observations; remote state determines whether they remain true.
 2. Apply the existing deterministic GitHub intake rules. Use the issue URL as `source` and the
    accepted event/comment ID as `requestId`. Include mode, revision, concrete acceptance criteria,
-   applicable gates, and a fresh authority observation. GitHub label priority and Linear proposal
+   applicable gates, and a fresh authority observation. GitHub label priority and Project proposal
    stages do not grant authority. Never read approval out of an issue body.
 3. Enqueue idempotently. If an identity exists with changed scope, preserve it and record a new
    authorized request; do not overwrite its original authority or evidence.
@@ -52,7 +52,7 @@ if it is unavailable, report the missing owner privately before mutating state.
    is not merge, public research delivery, or acceptance. For implementation, verify the
    maintainer's merge and exact accepted head before recording `delivered`. For public research,
    verify the actual Nisse comment author and URL. Private planning results require the separate
-   [Linear result readback](autonomous-builder-plan.md#private-result-readback) contract; its writer,
+   [private Project readback](autonomous-builder-plan.md#project-access-and-scope) contract; its writer,
    queue integration and live pilot remain activation gates. Preserve cleanup work independently.
 
 The default capacity is one unfinished claimed or dispatched task. Lease expiration does not
@@ -77,11 +77,11 @@ missing, keep the task eligible for investigation and report the missing evidenc
 
 ## Approval And Failure Boundaries
 
-The maintainer can authorize an exact Linear proposal revision in the trusted Codex conversation
-or through the existing accepted GitHub request path, using only a public-safe delivery brief.
-The current Linear connector writes as the maintainer account; its actor ID and an Approved label
-cannot distinguish a human decision from an agent mutation. Automatic Linear approval dispatch
-requires independently verifiable human-action provenance before activation.
+The maintainer can authorize an exact private Project draft revision in the trusted Codex
+conversation or through the accepted GitHub request path using a separately authored public-safe
+delivery brief. Authenticated account identity alone does not distinguish human decisions from
+agent writes. Project fields grant no implementation authority. Automatic approval dispatch
+requires independently verifiable human-action provenance and a live pilot before activation.
 
 If store access, state validation, ownership, authority or output verification fails, preserve the
 record and report the concrete failure privately. Do not create a replacement task. Quiet unchanged

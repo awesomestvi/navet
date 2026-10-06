@@ -1,6 +1,6 @@
 # Agentic Development
 
-This document defines Navet's issue-to-release operating model. Linear holds product proposals,
+This document defines Navet's issue-to-release operating model. A private organization Project holds product proposals,
 priorities and scoped planning decisions; GitHub holds approved public delivery and review.
 Deterministic checks remain authoritative over agent claims. Read the
 [autonomous builder plan](autonomous-builder-plan.md) for proposal requirements, visibility
@@ -166,11 +166,11 @@ research labels and command requests under their respective rules.
 ## Private Queue And Public Communication
 
 GitHub provides the mobile control plane for public delivery requests. Private proposal content
-stays in Linear, and orchestration details stay in the private runner. A planning-bound task needs
+stays in the private GitHub Project, and orchestration details stay in the private runner. A planning-bound task needs
 an independently verified human request for its exact proposal revision and delivery scope.
 The shared delivery queue requires explicit public visibility approval for every planning-bound
 execution, including research and audits. The [coordinated team](agent-team-workflow.md) develops
-private proposals through a separate research binding with an exact Linear destination. Its scoped
+private proposals through a separate research binding with an exact private Project destination. Its scoped
 ticket adapter verifies private result readback. Live source identity and completion remain
 integration gates; private scope does not authorize a public Nisse conclusion. See the
 [queue state protocol](agent-queue-state-protocol.md) for dispatch and
@@ -262,7 +262,7 @@ exact tested source tag and target release tag.
 Repository files define the workflow, but the following live GitHub and Cloudflare settings must be
 configured for the repository:
 
-1. Create the private **Navet Nisse** GitHub App and install it only on `awesomestvi/navet`. Grant
+1. Create the private **Navet Nisse** GitHub App and install it only on `navet-app/navet`. Grant
    Issues read/write, Pull requests read-only, and mandatory Metadata read. Do not grant Contents,
    Actions, Administration, Environments, Secrets, Workflows, package deletion, or organization
    and account permissions. Use the App for issue communication and read-only PR monitoring. Delivery tasks
@@ -290,7 +290,7 @@ configured for the repository:
    to its delivery tasks. Do not authorize work from issue-body markers. Dispatch no more than one issue or PR per run and follow the
    private queue contract above. Keep only one active queue runner so two agents cannot claim the
    same work.
-4. Connect `awesomestvi/navet` to Codex using the maintainer's ChatGPT account. In
+4. Connect `navet-app/navet` to Codex using the maintainer's ChatGPT account. In
    [Codex code review settings](https://chatgpt.com/settings/code-review), open the repository.
    Under **Review code**, enable **Automatic review**, set **Review** to **All PRs**, and set
    **Trigger** to **On every push** so updated PR heads receive fresh review. GitHub reviews use the account's

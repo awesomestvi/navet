@@ -1,0 +1,3 @@
+type: internal
+audiences: []
+summary: Support private GitHub Project drafts with verified scope reads and exact proposal destinations while preserving historical task records.
