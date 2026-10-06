@@ -141,7 +141,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
         notes: notes.notes.general,
       });
       assertReleaseNotes(
-        JSON.parse(gh('api', 'repos/awesomestvi/navet-home-assistant/releases/tags/' + tag)),
+        JSON.parse(gh('api', 'repos/navet-app/navet-home-assistant/releases/tags/' + tag)),
         { tag, prerelease: tag.includes('-'), notes: notes.notes.hacs },
       );
     }

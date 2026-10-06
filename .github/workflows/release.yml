@@ -29,7 +29,7 @@ env:
   RELEASE_TAG: ${{ inputs.release_tag }}
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository_owner }}/navet
-  HACS_REPOSITORY: awesomestvi/navet-home-assistant
+  HACS_REPOSITORY: navet-app/navet-home-assistant
 
 jobs:
   release-context:
@@ -211,7 +211,7 @@ jobs:
       group: hacs-sync-navet-hacs-main
       cancel-in-progress: false
     environment: ${{ needs.release-context.outputs.release_environment }}
-    if: github.repository == 'awesomestvi/navet'
+    if: github.repository == 'navet-app/navet'
     env:
       NAVET_HACS_APP_ID: ${{ secrets.NAVET_HACS_APP_ID }}
       NAVET_HACS_APP_PRIVATE_KEY: ${{ secrets.NAVET_HACS_APP_PRIVATE_KEY }}
@@ -406,7 +406,7 @@ jobs:
     timeout-minutes: 90
     needs: [release-context, verify-release]
     environment: ${{ needs.release-context.outputs.release_environment }}
-    if: github.repository == 'awesomestvi/navet'
+    if: github.repository == 'navet-app/navet'
     steps:
       - name: Create GitHub App token for metadata PR
         id: navet_app_token
@@ -608,7 +608,7 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     needs: [release-context, publish-channels]
-    if: needs.release-context.outputs.prerelease == 'false' && github.repository == 'awesomestvi/navet'
+    if: needs.release-context.outputs.prerelease == 'false' && github.repository == 'navet-app/navet'
     environment: production
     permissions:
       contents: read

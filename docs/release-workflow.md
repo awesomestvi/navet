@@ -3,6 +3,17 @@
 Navet has two independent delivery paths: continuous public sites and versioned installable
 releases. A product release does not redeploy or smoke-test the public sites.
 
+## GitHub Ownership And Access
+
+The `navet-app` organization owns `navet`, `navet-cards`, and `navet-home-assistant`.
+Release workflows run from `navet-app/navet` and synchronize the Home Assistant integration
+to `navet-app/navet-home-assistant`.
+
+Before publishing, install the GitHub Apps used by `NAVET_HACS_APP_ID` and
+`NAVET_NISSE_CLIENT_ID` in `navet-app` with access to the repositories their workflows target.
+Connect Cloudflare Pages to the organization repositories and verify its checks on a pull request.
+GitHub App credentials identify an app; repository access comes from its organization installation.
+
 ## Pull Requests And Public Sites
 
 Every pull request adds a validated `.changes/*.yaml` fragment. Use `internal` and an empty
@@ -185,8 +196,8 @@ same bundle. Existing release bodies, versioned changelog entries, and published
 must match on recovery; conflicts stop the run rather than silently replacing published notes.
 
 The monorepo owns Home Assistant integration and add-on sources under `platform/home-assistant`.
-HACS receives the integration export in `awesomestvi/navet-home-assistant`. The Home Assistant App
-repository is `awesomestvi/navet`, with root `repository.yaml`.
+HACS receives the integration export in `navet-app/navet-home-assistant`. The Home Assistant App
+repository is `navet-app/navet`, with root `repository.yaml`.
 
 After artifact verification, automation opens the small App metadata PR and merges it through
 normal branch protection without bypass privileges. This PR gets quality/script checks and
