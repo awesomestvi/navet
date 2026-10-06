@@ -53,5 +53,5 @@ remaining limitations. Do not report ready while required gates are pending or f
 In delivery during review; a PR is not Validated. Maintainer merge records acceptance, after which
 verify the merged result and update the ticket. Do not merge your own work or dispatch a production
 release. Report observed delivery time, interventions, duplicates and review defects; do not infer
-missing measurements. A blocking question remains on the originating ticket and resumes the same
-task only after a verified human answer within the accepted scope.
+missing measurements. Retain blocking questions in the originating draft history and ask the maintainer in the active
+Codex conversation. Resume the same task only after a verified human answer within accepted scope.

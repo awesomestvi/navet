@@ -17,11 +17,12 @@ the proposal is visual. Reuse the closest component family, with Home as the das
 
 ## Research and develop
 
-Use the connected GitHub Project tools to find the Navet team and the existing **Navet 1.0 readiness and
-idea backlog** project. Verify its identity and visibility; inspect active and archived drafts and their history
-before creating new proposals. Update an existing matching proposal rather than duplicating it.
-Keep proposal content private and publish only a separately approved delivery brief in repository issues. If visibility is
-unverified, retain the proposal privately and report the missing check.
+Use authenticated GitHub CLI or browser access to the navet-app organization's private **Navet
+planning** Project. Verify organization, Project identity and private visibility; inspect active
+and archived drafts and their history before creating proposals. Update a matching draft rather
+than duplicating it. Keep proposal content private and publish only a separately approved delivery
+brief in repository issues. If visibility is unverified, retain work privately and report the
+missing check.
 
 Verify what Navet already supports. Research current external evidence when it informs an idea,
 linking primary sources and distinguishing observed need from a hypothesis. Compare the smallest
@@ -45,8 +46,8 @@ completed steps, unknowns, blockers and next action. Use durable private storage
 do not call a cache or ignored directory a backup. Never put secrets in proposal files.
 
 Create/update private Project drafts through authenticated GitHub UI/API within the verified destination.
-Use Captured/Developing proposal while working. Link only authorized artifacts in verified access-controlled storage; verify their audience independently. Read back ticket content and attachments from GitHub Project and
-verify access before setting Ready for prioritization. Do not claim completion when an attachment
+Use Captured/Developing proposal while working. Link only authorized artifacts in verified access-controlled storage; verify their audience independently. Read back the complete draft body and artifact references from GitHub, then independently verify
+artifact content and access before setting Ready for prioritization. Do not claim completion when an attachment
 or ticket is missing. Mark inaccessible or unexercised prototype behavior explicitly.
 
 For a material question, retain one concise question in the originating draft and ask the maintainer
