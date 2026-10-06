@@ -938,7 +938,7 @@ export function verifyReleaseSource(sourceRoot, release, sourceFiles = [], requi
   if (
     git(['rev-parse', 'HEAD']) !== release.sourceHead ||
     (requireTag && git(['rev-parse', `${release.tag}^{commit}`]) !== release.sourceHead) ||
-    git(['status', '--porcelain', '--untracked-files=no'])
+    git(['status', '--porcelain', '--untracked-files=all'])
   ) {
     throw new Error(
       'Release source checkout must be clean and match the published tag and source head.'

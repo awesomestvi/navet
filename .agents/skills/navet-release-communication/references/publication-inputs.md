@@ -152,7 +152,8 @@ sends in this workspace; separate machines need the same durable ledger before p
 
 Create an incoming webhook in Discord Server Settings → Integrations, select the exact Navet
 announcements channel, and set its name/avatar. Review that identity with the final package;
-use the webhook's exact name as the quality review `account`. The human approval covers the
+use the webhook's exact name as the quality review `account` and retain its API `avatar`
+identifier as `webhookAvatar` (including `null` when it has no avatar). The human approval covers the
 displayed content, image and destination. Keep the URL in
 `marketing/private/discord-webhook-url` (or another private local file) with permissions `600`.
 Never put it in tracked configuration, task JSON, command arguments, receipts or chat.

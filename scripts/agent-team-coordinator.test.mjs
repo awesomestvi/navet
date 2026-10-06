@@ -256,7 +256,8 @@ it('hands scoped research through a real developer commit to current-head testin
   expect(changed.team.workers[1].evidence[0].head).toBe(deliveryHead);
   expect(await runTeamStep({ ...h.options, adapters })).toMatchObject({ status: 'blocked', reason: 'team-replan-required' });
   expect(h.calls).toHaveLength(4);
-});
+  // Real Git commits and eight durable worker transitions need headroom under parallel CI load.
+}, 15000);
 
 it.each(['failed', 'missing'])('reconciles a %s specialist after interruption and permits deliberate replanning', async (status) => {
   const h = await setup();

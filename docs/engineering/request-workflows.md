@@ -54,7 +54,7 @@ Discord webhook delivery requires a private local webhook URL rather than browse
 maintainer creates it in Server Settings → Integrations, selects the announcements channel and
 sets the reviewed name/avatar. Store its URL in `marketing/private/discord-webhook-url` with
 permissions `600`; keep it outside copy, screenshots and publication receipts. Include its
-identity in the consolidated approval package. The sender verifies the server, channel, name,
+identity in the consolidated approval package. The sender verifies the server, channel, name, avatar,
 approved text and image before claiming one send, disables automatic mentions, and records API
 readback. No webhook publication occurs during setup or testing. See publication inputs for the
 sender command. An unavailable actual Discord preview remains explicitly unverified.

@@ -33,6 +33,7 @@ function fixture(channelId = 'navet-subreddit') {
       stdio: ['ignore', 'pipe', 'pipe'],
     }).trim();
   git(['init', '--quiet']);
+  fs.writeFileSync(path.join(root, '.git', 'info', 'exclude'), '/release-*/\n/post-*/\n/screenshot.png\n/secret\n');
   git(['add', 'docs', 'scripts']);
   git([
     '-c',
@@ -131,6 +132,7 @@ function fixture(channelId = 'navet-subreddit') {
     reviewer: 'content-review',
     account: 'navet-maintainer',
     destinationUrl,
+    webhookAvatar: channelId === 'navet-discord' ? 'reviewed-avatar' : undefined,
     reviewedAt: now.toISOString(),
     evidence: Object.fromEntries(
       [
@@ -179,24 +181,25 @@ afterEach(() => {
 });
 
 describe('Discord webhook publication', () => {
-  function setup() {
+  function setup(webhookAvatar = 'reviewed-avatar') {
     const input = fixture('navet-discord');
+    input.review.webhookAvatar = webhookAvatar;
     const assetPath = path.join(input.root, 'screenshot.png');
     fs.writeFileSync(assetPath, 'fixture image');
     input.asset.sha256 = crypto.createHash('sha256').update('fixture image').digest('hex');
     input.review.assetSha256 = input.asset.sha256;
     input.authorization.approval.posts[0].assetSha256 = input.asset.sha256;
     const prepared = preparePublication(input);
-    const webhook = { id: '999', type: 1, guild_id: '1540491864325623892', channel_id: '12345', name: input.review.account };
+    const webhook = { id: '999', type: 1, guild_id: '1540491864325623892', channel_id: '12345', name: input.review.account, avatar: input.review.webhookAvatar };
     const message = { id: '67890', channel_id: '12345', webhook_id: '999',
-      author: { username: input.review.account }, content: input.pack.drafts[0].body,
+      author: { username: input.review.account, avatar: input.review.webhookAvatar }, content: input.pack.drafts[0].body,
       attachments: [{ filename: 'navet-release.png', description: input.asset.altText, size: 13 }] };
     return { input, prepared, webhook, message, options: {
       ...input, ...prepared, assetPath, webhookUrl: 'https://discord.com/api/webhooks/999/fixture-secret',
     } };
   }
-  it('sends the approved attachment once, disables mentions and retains API readback', async () => {
-    const f = setup();
+  it.each(['reviewed-avatar', null])('sends once with reviewed avatar %s, disables mentions and retains API readback', async avatar => {
+    const f = setup(avatar);
     const calls = [];
     const fetchImpl = async (url, options) => {
       calls.push({ url, options });
@@ -217,6 +220,17 @@ describe('Discord webhook publication', () => {
     const f = setup();
     const fetchImpl = async () => ({ ok: true, json: async () => ({ ...f.webhook, channel_id: '321' }) });
     await expect(publishDiscordWebhook({ ...f.options, fetchImpl })).rejects.toThrow('identity or destination');
+    expect(fs.existsSync(f.prepared.attemptPath)).toBe(false);
+  });
+  it.each(['changed-avatar', null])('blocks a changed webhook avatar %s before claiming or sending', async avatar => {
+    const f = setup();
+    let sends = 0;
+    const fetchImpl = async (_url, options) => {
+      if (options.method === 'POST') sends++;
+      return { ok: true, json: async () => ({ ...f.webhook, avatar }) };
+    };
+    await expect(publishDiscordWebhook({ ...f.options, fetchImpl })).rejects.toThrow('identity or destination');
+    expect(sends).toBe(0);
     expect(fs.existsSync(f.prepared.attemptPath)).toBe(false);
   });
   it('retains an uncertain send and refuses to retry after a network error', async () => {
@@ -336,6 +350,38 @@ describe('request-authorized release publication', () => {
     }
   );
 
+  it.each([
+    ['body', 'Unapproved copy', 'content hash'],
+    ['title', 'Unapproved title', 'content hash'],
+    ['account', 'another-account', 'Quality review'],
+    ['channelId', 'navet-discord', 'Quality review'],
+    ['destinationUrl', 'https://www.reddit.com/r/other', 'Quality review'],
+  ])('rejects changed retained %s before attempting and recording', (field, value, message) => {
+    const input = fixture();
+    const prepared = preparePublication(input);
+    const original = JSON.parse(fs.readFileSync(prepared.intentPath));
+    fs.writeFileSync(prepared.intentPath, JSON.stringify({ ...original, [field]: value }));
+    expect(() => attemptPublication({ ...input, ...prepared })).toThrow(message);
+    expect(fs.existsSync(prepared.attemptPath)).toBe(false);
+    fs.writeFileSync(prepared.intentPath, JSON.stringify(original));
+    attemptPublication({ ...input, ...prepared });
+    fs.writeFileSync(prepared.intentPath, JSON.stringify({ ...original, [field]: value }));
+    expect(() => recordAgentPublication({ ...input, ...prepared, receipt: { ...input.receipt, [field]: value } })).toThrow(message);
+    expect(fs.existsSync(prepared.recordPath)).toBe(false);
+  });
+
+  it('rejects untracked product files at preparation and immediately before sending', () => {
+    const input = fixture();
+    const productFile = path.join(input.root, 'public-asset.png');
+    fs.writeFileSync(productFile, 'uncommitted image');
+    expect(() => preparePublication(input)).toThrow('clean and match');
+    fs.unlinkSync(productFile);
+    const prepared = preparePublication(input);
+    fs.writeFileSync(productFile, 'uncommitted image');
+    expect(() => attemptPublication({ ...input, ...prepared })).toThrow('clean and match');
+    expect(fs.existsSync(prepared.attemptPath)).toBe(false);
+  });
+
   it('limits Home Assistant replies to the configured existing Navet topic', () => {
     const input = fixture('homeassistant-community');
     expect(() => preparePublication({ ...input, review: { ...input.review,
@@ -414,7 +460,7 @@ describe('request-authorized release publication', () => {
       source: 'docs/guide/unreleased.md',
       locator: 'Unreleased feature.',
     };
-    expect(() => preparePublication(untracked)).toThrow('not a file in the published commit');
+    expect(() => preparePublication(untracked)).toThrow('clean and match');
   });
 
   it('keeps uncertain sends blocked across new pack ids and preserves successful channels', () => {

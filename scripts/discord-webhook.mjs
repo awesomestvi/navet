@@ -54,7 +54,9 @@ export async function publishDiscordWebhook({
     throw new Error('Unsupported screenshot format.');
   const webhook = await requestJson(fetchImpl, endpoint);
   if (webhook.type !== 1 || String(webhook.guild_id) !== match[1] ||
-      String(webhook.channel_id) !== match[2] || webhook.name !== intent.account)
+      String(webhook.channel_id) !== match[2] || webhook.name !== intent.account ||
+      !Object.hasOwn(intent.review, 'webhookAvatar') ||
+      webhook.avatar !== intent.review.webhookAvatar)
     throw new Error('Webhook identity or destination does not match the reviewed intent.');
   const filename = `navet-release${extension}`;
   const form = new FormData();
@@ -74,7 +76,7 @@ export async function publishDiscordWebhook({
   const attachment = observed.attachments?.[0];
   if (String(observed.id) !== String(sent.id) || observed.content !== intent.body ||
       String(observed.channel_id) !== match[2] || String(observed.webhook_id) !== String(webhook.id) ||
-      observed.author?.username !== intent.account || observed.attachments?.length !== 1 ||
+      observed.author?.username !== intent.account || observed.author?.avatar !== intent.review.webhookAvatar || observed.attachments?.length !== 1 ||
       attachment?.filename !== filename || attachment?.description !== intent.asset.altText ||
       attachment?.size !== image.length)
     throw new Error('Discord readback differs from the approved message; reconcile the send.');

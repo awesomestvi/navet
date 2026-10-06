@@ -16,6 +16,7 @@ import { TabPanel, Tabs } from '@navet/app/components/primitives/tabs';
 import { CompactRoomSelector } from '@navet/app/components/shared/device-editor/compact-room-selector';
 import { CustomCardTintPicker } from '@navet/app/components/shared/device-editor/custom-card-tint-picker';
 import { CustomScrollbar } from '@navet/app/components/shared/device-editor/custom-scrollbar';
+import { getDialogReturnFocus } from '@navet/app/components/shared/dialog-return-focus';
 import { EntityRoomSelector } from '@navet/app/components/shared/entity-room-selector';
 import { getBaseCardDialogSurface } from '@navet/app/components/shared/theme/base-card-dialog-surface';
 import { getInheritedDialogSectionStyle } from '@navet/app/components/shared/theme/custom-card-tint-surface';
@@ -242,7 +243,7 @@ function BaseCardDialogRoot({
     if (isOpen) {
       setOpener(
         typeof document !== 'undefined' && document.activeElement instanceof HTMLElement
-          ? document.activeElement
+          ? getDialogReturnFocus(document.activeElement)
           : null
       );
     }

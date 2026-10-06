@@ -165,6 +165,7 @@ function CardActionOverflowMenu({
           theme={theme}
           size={buttonSize}
           variant="neutral"
+          disabled={items.every((item) => item.disabled)}
           aria-label={t('common.moreActions')}
           aria-haspopup="dialog"
           aria-expanded={isOpen}

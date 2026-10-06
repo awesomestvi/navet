@@ -1,3 +1,4 @@
+import { registerDialogReturnFocus } from '@navet/app/components/shared/dialog-return-focus';
 import { withTintAlpha } from '@navet/app/components/shared/theme/custom-card-tint-surface';
 import { useI18n } from '@navet/app/hooks';
 import type { ThemeType } from '@navet/app/hooks/use-theme';
@@ -88,6 +89,9 @@ export function PortalActionDock({
         <div className="fixed inset-0 z-[900]" data-card-edit-dock="true">
           <Dialog.Overlay className="absolute inset-0 bg-black/58" />
           <Dialog.Content
+            ref={(container) => {
+              if (container) registerDialogReturnFocus(container, opener);
+            }}
             aria-modal="true"
             className="absolute z-1"
             aria-describedby={undefined}

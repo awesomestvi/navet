@@ -77,6 +77,23 @@ function requireFinalApproval(authorization, snapshot, now) {
   observedTime(approval.approvedAt, now, 'Final content approval');
 }
 
+function verifyReviewedIntent(intent, now) {
+  if (publicationContentHash(intent) !== intent.contentHash)
+    fail('Intent text does not match its approved content hash.');
+  const review = intent.review;
+  if (review?.channelId !== intent.channelId ||
+      review?.contentHash !== intent.contentHash ||
+      review?.assetSha256 !== intent.asset?.sha256 ||
+      review?.sourceHead !== intent.release?.sourceHead ||
+      review?.account !== intent.account ||
+      review?.destinationUrl !== intent.destinationUrl ||
+      !text(review?.reviewer) || !text(review?.account) ||
+      REVIEW_CHECKS.some(key => !text(review?.evidence?.[key])))
+    fail('Quality review must match the retained content, screenshot, account, destination and source head.');
+  requireFinalApproval(intent.authorization, intent, now);
+  observedTime(review.reviewedAt, now, 'Quality review');
+}
+
 function destination(channelId, value) {
   let url;
   try {
@@ -315,7 +332,7 @@ export function preparePublication({
     contentHash,
     asset,
     authorization,
-    review,
+    review: { ...review, destinationUrl },
     evidenceIds: draft.evidenceIds,
     createdAt: now.toISOString(),
   };
@@ -349,9 +366,8 @@ export function attemptPublication({
   const status = retainedStatus(files, intent);
   if (status !== 'prepared')
     return { status, recordPath: files.recordPath, attemptPath: files.attemptPath };
-  requireFinalApproval(intent.authorization, intent, now);
+  verifyReviewedIntent(intent, now);
   observedTime(intent.authorization.requestedAt, now, 'Request authorization');
-  observedTime(intent.review.reviewedAt, now, 'Quality review');
   verifyReleaseSource(intent.sourceRoot, intent.release, intent.sourceFiles, !intent.publicationKind || intent.publicationKind === 'release');
   const attempt = {
     schemaVersion: 2,
@@ -382,6 +398,10 @@ export function recordAgentPublication({
     fail('Unsupported publication method for this channel.');
   if (!fs.existsSync(files.attemptPath))
     fail('No retained send attempt; cannot record an agent publication.');
+  verifyReviewedIntent(intent, now);
+  const attempt = read(files.attemptPath);
+  if (attempt.contentHash !== intent.contentHash || attempt.assetSha256 !== intent.asset.sha256)
+    fail('Retained send attempt must match the reviewed content and screenshot.');
   if (
     receipt?.account !== intent.account ||
     receipt?.destinationUrl !== intent.destinationUrl ||

@@ -1,0 +1,5 @@
+type: fixed
+audiences:
+  - standalone
+  - home-assistant
+summary: Restore keyboard focus after card settings and disable unavailable overflow actions.

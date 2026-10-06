@@ -3,6 +3,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
+import { BaseCardDialog } from '../primitives/Cards/BaseCardDialog';
 import { CardActionRow } from './card-action-row';
 
 function Example({ onRename = vi.fn(), nextDialog = false }) {
@@ -52,6 +53,53 @@ describe('PortalActionDock focus ownership', () => {
     fireEvent.keyDown(screen.getByRole('button', { name: 'Rename' }), { key: 'Escape' });
     await waitFor(() => expect(opener).toHaveFocus());
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('disables the overflow launcher when every action is unavailable', () => {
+    renderWithProviders(
+      <CardActionRow
+        theme="dark"
+        overflowItems={[
+          { key: 'start', label: 'Start', disabled: true, onSelect: vi.fn() },
+          { key: 'dock', label: 'Dock', disabled: true, onSelect: vi.fn() },
+        ]}
+      />
+    );
+    expect(screen.getByRole('button', { name: 'More actions' })).toBeDisabled();
+  });
+
+  it('restores the persistent launcher after a chained card settings dialog closes', async () => {
+    function Chained() {
+      const [open, setOpen] = useState(false);
+      return (
+        <>
+          <CardActionRow
+            theme="dark"
+            overflowItems={[{ key: 'settings', label: 'Settings', onSelect: () => setOpen(true) }]}
+          />
+          <BaseCardDialog
+            variant="modal"
+            isOpen={open}
+            onOpenChange={setOpen}
+            title="Card settings"
+            theme="dark"
+          >
+            <input aria-label="Card name" />
+          </BaseCardDialog>
+        </>
+      );
+    }
+    renderWithProviders(<Chained />);
+    const opener = screen.getByRole('button', { name: 'More actions' });
+    opener.focus();
+    fireEvent.click(opener);
+    const action = await screen.findByRole('button', { name: 'Settings' });
+    action.focus();
+    fireEvent.click(action);
+    const dialog = await screen.findByRole('dialog', { name: 'Card settings' });
+    await waitFor(() => expect(dialog.contains(document.activeElement)).toBe(true));
+    fireEvent.keyDown(dialog, { key: 'Escape' });
+    await waitFor(() => expect(opener).toHaveFocus());
   });
 
   it('runs a selected action once and lets its downstream dialog retain focus', async () => {
