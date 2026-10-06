@@ -50,10 +50,10 @@ Cloudflare Pages owns site deployment:
 
 | Project | Build command | Output |
 | --- | --- | --- |
-| `navet` | `pnpm website:build` | `apps/website/dist` |
-| `navet-demo` | `pnpm build:demo` | `apps/demo/dist` |
-| `navet-storybook` | `pnpm storybook:build` | `apps/storybook/dist` |
-| `navet-docs` | `pnpm docs:build` | `apps/docs/dist` |
+| `navet-app` | `pnpm website:build:app` | `apps/website/dist` |
+| `navet-app-demo` | `pnpm build:demo` | `apps/demo/dist` |
+| `navet-app-storybook` | `pnpm storybook:build` | `apps/storybook/dist` |
+| `navet-app-docs` | `pnpm docs:build` | `apps/docs/dist` |
 
 Affected branch pushes produce previews. Affected pushes to `main` update production.
 CI build checks and Cloudflare builds are separate: CI verifies the change; Cloudflare owns

@@ -34,14 +34,14 @@ const stories = [
 ];
 
 export const pagesProjects = {
-  website: { name: 'navet', excludes: [...documentation, 'apps/demo/*', ...stories] },
-  docs: { name: 'navet-docs', excludes: [...marketing, 'apps/demo/*', ...stories] },
+  website: { name: 'navet-app', excludes: [...documentation, 'apps/demo/*', ...stories] },
+  docs: { name: 'navet-app-docs', excludes: [...marketing, 'apps/demo/*', ...stories] },
   demo: {
-    name: 'navet-demo',
+    name: 'navet-app-demo',
     excludes: [...documentation, ...marketing, ...stories, 'CHANGELOG.md'],
   },
   storybook: {
-    name: 'navet-storybook',
+    name: 'navet-app-storybook',
     excludes: [...documentation, ...marketing, 'apps/demo/*', 'CHANGELOG.md'],
   },
 };
