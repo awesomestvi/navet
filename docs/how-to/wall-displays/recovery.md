@@ -1,7 +1,7 @@
 ---
 title: Recover kiosk access and keep-awake
 description: Exit kiosk mode, activate wake-lock fallback, and recover embedded-display problems.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/wall-displays/recovery.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/wall-displays/recovery.md
 ---
 
 Use this guide when normal navigation is hidden, the screen still sleeps, or an embedded page will

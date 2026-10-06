@@ -81,7 +81,7 @@ function createReleaseFixture() {
     join(repository, 'repository.yaml'),
     [
       'name: Navet Add-ons',
-      'url: https://github.com/awesomestvi/navet',
+      'url: https://github.com/navet-app/navet',
       'maintainer: Navet Release Test',
       '',
     ].join('\n'),

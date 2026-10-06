@@ -20,7 +20,7 @@ export const OPENFREEMAP_URL = 'https://openfreemap.org/';
 export const OPENMAPTILES_URL = 'https://openmaptiles.org/';
 
 /** GitHub repository URL */
-export const GITHUB_REPO_URL = 'https://github.com/awesomestvi/navet';
+export const GITHUB_REPO_URL = 'https://github.com/navet-app/navet';
 
 /** Navet-owned community destinations */
 export const COMMUNITY_URLS = {

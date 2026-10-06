@@ -1,7 +1,7 @@
 ---
 title: Voice and messaging
 description: How Navet speaks across product, documentation, marketing, and community work.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/branding/VOICE_AND_MESSAGING.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/branding/VOICE_AND_MESSAGING.md
 ---
 
 Navet speaks like the product works: calm, direct, compact, and grounded in the current state of the

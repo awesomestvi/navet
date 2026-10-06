@@ -1,7 +1,7 @@
 ---
 title: Use notifications and provider actions
 description: Review attention items, hide or clear notifications, and use supported update actions.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/everyday-control/notifications.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/everyday-control/notifications.md
 ---
 
 Navet combines supported provider notifications into an attention surface. Available actions

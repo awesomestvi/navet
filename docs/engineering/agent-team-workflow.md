@@ -175,6 +175,6 @@ remain separate ledgers and require their own evidence and authorization.
 | Measured specialist usage within accepted caps | Accounting fixtures cover full inventory and allocation settlement | Dedicated sessions and accepted live policy unverified |
 
 These local contracts form the workflow infrastructure delivered in
-[PR #232](https://github.com/awesomestvi/navet/pull/232). Operational acceptance requires the live
+[PR #232](https://github.com/navet-app/navet/pull/232). Operational acceptance requires the live
 gates above. The broader rollout ledger in the autonomous builder plan and the product release
 ledger retain their separate requirements.

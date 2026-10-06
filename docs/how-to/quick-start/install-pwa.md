@@ -1,7 +1,7 @@
 ---
 title: Add Navet to your phone
 description: Add Navet to the Home Screen on iPhone or Android and apply future updates.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/quick-start/install-pwa.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/quick-start/install-pwa.md
 ---
 
 Adding Navet to your phone's Home Screen gives it an app icon and opens it without the usual

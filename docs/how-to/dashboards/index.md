@@ -1,7 +1,7 @@
 ---
 title: Dashboards
 description: Create focused dashboards and decide what each household screen should show.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/dashboards/index.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/dashboards/index.md
 ---
 
 Navet can keep several focused Home dashboards. A wall display can open one dashboard while a

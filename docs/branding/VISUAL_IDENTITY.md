@@ -1,7 +1,7 @@
 ---
 title: Visual identity
 description: Apply Navet's established logo, color, typography, imagery, and motion system.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/branding/VISUAL_IDENTITY.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/branding/VISUAL_IDENTITY.md
 ---
 
 This document defines Navet’s visual identity.
@@ -14,7 +14,7 @@ The primary references are:
 
 Use this guide to decide how Navet should look across product, website, documentation, release
 graphics, social media, presentations, and partner materials. Use the
-[UI guidelines](https://github.com/awesomestvi/navet/blob/main/docs/design-system/UI-GUIDELINES.md) and Storybook for component implementation.
+[UI guidelines](https://github.com/navet-app/navet/blob/main/docs/design-system/UI-GUIDELINES.md) and Storybook for component implementation.
 
 ## Identity In One Sentence
 
@@ -74,7 +74,7 @@ must not invent a parallel brand or make the product look unlike the demo.
 
 ### Approved marks
 
-Use the supplied masters in [`assets/public`](https://github.com/awesomestvi/navet/blob/main/assets/public/README.md):
+Use the supplied masters in [`assets/public`](https://github.com/navet-app/navet/blob/main/assets/public/README.md):
 
 - `logo.svg` — primary square hub mark
 - `logo-horizontal.svg` — hub mark with dark wordmark for light backgrounds
@@ -349,7 +349,7 @@ The product is the strongest proof of the brand. Use real Navet UI captured from
 demo with realistic sample data.
 
 - Use the capture workflow documented in
-  [`assets/reference/marketing/README.md`](https://github.com/awesomestvi/navet/blob/main/assets/reference/marketing/README.md).
+  [`assets/reference/marketing/README.md`](https://github.com/navet-app/navet/blob/main/assets/reference/marketing/README.md).
 - Show current cards, navigation, spacing, and supported capabilities.
 - Preserve the product's real aspect ratio, density, semantic color, and theme.
 - Use a device frame only when screen context materially helps the story.
@@ -481,11 +481,11 @@ Before publishing a visual application, confirm:
 
 Use these sources rather than copying values out of this guide into feature-local code:
 
-- brand assets: [`assets/public`](https://github.com/awesomestvi/navet/blob/main/assets/public/README.md)
+- brand assets: [`assets/public`](https://github.com/navet-app/navet/blob/main/assets/public/README.md)
 - product foundations: `packages/app/src/components/system/tokens/`
 - theme surfaces: `packages/app/src/components/shared/theme/`
 - marketing expression: `packages/app/src/styles/marketing.css`
 - docs expression: `apps/docs/src/styles/navet.css`
 - product card expression: [Card grammar](https://docs.navet.app/brand/cards/)
-- component rules: [UI guidelines](https://github.com/awesomestvi/navet/blob/main/docs/design-system/UI-GUIDELINES.md)
-- fast UI reference: [AI design context](https://github.com/awesomestvi/navet/blob/main/docs/design-system/AI-DESIGN-CONTEXT.md)
+- component rules: [UI guidelines](https://github.com/navet-app/navet/blob/main/docs/design-system/UI-GUIDELINES.md)
+- fast UI reference: [AI design context](https://github.com/navet-app/navet/blob/main/docs/design-system/AI-DESIGN-CONTEXT.md)

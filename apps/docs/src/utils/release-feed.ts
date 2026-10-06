@@ -47,7 +47,7 @@ export function parseCachedReleases(value: unknown): FeedRelease[] {
       typeof entry.date !== 'string' ||
       !/^\d{4}-\d{2}-\d{2}$/.test(entry.date) ||
       !Number.isFinite(Date.parse(entry.date)) ||
-      entry.url !== `https://github.com/awesomestvi/navet/releases/tag/v${entry.version}`
+      entry.url !== `https://github.com/navet-app/navet/releases/tag/v${entry.version}`
     )
       throw new Error('Invalid cached release.');
     return { version: entry.version, date: entry.date, url: entry.url, body: entry.body };

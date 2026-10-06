@@ -1,7 +1,7 @@
 ---
 title: Brand foundations
 description: Navet's established purpose, promise, positioning, principles, and audiences.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/branding/BRAND_FOUNDATIONS.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/branding/BRAND_FOUNDATIONS.md
 ---
 
 This document defines Navet’s purpose, promise, positioning, principles, and audiences.

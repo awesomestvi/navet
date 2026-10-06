@@ -3,7 +3,7 @@ import { getMarketingWebsitePath, MARKETING_URLS } from '../marketingLinks';
 
 describe('marketing links', () => {
   it('uses the real public repo and pages URLs', () => {
-    expect(MARKETING_URLS.github).toBe('https://github.com/awesomestvi/navet');
+    expect(MARKETING_URLS.github).toBe('https://github.com/navet-app/navet');
     expect(MARKETING_URLS.demo).toBe('https://demo.navet.app/');
     expect(MARKETING_URLS.storybook).toBe('https://storybook.navet.app/');
     expect(MARKETING_URLS.discord).toBe('https://discord.gg/fJWZwSyfVf');

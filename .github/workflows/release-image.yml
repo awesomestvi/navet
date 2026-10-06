@@ -19,6 +19,10 @@ on:
         default: edge
         type: string
 
+    secrets:
+      NAVET_GHCR_TOKEN:
+        required: true
+
 permissions:
   contents: read
   packages: write
@@ -47,7 +51,7 @@ jobs:
             arch: aarch64
             tag_prefix: ''
     env:
-      IMAGE: ghcr.io/${{ github.repository_owner }}/${{ matrix.name }}
+      IMAGE: ghcr.io/awesomestvi/${{ matrix.name }}
       IMAGE_TAG: ${{ matrix.name == 'navet' && inputs.standalone_tag || format('{0}{1}', matrix.tag_prefix, inputs.version) }}
       VERSION: ${{ inputs.version }}
       RELEASE_SHA: ${{ inputs.sha }}
@@ -71,8 +75,8 @@ jobs:
       - uses: docker/login-action@v4
         with:
           registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: awesomestvi
+          password: ${{ secrets.NAVET_GHCR_TOKEN }}
       - name: Reuse an existing exact version without overwriting it
         id: existing
         run: node .release-tools/scripts/release-image.mjs lookup

@@ -15,7 +15,7 @@ export const NAVET_SPOTIFY_OAUTH_RELAY_URI = 'https://navet.app/redirect/oauth';
 const INSTANCE_STORAGE_KEY = 'navet-oauth-relay-instance';
 const HOME_STORAGE_KEY = 'navet-oauth-relay-home';
 const NAVET_SPOTIFY_CALLBACK_PATH = '/__navet_music__/spotify/callback';
-const NAVET_ISSUES_URL = 'https://github.com/awesomestvi/navet/issues/new';
+const NAVET_ISSUES_URL = 'https://github.com/navet-app/navet/issues/new';
 
 function isPrivateIpv4(hostname: string): boolean {
   const octets = hostname.split('.').map(Number);

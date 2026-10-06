@@ -1,7 +1,7 @@
 ---
 title: Understand Energy usage and KPIs
 description: Read KPI summaries and detailed usage history by device, room, or source.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/everyday-control/energy.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/everyday-control/energy.md
 ---
 
 Energy requires compatible energy and history services. Home Assistant is currently the reference

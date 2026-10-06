@@ -17,7 +17,7 @@ describe('public release feed resilience', () => {
     expect(
       parseLatestGithubRelease({
         tag_name: 'v0.18.0',
-        html_url: 'https://github.com/awesomestvi/navet/releases/tag/v0.18.0',
+        html_url: 'https://github.com/navet-app/navet/releases/tag/v0.18.0',
         body,
       }).version
     ).toBe('0.18.0');

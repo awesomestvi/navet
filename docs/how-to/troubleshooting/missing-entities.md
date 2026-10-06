@@ -1,7 +1,7 @@
 ---
 title: Rooms, devices, or entities are missing
 description: Check filters, visibility, provider selection, room assignment, and capability support.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/troubleshooting/missing-entities.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/troubleshooting/missing-entities.md
 ---
 
 Work from the provider toward the dashboard. Recreating a missing entity as a widget can hide the

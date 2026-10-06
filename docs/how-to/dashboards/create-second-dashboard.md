@@ -1,7 +1,7 @@
 ---
 title: Create a second dashboard
 description: Build a focused Home dashboard from rooms, a copy, or a blank layout.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/dashboards/create-second-dashboard.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/dashboards/create-second-dashboard.md
 ---
 
 A second dashboard can focus on one floor, one room group, or one household screen without

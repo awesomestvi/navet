@@ -3,6 +3,27 @@
 Navet has two independent delivery paths: continuous public sites and versioned installable
 releases. A product release does not redeploy or smoke-test the public sites.
 
+## GitHub Ownership And Access
+
+The `navet-app` organization owns `navet`, `navet-cards`, and `navet-home-assistant`.
+Release workflows run from `navet-app/navet` and synchronize the Home Assistant integration
+to `navet-app/navet-home-assistant`.
+
+Before publishing, install the GitHub Apps used by `NAVET_HACS_APP_ID` and
+`NAVET_NISSE_CLIENT_ID` in `navet-app` with access to the repositories their workflows target.
+Connect Cloudflare Pages to the organization repositories and verify its checks on a pull request.
+GitHub App credentials identify an app; repository access comes from its organization installation.
+
+## Container Registry
+
+Published images use `ghcr.io/awesomestvi/navet` and
+`ghcr.io/awesomestvi/{arch}-navet-addon`. These package paths remain stable for Docker users
+and Home Assistant installations. Repository ownership and package namespaces are independent.
+Publishing to the personal package namespace requires `NAVET_GHCR_TOKEN`, a classic personal
+access token owned by `awesomestvi` with `write:packages` access, stored as a GitHub Actions
+secret in `navet-app/navet`. The repository-scoped `GITHUB_TOKEN` cannot write those packages
+after the repository transfer. Runtime verification pulls the public images anonymously.
+
 ## Pull Requests And Public Sites
 
 Every pull request adds a validated `.changes/*.yaml` fragment. Use `internal` and an empty
@@ -29,10 +50,10 @@ Cloudflare Pages owns site deployment:
 
 | Project | Build command | Output |
 | --- | --- | --- |
-| `navet` | `pnpm website:build` | `apps/website/dist` |
-| `navet-demo` | `pnpm build:demo` | `apps/demo/dist` |
-| `navet-storybook` | `pnpm storybook:build` | `apps/storybook/dist` |
-| `navet-docs` | `pnpm docs:build` | `apps/docs/dist` |
+| `navet-app` | `pnpm website:build:app` | `apps/website/dist` |
+| `navet-app-demo` | `pnpm build:demo` | `apps/demo/dist` |
+| `navet-app-storybook` | `pnpm storybook:build` | `apps/storybook/dist` |
+| `navet-app-docs` | `pnpm docs:build` | `apps/docs/dist` |
 
 Affected branch pushes produce previews. Affected pushes to `main` update production.
 CI build checks and Cloudflare builds are separate: CI verifies the change; Cloudflare owns
@@ -185,8 +206,8 @@ same bundle. Existing release bodies, versioned changelog entries, and published
 must match on recovery; conflicts stop the run rather than silently replacing published notes.
 
 The monorepo owns Home Assistant integration and add-on sources under `platform/home-assistant`.
-HACS receives the integration export in `awesomestvi/navet-home-assistant`. The Home Assistant App
-repository is `awesomestvi/navet`, with root `repository.yaml`.
+HACS receives the integration export in `navet-app/navet-home-assistant`. The Home Assistant App
+repository is `navet-app/navet`, with root `repository.yaml`.
 
 After artifact verification, automation opens the small App metadata PR and merges it through
 normal branch protection without bypass privileges. This PR gets quality/script checks and

@@ -1,7 +1,7 @@
 ---
 title: Your first 15 minutes with Navet
 description: Complete first-run setup, learn the main navigation, and make your first dashboard change.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/quick-start/first-15-minutes.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/quick-start/first-15-minutes.md
 next:
   link: /guide/dashboards/customize-home/
   label: Customize Home

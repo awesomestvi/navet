@@ -21,7 +21,7 @@ async function createFixture() {
     await mkdir(addonRoot, { recursive: true });
     await writeFile(
       resolve(addonRoot, 'config.yaml'),
-      `name: Navet\nversion: "0.17.1"\nslug: ${directory}\nurl: https://github.com/awesomestvi/navet\n`,
+      `name: Navet\nversion: "0.17.1"\nslug: ${directory}\nurl: https://github.com/navet-app/navet\n`,
     );
     await writeFile(
       resolve(addonRoot, 'CHANGELOG.md'),

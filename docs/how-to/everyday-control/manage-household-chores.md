@@ -1,7 +1,7 @@
 ---
 title: Manage and recover household chores
 description: Edit recurring work, review progress, protect management, and back up or restore the shared chores workspace.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/everyday-control/manage-household-chores.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/everyday-control/manage-household-chores.md
 ---
 
 Use **Chores** to manage recurring work and **Progress** to review activity. Open

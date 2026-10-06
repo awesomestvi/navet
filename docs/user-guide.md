@@ -1,7 +1,7 @@
 ---
 title: Using Navet
 description: Learn the dashboard model and find user-facing references.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/user-guide.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/user-guide.md
 next:
   link: /guide/how-to/
   label: Browse all guides

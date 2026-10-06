@@ -32,7 +32,7 @@ export default defineConfig({
         {
           icon: "github",
           label: "Navet on GitHub",
-          href: "https://github.com/awesomestvi/navet",
+          href: "https://github.com/navet-app/navet",
         },
         {
           icon: "youtube",
