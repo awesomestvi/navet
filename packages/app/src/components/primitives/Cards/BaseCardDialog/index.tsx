@@ -16,6 +16,7 @@ import { TabPanel, Tabs } from '@navet/app/components/primitives/tabs';
 import { CompactRoomSelector } from '@navet/app/components/shared/device-editor/compact-room-selector';
 import { CustomCardTintPicker } from '@navet/app/components/shared/device-editor/custom-card-tint-picker';
 import { CustomScrollbar } from '@navet/app/components/shared/device-editor/custom-scrollbar';
+import { getDialogReturnFocus } from '@navet/app/components/shared/dialog-return-focus';
 import { EntityRoomSelector } from '@navet/app/components/shared/entity-room-selector';
 import { getBaseCardDialogSurface } from '@navet/app/components/shared/theme/base-card-dialog-surface';
 import { getInheritedDialogSectionStyle } from '@navet/app/components/shared/theme/custom-card-tint-surface';
@@ -26,7 +27,7 @@ import type { ThemeType } from '@navet/app/hooks/use-theme';
 import * as Dialog from '@radix-ui/react-dialog';
 import { ArrowLeft, type LucideIcon, MapPin, Palette, Sliders, X } from 'lucide-react';
 import type { CSSProperties, ReactNode, PointerEvent as ReactPointerEvent } from 'react';
-import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 
 export type BaseCardDialogVariant = 'card' | 'modal' | 'sheet' | 'fullscreen';
 
@@ -234,6 +235,19 @@ function BaseCardDialogRoot({
   const [mobileCoverSheetTopInset, setMobileCoverSheetTopInset] = useState('auto');
   const [isMobileCoverSheetDragging, setIsMobileCoverSheetDragging] = useState(false);
   const mobileCoverSheetContentRef = useRef<HTMLDivElement | null>(null);
+  const [wasOpen, setWasOpen] = useState(false);
+  const [opener, setOpener] = useState<HTMLElement | null>(null);
+  // Capture before portal descendants (including autoFocus inputs) mount.
+  if (isOpen !== wasOpen) {
+    setWasOpen(isOpen);
+    if (isOpen) {
+      setOpener(
+        typeof document !== 'undefined' && document.activeElement instanceof HTMLElement
+          ? getDialogReturnFocus(document.activeElement)
+          : null
+      );
+    }
+  }
   const mobileCoverSheetDragStartYRef = useRef(0);
   const mobileCoverSheetDragStartTopRef = useRef(0);
   const mobileCoverSheetRestingTopRef = useRef(0);
@@ -252,12 +266,6 @@ function BaseCardDialogRoot({
   const resolvedAriaDescribedBy = contentDescription
     ? generatedDescriptionId
     : contentAriaDescribedBy;
-
-  useLayoutEffect(() => {
-    if (isOpen) {
-      blurActiveElement();
-    }
-  }, [isOpen]);
 
   const resetMobileCoverSheetDragState = useCallback(() => {
     mobileCoverSheetDragDeltaRef.current = 0;
@@ -422,19 +430,24 @@ function BaseCardDialogRoot({
       <Dialog.Portal>
         <Dialog.Overlay className={`fixed inset-0 z-50 ${overlayClassName}`} />
         <Dialog.Content
-          onCloseAutoFocus={onCloseAutoFocus}
+          onCloseAutoFocus={(event) => {
+            onCloseAutoFocus?.(event);
+            if (event.defaultPrevented) return;
+            event.preventDefault();
+            const activeDialog = document.activeElement?.closest('[role="dialog"]');
+            if (activeDialog && activeDialog !== mobileCoverSheetContentRef.current) return;
+            if (opener?.isConnected) opener.focus({ preventScroll: true });
+          }}
           ref={mobileCoverSheetContentRef}
           className={resolvedContentClassName}
           style={resolvedContentStyle}
           aria-describedby={resolvedAriaDescribedBy}
-          onOpenAutoFocus={
-            disableOpenAutoFocus
-              ? (event) => {
-                  event.preventDefault();
-                  blurActiveElement();
-                }
-              : undefined
-          }
+          onOpenAutoFocus={(event) => {
+            if (disableOpenAutoFocus) {
+              event.preventDefault();
+              mobileCoverSheetContentRef.current?.focus({ preventScroll: true });
+            }
+          }}
         >
           {contentTitle ? <Dialog.Title className="sr-only">{contentTitle}</Dialog.Title> : null}
           {contentDescription ? (

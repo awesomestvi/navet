@@ -28,6 +28,7 @@ export function CoverSettingsDialog(props: {
   onStop: () => void;
   onClose: () => void;
   canOpen: boolean;
+  supportsStop: boolean;
   canStop: boolean;
   canClose: boolean;
   canSetPosition: boolean;
@@ -87,16 +88,18 @@ export function CoverSettingsDialog(props: {
                 >
                   {t('cover.open')}
                 </Button>
-                <Button
-                  variant="soft"
-                  size="compact"
-                  className="w-full rounded-full"
-                  leading={<Square className="h-3 w-3" />}
-                  disabled={!props.canStop}
-                  onClick={props.onStop}
-                >
-                  {t('cover.stop')}
-                </Button>
+                {props.supportsStop && (
+                  <Button
+                    variant="soft"
+                    size="compact"
+                    className="w-full rounded-full"
+                    leading={<Square className="h-3 w-3" />}
+                    disabled={!props.canStop}
+                    onClick={props.onStop}
+                  >
+                    {t('cover.stop')}
+                  </Button>
+                )}
                 <Button
                   variant="soft"
                   size="compact"

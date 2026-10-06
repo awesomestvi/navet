@@ -201,3 +201,39 @@ export const MobileControlsDialog: Story = {
   ...ControlsDialog,
   globals: { viewport: { value: 'mobile1', isRotated: false } },
 };
+
+export const KeyboardControlsDialog: Story = {
+  play: async ({ canvas, userEvent }) => {
+    const opener = canvas.getByRole('button', { name: /Open settings for/i });
+    opener.focus();
+    await userEvent.keyboard('{Enter}');
+    const dialog = await within(document.body).findByRole('dialog');
+    await expect(dialog).toHaveFocus();
+    for (let i = 0; i < 15; i++) {
+      await userEvent.tab();
+      await expect(dialog.contains(document.activeElement)).toBe(true);
+    }
+    for (let i = 0; i < 15; i++) {
+      await userEvent.tab({ shift: true });
+      await expect(dialog.contains(document.activeElement)).toBe(true);
+    }
+    await userEvent.keyboard('{Escape}');
+    await expect(opener).toHaveFocus();
+    await userEvent.keyboard(' ');
+    const reopened = await within(document.body).findByRole('dialog');
+    await expect(reopened).toHaveFocus();
+    await userEvent.click(within(reopened).getByRole('button', { name: 'More actions' }));
+    await within(document.body).findByRole('menu');
+    await userEvent.keyboard('{Escape}');
+    await expect(within(reopened).getByRole('button', { name: 'More actions' })).toHaveFocus();
+    await userEvent.click(within(reopened).getByRole('button', { name: 'More actions' }));
+    await userEvent.click(
+      within(await within(document.body).findByRole('menu')).getByRole('menuitem', {
+        name: 'Customize',
+      })
+    );
+    await userEvent.click(within(reopened).getByRole('button', { name: 'Back to controls' }));
+    await userEvent.click(within(reopened).getByRole('button', { name: /^Close$/ }));
+    await expect(opener).toHaveFocus();
+  },
+};

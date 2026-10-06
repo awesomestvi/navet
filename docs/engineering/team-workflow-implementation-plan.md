@@ -103,6 +103,8 @@ Use the [proposal template](templates/idea-proposal.md). Record evidence, option
 scope, design/prototype references, implementation slices, risks, acceptance criteria and unknowns.
 Publish a ready proposal only after verifying its destination and actual readback. Do not implement
 a feature while developing its proposal.
+An authorized idea request may include an isolated private feasibility POC to resolve a named
+uncertainty. Keep it as proposal evidence; production integration requires selected-scope approval.
 
 Verify stage handling, duplicate intake, scope withdrawal, private destination enforcement and
 unavailable reads with focused deterministic cases. A fixture proves its contract, not live access.

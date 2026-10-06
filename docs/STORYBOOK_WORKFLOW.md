@@ -36,6 +36,11 @@ Use colocated stories by default.
 - reuse helpers from `packages/app/src/storybook/`
 - do not connect stories to live provider sessions
 - use the preview runtime's deterministic media service for media browse and playback stories
+- For interactive entity fixtures, assemble normalized entities with `withPreviewEntities` and
+  install the resulting scenario before rendering controls. Reads and commands must use that same
+  runtime. Restore the previous runtime and store state when a fixture unmounts. Preview snapshots
+  provide compatibility aliases for normalized lighting attributes; fixture authors keep
+  `brightnessPct`, capabilities and availability in normalized entity state.
 - initialize only the minimum store state a story needs
 - keep aggregate stories useful, but do not hide normal component stories behind them
 - when adding or renaming a public card story, register its shared docs copy in `packages/app/src/storybook/story-docs.ts`

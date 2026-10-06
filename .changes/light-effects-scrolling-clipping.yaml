@@ -1,0 +1,6 @@
+type: fixed
+audiences:
+  - standalone
+  - home-assistant
+  - hacs
+summary: Scroll long light-effect menus and keep animated colors inside the card's rounded corners.

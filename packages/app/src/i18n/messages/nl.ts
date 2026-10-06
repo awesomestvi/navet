@@ -407,6 +407,8 @@ export const nlMessages = {
   'household.data.importTitle': 'Back-up van taken herstellen?',
   'household.data.importDescription':
     'Samenvoegen bewaart huidige taken en hernoemt conflicten. Vervangen verwijdert eerst de huidige ruimte.',
+  'household.data.importFailed':
+    'De back-up kon niet worden hersteld. Probeer opnieuw samen te voegen of te vervangen.',
   'household.data.imported': 'Back-up van taken hersteld.',
   'household.data.merge': 'Samenvoegen',
   'household.data.replace': 'Vervangen',

@@ -11,6 +11,7 @@ Use exactly these local boundaries:
 
 ```text
 marketing/
+├── private/
 ├── planning/
 │   ├── community/
 │   ├── tutorials/
@@ -33,6 +34,8 @@ marketing/
   checksums, final public copy, and publication receipts.
 - Important masters and editable archives need durable storage outside the repository. An ignored
   local deliverable is not a backup.
+- `marketing/private/` holds local publishing secrets in permission-600 files. Keep secrets
+  outside task artifacts, deliverable copies, logs and screenshots.
 
 ## Git boundary
 
@@ -68,7 +71,12 @@ Do not delete a long-lived `planning/` roadmap as part of routine WIP cleanup.
 
 ## Publication boundary
 
-- Publication requires the user's explicit approval and remains separate from media production.
+- Publication requires one explicit approval of the shared master post, screenshot, alt text
+  and intended destinations. Default to r/navet, Navet Discord #announcements and the configured
+  existing Home Assistant topic. Show one post and preview; one approval covers all three.
+  Adapt only platform formatting and title placement. Changes to wording or assets require fresh
+  approval. Use the [community communication skill](../../.agents/skills/navet-release-communication/SKILL.md)
+  for releases, features, tips and general Navet discussion.
 - Store the final public URL, public copy, timestamps, platform status, and media checksums beside
   the local deliverable when useful.
 - Do not treat publication receipts as a reason to keep internal planning in Git.

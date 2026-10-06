@@ -105,9 +105,11 @@ function CardActionOverflowMenu({
   const buttonSize = toControlButtonSize(size);
   const [isOpen, setIsOpen] = useState(false);
   const [anchorRect, setAnchorRect] = useState<PortalActionDockAnchorRect | null>(null);
+  const [opener, setOpener] = useState<HTMLButtonElement | null>(null);
 
   const handleOpen = (event: MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
+    setOpener(event.currentTarget);
     setAnchorRect(getPortalActionDockAnchorRect(event.currentTarget));
     setIsOpen(true);
   };
@@ -123,6 +125,7 @@ function CardActionOverflowMenu({
         <PortalActionDock
           accentColor={accentColor}
           anchorRect={anchorRect}
+          returnFocusTo={opener}
           onClose={handleClose}
           theme={theme}
           title={t('common.moreActions')}
@@ -162,7 +165,10 @@ function CardActionOverflowMenu({
           theme={theme}
           size={buttonSize}
           variant="neutral"
+          disabled={items.every((item) => item.disabled)}
           aria-label={t('common.moreActions')}
+          aria-haspopup="dialog"
+          aria-expanded={isOpen}
           className="transform-none transition-[background-color,border-color,color,opacity,box-shadow] hover:scale-100 active:scale-100"
           onClick={handleOpen}
         >

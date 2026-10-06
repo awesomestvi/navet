@@ -32,9 +32,11 @@ import type {
   NavetProviderState,
 } from '@navet/core/types';
 import { createStore } from 'zustand/vanilla';
+import { setInstalledPreviewCommandHandler } from './preview-action-bridge';
 import { applyPreviewCommandToEntity } from './preview-command-model';
 import {
   createPreviewEntityRuntimeService,
+  getPreviewSnapshotAttributes,
   resetPreviewEntityRuntimeCaches,
 } from './preview-entity-runtime-service';
 
@@ -176,7 +178,7 @@ function createHomeAssistantCompatEntity(entity: NavetEntity) {
     state,
     attributes: {
       friendly_name: entity.name,
-      ...entity.attributes,
+      ...getPreviewSnapshotAttributes(entity),
     },
     last_changed: PREVIEW_TIMESTAMP,
     last_updated: entity.lastUpdated ?? PREVIEW_TIMESTAMP,
@@ -1745,9 +1747,28 @@ function applyPreviewRuntimeScenario(scenario: PreviewRuntimeScenario) {
 
 export function installPreviewRuntime(scenario: PreviewRuntimeScenario) {
   applyPreviewRuntimeScenario(clonePreviewScenario(scenario));
+  setInstalledPreviewCommandHandler(async (command) => {
+    const entity = getActiveScenario()?.entities.find(
+      (entry) =>
+        entry.id === command.entityId ||
+        entry.canonicalId === command.entityId ||
+        entry.externalId === command.entityId
+    );
+    if (
+      entity?.type !== 'light' ||
+      !['turn_on', 'turn_off', 'set_brightness', 'set_color_temperature'].includes(command.type)
+    )
+      return null;
+    return previewProviderPackageRegistration.providerContractAdapter.execute(command);
+  });
+}
+
+export function getInstalledPreviewRuntimeScenario() {
+  return getActiveScenario();
 }
 
 export function resetPreviewRuntime() {
+  setInstalledPreviewCommandHandler(null);
   resetPreviewEntityRuntimeCaches();
   previewRuntimeStore.setState({ scenario: null });
   setProviderPackageRegistrationOverride(PREVIEW_PROVIDER_ID, null);
@@ -1769,6 +1790,13 @@ export function replacePreviewEntity(
     entity.externalId === nextEntity.externalId ? nextEntity : entity
   );
 
+  return withPreviewEntities(scenario, nextEntities);
+}
+
+export function withPreviewEntities(
+  scenario: PreviewRuntimeScenario,
+  nextEntities: NavetEntity[]
+): PreviewRuntimeScenario {
   return {
     ...scenario,
     entities: nextEntities,

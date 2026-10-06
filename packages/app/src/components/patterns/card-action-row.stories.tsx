@@ -6,6 +6,9 @@ import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-
 import { useTheme } from '@navet/app/hooks';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Moon, Sparkles, SunMedium, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { expect, userEvent, within } from 'storybook/test';
+import { BaseCardDialog } from '../primitives/Cards/BaseCardDialog';
 import { CardActionRow } from './card-action-row';
 
 function resolveStoryCardActionRowSize(size: 'small' | 'default' | 'medium' | 'large') {
@@ -112,6 +115,22 @@ export const Small: Story = {
 
 export const Medium: Story = {
   args: { size: 'default' },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const body = within(canvasElement.ownerDocument.body);
+    const opener = canvas.getAllByRole('button', { name: 'More actions' })[0];
+    opener.focus();
+    await userEvent.keyboard('{Enter}');
+    const dialog = await body.findByRole('dialog', { name: 'More actions' });
+    const actions = within(dialog);
+    await expect(actions.getByRole('button', { name: 'Rename' })).toHaveFocus();
+    await userEvent.tab({ shift: true });
+    await expect(actions.getByRole('button', { name: 'Close action dock' })).toHaveFocus();
+    await userEvent.tab();
+    await expect(actions.getByRole('button', { name: 'Rename' })).toHaveFocus();
+    await userEvent.keyboard('{Escape}');
+    await expect(opener).toHaveFocus();
+  },
   parameters: {
     docs: {
       description: {
@@ -136,5 +155,61 @@ export const Large: Story = {
 export const Docs: Story = {
   parameters: {
     docsOnly: true,
+  },
+};
+
+function ChainedSettingsStory() {
+  const [open, setOpen] = useState(false);
+  const { theme } = useTheme();
+  return (
+    <div className="p-8">
+      <CardActionRow
+        theme={theme}
+        overflowItems={[{ key: 'settings', label: 'Settings', onSelect: () => setOpen(true) }]}
+      />
+      <BaseCardDialog
+        variant="modal"
+        isOpen={open}
+        onOpenChange={setOpen}
+        title="Card settings"
+        theme={theme}
+      >
+        <input aria-label="Card name" />
+      </BaseCardDialog>
+    </div>
+  );
+}
+
+export const ChainedSettings: Story = {
+  render: () => <ChainedSettingsStory />,
+  play: async ({ canvasElement }) => {
+    const opener = within(canvasElement).getByRole('button', { name: 'More actions' });
+    const body = within(canvasElement.ownerDocument.body);
+    opener.focus();
+    await userEvent.keyboard('{Enter}');
+    const settings = await body.findByRole('button', { name: 'Settings' });
+    await expect(settings).toHaveFocus();
+    await userEvent.keyboard('{Enter}');
+    const dialog = await body.findByRole('dialog', { name: 'Card settings' });
+    await expect(dialog.contains(document.activeElement)).toBe(true);
+    await userEvent.keyboard('{Escape}');
+    await expect(opener).toHaveFocus();
+  },
+};
+
+export const UnavailableActions: Story = {
+  render: () => (
+    <CardActionRow
+      theme="dark"
+      overflowItems={[
+        { key: 'start', label: 'Start', disabled: true, onSelect: () => {} },
+        { key: 'dock', label: 'Dock', disabled: true, onSelect: () => {} },
+      ]}
+    />
+  ),
+  play: async ({ canvasElement }) => {
+    await expect(
+      within(canvasElement).getByRole('button', { name: 'More actions' })
+    ).toBeDisabled();
   },
 };

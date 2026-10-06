@@ -25,6 +25,7 @@ interface BrightnessSliderProps {
   step?: number;
   labelKey?: TranslationKey;
   inverseSurface?: boolean;
+  ariaLabel?: string;
 }
 
 export const BrightnessSlider = memo(function BrightnessSlider({
@@ -42,6 +43,7 @@ export const BrightnessSlider = memo(function BrightnessSlider({
   step = 1,
   labelKey = 'lighting.brightness',
   inverseSurface,
+  ariaLabel,
 }: BrightnessSliderProps) {
   const { theme, accentColor } = useTheme();
   const { t } = useI18n();
@@ -162,7 +164,7 @@ export const BrightnessSlider = memo(function BrightnessSlider({
         step={step}
         disabled={disabled}
         dataCardInteractive
-        ariaLabel={label}
+        ariaLabel={ariaLabel ?? label}
         rootClassName={`relative flex items-center w-full select-none touch-none ${heightClass}`}
         trackClassName={`relative grow rounded-full ${trackHeightClass} ${trackBg}`}
         rangeClassName="absolute h-full rounded-full"

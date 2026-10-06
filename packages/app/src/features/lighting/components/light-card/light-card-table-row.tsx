@@ -55,7 +55,6 @@ export const LightCardTableRow = memo(function LightCardTableRow({
 
   return (
     <div
-      {...cardInteraction.cardProps}
       className={cn(
         'flex min-h-12 w-full min-w-0 items-center gap-3 py-1 text-left transition-colors motion-reduce:transition-none',
         !isEditMode && 'cursor-pointer rounded-xl',
@@ -67,6 +66,7 @@ export const LightCardTableRow = memo(function LightCardTableRow({
         type="button"
         aria-label={iconButtonProps['aria-label']}
         aria-pressed={isOn}
+        disabled={isEditMode}
         onClick={iconButtonProps.onClick}
         onPointerDown={iconButtonProps.onPointerDown}
         className={cn(
@@ -96,13 +96,19 @@ export const LightCardTableRow = memo(function LightCardTableRow({
         </span>
       </button>
 
-      <span
-        className={`-ml-[3px] min-w-0 flex-1 truncate text-sm font-medium ${
-          isOn ? surface.textPrimary : surface.textSecondary
-        }`}
+      <button
+        {...cardInteraction.settingsButtonProps}
+        aria-haspopup="dialog"
+        disabled={isEditMode}
+        className={cn(
+          `-ml-[3px] min-h-9 min-w-0 flex-1 truncate rounded-lg text-left text-sm font-medium ${
+            isOn ? surface.textPrimary : surface.textSecondary
+          }`,
+          getThemeFocusRingClassName(theme)
+        )}
       >
         {name}
-      </span>
+      </button>
 
       {isOn && supportsBrightness ? (
         <div className="w-20 min-w-16 sm:w-24">
@@ -115,6 +121,8 @@ export const LightCardTableRow = memo(function LightCardTableRow({
             showLabel={false}
             activeColor={activeColor}
             inverseSurface={false}
+            disabled={isEditMode}
+            ariaLabel={`${t('lighting.brightness')}: ${name}`}
           />
         </div>
       ) : null}

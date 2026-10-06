@@ -3,6 +3,8 @@ import { Input } from '@navet/app/components/primitives';
 import { useTheme } from '@navet/app/hooks';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Search } from 'lucide-react';
+import { useId } from 'react';
+import { expect } from 'storybook/test';
 
 function FieldBlockStory({
   hint,
@@ -15,6 +17,8 @@ function FieldBlockStory({
   required?: boolean;
   disabled?: boolean;
 }) {
+  const inputId = useId();
+  const messageId = `${inputId}-message`;
   const { theme } = useTheme();
   const iconClassName =
     theme === 'light' ? 'text-gray-500' : theme === 'black' ? 'text-gray-300' : 'text-white/64';
@@ -23,13 +27,14 @@ function FieldBlockStory({
     <div className="w-full max-w-md space-y-4">
       <FieldBlock
         label="Search"
-        htmlFor="storybook-field-block"
-        hint={hint}
-        error={error}
+        htmlFor={inputId}
+        hint={hint ? <span id={messageId}>{hint}</span> : undefined}
+        error={error ? <span id={messageId}>{error}</span> : undefined}
         required={required}
       >
         <Input
-          id="storybook-field-block"
+          id={inputId}
+          aria-describedby={error || hint ? messageId : undefined}
           type="text"
           placeholder="Find sensors or devices"
           disabled={disabled}
@@ -46,6 +51,12 @@ const meta = {
   title: 'Components/Patterns/Form Field',
   component: FieldBlockStory,
   tags: ['autodocs'],
+  play: async ({ canvas, args }) => {
+    const input = canvas.getByRole('textbox', { name: /Search/ });
+    await expect(input).toHaveAccessibleDescription(args.error ?? args.hint ?? '');
+    if (args.error) await expect(input).toHaveAttribute('aria-invalid', 'true');
+    if (args.disabled) await expect(input).toBeDisabled();
+  },
   parameters: {
     docs: {
       description: {
@@ -127,6 +138,25 @@ export const Disabled: Story = {
         story: 'Disabled control state while preserving contextual label and hint messaging.',
       },
     },
+  },
+};
+
+export const MultipleFields: Story = {
+  render: () => (
+    <>
+      <FieldBlockStory hint="Search by room." />
+      <FieldBlockStory error="Enter a valid device name." />
+    </>
+  ),
+  play: async ({ canvas }) => {
+    const inputs = canvas.getAllByRole('textbox', { name: /Search/ });
+    await expect(inputs).toHaveLength(2);
+    await expect(inputs[0]).toHaveAccessibleDescription('Search by room.');
+    await expect(inputs[1]).toHaveAccessibleDescription('Enter a valid device name.');
+    await expect(inputs[0].id).not.toBe(inputs[1].id);
+    await expect(inputs[0].getAttribute('aria-describedby')).not.toBe(
+      inputs[1].getAttribute('aria-describedby')
+    );
   },
 };
 

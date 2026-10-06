@@ -213,14 +213,15 @@ describe('CoverCard', () => {
     );
   });
 
-  it('keeps unsupported cover dialog actions disabled and hides position presets', () => {
+  it('hides unsupported Stop controls and position presets while disabling Close', () => {
     renderCoverCard({ size: 'medium', hasPosition: false, supportedFeatures: COVER_FEATURE_OPEN });
+    expect(screen.queryByRole('button', { name: 'Stop' })).not.toBeInTheDocument();
     fireEvent.click(
       screen.getByRole('button', { name: 'Open settings for Living Room Blind cover' })
     );
     const dialog = within(screen.getByRole('dialog'));
     expect(dialog.getByRole('button', { name: 'Open' })).toBeEnabled();
-    expect(dialog.getByRole('button', { name: 'Stop' })).toBeDisabled();
+    expect(dialog.queryByRole('button', { name: 'Stop' })).not.toBeInTheDocument();
     expect(
       within(dialog.getByRole('group', { name: 'Controls' })).getByRole('button', { name: 'Close' })
     ).toBeDisabled();

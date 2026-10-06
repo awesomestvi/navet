@@ -24,6 +24,12 @@ describe the composition; the running Storybook index supplies current story IDs
 
 ## Controls-first dialog
 
+`BaseCardDialog` moves focus inside on opening and restores its connected opener on dismissal.
+With `disableOpenAutoFocus`, focus lands on the dialog container so form inputs are not selected
+automatically. Tab and Shift+Tab remain within the modal; Escape closes it. A caller-supplied close
+focus handler takes precedence, and a downstream dialog retains focus.
+
+
 Choose one `BaseCardDialog` union variant. The card variant takes `tabs`; the modal, sheet and
 fullscreen variants have different contracts. The overflow menu is owned by the card dialog.
 
@@ -83,11 +89,17 @@ explicit detail scroll region rather than relying on the frame to scroll.
 
 The existing `Tabs` contract requires `defaultValue`, including in controlled compositions, and
 supplies selection context and generated IDs. Each `TabTrigger` value links to its `TabPanel`.
-The current primitive leaves inactive triggers outside the Tab sequence and supplies no arrow-key
-navigation, which blocks keyboard-only view switching. A new view-switch composition must provide
-and verify a complete keyboard selection path before it can use this primitive. Inspection alone
-cannot satisfy that requirement. Include any shared repair in the accepted ticket scope.
+Tab enters the selected trigger. Left/Right Arrow moves focus and automatically selects the next
+enabled sibling, skips disabled triggers and wraps at either end. Direction follows the rendered
+text direction. Tab then leaves the tablist through native focus navigation. Caller key handlers
+can prevent the default navigation; controlled compositions must update their value in response
+to `onValueChange`. Verify the consumer's panel focus path and callback effects.
 `preserveLayout` retains an inactive panel's geometry while making it invisible and inert.
+
+`PortalActionDock` is a named modal action overlay. Its first enabled action receives focus,
+Tab/Shift+Tab remain inside, and Escape or outside dismissal closes it. Pass `returnFocusTo` when
+opening from a control whose focus may change before mounting. Dismissal restores a connected
+opener unless a selected action has already moved focus to its next dialog or destination.
 
 `CardDialogTabList` is a layout wrapper and `CardDialogTabTrigger` is a controlled pill; they do not
 supply the `Tabs` context or linked panel semantics. Choose the actual interaction contract required

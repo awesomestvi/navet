@@ -105,13 +105,12 @@ export const CoverCardContainer = memo(function CoverCardContainer({
       positionMode === 'tilt' ? COVER_FEATURE_CLOSE_TILT : COVER_FEATURE_CLOSE,
       true
     );
-  const canStop =
-    !isUnavailable &&
-    supportsCoverFeature(
-      resolvedSupportedFeatures,
-      positionMode === 'tilt' ? COVER_FEATURE_STOP_TILT : COVER_FEATURE_STOP,
-      true
-    );
+  const supportsStop = supportsCoverFeature(
+    resolvedSupportedFeatures,
+    positionMode === 'tilt' ? COVER_FEATURE_STOP_TILT : COVER_FEATURE_STOP,
+    true
+  );
+  const canStop = !isUnavailable && supportsStop;
   const canSetPosition =
     !isUnavailable &&
     hasPosition &&
@@ -368,6 +367,7 @@ export const CoverCardContainer = memo(function CoverCardContainer({
       handleStop={handleStop}
       canOpen={canOpen}
       canClose={canClose}
+      supportsStop={supportsStop}
       canStop={canStop}
       canSetPosition={showPosition && canSetPosition}
       setDeviceClass={setDeviceClass}

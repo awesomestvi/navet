@@ -2052,6 +2052,8 @@ export const enMessages = {
   'household.data.importTitle': 'Restore chores backup?',
   'household.data.importDescription':
     'Merge keeps current chores and renames conflicts. Replace removes the current workspace first.',
+  'household.data.importFailed':
+    'The chores backup could not be restored. Try Merge or Replace again.',
   'household.data.imported': 'Chores backup restored.',
   'household.data.merge': 'Merge',
   'household.data.replace': 'Replace',

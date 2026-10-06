@@ -7,6 +7,8 @@ interface UseMediaPlaybackParams {
   entityId: string;
   canPreviousTrack: boolean;
   canNextTrack: boolean;
+  canShuffle: boolean;
+  canRepeat: boolean;
   shuffleEnabled: boolean;
   repeatMode: 'off' | 'one' | 'all';
   t: TranslateFn;
@@ -16,6 +18,8 @@ export function useMediaPlayback({
   entityId,
   canPreviousTrack,
   canNextTrack,
+  canShuffle,
+  canRepeat,
   shuffleEnabled,
   repeatMode,
   t,
@@ -46,12 +50,14 @@ export function useMediaPlayback({
   }, [canNextTrack, entityId, runAction, t]);
 
   const toggleShuffle = useCallback(() => {
+    if (!canShuffle) return;
     void runAction(async () => {
       await dispatchEntityCommand({ type: 'set_shuffle', entityId, shuffle: !shuffleEnabled });
     }, t('media.feedback.updateShuffleFailed'));
-  }, [entityId, runAction, shuffleEnabled, t]);
+  }, [canShuffle, entityId, runAction, shuffleEnabled, t]);
 
   const cycleRepeat = useCallback(() => {
+    if (!canRepeat) return;
     const nextRepeat = repeatMode === 'off' ? 'all' : repeatMode === 'all' ? 'one' : 'off';
     void runAction(async () => {
       await dispatchEntityCommand({
@@ -60,7 +66,7 @@ export function useMediaPlayback({
         repeatMode: nextRepeat,
       });
     }, t('media.feedback.updateRepeatFailed'));
-  }, [entityId, repeatMode, runAction, t]);
+  }, [canRepeat, entityId, repeatMode, runAction, t]);
 
   const openDialog = useCallback(() => setIsOpen(true), []);
   const closeDialog = useCallback((open: boolean) => setIsOpen(open), []);

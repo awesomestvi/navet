@@ -411,6 +411,8 @@ export const frMessages = {
   'household.data.importTitle': 'Restaurer la sauvegarde des tâches ?',
   'household.data.importDescription':
     'Fusionner conserve les tâches actuelles et renomme les conflits. Remplacer supprime d’abord l’espace actuel.',
+  'household.data.importFailed':
+    'La sauvegarde n’a pas pu être restaurée. Réessayez de fusionner ou de remplacer.',
   'household.data.imported': 'Sauvegarde des tâches restaurée.',
   'household.data.merge': 'Fusionner',
   'household.data.replace': 'Remplacer',

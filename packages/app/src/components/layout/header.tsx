@@ -33,6 +33,8 @@ function HeaderView({
   const isMobileViewport = useMediaQuery('(max-width: 767px)');
   const [isDesktopSearchOpen, setIsDesktopSearchOpen] = useState(false);
   const desktopSearchContainerRef = useRef<HTMLDivElement | null>(null);
+  const desktopSearchLauncherRef = useRef<HTMLButtonElement | null>(null);
+  const restoreDesktopSearchFocusRef = useRef(false);
   const desktopSearchInputRef = useRef<HTMLInputElement | null>(null);
   const mobileAvailability = useMemo(
     () => getMobileHeaderActionAvailability(mobileEditActions),
@@ -101,6 +103,19 @@ function HeaderView({
     setIsDesktopSearchOpen(true);
     window.setTimeout(() => desktopSearchInputRef.current?.focus(), 0);
   };
+
+  const closeDesktopSearch = () => {
+    handleClearSearch();
+    restoreDesktopSearchFocusRef.current = true;
+    setIsDesktopSearchOpen(false);
+  };
+
+  useEffect(() => {
+    if (!isDesktopSearchOpen && restoreDesktopSearchFocusRef.current) {
+      restoreDesktopSearchFocusRef.current = false;
+      desktopSearchLauncherRef.current?.focus();
+    }
+  }, [isDesktopSearchOpen]);
 
   useEffect(() => {
     if (!isDesktopSearchOpen) {
@@ -260,9 +275,13 @@ function HeaderView({
                     isSearchFocused={isSearchFocused}
                     onBlur={() => setIsSearchFocused(false)}
                     onChange={handleSearchChange}
-                    onClear={() => {
-                      handleClearSearch();
-                      setIsDesktopSearchOpen(false);
+                    onClear={closeDesktopSearch}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Escape') {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        closeDesktopSearch();
+                      }
                     }}
                     onFocus={() => setIsSearchFocused(true)}
                     placeholder={t('header.searchPlaceholder')}
@@ -274,6 +293,7 @@ function HeaderView({
                 </div>
               ) : (
                 <button
+                  ref={desktopSearchLauncherRef}
                   type="button"
                   onClick={(event) => {
                     event.stopPropagation();
