@@ -1,8 +1,8 @@
 <div align="center">
   <h1>
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/awesomestvi/navet/main/assets/public/logo-horizontal-light.svg">
-      <img src="https://raw.githubusercontent.com/awesomestvi/navet/main/assets/public/logo-horizontal.svg" alt="Navet" width="220">
+      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/navet-app/navet/main/assets/public/logo-horizontal-light.svg">
+      <img src="https://raw.githubusercontent.com/navet-app/navet/main/assets/public/logo-horizontal.svg" alt="Navet" width="220">
     </picture>
   </h1>
 
@@ -26,11 +26,11 @@
   <p>
     <a href="https://docs.navet.app/security/"><img src="https://img.shields.io/badge/local--first-self--hosted-14b8a6" alt="Local-first and self-hosted"></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-f97316" alt="AGPL-3.0 license"></a>
-    <a href="https://github.com/awesomestvi/navet/stargazers"><img src="https://img.shields.io/github/stars/awesomestvi/navet?style=flat" alt="GitHub stars"></a>
+    <a href="https://github.com/navet-app/navet/stargazers"><img src="https://img.shields.io/github/stars/awesomestvi/navet?style=flat" alt="GitHub stars"></a>
   </p>
 </div>
 
-![Navet dashboard running on an iPad](https://raw.githubusercontent.com/awesomestvi/navet/main/assets/reference/marketing/use-cases/navet-ipad-frame-dashboard.jpg)
+![Navet dashboard running on an iPad](https://raw.githubusercontent.com/navet-app/navet/main/assets/reference/marketing/use-cases/navet-ipad-frame-dashboard.jpg)
 
 ## Everyday control without admin-screen clutter
 
@@ -50,7 +50,7 @@ without making every household member navigate a configuration interface.
 
 | Home at a glance | Focused energy view | Security without the noise |
 |---|---|---|
-| ![Navet home dashboard on an iPad](https://raw.githubusercontent.com/awesomestvi/navet/main/assets/reference/marketing/screenshots/navet-ipad-landscape-home.jpg) | ![Navet energy dashboard on an iPad](https://raw.githubusercontent.com/awesomestvi/navet/main/assets/reference/marketing/screenshots/navet-ipad-landscape-energy.jpg) | ![Navet security dashboard on an iPad](https://raw.githubusercontent.com/awesomestvi/navet/main/assets/reference/marketing/screenshots/navet-ipad-landscape-security.jpg) |
+| ![Navet home dashboard on an iPad](https://raw.githubusercontent.com/navet-app/navet/main/assets/reference/marketing/screenshots/navet-ipad-landscape-home.jpg) | ![Navet energy dashboard on an iPad](https://raw.githubusercontent.com/navet-app/navet/main/assets/reference/marketing/screenshots/navet-ipad-landscape-energy.jpg) | ![Navet security dashboard on an iPad](https://raw.githubusercontent.com/navet-app/navet/main/assets/reference/marketing/screenshots/navet-ipad-landscape-security.jpg) |
 
 <div align="center">
   <a href="https://demo.navet.app/"><strong>Open the live demo →</strong></a>
@@ -98,7 +98,7 @@ Navet is an AGPL-3.0 open-source project. Whether you want to fix a bug, improve
 the dashboard, or document a setup, start with the [contribution guide](CONTRIBUTING.md).
 
 ```bash
-git clone https://github.com/awesomestvi/navet.git
+git clone https://github.com/navet-app/navet.git
 cd navet
 pnpm install
 pnpm dev

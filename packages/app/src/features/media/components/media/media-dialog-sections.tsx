@@ -107,6 +107,8 @@ interface MediaDialogPlaybackControlsProps {
   canPreviousTrack: boolean;
   canTogglePlayback: boolean;
   canSeek: boolean;
+  canShuffle: boolean;
+  canRepeat: boolean;
   durationSeconds: number;
   elapsedSeconds: number;
   onCycleRepeat: () => void;
@@ -128,6 +130,8 @@ export function MediaDialogPlaybackControls({
   canPreviousTrack,
   canTogglePlayback,
   canSeek,
+  canShuffle,
+  canRepeat,
   durationSeconds,
   elapsedSeconds,
   onCycleRepeat,
@@ -220,26 +224,30 @@ export function MediaDialogPlaybackControls({
         </div>
       </div>
       <div className="flex items-center justify-between gap-1.5">
-        <RoundControlButton
-          theme={controller.theme}
-          size="medium"
-          variant="soft"
-          aria-label={shuffleEnabled ? t('media.shuffle') : t('media.linearPlayback')}
-          aria-pressed={shuffleEnabled}
-          onClick={onToggleShuffle}
-          className={`!h-11 !w-11 transition-colors ${shuffleEnabled ? '!border-0' : ''}`}
-          iconStyle={transportIconStyle}
-          style={shuffleEnabled ? controller.activeMiniControlStyle : controller.subtleControlStyle}
-        >
-          {shuffleEnabled ? (
-            <Shuffle className="h-4 w-4" />
-          ) : (
-            <span className="relative flex items-center justify-center">
+        {canShuffle ? (
+          <RoundControlButton
+            theme={controller.theme}
+            size="medium"
+            variant="soft"
+            aria-label={shuffleEnabled ? t('media.shuffle') : t('media.linearPlayback')}
+            aria-pressed={shuffleEnabled}
+            onClick={onToggleShuffle}
+            className={`!h-11 !w-11 transition-colors ${shuffleEnabled ? '!border-0' : ''}`}
+            iconStyle={transportIconStyle}
+            style={
+              shuffleEnabled ? controller.activeMiniControlStyle : controller.subtleControlStyle
+            }
+          >
+            {shuffleEnabled ? (
               <Shuffle className="h-4 w-4" />
-              <Slash className={offToggleSlashClassName} style={mirroredOffToggleSlashStyle} />
-            </span>
-          )}
-        </RoundControlButton>
+            ) : (
+              <span className="relative flex items-center justify-center">
+                <Shuffle className="h-4 w-4" />
+                <Slash className={offToggleSlashClassName} style={mirroredOffToggleSlashStyle} />
+              </span>
+            )}
+          </RoundControlButton>
+        ) : null}
         <RoundControlButton
           theme={controller.theme}
           size="medium"
@@ -286,33 +294,37 @@ export function MediaDialogPlaybackControls({
         >
           <SkipForward className="h-5 w-5" />
         </RoundControlButton>
-        <RoundControlButton
-          theme={controller.theme}
-          size="medium"
-          variant="soft"
-          aria-label={
-            repeatMode === 'one'
-              ? t('media.repeatOne')
-              : repeatMode === 'all'
-                ? t('media.repeatAll')
-                : t('media.repeatOff')
-          }
-          aria-pressed={repeatMode !== 'off'}
-          onClick={onCycleRepeat}
-          className={`!h-11 !w-11 transition-colors ${repeatMode !== 'off' ? '!border-0' : ''}`}
-          iconStyle={transportIconStyle}
-          style={
-            repeatMode !== 'off' ? controller.activeMiniControlStyle : controller.subtleControlStyle
-          }
-        >
-          {repeatMode === 'off' ? (
-            <RepeatOff className="h-4 w-4" />
-          ) : repeatMode === 'one' ? (
-            <Repeat1 className="h-4 w-4" />
-          ) : (
-            <Repeat className="h-4 w-4" />
-          )}
-        </RoundControlButton>
+        {canRepeat ? (
+          <RoundControlButton
+            theme={controller.theme}
+            size="medium"
+            variant="soft"
+            aria-label={
+              repeatMode === 'one'
+                ? t('media.repeatOne')
+                : repeatMode === 'all'
+                  ? t('media.repeatAll')
+                  : t('media.repeatOff')
+            }
+            aria-pressed={repeatMode !== 'off'}
+            onClick={onCycleRepeat}
+            className={`!h-11 !w-11 transition-colors ${repeatMode !== 'off' ? '!border-0' : ''}`}
+            iconStyle={transportIconStyle}
+            style={
+              repeatMode !== 'off'
+                ? controller.activeMiniControlStyle
+                : controller.subtleControlStyle
+            }
+          >
+            {repeatMode === 'off' ? (
+              <RepeatOff className="h-4 w-4" />
+            ) : repeatMode === 'one' ? (
+              <Repeat1 className="h-4 w-4" />
+            ) : (
+              <Repeat className="h-4 w-4" />
+            )}
+          </RoundControlButton>
+        ) : null}
       </div>
     </div>
   );

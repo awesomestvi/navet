@@ -1,7 +1,7 @@
 ---
 title: Brand asset system
 description: Official Navet asset sources, exports, platform requirements, and validation.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/branding/ASSET_SYSTEM.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/branding/ASSET_SYSTEM.md
 ---
 
 This document defines how Navet's established logo, install icons, social artwork, and
@@ -9,13 +9,13 @@ Home Assistant brand exports move from an approved source into product distribut
 
 Use these machine-readable files with this guide:
 
-- [`brand-tokens.json`](https://github.com/awesomestvi/navet/blob/main/assets/brand/source/brand-tokens.json) records the small set of
+- [`brand-tokens.json`](https://github.com/navet-app/navet/blob/main/assets/brand/source/brand-tokens.json) records the small set of
   cross-surface brand primitives that should not drift between product, website, and docs. It is
   a validation contract, not a runtime dependency; each surface keeps its native token layer and
   `pnpm check:brand` verifies alignment.
-- [`asset-manifest.json`](https://github.com/awesomestvi/navet/blob/main/assets/brand/source/asset-manifest.json) records approved variants,
+- [`asset-manifest.json`](https://github.com/navet-app/navet/blob/main/assets/brand/source/asset-manifest.json) records approved variants,
   intended output dimensions, formats, and committed distribution paths.
-- [`assets/brand/README.md`](https://github.com/awesomestvi/navet/blob/main/assets/brand/README.md) explains the authoring and export
+- [`assets/brand/README.md`](https://github.com/navet-app/navet/blob/main/assets/brand/README.md) explains the authoring and export
   boundary.
 
 The [brand and trademark policy](https://docs.navet.app/brand/trademark/) governs every Navet mark, including copies

@@ -1,7 +1,7 @@
 ---
 title: Agentic development workflow
 description: Understand how maintainers send selected Navet issues to Codex while preserving human review and manual contributions.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/developers/agentic-development.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/developers/agentic-development.md
 ---
 
 Navet uses GitHub as the control point for selected agent-assisted work. Maintainers decide which
@@ -86,6 +86,19 @@ merge records human acceptance for ordinary, foundational, and security-sensitiv
 Merging runtime changes to `main` automatically publishes a Navet Dev release. Production releases
 and public release communication require maintainer approval.
 
+## Requests in the Codex workspace
+
+Maintainers can request release announcements, researched ideas in private Linear, or delivery of
+a selected scope directly in the Navet workspace. The matching repository skill applies Navet's
+brand, voice and UX standards and retains checked evidence. Before publication, the maintainer
+reviews one package containing final copy, screenshot and all destinations/variants. One approval
+covers that package; changed content requires fresh approval. Idea proposals may include private prototypes and
+targeted feasibility POCs; product implementation needs selected-scope approval.
+
+See [direct request workflows](https://github.com/awesomestvi/navet/blob/main/docs/engineering/request-workflows.md)
+for setup, recovery and live acceptance evidence. PR merge and production release decisions remain
+with the maintainer.
+
 ## Develop manually
 
 Create a branch, make the change, run focused validation, and open a pull request by following the
@@ -98,4 +111,4 @@ Initial issue dispatch and follow-up work are automated. After adding unrelated 
 feedback, a maintainer can add the appropriate request label to queue another iteration.
 
 For the complete roles, permissions, and approval contract, see the
-[repository workflow specification](https://github.com/awesomestvi/navet/blob/main/docs/engineering/agentic-development.md).
+[repository workflow specification](https://github.com/navet-app/navet/blob/main/docs/engineering/agentic-development.md).

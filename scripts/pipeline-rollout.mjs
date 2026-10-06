@@ -65,7 +65,7 @@ async function rollout() {
     throw new Error(
       'Set CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN locally. Do not paste credentials into chat.',
     );
-  const repo = 'awesomestvi/navet';
+  const repo = 'navet-app/navet';
   const gh = (path, method = 'GET', body) =>
     JSON.parse(
       execFileSync(
@@ -141,7 +141,7 @@ async function rollout() {
     const project = await cf(name);
     if (
       project.source?.type !== 'github' ||
-      project.source.config.owner !== 'awesomestvi' ||
+      project.source.config.owner !== 'navet-app' ||
       project.source.config.repo_name !== 'navet' ||
       project.production_branch !== 'main'
     ) {

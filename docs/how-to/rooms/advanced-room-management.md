@@ -1,7 +1,7 @@
 ---
 title: Rename, merge, split, or delete rooms
 description: Perform structural room changes and review their provider impact before saving.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/rooms/advanced-room-management.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/rooms/advanced-room-management.md
 ---
 
 These operations can affect many devices. Review the provider impact before saving, especially

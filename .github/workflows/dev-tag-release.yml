@@ -16,7 +16,7 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository_owner }}/navet
+  IMAGE_NAME: awesomestvi/navet
 
 jobs:
   release-context:
@@ -112,6 +112,8 @@ jobs:
       packages: write
     needs: [release-context, tier-1-release-critical]
     uses: ./.github/workflows/release-image.yml
+    secrets:
+      NAVET_GHCR_TOKEN: ${{ secrets.NAVET_GHCR_TOKEN }}
     with:
       sha: ${{ needs.release-context.outputs.release_sha }}
       version: ${{ needs.release-context.outputs.dev_version }}
@@ -177,7 +179,7 @@ jobs:
             echo
             echo "Published artifacts:"
             echo "- standalone app image \`${REGISTRY}/${IMAGE_NAME}:${DEV_VERSION}\` for linux/amd64 and linux/arm64"
-            echo "- Home Assistant add-on images \`ghcr.io/${GITHUB_REPOSITORY_OWNER}/{arch}-navet-addon:${DEV_VERSION}\` for amd64 and aarch64"
+            echo "- Home Assistant add-on images \`ghcr.io/awesomestvi/{arch}-navet-addon:${DEV_VERSION}\` for amd64 and aarch64"
             echo
             echo "HACS/custom-panel, \`latest\`, and \`beta\` are unchanged."
             echo "EOF"
@@ -211,9 +213,9 @@ jobs:
           TAG_NAME: ${{ needs.release-context.outputs.tag_name }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          docker buildx imagetools inspect "ghcr.io/${GITHUB_REPOSITORY_OWNER}/navet:${DEV_VERSION}"
-          docker buildx imagetools inspect "ghcr.io/${GITHUB_REPOSITORY_OWNER}/amd64-navet-addon:${DEV_VERSION}"
-          docker buildx imagetools inspect "ghcr.io/${GITHUB_REPOSITORY_OWNER}/aarch64-navet-addon:${DEV_VERSION}"
+          docker buildx imagetools inspect "ghcr.io/awesomestvi/navet:${DEV_VERSION}"
+          docker buildx imagetools inspect "ghcr.io/awesomestvi/amd64-navet-addon:${DEV_VERSION}"
+          docker buildx imagetools inspect "ghcr.io/awesomestvi/aarch64-navet-addon:${DEV_VERSION}"
           gh release view "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --json isPrerelease \
             --jq '.isPrerelease' | grep -Fx true
 
@@ -238,8 +240,8 @@ jobs:
       - uses: docker/login-action@v4
         with:
           registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: awesomestvi
+          password: ${{ secrets.NAVET_GHCR_TOKEN }}
       - uses: actions/download-artifact@v7
         with:
           pattern: release-image-*

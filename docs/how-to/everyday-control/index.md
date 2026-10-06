@@ -1,7 +1,7 @@
 ---
 title: Everyday control
 description: Use Navet's main sections, controls, notifications, and widgets.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/everyday-control/index.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/everyday-control/index.md
 ---
 
 The controls shown in Navet depend on the capabilities reported by the connected provider and

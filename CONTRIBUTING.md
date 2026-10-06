@@ -1,15 +1,15 @@
 ---
 title: Contributing to Navet
 description: Set up the repository, make changes, and validate contributions.
-editUrl: https://github.com/awesomestvi/navet/edit/main/CONTRIBUTING.md
+editUrl: https://github.com/navet-app/navet/edit/main/CONTRIBUTING.md
 ---
 
 Use this file for the shortest path from clone to productive work.
 
 ## Start Here
 
-Before changing code, read [`AGENTS.md`](https://github.com/awesomestvi/navet/blob/main/AGENTS.md). Its task router points to the one focused
-guide needed for the area you are touching. Use [`docs/README.md`](https://github.com/awesomestvi/navet/blob/main/docs/README.md) only when you
+Before changing code, read [`AGENTS.md`](https://github.com/navet-app/navet/blob/main/AGENTS.md). Its task router points to the one focused
+guide needed for the area you are touching. Use [`docs/README.md`](https://github.com/navet-app/navet/blob/main/docs/README.md) only when you
 need the complete documentation map.
 
 ## Prerequisites
@@ -77,7 +77,7 @@ Important repo policy:
 - contributors and agents run the checks needed to prove their own changes
 - begin with focused checks and use `pnpm validate -- --dry-run` when the correct scope is unclear
 - release and packaging commands are maintainer workflows unless the task explicitly calls for them
-- use [`docs/agents/commands.md`](https://github.com/awesomestvi/navet/blob/main/docs/agents/commands.md) as the source of truth for command restrictions
+- use [`docs/agents/commands.md`](https://github.com/navet-app/navet/blob/main/docs/agents/commands.md) as the source of truth for command restrictions
 
 ## Architecture Rules
 

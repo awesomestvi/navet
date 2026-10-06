@@ -1,7 +1,7 @@
 ---
 title: Restore removed entities
 description: Add hidden dashboard entities back or restart the first-run dashboard choices.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/dashboards/restore-entities.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/dashboards/restore-entities.md
 ---
 
 Hiding a provider-backed card removes it from the dashboard presentation; it does not delete the

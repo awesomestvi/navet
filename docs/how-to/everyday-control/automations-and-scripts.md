@@ -1,7 +1,7 @@
 ---
 title: Run and inspect automations and scripts
 description: Filter routines, enable or disable automations, trigger runs, and read provider diagnostics.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/everyday-control/automations-and-scripts.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/everyday-control/automations-and-scripts.md
 ---
 
 Open **Household**, then choose **Routines**. This view separates automations and scripts while

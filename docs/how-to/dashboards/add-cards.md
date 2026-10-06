@@ -1,7 +1,7 @@
 ---
 title: Add cards, devices, and widgets
 description: Find provider entities and Navet widgets, choose placement, and configure a new card.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/dashboards/add-cards.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/dashboards/add-cards.md
 ---
 
 The Add Card library combines provider-backed entities with Navet-owned widgets. It excludes cards

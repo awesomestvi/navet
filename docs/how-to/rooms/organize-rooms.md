@@ -1,7 +1,7 @@
 ---
 title: Organize rooms and groups
 description: Create a room structure, reorder navigation, choose favorites, and hide rooms.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/rooms/organize-rooms.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/rooms/organize-rooms.md
 ---
 
 The Rooms workspace controls how rooms are presented in Navet and shows when an operation will also

@@ -1,13 +1,17 @@
+import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
+import { useTheme } from '@navet/app/hooks';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { Radio } from './radio';
 
 function RadioStory({ disabled = false }: { disabled?: boolean }) {
+  const { theme } = useTheme();
+  const surface = getThemeSurfaceTokens(theme);
   const [value, setValue] = useState('grid');
 
   return (
-    <div className="space-y-3 text-sm text-white/80">
+    <div className={`space-y-3 text-sm ${surface.textSecondary}`}>
       {['grid', 'list'].map((option) => (
         <label
           key={option}

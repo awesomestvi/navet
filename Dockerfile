@@ -49,7 +49,7 @@ ARG NAVET_VERSION=0.0.0
 ARG NAVET_GIT_SHA=local
 ARG NAVET_BUILD_DATE=unknown
 ARG NAVET_RELEASE_CHANNEL=development
-ARG NAVET_SOURCE=https://github.com/awesomestvi/navet
+ARG NAVET_SOURCE=https://github.com/navet-app/navet
 
 LABEL org.opencontainers.image.title="Navet" \
   org.opencontainers.image.description="Provider-neutral smart-home dashboard for Home Assistant, Homey, and openHAB." \

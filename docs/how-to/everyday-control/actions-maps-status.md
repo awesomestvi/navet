@@ -1,7 +1,7 @@
 ---
 title: Create actions, maps, and status widgets
 description: Add a custom action, scene shortcut, location map, or household status summary.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/everyday-control/actions-maps-status.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/everyday-control/actions-maps-status.md
 ---
 
 These widgets turn selected household actions or summaries into focused dashboard cards.

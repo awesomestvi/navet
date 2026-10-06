@@ -1,7 +1,7 @@
 ---
 title: Resolve a dashboard synchronization conflict
 description: Choose between local and remote dashboard changes.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/dashboards/sync-conflicts.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/dashboards/sync-conflicts.md
 ---
 
 A conflict means the shared profile changed elsewhere while the current device had a different

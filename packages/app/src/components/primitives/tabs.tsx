@@ -219,7 +219,7 @@ export interface TabTriggerProps extends Omit<ButtonHTMLAttributes<HTMLButtonEle
 export type TabTriggerSize = NonNullable<TabTriggerProps['size']>;
 
 export const TabTrigger = forwardRef<HTMLButtonElement, TabTriggerProps>(function TabTrigger(
-  { value, className, children, onClick, size = 'default', ...props },
+  { value, className, children, onClick, onKeyDown, size = 'default', ...props },
   ref
 ) {
   const { theme, accentColor, primaryColor } = useTheme();
@@ -255,7 +255,36 @@ export const TabTrigger = forwardRef<HTMLButtonElement, TabTriggerProps>(functio
       aria-selected={isActive}
       aria-controls={panelId}
       data-state={isActive ? 'active' : 'inactive'}
+      data-navet-tab-value={value}
       tabIndex={isActive ? 0 : -1}
+      onKeyDown={(event) => {
+        onKeyDown?.(event);
+        if (
+          event.defaultPrevented ||
+          event.altKey ||
+          event.ctrlKey ||
+          event.metaKey ||
+          (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight')
+        ) {
+          return;
+        }
+        const list = event.currentTarget.closest('[role="tablist"]');
+        if (!list) return;
+        const triggers = Array.from(
+          list.querySelectorAll<HTMLButtonElement>(
+            'button[role="tab"][data-navet-tab-value]:not(:disabled)'
+          )
+        ).filter((trigger) => trigger.closest('[role="tablist"]') === list);
+        const index = triggers.indexOf(event.currentTarget);
+        if (index < 0 || triggers.length === 0) return;
+        event.preventDefault();
+        const isRtl = getComputedStyle(list).direction === 'rtl';
+        const direction = (event.key === 'ArrowRight' ? 1 : -1) * (isRtl ? -1 : 1);
+        const next = triggers[(index + direction + triggers.length) % triggers.length];
+        next.focus();
+        const nextValue = next.dataset.navetTabValue;
+        if (nextValue !== undefined && nextValue !== currentValue) setValue(nextValue);
+      }}
       onClick={(event) => {
         setValue(value);
         onClick?.(event);

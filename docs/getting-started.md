@@ -1,7 +1,7 @@
 ---
 title: Getting started
 description: Understand Navet, choose a provider, and reach your first dashboard.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/getting-started.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/getting-started.md
 next:
   link: /install/
   label: Choose an installation

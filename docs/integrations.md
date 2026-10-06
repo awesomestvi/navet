@@ -1,7 +1,7 @@
 ---
 title: Integrations
 description: Provider setup documentation and current support status.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/integrations.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/integrations.md
 ---
 
 Navet connects to your smart-home providers and brings their supported devices and features into

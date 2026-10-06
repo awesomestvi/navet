@@ -1,7 +1,7 @@
 ---
 title: Switch and manage dashboards
 description: Open, rename, duplicate, order, default, assign, or delete Home dashboards.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/dashboards/switch-and-manage.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/dashboards/switch-and-manage.md
 ---
 
 Dashboard management changes the collection of Home dashboards. It does not change the main

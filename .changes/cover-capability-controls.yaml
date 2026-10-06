@@ -1,0 +1,6 @@
+type: fixed
+audiences:
+  - standalone
+  - home-assistant
+  - hacs
+summary: Hide unsupported Stop controls on cover cards and use the standard card surface for covers without position controls.

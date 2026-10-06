@@ -1,7 +1,7 @@
 ---
 title: Camera does not play live video
 description: Check camera state, live-stream settings, direct URLs, and playback fallback behavior.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/troubleshooting/camera-playback.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/troubleshooting/camera-playback.md
 ---
 
 When live playback fails, Navet shows a snapshot or an error. Start by checking the camera in

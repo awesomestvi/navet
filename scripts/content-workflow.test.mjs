@@ -1,9 +1,11 @@
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   checkContentPack,
+  createSharedDrafts,
   createFallbackDrafts,
   generateContentPack,
   jaccardSimilarity,
@@ -20,6 +22,33 @@ import {
 
 const temporaryDirectories = [];
 const fixedNow = new Date('2026-09-01T12:00:00.000Z');
+
+it('generates all three transports from one master without rewriting wording or links', async () => {
+  const cacheRoot = path.join(repoRoot, '.cache', 'content-workflow-tests');
+  fs.mkdirSync(cacheRoot, { recursive: true });
+  const outputRoot = fs.mkdtempSync(path.join(cacheRoot, 'shared-post-'));
+  temporaryDirectories.push(outputRoot);
+  const brief = makeBrief({ sharedPost: true, kind: 'general',
+    providerScope: ['provider-neutral', 'home-assistant'],
+    channels: ['navet-subreddit', 'navet-discord', 'homeassistant-community'] });
+  const master = validDraft();
+  const drafts = createSharedDrafts(master, brief.channels);
+  expect(drafts[0].body).toBe(master.body);
+  expect(drafts[1].body).toBe(`${master.title}\n\n${master.body}`);
+  expect(drafts[2].body).toBe(drafts[1].body);
+  expect(validateDrafts(drafts, brief, loadChannelConfig()).errors).toEqual([]);
+  const briefPath = path.join(outputRoot, 'brief.yml');
+  writeYaml(briefPath, brief);
+  const result = await generateContentPack({ briefPath, outputPath: outputRoot,
+    suppliedMaster: master, env: {}, now: new Date('2026-10-05T12:00:00Z') });
+  expect(result.pack.publishEligible).toBe(true);
+  expect(result.pack.drafts).toEqual(drafts);
+  const masterPath = path.join(outputRoot, 'master.json');
+  fs.writeFileSync(masterPath, JSON.stringify(master));
+  expect(execFileSync(process.execPath, [path.join(repoRoot, 'scripts/content-cli.mjs'),
+    'generate', '--brief', briefPath, '--master', masterPath, '--output', outputRoot],
+    { encoding: 'utf8' })).toContain('Content checks: passed');
+});
 
 function makeBrief(overrides = {}) {
   return {
@@ -69,8 +98,7 @@ function validDraft(channelId = 'navet-subreddit') {
   return {
     channelId,
     title: 'Control lights by room',
-    body:
-      'Room controls keep a common household action beside the live state. The connected provider remains the source of truth. Which room action do you reach for most often?',
+    body: 'Room controls keep a common household action beside the live state. The connected provider remains the source of truth. Which room action do you reach for most often?',
     script: '',
     description: 'A native community update with a concrete product detail.',
     evidenceIds: ['voice-standard'],
@@ -180,8 +208,7 @@ describe('content brief validation', () => {
     expect(briefResult.errors).toEqual([]);
     const draft = {
       ...validDraft(channelId),
-      body:
-        'I work on Navet. Room controls keep a common household action beside live state, while the connected provider remains the source of truth. The linked demo shows the current interface.',
+      body: 'I work on Navet. Room controls keep a common household action beside live state, while the connected provider remains the source of truth. The linked demo shows the current interface.',
     };
     expect(validateDrafts([draft], brief, config).errors).toEqual([]);
   });
@@ -283,16 +310,91 @@ describe('channel draft validation', () => {
 });
 
 describe('content pack generation', () => {
+  it('accepts agent-authored final content without API credentials or an invented personal seed', async () => {
+    const cacheTestRoot = path.join(repoRoot, '.cache', 'content-workflow-tests');
+    fs.mkdirSync(cacheTestRoot, { recursive: true });
+    const outputRoot = fs.mkdtempSync(path.join(cacheTestRoot, 'navet-agent-content-'));
+    temporaryDirectories.push(outputRoot);
+    const briefPath = path.join(outputRoot, 'brief.yml');
+    writeYaml(
+      briefPath,
+      makeBrief({
+        maintainerSeed: undefined,
+        sourceContext: {
+          problem: 'Room actions need clear current state.',
+          benefit: 'Household controls are easier to find.',
+          specificDetail: 'Room controls sit beside state.',
+          limitation: 'Provider capabilities determine controls.',
+          nextAction: 'Explore the demo.',
+        },
+      })
+    );
+    const result = await generateContentPack({
+      briefPath,
+      outputPath: outputRoot,
+      env: {},
+      suppliedDrafts: [validDraft()],
+      now: fixedNow,
+    });
+    expect(result.pack.publishEligible).toBe(true);
+    expect(result.pack.requiresHumanReview).toBe(false);
+    expect(result.pack.requiresQualityReview).toBe(true);
+    expect(checkContentPack(result.pack, { now: fixedNow }).errors).toEqual([]);
+    const draftsPath = path.join(outputRoot, 'drafts.json');
+    fs.writeFileSync(draftsPath, JSON.stringify([validDraft()]));
+    const cli = path.join(repoRoot, 'scripts', 'content-cli.mjs');
+    const sourceRoot = path.join(outputRoot, 'release-source');
+    fs.mkdirSync(path.join(sourceRoot, 'docs', 'branding'), { recursive: true });
+    fs.mkdirSync(path.join(sourceRoot, 'scripts'));
+    fs.copyFileSync(
+      path.join(repoRoot, 'docs', 'branding', 'VOICE_AND_MESSAGING.md'),
+      path.join(sourceRoot, 'docs', 'branding', 'VOICE_AND_MESSAGING.md')
+    );
+    fs.copyFileSync(
+      path.join(repoRoot, 'scripts', 'capture-marketing-media.mjs'),
+      path.join(sourceRoot, 'scripts', 'capture-marketing-media.mjs')
+    );
+    expect(
+      execFileSync(
+        process.execPath,
+        [
+          cli,
+          'generate',
+          '--brief',
+          briefPath,
+          '--drafts',
+          draftsPath,
+          '--source-root',
+          sourceRoot,
+          '--output',
+          outputRoot,
+        ],
+        { encoding: 'utf8' }
+      )
+    ).toContain('Content checks: passed');
+    expect(JSON.parse(fs.readFileSync(path.join(outputRoot, 'pack.json'), 'utf8')).sourceRoot).toBe(
+      sourceRoot
+    );
+    expect(
+      execFileSync(process.execPath, [cli, 'check', '--pack', outputRoot], { encoding: 'utf8' })
+    ).toContain('Content pack checks passed');
+    await expect(
+      generateContentPack({
+        briefPath,
+        outputPath: outputRoot,
+        env: {},
+        suppliedDrafts: [{ ...validDraft(), body: 'Navet is 100% private.' }],
+        now: fixedNow,
+      })
+    ).rejects.toThrow('unsafe privacy claim');
+  });
   it('writes an inspectable non-publishable fallback when credentials are missing', async () => {
     const cacheTestRoot = path.join(repoRoot, '.cache', 'content-workflow-tests');
     fs.mkdirSync(cacheTestRoot, { recursive: true });
     const outputRoot = fs.mkdtempSync(path.join(cacheTestRoot, 'navet-content-test-'));
     temporaryDirectories.push(outputRoot);
     const briefPath = path.join(outputRoot, 'brief.yml');
-    writeYaml(
-      briefPath,
-      makeBrief({ channels: ['navet-subreddit', 'navet-discord', 'youtube'] })
-    );
+    writeYaml(briefPath, makeBrief({ channels: ['navet-subreddit', 'navet-discord', 'youtube'] }));
     const result = await generateContentPack({
       briefPath,
       outputPath: outputRoot,
@@ -374,7 +476,8 @@ describe('content pack generation', () => {
       channelId: 'youtube',
       title: 'Home Assistant Assist in Navet',
       body: 'A narrated demonstration of the current Home Assistant Assist flow.',
-      script: 'Show the result first. Open Assist, choose a pipeline, use the microphone, and explain that Homey and openHAB do not register this capability yet.',
+      script:
+        'Show the result first. Open Assist, choose a pipeline, use the microphone, and explain that Homey and openHAB do not register this capability yet.',
       description: 'A two-minute narrated product walkthrough.',
     };
     const fetchImpl = async () => ({

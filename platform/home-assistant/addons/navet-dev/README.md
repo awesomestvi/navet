@@ -28,7 +28,7 @@ use Home Assistant Ingress.
 4. Check whether the same action works in stable Navet. This helps separate a regression from a
    configuration problem.
 
-[Open a GitHub issue](https://github.com/awesomestvi/navet/issues) with the Navet Dev version, your
+[Open a GitHub issue](https://github.com/navet-app/navet/issues) with the Navet Dev version, your
 Home Assistant version, the exact action that failed, and clear reproduction steps. Remove tokens,
 private URLs, entity names, and household details from logs and screenshots first.
 

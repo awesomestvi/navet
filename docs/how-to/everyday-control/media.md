@@ -1,7 +1,7 @@
 ---
 title: Play and manage media
 description: Browse sources, search, choose speakers, group playback, and use TV controls.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/everyday-control/media.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/everyday-control/media.md
 ---
 
 Media features vary by provider and player. Navet shows the controls supported by your connected

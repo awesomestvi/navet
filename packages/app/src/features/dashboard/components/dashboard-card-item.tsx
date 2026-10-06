@@ -102,6 +102,7 @@ export const DashboardCardItem = memo(function DashboardCardItem({
   const isLocked = useDashboardEntitiesStore((state) => state.lockedCardIds.includes(id));
   const toggleCardLock = useDashboardEntitiesStore((state) => state.toggleCardLock);
   const [isTinyEditDockOpen, setIsTinyEditDockOpen] = useState(false);
+  const [tinyEditDockOpener, setTinyEditDockOpener] = useState<HTMLButtonElement | null>(null);
   const [tinyEditDockAnchorRect, setTinyEditDockAnchorRect] =
     useState<PortalActionDockAnchorRect | null>(null);
   const [customCardSettingsRequestKey, setCustomCardSettingsRequestKey] = useState(0);
@@ -215,54 +216,57 @@ export const DashboardCardItem = memo(function DashboardCardItem({
       {isEditMode ? <EditModeCardBackdrop size={resolvedSize} /> : null}
       {isEditMode ? (
         usesTinyEditDockLauncher ? (
-          isTinyEditDockOpen ? (
-            <TinyEditModeDockOverlay
-              accentColor={accentColor}
-              anchorRect={tinyEditDockAnchorRect}
-              subtitle={tinyEditOverlaySubtitle}
-              theme={theme}
-              title={tinyEditOverlayTitle}
-              onClose={() => {
-                setIsTinyEditDockOpen(false);
-                setTinyEditDockAnchorRect(null);
-              }}
-            >
-              {renderEditModeDockActions({
-                allowedSizes,
-                allowEntityRemoval,
-                canOpenEditModeSettings,
-                card,
-                cardId: id,
-                cardSize: editControlSize,
-                entityName: device?.name ?? card?.id ?? '',
-                handleEditModeSettingsOpen,
-                handleLockToggle,
-                handleSizeChange,
-                hasDevice: Boolean(device),
-                isLocked,
-                lockAriaLabel,
-                onDeleteCard,
-                onRemoveEntity,
-                onRemoveFromLayout,
-                removeFromLayoutLabel,
-                removeAriaLabel,
-                RemoveActionIcon,
-                resolvedSize,
-                theme,
-                t,
-                usesHideAction,
-              })}
-            </TinyEditModeDockOverlay>
-          ) : (
+          <>
             <TinyEditModeDockLauncher
               theme={theme}
               onOpen={(event) => {
+                setTinyEditDockOpener(event.currentTarget);
                 setTinyEditDockAnchorRect(getPortalActionDockAnchorRect(event.currentTarget));
                 setIsTinyEditDockOpen(true);
               }}
               title={t('common.moreActions')}
             />
-          )
+            {isTinyEditDockOpen ? (
+              <TinyEditModeDockOverlay
+                accentColor={accentColor}
+                anchorRect={tinyEditDockAnchorRect}
+                returnFocusTo={tinyEditDockOpener}
+                subtitle={tinyEditOverlaySubtitle}
+                theme={theme}
+                title={tinyEditOverlayTitle}
+                onClose={() => {
+                  setIsTinyEditDockOpen(false);
+                  setTinyEditDockAnchorRect(null);
+                }}
+              >
+                {renderEditModeDockActions({
+                  allowedSizes,
+                  allowEntityRemoval,
+                  canOpenEditModeSettings,
+                  card,
+                  cardId: id,
+                  cardSize: editControlSize,
+                  entityName: device?.name ?? card?.id ?? '',
+                  handleEditModeSettingsOpen,
+                  handleLockToggle,
+                  handleSizeChange,
+                  hasDevice: Boolean(device),
+                  isLocked,
+                  lockAriaLabel,
+                  onDeleteCard,
+                  onRemoveEntity,
+                  onRemoveFromLayout,
+                  removeFromLayoutLabel,
+                  removeAriaLabel,
+                  RemoveActionIcon,
+                  resolvedSize,
+                  theme,
+                  t,
+                  usesHideAction,
+                })}
+              </TinyEditModeDockOverlay>
+            ) : null}
+          </>
         ) : (
           <EditModeActionDock
             cardSize={editControlSize}
@@ -512,6 +516,7 @@ function TinyEditModeDockOverlay({
   subtitle,
   theme,
   title,
+  returnFocusTo,
 }: {
   accentColor: string;
   anchorRect: PortalActionDockAnchorRect | null;
@@ -520,11 +525,13 @@ function TinyEditModeDockOverlay({
   subtitle: string;
   theme: ReturnType<typeof useTheme>['theme'];
   title: string;
+  returnFocusTo: HTMLElement | null;
 }) {
   return (
     <PortalActionDock
       accentColor={accentColor}
       anchorRect={anchorRect}
+      returnFocusTo={returnFocusTo}
       onClose={onClose}
       subtitle={subtitle}
       theme={theme}

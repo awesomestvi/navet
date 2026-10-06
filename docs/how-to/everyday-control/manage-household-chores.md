@@ -1,7 +1,7 @@
 ---
 title: Manage and recover household chores
 description: Edit recurring work, review progress, protect management, and back up or restore the shared chores workspace.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/everyday-control/manage-household-chores.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/everyday-control/manage-household-chores.md
 ---
 
 Use **Chores** to manage recurring work and **Progress** to review activity. Open
@@ -141,11 +141,14 @@ returns to the appropriate setup state.
 1. In **Data and recovery**, choose **Import backup**.
 2. Select a Navet chores backup, a supported Home Assistant todo export, or a normalized ChoreOps
    export.
-3. Choose **Merge** to keep current chores and remap conflicts, or **Replace** to remove the current
+3. Review the restore confirmation.
+4. Choose **Merge** to keep current chores and remap conflicts, or **Replace** to remove the current
    workspace first.
-4. Review the confirmation before restoring.
 
 Download a fresh backup before using **Replace** if the current household may be needed later.
+If restoring fails, the confirmation keeps your selected backup and shows an error. Choose **Merge**
+or **Replace** again to retry, or **Cancel** to discard the selection. Restore controls are disabled
+while saving.
 
 ## Recover damaged chore data
 

@@ -81,6 +81,22 @@ not expand that into the whole table.
 If no row matches, this file is sufficient. `ai/agents.md` is a navigation index, not mandatory
 second-stage reading.
 
+### Direct requests in Codex
+
+Use the repository skill matching the requested outcome:
+
+- Community posts, feature highlights and release announcements: [navet-release-communication](.agents/skills/navet-release-communication/SKILL.md).
+- Ideas for private GitHub Project prioritization: [navet-idea-proposals](.agents/skills/navet-idea-proposals/SKILL.md).
+- Selected implementation scope: [navet-approved-delivery](.agents/skills/navet-approved-delivery/SKILL.md).
+
+Prepare one master post and screenshot for r/navet, Navet Discord #announcements and the existing
+Navet Home Assistant topic. One explicit maintainer approval covers that shared post in all three
+destinations. Adapt only platform formatting; changed wording or assets require fresh approval.
+This applies to releases, feature highlights, tips and general Navet discussion.
+An ideas request permits private prototypes and targeted feasibility POCs;
+production implementation needs explicit selected-scope approval. Load only the applicable skill.
+See [request workflows](docs/engineering/request-workflows.md) for setup and operational evidence.
+
 ## Non-Negotiable Rules
 
 - `@navet/core` must not import React, provider SDKs, API clients, or provider-specific code.

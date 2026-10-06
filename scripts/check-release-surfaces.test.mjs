@@ -14,7 +14,7 @@ function fixture({ addonVersion = '0.17.2', addonNotes = '0.17.2', docVersion = 
   fixtures.push(root);
   const files = {
     'package.json': JSON.stringify({ version: '0.17.1' }),
-    'repository.yaml': 'url: https://github.com/awesomestvi/navet\n',
+    'repository.yaml': 'url: https://github.com/navet-app/navet\n',
     'docs/VERSIONING.md': `- current version: \`${docVersion}\`\n`,
     'CHANGELOG.md': '## 0.17.1\n\n## Improvements and bug fixes\n\n- Fixed setup.\n',
     'platform/home-assistant/custom_components/navet/manifest.json': JSON.stringify({ version: '0.17.1' }),

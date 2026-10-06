@@ -1,7 +1,7 @@
 ---
 title: Control climate devices
 description: Read the climate overview and adjust thermostats, humidity, fans, and water heaters.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/everyday-control/climate.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/everyday-control/climate.md
 ---
 
 The Climate section collects your climate devices, summarizes current conditions, and shows

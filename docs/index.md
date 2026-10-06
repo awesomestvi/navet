@@ -1,7 +1,7 @@
 ---
 title: Navet documentation
 description: Install, configure, and use Navet.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/index.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/index.md
 ---
 
 Control your smart home with Navet on a wall panel, tablet, computer, or phone.

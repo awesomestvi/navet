@@ -63,7 +63,7 @@ const releaseId = (version: string) => `release-${version.toLowerCase().replace(
     <p>
       Stable Navet releases load from the canonical GitHub release record, followed by the
       historical repository archive.{" "}
-      <a href="https://github.com/awesomestvi/navet/releases">View releases on GitHub <span aria-hidden="true">↗</span></a>
+      <a href="https://github.com/navet-app/navet/releases">View releases on GitHub <span aria-hidden="true">↗</span></a>
     </p>
   </div>
 
@@ -100,7 +100,7 @@ const releaseId = (version: string) => `release-${version.toLowerCase().replace(
           <header>
             <time datetime={item.date}>{formatDate(item.date)}</time>
             <h2>
-              <a href={`https://github.com/awesomestvi/navet/releases/tag/v${item.version}`}>Navet {item.version}</a>
+              <a href={`https://github.com/navet-app/navet/releases/tag/v${item.version}`}>Navet {item.version}</a>
             </h2>
             {index === 0 && <span class="navet-release-latest">Archive</span>}
           </header>
@@ -120,14 +120,14 @@ const releaseId = (version: string) => `release-${version.toLowerCase().replace(
 
   <div class="navet-changelog-source">
     <span aria-hidden="true">↻</span>
-    <p><strong>Release archive.</strong> Current stable notes load directly from GitHub Releases; older entries remain in the historical <a href="https://github.com/awesomestvi/navet/blob/main/CHANGELOG.md">CHANGELOG.md</a>.</p>
+    <p><strong>Release archive.</strong> Current stable notes load directly from GitHub Releases; older entries remain in the historical <a href="https://github.com/navet-app/navet/blob/main/CHANGELOG.md">CHANGELOG.md</a>.</p>
   </div>
 </div>
 
 <script>
   import { parseReleaseGroups, parseCachedReleases, type FeedRelease } from "../utils/release-feed";
   import { loadReleaseCache, saveReleaseCache } from "../../../../packages/app/src/utils/public-release-cache";
-  const RELEASES_API_URL = "https://api.github.com/repos/awesomestvi/navet/releases";
+  const RELEASES_API_URL = "https://api.github.com/repos/navet-app/navet/releases";
   const STABLE_TAG_PATTERN = /^v(\d+\.\d+\.\d+)$/;
 
   const releaseId = (version: string) => `release-${version.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;

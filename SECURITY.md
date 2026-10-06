@@ -1,7 +1,7 @@
 ---
 title: Security policy
 description: Supported versions, vulnerability reporting, and safe deployment guidance.
-editUrl: https://github.com/awesomestvi/navet/edit/main/SECURITY.md
+editUrl: https://github.com/navet-app/navet/edit/main/SECURITY.md
 ---
 
 ## Reporting A Vulnerability

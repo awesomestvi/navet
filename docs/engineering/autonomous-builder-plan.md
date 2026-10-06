@@ -22,8 +22,8 @@ role continuously reduces the manual effort of finding layout and interaction de
 
 Target outcome: a dependable team that develops proposals and delivers approved features and
 products. Navet 1.0.0 is a product milestone supported by that team.
-Content production, videos, advertising, social publishing, and their integrations are deferred
-until product maturity and a separate plan.
+On-request release communication is defined in [request workflows](request-workflows.md).
+Video production, advertising, recurring content and unattended publishing remain separate scopes.
 
 ## Workflow And Product Acceptance
 

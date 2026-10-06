@@ -1,7 +1,7 @@
 ---
 title: Control lights and scenes
 description: Read whole-home lighting status, run scenes, and control room or individual lights.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/everyday-control/lights-and-scenes.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/everyday-control/lights-and-scenes.md
 ---
 
 The Lights section groups supported lights and switches by room while keeping common actions close

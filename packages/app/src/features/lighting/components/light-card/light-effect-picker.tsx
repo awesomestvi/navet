@@ -76,7 +76,7 @@ export const LightEffectPicker = memo(function LightEffectPicker({
             sideOffset={10}
             className={cn(
               getThemeDropdownSurfaceClasses(effectiveTheme),
-              'w-[var(--radix-dropdown-menu-trigger-width)] p-2'
+              'max-h-[min(20rem,var(--radix-dropdown-menu-content-available-height))] w-[var(--radix-dropdown-menu-trigger-width)] overscroll-contain p-2'
             )}
             onClick={(event) => event.stopPropagation()}
           >
@@ -136,7 +136,10 @@ export const LightEffectPicker = memo(function LightEffectPicker({
       <DropdownMenuContent
         align="start"
         sideOffset={10}
-        className={cn(getThemeDropdownSurfaceClasses(effectiveTheme), 'w-64 overflow-visible p-2')}
+        className={cn(
+          getThemeDropdownSurfaceClasses(effectiveTheme),
+          'max-h-[min(20rem,var(--radix-dropdown-menu-content-available-height))] w-64 overscroll-contain p-2'
+        )}
         onClick={(event) => event.stopPropagation()}
       >
         <DropdownMenuLabel>{t('lighting.effects')}</DropdownMenuLabel>

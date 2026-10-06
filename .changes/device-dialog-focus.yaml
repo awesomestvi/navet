@@ -1,0 +1,6 @@
+type: fixed
+audiences:
+  - standalone
+  - home-assistant
+  - hacs
+summary: Keep keyboard focus inside device controls dialogs and return it to the opener on dismissal.

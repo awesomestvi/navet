@@ -1,7 +1,7 @@
 ---
 title: Choose how cards react to taps
 description: Select toggle-first or control-first behavior for supported cards.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/settings/card-interactions.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/settings/card-interactions.md
 ---
 
 Card interaction style changes the common tap path without changing what the provider device can

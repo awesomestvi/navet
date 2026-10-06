@@ -1,11 +1,68 @@
 import { CardDialogHeader } from '@navet/app/components/patterns/card-dialog';
 import { renderWithProviders } from '@navet/app/test/render';
-import { fireEvent, screen, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { Sliders } from 'lucide-react';
+import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { BaseCardDialog } from '.';
 
 describe('BaseCardDialog', () => {
+  it.each([
+    [true, false],
+    [false, false],
+    [false, true],
+  ])(
+    'moves focus inside and restores the opener with disableOpenAutoFocus=%s and autoFocus child=%s',
+    async (disableOpenAutoFocus, autoFocusChild) => {
+      function Fixture() {
+        const [open, setOpen] = useState(false);
+        return (
+          <>
+            <button type="button" onClick={() => setOpen(true)}>
+              Open fan controls
+            </button>
+            <button type="button">Background climate</button>
+            <BaseCardDialog
+              isOpen={open}
+              onOpenChange={setOpen}
+              title="Bedroom fan"
+              theme="dark"
+              disableOpenAutoFocus={disableOpenAutoFocus}
+              tabs={[
+                {
+                  key: 'controls',
+                  label: 'Controls',
+                  icon: Sliders,
+                  content: autoFocusChild ? (
+                    // biome-ignore lint/a11y/noAutofocus: Reproduce existing autofocus form consumers for restoration regression.
+                    <input aria-label="Target" autoFocus />
+                  ) : (
+                    <button type="button">Fan speed</button>
+                  ),
+                },
+              ]}
+            />
+          </>
+        );
+      }
+      renderWithProviders(<Fixture />);
+      const opener = screen.getByRole('button', { name: 'Open fan controls' });
+      opener.focus();
+      fireEvent.click(opener);
+      const dialog = screen.getByRole('dialog', { name: 'Bedroom fan' });
+      expect(dialog.contains(document.activeElement)).toBe(true);
+      if (disableOpenAutoFocus) expect(dialog).toHaveFocus();
+      fireEvent.keyDown(dialog, { key: 'Escape' });
+      await waitFor(() => expect(opener).toHaveFocus());
+      fireEvent.click(opener);
+      expect(
+        screen.getByRole('dialog', { name: 'Bedroom fan' }).contains(document.activeElement)
+      ).toBe(true);
+      fireEvent.click(screen.getAllByRole('button', { name: /^Close$/ })[0]);
+      await waitFor(() => expect(opener).toHaveFocus());
+    }
+  );
+
   it('keeps primary controls visible and returns to them after secondary navigation and reopening', () => {
     const onRoomChange = vi.fn();
     const props = {

@@ -641,4 +641,72 @@ describe('MediaDialog', () => {
     expect(screen.getAllByText('Cigarettes After Sex').length).toBeGreaterThanOrEqual(1);
     expect(screen.queryByRole('button', { name: 'Menu' })).not.toBeInTheDocument();
   });
+  it.each([
+    [false, false],
+    [true, false],
+    [false, true],
+    [true, true],
+  ])('exposes only supported shuffle and repeat controls (%s, %s)', (canShuffle, canRepeat) => {
+    useThemeMock.mockReturnValue({ theme: 'dark' });
+    useMediaArtworkColorsMock.mockReturnValue({
+      dominant: '#202023',
+      vibrant: '#505056',
+      darkMuted: '#121214',
+      highlight: '#f2f2f5',
+      gradientEnd: '#0a0a0c',
+    });
+    const toggleShuffle = vi.fn();
+    const cycleRepeat = vi.fn();
+    renderWithProviders(
+      <MediaDialog
+        entityId="media_player.bathroom"
+        room="Bathroom"
+        isOpen
+        onOpenChange={vi.fn()}
+        artwork="data:image/png;base64,artwork"
+        entityName="Bathroom"
+        entityType="Speaker"
+        title="Touch"
+        artist="Cigarettes After Sex"
+        isPlaying
+        volume={10}
+        isMuted={false}
+        elapsedSeconds={93}
+        durationSeconds={293}
+        supportsGrouping={false}
+        groupMembers={[]}
+        availableGroupingPlayers={[]}
+        onPrevious={vi.fn()}
+        canPreviousTrack
+        onTogglePlay={vi.fn()}
+        onNext={vi.fn()}
+        canNextTrack
+        shuffleEnabled={false}
+        repeatMode="off"
+        onToggleShuffle={toggleShuffle}
+        onCycleRepeat={cycleRepeat}
+        capabilities={{ ...getMediaPlayerCapabilities(0), canShuffle, canRepeat }}
+        sourceList={[]}
+        onSelectSource={vi.fn()}
+        soundModeList={[]}
+        onSelectSoundMode={vi.fn()}
+        onSeek={vi.fn()}
+        onClearPlaylist={vi.fn()}
+        onToggleMute={vi.fn()}
+        onVolumeChange={vi.fn()}
+        onVolumeInteractionStart={vi.fn()}
+        onVolumeInteractionEnd={vi.fn()}
+        onAttachGroupMember={vi.fn()}
+        onDetachGroupMember={vi.fn()}
+      />
+    );
+    const shuffle = screen.queryByRole('button', { name: 'Linear playback' });
+    const repeat = screen.queryByRole('button', { name: 'Repeat off' });
+    expect(Boolean(shuffle)).toBe(canShuffle);
+    expect(Boolean(repeat)).toBe(canRepeat);
+    if (shuffle) fireEvent.click(shuffle);
+    if (repeat) fireEvent.click(repeat);
+    expect(toggleShuffle).toHaveBeenCalledTimes(canShuffle ? 1 : 0);
+    expect(cycleRepeat).toHaveBeenCalledTimes(canRepeat ? 1 : 0);
+  });
 });

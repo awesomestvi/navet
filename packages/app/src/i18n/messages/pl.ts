@@ -406,6 +406,8 @@ export const plMessages = {
   'household.data.importTitle': 'Przywrócić kopię obowiązków?',
   'household.data.importDescription':
     'Scal zachowuje bieżące obowiązki i zmienia nazwy konfliktów. Zastąp najpierw usuwa bieżący obszar.',
+  'household.data.importFailed':
+    'Nie udało się przywrócić kopii. Spróbuj ponownie scalić lub zastąpić.',
   'household.data.imported': 'Przywrócono kopię obowiązków.',
   'household.data.merge': 'Scal',
   'household.data.replace': 'Zastąp',

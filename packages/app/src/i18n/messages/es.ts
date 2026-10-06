@@ -410,6 +410,8 @@ export const esMessages = {
   'household.data.importTitle': '¿Restaurar la copia de tareas?',
   'household.data.importDescription':
     'Combinar conserva las tareas actuales y cambia el nombre de los conflictos. Reemplazar elimina primero el espacio actual.',
+  'household.data.importFailed':
+    'No se pudo restaurar la copia. Intenta combinar o reemplazar de nuevo.',
   'household.data.imported': 'Copia de tareas restaurada.',
   'household.data.merge': 'Combinar',
   'household.data.replace': 'Reemplazar',

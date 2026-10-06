@@ -1,7 +1,7 @@
 ---
 title: Keep dashboards synchronized across devices
 description: Understand shared profile changes, device-owned settings, and connected-device status.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/dashboards/sync-across-devices.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/dashboards/sync-across-devices.md
 ---
 
 Supported standalone and server-backed installations can synchronize dashboard structure across

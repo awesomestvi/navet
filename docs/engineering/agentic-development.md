@@ -6,6 +6,10 @@ Deterministic checks remain authoritative over agent claims. Read the
 [autonomous builder plan](autonomous-builder-plan.md) for proposal requirements, visibility
 decisions and the activation gates for planning automation.
 
+For direct requests in the Codex workspace, use [request workflows](request-workflows.md):
+release announcements, private idea proposals and explicitly approved delivery. These skills use
+connected tools interactively; the private coordinated runner has its own live integration gates.
+
 ## Workflow
 
 ```text
@@ -20,7 +24,9 @@ issue or product feedback
   -> beta publication and actual-image verification
   -> maintainer installation test and stable dispatch
   -> correctly versioned stable packaging and actual-image verification
-  -> human-approved communication
+  -> quality-reviewed communication package
+  -> one maintainer approval for all shown destinations
+  -> verified publication
 ```
 
 An issue may be short and product-oriented. The delivery agent must inspect the relevant code,
@@ -106,11 +112,14 @@ review. The maintainer decides whether to merge; integration maintenance stays w
   communication drafts grounded in the actual diff.
 - Escalate: SemVer choice, incomplete artifacts, migration risk, security notes, production
   approval, or claims not demonstrated by the release.
-- Forbidden: choose major product scope, publish without a maintainer dispatch, publish community
-  communication, or call a partial release successful.
+- Forbidden: choose major product scope, publish without a maintainer dispatch, or call a partial
+  release successful. Social publication uses the separate release communication workflow and
+  requires explicit approval of the final copy, screenshot and destination package.
 
-Request community communication drafts explicitly when a release needs an announcement. Published
-release notes are the source for the website and documentation changelogs.
+Request drafts or publication explicitly when a release needs an announcement. Review the final
+copy and screenshot in one package with all destinations and platform variants. One maintainer
+approval authorizes the whole shown package; content changes require renewed approval. Published release notes
+are the source for the website and documentation changelogs.
 
 After a stable release completes artifact, distribution, and channel verification, Navet Nisse
 comments on each issue in this repository linked as closed by a pull request merged since the

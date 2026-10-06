@@ -71,10 +71,10 @@ export function assertSameArtifactIdentity(previous, next) {
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const {
     GITHUB_REPOSITORY: repo,
-    GITHUB_REPOSITORY_OWNER: owner,
     SOURCE_TAG: tag,
     RELEASE_SHA: sha,
   } = process.env;
+  const owner = 'awesomestvi';
   if (process.argv[2] === 'verify-source') {
     if (tag.startsWith('navet-dev-')) {
       const runs = JSON.parse(
@@ -141,7 +141,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
         notes: notes.notes.general,
       });
       assertReleaseNotes(
-        JSON.parse(gh('api', 'repos/awesomestvi/navet-home-assistant/releases/tags/' + tag)),
+        JSON.parse(gh('api', 'repos/navet-app/navet-home-assistant/releases/tags/' + tag)),
         { tag, prerelease: tag.includes('-'), notes: notes.notes.hacs },
       );
     }

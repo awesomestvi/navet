@@ -249,7 +249,7 @@ describe('LightCard', () => {
     expect(container.querySelector('[data-light-table-row]')).toHaveClass('rounded-xl', 'w-full');
     expect(container.querySelector('[data-light-table-row]')).not.toHaveClass('px-2', 'mx-2');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Desk Lamp' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Open settings for Desk Lamp' }));
 
     expect(screen.getByRole('dialog', { name: 'Desk Lamp' })).toBeInTheDocument();
   });

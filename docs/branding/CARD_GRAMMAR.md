@@ -1,7 +1,7 @@
 ---
 title: Product card grammar
 description: The cards, state hierarchy, and interactions that make Navet feel like Navet.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/branding/CARD_GRAMMAR.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/branding/CARD_GRAMMAR.md
 ---
 
 Navet's cards are a core brand signature. They are not a generic bento-grid style applied after the
@@ -11,8 +11,8 @@ language.
 This document defines that language. It does not replace component APIs, design tokens, feature
 stories, or implementation guidance. For implementation, use:
 
-- [Navet UI guidelines](https://github.com/awesomestvi/navet/blob/main/docs/design-system/UI-GUIDELINES.md)
-- [AI design context](https://github.com/awesomestvi/navet/blob/main/docs/design-system/AI-DESIGN-CONTEXT.md)
+- [Navet UI guidelines](https://github.com/navet-app/navet/blob/main/docs/design-system/UI-GUIDELINES.md)
+- [AI design context](https://github.com/navet-app/navet/blob/main/docs/design-system/AI-DESIGN-CONTEXT.md)
 - Storybook's `Components/Primitives/Cards/BaseCard` and `Cards/Overview/*` surfaces
 - the exact neighboring feature card and its stories
 

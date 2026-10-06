@@ -35,6 +35,27 @@ interface PreviewEntityRuntimeServiceOptions<TState extends PreviewEntityRuntime
   timestamp: string;
 }
 
+// Keep normalized preview state intact; legacy controls read these snapshot aliases.
+export function getPreviewSnapshotAttributes(entity: NavetEntity) {
+  if (entity.type !== 'light') return entity.attributes;
+  const attributes = { ...entity.attributes };
+  const aliases = {
+    brightnessPct: 'brightness_pct',
+    colorTemperatureKelvin: 'color_temp_kelvin',
+    supportedColorModes: 'supported_color_modes',
+    colorMode: 'color_mode',
+    hsColor: 'hs_color',
+    rgbColor: 'rgb_color',
+    xyColor: 'xy_color',
+    effectList: 'effect_list',
+  };
+  for (const [normalized, snapshot] of Object.entries(aliases)) {
+    if (entity.attributes[normalized] !== undefined)
+      attributes[snapshot] = entity.attributes[normalized];
+  }
+  return attributes;
+}
+
 function buildEntitySnapshotMap(
   entities: NavetEntity[],
   timestamp: string
@@ -50,7 +71,7 @@ function buildEntitySnapshotMap(
             : typeof entity.primaryState === 'string'
               ? entity.primaryState
               : String(entity.primaryState),
-        attributes: entity.attributes,
+        attributes: getPreviewSnapshotAttributes(entity),
         lastChanged: timestamp,
         lastUpdated: entity.lastUpdated ?? timestamp,
       },

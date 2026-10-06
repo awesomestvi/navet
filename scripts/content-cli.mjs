@@ -4,6 +4,11 @@ import path from 'node:path';
 import process, { stdin as input, stdout as output } from 'node:process';
 import readline from 'node:readline/promises';
 import {
+  attemptPublication,
+  preparePublication,
+  recordAgentPublication,
+} from './content-publication.mjs';
+import {
   CONTENT_KINDS,
   checkContentPack,
   communityPublishedRoot,
@@ -42,9 +47,7 @@ async function createBrief(options) {
     const today = new Date().toISOString().slice(0, 10);
     const kind =
       options.kind ||
-      (await prompt.question(
-        'Content kind (feature, release, how-to, tip, behind-the-scenes): '
-      ));
+      (await prompt.question('Content kind (feature, release, how-to, tip, behind-the-scenes, general): '));
     if (!CONTENT_KINDS.has(kind)) throw new Error(`Unsupported content kind "${kind}".`);
     const title = options.title || (await prompt.question('Working title: '));
     const id = options.id || `${today}-${slugify(title)}`;
@@ -55,7 +58,11 @@ async function createBrief(options) {
       createdOn: today,
       kind,
       title,
-      oneIdea: await ask('One idea this piece should communicate: '),
+      oneIdea: await ask(
+        kind === 'release'
+          ? 'After reading the full changelog, what headline news should drive this post? '
+          : 'One idea this piece should communicate: '
+      ),
       audience: await ask('Who is this for? '),
       maintainerSeed: {
         problem: await ask('What changed or what problem are you solving? '),
@@ -64,7 +71,7 @@ async function createBrief(options) {
         limitation: await ask('What limitation must be clear? '),
         desiredConversation: await ask('What useful action should follow? '),
       },
-      providerScope: ['provider-neutral'],
+      providerScope: ['provider-neutral', 'home-assistant'],
       evidence: [
         {
           id: 'replace-with-evidence-id',
@@ -86,10 +93,11 @@ async function createBrief(options) {
         sourcePolicy: 'provider-free-demo-only',
         altText: 'PENDING: Describe the product state shown in the capture.',
       },
-      channels: ['navet-subreddit', 'navet-discord'],
+      sharedPost: true,
+      channels: ['navet-subreddit', 'navet-discord', 'homeassistant-community'],
       publishing: {
-        cadence: 'weekly-anchor',
-        externalCommunity: false,
+        cadence: 'on-request',
+        externalCommunity: true,
         humanApprovalRequired: true,
       },
     };
@@ -106,14 +114,21 @@ async function createBrief(options) {
 
 async function generate(options) {
   if (!options.brief || options.brief === true) {
-    throw new Error('Usage: pnpm marketing:content:generate -- --brief <brief.yml> [--output <dir>]');
+    throw new Error(
+      'Usage: pnpm marketing:content:generate -- --brief <brief.yml> [--output <dir>]'
+    );
   }
   const result = await generateContentPack({
     briefPath: options.brief,
     outputPath: options.output === true ? undefined : options.output,
+    suppliedDrafts: options.drafts ? readJson(options.drafts) : undefined,
+    suppliedMaster: options.master ? readJson(options.master) : undefined,
+    sourceRoot: options['source-root'] ? path.resolve(options['source-root']) : repoRoot,
   });
   console.log(`Generated content pack at ${path.relative(repoRoot, result.outputPath)}.`);
-  console.log(`Publish eligible after human review: ${result.pack.publishEligible ? 'yes' : 'no'}.`);
+  console.log(
+    `Content checks: ${result.pack.publishEligible ? 'passed' : 'blocked'}. Quality review and publication authorization are required.`
+  );
 }
 
 function check(options) {
@@ -122,11 +137,23 @@ function check(options) {
   }
   const result = checkContentPack(loadPack(options.pack).pack);
   for (const warning of result.warnings) console.warn(`warning: ${warning}`);
-  if (result.errors.length > 0) throw new Error(result.errors.map((error) => `- ${error}`).join('\n'));
-  console.log('Content pack checks passed. Human review and manual publication remain required.');
+  if (result.errors.length > 0)
+    throw new Error(result.errors.map((error) => `- ${error}`).join('\n'));
+  console.log(
+    'Content pack checks passed. Quality review and publication authorization are required.'
+  );
 }
 
 function record(options) {
+  if (options.intent) {
+    if (!options.receipt) throw new Error('Agent recording requires --intent and --receipt.');
+    const result = recordAgentPublication({
+      intentPath: options.intent,
+      receipt: readJson(options.receipt),
+    });
+    console.log(`Publication ${result.status}: ${path.relative(repoRoot, result.recordPath)}.`);
+    return;
+  }
   if (options['update-record']) {
     if (!options['metrics-file'] || options['metrics-file'] === true) {
       throw new Error('--update-record requires --metrics-file.');
@@ -153,11 +180,12 @@ function record(options) {
   if (missing.length > 0) throw new Error(`Missing required option(s): ${missing.join(', ')}.`);
   const { pack } = loadPack(options.pack);
   if (!pack.publishEligible) throw new Error('The content pack is not publish-eligible.');
+  if (options['confirm-human-reviewed'] !== true)
+    throw new Error('Manual recording requires an explicit --confirm-human-reviewed flag.');
+  const packErrors = checkContentPack(pack).errors;
+  if (packErrors.length) throw new Error(`Content pack checks failed: ${packErrors.join(' ')}`);
   const finalCopy = fs.readFileSync(path.resolve(repoRoot, options['final-copy']), 'utf8').trim();
-  const generatedDraft = pack.drafts.find((entry) => entry.channelId === options.channel);
-  if (finalCopy === (generatedDraft?.script || generatedDraft?.body || '').trim()) {
-    throw new Error('Final copy is unchanged from the generated draft; complete the human edit first.');
-  }
+  // Review can accept existing wording; changing bytes is not evidence of quality.
   const finalCopyErrors = validateFinalCopy({
     body: finalCopy,
     channelId: options.channel,
@@ -191,7 +219,7 @@ function record(options) {
   const outputDirectory = path.join(communityPublishedRoot, pack.id);
   const outputPath = path.join(outputDirectory, `${options.channel}.json`);
   fs.mkdirSync(outputDirectory, { recursive: true });
-  fs.writeFileSync(outputPath, `${JSON.stringify(publishedRecord, null, 2)}\n`);
+  fs.writeFileSync(outputPath, `${JSON.stringify(publishedRecord, null, 2)}\n`, { flag: 'wx' });
   console.log(`Recorded human-reviewed publication at ${path.relative(repoRoot, outputPath)}.`);
 }
 
@@ -203,7 +231,31 @@ try {
   else if (command === 'generate') await generate(options);
   else if (command === 'check') check(options);
   else if (command === 'record') record(options);
-  else throw new Error('Use one of: new, generate, check, record.');
+  else if (command === 'prepare') {
+    if (
+      !options.pack ||
+      !options.channel ||
+      !options.authorization ||
+      !options.review ||
+      !options['asset-metadata']
+    ) {
+      throw new Error(
+        'Prepare requires --pack, --channel, --authorization, --review and --asset-metadata.'
+      );
+    }
+    const { pack } = loadPack(options.pack);
+    const result = preparePublication({
+      pack,
+      channelId: options.channel,
+      authorization: readJson(options.authorization),
+      review: readJson(options.review),
+      asset: readJson(options['asset-metadata']),
+    });
+    console.log(JSON.stringify(result));
+  } else if (command === 'attempt') {
+    if (!options.intent) throw new Error('Attempt requires --intent.');
+    console.log(JSON.stringify(attemptPublication({ intentPath: options.intent })));
+  } else throw new Error('Use one of: new, generate, check, prepare, attempt, record.');
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));
   process.exitCode = 1;

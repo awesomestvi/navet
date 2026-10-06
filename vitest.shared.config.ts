@@ -11,7 +11,7 @@ const packageJson = JSON.parse(readFileSync(new URL('./package.json', import.met
 const appVersion = packageJson.version ?? '0.0.0';
 const latestRelease = {
   version: appVersion,
-  url: `https://github.com/awesomestvi/navet/releases/tag/v${appVersion}`,
+  url: `https://github.com/navet-app/navet/releases/tag/v${appVersion}`,
   highlights: getMarketingReleaseHighlights(
     readFileSync(new URL('./CHANGELOG.md', import.meta.url), 'utf8'),
     appVersion

@@ -244,7 +244,7 @@ export const LightCard = memo(function LightCard({
             {...controller.cardInteraction.cardProps}
             interactive={!isEditMode}
             className={`relative z-10 ${CARD_VISUAL_TRANSITION_CLASS} ${!isEditMode ? 'cursor-pointer' : ''}`}
-            frameClassName={`${cardShell.rootFrameClassName} ${surfaceTokens.cardClassName}`}
+            frameClassName={`isolate ${cardShell.rootFrameClassName} ${surfaceTokens.cardClassName}`}
             style={surfaceTokens.cardStyle}
             disableDefaultSheen
             overlay={

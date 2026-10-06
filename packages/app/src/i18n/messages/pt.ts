@@ -409,6 +409,8 @@ export const ptMessages = {
   'household.data.importTitle': 'Restaurar a cópia das tarefas?',
   'household.data.importDescription':
     'Combinar mantém as tarefas atuais e muda o nome dos conflitos. Substituir remove primeiro o espaço atual.',
+  'household.data.importFailed':
+    'Não foi possível restaurar a cópia. Tente mesclar ou substituir novamente.',
   'household.data.imported': 'Cópia das tarefas restaurada.',
   'household.data.merge': 'Combinar',
   'household.data.replace': 'Substituir',
