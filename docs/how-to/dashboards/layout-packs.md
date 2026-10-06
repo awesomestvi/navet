@@ -1,7 +1,7 @@
 ---
 title: Start with a dashboard layout pack
 description: Apply a focused starting layout, then refine it in Home edit mode.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/dashboards/layout-packs.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/dashboards/layout-packs.md
 ---
 
 Layout packs provide a starting arrangement. They remain ordinary editable Home layouts after

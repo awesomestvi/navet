@@ -41,6 +41,6 @@ under **Settings → System → Authorized devices**, then review and approve ac
 The screen connects automatically.
 
 Still stuck? Read the [Home Assistant guide](https://docs.navet.app/install/home-assistant/) or
-[open a GitHub issue](https://github.com/awesomestvi/navet/issues). Include your Navet and Home
+[open a GitHub issue](https://github.com/navet-app/navet/issues). Include your Navet and Home
 Assistant versions, what you were doing, and the smallest set of steps that reproduces the problem.
 Remove tokens, private URLs, entity names, and household details from logs and screenshots first.

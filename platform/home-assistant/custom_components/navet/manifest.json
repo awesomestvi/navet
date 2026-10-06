@@ -11,8 +11,8 @@
     "panel_custom",
     "websocket_api"
   ],
-  "documentation": "https://github.com/awesomestvi/navet",
+  "documentation": "https://github.com/navet-app/navet",
   "iot_class": "local_push",
-  "issue_tracker": "https://github.com/awesomestvi/navet/issues",
+  "issue_tracker": "https://github.com/navet-app/navet/issues",
   "version": "0.17.1"
 }

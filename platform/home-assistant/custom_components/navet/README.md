@@ -7,7 +7,7 @@ HACS repository, not in this monorepo.
 
 ## Install With HACS
 
-1. Add `https://github.com/awesomestvi/navet-home-assistant` as a HACS custom repository with
+1. Add `https://github.com/navet-app/navet-home-assistant` as a HACS custom repository with
    category `Integration`.
 2. Download `Navet`.
 3. Restart Home Assistant.

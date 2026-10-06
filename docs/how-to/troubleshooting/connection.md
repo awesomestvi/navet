@@ -1,7 +1,7 @@
 ---
 title: Connection or sign-in fails
 description: Check the address, deployment path, provider status, and browser-specific session.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/troubleshooting/connection.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/troubleshooting/connection.md
 ---
 
 Connection recovery differs by deployment mode. Avoid clearing all dashboard data before checking

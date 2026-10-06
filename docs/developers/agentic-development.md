@@ -1,7 +1,7 @@
 ---
 title: Agentic development workflow
 description: Understand how maintainers send selected Navet issues to Codex while preserving human review and manual contributions.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/developers/agentic-development.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/developers/agentic-development.md
 ---
 
 Navet uses GitHub as the control point for selected agent-assisted work. Maintainers decide which
@@ -98,4 +98,4 @@ Initial issue dispatch and follow-up work are automated. After adding unrelated 
 feedback, a maintainer can add the appropriate request label to queue another iteration.
 
 For the complete roles, permissions, and approval contract, see the
-[repository workflow specification](https://github.com/awesomestvi/navet/blob/main/docs/engineering/agentic-development.md).
+[repository workflow specification](https://github.com/navet-app/navet/blob/main/docs/engineering/agentic-development.md).

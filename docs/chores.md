@@ -1,7 +1,7 @@
 ---
 title: Household chores
 description: Understand Navet's shared, installation-owned chores workspace.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/chores.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/chores.md
 ---
 
 Household chores keeps recurring home work in the same calm, shared interface as the rest of

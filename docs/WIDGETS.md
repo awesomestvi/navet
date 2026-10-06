@@ -1,7 +1,7 @@
 ---
 title: Widgets
 description: Available widget types, supported sizes, placement, and current limits.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/WIDGETS.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/WIDGETS.md
 ---
 
 Widgets add notes, photos, feeds, actions, and summaries to your dashboard. Open

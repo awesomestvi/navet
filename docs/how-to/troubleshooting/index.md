@@ -1,7 +1,7 @@
 ---
 title: Troubleshooting
 description: Recover common dashboard, provider, camera, and kiosk problems.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/troubleshooting/index.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/troubleshooting/index.md
 ---
 
 Start with the guide that matches what you can see. Recovery steps preserve dashboard data unless a

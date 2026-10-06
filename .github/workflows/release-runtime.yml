@@ -39,11 +39,6 @@ jobs:
           node-version: 22
           package-manager-cache: false
       - uses: docker/setup-qemu-action@v4
-      - uses: docker/login-action@v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/download-artifact@v7
         with:
           pattern: release-image-*

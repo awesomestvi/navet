@@ -37,7 +37,7 @@ substitute for the maintainer's approval.
 
 The scope audit covers 67 commits from `c9abf84001518fe83ed0db1909fda4466d13c099` through
 `eab3591679db05657e75bf5a37e1f293890b185d`. GitHub observations on 2026-10-04 showed nine on
-`main` and 58 in [PR #232](https://github.com/awesomestvi/navet/pull/232), using
+`main` and 58 in [PR #232](https://github.com/navet-app/navet/pull/232), using
 `feature/autonomous-builder-followup`. Recheck these refs and preserve any local edits before work.
 The audit is a scope/integration assessment, not blanket correctness approval of every commit.
 

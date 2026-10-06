@@ -1,7 +1,7 @@
 ---
 title: Add notes, photos, and RSS feeds
 description: Place lightweight household content on a Home or room dashboard.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/everyday-control/notes-photos-rss.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/everyday-control/notes-photos-rss.md
 ---
 
 Notes, photo frames, and RSS feeds are Navet widgets. They are saved with the dashboard profile and

@@ -14,6 +14,16 @@ Before publishing, install the GitHub Apps used by `NAVET_HACS_APP_ID` and
 Connect Cloudflare Pages to the organization repositories and verify its checks on a pull request.
 GitHub App credentials identify an app; repository access comes from its organization installation.
 
+## Container Registry
+
+Published images use `ghcr.io/awesomestvi/navet` and
+`ghcr.io/awesomestvi/{arch}-navet-addon`. These package paths remain stable for Docker users
+and Home Assistant installations. Repository ownership and package namespaces are independent.
+Publishing to the personal package namespace requires `NAVET_GHCR_TOKEN`, a classic personal
+access token owned by `awesomestvi` with `write:packages` access, stored as a GitHub Actions
+secret in `navet-app/navet`. The repository-scoped `GITHUB_TOKEN` cannot write those packages
+after the repository transfer. Runtime verification pulls the public images anonymously.
+
 ## Pull Requests And Public Sites
 
 Every pull request adds a validated `.changes/*.yaml` fragment. Use `internal` and an empty

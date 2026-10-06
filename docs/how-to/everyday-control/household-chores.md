@@ -1,7 +1,7 @@
 ---
 title: Set up and complete household chores
 description: Create the household, schedule recurring work, and use the Today list from a shared Navet screen.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/everyday-control/household-chores.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/everyday-control/household-chores.md
 ---
 
 Open **Household** to keep ordinary home work beside the routines that already run your smart

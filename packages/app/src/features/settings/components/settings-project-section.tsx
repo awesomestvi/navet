@@ -157,7 +157,7 @@ export function SettingsProjectSection({ controller }: SettingsProjectSectionPro
                 <ExternalLink className={`h-3.5 w-3.5 ${styles.subtleColor}`} />
               </a>
               <a
-                href="https://github.com/awesomestvi/navet/blob/main/docs/ATTRIBUTIONS.md"
+                href="https://github.com/navet-app/navet/blob/main/docs/ATTRIBUTIONS.md"
                 target="_blank"
                 rel="noopener noreferrer"
                 className={`inline-flex h-9 items-center gap-2 rounded-full border px-3.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor} ${styles.ringClass}`}

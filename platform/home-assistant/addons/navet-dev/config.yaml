@@ -2,7 +2,7 @@ name: Navet Dev
 version: "0.17.7-beta.1"
 slug: navet_dev
 description: Development build of the Navet smart home dashboard
-url: https://github.com/awesomestvi/navet
+url: https://github.com/navet-app/navet
 image: ghcr.io/awesomestvi/{arch}-navet-addon
 arch:
   - aarch64

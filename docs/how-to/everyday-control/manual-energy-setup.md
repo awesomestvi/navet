@@ -1,7 +1,7 @@
 ---
 title: Configure Home Assistant Energy sources
 description: Configure required and optional sensors in Home Assistant when Energy discovery is incomplete.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/everyday-control/manual-energy-setup.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/everyday-control/manual-energy-setup.md
 ---
 
 Use Home Assistant's Energy configuration when Navet cannot discover the live power and cumulative

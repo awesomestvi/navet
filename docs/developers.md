@@ -1,7 +1,7 @@
 ---
 title: Developers
 description: Contribute to Navet and understand where shared and provider-specific work belongs.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/developers.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/developers.md
 ---
 
 Navet is organized as a pnpm workspace with deployable applications under `apps/` and product,
@@ -30,4 +30,4 @@ collections. Each adapter declares the services and controls it supports; see th
 [capability matrix](/integrations/) when implementing or documenting a shared feature.
 
 Detailed maintainer, architecture, testing, release, and AI-agent documents remain available in the
-[repository documentation](https://github.com/awesomestvi/navet/tree/main/docs).
+[repository documentation](https://github.com/navet-app/navet/tree/main/docs).

@@ -1,7 +1,7 @@
 ---
 title: Navet brand system
 description: Apply Navet's established identity consistently without redesigning it.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/branding/README.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/branding/README.md
 ---
 
 This system defines Navet’s identity across product UI, documentation, marketing, releases,
@@ -18,13 +18,13 @@ community material, and official assets.
 - [Product card grammar](https://docs.navet.app/brand/cards/) defines how Navet's product cards communicate identity,
   live state, actions, semantic color, and responsive behavior.
 - [Brand asset system](https://docs.navet.app/brand/assets/) defines source and distribution ownership for official brand
-  assets. The working asset index lives in [assets/brand/README.md](https://github.com/awesomestvi/navet/blob/main/assets/brand/README.md),
-  with reusable layouts in [assets/brand/templates/](https://github.com/awesomestvi/navet/tree/main/assets/brand/templates/).
+  assets. The working asset index lives in [assets/brand/README.md](https://github.com/navet-app/navet/blob/main/assets/brand/README.md),
+  with reusable layouts in [assets/brand/templates/](https://github.com/navet-app/navet/tree/main/assets/brand/templates/).
 - [Brand governance](https://docs.navet.app/brand/governance/) defines ownership, change classes, review gates, maintenance, and
   deprecation.
 - [Brand and trademark policy](https://docs.navet.app/brand/trademark/) defines permitted use of the Navet name and marks.
 
-[Brand quick reference](https://github.com/awesomestvi/navet/blob/main/docs/branding/BRANDING.md) and [asset quick reference](https://github.com/awesomestvi/navet/blob/main/docs/branding/BRANDING_ASSETS.md) remain useful quick
+[Brand quick reference](https://github.com/navet-app/navet/blob/main/docs/branding/BRANDING.md) and [asset quick reference](https://github.com/navet-app/navet/blob/main/docs/branding/BRANDING_ASSETS.md) remain useful quick
 references for the name, logo, and existing files. When a quick reference and a specialized
 document differ, use the specialized document for that concern.
 
@@ -111,16 +111,16 @@ Use the source that owns the question instead of choosing whichever wording is e
 
 | Question | Canonical source | Supporting evidence |
 |---|---|---|
-| What does Navet stand for? | [Brand foundations](https://docs.navet.app/brand/foundations/) | [Product marketing context](https://github.com/awesomestvi/navet/blob/main/.agents/product-marketing.md) |
+| What does Navet stand for? | [Brand foundations](https://docs.navet.app/brand/foundations/) | [Product marketing context](https://github.com/navet-app/navet/blob/main/.agents/product-marketing.md) |
 | How should Navet sound? | [Voice and messaging](https://docs.navet.app/brand/voice/) | Current product, website, and docs copy |
-| How should Navet look? | [Visual identity](https://docs.navet.app/brand/visual/) | [UI guidelines](https://github.com/awesomestvi/navet/blob/main/docs/design-system/UI-GUIDELINES.md) and current public surfaces |
+| How should Navet look? | [Visual identity](https://docs.navet.app/brand/visual/) | [UI guidelines](https://github.com/navet-app/navet/blob/main/docs/design-system/UI-GUIDELINES.md) and current public surfaces |
 | How should a card communicate? | [Product card grammar](https://docs.navet.app/brand/cards/) | [demo.navet.app](https://demo.navet.app/), current app cards, and Storybook |
-| Which asset should be used? | [Brand asset system](https://docs.navet.app/brand/assets/) | [Asset source reference](https://github.com/awesomestvi/navet/blob/main/assets/brand/README.md) and `assets/public/` distributions |
-| Which recurring layout should be used? | [Brand templates](https://github.com/awesomestvi/navet/tree/main/assets/brand/templates/) | [Visual identity](https://docs.navet.app/brand/visual/) and current product captures |
-| May the name or logo be used? | [Brand and trademark policy](https://docs.navet.app/brand/trademark/) | [Brand quick reference](https://github.com/awesomestvi/navet/blob/main/docs/branding/BRANDING.md) |
-| What can the product do today? | [Integration capability matrix](https://docs.navet.app/integrations/) and current implementation | [Repository overview](https://github.com/awesomestvi/navet#readme), user guide, installation guides, and release notes |
+| Which asset should be used? | [Brand asset system](https://docs.navet.app/brand/assets/) | [Asset source reference](https://github.com/navet-app/navet/blob/main/assets/brand/README.md) and `assets/public/` distributions |
+| Which recurring layout should be used? | [Brand templates](https://github.com/navet-app/navet/tree/main/assets/brand/templates/) | [Visual identity](https://docs.navet.app/brand/visual/) and current product captures |
+| May the name or logo be used? | [Brand and trademark policy](https://docs.navet.app/brand/trademark/) | [Brand quick reference](https://github.com/navet-app/navet/blob/main/docs/branding/BRANDING.md) |
+| What can the product do today? | [Integration capability matrix](https://docs.navet.app/integrations/) and current implementation | [Repository overview](https://github.com/navet-app/navet#readme), user guide, installation guides, and release notes |
 | What is planned? | [Public roadmap](https://docs.navet.app/roadmap/) | Current project and issue status |
-| How should shared UI be implemented? | [UI guidelines](https://github.com/awesomestvi/navet/blob/main/docs/design-system/UI-GUIDELINES.md) | [AI design context](https://github.com/awesomestvi/navet/blob/main/docs/design-system/AI-DESIGN-CONTEXT.md), Storybook, and product neighbors |
+| How should shared UI be implemented? | [UI guidelines](https://github.com/navet-app/navet/blob/main/docs/design-system/UI-GUIDELINES.md) | [AI design context](https://github.com/navet-app/navet/blob/main/docs/design-system/AI-DESIGN-CONTEXT.md), Storybook, and product neighbors |
 | What may marketing claim? | [Claims discipline](https://docs.navet.app/brand/voice/#claims-discipline) | Current product truth and a dated primary source |
 
 `.agents/product-marketing.md` is a working context document for marketing tasks. It may summarize

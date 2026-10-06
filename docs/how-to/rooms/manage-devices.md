@@ -1,7 +1,7 @@
 ---
 title: Move, hide, and restore devices in rooms
 description: Adjust dashboard placement without accidentally deleting a provider entity.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/rooms/manage-devices.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/rooms/manage-devices.md
 ---
 
 Device actions in the Rooms workspace distinguish dashboard visibility from provider-backed room

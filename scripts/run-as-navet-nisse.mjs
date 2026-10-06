@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 
 const API_ROOT = 'https://api.github.com';
-const DEFAULT_REPOSITORY = 'awesomestvi/navet';
+const DEFAULT_REPOSITORY = 'navet-app/navet';
 const REACTIONS = new Set(['+1', '-1', 'laugh', 'confused', 'heart', 'hooray', 'rocket', 'eyes']);
 const REQUEST_LABELS = new Map([
   ['research', 'navet: research'],

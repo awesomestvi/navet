@@ -1,7 +1,7 @@
 ---
 title: Back up and restore Navet configuration
 description: Export a local configuration backup and import it later.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/dashboards/backup-and-restore.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/dashboards/backup-and-restore.md
 ---
 
 Export a local configuration backup before a large layout change or before importing another

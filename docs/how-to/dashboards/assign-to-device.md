@@ -1,7 +1,7 @@
 ---
 title: Assign a dashboard to a device
 description: Choose which dashboard opens on each registered wall display, phone, or browser.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/dashboards/assign-to-device.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/dashboards/assign-to-device.md
 ---
 
 Each registered browser or display can open a different Home dashboard while sharing the same

@@ -1,7 +1,7 @@
 ---
 title: Set up kiosk and Wall Display mode
 description: Hide normal chrome, keep the screen awake, and navigate through Kiosk control.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/wall-displays/kiosk-mode.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/wall-displays/kiosk-mode.md
 ---
 
 Use **Wall display** for a dedicated household screen. It applies a coordinated set of settings

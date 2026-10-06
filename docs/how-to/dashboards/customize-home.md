@@ -1,7 +1,7 @@
 ---
 title: Customize your Home dashboard
 description: Move, resize, hide, lock, and arrange Home cards without changing provider devices.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/dashboards/customize-home.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/dashboards/customize-home.md
 ---
 
 Home edit mode changes the active dashboard layout. It does not reconfigure the underlying device

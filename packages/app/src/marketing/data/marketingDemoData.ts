@@ -382,7 +382,7 @@ export const MARKETING_BENTO_RSS_PROVIDERS = [
     id: 'smart-home',
     name: 'Navet Docs',
     type: 'url',
-    feedUrl: 'https://github.com/awesomestvi/navet/releases.atom',
+    feedUrl: 'https://github.com/navet-app/navet/releases.atom',
   },
 ] as const satisfies readonly RSSProvider[];
 

@@ -71,7 +71,7 @@ export function assertSameArtifactIdentity(previous, next) {
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const {
     GITHUB_REPOSITORY: repo,
-    GITHUB_REPOSITORY_OWNER: owner,
+    NAVET_IMAGE_OWNER: owner = 'awesomestvi',
     SOURCE_TAG: tag,
     RELEASE_SHA: sha,
   } = process.env;

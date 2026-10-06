@@ -1,7 +1,7 @@
 ---
 title: Home Assistant
 description: Install Navet with HACS, as a Home Assistant App, or with Docker.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/HOME_ASSISTANT.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/HOME_ASSISTANT.md
 ---
 
 This guide helps you install Navet for Home Assistant.
@@ -34,7 +34,7 @@ use the **Home Assistant App**.
 4. Paste this address:
 
    ```text
-   https://github.com/awesomestvi/navet-home-assistant
+   https://github.com/navet-app/navet-home-assistant
    ```
 
 5. Choose **Integration** as the category, then add the repository.
@@ -59,7 +59,7 @@ Navet uses your current Home Assistant session.
 3. Paste this address and add it:
 
    ```text
-   https://github.com/awesomestvi/navet
+   https://github.com/navet-app/navet
    ```
 
 4. Find **Navet** in the App store and install it.
