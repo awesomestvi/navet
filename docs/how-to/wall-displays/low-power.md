@@ -1,7 +1,7 @@
 ---
 title: Optimize Navet for low-power displays
 description: Reduce rendering cost on Raspberry Pi-class hardware without removing controls.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/wall-displays/low-power.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/wall-displays/low-power.md
 ---
 
 Navet can reduce expensive visual effects while preserving information, layout meaning, and

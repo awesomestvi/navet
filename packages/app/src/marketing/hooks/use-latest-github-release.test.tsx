@@ -13,7 +13,7 @@ describe('useLatestGithubRelease', () => {
       new Response(
         JSON.stringify({
           tag_name: 'v0.17.2',
-          html_url: 'https://github.com/awesomestvi/navet/releases/tag/v0.17.2',
+          html_url: 'https://github.com/navet-app/navet/releases/tag/v0.17.2',
           body: '## Improvements and bug fixes\n\n- Fixed the Home security summary badge.',
         }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
@@ -25,7 +25,7 @@ describe('useLatestGithubRelease', () => {
 
     await waitFor(() => expect(result.current.version).toBe('0.17.2'));
     expect(fetchSpy).toHaveBeenCalledWith(
-      'https://api.github.com/repos/awesomestvi/navet/releases/latest',
+      'https://api.github.com/repos/navet-app/navet/releases/latest',
       expect.objectContaining({
         headers: { Accept: 'application/vnd.github+json' },
         signal: expect.any(AbortSignal),
@@ -40,7 +40,7 @@ describe('useLatestGithubRelease', () => {
         checkedAt: '2026-01-01T00:00:00Z',
         value: {
           tag_name: 'v0.18.0',
-          html_url: 'https://github.com/awesomestvi/navet/releases/tag/v0.18.0',
+          html_url: 'https://github.com/navet-app/navet/releases/tag/v0.18.0',
           body: 'No user-facing changes in this release.',
         },
       })
@@ -58,7 +58,7 @@ describe('useLatestGithubRelease', () => {
       new Response(
         JSON.stringify({
           tag_name: 'v0.18.1',
-          html_url: 'https://github.com/awesomestvi/navet/releases/tag/v0.18.1',
+          html_url: 'https://github.com/navet-app/navet/releases/tag/v0.18.1',
           body: 'No user-facing changes in this release.',
         })
       )
@@ -80,7 +80,7 @@ describe('useLatestGithubRelease', () => {
         new Response(
           JSON.stringify({
             tag_name: 'v0.17.2',
-            html_url: 'https://github.com/awesomestvi/navet/releases/tag/v0.17.2',
+            html_url: 'https://github.com/navet-app/navet/releases/tag/v0.17.2',
             body: '## Improvements and bug fixes\n\n- Fixed the Home security summary badge.',
           }),
           { status: 200, headers: { 'Content-Type': 'application/json' } }

@@ -1,7 +1,7 @@
 ---
 title: Wall displays
 description: Prepare Navet for a tablet, kiosk, or always-on household screen.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/wall-displays/index.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/wall-displays/index.md
 ---
 
 Wall Display is a preset that combines kiosk mode, keep-awake, a clock header, denser spacing, and

@@ -49,7 +49,7 @@ export function parseLatestGithubRelease(input: unknown): MarketingLatestRelease
   }
   if (
     typeof value.html_url !== 'string' ||
-    !value.html_url.startsWith('https://github.com/awesomestvi/navet/releases/tag/')
+    !value.html_url.startsWith('https://github.com/navet-app/navet/releases/tag/')
   ) {
     throw new Error('GitHub latest release does not have a valid release URL.');
   }

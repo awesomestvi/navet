@@ -6,7 +6,7 @@ if (!/^v\d+\.\d+\.\d+(?:-(?:beta|rc)\.\d+)?$/.test(target ?? ''))
   throw new Error('Invalid release target.');
 const prerelease = target.includes('-');
 // Publication is serialized; reject stale recovery runs before any HACS/App metadata writes.
-for (const repo of [process.env.GITHUB_REPOSITORY, 'awesomestvi/navet-home-assistant']) {
+for (const repo of [process.env.GITHUB_REPOSITORY, 'navet-app/navet-home-assistant']) {
   const pages = JSON.parse(
     execFileSync('gh', ['api', '--paginate', '--slurp', `repos/${repo}/releases?per_page=100`], {
       encoding: 'utf8',

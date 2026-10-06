@@ -1,7 +1,7 @@
 ---
 title: Use the Security dashboard
 description: Review attention states and safely control alarms, locks, covers, and cameras.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/everyday-control/security.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/everyday-control/security.md
 ---
 
 Security brings together provider-backed alarms, locks, covers, openings, and cameras. Risky

@@ -1,7 +1,7 @@
 ---
 title: Use Navet on a phone or tablet
 description: Navigate sections, rooms, search, and card controls on smaller screens.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/quick-start/phone-and-tablet.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/quick-start/phone-and-tablet.md
 ---
 
 Navet keeps the same rooms, sections, and cards across screen sizes, but moves navigation into

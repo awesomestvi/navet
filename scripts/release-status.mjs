@@ -5,7 +5,7 @@ import { pathToFileURL } from 'node:url';
 import { validateEvidence } from './release-evidence.mjs';
 import { compareVersions } from './release-channels.mjs';
 
-const repository = 'awesomestvi/navet';
+const repository = 'navet-app/navet';
 const stableTag = /^v\d+\.\d+\.\d+$/;
 
 function git(...args) {
@@ -44,7 +44,12 @@ export async function latestPublishedStable({ releases, readEvidence, readRun, r
     if (!sha) throw new Error(`Fetch the local ${release.tag_name} tag before checking release status.`);
     const evidence = await readEvidence(asset);
     try {
-      validateEvidence(evidence, { tag: release.tag_name, sha, owner: repository.split('/')[0] });
+      // Published evidence keeps the image namespace used at publication time.
+      const owner = ['navet-app', 'awesomestvi'].find((candidate) =>
+        evidence?.images?.some((entry) => entry?.image === `ghcr.io/${candidate}/navet`),
+      );
+      if (!owner) continue;
+      validateEvidence(evidence, { tag: release.tag_name, sha, owner });
     } catch {
       continue;
     }

@@ -1,7 +1,7 @@
 ---
 title: Settings
 description: Adjust appearance, behavior, providers, language, and extensions.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/settings/index.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/settings/index.md
 ---
 
 Settings uses a section list on phones and a persistent navigation column on larger screens. Use

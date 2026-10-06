@@ -1,7 +1,7 @@
 ---
 title: Navet Dev
 description: Install and update development builds through Home Assistant, Docker, or a manual panel build.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/NAVET_DEV.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/NAVET_DEV.md
 ---
 
 Navet Dev is the frequently updated development channel for testing changes before a stable
@@ -39,7 +39,7 @@ This is the recommended development installation for Home Assistant OS users.
 2. Open the store menu, choose `Repositories`, and add:
 
    ```text
-   https://github.com/awesomestvi/navet
+   https://github.com/navet-app/navet
    ```
 
 3. Reload the App store if the repository does not appear immediately.
@@ -175,12 +175,12 @@ exact branch build on a household dashboard.
 ## HACS Custom Panel
 
 HACS installs the stable Navet custom-panel release from
-`https://github.com/awesomestvi/navet-home-assistant`. The Navet Dev publish workflow does not
+`https://github.com/navet-app/navet-home-assistant`. The Navet Dev publish workflow does not
 update that repository, so there is no supported `Navet Dev` HACS channel.
 
 For the supported stable installation:
 
-1. Add `https://github.com/awesomestvi/navet-home-assistant` to HACS as an `Integration` custom
+1. Add `https://github.com/navet-app/navet-home-assistant` to HACS as an `Integration` custom
    repository.
 2. Install `Navet`.
 3. Restart Home Assistant.
@@ -201,7 +201,7 @@ Requirements:
 On a development machine:
 
 ```bash
-git clone https://github.com/awesomestvi/navet.git
+git clone https://github.com/navet-app/navet.git
 cd navet
 corepack enable
 pnpm install

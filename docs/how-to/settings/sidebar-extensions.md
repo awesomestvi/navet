@@ -1,7 +1,7 @@
 ---
 title: Add custom sidebar shortcuts
 description: Open a Navet section, external page, or embeddable page from the sidebar.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/settings/sidebar-extensions.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/settings/sidebar-extensions.md
 ---
 
 Custom extensions provide bounded sidebar actions and optional summary pills. They require manual

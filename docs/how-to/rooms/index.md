@@ -1,7 +1,7 @@
 ---
 title: Rooms
 description: Shape Navet around the rooms and devices in your home.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/rooms/index.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/rooms/index.md
 ---
 
 Room navigation is shared across dashboards. Changes made only in Navet stay in the dashboard

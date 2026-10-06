@@ -1,7 +1,7 @@
 ---
 title: Product roadmap
 description: Current Navet capabilities, dashboard plans, and provider expansion.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/ROADMAP.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/ROADMAP.md
 ---
 
 This is the public roadmap for Navet. It answers two questions:

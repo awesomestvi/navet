@@ -1,7 +1,7 @@
 ---
 title: Change themes, accents, and wallpapers
 description: Personalize Navet while keeping cards readable across household screens.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/settings/appearance.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/settings/appearance.md
 ---
 
 Navet supports Liquid Glass, dark, light, and black theme families, built-in accent choices, a

@@ -1,7 +1,7 @@
 ---
 title: Change room icons and images
 description: Give each room a recognizable symbol and optional image without changing devices.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/rooms/room-appearance.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/rooms/room-appearance.md
 ---
 
 Choose an icon and optional image to make each room easy to recognize in Navet.

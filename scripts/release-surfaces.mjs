@@ -187,9 +187,9 @@ export function assertMainRepositoryMetadata() {
   }
 
   const metadata = readYaml(repositoryMetadataPath);
-  if (metadata?.url !== 'https://github.com/awesomestvi/navet') {
+  if (metadata?.url !== 'https://github.com/navet-app/navet') {
     throw new Error(
-      `repository.yaml url must point to https://github.com/awesomestvi/navet, received ${metadata?.url ?? 'undefined'}.`
+      `repository.yaml url must point to https://github.com/navet-app/navet, received ${metadata?.url ?? 'undefined'}.`
     );
   }
 }

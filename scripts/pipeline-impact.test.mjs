@@ -79,7 +79,7 @@ describe('required merge gate', () => {
         strict_required_status_checks_policy: true,
         required_status_checks: [
           { context: 'Product review gate', integration_id: 15368 },
-          { context: 'Cloudflare Pages: navet', integration_id: 85455 },
+          { context: 'Cloudflare Pages: navet-app', integration_id: 85455 },
           { context: 'Security', integration_id: 42 },
         ],
       },
@@ -145,7 +145,7 @@ describe('required merge gate', () => {
   });
   it('requires only affected previews, from the Cloudflare app and exact head', () => {
     const names = requiredPagesChecks({ docs: 'true', demo: 'false' });
-    expect(names).toEqual(['Cloudflare Pages: navet-docs']);
+    expect(names).toEqual(['Cloudflare Pages: navet-app-docs']);
     const check = {
       id: 1,
       name: names[0],

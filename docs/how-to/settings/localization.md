@@ -1,7 +1,7 @@
 ---
 title: Change language, time, and temperature units
 description: Set Navet's interface language and household display formats.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/settings/localization.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/settings/localization.md
 ---
 
 Choose the language and display formats you want to use in Navet.

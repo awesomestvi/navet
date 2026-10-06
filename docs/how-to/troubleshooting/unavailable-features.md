@@ -1,7 +1,7 @@
 ---
 title: A feature is unavailable
 description: Distinguish provider limitations, missing services, entity capabilities, and connection errors.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/troubleshooting/unavailable-features.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/troubleshooting/unavailable-features.md
 ---
 
 Feature availability depends on your connected providers and devices.

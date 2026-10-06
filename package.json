@@ -4,13 +4,13 @@
   "version": "0.17.1",
   "description": "A provider-neutral, local-first smart-home dashboard.",
   "license": "AGPL-3.0-only",
-  "homepage": "https://github.com/awesomestvi/navet#readme",
+  "homepage": "https://github.com/navet-app/navet#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/awesomestvi/navet.git"
+    "url": "git+https://github.com/navet-app/navet.git"
   },
   "bugs": {
-    "url": "https://github.com/awesomestvi/navet/issues"
+    "url": "https://github.com/navet-app/navet/issues"
   },
   "type": "module",
   "packageManager": "pnpm@11.18.0+sha512.33d83c77da82f49fba836925c6f1b841181ec3132b670639bd012f7075f5c7cf634c5f870147c19aae7478fac01df09d8892e880454896edd23ee9b33757563c",

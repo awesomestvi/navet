@@ -1,7 +1,7 @@
 ---
 title: Connect and manage providers
 description: Connect smart-home providers and choose the sources used by your dashboard.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/settings/manage-providers.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/settings/manage-providers.md
 ---
 
 Standalone Navet connects to multiple smart-home providers and combines their supported devices

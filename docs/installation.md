@@ -1,7 +1,7 @@
 ---
 title: Choose an installation
 description: Pick the simplest way to install Navet for your smart-home system.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/installation.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/installation.md
 next:
   link: /guide/quick-start/first-15-minutes/
   label: Your first 15 minutes

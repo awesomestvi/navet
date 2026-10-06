@@ -3,7 +3,7 @@ import { parseLatestGithubRelease } from '@navet/app/marketing/utils/github-rele
 import { useEffect, useState } from 'react';
 import { loadReleaseCache, saveReleaseCache } from '../../utils/public-release-cache';
 
-const LATEST_RELEASE_API_URL = 'https://api.github.com/repos/awesomestvi/navet/releases/latest';
+const LATEST_RELEASE_API_URL = 'https://api.github.com/repos/navet-app/navet/releases/latest';
 
 let latestReleasePromise: Promise<typeof MARKETING_LATEST_RELEASE> | undefined;
 let checkedAt = '';

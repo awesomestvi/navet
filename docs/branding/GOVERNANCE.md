@@ -1,7 +1,7 @@
 ---
 title: Brand governance
 description: How Navet's established identity is owned, reviewed, changed, and kept consistent.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/branding/GOVERNANCE.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/branding/GOVERNANCE.md
 ---
 
 Brand governance keeps Navet recognizable as the product evolves. It protects established choices,

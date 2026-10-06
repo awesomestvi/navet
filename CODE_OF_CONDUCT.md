@@ -1,7 +1,7 @@
 ---
 title: Code of Conduct
 description: The standards for respectful participation in the Navet community.
-editUrl: https://github.com/awesomestvi/navet/edit/main/CODE_OF_CONDUCT.md
+editUrl: https://github.com/navet-app/navet/edit/main/CODE_OF_CONDUCT.md
 ---
 
 ## Our Commitment

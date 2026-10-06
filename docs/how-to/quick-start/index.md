@@ -1,7 +1,7 @@
 ---
 title: Quick start
 description: Learn the Navet interface and get comfortable on your first screen.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/quick-start/index.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/quick-start/index.md
 ---
 
 These guides take you from a connected provider to a dashboard that feels familiar on the screen

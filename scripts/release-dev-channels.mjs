@@ -8,7 +8,7 @@ const updates = [];
 for (const name of ['navet', 'amd64-navet-addon', 'aarch64-navet-addon']) {
   const record = JSON.parse(readFileSync(`release-images/${name}.json`, 'utf8'));
   if (
-    record.image !== `ghcr.io/${process.env.GITHUB_REPOSITORY_OWNER}/${name}` ||
+    record.image !== `ghcr.io/awesomestvi/${name}` ||
     record.sha !== sha ||
     record.channel !== 'dev'
   )

@@ -1,7 +1,7 @@
 ---
 title: Help and safety
 description: Safe first checks, issue reporting, and security guidance.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/help.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/help.md
 ---
 
 ## Start with the installation guide
@@ -15,7 +15,7 @@ behavior differ between the custom panel, add-on, and standalone applications.
 2. Confirm the provider itself is reachable.
 3. Capture the exact error and the action that triggered it.
 4. Remove tokens, private URLs, entity names, and household details from logs or screenshots.
-5. Search existing [GitHub issues](https://github.com/awesomestvi/navet/issues).
+5. Search existing [GitHub issues](https://github.com/navet-app/navet/issues).
 
 If the problem is new, open an issue with the smallest reproducible description you can provide.
 

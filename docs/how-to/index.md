@@ -1,7 +1,7 @@
 ---
 title: How-to guides
 description: Step-by-step help for setting up, personalizing, and operating Navet.
-editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/index.md
+editUrl: https://github.com/navet-app/navet/edit/main/docs/how-to/index.md
 ---
 
 Choose the task you want to complete. Each guide includes steps and an expected result.

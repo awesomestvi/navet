@@ -34,6 +34,6 @@ integration.
 4. Hard-refresh your browser if the sidebar still shows an older panel bundle.
 
 Still stuck? Read the [Home Assistant guide](https://docs.navet.app/install/home-assistant/) or
-[open a GitHub issue](https://github.com/awesomestvi/navet/issues). Include your Navet and Home
+[open a GitHub issue](https://github.com/navet-app/navet/issues). Include your Navet and Home
 Assistant versions, the exact action that failed, and clear reproduction steps. Remove tokens,
 private URLs, entity names, and household details from logs and screenshots first.
