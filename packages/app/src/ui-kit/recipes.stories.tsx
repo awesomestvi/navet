@@ -7,69 +7,13 @@ import {
 } from '@navet/app/storybook/workbench-docs';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
-const recipes = [
-  {
-    title: 'Compose a card',
-    when: 'Use for entity and custom-card surfaces that need shared shell behavior.',
-    snippet: `import { BaseCard, EntityCardHeader } from '@navet/app/ui-kit/primitives';
-import { CardActionRow } from '@navet/app/ui-kit/patterns';`,
-    checks: [
-      'Use shared card size behavior',
-      'Keep actions compact',
-      'Avoid feature-local shell forks',
-    ],
-  },
-  {
-    title: 'Compose a settings dialog',
-    when: 'Use for entity-card and dashboard-widget settings with tabbed or sectioned content.',
-    snippet: `import { ModalSurface } from '@navet/app/ui-kit/primitives';
-import { CardDialogHeader, CardDialogSection } from '@navet/app/ui-kit/patterns';`,
-    checks: [
-      'Use shared done/footer affordances',
-      'Keep room assignment consistent',
-      'Cover mobile viewport',
-    ],
-  },
-  {
-    title: 'Compose a mobile sheet',
-    when: 'Use for command, search, navigation, or compact edit controls on touch displays.',
-    snippet: `import { SheetSurface, Button } from '@navet/app/ui-kit/primitives';
-import { FieldBlock } from '@navet/app/ui-kit/patterns';`,
-    checks: [
-      'Avoid nested cards',
-      'Use stable sheet dimensions',
-      'Keep target sizes touch friendly',
-    ],
-  },
-  {
-    title: 'Compose a filter row',
-    when: 'Use for section filters, modes, and small sets of mutually exclusive choices.',
-    snippet: `import { InteractivePill, TabList, Tabs, TabTrigger } from '@navet/app/ui-kit/primitives';`,
-    checks: ['Expose selected state', 'Handle long labels', 'Keep keyboard focus visible'],
-  },
-  {
-    title: 'Compose an empty state',
-    when: 'Use when a section has no entities, no configured widgets, or no matching search results.',
-    snippet: `import { Button } from '@navet/app/ui-kit/primitives';
-import { DashboardEmptyState } from '@navet/app/ui-kit/patterns';`,
-    checks: [
-      'Use actionable copy',
-      'Avoid marketing-style layout',
-      'Keep fallback useful without HA data',
-    ],
-  },
-  {
-    title: 'Compose a themed surface',
-    when: 'Use when a reusable UI piece needs theme-aware glass, dark, light, and black behavior.',
-    snippet: `import { SurfacePanel } from '@navet/app/ui-kit/primitives';
-import { getThemeSurfaceTokens } from '@navet/app/ui-kit/tokens';`,
-    checks: [
-      'Prefer token helpers over inline theme branches',
-      'Check contrast',
-      'Avoid heavy effects by default',
-    ],
-  },
-];
+import recipes from './registry/recipes.json';
+
+const templates = import.meta.glob<string>('./registry/*.tsx', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+});
 
 function RecipesStory() {
   return (
@@ -77,17 +21,19 @@ function RecipesStory() {
       <WorkbenchIntro eyebrow="Composition recipes" title="Build from Navet's working parts">
         <p>
           Use these compositions as the default starting points when building in Navet. Each recipe
-          points to the stable UI-kit imports first, then the review checks that usually catch
-          regressions in shared UI.
+          uses existing UI-kit imports. The registry and this page share one recipe manifest and the
+          same typed templates. These pilot recipes require Navet app context.
         </p>
       </WorkbenchIntro>
 
       <section className="grid gap-4 md:grid-cols-2">
         {recipes.map((recipe) => (
-          <WorkbenchPanel key={recipe.title} title={recipe.title} summary={recipe.when}>
-            <WorkbenchCode>{recipe.snippet}</WorkbenchCode>
+          <WorkbenchPanel key={recipe.name} title={recipe.title} summary={recipe.when}>
+            <p className="mb-3 text-sm">{recipe.description}</p>
+            <WorkbenchCode>{templates[`./registry/${recipe.name}.tsx`]}</WorkbenchCode>
+            <p className="mt-3 text-sm">Required context: {recipe.context.join('. ')}.</p>
             <ul className="mt-3 space-y-2 text-sm leading-5">
-              {recipe.checks.map((check) => (
+              {recipe.review.map((check) => (
                 <li key={check}>
                   <WorkbenchInset className="px-3 py-2">{check}</WorkbenchInset>
                 </li>

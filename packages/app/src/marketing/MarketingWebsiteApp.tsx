@@ -9,6 +9,11 @@ const MarketingRoadmapPage = lazy(async () => {
   return { default: module.MarketingRoadmapPage };
 });
 
+const MarketingCardsPage = lazy(async () => {
+  const module = await import('@navet/app/marketing/pages/MarketingCardsPage');
+  return { default: module.MarketingCardsPage };
+});
+
 function DeferredPageFallback() {
   return <div aria-hidden="true" className="min-h-[60vh]" />;
 }
@@ -22,7 +27,11 @@ function WebsiteContent() {
 
   return (
     <MarketingWebsiteShell currentPathname={route.pathname}>
-      {route.id === 'roadmap' ? (
+      {route.id === 'cards' ? (
+        <Suspense fallback={<DeferredPageFallback />}>
+          <MarketingCardsPage />
+        </Suspense>
+      ) : route.id === 'roadmap' ? (
         <Suspense fallback={<DeferredPageFallback />}>
           <MarketingRoadmapPage />
         </Suspense>

@@ -1,13 +1,20 @@
 ---
 title: Navet documentation
-description: Install, configure, and use Navet.
+description: Choose, install, and use Navet or Navet Cards.
 editUrl: https://github.com/navet-app/navet/edit/main/docs/index.md
 ---
 
 Control your smart home with Navet on a wall panel, tablet, computer, or phone.
 These guides help you install it, build your first dashboard, and make it your own.
 
-## Start here
+## Choose your dashboard
+
+**Navet** is a complete smart-home dashboard for Home Assistant, Homey, and openHAB.
+**Navet Cards** adds custom cards to an existing Home Assistant dashboard and runs independently
+inside Home Assistant. Choose Cards when you want to keep Home Assistant’s dashboard layout
+and add Navet controls. [Explore Navet Cards](/cards/) or [install your first card](/cards/installation/).
+
+## Start with Navet
 
 1. **Install Navet.** [Choose an installation](/install/) for Home Assistant, Homey, or openHAB.
 2. **Set up your dashboard.** Follow [Your first 15 minutes](/guide/quick-start/first-15-minutes/)

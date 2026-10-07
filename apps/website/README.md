@@ -25,7 +25,7 @@ deployment-facing app shell.
 - Production domain: `navet.app`
 - Demo, Storybook, and docs deploy from separate Cloudflare Pages projects at
   `demo.navet.app`, `storybook.navet.app`, and `docs.navet.app`.
-- The website build clones `index.html` into `/roadmap/` and `/redirect/oauth/` so direct page
+- The website build clones `index.html` into `/cards/`, `/roadmap/`, and `/redirect/oauth/` so direct page
   loads work when only the marketing output is deployed.
 - The Pages Function at `/api/music/apple/developer-token` signs short-lived MusicKit developer
   tokens. Configure `APPLE_MUSIC_TEAM_ID`, `APPLE_MUSIC_KEY_ID`, and

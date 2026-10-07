@@ -9,6 +9,8 @@ describe('marketing website routes', () => {
   });
 
   it('resolves supported routes', () => {
+    expect(resolveMarketingWebsiteRoute('/cards').id).toBe('cards');
+    expect(resolveMarketingWebsiteRoute('/navet/cards/', '/navet/').id).toBe('cards');
     expect(resolveMarketingWebsiteRoute('/navet/', '/navet/').id).toBe('home');
     expect(resolveMarketingWebsiteRoute('/navet/roadmap/', '/navet/').id).toBe('roadmap');
   });

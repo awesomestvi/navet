@@ -10,6 +10,21 @@ const indexPath = path.join(distDir, 'index.html');
 const deploymentAssetNames = ['_headers', '_redirects', 'robots.txt', 'sitemap.xml'];
 const routeClones = [
   {
+    path: 'cards',
+    title: 'Navet Cards — Home Assistant dashboard cards',
+    description: 'Bring Navet controls to your Home Assistant dashboard. Explore beta cards for lights, rooms, climate, media, and more, with visual editing and flexible layouts.',
+    canonicalUrl: 'https://navet.app/cards/',
+    robots: 'index,follow',
+    structuredData: {
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      name: 'Navet Cards',
+      url: 'https://navet.app/cards/',
+      description: 'Beta custom cards for your Home Assistant dashboard.',
+      isPartOf: { '@type': 'WebSite', name: 'Navet', url: 'https://navet.app/' },
+    },
+  },
+  {
     path: 'roadmap',
     title: 'Navet Roadmap — What is shipping now and next',
     description:
@@ -98,6 +113,7 @@ for (const assetName of deploymentAssetNames) {
 
 const structuredDataRoutes = [
   { headerPath: '/', htmlPath: indexPath },
+  { headerPath: '/cards/*', htmlPath: path.join(distDir, 'cards', 'index.html') },
   { headerPath: '/roadmap/*', htmlPath: path.join(distDir, 'roadmap', 'index.html') },
 ];
 const headersPath = path.join(distDir, '_headers');

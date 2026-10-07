@@ -1,0 +1,3 @@
+type: internal
+audiences: []
+summary: Add a local recipe registry with shared Navet imports, source-derived contracts, and executable Storybook examples.

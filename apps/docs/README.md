@@ -13,6 +13,11 @@ they are deliberately added to that map.
 Every published Markdown file needs Starlight frontmatter with at least `title`, `description`, and
 an exact GitHub `editUrl`.
 
+The sidebar groups product guides under separate **Navet** and **Navet Cards** parents.
+Navet contains installation, dashboard guides, reference, and discovery pages. Navet Cards
+loads its Home Assistant card guides from `docs/cards/` at `/cards/`.
+Developer, brand, and support resources appear alongside the product groups.
+
 ## Discovery pages
 
 - `/changelog/` loads current stable entries directly from the GitHub Releases API and follows them

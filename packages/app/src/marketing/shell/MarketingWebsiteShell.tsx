@@ -24,6 +24,7 @@ const GITHUB_STARS_CACHE_KEY = 'marketing:github-stars';
 const GITHUB_STARS_CACHE_TTL_MS = 60 * 60 * 1000;
 
 const WEBSITE_PRIMARY_NAV_ITEMS = [
+  { href: getMarketingWebsitePath('/cards/'), label: 'Navet Cards' },
   { href: MARKETING_URLS.demo, label: 'Demo' },
   { href: MARKETING_URLS.docsIndex, label: 'Docs' },
   { href: MARKETING_URLS.storybook, label: 'Storybook' },
@@ -470,6 +471,7 @@ export function MarketingWebsiteShell({
                 Changelog
               </WebsiteNavLink>
               <WebsiteNavLink href={latestRelease.url} className="min-h-0 px-0">
+                {currentPathname === '/cards/' ? 'Navet ' : ''}
                 {latestRelease.status === 'fresh' ? 'Latest' : 'Release'}: v{latestRelease.version}
               </WebsiteNavLink>
               <WebsiteNavLink href={MARKETING_URLS.resources} className="min-h-0 px-0">

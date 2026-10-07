@@ -1,6 +1,7 @@
 # Agent composition recipes
 
-Choose the matching composition before writing UI. Inspect its current source contract with
+Choose the matching composition before writing UI. The [recipe registry](REGISTRY.md) supplies typed
+starting templates for five of these compositions. Inspect its current source contract with
 `pnpm agent:components <name>` and open the linked story. These are authoring recipes for Navet's
 React app; the shared hooks and theme context make them app-coupled. An export or passing story
 does not establish a stable public API or complete accessibility coverage.
@@ -33,37 +34,8 @@ focus handler takes precedence, and a downstream dialog retains focus.
 Choose one `BaseCardDialog` union variant. The card variant takes `tabs`; the modal, sheet and
 fullscreen variants have different contracts. The overflow menu is owned by the card dialog.
 
-```tsx
-import { BaseCardDialog } from '@navet/app/ui-kit/primitives';
-import { useTheme } from '@navet/app/hooks';
-import { Palette, Sliders } from 'lucide-react';
-import type { ReactNode } from 'react';
-
-export function ControlsDialog({
-  isOpen, onOpenChange, controls, settings,
-}: {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  controls: ReactNode;
-  settings: ReactNode;
-}) {
-  const { theme } = useTheme();
-  return (
-    <BaseCardDialog
-      isOpen={isOpen}
-      onOpenChange={onOpenChange}
-      title="Living room lamp"
-      theme={theme}
-      navigation="overflow"
-      height="capped"
-      tabs={[
-        { key: 'controls', label: 'Controls', icon: Sliders, content: controls },
-        { key: 'customize', label: 'Customize', icon: Palette, content: settings },
-      ]}
-    />
-  );
-}
-```
+Use the [controls-first-dialog template](../../packages/app/src/ui-kit/registry/controls-first-dialog.tsx)
+and inspect its executable story under **Concepts / Registry Recipes**.
 
 Connect entity controls to Navet-owned state and commands routed to their owning provider. Use the
 existing device editor for persisted name/room changes; this skeleton only composes supplied
@@ -106,38 +78,23 @@ supply the `Tabs` context or linked panel semantics. Choose the actual interacti
 by the composition. For controls-first device dialogs, the existing overflow recipe supplies
 secondary navigation and the return path.
 
-Dialog close actions require the surrounding Radix dialog context. Closing a dialog does not save
-settings. Keep persistence and save-error handling in the feature's existing workflow. When using
+Dialog close actions require the surrounding Radix dialog context. The card dialog's
+`onCloseAutoFocus` callback lets the controls-first template return focus to its supplied launch-button
+ref. Closing a dialog does not save settings. Keep persistence and save-error handling in the
+feature's existing workflow. When using
 `CardDialogHeader`, an entity ID can enable entity-name persistence through app administration;
 use its callback contract deliberately and route entities to their owning provider.
 
 ## Sheet header and body
 
-```tsx
-import { SheetSurface, SheetSurfaceHeader } from '@navet/app/ui-kit/primitives';
-import type { ReactNode } from 'react';
+Use the [detail-sheet template](../../packages/app/src/ui-kit/registry/detail-sheet.tsx)
+and inspect its executable story under **Concepts / Registry Recipes**.
 
-export function DetailSheet({ isOpen, onOpenChange, children }: {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  children: ReactNode;
-}) {
-  return (
-    <SheetSurface isOpen={isOpen} onOpenChange={onOpenChange} title="Device details">
-      <SheetSurfaceHeader
-        title="Device details"
-        closeLabel="Close device details"
-        onClose={() => onOpenChange(false)}
-      />
-      {children}
-    </SheetSurface>
-  );
-}
-```
-
-The header owns its chrome spacing. Apply body spacing to the body composition, not an extra
-wrapper around the header. Default sheets are mobile-only; use `responsive` when the same focused
-detail surface is intentionally available on desktop. Inspect both behaviors in a rendered preview.
+Attach the template's `returnFocusRef` to its launch button. The localized close label reaches both
+the shell and its direct-child header. The header owns its chrome spacing. Apply body spacing to the
+body composition, not an extra wrapper around the header. Default sheets are mobile-only; use
+`responsive` when the same focused detail surface is intentionally available on desktop. Inspect
+both behaviors in a rendered preview.
 
 ## Form messaging
 
@@ -145,43 +102,12 @@ detail surface is intentionally available on desktop. Inspect both behaviors in 
 use `Input`'s `invalid` prop, and associate descriptive text explicitly. A `required` indicator on
 the wrapper does not set the control's native requirement.
 
-```tsx
-import { FieldBlock } from '@navet/app/ui-kit/patterns';
-import { Input } from '@navet/app/ui-kit/primitives';
-import { useId } from 'react';
+Use the [settings-field template](../../packages/app/src/ui-kit/registry/settings-field.tsx)
+and inspect its executable story under **Concepts / Registry Recipes**.
 
-export function NameField({ value, onChange, error }: {
-  value: string;
-  onChange: (value: string) => void;
-  error?: string;
-}) {
-  const inputId = useId();
-  const hintId = `${inputId}-hint`;
-  const errorId = `${inputId}-error`;
-  return (
-    <FieldBlock
-      label="Card name"
-      htmlFor={inputId}
-      required
-      hint={<span id={hintId}>Use a name your household recognizes.</span>}
-      error={error ? <span id={errorId}>{error}</span> : undefined}
-    >
-      <Input
-        id={inputId}
-        value={value}
-        onChange={(event) => onChange(event.currentTarget.value)}
-        required
-        invalid={Boolean(error)}
-        aria-describedby={error ? errorId : hintId}
-      />
-    </FieldBlock>
-  );
-}
-```
-
-`useId` gives each field instance its own label and message associations. The caller owns validation, save, cancellation
-and persistence; pair this field with the existing settings workflow rather than adding a separate
-save mechanism.
+`useId` gives each field instance its own label and message associations. The caller owns validation,
+save, cancellation and persistence; pair this field with the existing settings workflow rather than
+adding a separate save mechanism.
 
 ## Empty card with an optional action
 
@@ -190,34 +116,21 @@ configuration workflow. Supply both `actionLabel` and `onAction` for an action; 
 there is no supported destination. Import icons explicitly. Storybook test helpers belong only
 in test stories, while a product caller supplies its own handler.
 
-```tsx
-import { BaseCard } from '@navet/app/ui-kit/primitives';
-import { CardEmptyState } from '@navet/app/ui-kit/patterns';
-import { Plus, Rss } from 'lucide-react';
-
-export function EmptyFeedCard({ onConfigureFeeds }: { onConfigureFeeds?: () => void }) {
-  return (
-    <div className="h-40 w-40">
-      <BaseCard size="small">
-        <CardEmptyState
-          title="No feeds selected"
-          description="Select one or more providers for this card."
-          icon={Rss}
-          size="small"
-          actionLabel={onConfigureFeeds ? 'Configure RSS providers' : undefined}
-          actionIcon={Plus}
-          onAction={onConfigureFeeds}
-        />
-      </BaseCard>
-    </div>
-  );
-}
-```
+Use the [empty-card template](../../packages/app/src/ui-kit/registry/empty-card.tsx)
+and inspect its executable story under **Concepts / Registry Recipes**.
 
 Review the existing small and large/no-action stories before adapting the pattern to another
-card. This example proves composition and API compatibility; provider configuration, saved choices
+card. Template stories exercise composition and API compatibility; provider configuration, saved choices
 and other card sizes need their own journey evidence. Product copy follows the feature's existing
 translation workflow.
+
+## Compact device card
+
+Use the [compact-device-card template](../../packages/app/src/ui-kit/registry/compact-device-card.tsx)
+for a simple small card with one state label and one action. The caller supplies normalized state,
+translated labels and a supported action, and owns dimensions and command routing. An unavailable
+label disables the supplied action; omitting the action represents an unsupported capability.
+Inspect the existing device family before adapting this composition to richer controls.
 
 ## Evidence for a UI approval package
 

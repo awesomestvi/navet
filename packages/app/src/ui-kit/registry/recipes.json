@@ -1,0 +1,110 @@
+[
+  {
+    "name": "controls-first-dialog",
+    "title": "Controls-first device dialog",
+    "description": "Compose everyday device controls and secondary configuration with BaseCardDialog and its More actions navigation.",
+    "when": "A device needs everyday controls and secondary settings in one focused dialog.",
+    "context": [
+      "Navet theme and i18n context",
+      "Caller supplies translated labels, content and a launch-button returnFocusRef",
+      "Feature owns capability checks, provider-neutral commands, saving and errors"
+    ],
+    "components": ["BaseCardDialog"],
+    "review": [
+      "Controls appear first",
+      "More actions and Back to controls work",
+      "Closing and reopening returns to controls",
+      "Keyboard dismissal, focus containment and return",
+      "Long titles, phone/tablet/desktop and all four themes"
+    ],
+    "storyExport": "ControlsFirstDialog",
+    "reference": "packages/app/src/components/patterns/card-dialog-overflow-menu.stories.tsx"
+  },
+  {
+    "name": "detail-sheet",
+    "title": "Detail sheet with shared header",
+    "description": "Compose a mobile detail sheet with a direct-child SheetSurfaceHeader, localized dismissal and separately padded body.",
+    "when": "Focused detail or commands need a mobile sheet; enable responsive only when desktop should use the same surface.",
+    "context": [
+      "Navet theme and i18n context",
+      "Caller supplies translated title, close label, body and a launch-button returnFocusRef",
+      "Mobile-only by default; responsive enables desktop",
+      "Feature owns commands and persistence"
+    ],
+    "components": ["SheetSurface", "SheetSurfaceHeader"],
+    "review": [
+      "Header remains a direct child of SheetSurface",
+      "Close label reaches the shell and header",
+      "Dismissal and focus return",
+      "Long body scroll and mobile keyboard",
+      "Mobile-only and responsive desktop behavior in all four themes"
+    ],
+    "storyExport": "DetailSheet",
+    "reference": "packages/app/src/components/primitives/sheet-surface.stories.tsx"
+  },
+  {
+    "name": "settings-field",
+    "title": "Settings field with validation",
+    "description": "Compose FieldBlock and Input with unique label and message associations, visible validation and native required/disabled state.",
+    "when": "An existing settings workflow needs a labeled text field with validation.",
+    "context": [
+      "Navet theme context",
+      "Caller supplies translated copy, value and change callback",
+      "Feature owns validation, save, cancellation and persistence"
+    ],
+    "components": ["FieldBlock", "Input"],
+    "review": [
+      "Label activates its own input",
+      "Hint or error is associated with the input",
+      "Multiple instances have unique IDs",
+      "Required, disabled and error states",
+      "Long translated copy and all four themes"
+    ],
+    "storyExport": "SettingsField",
+    "reference": "packages/app/src/components/patterns/field-block.stories.tsx"
+  },
+  {
+    "name": "empty-card",
+    "title": "Empty card with optional action",
+    "description": "Compose BaseCard and CardEmptyState with a single optional configuration action and caller-owned dimensions.",
+    "when": "A configured card has no selection or matching content; device unavailable state uses its device family instead.",
+    "context": [
+      "Navet theme context",
+      "Caller owns card dimensions and translated copy",
+      "An action requires a supported destination and callback",
+      "Small, medium and large compositions require separate review"
+    ],
+    "components": ["BaseCard", "CardEmptyState"],
+    "review": [
+      "Small, medium and large cards",
+      "With and without a supported action",
+      "Long names and translated copy",
+      "No matches versus unconfigured content",
+      "All four themes and keyboard action"
+    ],
+    "storyExport": "EmptyCard",
+    "reference": "packages/app/src/components/patterns/card-empty-state.stories.tsx"
+  },
+  {
+    "name": "compact-device-card",
+    "title": "Compact device-card composition",
+    "description": "Compose a small BaseCard with identity, normalized state and one capability-gated action using Navet's shared controls.",
+    "when": "A simple device can be understood through one state label and one household action; richer devices use their existing family recipe.",
+    "context": [
+      "Navet theme context",
+      "Caller owns card dimensions and translated labels",
+      "Caller supplies normalized state and only supported actions",
+      "Feature routes commands to the entity's owning provider"
+    ],
+    "components": ["BaseCard", "BodyText", "Button"],
+    "review": [
+      "Identity, state, exception, then primary action",
+      "Active, inactive, unavailable and unsupported action",
+      "One primary control path",
+      "Long names, translated copy and touch target",
+      "All four themes and keyboard action"
+    ],
+    "storyExport": "CompactDeviceCard",
+    "reference": "packages/app/src/components/primitives/base-card.stories.tsx"
+  }
+]

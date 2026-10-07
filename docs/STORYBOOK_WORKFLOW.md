@@ -21,7 +21,7 @@ Use colocated stories by default.
 
 | Area | Location | Title root |
 |---|---|---|
-| UI kit overview stories | `packages/app/src/ui-kit/*.stories.tsx` | `Concepts/` |
+| UI kit overview and registry recipes | `packages/app/src/ui-kit/**/*.stories.tsx` | `Concepts/` |
 | primitives | `packages/app/src/components/primitives/*.stories.tsx` | `Components/Primitives/` |
 | patterns | `packages/app/src/components/patterns/*.stories.tsx` | `Components/Patterns/` |
 | shared app UI | `packages/app/src/components/shared/**/*.stories.tsx` | `Components/Shared/` or `Theme/` |

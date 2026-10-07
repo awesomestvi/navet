@@ -20,6 +20,20 @@ describe('marketing website metadata', () => {
     );
   });
 
+  it('replaces Cards metadata when navigating back home', () => {
+    applyMarketingWebsiteMetadata(MARKETING_WEBSITE_ROUTES.cards);
+    expect(document.title).toBe('Navet Cards — Home Assistant dashboard cards');
+    expect(document.head.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe(
+      'https://navet.app/cards/'
+    );
+    applyMarketingWebsiteMetadata(MARKETING_WEBSITE_ROUTES.home);
+    expect(document.title).toBe('Provider-neutral Smart Home Dashboard | Navet');
+    expect(document.head.querySelectorAll('link[rel="canonical"]')).toHaveLength(1);
+    expect(document.head.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe(
+      'https://navet.app/'
+    );
+  });
+
   it('applies route-specific metadata', () => {
     applyMarketingWebsiteMetadata(MARKETING_WEBSITE_ROUTES.roadmap);
 

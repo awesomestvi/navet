@@ -86,6 +86,14 @@ Storybook is the main review surface for:
 - UI-kit discovery stories
 - layout and section composition examples
 
+## Recipe Registry
+
+The [Navet recipe registry](REGISTRY.md) provides five typed pilot compositions for the app.
+Its curated manifest also feeds Storybook's UI-kit recipe page, and executable stories exercise
+the same template files. Registry items carry current source-derived API metadata and import
+shared UI through the existing UI-kit. Use it to select a starting composition, then inspect
+and review the result in Storybook.
+
 ## Rules
 
 - distinguish current implementation from target package ownership in docs and reviews
