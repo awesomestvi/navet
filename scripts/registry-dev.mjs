@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { spawn } from 'node:child_process';
-import { existsSync, mkdirSync, watch, writeFileSync, rmSync } from 'node:fs';
+import { mkdirSync, watch, writeFileSync, rmSync } from 'node:fs';
 import { createServer } from 'node:net';
 import path from 'node:path';
 import { serveRegistry, sourceRevision } from './ui-registry.mjs';
@@ -75,7 +75,9 @@ for (const directory of ['packages', 'scripts', 'apps/storybook']) watchers.push
   if (!/\.(?:tsx?|mjs|json|ya?ml|css)$/.test(String(file))) return;
   changed();
 }));
-for (const file of ['tsconfig.json', 'package.json', 'pnpm-lock.yaml', 'components.json']) if (existsSync(path.join(root, file))) watchers.push(watch(path.join(root, file), changed));
+// Watch the directory so editor atomic replacements do not detach a file-inode watcher.
+const rootInputs = new Set(['tsconfig.json', 'package.json', 'pnpm-lock.yaml', 'components.json']);
+watchers.push(watch(root, (_event, file) => { if (rootInputs.has(String(file))) changed(); }));
 let lastRevision = JSON.stringify(sourceRevision(root));
 const revisionTimer = setInterval(() => { const revision = JSON.stringify(sourceRevision(root)); if (revision !== lastRevision) { lastRevision = revision; changed(); } }, 2000);
 server.once('error', (error) => { console.error(error); stop(1); });
