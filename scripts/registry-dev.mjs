@@ -81,5 +81,7 @@ watchers.push(watch(root, (_event, file) => { if (rootInputs.has(String(file))) 
 let lastRevision = JSON.stringify(sourceRevision(root));
 const revisionTimer = setInterval(() => { const revision = JSON.stringify(sourceRevision(root)); if (revision !== lastRevision) { lastRevision = revision; changed(); } }, 2000);
 server.once('error', (error) => { console.error(error); stop(1); });
-process.once('SIGINT', () => stop()); process.once('SIGTERM', () => stop());
+// Package runners can forward the terminal signal twice; keep handlers installed
+// while the detached process groups finish their graceful shutdown.
+process.on('SIGINT', () => stop()); process.on('SIGTERM', () => stop());
 rebuild();
