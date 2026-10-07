@@ -87,6 +87,7 @@ Use the repository skill matching the requested outcome:
 
 - Community posts, feature highlights and release announcements: [navet-release-communication](.agents/skills/navet-release-communication/SKILL.md).
 - Ideas for private GitHub Project prioritization: [navet-idea-proposals](.agents/skills/navet-idea-proposals/SKILL.md).
+- On-demand discovery of UX bugs and improvements: [navet-ux-scan](.agents/skills/navet-ux-scan/SKILL.md).
 - Selected implementation scope: [navet-approved-delivery](.agents/skills/navet-approved-delivery/SKILL.md).
 
 Prepare one master post and screenshot for r/navet, Navet Discord #announcements and the existing

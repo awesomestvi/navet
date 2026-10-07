@@ -24,15 +24,17 @@ than duplicating it. Keep proposal content private and publish only a separately
 brief in repository issues. If visibility is unverified, retain work privately and report the
 missing check.
 
-Verify what Navet already supports. Research current external evidence when it informs an idea,
-linking primary sources and distinguishing observed need from a hypothesis. Compare the smallest
-useful solution, credible alternatives and keeping current behavior. Include household benefit,
-workflow states, recommended scope, effort range, dependencies, provider/compatibility risks,
-acceptance criteria, verification and documentation impact. Recommend priority with evidence;
-do not assign the maintainer's decision or label an agent recommendation Approved.
+Verify what Navet already supports. Choose the ticket detail level from
+`docs/engineering/templates/idea-proposal.md`. A small, understood bug needs the observed problem,
+reproduction or source evidence, expected behavior, smallest repair and acceptance check. Research
+external evidence, compare alternatives and develop a fuller plan only when uncertainty or a
+material product decision calls for them. Link primary sources and distinguish observation from
+hypothesis. Include relevant dependencies and provider/compatibility risks; omit empty or
+irrelevant sections. Recommend priority with evidence; do not assign the maintainer's decision
+or label an agent recommendation Approved.
 
-Provide sketches or flows for interaction proposals; use existing primitives for higher-fidelity
-prototypes when visual judgment needs them. Build a private POC only to answer a named technical
+Provide sketches or flows when an interaction decision needs them; use existing primitives for
+higher-fidelity prototypes when visual judgment needs them. Build a private POC only to answer a named technical
 uncertainty. Keep it outside public branches, tracked product files, public previews and CI logs.
 Use synthetic/provider-free data. Explain the experiment, observed result, limitations and what
 production integration would still require. Local callbacks or simulated state are not provider

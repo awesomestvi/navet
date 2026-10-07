@@ -42,6 +42,9 @@ Open/update one PR with Conventional Commit title, behavior, acceptance criteria
 actual preview links. Attach the PR to this Codex task. Link it and the approval package back to
 the originating Project draft within its authorized visibility. Independently read back links and
 preview artifacts; private planning details must not enter the public PR or CI logs.
+Keep GitHub Project updates proportional using `docs/engineering/templates/idea-proposal.md`: summarize
+the result, relevant validation, outstanding blockers and PR link. Link detailed evidence; avoid
+repeating the proposal, full logs or internal execution bookkeeping in draft history.
 
 Use independent current-head code review after builder checks. Verify findings at the current head,
 fix valid issues, push revisions and obtain fresh head-sensitive evidence. Do not run duplicate

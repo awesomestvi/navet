@@ -7,6 +7,7 @@ its checked deliverable. These workflows run interactively using available conne
 | --- | --- | --- |
 | Post about Navet, promote a feature, or share release updates | One checked post and screenshot published to Navet Reddit, Discord and the existing Home Assistant topic | One approval of the shared master post and screenshot covers all three destinations |
 | Suggest ideas for Navet | Researched private GitHub Project proposals with plans and proportionate prototypes | Includes isolated feasibility POCs; prioritization remains with the maintainer |
+| Scan Navet for UX bugs and improvements | Luna high code inspection with concise, deduplicated GitHub Project findings and explicit coverage | On demand; findings do not authorize implementation |
 | Implement this approved idea | One PR, previews, current-head checks and UX evidence linked to GitHub Project | Requires selected scope and public visibility; maintainer merges |
 
 ## Use the matching skill
@@ -14,9 +15,17 @@ its checked deliverable. These workflows run interactively using available conne
 - [Community communication](../../.agents/skills/navet-release-communication/SKILL.md) resolves the
   requested topic or feature, applies Navet voice and design standards, and verifies all three
   publications. Release posts also read the full changelog and ask which news should lead.
-- [Idea proposals](../../.agents/skills/navet-idea-proposals/SKILL.md) uses the existing **Navet planning** project, checks duplicates and develops decision-ready proposals.
+- [Idea proposals](../../.agents/skills/navet-idea-proposals/SKILL.md) uses the existing private **Navet planning** Project, checks duplicates and develops decision-ready proposals.
 - [Approved delivery](../../.agents/skills/navet-approved-delivery/SKILL.md) implements selected
   scope using the existing work brief, UX audit and approval package.
+- [UX discovery scan](../../.agents/skills/navet-ux-scan/SKILL.md) delegates close code and journey
+  inspection to `gpt-6-luna` with high reasoning effort. It separates defects from improvements
+  and reports source evidence and actual rendered coverage.
+
+Project draft detail follows the [proposal template](templates/idea-proposal.md). Small bugs use
+short reproduction, expected behavior, suggested repair and acceptance checks. Research, options
+and prototypes support decisions that need them. Detailed logs and execution records remain in
+private task artifacts; draft history carries useful new results, questions and delivery links.
 
 For a release announcement, the agent first reads and retains the entire published changelog.
 It presents a brief digest and asks **“What should be the headline news for this release?”**
@@ -79,7 +88,7 @@ by actual evidence; the scripts cannot authenticate a human conversation or insp
 The local shared ledger deduplicates within this workspace; multiple machines require shared
 durable history. Local ignored files and caches are not backups.
 
-Idea and delivery tasks retain request identity, ticket revision, artifact locations, completed
+Idea and delivery tasks retain request identity, draft revision, artifact locations, completed
 steps, blockers and next action. A human answer resumes the same task within accepted scope.
 Head-sensitive validation becomes unverified after another commit. A pending preview, unresolved
 valid finding or missing UX evidence stays visible in the approval package.
