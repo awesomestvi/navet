@@ -309,7 +309,7 @@
     "when": "Present inline operation progress, success, warning and failure through MessageBar.",
     "searchTerms": ["loading", "success", "warning", "error", "feedback"],
     "states": ["loading", "success", "warning", "error"],
-    "components": ["MessageBar"],
+    "components": ["MessageBar", "BodyText"],
     "templateExport": "StatusFeedback",
     "storyExport": "StatusFeedback",
     "reference": "packages/app/src/components/primitives/message-bar.stories.tsx",

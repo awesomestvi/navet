@@ -13,7 +13,7 @@ export const STORY_SOURCE = `${RECIPE_DIRECTORY}/registry.stories.tsx`;
 export const fingerprint = (value) => createHash('sha256').update(typeof value === 'string' ? value : JSON.stringify(value)).digest('hex');
 export function sourceRevision(root) {
   try {
-    const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();
+    const git = (...args) => execFileSync('git', ['--no-optional-locks', ...args], { cwd: root, encoding: 'utf8' }).trim();
     return { commit: git('rev-parse', 'HEAD'), dirty: Boolean(git('status', '--porcelain', '--untracked-files=normal')) };
   } catch { return { commit: null, dirty: true }; }
 }
