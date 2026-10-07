@@ -1,7 +1,7 @@
 const GROUPS = {
   ui: [
     /^packages\/ui\//,
-    /^packages\/app\/src\/(components|features|ui-kit|demo|styles)\//,
+    /^packages\/app\/src\/(components|features|ui-kit|composition-recipes|demo|styles)\//,
     /^packages\/app\/src\/(main|App|authenticated-app)\.tsx$/,
     /^apps\/(demo|storybook)\//,
     /\.stories\.[jt]sx?$/,

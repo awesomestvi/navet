@@ -10,7 +10,7 @@ import { API, SignatureKind, SymbolFlags } from 'typescript/unstable/sync';
 function storiesIn(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const file = path.join(directory, entry.name);
-    return entry.isDirectory() ? storiesIn(file) : entry.name.endsWith('.stories.tsx') ? [file] : [];
+    return entry.isDirectory() ? storiesIn(file) : /\.stories\.tsx?$/.test(entry.name) ? [file] : [];
   });
 }
 
@@ -78,10 +78,12 @@ export function generateCatalog({ root, entries, stories = [], compilerOptions =
       if (!declaration) return null;
       const declarationSource = declaration.getSourceFile();
       if (!declarationSource.fileName.startsWith(`${root}${path.sep}`) || declarationSource.isDeclarationFile) return null;
-      const type = checker.getTypeOfSymbolAtLocation(resolved, declaration);
+      const typeOnly = !(resolved.flags & SymbolFlags.Value);
+      const type = typeOnly ? checker.getDeclaredTypeOfSymbol(resolved) : checker.getTypeOfSymbolAtLocation(resolved, declaration);
       const signature = checker.getSignaturesOfType(type, SignatureKind.Call)[0];
       const parameter = signature?.getParameters()[0];
       const props = parameter ? checker.getTypeOfSymbolAtLocation(parameter, declaration) : null;
+      const shape = props ?? (typeOnly ? type : null);
       const propertiesOf = (contract) => checker.getPropertiesOfType(contract).map((prop) => ({
         name: prop.name, optional: Boolean(prop.flags & SymbolFlags.Optional),
         type: checker.typeToString(checker.getTypeOfSymbolAtLocation(prop, declaration), declaration),
@@ -92,9 +94,15 @@ export function generateCatalog({ root, entries, stories = [], compilerOptions =
         source: relative(declarationSource.fileName),
         line: declarationSource.getLineAndCharacterOfPosition(declaration.getStart()).line + 1,
         description: resolved.getDocumentationComment(checker),
+        exportName: name, type: checker.typeToString(type, declaration),
+        dependencies: declarationSource.statements.filter(ast.isImportDeclaration).filter((node) => ast.isStringLiteral(node.moduleSpecifier)).map((node) => {
+          const module = checker.getSymbolAtLocation(node.moduleSpecifier);
+          const dependencySource = module?.declarations?.[0]?.resolve()?.getSourceFile();
+          return { importFrom: node.moduleSpecifier.text, source: dependencySource && !dependencySource.isDeclarationFile && dependencySource.fileName.startsWith(`${root}${path.sep}`) ? relative(dependencySource.fileName) : null };
+        }),
         parameters: props ? checker.typeToString(props, declaration) : null,
-        properties: props ? propertiesOf(props) : [],
-        variants: props?.isUnionType() ? props.getTypes().map((contract) => ({
+        properties: shape && (shape.isObjectType() || shape.isIntersectionType() || shape.isUnionType() && shape.getTypes().every((type) => type.isObjectType() || type.isIntersectionType())) ? propertiesOf(shape) : [],
+        variants: shape?.isUnionType() && shape.getTypes().every((type) => type.isObjectType() || type.isIntersectionType()) ? shape.getTypes().map((contract) => ({
           type: checker.typeToString(contract, declaration), properties: propertiesOf(contract),
         })) : [],
         // Export presence does not prove maturity. Curated usage docs own stability.
@@ -121,12 +129,45 @@ export function generateCatalog({ root, entries, stories = [], compilerOptions =
                 if (!memberDeclaration || !checker.getSignaturesOfType(
                   checker.getTypeOfSymbolAtLocation(member, memberDeclaration), SignatureKind.Call).length) return [];
                 const contract = contractRecord(member, `${exported.name}.${member.name}`, entry.importFrom);
-                return contract ? [contract] : [];
+                return contract ? [{ ...contract, exportName: exported.name, accessPath: member.name }] : [];
               });
             }
           }
         }
         records.push(record);
+      }
+    }
+    const storyFiles = [];
+    const packageImport = (file) => {
+      const match = /^packages\/([^/]+)\/src\/(.+)\.(?:tsx?|jsx?)$/.exec(relative(file));
+      return match ? `@navet/${match[1]}/${match[2]}` : null;
+    };
+    // Story imports extend the inventory to feature UI, foundations and marketing.
+    // Prefer canonical barrels already above; never catalog third-party or provider SDK exports.
+    function discover(symbol, exportName, moduleFile) {
+      const resolved = resolveSymbol(checker, symbol);
+      if (!resolved || records.some((record) => record.symbolKey === symbolKey(resolved))) return;
+      const declaration = (resolved.valueDeclaration ?? resolved.declarations?.[0])?.resolve();
+      if (!declaration) return;
+      const file = declaration.getSourceFile().fileName;
+      const importFrom = packageImport(moduleFile ?? file);
+      if (!importFrom || /\.stories\.tsx?$/.test(file)) return;
+      const record = contractRecord(resolved, exportName, importFrom);
+      if (record) records.push(record);
+    }
+    for (const file of stories) {
+      const source = program.getSourceFile(file);
+      for (const node of source.statements) {
+        if (!ast.isImportDeclaration(node)) continue;
+        const moduleFile = checker.getSymbolAtLocation(node.moduleSpecifier)?.declarations?.[0]?.resolve()?.getSourceFile().fileName;
+        const clause = node.importClause;
+        if (clause?.name) discover(checker.getSymbolAtLocation(clause.name), 'default', moduleFile);
+        const named = clause?.namedBindings;
+        if (named && ast.isNamedImports(named)) for (const specifier of named.elements) discover(checker.getSymbolAtLocation(specifier.name), (specifier.propertyName ?? specifier.name).text, moduleFile);
+        if (named && ast.isNamespaceImport(named)) {
+          const module = resolveSymbol(checker, checker.getSymbolAtLocation(named.name));
+          if (module) for (const exported of checker.getExportsOfModule(module)) discover(exported, exported.name, moduleFile);
+        }
       }
     }
     for (const file of stories) {
@@ -151,6 +192,7 @@ export function generateCatalog({ root, entries, stories = [], compilerOptions =
         node.forEachChild(visit);
       }
       visit(source);
+      storyFiles.push({ source: relative(file), title, exports: storyExports, contracts: records.filter((record) => imports.has(record.symbolKey)).map(({ name, importFrom }) => ({ name, importFrom })) });
       for (const record of records.flatMap((record) => [record, ...(record.members ?? [])])) {
         if (imports.has(record.symbolKey)) record.stories.push({ source: relative(file), title, exports: storyExports });
       }
@@ -164,7 +206,7 @@ export function generateCatalog({ root, entries, stories = [], compilerOptions =
       fingerprint.update(relative(source.fileName)).update(source.text);
     }
     const catalog = {
-      version: 1, sourceFingerprint: fingerprint.digest('hex'),
+      version: 2, storyFiles, sourceFingerprint: fingerprint.digest('hex'),
       guidance: ['docs/design-system/README.md', 'docs/design-system/AI-DESIGN-CONTEXT.md', 'ai/skills/navet-ux.md'],
       entries: records.map(({ symbolKey: _key, members, ...record }) => ({ ...record,
         ...(members ? { members: members.map(({ symbolKey: _memberKey, ...member }) => member) } : {}),
@@ -179,10 +221,14 @@ export function generateCatalog({ root, entries, stories = [], compilerOptions =
 }
 
 export function generateNavetCatalog(root = process.cwd()) {
-  const entries = ['primitives', 'patterns'].map((name) => ({
+  const entries = ['tokens', 'primitives', 'patterns'].map((name) => ({
     file: path.join(root, `packages/app/src/ui-kit/${name}.ts`), importFrom: `@navet/app/ui-kit/${name}`,
   }));
-  return generateCatalog({ root, entries, stories: storiesIn(path.join(root, 'packages/app/src')) });
+  entries.push(
+    { file: path.join(root, 'packages/app/src/features/lighting/components/switch-card.tsx'), importFrom: '@navet/app/features/lighting/components/switch-card' },
+    { file: path.join(root, 'packages/app/src/features/weather/components/weather-card/weather-settings-dialog.tsx'), importFrom: '@navet/app/features/weather/components/weather-card/weather-settings-dialog' },
+  );
+  return generateCatalog({ root, entries, stories: storiesIn(path.join(root, 'packages')) });
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {

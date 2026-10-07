@@ -69,7 +69,7 @@
     "provider-lab:homey": "node scripts/install-provider-lab.mjs homey",
     "clean:root": "node scripts/clean-root-artifacts.mjs",
     "clean:all": "node scripts/clean-root-artifacts.mjs --all",
-    "storybook": "STORYBOOK=1 HOME=$PWD/.cache/storybook/home XDG_CONFIG_HOME=$PWD/.cache/storybook STORYBOOK_DISABLE_TELEMETRY=1 pnpm --filter @navet/storybook run storybook",
+    "storybook": "pnpm registry:build && pnpm storybook:only",
     "storybook:build": "STORYBOOK=1 STORYBOOK_BASE_PATH=/ HOME=$PWD/.cache/storybook/home XDG_CONFIG_HOME=$PWD/.cache/storybook STORYBOOK_DISABLE_TELEMETRY=1 pnpm --filter @navet/storybook run build",
     "build-storybook": "pnpm storybook:build",
     "lint": "biome lint ./packages",
@@ -103,7 +103,12 @@
     "test:storybook": "vitest --project \"storybook:$PWD/apps/storybook/.storybook\"",
     "test:visual-review": "pnpm build:demo && node scripts/run-pr-visual-review.mjs",
     "typecheck": "tsc --noEmit",
-    "prepare": "husky"
+    "prepare": "husky",
+    "storybook:only": "STORYBOOK=1 HOME=$PWD/.cache/storybook/home XDG_CONFIG_HOME=$PWD/.cache/storybook STORYBOOK_DISABLE_TELEMETRY=1 pnpm --filter @navet/storybook run storybook",
+    "registry:dev": "node scripts/registry-dev.mjs",
+    "registry:publish": "node scripts/ui-registry.mjs publish",
+    "test:registry": "vitest --config vitest.unit.config.ts --project unit --run scripts/ui-registry.test.mjs scripts/ui-shell-recipes.test.mjs scripts/registry-preview.test.mjs scripts/registry-catalog.test.mjs scripts/agent-component-catalog.test.mjs",
+    "registry:preview": "node scripts/registry-preview.mjs"
   },
   "dependencies": {
     "@assistant-ui/react": "^0.15.16",
@@ -147,6 +152,7 @@
     "@vitejs/plugin-react": "6.1.0",
     "@vitest/browser-playwright": "^4.1.11",
     "@vitest/coverage-v8": "^4.1.11",
+    "ajv": "8.17.1",
     "babel-plugin-react-compiler": "^1.0.0",
     "husky": "^9.1.7",
     "jsdom": "^30.0.1",

@@ -46,6 +46,7 @@ export interface BaseCardDialogRoomSelector {
 }
 
 interface BaseCardDialogSharedProps {
+  onCloseAutoFocus?: (event: Event) => void;
   variant?: BaseCardDialogVariant;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
@@ -74,7 +75,6 @@ interface BaseCardDialogSharedProps {
 
 interface BaseCardDialogCardProps extends BaseCardDialogSharedProps {
   variant?: 'card';
-  onCloseAutoFocus?: (event: Event) => void;
   entityId?: string;
   entityType?: string;
   tabs: BaseCardDialogTab[];
@@ -121,7 +121,6 @@ interface BaseCardDialogSheetProps extends BaseCardDialogSharedProps {
   contentDescription?: string;
   accentColor?: string;
   closeLabel?: string;
-  onCloseAutoFocus?: (event: Event) => void;
   persistentMobileDismiss?: boolean;
 }
 
@@ -847,6 +846,7 @@ function BaseCardDialogCardVariant({
 }
 
 function BaseCardDialogModalVariant({
+  onCloseAutoFocus,
   isOpen,
   onOpenChange,
   title,
@@ -877,6 +877,7 @@ function BaseCardDialogModalVariant({
 
   return (
     <BaseCardDialogRoot
+      onCloseAutoFocus={onCloseAutoFocus}
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       disableOpenAutoFocus={disableOpenAutoFocus}
@@ -974,6 +975,7 @@ function BaseCardDialogSheetVariant({
 }
 
 function BaseCardDialogFullscreenVariant({
+  onCloseAutoFocus,
   isOpen,
   onOpenChange,
   title,
@@ -999,6 +1001,7 @@ function BaseCardDialogFullscreenVariant({
 
   return (
     <BaseCardDialogRoot
+      onCloseAutoFocus={onCloseAutoFocus}
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       disableOpenAutoFocus={disableOpenAutoFocus}

@@ -88,6 +88,9 @@ jobs:
       - name: Validate UI kit boundaries
         run: pnpm check:ui-kit
 
+      - name: Validate composition registry contracts and guards
+        run: pnpm test:registry
+
       - name: Typecheck
         run: pnpm typecheck
 

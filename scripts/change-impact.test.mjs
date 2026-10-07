@@ -12,6 +12,8 @@ describe('change impact classification', () => {
   });
 
   it.each([
+    'packages/app/src/composition-recipes/weather/weather-settings/template.tsx',
+    'packages/app/src/composition-recipes/recipes.json',
     'packages/app/src/main.tsx',
     'packages/app/src/App.tsx',
     'packages/app/src/authenticated-app.tsx',
