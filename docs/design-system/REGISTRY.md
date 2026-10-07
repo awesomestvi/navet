@@ -60,7 +60,7 @@ Ctrl+C or SIGTERM shuts down both child process groups. Occupied ports fail clea
 review server, explicitly select `NAVET_STORYBOOK_PORT`; changing `NAVET_REGISTRY_PORT` also requires
 an explicit matching client registry URL.
 
-The repository's `components.json` retains local resolution:
+The root and app-workspace `components.json` retain local resolution. The app config is required by shadcn 4.21.0 when it routes installation through the workspace package:
 
 ```json
 { "registries": { "@navet": "http://127.0.0.1:7331/r/{name}.json" } }

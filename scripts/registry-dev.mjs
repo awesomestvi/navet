@@ -71,7 +71,8 @@ function changed() {
 }
 for (const directory of ['packages', 'scripts', 'apps/storybook']) watchers.push(watch(path.join(root, directory), { recursive: true }, (_event, file) => {
   const parts = String(file ?? '').split(path.sep);
-  if (parts.some((part) => ['node_modules', 'dist', '.cache', '.git'].includes(part)) || String(file).endsWith('.log')) return;
+  if (parts.some((part) => ['node_modules', 'dist', '.cache', '.git', '.vite'].includes(part)) || String(file).endsWith('.log')) return;
+  if (!/\.(?:tsx?|mjs|json|ya?ml|css)$/.test(String(file))) return;
   changed();
 }));
 for (const file of ['tsconfig.json', 'package.json', 'pnpm-lock.yaml', 'components.json']) if (existsSync(path.join(root, file))) watchers.push(watch(path.join(root, file), changed));
