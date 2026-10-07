@@ -74,6 +74,7 @@ pnpm wallpapers:check
 
 - app behavior change: `pnpm test:tier2`
 - provider contract or auth/runtime change: `pnpm test:tier1`
+- Composition registry work: `pnpm test:registry`, `pnpm check:ui-kit`, focused recipe Storybook tests, `pnpm typecheck`, and `pnpm storybook:build`; verify the exact hosted revision with `pnpm registry:preview <immutable-preview-URL> <full-SHA>`
 - Storybook or UI-kit work: `pnpm check:stories` and `pnpm test:storybook`
 - website or marketing work: `pnpm website:build`
 - public documentation work: `pnpm docs:build`

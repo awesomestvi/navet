@@ -6,6 +6,9 @@ starting templates for five of these compositions. Inspect its current source co
 React app; the shared hooks and theme context make them app-coupled. An export or passing story
 does not establish a stable public API or complete accessibility coverage.
 
+
+Discover a composition by family and intended behavior through shadcn MCP or **Concepts / UI Kit Recipes** before writing JSX. Inspect its current contract/context/state metadata and review both the executable example and exact reference link. See [registry workflow](REGISTRY.md) for the 16 templates, local commands and matching hosted evidence. When no recipe fits, retain the reference-first sequence below and record the coverage gap. Standard section cards and inline feedback are covered; hero summaries, attention summaries and richer device controls require their specific product references.
+
 ## Select a composition
 
 | Intended behavior | Starting composition | Source example and review targets |

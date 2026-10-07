@@ -18,7 +18,12 @@
       "Long titles, phone/tablet/desktop and all four themes"
     ],
     "storyExport": "ControlsFirstDialog",
-    "reference": "packages/app/src/components/patterns/card-dialog-overflow-menu.stories.tsx"
+    "reference": "packages/app/src/components/patterns/card-dialog-overflow-menu.stories.tsx",
+    "family": "dialog",
+    "searchTerms": ["device controls", "more actions", "progressive disclosure"],
+    "states": ["closed", "controls", "settings"],
+    "referenceExport": "ControlsFirst",
+    "templateExport": "ControlsFirstDialog"
   },
   {
     "name": "detail-sheet",
@@ -40,7 +45,12 @@
       "Mobile-only and responsive desktop behavior in all four themes"
     ],
     "storyExport": "DetailSheet",
-    "reference": "packages/app/src/components/primitives/sheet-surface.stories.tsx"
+    "reference": "packages/app/src/components/primitives/sheet-surface.stories.tsx",
+    "family": "sheet",
+    "searchTerms": ["mobile detail", "dismiss", "focus return"],
+    "states": ["closed", "mobile", "responsive desktop"],
+    "referenceExport": "Default",
+    "templateExport": "DetailSheet"
   },
   {
     "name": "settings-field",
@@ -61,7 +71,12 @@
       "Long translated copy and all four themes"
     ],
     "storyExport": "SettingsField",
-    "reference": "packages/app/src/components/patterns/field-block.stories.tsx"
+    "reference": "packages/app/src/components/patterns/field-block.stories.tsx",
+    "family": "settings",
+    "searchTerms": ["text input", "validation", "label"],
+    "states": ["valid", "invalid", "required", "disabled"],
+    "referenceExport": "Default",
+    "templateExport": "SettingsField"
   },
   {
     "name": "empty-card",
@@ -83,7 +98,12 @@
       "All four themes and keyboard action"
     ],
     "storyExport": "EmptyCard",
-    "reference": "packages/app/src/components/patterns/card-empty-state.stories.tsx"
+    "reference": "packages/app/src/components/patterns/card-empty-state.stories.tsx",
+    "family": "card",
+    "searchTerms": ["unconfigured", "no matches", "optional action"],
+    "states": ["small", "medium", "large", "with action", "without action"],
+    "referenceExport": "Playground",
+    "templateExport": "EmptyCard"
   },
   {
     "name": "compact-device-card",
@@ -105,6 +125,292 @@
       "All four themes and keyboard action"
     ],
     "storyExport": "CompactDeviceCard",
-    "reference": "packages/app/src/components/primitives/base-card.stories.tsx"
+    "reference": "packages/app/src/components/primitives/base-card.stories.tsx",
+    "family": "card",
+    "searchTerms": ["normalized device", "capability", "unavailable"],
+    "states": ["inactive", "active", "unavailable", "unsupported action"],
+    "referenceExport": "Default",
+    "templateExport": "CompactDeviceCard"
+  },
+  {
+    "name": "settings-dialog",
+    "title": "Settings dialog",
+    "family": "dialog",
+    "description": "Edit feature settings in a canonical responsive modal with explicit save, cancel and focus return.",
+    "when": "Edit feature settings in a canonical responsive modal with explicit save, cancel and focus return.",
+    "searchTerms": ["save", "cancel", "unsaved edits", "validation"],
+    "states": ["closed", "clean", "dirty guarded", "invalid", "pending", "save failure", "saved"],
+    "components": ["BaseCardDialog", "Button", "CardDialogFooter", "CardDialogHeader"],
+    "templateExport": "SettingsDialog",
+    "storyExport": "SettingsDialog",
+    "reference": "packages/app/src/components/patterns/card-dialog.stories.tsx",
+    "referenceExport": "Default",
+    "context": [
+      "Navet theme and i18n context",
+      "Caller supplies translated labels, form content and connected returnFocusRef",
+      "Feature handles dismiss/cancel requests, validation, pending saves and persistence"
+    ],
+    "review": [
+      "Save/cancel stay in the footer",
+      "Every close request goes through the feature policy; pending/dirty requests may be refused",
+      "Validation and failed save preserve edits",
+      "Keyboard focus containment and return after accepted closure"
+    ]
+  },
+  {
+    "name": "settings-section",
+    "title": "Settings section",
+    "family": "settings",
+    "description": "Group labeled fields with caller-owned values and associated validation.",
+    "when": "Group labeled fields with caller-owned values and associated validation.",
+    "searchTerms": ["form section", "fields", "validation"],
+    "states": ["valid", "required", "invalid", "disabled"],
+    "components": ["CardDialogSection", "FieldBlock", "Input"],
+    "templateExport": "SettingsSection",
+    "storyExport": "SettingsSection",
+    "reference": "packages/app/src/components/patterns/field-block.stories.tsx",
+    "referenceExport": "MultipleFields",
+    "context": [
+      "Navet theme context",
+      "Caller provides unique field keys and translated title, labels, hints and errors",
+      "Feature supplies validation and change callbacks"
+    ],
+    "review": [
+      "Labels activate the correct fields",
+      "Unique IDs and error descriptions",
+      "Disabled and required fields; long labels"
+    ]
+  },
+  {
+    "name": "searchable-selection",
+    "title": "Searchable selection",
+    "family": "selection",
+    "description": "Compose a controlled search and accessible single selection over feature-filtered options.",
+    "when": "Compose a controlled search and accessible single selection over feature-filtered options.",
+    "searchTerms": ["combobox", "search", "filter", "keyboard selection"],
+    "states": ["closed", "open", "selected", "empty", "disabled", "unavailable option"],
+    "components": ["Combobox", "Button", "SurfacePanel", "BodyText"],
+    "templateExport": "SearchableSelection",
+    "storyExport": "SearchableSelection",
+    "reference": "packages/app/src/components/primitives/combobox.stories.tsx",
+    "referenceExport": "Open",
+    "context": [
+      "Navet theme context",
+      "Feature supplies filtered options with unique IDs, query, selected ID and translated labels",
+      "Feature owns source loading, capability filtering and selection persistence"
+    ],
+    "review": [
+      "Arrow keys skip unavailable options; Enter selects; Escape dismisses",
+      "Pointer selection retains input focus; blur dismisses",
+      "No results, disabled input, long labels and all themes"
+    ]
+  },
+  {
+    "name": "checkbox-list",
+    "title": "Checkbox list",
+    "family": "selection",
+    "description": "Compose controlled multi-selection with native checkbox keyboard behavior.",
+    "when": "Compose controlled multi-selection with native checkbox keyboard behavior.",
+    "searchTerms": ["multi select", "checkbox", "disabled option"],
+    "states": ["selected", "unselected", "disabled", "empty"],
+    "components": ["SelectableCheckboxList", "SelectableCheckboxRow", "BodyText"],
+    "templateExport": "CheckboxList",
+    "storyExport": "CheckboxList",
+    "reference": "packages/app/src/components/patterns/selectable-checkbox-row.stories.tsx",
+    "referenceExport": "Preview",
+    "context": [
+      "Navet theme context",
+      "Caller supplies unique item IDs, translated copy and controlled selection",
+      "Feature owns capability checks and persistence"
+    ],
+    "review": [
+      "Label and Space toggle one item",
+      "Unavailable options cannot change",
+      "Empty and long-label states; semantic list items"
+    ]
+  },
+  {
+    "name": "dashboard-section",
+    "title": "Dashboard section",
+    "family": "dashboard",
+    "description": "Organize a standard SectionCard with populated, empty and unavailable content.",
+    "when": "Organize a standard SectionCard with populated, empty and unavailable content.",
+    "searchTerms": ["section", "group content", "empty", "unavailable"],
+    "states": ["populated", "empty", "unavailable", "supported action", "unsupported action"],
+    "components": ["SectionCard", "BodyText", "Button"],
+    "templateExport": "DashboardSection",
+    "storyExport": "DashboardSection",
+    "reference": "packages/app/src/components/patterns/section-card.stories.tsx",
+    "referenceExport": "Default",
+    "context": [
+      "Navet theme and settings store context",
+      "Use inside the existing dashboard shell and spacing mode",
+      "Caller supplies translated labels and supported action; feature owns data/capabilities"
+    ],
+    "review": [
+      "No additional page shell or hero",
+      "Clear section hierarchy across widths",
+      "Unavailable action disabled; omitted actions stay absent"
+    ]
+  },
+  {
+    "name": "dashboard-grouping",
+    "title": "Dashboard grouping",
+    "family": "dashboard",
+    "description": "Connect grouping modes and item navigation to labeled content panels.",
+    "when": "Connect grouping modes and item navigation to labeled content panels.",
+    "searchTerms": ["group by", "room", "type", "navigation"],
+    "states": ["selected group", "changed mode", "attention indicator", "no modes"],
+    "components": ["DashboardGroupingNavigation"],
+    "templateExport": "DashboardGrouping",
+    "storyExport": "DashboardGrouping",
+    "reference": "packages/app/src/components/patterns/dashboard-grouping-navigation.stories.tsx",
+    "referenceExport": "TypeGrouping",
+    "context": [
+      "Navet theme context",
+      "Caller supplies unique mode/item IDs, labels and a valid selected item for the active mode",
+      "Feature computes groups and panel data and persists selection"
+    ],
+    "review": [
+      "Grouping menu returns focus",
+      "Keyboard arrows/Home/End navigate corresponding panels",
+      "Horizontal phone overflow and long group names"
+    ]
+  },
+  {
+    "name": "metric-action-row",
+    "title": "Metric and action row",
+    "family": "card",
+    "description": "Pair a normalized metric with a capability-gated household action inside an existing card.",
+    "when": "Pair a normalized metric with a capability-gated household action inside an existing card.",
+    "searchTerms": ["metric", "value", "primary action", "card size"],
+    "states": ["small", "medium", "large", "active", "inactive", "unavailable action", "no action"],
+    "components": ["CardMetricActionLayout", "CardMetric", "Button", "CardActionRow"],
+    "templateExport": "MetricActionRow",
+    "storyExport": "MetricActionRow",
+    "reference": "packages/app/src/components/primitives/card-metric-action-layout.stories.tsx",
+    "referenceExport": "Default",
+    "context": [
+      "Navet theme context and existing card layout/dimensions",
+      "Caller supplies translated labels, normalized value and canonical accent class",
+      "Feature owns action availability and provider command routing"
+    ],
+    "review": [
+      "Metric reads before the primary action",
+      "All supported card sizes and long labels",
+      "Disabled or absent unsupported action"
+    ]
+  },
+  {
+    "name": "status-feedback",
+    "title": "Status feedback",
+    "family": "feedback",
+    "description": "Present inline operation progress, success, warning and failure through MessageBar.",
+    "when": "Present inline operation progress, success, warning and failure through MessageBar.",
+    "searchTerms": ["loading", "success", "warning", "error", "feedback"],
+    "states": ["loading", "success", "warning", "error"],
+    "components": ["MessageBar"],
+    "templateExport": "StatusFeedback",
+    "storyExport": "StatusFeedback",
+    "reference": "packages/app/src/components/primitives/message-bar.stories.tsx",
+    "referenceExport": "Info",
+    "context": [
+      "Navet theme context",
+      "Caller supplies translated title/message and normalized operation state",
+      "Feature owns retries, errors and operation lifecycle"
+    ],
+    "review": [
+      "Status is conveyed by text and live region",
+      "Errors announce as alerts",
+      "All themes, long messages and reduced motion"
+    ]
+  },
+  {
+    "name": "tabs",
+    "title": "Controlled tabs",
+    "family": "navigation",
+    "description": "Connect canonical keyboard tabs and their panels with controlled feature state.",
+    "when": "Connect canonical keyboard tabs and their panels with controlled feature state.",
+    "searchTerms": ["tabs", "panel", "keyboard", "disabled tab"],
+    "states": ["selected", "changed selection", "disabled tab"],
+    "components": ["Tabs", "TabList", "TabTrigger", "TabPanel"],
+    "templateExport": "TabsRecipe",
+    "storyExport": "Tabs",
+    "reference": "packages/app/src/components/primitives/tabs.stories.tsx",
+    "referenceExport": "Default",
+    "context": [
+      "Navet theme context",
+      "Caller supplies unique item IDs, translated labels and valid enabled selection",
+      "Feature owns panel content and selection persistence"
+    ],
+    "review": [
+      "Arrow navigation skips disabled tabs",
+      "Hidden panels leave the focus order",
+      "Long labels and narrow layouts"
+    ]
+  },
+  {
+    "name": "navigation-workspace",
+    "title": "Navigation workspace",
+    "family": "navigation",
+    "description": "Compose the named NavigationWorkspace members into a responsive selection workspace.",
+    "when": "Compose the named NavigationWorkspace members into a responsive selection workspace.",
+    "searchTerms": ["sidebar", "workspace", "navigation", "detail"],
+    "states": [
+      "selected",
+      "changed selection",
+      "disabled destination",
+      "phone stacked",
+      "desktop split"
+    ],
+    "components": [
+      "NavigationWorkspace",
+      "NavigationWorkspace.Frame",
+      "NavigationWorkspace.Body",
+      "NavigationWorkspace.Sidebar",
+      "NavigationWorkspace.Group",
+      "NavigationWorkspace.Item",
+      "NavigationWorkspace.ItemButton",
+      "NavigationWorkspace.ItemText",
+      "NavigationWorkspace.Content"
+    ],
+    "templateExport": "NavigationWorkspaceRecipe",
+    "storyExport": "NavigationWorkspace",
+    "reference": "packages/app/src/components/patterns/navigation-workspace.stories.tsx",
+    "referenceExport": "Default",
+    "context": [
+      "Navet theme and accent context",
+      "Named members must stay inside NavigationWorkspace.Frame",
+      "Caller supplies unique IDs, valid selection, translated copy and permitted destinations"
+    ],
+    "review": [
+      "Keyboard activates enabled destinations",
+      "Selected navigation identifies its content",
+      "Phone stacks navigation/content; desktop splits without overflow"
+    ]
+  },
+  {
+    "name": "sortable-table",
+    "title": "Sortable table",
+    "family": "data",
+    "description": "Connect semantic table headers to caller-sorted normalized rows.",
+    "when": "Connect semantic table headers to caller-sorted normalized rows.",
+    "searchTerms": ["table", "sort", "ascending", "descending"],
+    "states": ["unsorted", "ascending", "descending", "empty", "disabled column"],
+    "components": ["SortableTableHeader", "SurfacePanel", "BodyText", "TableCellContent"],
+    "templateExport": "SortableTable",
+    "storyExport": "SortableTable",
+    "reference": "packages/app/src/components/primitives/sortable-table-header.stories.tsx",
+    "referenceExport": "InteractiveTable",
+    "context": [
+      "Navet theme context",
+      "Caller supplies unique row/column IDs, translated caption/headers/sort labels and cell strings",
+      "Feature owns stable sorting, validation and persistence"
+    ],
+    "review": [
+      "Keyboard sort updates rows and aria-sort",
+      "Unavailable columns cannot sort",
+      "Empty rows and long content; phone horizontal scroll"
+    ]
   }
 ]

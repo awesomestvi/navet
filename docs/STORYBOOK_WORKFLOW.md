@@ -77,3 +77,11 @@ Development behavior:
 
 - [design-system/README.md](design-system/README.md)
 - [design-system/UI-GUIDELINES.md](design-system/UI-GUIDELINES.md)
+
+## Composition registry
+
+Use `pnpm registry:dev` for coordinated Storybook and registry development. Every Storybook build
+publishes matching `/r/registry.json` and item payloads, with links resolved against its actual
+index. Inspect templates, contracts and executable examples in **Concepts / UI Kit Recipes**.
+Verify the exact clean PR preview with `pnpm registry:preview <immutable-preview-URL> <full-SHA>`;
+see [registry workflow](design-system/REGISTRY.md) for provenance, CLI and MCP access.

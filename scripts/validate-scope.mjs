@@ -21,10 +21,12 @@ const SCOPE_COMMANDS = {
     ['pnpm', ['test:tier1']],
   ],
   ui: [
+    ['pnpm', ['test:registry']],
     ['pnpm', ['check:ui-kit']],
     ['pnpm', ['check:stories']],
   ],
   workflow: [
+    ['pnpm', ['test:registry']],
     ['pnpm', ['check:stories']],
     ['pnpm', ['check:ui-kit']],
     ['pnpm', ['check:provider-boundaries']],
