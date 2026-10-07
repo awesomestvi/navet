@@ -143,10 +143,10 @@ function RecipesStory() {
               {item ? (
                 <>
                   <div className="my-3 flex flex-wrap gap-3 text-sm underline">
-                    <a href={item.meta.story.href} target="_top">
+                    <a href={`./${item.meta.story.href}`} target="_top">
                       Executable example
                     </a>
-                    <a href={item.meta.reference.href} target="_top">
+                    <a href={`./${item.meta.reference.href}`} target="_top">
                       Component reference
                     </a>
                     <a href={`/r/${recipe.name}.json`}>Registry payload</a>
@@ -201,6 +201,10 @@ export const Recipes: Story = {
     await userEvent.type(input, 'keyboard selection');
     await expect(canvas.getByRole('status')).toHaveTextContent('1 compositions');
     await expect(canvas.getByRole('heading', { name: 'Searchable selection' })).toBeVisible();
+    const example = await canvas.findByRole('link', { name: 'Executable example' });
+    await expect(
+      new URL(example.getAttribute('href') ?? '', window.location.href).pathname
+    ).not.toContain('iframe.html');
     await userEvent.clear(input);
     await userEvent.click(canvas.getByRole('button', { name: 'feedback' }));
     await expect(canvas.getByRole('status')).toHaveTextContent('1 compositions');
