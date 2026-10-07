@@ -1,3 +1,3 @@
 type: internal
 audiences: []
-summary: Organize Navet composition recipes by family and review status, reuse actual switch and Weather UI, and publish source-derived contracts with matching Storybook references.
+summary: Organize composition recipes by family and review status, with existing Navet feature UI and matching Storybook references.
