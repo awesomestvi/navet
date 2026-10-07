@@ -1,7 +1,7 @@
 # Coordinated Agent Team
 
 The team develops private proposals and delivers explicitly approved scope through the existing
-private task store. Linear holds proposals, questions and decisions; one GitHub PR holds approved
+private task store. The private GitHub Project holds proposals, questions and decisions; one GitHub PR holds approved
 public delivery. Maintainer acceptance, merge and release remain separate decisions.
 
 ## UI ticket support
@@ -20,13 +20,13 @@ specialist for every task.
 | Module | Responsibility |
 | --- | --- |
 | `agent-task-store.mjs` | Shared atomic ownership, deduplication, resources, execution guards and recovery history |
-| `agent-proposal-scope.mjs` | Private idea authority, exact Linear destination and proposal intake |
+| `agent-proposal-scope.mjs` | Private idea authority, exact private Project destination and proposal intake |
 | `agent-planning-intake.mjs` | Human approval bound to the selected delivery brief and proposal revision |
 | `agent-team-state.mjs` | Specialist plans, dependencies, file ownership, attempts, evidence and waiting states |
 | `agent-team-coordinator.mjs` | One specialist execution or observation per bounded invocation |
-| `agent-team-ticket.mjs` | Scoped ticket updates, durable send permission and independent service readback |
+| `agent-team-ticket.mjs` | Historical ticket transport, durable send permission and independent readback; Project adapter requires a pilot |
 | `agent-team-conversation.mjs` | Store-backed ticket publication and verified answer resumption |
-| `agent-team-delivery.mjs` | Artifact readback, Linear links and independently observed human acceptance |
+| `agent-team-delivery.mjs` | Artifact/acceptance contracts; Project publication adapter requires a pilot |
 | `agent-team-checkpoint.mjs` | Read-only, stable Git checkpoints for the exact worker run |
 | `agent-team-monitor.mjs` | Bounded interruption and terminal reconciliation of existing specialists |
 | `agent-team-resume.mjs` | Verified answers continue the same worker from its retained checkpoint |
@@ -35,11 +35,17 @@ specialist for every task.
 | `agent-team-run.mjs` | Explicit command entry point using locally installed trusted adapters |
 
 Public planning execution retains its explicit visibility requirement. Private proposal tasks use
-`proposalBinding` and `linear-proposal`, with research mode, `maintainer-idea-request` authority,
-`proposalRevision`, `purpose: proposal-development`, private visibility and an exact Linear
-issue/team/project destination. Captured and Developing proposal permit this work. Priority and
+`proposalBinding` and `github-project-proposal`, with research mode, `maintainer-idea-request` authority,
+`proposalRevision`, `purpose: proposal-development`, private visibility and an exact private Project
+item/organization/project destination. Captured and Developing proposal permit this work. Priority and
 agent-authored stage changes grant no implementation authority. Approved delivery uses the existing
 `planningBinding` contract and a new verified human request identity.
+
+Project drafts have no comment threads. Interactive skills retain questions, verified answers and
+results in draft history and use the active Codex conversation for authenticated decisions. The
+coordinated ticket callbacks below are transport contracts; their existing historical transport
+helpers do not implement GitHub draft editing or human provenance. Install and pilot Project
+adapters before using those operations against this destination. The queue remains paused.
 
 ## Run One Operation
 
@@ -58,8 +64,7 @@ Configure `maxStopAttempts` within 1–10, an accepted `leaseDurationMs`, and th
 `native-observed-operations-v1` resource policy. The default checkpoint reader captures local Git;
 workers must supply exact task, intent, worker and run identities. Native usage requires a dedicated
 coordinator session and every historical worker session, with complete authenticated inventory.
-The existing
-Linear read/session adapters can supply issue reads; the installed human decision reader remains a
+The private Project reader can supply issue reads; the installed human decision reader remains a
 separate authentication boundary. Credential contents belong in a private credential manager.
 
 Inputs select one operation:
@@ -131,7 +136,7 @@ retain their original head as historical provenance. Head-sensitive checks becom
 code or checkpoint changes. Testers and independent reviewers always supply head-sensitive
 evidence; required final gates and acceptance must match the current head. Plans must place those
 checks after the changes they assess. Acceptance becomes stale after any head/checkpoint change.
-A PR and its Linear
+A PR and its private Project
 link establish reviewable delivery, not Validated status, merge authority or release readiness.
 
 ## Verification And Live Gates
@@ -147,14 +152,14 @@ They exercise local callback contracts; they do not prove that those callbacks a
 
 Remaining live gates are:
 
-- Dedicated, distinct Linear reader/writer identities and a verified private unsynced destination.
+- Authenticated Project access, a verified private destination and installed draft write/readback adapters.
 - A human-source reader that distinguishes maintainer decisions from agent writes and binds exact
   proposal revision, selected option, permitted changes, visibility and acceptance criteria.
 - Installed worker creation, lookup, checkpoint, role permissions, interruption and accounting
   callbacks with observed identity and recovery evidence.
 - Accepted numerical resources and current measured participant usage; fixtures set no live policy.
 - An explicitly authorized real idea-to-proposal run, its separately approved delivery, actual
-  ticket question/answer recovery and verified PR/preview/Linear receipts.
+  ticket question/answer recovery and verified PR/preview/Project receipts.
 
 No scheduler is installed or activated by this command. Comparative experiments remain stopped.
 Broader rollout/pilot evidence in the autonomous builder plan and Navet 1.0 release acceptance
@@ -164,13 +169,13 @@ remain separate ledgers and require their own evidence and authorization.
 
 | Requirement | Deterministic source evidence | Operational evidence |
 | --- | --- | --- |
-| Private idea intake, sourced proposal and exact destination | `agent-proposal-scope.test.mjs`, `agent-team-delivery.test.mjs` | Live Linear proposal unverified |
+| Private idea intake, sourced proposal and exact destination | `agent-proposal-scope.test.mjs`, `agent-team-delivery.test.mjs` | Live Project proposal unverified |
 | Exact human approval; priority/agent writes grant no authority | Planning intake/scope regressions, ticket provenance fixtures | Dedicated human-source authentication unverified |
 | Specialist dependencies, ownership and independent review | Coordinator/state fixtures and CLI subprocess handoff | Installed role/tool restrictions unverified |
 | Durable creation and write-loss reconciliation | Coordinator, conversation and ticket fixtures | Owning runtime/service receipts unverified |
 | Ticket question and same-worker answer continuation | Conversation/resume fixtures, fresh Git checkpoint fixtures | Real ticket answer/resume unverified |
 | Withdrawal, unavailable usage and bounded interruption | Coordinator monitor and native accounting fixtures | Live runtime interruption unverified |
-| One PR, current preview/criteria evidence and Linear links | Delivery fixtures reject stale/false readback | Live PR/preview/Linear aggregate adapter unverified |
+| One PR, current preview/criteria evidence and private planning links | Delivery fixtures reject stale/false readback | Live PR/preview/Project aggregate adapter unverified |
 | Terminal acceptance and ownership release | Completion fixtures use real task storage and native session JSONL | Human merge and live completion receipts unverified |
 | Measured specialist usage within accepted caps | Accounting fixtures cover full inventory and allocation settlement | Dedicated sessions and accepted live policy unverified |
 

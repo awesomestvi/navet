@@ -68,7 +68,7 @@ describe('private proposal development authority', () => {
       { ...request().brief, resultDestination: 'public-github' },
       { ...request().brief, destination: { ...request().brief.destination, projectId: 'another' } },
       { ...request().brief, destination: { ...request().brief.destination, url: 'public' } }]) {
-      expect(() => validate({ ...request(), brief })).toThrow('exact private Linear');
+      expect(() => validate({ ...request(), brief })).toThrow('exact private planning');
     }
     expect(() => validate(request(), { status: 'withdrawn' })).toThrow('not authorized');
     expect(() => validate({ ...request(), requestId: 'different' })).toThrow('identity mismatch');
@@ -101,6 +101,18 @@ describe('proposal intake reuses durable task ownership', () => {
     return { store, directory, options: { store, identity, readIssue: async () => observe(),
       readRequest: async () => ({ status: 'authorized', request: request() }), now: () => now } };
   }
+
+  // Rewrite the destination contract coverage for Project drafts; retain historical records.
+  it('stores exact GitHub Project destinations while rejecting a mismatched transport', async () => {
+    const { store } = await setup();
+    const value = request();
+    value.brief.resultDestination = 'github-project-proposal';
+    value.brief.destination.kind = 'github-project';
+    const task = await store.enqueue(value);
+    expect(task.brief.destination.kind).toBe('github-project');
+    await expect(store.enqueue({ ...value, requestId: 'bad-transport', brief: { ...value.brief,
+      destination: { ...value.brief.destination, kind: 'linear' } } })).rejects.toThrow('exact private planning');
+  });
 
   it('deduplicates across restart and keeps observations empty until execution', async () => {
     const { store, directory, options } = await setup();

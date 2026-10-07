@@ -1,6 +1,6 @@
 ---
 name: navet-idea-proposals
-description: Develop requested Navet ideas into researched, decision-ready private Linear proposals with plans, design prototypes and targeted feasibility POCs. Use for product ideas and UX improvement proposals before delivery approval.
+description: Develop requested Navet ideas into researched, decision-ready private GitHub Project proposals with plans, design prototypes and targeted feasibility POCs. Use for product ideas and UX improvement proposals before delivery approval.
 ---
 
 # Idea proposals
@@ -17,11 +17,12 @@ the proposal is visual. Reuse the closest component family, with Home as the das
 
 ## Research and develop
 
-Use the connected Linear tools to find the Navet team and the existing **Navet 1.0 readiness and
-idea backlog** project. Verify its identity and visibility; inspect related tickets and comments
-before creating new proposals. Update an existing matching proposal rather than duplicating it.
-Keep proposal content and attachments private and unsynced to public GitHub. If visibility is
-unverified, retain the proposal privately and report the missing check.
+Use authenticated GitHub CLI or browser access to the navet-app organization's private **Navet
+planning** Project. Verify organization, Project identity and private visibility; inspect active
+and archived drafts and their history before creating proposals. Update a matching draft rather
+than duplicating it. Keep proposal content private and publish only a separately approved delivery
+brief in repository issues. If visibility is unverified, retain work privately and report the
+missing check.
 
 Verify what Navet already supports. Research current external evidence when it informs an idea,
 linking primary sources and distinguishing observed need from a hypothesis. Compare the smallest
@@ -40,18 +41,17 @@ routing, persistence or operational readiness. Do not restart stopped comparison
 ## Store and verify
 
 Keep local work in `.cache/agent-planning/proposals/<task-id>/` with private filesystem permissions.
-Retain `progress.json` containing request reference, Linear identifiers/revision, local artifacts,
+Retain `progress.json` containing request reference, Project item identifiers/revision, local artifacts,
 completed steps, unknowns, blockers and next action. Use durable private storage for retained POCs;
 do not call a cache or ignored directory a backup. Never put secrets in proposal files.
 
-Create/update tickets through the connected Linear plugin within the verified destination.
-Use Captured/Developing proposal while working. Upload only authorized private artifacts using
-the installed attachment workflow. Read back ticket content and attachments from Linear and
-verify access before setting Ready for prioritization. Do not claim completion when an attachment
+Create/update private Project drafts through authenticated GitHub UI/API within the verified destination.
+Use Captured/Developing proposal while working. Link only authorized artifacts in verified access-controlled storage; verify their audience independently. Read back the complete draft body and artifact references from GitHub, then independently verify
+artifact content and access before setting Ready for prioritization. Do not claim completion when an attachment
 or ticket is missing. Mark inaccessible or unexercised prototype behavior explicitly.
 
-For a material question, leave one concise question on the originating ticket and retain the
-waiting state. Verify a human answer and resume the same task within scope; elapsed time and
+For a material question, retain one concise question in the originating draft and ask the maintainer
+in the active Codex conversation. Preserve the waiting state. Verify a human answer and resume the same task within scope; elapsed time and
 agent comments are not answers. Finish with ticket links, recommendations and the decision needed.
 Record observed duration, interventions, duplicates and review defects; unknowns stay unknown.
 

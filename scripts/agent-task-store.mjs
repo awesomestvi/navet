@@ -235,7 +235,7 @@ export class AgentTaskStore {
     }
     const gates = [...new Set([...requiredGates, 'output'])];
     if (resourceLimits !== undefined) validateResourceLimits(resourceLimits);
-    if (brief.resultDestination !== undefined && !['public-github', 'linear-planning', 'linear-proposal'].includes(brief.resultDestination)) {
+    if (brief.resultDestination !== undefined && !['public-github', 'linear-planning', 'linear-proposal', 'github-project-proposal'].includes(brief.resultDestination)) {
       throw new Error('Unsupported result destination.');
     }
     if (brief.resultDestination === 'linear-planning' &&
@@ -246,11 +246,11 @@ export class AgentTaskStore {
       validatePlanningBinding(proposalBinding);
       validateProposalDestination(brief, proposalBinding);
       if (planningBinding || mode !== 'research' || brief.purpose !== 'proposal-development' ||
-          brief.visibility !== 'private-planning' || brief.resultDestination !== 'linear-proposal' ||
+          brief.visibility !== 'private-planning' || !['linear-proposal', 'github-project-proposal'].includes(brief.resultDestination) ||
           authority.kind !== 'maintainer-idea-request' || authority.proposalRevision !== proposalBinding.revision ||
-          brief.destination?.kind !== 'linear' || ['issueId', 'teamId', 'projectId'].some((key) =>
+          !['linear', 'github-project'].includes(brief.destination?.kind) || ['issueId', 'teamId', 'projectId'].some((key) =>
             brief.destination[key] !== proposalBinding[key])) throw new Error('Private proposal authority and destination required.');
-    } else if (brief.resultDestination === 'linear-proposal') throw new Error('Proposal binding required.');
+    } else if (['linear-proposal', 'github-project-proposal'].includes(brief.resultDestination)) throw new Error('Proposal binding required.');
     if (planningBinding !== undefined) {
       validatePlanningBinding(planningBinding);
       if (authority.planningRevision !== planningBinding.revision) {

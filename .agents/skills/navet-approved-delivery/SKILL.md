@@ -1,6 +1,6 @@
 ---
 name: navet-approved-delivery
-description: Deliver an explicitly approved Navet proposal or change as one PR with current-head checks, rendered UX evidence, independent review and verified Linear links. Use when the maintainer authorizes a selected implementation scope.
+description: Deliver an explicitly approved Navet proposal or change as one PR with current-head checks, rendered UX evidence, independent review and verified GitHub Project links. Use when the maintainer authorizes a selected implementation scope.
 ---
 
 # Approved delivery
@@ -40,7 +40,7 @@ within scope and retest; escalate subjective design choices or material scope ch
 
 Open/update one PR with Conventional Commit title, behavior, acceptance criteria, validation and
 actual preview links. Attach the PR to this Codex task. Link it and the approval package back to
-the originating Linear ticket within its authorized visibility. Independently read back links and
+the originating Project draft within its authorized visibility. Independently read back links and
 preview artifacts; private planning details must not enter the public PR or CI logs.
 
 Use independent current-head code review after builder checks. Verify findings at the current head,
@@ -49,9 +49,9 @@ general reviewers merely to accumulate passes. Resolve conversations only if the
 authorized that action. CI, review, preview and UX evidence must refer to the current head.
 
 Prepare `docs/engineering/templates/approval-package.md` with pass/fail/unverified criteria and
-remaining limitations. Do not report ready while required gates are pending or failing. Keep Linear
+remaining limitations. Do not report ready while required gates are pending or failing. Keep GitHub Project
 In delivery during review; a PR is not Validated. Maintainer merge records acceptance, after which
 verify the merged result and update the ticket. Do not merge your own work or dispatch a production
 release. Report observed delivery time, interventions, duplicates and review defects; do not infer
-missing measurements. A blocking question remains on the originating ticket and resumes the same
-task only after a verified human answer within the accepted scope.
+missing measurements. Retain blocking questions in the originating draft history and ask the maintainer in the active
+Codex conversation. Resume the same task only after a verified human answer within accepted scope.

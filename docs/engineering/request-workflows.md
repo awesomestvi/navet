@@ -6,16 +6,15 @@ its checked deliverable. These workflows run interactively using available conne
 | Request | Result | Authority |
 | --- | --- | --- |
 | Post about Navet, promote a feature, or share release updates | One checked post and screenshot published to Navet Reddit, Discord and the existing Home Assistant topic | One approval of the shared master post and screenshot covers all three destinations |
-| Suggest ideas for Navet | Researched private Linear proposals with plans and proportionate prototypes | Includes isolated feasibility POCs; prioritization remains with the maintainer |
-| Implement this approved idea | One PR, previews, current-head checks and UX evidence linked to Linear | Requires selected scope and public visibility; maintainer merges |
+| Suggest ideas for Navet | Researched private GitHub Project proposals with plans and proportionate prototypes | Includes isolated feasibility POCs; prioritization remains with the maintainer |
+| Implement this approved idea | One PR, previews, current-head checks and UX evidence linked to GitHub Project | Requires selected scope and public visibility; maintainer merges |
 
 ## Use the matching skill
 
 - [Community communication](../../.agents/skills/navet-release-communication/SKILL.md) resolves the
   requested topic or feature, applies Navet voice and design standards, and verifies all three
   publications. Release posts also read the full changelog and ask which news should lead.
-- [Idea proposals](../../.agents/skills/navet-idea-proposals/SKILL.md) uses the existing **Navet 1.0
-  readiness and idea backlog** project, checks duplicates and develops decision-ready proposals.
+- [Idea proposals](../../.agents/skills/navet-idea-proposals/SKILL.md) uses the existing **Navet planning** project, checks duplicates and develops decision-ready proposals.
 - [Approved delivery](../../.agents/skills/navet-approved-delivery/SKILL.md) implements selected
   scope using the existing work brief, UX audit and approval package.
 
@@ -41,7 +40,10 @@ New identity, templates and foundational product/design choices keep their exist
 
 ## Setup and recovery
 
-Linear must be connected with access to the private Navet project and intended attachments.
+GitHub must be authenticated with Projects access to the private Navet planning Project. Drafts
+need no repository and have no comment threads. Retain research, questions and verified answers in
+the draft body; separately protected artifacts retain their own access permissions. Use a separately
+authored public issue for the approved delivery brief.
 The agent verifies destination privacy and owning-service readback before completing a proposal.
 Public delivery requires a separate selected-scope decision; prioritization does not grant it.
 
@@ -88,7 +90,7 @@ valid finding or missing UX evidence stays visible in the approval package.
 | --- | --- | --- |
 | Community post | Actual human request, verified source, one master approval, reviewed image/copy, identities/destinations and three permalinks | v0.17.7 published to all three; Reddit and forum visually verified, Discord verified through API readback |
 | Idea development | Requested ideas, verified private destination, readable proposals and attachment/prototype readback | Live proposal development unverified |
-| Approved delivery | Selected scope, one PR, current previews/checks, rendered UX review and Linear readback | Live delivery through these skills unverified |
+| Approved delivery | Selected scope, one PR, current previews/checks, rendered UX review and GitHub Project readback | Live delivery through these skills unverified |
 
 Deterministic tests cover agent-authored content, clean tagged evidence, request scope, reviewed
 payloads, wrong destinations/readbacks, retained attempts and partial-channel recovery. Isolated
