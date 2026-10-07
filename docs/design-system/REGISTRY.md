@@ -59,9 +59,10 @@ configuration workflow uses forecast/metric choices and its existing dialog. Att
    explicit status and are excluded from approved discovery.
 6. Publish the registry and Storybook from the same revision, then verify the exact hosted preview.
 
-MCP and CLI search see level, review status and owner in descriptions and categories. Search for
-`approved` to discover accepted items; if none fits, follow the reference-first workflow and
-identify the coverage gap. Pending and draft examples are inspection material, not accepted design.
+MCP and CLI search see level, review status and owner in descriptions and categories. Search identifies candidates; inspect the exact `meta.level` and `meta.reviewStatus` values
+to establish eligibility. The pinned CLI uses fuzzy search, so query matches are not review-status
+filters. Use Storybook’s exact review filter for approved discovery. If no accepted item fits,
+follow the reference-first workflow and identify the coverage gap. Pending and draft examples are inspection material, not accepted design.
 A recipe's published name is its stable installation address; folder and display title express
 its actual purpose.
 
