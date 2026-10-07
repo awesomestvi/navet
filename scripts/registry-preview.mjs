@@ -10,7 +10,12 @@ export async function inspectPreview(base, revision, request = fetch) {
   if (!/^[a-f0-9]{40}$/.test(revision)) throw new Error('Expected revision must be an exact commit SHA');
   const endpoint = (file) => new URL(file, `${url.href.replace(/\/$/, '')}/`).href;
   const get = async (file) => {
-    const response = await request(endpoint(file), { redirect: 'error', cache: 'no-store', signal: AbortSignal.timeout(20000) });
+    let response = await request(endpoint(file), { redirect: file === 'iframe.html' ? 'manual' : 'error', cache: 'no-store', signal: AbortSignal.timeout(20000) });
+    if (file === 'iframe.html' && response.status === 308) {
+      const location = response.headers.get('location');
+      if (!location || new URL(location, endpoint(file)).href !== endpoint('iframe')) throw new Error('iframe.html: unsafe redirect; no alternate revision is used');
+      response = await request(endpoint('iframe'), { redirect: 'error', cache: 'no-store', signal: AbortSignal.timeout(20000) });
+    }
     if (!response.ok) throw new Error(`${file}: HTTP ${response.status}; no alternate revision is used`);
     return response;
   };

@@ -152,3 +152,5 @@ interactions for every recipe. Review a recorded representative matrix spanning 
 card sizes, phone, tablet portrait/landscape, desktop, long labels and reduced motion. Review
 risk-specific combinations exhaustively. Maintainer visual acceptance, merge and production release
 remain separate delivery gates.
+
+Hosted verification permits Cloudflare Pages’ canonical `/iframe.html` to `/iframe` 308 redirect only on the identical deployment. Registry redirects and all other HTML redirect destinations are rejected.

@@ -15,7 +15,7 @@ function fixture() {
 }
 it('verifies matching revision, rendered index/HTML, payloads and exact story exports', async () => {
   const f = fixture(); const preview = await inspectPreview('https://immutable-preview.pages.dev', f.revision, f.request);
-  expect(preview.registry).toEqual(f.registry); expect(f.calls.every(({ options }) => options.redirect === 'error')).toBe(true);
+  expect(preview.registry).toEqual(f.registry); expect(f.calls.every(({ url, options }) => options.redirect === (new URL(url).pathname === '/iframe.html' ? 'manual' : 'error'))).toBe(true);
   matchLocalSource(preview, f.registry);
 });
 it.each(['revision', 'dirty', 'rendered', 'story', 'payload'])('rejects mismatched %s evidence without fallback', async (problem) => {
@@ -33,4 +33,15 @@ it('rejects missing endpoints and different source coverage/fingerprints', async
   await expect(inspectPreview('https://preview.pages.dev', f.revision, f.request)).rejects.toThrow('HTTP 404');
   expect(() => matchLocalSource({ registry: f.registry }, { items: [] })).toThrow('coverage');
   expect(() => matchLocalSource({ registry: f.registry }, { items: [{ ...f.item, meta: { ...f.item.meta, sourceFingerprint: 'different source' } }] })).toThrow('sourceFingerprint');
+});
+
+it('permits only Cloudflare canonical HTML on the identical deployment', async () => {
+  const f = fixture(); f.responses.set('/iframe', f.responses.get('/iframe.html'));
+  const request = (url, options) => new URL(url).pathname === '/iframe.html' ? new Response('', { status: 308, headers: { location: '/iframe' } }) : f.request(url, options);
+  expect((await inspectPreview('https://exact-preview.pages.dev', f.revision, request)).registry).toEqual(f.registry);
+});
+it.each(['https://different-revision.pages.dev/iframe', '/other', '/iframe?revision=old'])('rejects HTML redirect to %s', async (location) => {
+  const f = fixture();
+  const request = (url, options) => new URL(url).pathname === '/iframe.html' ? new Response('', { status: 308, headers: { location } }) : f.request(url, options);
+  await expect(inspectPreview('https://exact-preview.pages.dev', f.revision, request)).rejects.toThrow('unsafe redirect');
 });
