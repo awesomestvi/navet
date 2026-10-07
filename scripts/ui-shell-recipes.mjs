@@ -116,7 +116,7 @@ export function findCompositionViolations(root, files) {
             const parent = element.parent;
             if (!parent || !ast.isJsxElement(parent) || component(parent.openingElement.tagName) !== 'SheetSurface') record('nested-sheet-header', node);
           }
-          if (file.startsWith('packages/app/src/ui-kit/registry/') && !file.endsWith('.stories.tsx') && ['BaseCardDialog', 'SheetSurface', 'ModalSurface'].includes(name)) {
+          if (file.startsWith('packages/app/src/composition-recipes/') && !file.endsWith('.stories.tsx') && ['BaseCardDialog', 'SheetSurface', 'ModalSurface'].includes(name)) {
             const focus = node.attributes.properties.find((property) => ast.isJsxAttribute(property) && property.name.getText(source) === 'onCloseAutoFocus');
             if (!focus?.initializer || !ast.isJsxExpression(focus.initializer) || !focus.initializer.expression) record('missing-focus-return', node);
           }

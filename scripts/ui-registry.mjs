@@ -8,8 +8,13 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { generateNavetCatalog } from './agent-component-catalog.mjs';
 import { exportedNames, inspectTemplate, safeSourcePath, withSources } from './registry-source.mjs';
 import { validateRegistry } from './registry-schema.mjs';
-export const RECIPE_DIRECTORY = 'packages/app/src/ui-kit/registry';
-export const STORY_SOURCE = `${RECIPE_DIRECTORY}/registry.stories.tsx`;
+export const RECIPE_DIRECTORY = 'packages/app/src/composition-recipes';
+function templateFiles(root, directory = RECIPE_DIRECTORY) {
+  return readdirSync(path.join(root, directory), { withFileTypes: true }).flatMap((entry) => {
+    const file = `${directory}/${entry.name}`;
+    return entry.isDirectory() ? templateFiles(root, file) : entry.name.endsWith('.tsx') && !entry.name.endsWith('.stories.tsx') ? [file] : [];
+  });
+}
 export const fingerprint = (value) => createHash('sha256').update(typeof value === 'string' ? value : JSON.stringify(value)).digest('hex');
 export function sourceRevision(root) {
   try {
@@ -35,21 +40,29 @@ export function buildRegistry(root = process.cwd(), catalog = generateNavetCatal
   for (const recipe of recipes) {
     if (!recipe || !/^[a-z][a-z0-9-]*$/.test(recipe.name) || names.has(recipe.name)) throw new Error(`Invalid or duplicate recipe name: ${recipe?.name}`);
     names.add(recipe.name);
-    for (const key of ['title', 'description', 'when', 'family', 'templateExport', 'storyExport', 'reference', 'referenceExport']) if (typeof recipe[key] !== 'string' || !recipe[key].trim()) throw new Error(`${recipe.name}: missing ${key}`);
+    for (const key of ['title', 'description', 'when', 'family', 'templateExport', 'storyExport', 'reference', 'referenceExport', 'template', 'storySource', 'owner']) if (typeof recipe[key] !== 'string' || !recipe[key].trim()) throw new Error(`${recipe.name}: missing ${key}`);
     for (const key of ['context', 'components', 'review', 'searchTerms', 'states']) if (!Array.isArray(recipe[key]) || !recipe[key].length || recipe[key].some((value) => typeof value !== 'string' || !value.trim()) || new Set(recipe[key]).size !== recipe[key].length) throw new Error(`${recipe.name}: invalid ${key}`);
+    if (!['building-block', 'product'].includes(recipe.level)) throw new Error(`${recipe.name}: invalid level`);
+    if (!['draft', 'pending', 'approved', 'deprecated'].includes(recipe.reviewStatus)) throw new Error(`${recipe.name}: invalid reviewStatus`);
+    if (recipe.reviewStatus === 'approved' && (typeof recipe.acceptance !== 'string' || !recipe.acceptance.trim())) throw new Error(`${recipe.name}: approved recipes require acceptance evidence`);
+    if (!recipe.template.startsWith(`${RECIPE_DIRECTORY}/`) || !recipe.template.endsWith('.tsx') || recipe.template.endsWith('.stories.tsx')) throw new Error(`${recipe.name}: invalid template path`);
+    if (!recipe.storySource.startsWith(`${RECIPE_DIRECTORY}/`) || !recipe.storySource.endsWith('.stories.tsx')) throw new Error(`${recipe.name}: invalid storySource path`);
+    if (recipe.level === 'product' && !recipe.reference.startsWith('packages/app/src/features/')) throw new Error(`${recipe.name}: product requires a feature reference`);
+    safeSourcePath(root, recipe.storySource);
     safeSourcePath(root, recipe.reference);
-    safeSourcePath(root, `${RECIPE_DIRECTORY}/${recipe.name}.tsx`);
+    safeSourcePath(root, recipe.template);
   }
-  const templates = readdirSync(path.join(root, RECIPE_DIRECTORY)).filter((file) => file.endsWith('.tsx') && !file.endsWith('.stories.tsx'));
-  for (const template of templates) if (!names.has(template.slice(0, -4))) throw new Error(`Unmanifested template: ${template}`);
+  const declaredTemplates = recipes.map((recipe) => recipe.template);
+  if (new Set(declaredTemplates).size !== declaredTemplates.length) throw new Error('Duplicate template path');
+  for (const template of templateFiles(root)) if (!declaredTemplates.includes(template)) throw new Error(`Unmanifested template: ${template}`);
   const index = options.index ?? generateStoryIndex(root);
   const revision = options.revision ?? sourceRevision(root);
   const contracts = catalog.entries.flatMap((entry) => [entry, ...(entry.members ?? [])]);
   const packageJson = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'));
   const installed = new Set(Object.keys({ ...packageJson.dependencies, ...packageJson.peerDependencies }));
-  const files = [...new Set([STORY_SOURCE, ...recipes.flatMap((recipe) => [recipe.reference, `${RECIPE_DIRECTORY}/${recipe.name}.tsx`])])];
+  const files = [...new Set(recipes.flatMap((recipe) => [recipe.storySource, recipe.reference, recipe.template]))];
   const items = withSources(root, files, (project) => recipes.map((recipe) => {
-    const source = `${RECIPE_DIRECTORY}/${recipe.name}.tsx`;
+    const source = recipe.template;
     const content = readFileSync(path.join(root, source), 'utf8');
     const componentContracts = recipe.components.map((name) => {
       const entry = contracts.find((entry) => entry.name === name && entry.kind === 'value');
@@ -57,27 +70,31 @@ export function buildRegistry(root = process.cwd(), catalog = generateNavetCatal
       const { importFrom, source, line, parameters, properties, variants } = entry;
       return { name, importFrom, source, line, parameters, properties, variants };
     });
+    if (recipe.level === 'product') {
+      const featureFamily = recipe.reference.split('/features/')[1].split('/')[0];
+      if (!componentContracts.some((contract) => contract.source.startsWith(`packages/app/src/features/${featureFamily}/`))) throw new Error(`${recipe.name}: product requires a same-family feature contract`);
+    }
     inspectTemplate(project, project.program.getSourceFile(path.resolve(root, source)), recipe, componentContracts, installed);
-    for (const [file, exported, label] of [[STORY_SOURCE, recipe.storyExport, 'recipe'], [recipe.reference, recipe.referenceExport, 'reference']]) if (!exportedNames(project, project.program.getSourceFile(path.resolve(root, file))).has(exported)) throw new Error(`${recipe.name}: missing ${label} story export ${exported}`);
-    const story = resolveStory(index, STORY_SOURCE, recipe.storyExport);
+    for (const [file, exported, label] of [[recipe.storySource, recipe.storyExport, 'recipe'], [recipe.reference, recipe.referenceExport, 'reference']]) if (!exportedNames(project, project.program.getSourceFile(path.resolve(root, file))).has(exported)) throw new Error(`${recipe.name}: missing ${label} story export ${exported}`);
+    const story = resolveStory(index, recipe.storySource, recipe.storyExport);
     const reference = resolveStory(index, recipe.reference, recipe.referenceExport);
     const meta = {
       renderedFingerprint: options.renderedFingerprint ?? null,
-      scope: 'navet-app', family: recipe.family, searchTerms: recipe.searchTerms,
+      scope: 'navet-app', level: recipe.level, reviewStatus: recipe.reviewStatus, owner: recipe.owner, acceptance: recipe.acceptance ?? null, family: recipe.family, searchTerms: recipe.searchTerms,
       sourceRevision: revision, sourceFingerprint: catalog.sourceFingerprint,
       templateFingerprint: fingerprint(content), contractFingerprint: fingerprint(componentContracts),
-      storyFingerprint: fingerprint([readFileSync(path.join(root, STORY_SOURCE), 'utf8'), readFileSync(path.join(root, recipe.reference), 'utf8'), story, reference]),
+      storyFingerprint: fingerprint([readFileSync(path.join(root, recipe.storySource), 'utf8'), readFileSync(path.join(root, recipe.reference), 'utf8'), story, reference]),
       when: recipe.when, context: recipe.context, states: recipe.states, review: recipe.review,
       templateExport: recipe.templateExport, story, reference, contracts: componentContracts,
     };
     meta.compositionFingerprint = fingerprint({ recipe, ...meta });
     return {
       $schema: 'https://ui.shadcn.com/schema/registry-item.json', name: recipe.name, type: 'registry:block', title: recipe.title,
-      description: `${recipe.description} Family: ${recipe.family}. Use when: ${recipe.when} Search: ${recipe.searchTerms.join(', ')}.`,
+      description: `${recipe.description} Level: ${recipe.level}. Review: ${recipe.reviewStatus}. Owner: ${recipe.owner}. Family: ${recipe.family}. Use when: ${recipe.when} Search: ${recipe.searchTerms.join(', ')}.`,
       dependencies: [], registryDependencies: [],
       files: [{ path: source, type: 'registry:file', target: `@components/recipes/${recipe.name}.tsx`, content }],
-      categories: ['navet', 'composition', recipe.family],
-      docs: `Use when: ${recipe.when}\n\nRequired context:\n${recipe.context.map((value) => `- ${value}`).join('\n')}\n\nStates: ${recipe.states.join(', ')}\n\nReview:\n${recipe.review.map((value) => `- ${value}`).join('\n')}\n\nExecutable example: ${story.href}\nReference: ${reference.href}\nInspect contracts in meta.contracts. Feature owns routing, capabilities, validation and persistence.`, meta,
+      categories: ['navet', 'composition', recipe.level, recipe.reviewStatus, recipe.family],
+      docs: `Level: ${recipe.level}. Review: ${recipe.reviewStatus}. Owner: ${recipe.owner}. Acceptance: ${recipe.acceptance ?? 'Awaiting maintainer review'}.\n\nUse when: ${recipe.when}\n\nRequired context:\n${recipe.context.map((value) => `- ${value}`).join('\n')}\n\nStates: ${recipe.states.join(', ')}\n\nReview:\n${recipe.review.map((value) => `- ${value}`).join('\n')}\n\nExecutable example: ${story.href}\nReference: ${reference.href}\nInspect contracts in meta.contracts. Feature owns routing, capabilities, validation and persistence.`, meta,
     };
   }));
   return validateRegistry({ $schema: 'https://ui.shadcn.com/schema/registry.json', name: 'navet', homepage: 'https://github.com/navet-app/navet', items });

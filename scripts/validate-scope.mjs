@@ -188,6 +188,7 @@ function inferScopes(files) {
       file.startsWith('packages/ui/') ||
       file.startsWith('packages/app/src/components/') ||
       file.startsWith('packages/app/src/ui-kit/') ||
+      file.startsWith('packages/app/src/composition-recipes/') ||
       file.startsWith('docs/design-system/')
     ) {
       scopes.add('ui');

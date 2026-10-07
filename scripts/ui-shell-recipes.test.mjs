@@ -80,7 +80,7 @@ it('does not confuse unrelated local names with canonical headers', () => {
   expect(inspect('const SheetSurfaceHeader = () => null; <div><SheetSurfaceHeader /></div>')).toEqual([]);
 });
 it('requires explicit close autofocus in shell templates', () => {
-  const file = 'packages/app/src/ui-kit/registry/example.tsx';
+  const file = 'packages/app/src/composition-recipes/example.tsx';
   expect(inspect(imports + '<Sheet><Header /></Sheet>', file).map((entry) => entry.rule)).toEqual(['missing-focus-return']);
   expect(inspect(imports + '<Sheet onCloseAutoFocus={(event) => { event.preventDefault(); launcher.focus(); }}><Header /></Sheet>', file)).toEqual([]);
 });

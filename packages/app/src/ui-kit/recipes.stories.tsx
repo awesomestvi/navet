@@ -9,12 +9,14 @@ import { Button, Input } from '@navet/app/ui-kit/primitives';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useEffect, useId, useState } from 'react';
 import { expect } from 'storybook/test';
-import recipes from './registry/recipes.json';
+import recipes from '../composition-recipes/recipes.json';
 
 interface RegistryItem {
   name: string;
   files: { content: string }[];
   meta: {
+    level: string;
+    reviewStatus: string;
     sourceRevision: { commit: string | null; dirty: boolean };
     sourceFingerprint: string;
     compositionFingerprint: string;
@@ -26,6 +28,8 @@ interface RegistryItem {
 function RecipesStory() {
   const [query, setQuery] = useState('');
   const [family, setFamily] = useState('all');
+  const [level, setLevel] = useState('all');
+  const [reviewStatus, setReviewStatus] = useState('all');
   const [registry, setRegistry] = useState<RegistryItem[]>();
   const [error, setError] = useState<string>();
   const [retry, setRetry] = useState(0);
@@ -50,7 +54,13 @@ function RecipesStory() {
           !Array.isArray(payload.items) ||
           payload.items.length !== recipes.length ||
           recipes.some(
-            (recipe) => !payload.items.some((item: RegistryItem) => item.name === recipe.name)
+            (recipe) =>
+              !payload.items.some(
+                (item: RegistryItem) =>
+                  item.name === recipe.name &&
+                  item.meta.level === recipe.level &&
+                  item.meta.reviewStatus === recipe.reviewStatus
+              )
           )
         )
           throw new Error(
@@ -80,21 +90,64 @@ function RecipesStory() {
   const visible = recipes.filter(
     (recipe) =>
       (family === 'all' || recipe.family === family) &&
-      [recipe.title, recipe.name, recipe.when, recipe.family, ...recipe.searchTerms]
+      (level === 'all' || recipe.level === level) &&
+      (reviewStatus === 'all' || recipe.reviewStatus === reviewStatus) &&
+      [
+        recipe.title,
+        recipe.name,
+        recipe.when,
+        recipe.family,
+        recipe.level,
+        recipe.reviewStatus,
+        recipe.owner,
+        ...recipe.searchTerms,
+      ]
         .join(' ')
         .toLocaleLowerCase()
         .includes(query.toLocaleLowerCase())
   );
   return (
     <WorkbenchPage>
-      <WorkbenchIntro eyebrow="Composition recipes" title="Build from Navet's working parts">
+      <WorkbenchIntro
+        eyebrow="Composition recipes"
+        title="Choose a building block or a product composition"
+      >
         <p>
-          Discover a composition, inspect its current contracts, then review the executable example
-          and reference before editing the template. Features own routing, capabilities, validation
-          and persistence.
+          Building blocks demonstrate reusable controls and layouts. Product compositions reuse
+          existing feature UI. Check review status, inspect current contracts, then review the
+          executable example and reference before editing the template. Features own routing,
+          capabilities, validation and persistence.
         </p>
       </WorkbenchIntro>
       <WorkbenchPanel title="Find a composition">
+        <div className="mb-4 flex flex-wrap gap-4">
+          <label>
+            Catalog level
+            <select
+              className="ml-2 rounded border bg-transparent p-2"
+              value={level}
+              onChange={(event) => setLevel(event.target.value)}
+            >
+              <option value="all">All levels</option>
+              <option value="product">Product compositions</option>
+              <option value="building-block">Building blocks</option>
+            </select>
+          </label>
+          <label>
+            Review status
+            <select
+              className="ml-2 rounded border bg-transparent p-2"
+              value={reviewStatus}
+              onChange={(event) => setReviewStatus(event.target.value)}
+            >
+              <option value="all">All statuses</option>
+              <option value="approved">Maintainer approved</option>
+              <option value="pending">Awaiting design review</option>
+              <option value="draft">Draft building blocks</option>
+              <option value="deprecated">Deprecated</option>
+            </select>
+          </label>
+        </div>
         <label htmlFor={id}>Search by intended behavior</label>
         <Input
           id={id}
@@ -132,54 +185,80 @@ function RecipesStory() {
           </p>
         )}
       </WorkbenchPanel>
-      <section className="grid gap-4 md:grid-cols-2">
-        {visible.map((recipe) => {
-          const item = registry?.find((item) => item.name === recipe.name);
-          return (
-            <WorkbenchPanel key={recipe.name} title={recipe.title} summary={recipe.when}>
-              <p className="mb-3 text-sm">{recipe.description}</p>
-              <p className="text-sm">Required context: {recipe.context.join('. ')}.</p>
-              <p className="mt-2 text-sm">Supported states: {recipe.states.join(', ')}.</p>
-              {item ? (
-                <>
-                  <div className="my-3 flex flex-wrap gap-3 text-sm underline">
-                    <a href={`./${item.meta.story.href}`} target="_top">
-                      Executable example
-                    </a>
-                    <a href={`./${item.meta.reference.href}`} target="_top">
-                      Component reference
-                    </a>
-                    <a href={`/r/${recipe.name}.json`}>Registry payload</a>
-                  </div>
-                  <details>
-                    <summary className="cursor-pointer">
-                      Editable template: {recipe.templateExport}
-                    </summary>
-                    <WorkbenchCode>{item.files[0].content}</WorkbenchCode>
-                  </details>
-                  <details className="mt-3">
-                    <summary className="cursor-pointer">Current component contracts</summary>
-                    <WorkbenchCode>{JSON.stringify(item.meta.contracts, null, 2)}</WorkbenchCode>
-                  </details>
-                  <p className="mt-2 break-all text-xs">
-                    Composition fingerprint: {item.meta.compositionFingerprint}
-                  </p>
-                </>
-              ) : null}
-              <details className="mt-3">
-                <summary className="cursor-pointer">Review criteria</summary>
-                <ul className="mt-3 space-y-2 text-sm">
-                  {recipe.review.map((check) => (
-                    <li key={check}>
-                      <WorkbenchInset className="px-3 py-2">{check}</WorkbenchInset>
-                    </li>
-                  ))}
-                </ul>
-              </details>
-            </WorkbenchPanel>
-          );
-        })}
-      </section>
+      {(['product', 'building-block'] as const).map((catalogLevel) => (
+        <section key={catalogLevel} className="space-y-4">
+          <h2 className="text-xl font-semibold">
+            {catalogLevel === 'product' ? 'Product compositions' : 'Building blocks'}
+          </h2>
+          <p>
+            {catalogLevel === 'product'
+              ? 'Existing Navet feature UI. Pending items require maintainer design review before recommendation.'
+              : 'Draft usage patterns. Establish the consuming feature reference before adapting these templates.'}
+          </p>
+          <div className="grid gap-4 md:grid-cols-2">
+            {visible
+              .filter((recipe) => recipe.level === catalogLevel)
+              .map((recipe) => {
+                const item = registry?.find((item) => item.name === recipe.name);
+                return (
+                  <WorkbenchPanel key={recipe.name} title={recipe.title} summary={recipe.when}>
+                    <p className="mb-3 text-sm">{recipe.description}</p>
+                    <p className="mb-2 text-sm">
+                      Family: {recipe.family} · Review:{' '}
+                      {recipe.reviewStatus === 'pending'
+                        ? 'Awaiting design review'
+                        : recipe.reviewStatus}{' '}
+                      · Owner: {recipe.owner}
+                    </p>
+                    <p className="text-sm">Required context: {recipe.context.join('. ')}.</p>
+                    <p className="mt-2 text-sm">Supported states: {recipe.states.join(', ')}.</p>
+                    {item ? (
+                      <>
+                        <div className="my-3 flex flex-wrap gap-3 text-sm underline">
+                          <a href={`./${item.meta.story.href}`} target="_top">
+                            Executable example
+                          </a>
+                          <a href={`./${item.meta.reference.href}`} target="_top">
+                            {recipe.level === 'product'
+                              ? 'Existing feature reference'
+                              : 'Usage reference'}
+                          </a>
+                          <a href={`/r/${recipe.name}.json`}>Registry payload</a>
+                        </div>
+                        <details>
+                          <summary className="cursor-pointer">
+                            Editable template: {recipe.templateExport}
+                          </summary>
+                          <WorkbenchCode>{item.files[0].content}</WorkbenchCode>
+                        </details>
+                        <details className="mt-3">
+                          <summary className="cursor-pointer">Current component contracts</summary>
+                          <WorkbenchCode>
+                            {JSON.stringify(item.meta.contracts, null, 2)}
+                          </WorkbenchCode>
+                        </details>
+                        <p className="mt-2 break-all text-xs">
+                          Composition fingerprint: {item.meta.compositionFingerprint}
+                        </p>
+                      </>
+                    ) : null}
+                    <details className="mt-3">
+                      <summary className="cursor-pointer">Review criteria</summary>
+                      <ul className="mt-3 space-y-2 text-sm">
+                        {recipe.review.map((check) => (
+                          <li key={check}>
+                            <WorkbenchInset className="px-3 py-2">{check}</WorkbenchInset>
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
+                  </WorkbenchPanel>
+                );
+              })}
+          </div>
+        </section>
+      ))}
+      {visible.length === 0 ? <p>No recipes match these filters.</p> : null}
       <WorkbenchPanel title="Rendered review">
         Structural checks establish concrete source contracts. Review hierarchy, all four themes,
         responsive usability, long labels and reduced motion in the executable examples. Hero
@@ -208,7 +287,25 @@ export const Recipes: Story = {
     await userEvent.clear(input);
     await userEvent.click(canvas.getByRole('button', { name: 'feedback' }));
     await expect(canvas.getByRole('status')).toHaveTextContent('1 compositions');
-    await expect(canvas.getByRole('heading', { name: 'Status feedback' })).toBeVisible();
+    await expect(canvas.getByRole('heading', { name: 'Inline operation feedback' })).toBeVisible();
     await userEvent.click(canvas.getByRole('button', { name: 'all' }));
+    await userEvent.selectOptions(
+      canvas.getByRole('combobox', { name: 'Catalog level' }),
+      'product'
+    );
+    await expect(canvas.getByRole('status')).toHaveTextContent('2 compositions');
+    await expect(canvas.getByRole('heading', { name: 'Switch card' })).toBeVisible();
+    await expect(canvas.getByRole('heading', { name: 'Weather card configuration' })).toBeVisible();
+    await expect(canvas.getAllByRole('link', { name: 'Existing feature reference' })).toHaveLength(
+      2
+    );
+    await userEvent.selectOptions(
+      canvas.getByRole('combobox', { name: 'Review status' }),
+      'approved'
+    );
+    await expect(canvas.getByRole('status')).toHaveTextContent('0 compositions');
+    await expect(canvas.getByText('No recipes match these filters.')).toBeVisible();
+    await userEvent.selectOptions(canvas.getByRole('combobox', { name: 'Review status' }), 'all');
+    await userEvent.selectOptions(canvas.getByRole('combobox', { name: 'Catalog level' }), 'all');
   },
 };

@@ -54,7 +54,7 @@ export function inspectTemplate(project, source, recipe, contracts, installed) {
     const module = statement.moduleSpecifier.text;
     if (!allowed.has(module)) throw new Error(`${recipe.name}: unexpected template import ${module}`);
     if (['react', 'lucide-react'].includes(module) && !installed.has(module)) throw new Error(`${recipe.name}: missing installed dependency ${module}`);
-    const ui = module.startsWith('@navet/app/ui-kit/');
+    const ui = contracts.some((entry) => entry.importFrom === module);
     if (!statement.importClause) throw new Error(`${recipe.name}: side effect import ${module}`);
     const clause = statement.importClause;
     if (ui && clause.name) throw new Error(`${recipe.name}: default UI import is not a named contract`);

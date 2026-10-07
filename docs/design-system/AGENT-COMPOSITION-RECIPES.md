@@ -1,13 +1,15 @@
 # Agent composition recipes
 
-Choose the matching composition before writing UI. The [recipe registry](REGISTRY.md) supplies typed
-starting templates for five of these compositions. Inspect its current source contract with
-`pnpm agent:components <name>` and open the linked story. These are authoring recipes for Navet's
-React app; the shared hooks and theme context make them app-coupled. An export or passing story
-does not establish a stable public API or complete accessibility coverage.
+Discover by family and intended behavior through shadcn MCP or **Concepts / UI Kit Recipes**.
+Check catalog level, owner and review status. Building blocks explain controls and layout; product
+compositions reuse a specific feature. Inspect current contracts, context and states, then review
+the executable example and same-family reference. Only maintainer-approved product compositions
+establish accepted design guidance. See the [registry workflow](REGISTRY.md) for authoring,
+review status, local commands and matching hosted evidence.
 
-
-Discover a composition by family and intended behavior through shadcn MCP or **Concepts / UI Kit Recipes** before writing JSX. Inspect its current contract/context/state metadata and review both the executable example and exact reference link. See [registry workflow](REGISTRY.md) for the 16 templates, local commands and matching hosted evidence. When no recipe fits, retain the reference-first sequence below and record the coverage gap. Standard section cards and inline feedback are covered; hero summaries, attention summaries and richer device controls require their specific product references.
+When no accepted recipe fits, follow the reference-first sequence below and record the coverage
+gap. Existing feature UI takes precedence over a generic building-block example. Features own
+capabilities, provider routing, validation and persistence; templates use Navet's app authoring seams.
 
 ## Select a composition
 
@@ -37,8 +39,8 @@ focus handler takes precedence, and a downstream dialog retains focus.
 Choose one `BaseCardDialog` union variant. The card variant takes `tabs`; the modal, sheet and
 fullscreen variants have different contracts. The overflow menu is owned by the card dialog.
 
-Use the [controls-first-dialog template](../../packages/app/src/ui-kit/registry/controls-first-dialog.tsx)
-and inspect its executable story under **Concepts / Registry Recipes**.
+Use the [controls-first-dialog template](../../packages/app/src/composition-recipes/overlays/controls-first-dialog/template.tsx)
+and inspect its executable story under **Concepts / Composition recipes / Building blocks**.
 
 Connect entity controls to Navet-owned state and commands routed to their owning provider. Use the
 existing device editor for persisted name/room changes; this skeleton only composes supplied
@@ -90,8 +92,8 @@ use its callback contract deliberately and route entities to their owning provid
 
 ## Sheet header and body
 
-Use the [detail-sheet template](../../packages/app/src/ui-kit/registry/detail-sheet.tsx)
-and inspect its executable story under **Concepts / Registry Recipes**.
+Use the [detail-sheet template](../../packages/app/src/composition-recipes/overlays/detail-sheet/template.tsx)
+and inspect its executable story under **Concepts / Composition recipes / Building blocks**.
 
 Attach the template's `returnFocusRef` to its launch button. The localized close label reaches both
 the shell and its direct-child header. The header owns its chrome spacing. Apply body spacing to the
@@ -105,8 +107,8 @@ both behaviors in a rendered preview.
 use `Input`'s `invalid` prop, and associate descriptive text explicitly. A `required` indicator on
 the wrapper does not set the control's native requirement.
 
-Use the [settings-field template](../../packages/app/src/ui-kit/registry/settings-field.tsx)
-and inspect its executable story under **Concepts / Registry Recipes**.
+Use the [settings-field template](../../packages/app/src/composition-recipes/forms/settings-field/template.tsx)
+and inspect its executable story under **Concepts / Composition recipes / Building blocks**.
 
 `useId` gives each field instance its own label and message associations. The caller owns validation,
 save, cancellation and persistence; pair this field with the existing settings workflow rather than
@@ -119,8 +121,8 @@ configuration workflow. Supply both `actionLabel` and `onAction` for an action; 
 there is no supported destination. Import icons explicitly. Storybook test helpers belong only
 in test stories, while a product caller supplies its own handler.
 
-Use the [empty-card template](../../packages/app/src/ui-kit/registry/empty-card.tsx)
-and inspect its executable story under **Concepts / Registry Recipes**.
+Use the [empty-card template](../../packages/app/src/composition-recipes/card/empty-card/template.tsx)
+and inspect its executable story under **Concepts / Composition recipes / Building blocks**.
 
 Review the existing small and large/no-action stories before adapting the pattern to another
 card. Template stories exercise composition and API compatibility; provider configuration, saved choices
@@ -129,11 +131,11 @@ translation workflow.
 
 ## Compact device card
 
-Use the [compact-device-card template](../../packages/app/src/ui-kit/registry/compact-device-card.tsx)
-for a simple small card with one state label and one action. The caller supplies normalized state,
-translated labels and a supported action, and owns dimensions and command routing. An unavailable
-label disables the supplied action; omitting the action represents an unsupported capability.
-Inspect the existing device family before adapting this composition to richer controls.
+Use the [Switch card adapter](../../packages/app/src/composition-recipes/devices/compact-device-card/template.tsx)
+for the existing Navet switch family. Review **Cards / Entity / Switch** at the same size and state.
+The feature controller retains identity, power controls, metrics, capabilities, commands and persisted
+appearance. Other device families need their own existing feature reference. This product recipe
+awaits maintainer design acceptance; it is not a generic template for sensors, lights or other devices.
 
 ## Evidence for a UI approval package
 

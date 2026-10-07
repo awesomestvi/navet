@@ -1,7 +1,7 @@
 [
   {
     "name": "controls-first-dialog",
-    "title": "Controls-first device dialog",
+    "title": "Device dialog with secondary settings",
     "description": "Compose everyday device controls and secondary configuration with BaseCardDialog and its More actions navigation.",
     "when": "A device needs everyday controls and secondary settings in one focused dialog.",
     "context": [
@@ -18,16 +18,21 @@
       "Long titles, phone/tablet/desktop and all four themes"
     ],
     "storyExport": "ControlsFirstDialog",
-    "reference": "packages/app/src/components/patterns/card-dialog-overflow-menu.stories.tsx",
-    "family": "dialog",
+    "reference": "packages/app/src/features/lighting/components/switch-card-dialog.stories.tsx",
+    "family": "overlays",
     "searchTerms": ["device controls", "more actions", "progressive disclosure"],
     "states": ["closed", "controls", "settings"],
-    "referenceExport": "ControlsFirst",
-    "templateExport": "ControlsFirstDialog"
+    "referenceExport": "Default",
+    "templateExport": "ControlsFirstDialog",
+    "level": "building-block",
+    "reviewStatus": "draft",
+    "owner": "Navet maintainers",
+    "template": "packages/app/src/composition-recipes/overlays/controls-first-dialog/template.tsx",
+    "storySource": "packages/app/src/composition-recipes/overlays/controls-first-dialog/recipe.stories.tsx"
   },
   {
     "name": "detail-sheet",
-    "title": "Detail sheet with shared header",
+    "title": "Detail sheet",
     "description": "Compose a mobile detail sheet with a direct-child SheetSurfaceHeader, localized dismissal and separately padded body.",
     "when": "Focused detail or commands need a mobile sheet; enable responsive only when desktop should use the same surface.",
     "context": [
@@ -44,17 +49,22 @@
       "Long body scroll and mobile keyboard",
       "Mobile-only and responsive desktop behavior in all four themes"
     ],
-    "storyExport": "DetailSheet",
+    "storyExport": "PhoneOnly",
     "reference": "packages/app/src/components/primitives/sheet-surface.stories.tsx",
-    "family": "sheet",
+    "family": "overlays",
     "searchTerms": ["mobile detail", "dismiss", "focus return"],
     "states": ["closed", "mobile", "responsive desktop"],
     "referenceExport": "Default",
-    "templateExport": "DetailSheet"
+    "templateExport": "DetailSheet",
+    "level": "building-block",
+    "reviewStatus": "draft",
+    "owner": "Navet maintainers",
+    "template": "packages/app/src/composition-recipes/overlays/detail-sheet/template.tsx",
+    "storySource": "packages/app/src/composition-recipes/overlays/detail-sheet/recipe.stories.tsx"
   },
   {
     "name": "settings-field",
-    "title": "Settings field with validation",
+    "title": "Text field with validation",
     "description": "Compose FieldBlock and Input with unique label and message associations, visible validation and native required/disabled state.",
     "when": "An existing settings workflow needs a labeled text field with validation.",
     "context": [
@@ -72,11 +82,16 @@
     ],
     "storyExport": "SettingsField",
     "reference": "packages/app/src/components/patterns/field-block.stories.tsx",
-    "family": "settings",
+    "family": "forms",
     "searchTerms": ["text input", "validation", "label"],
     "states": ["valid", "invalid", "required", "disabled"],
     "referenceExport": "Default",
-    "templateExport": "SettingsField"
+    "templateExport": "SettingsField",
+    "level": "building-block",
+    "reviewStatus": "draft",
+    "owner": "Navet maintainers",
+    "template": "packages/app/src/composition-recipes/forms/settings-field/template.tsx",
+    "storySource": "packages/app/src/composition-recipes/forms/settings-field/recipe.stories.tsx"
   },
   {
     "name": "empty-card",
@@ -103,41 +118,49 @@
     "searchTerms": ["unconfigured", "no matches", "optional action"],
     "states": ["small", "medium", "large", "with action", "without action"],
     "referenceExport": "Playground",
-    "templateExport": "EmptyCard"
+    "templateExport": "EmptyCard",
+    "level": "building-block",
+    "reviewStatus": "draft",
+    "owner": "Navet maintainers",
+    "template": "packages/app/src/composition-recipes/card/empty-card/template.tsx",
+    "storySource": "packages/app/src/composition-recipes/card/empty-card/recipe.stories.tsx"
   },
   {
     "name": "compact-device-card",
-    "title": "Compact device-card composition",
-    "description": "Compose a small BaseCard with identity, normalized state and one capability-gated action using Navet's shared controls.",
-    "when": "A simple device can be understood through one state label and one household action; richer devices use their existing family recipe.",
+    "title": "Switch card",
+    "description": "Use the existing Navet switch card, including its identity, power control, metrics and feature controller.",
+    "when": "Compose a switch card in Navet. Other device families require their own feature reference.",
     "context": [
-      "Navet theme context",
-      "Caller owns card dimensions and translated labels",
-      "Caller supplies normalized state and only supported actions",
-      "Feature routes commands to the entity's owning provider"
+      "Navet theme, i18n, provider runtime and settings-store context",
+      "Caller supplies provider-scoped entity identity and household name",
+      "Existing switch controller owns capabilities, provider routing and persisted appearance"
     ],
-    "components": ["BaseCard", "BodyText", "Button"],
+    "components": ["SwitchCard"],
     "review": [
-      "Identity, state, exception, then primary action",
-      "Active, inactive, unavailable and unsupported action",
-      "One primary control path",
-      "Long names, translated copy and touch target",
-      "All four themes and keyboard action"
+      "Compare against Cards/Entity/Switch at the same size and state",
+      "Power control and dialog remain feature-owned",
+      "Tiny, extra-small, small, long names and all four themes",
+      "Keyboard operation, unavailable provider and capability checks in the existing feature"
     ],
-    "storyExport": "CompactDeviceCard",
-    "reference": "packages/app/src/components/primitives/base-card.stories.tsx",
-    "family": "card",
+    "storyExport": "CompactDeviceCardExample",
+    "reference": "packages/app/src/features/lighting/components/entity-card-switch.stories.tsx",
+    "family": "devices",
     "searchTerms": ["normalized device", "capability", "unavailable"],
-    "states": ["inactive", "active", "unavailable", "unsupported action"],
-    "referenceExport": "Default",
-    "templateExport": "CompactDeviceCard"
+    "states": ["active", "inactive", "tiny", "extra-small", "small", "edit mode"],
+    "referenceExport": "Small",
+    "templateExport": "CompactDeviceCard",
+    "level": "product",
+    "reviewStatus": "pending",
+    "owner": "Navet maintainers",
+    "template": "packages/app/src/composition-recipes/devices/compact-device-card/template.tsx",
+    "storySource": "packages/app/src/composition-recipes/devices/compact-device-card/recipe.stories.tsx"
   },
   {
     "name": "settings-dialog",
-    "title": "Settings dialog",
-    "family": "dialog",
-    "description": "Edit feature settings in a canonical responsive modal with explicit save, cancel and focus return.",
-    "when": "Edit feature settings in a canonical responsive modal with explicit save, cancel and focus return.",
+    "title": "Form modal with save and cancel",
+    "family": "forms",
+    "description": "Edit feature settings in a form modal building block with explicit save, cancel and focus return.",
+    "when": "A feature explicitly needs a Save/Cancel form. Establish its feature-specific save policy before adapting this draft building block.",
     "searchTerms": ["save", "cancel", "unsaved edits", "validation"],
     "states": ["closed", "clean", "dirty guarded", "invalid", "pending", "save failure", "saved"],
     "components": ["BaseCardDialog", "Button", "CardDialogFooter", "CardDialogHeader"],
@@ -155,12 +178,17 @@
       "Every close request goes through the feature policy; pending/dirty requests may be refused",
       "Validation and failed save preserve edits",
       "Keyboard focus containment and return after accepted closure"
-    ]
+    ],
+    "level": "building-block",
+    "reviewStatus": "draft",
+    "owner": "Navet maintainers",
+    "template": "packages/app/src/composition-recipes/forms/settings-dialog/template.tsx",
+    "storySource": "packages/app/src/composition-recipes/forms/settings-dialog/recipe.stories.tsx"
   },
   {
     "name": "settings-section",
-    "title": "Settings section",
-    "family": "settings",
+    "title": "Text field group",
+    "family": "forms",
     "description": "Group labeled fields with caller-owned values and associated validation.",
     "when": "Group labeled fields with caller-owned values and associated validation.",
     "searchTerms": ["form section", "fields", "validation"],
@@ -179,7 +207,12 @@
       "Labels activate the correct fields",
       "Unique IDs and error descriptions",
       "Disabled and required fields; long labels"
-    ]
+    ],
+    "level": "building-block",
+    "reviewStatus": "draft",
+    "owner": "Navet maintainers",
+    "template": "packages/app/src/composition-recipes/forms/settings-section/template.tsx",
+    "storySource": "packages/app/src/composition-recipes/forms/settings-section/recipe.stories.tsx"
   },
   {
     "name": "searchable-selection",
@@ -203,7 +236,12 @@
       "Arrow keys skip unavailable options; Enter selects; Escape dismisses",
       "Pointer selection retains input focus; blur dismisses",
       "No results, disabled input, long labels and all themes"
-    ]
+    ],
+    "level": "building-block",
+    "reviewStatus": "draft",
+    "owner": "Navet maintainers",
+    "template": "packages/app/src/composition-recipes/selection/searchable-selection/template.tsx",
+    "storySource": "packages/app/src/composition-recipes/selection/searchable-selection/recipe.stories.tsx"
   },
   {
     "name": "checkbox-list",
@@ -227,11 +265,16 @@
       "Label and Space toggle one item",
       "Unavailable options cannot change",
       "Empty and long-label states; semantic list items"
-    ]
+    ],
+    "level": "building-block",
+    "reviewStatus": "draft",
+    "owner": "Navet maintainers",
+    "template": "packages/app/src/composition-recipes/selection/checkbox-list/template.tsx",
+    "storySource": "packages/app/src/composition-recipes/selection/checkbox-list/recipe.stories.tsx"
   },
   {
     "name": "dashboard-section",
-    "title": "Dashboard section",
+    "title": "Section container",
     "family": "dashboard",
     "description": "Organize a standard SectionCard with populated, empty and unavailable content.",
     "when": "Organize a standard SectionCard with populated, empty and unavailable content.",
@@ -251,11 +294,16 @@
       "No additional page shell or hero",
       "Clear section hierarchy across widths",
       "Unavailable action disabled; omitted actions stay absent"
-    ]
+    ],
+    "level": "building-block",
+    "reviewStatus": "draft",
+    "owner": "Navet maintainers",
+    "template": "packages/app/src/composition-recipes/dashboard/dashboard-section/template.tsx",
+    "storySource": "packages/app/src/composition-recipes/dashboard/dashboard-section/recipe.stories.tsx"
   },
   {
     "name": "dashboard-grouping",
-    "title": "Dashboard grouping",
+    "title": "Grouping navigation",
     "family": "dashboard",
     "description": "Connect grouping modes and item navigation to labeled content panels.",
     "when": "Connect grouping modes and item navigation to labeled content panels.",
@@ -275,11 +323,16 @@
       "Grouping menu returns focus",
       "Keyboard arrows/Home/End navigate corresponding panels",
       "Horizontal phone overflow and long group names"
-    ]
+    ],
+    "level": "building-block",
+    "reviewStatus": "draft",
+    "owner": "Navet maintainers",
+    "template": "packages/app/src/composition-recipes/dashboard/dashboard-grouping/template.tsx",
+    "storySource": "packages/app/src/composition-recipes/dashboard/dashboard-grouping/recipe.stories.tsx"
   },
   {
     "name": "metric-action-row",
-    "title": "Metric and action row",
+    "title": "Metric and action layout",
     "family": "card",
     "description": "Pair a normalized metric with a capability-gated household action inside an existing card.",
     "when": "Pair a normalized metric with a capability-gated household action inside an existing card.",
@@ -299,11 +352,16 @@
       "Metric reads before the primary action",
       "All supported card sizes and long labels",
       "Disabled or absent unsupported action"
-    ]
+    ],
+    "level": "building-block",
+    "reviewStatus": "draft",
+    "owner": "Navet maintainers",
+    "template": "packages/app/src/composition-recipes/card/metric-action-row/template.tsx",
+    "storySource": "packages/app/src/composition-recipes/card/metric-action-row/recipe.stories.tsx"
   },
   {
     "name": "status-feedback",
-    "title": "Status feedback",
+    "title": "Inline operation feedback",
     "family": "feedback",
     "description": "Present inline operation progress, success, warning and failure through MessageBar.",
     "when": "Present inline operation progress, success, warning and failure through MessageBar.",
@@ -323,7 +381,12 @@
       "Status is conveyed by text and live region",
       "Errors announce as alerts",
       "All themes, long messages and reduced motion"
-    ]
+    ],
+    "level": "building-block",
+    "reviewStatus": "draft",
+    "owner": "Navet maintainers",
+    "template": "packages/app/src/composition-recipes/feedback/status-feedback/template.tsx",
+    "storySource": "packages/app/src/composition-recipes/feedback/status-feedback/recipe.stories.tsx"
   },
   {
     "name": "tabs",
@@ -347,11 +410,16 @@
       "Arrow navigation skips disabled tabs",
       "Hidden panels leave the focus order",
       "Long labels and narrow layouts"
-    ]
+    ],
+    "level": "building-block",
+    "reviewStatus": "draft",
+    "owner": "Navet maintainers",
+    "template": "packages/app/src/composition-recipes/navigation/tabs/template.tsx",
+    "storySource": "packages/app/src/composition-recipes/navigation/tabs/recipe.stories.tsx"
   },
   {
     "name": "navigation-workspace",
-    "title": "Navigation workspace",
+    "title": "Sidebar workspace",
     "family": "navigation",
     "description": "Compose the named NavigationWorkspace members into a responsive selection workspace.",
     "when": "Compose the named NavigationWorkspace members into a responsive selection workspace.",
@@ -387,11 +455,16 @@
       "Keyboard activates enabled destinations",
       "Selected navigation identifies its content",
       "Phone stacks navigation/content; desktop splits without overflow"
-    ]
+    ],
+    "level": "building-block",
+    "reviewStatus": "draft",
+    "owner": "Navet maintainers",
+    "template": "packages/app/src/composition-recipes/navigation/navigation-workspace/template.tsx",
+    "storySource": "packages/app/src/composition-recipes/navigation/navigation-workspace/recipe.stories.tsx"
   },
   {
     "name": "sortable-table",
-    "title": "Sortable table",
+    "title": "Sortable table building block",
     "family": "data",
     "description": "Connect semantic table headers to caller-sorted normalized rows.",
     "when": "Connect semantic table headers to caller-sorted normalized rows.",
@@ -411,6 +484,42 @@
       "Keyboard sort updates rows and aria-sort",
       "Unavailable columns cannot sort",
       "Empty rows and long content; phone horizontal scroll"
+    ],
+    "level": "building-block",
+    "reviewStatus": "draft",
+    "owner": "Navet maintainers",
+    "template": "packages/app/src/composition-recipes/data/sortable-table/template.tsx",
+    "storySource": "packages/app/src/composition-recipes/data/sortable-table/recipe.stories.tsx"
+  },
+  {
+    "name": "weather-settings",
+    "title": "Weather card configuration",
+    "description": "Compose the existing Weather dialog with forecast selection, bounded metric choices and appearance controls.",
+    "when": "Configure a Navet Weather card. Features keep ownership of available metrics and persistence.",
+    "family": "weather",
+    "level": "product",
+    "reviewStatus": "pending",
+    "owner": "Navet maintainers",
+    "searchTerms": ["forecast", "weather settings", "metric selection"],
+    "states": ["closed", "hourly", "weekly", "one metric", "five metrics", "appearance"],
+    "components": ["WeatherSettingsDialog"],
+    "templateExport": "WeatherSettings",
+    "template": "packages/app/src/composition-recipes/weather/weather-settings/template.tsx",
+    "storySource": "packages/app/src/composition-recipes/weather/weather-settings/recipe.stories.tsx",
+    "storyExport": "SelectableControls",
+    "reference": "packages/app/src/features/weather/components/weather-card/weather-settings-dialog.stories.tsx",
+    "referenceExport": "SelectableControls",
+    "context": [
+      "Navet theme and i18n context",
+      "Caller supplies entity identity, translated household title, available metrics and controlled callbacks",
+      "Connect returnFocusRef to the launcher; feature owns persisted forecast and metric preferences"
+    ],
+    "review": [
+      "Match Cards/Dialogs/Weather using identical state and theme",
+      "Forecast remains mutually exclusive",
+      "Metric selection permits one to five available metrics",
+      "Keyboard dismissal and focus return; closing and reopening preserves caller state",
+      "Phone/tablet/desktop, long title and all four themes"
     ]
   }
 ]

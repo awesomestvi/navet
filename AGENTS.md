@@ -102,7 +102,7 @@ See [request workflows](docs/engineering/request-workflows.md) for setup and ope
 
 - `@navet/core` must not import React, provider SDKs, API clients, or provider-specific code.
 - `@navet/ui` must not import provider-specific code.
-- Before composing UI, discover a composition recipe through shadcn MCP or Storybook, inspect its current source-derived contracts, and review its executable reference story. For unsupported compositions, use the reference-first workflow in `docs/design-system/AGENT-COMPOSITION-RECIPES.md` and record the coverage gap. Structural checks do not replace rendered acceptance.
+- Before composing UI, discover a composition recipe through shadcn MCP or Storybook, check its catalog level, owner and review status, inspect its current source-derived contracts, and review its executable reference story. For unsupported compositions, use the reference-first workflow in `docs/design-system/AGENT-COMPOSITION-RECIPES.md` and record the coverage gap. Only maintainer-approved product compositions establish accepted design guidance. Draft building blocks and pending feature examples require same-family rendered review. Structural checks do not replace rendered acceptance.
 - Shared UI uses normalized Navet state and provider-neutral commands. Do not add raw
   `HassEntity`, Home Assistant service payloads, or backend conditionals to shared interfaces.
 - Provider auth, transport, mapping, realtime updates, and command translation belong in provider

@@ -8,24 +8,25 @@ const roots = [];
 afterEach(() => roots.splice(0).forEach((root) => rmSync(root, { recursive: true, force: true })));
 function fixture() {
   const root = mkdtempSync(path.join(tmpdir(), 'navet-registry-')); roots.push(root);
-  const directory = path.join(root, 'packages/app/src/ui-kit/registry'); mkdirSync(directory, { recursive: true });
+  const directory = path.join(root, 'packages/app/src/composition-recipes'); mkdirSync(directory, { recursive: true });
   writeFileSync(path.join(root, 'package.json'), JSON.stringify({ dependencies: { react: '19.2.0' } }));
   writeFileSync(path.join(root, 'tsconfig.json'), JSON.stringify({ compilerOptions: { moduleResolution: 'bundler', module: 'esnext', paths: { '@navet/app/*': ['./packages/app/src/*'] } } }));
+  mkdirSync(path.join(root, 'packages/app/src/ui-kit'), { recursive: true });
   writeFileSync(path.join(root, 'packages/app/src/ui-kit/primitives.ts'), 'export const Button = () => null; export const Input = () => null;');
   writeFileSync(path.join(directory, 'example.tsx'), "import { Button } from '@navet/app/ui-kit/primitives'; export const Example = Button;");
   writeFileSync(path.join(directory, 'registry.stories.tsx'), 'export const Example = {};');
   writeFileSync(path.join(directory, 'reference.stories.tsx'), 'export const Default = {};');
-  const recipe = { name: 'example', title: 'Example', description: 'A compact action', when: 'One action', family: 'action', searchTerms: ['keyboard action'], states: ['enabled', 'disabled'], context: ['Theme context'], components: ['Button'], review: ['Keyboard action'], templateExport: 'Example', storyExport: 'Example', reference: 'packages/app/src/ui-kit/registry/reference.stories.tsx', referenceExport: 'Default' };
+  const recipe = { name: 'example', title: 'Example', description: 'A compact action', when: 'One action', level: 'building-block', reviewStatus: 'draft', owner: 'Navet maintainers', template: 'packages/app/src/composition-recipes/example.tsx', storySource: 'packages/app/src/composition-recipes/registry.stories.tsx', family: 'action', searchTerms: ['keyboard action'], states: ['enabled', 'disabled'], context: ['Theme context'], components: ['Button'], review: ['Keyboard action'], templateExport: 'Example', storyExport: 'Example', reference: 'packages/app/src/composition-recipes/reference.stories.tsx', referenceExport: 'Default' };
   const manifest = path.join(directory, 'recipes.json'); writeFileSync(manifest, JSON.stringify([recipe]));
   const catalog = { sourceFingerprint: 'current-source', entries: [{ name: 'Button', kind: 'value', importFrom: '@navet/app/ui-kit/primitives', source: 'button.tsx', line: 12, parameters: 'ButtonProps', properties: [{ name: 'disabled', type: 'boolean', optional: true }], variants: [] }] };
-  const index = { v: 5, entries: { recipe: { id: 'actual-custom-recipe-id', type: 'story', importPath: './packages/app/src/ui-kit/registry/registry.stories.tsx', exportName: 'Example' }, reference: { id: 'actual-custom-reference-id', type: 'story', importPath: `./${recipe.reference}`, exportName: 'Default' } } };
+  const index = { v: 5, entries: { recipe: { id: 'actual-custom-recipe-id', type: 'story', importPath: './packages/app/src/composition-recipes/registry.stories.tsx', exportName: 'Example' }, reference: { id: 'actual-custom-reference-id', type: 'story', importPath: `./${recipe.reference}`, exportName: 'Default' } } };
   const options = { index, revision: { commit: 'a'.repeat(40), dirty: false } };
   const build = () => buildRegistry(root, catalog, options);
   return { root, directory, recipe, manifest, catalog, index, options, build };
 }
 it('distributes exact templates, current contracts, resolved Storybook IDs and no dependencies/themes', () => {
   const { root, directory, catalog, options, build } = fixture(); const item = build().items[0];
-  expect(item.files).toEqual([{ path: 'packages/app/src/ui-kit/registry/example.tsx', target: '@components/recipes/example.tsx', type: 'registry:file', content: readFileSync(path.join(directory, 'example.tsx'), 'utf8') }]);
+  expect(item.files).toEqual([{ path: 'packages/app/src/composition-recipes/example.tsx', target: '@components/recipes/example.tsx', type: 'registry:file', content: readFileSync(path.join(directory, 'example.tsx'), 'utf8') }]);
   expect(item.meta.contracts[0]).toMatchObject({ name: 'Button', line: 12 });
   expect(item.meta.sourceFingerprint).toBe('current-source');
   expect(item.meta.story.id).toBe('actual-custom-recipe-id');
@@ -72,7 +73,7 @@ it('rejects unresolvable imported symbols and unused declared components', () =>
 it.each([null, {}, [], [{ name: '../escape' }]])('rejects invalid manifest shape: %j', (manifest) => {
   const f = fixture(); writeFileSync(f.manifest, JSON.stringify(manifest)); expect(f.build).toThrow();
 });
-it.each(['family', 'searchTerms', 'states', 'templateExport', 'referenceExport'])('requires %s metadata', (key) => {
+it.each(['family', 'searchTerms', 'states', 'templateExport', 'referenceExport', 'template', 'storySource', 'owner', 'level', 'reviewStatus'])('requires %s metadata', (key) => {
   const f = fixture(); delete f.recipe[key]; writeFileSync(f.manifest, JSON.stringify([f.recipe])); expect(f.build).toThrow(key);
 });
 it('rejects duplicate names and unmanifested templates; atomically removes stale payloads', () => {
@@ -93,7 +94,7 @@ it('requires the actual indexed export and rejects ambiguous index matches', () 
   expect(() => resolveStory({ entries: {} }, 'missing', 'Default')).toThrow('indexed story');
 });
 it('resolves the build index relative to the Storybook workspace', () => {
-  const f = fixture(); f.index.entries.recipe.importPath = '../../packages/app/src/ui-kit/registry/registry.stories.tsx';
+  const f = fixture(); f.index.entries.recipe.importPath = '../../packages/app/src/composition-recipes/registry.stories.tsx';
   expect(f.build().items[0].meta.story.id).toBe('actual-custom-recipe-id');
 });
 it('validates payloads with official shadcn schemas and forbids theme/dependency mutation', () => {
@@ -121,4 +122,35 @@ it('serves safe endpoints and refuses stale payloads after a failed rebuild', as
     state.error = 'Build failed'; expect((await fetch(`${base}/r/example.json`)).status).toBe(503);
     state.error = null; expect((await fetch(`${base}/r/example.json`)).status).toBe(200);
   } finally { await new Promise((resolve) => server.close(resolve)); }
+});
+
+it('publishes catalog level, review status and ownership for agent discovery', () => {
+  const f = fixture(); const item = f.build().items[0];
+  expect(item.meta).toMatchObject({ level: 'building-block', reviewStatus: 'draft', owner: 'Navet maintainers', acceptance: null });
+  expect(item.categories).toContain('draft');
+  expect(item.description).toContain('Review: draft');
+});
+it('requires acceptance evidence before marking a recipe approved', () => {
+  const f = fixture(); f.recipe.reviewStatus = 'approved'; writeFileSync(f.manifest, JSON.stringify([f.recipe]));
+  expect(f.build).toThrow('acceptance evidence');
+  f.recipe.acceptance = 'https://example.com/maintainer-review'; writeFileSync(f.manifest, JSON.stringify([f.recipe]));
+  expect(f.build().items[0].meta.acceptance).toBe(f.recipe.acceptance);
+});
+it('rejects product claims without a feature reference and same-family contract', () => {
+  const f = fixture(); f.recipe.level = 'product'; f.recipe.reviewStatus = 'pending'; writeFileSync(f.manifest, JSON.stringify([f.recipe]));
+  expect(f.build).toThrow('product requires a feature reference');
+  const reference = 'packages/app/src/features/example/reference.stories.tsx';
+  mkdirSync(path.join(f.root, path.dirname(reference)), { recursive: true });
+  writeFileSync(path.join(f.root, reference), 'export const Default = {};');
+  f.recipe.reference = reference; f.index.entries.reference.importPath = `./${reference}`; writeFileSync(f.manifest, JSON.stringify([f.recipe]));
+  expect(f.build).toThrow('same-family feature contract');
+});
+it('finds unmanifested templates in nested recipe folders', () => {
+  const f = fixture(); mkdirSync(path.join(f.directory, 'action/unlisted'), { recursive: true });
+  writeFileSync(path.join(f.directory, 'action/unlisted/template.tsx'), 'export const Unlisted = {};');
+  expect(f.build).toThrow('Unmanifested template');
+});
+it.each(['../escape.tsx', 'packages/app/src/composition-recipes/../escape.tsx'])('rejects unsafe explicit template paths: %s', (template) => {
+  const f = fixture(); f.recipe.template = template; writeFileSync(f.manifest, JSON.stringify([f.recipe]));
+  expect(f.build).toThrow(/invalid template path|Unsafe source path/);
 });

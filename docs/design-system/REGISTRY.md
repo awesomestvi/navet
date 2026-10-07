@@ -14,34 +14,62 @@ Before composing UI:
 4. Adapt caller-owned translated labels, normalized data and callbacks. Keep provider routing,
    capability decisions, validation rules and persistence in the consuming feature.
 
-The [manifest](../../packages/app/src/ui-kit/registry/recipes.json) declares all templates and their
-exact template, example and reference exports. Links resolve against Storybook's actual index;
-source-file presence or a guessed story slug does not establish a valid reference.
+## Catalog structure and review
 
-| Family | Recipes |
+The [manifest](../../packages/app/src/composition-recipes/recipes.json) is the catalog index. Each
+family/recipe folder contains `template.tsx`, `recipe.stories.tsx` and `README.md`. The manifest
+records their exact paths and exports, search terms, required context, supported states, owner,
+review status and primary reference. Story links resolve against Storybook's actual index.
+
+**Building blocks** demonstrate fields, form groups, modal/sheet shells, selection, layout, tabs,
+feedback and tables. They are draft usage patterns. Establish the consuming feature's reference
+before adapting them. **Product compositions** import existing feature components: the switch card
+and Weather card configuration. Their controllers, translations, metric bounds, capabilities,
+provider routing and persistence retain feature ownership. They await maintainer design review.
+Use **Concepts / Composition recipes / Product compositions** or **Concepts / Composition recipes / Building blocks**
+in Storybook. Each recipe has its own state stories; diagnostics live in a separate section.
+The searchable browser is **Concepts / UI Kit Recipes**, with level, family and review filters.
+
+| Level | Items |
 | --- | --- |
-| Dialog | `controls-first-dialog`, `settings-dialog` |
-| Sheet | `detail-sheet` |
-| Settings | `settings-field`, `settings-section` |
-| Selection | `searchable-selection`, `checkbox-list` |
-| Dashboard | `dashboard-section`, `dashboard-grouping` |
-| Card | `empty-card`, `compact-device-card`, `metric-action-row` |
-| Feedback | `status-feedback` |
-| Navigation | `tabs`, `navigation-workspace` |
-| Data | `sortable-table` |
+| Product compositions, pending | `compact-device-card` (Switch card), `weather-settings` |
+| Form building blocks | `settings-field` (Text field with validation), `settings-section` (Text field group), `settings-dialog` (Form modal with save and cancel) |
+| Overlay building blocks | `controls-first-dialog` (Device dialog with secondary settings), `detail-sheet` |
+| Other building blocks | `empty-card`, `searchable-selection`, `checkbox-list`, `dashboard-section`, `dashboard-grouping`, `metric-action-row`, `status-feedback`, `tabs`, `navigation-workspace`, `sortable-table` |
 
-Each payload includes context, states, review criteria, component contracts and template source.
-`settings-dialog` uses the `BaseCardDialog` modal variant. Its caller receives `dismiss` requests
-from the shell and `cancel` requests from the footer, decides whether to close, and owns dirty-edit
-confirmation, pending saves and failed-save recovery. Save and cancel remain footer actions.
-Attach `returnFocusRef` to a connected launch control. Focus returns after accepted closure;
-choose an explicit feature fallback if the launcher may disappear.
+`detail-sheet` is one template with **Phone only** and **Phone and desktop** stories. The
+`responsive` flag enables desktop display. `settings-dialog` is a Save/Cancel form building block;
+its feature decides validation, dirty-edit confirmation and pending/error policy. Weather's actual
+configuration workflow uses forecast/metric choices and its existing dialog. Attach a connected
+`returnFocusRef` for overlays; provide a feature fallback when the launcher may disappear.
 
-`searchable-selection` receives already filtered, capability-aware options. It owns opening,
-keyboard highlighting and dismissal, while the feature owns query/filtering and selected data.
-`dashboard-section` is a standard `SectionCard` composition. `status-feedback` is inline operation
-feedback. Hero sections, dashboard attention summaries and richer device-family controls follow the
-[reference-first workflow](AGENT-COMPOSITION-RECIPES.md); identify the coverage gap in the work brief.
+## Maintain a recipe
+
+1. Find the nearest existing feature and its same-family Storybook reference. Record intended use
+   and the coverage gap before creating a composition.
+2. Create the family/recipe folder, importing canonical components. Declare template and story
+   paths/exports in the manifest and update the adjacent README.
+3. Mark a building block `draft` or a feature-derived product `pending`. Include the owner and
+   executable reference. A product item must declare a source-derived feature contract and a
+   reference from that feature family.
+4. Exercise relevant states and interactions, run structural checks, then compare rendered output
+   with the named reference across relevant sizes and themes.
+5. Maintainer design acceptance changes `reviewStatus` to `approved` and records an `acceptance`
+   evidence link. Automated checks cannot grant this acceptance. Deprecated items retain an
+   explicit status and are excluded from approved discovery.
+6. Publish the registry and Storybook from the same revision, then verify the exact hosted preview.
+
+MCP and CLI search see level, review status and owner in descriptions and categories. Search for
+`approved` to discover accepted items; if none fits, follow the reference-first workflow and
+identify the coverage gap. Pending and draft examples are inspection material, not accepted design.
+A recipe's published name is its stable installation address; folder and display title express
+its actual purpose.
+
+This organization follows [shadcn registry authoring](https://ui.shadcn.com/docs/registry/getting-started),
+[item metadata](https://ui.shadcn.com/docs/registry/registry-item-json),
+[Storybook hierarchy](https://storybook.js.org/docs/writing-stories/naming-components-and-hierarchy)
+and [review tags](https://storybook.js.org/docs/writing-stories/tags). Keep the pinned CLI compatibility
+check before adopting new registry-format features.
 
 ## Local development
 
@@ -132,7 +160,7 @@ pnpm test:registry
 pnpm check:ui-kit
 pnpm check:stories
 pnpm typecheck
-pnpm test:storybook packages/app/src/ui-kit/registry/registry.stories.tsx packages/app/src/ui-kit/recipes.stories.tsx --run
+pnpm test:storybook packages/app/src/composition-recipes packages/app/src/ui-kit/recipes.stories.tsx --run
 pnpm storybook:build
 ```
 

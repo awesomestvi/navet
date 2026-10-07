@@ -11,6 +11,7 @@ import type { WeatherForecastMode, WeatherMetricId } from '@navet/app/stores/set
 import { getEntityTypeLabel } from '@navet/app/utils/entity-type-label';
 
 interface WeatherSettingsDialogProps {
+  onCloseAutoFocus?: (event: Event) => void;
   entityId: string;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
@@ -43,6 +44,7 @@ function getWeatherMetricLabelKey(metricId: WeatherMetricId) {
 }
 
 export function WeatherSettingsDialog({
+  onCloseAutoFocus,
   entityId,
   isOpen,
   onOpenChange,
@@ -90,6 +92,7 @@ export function WeatherSettingsDialog({
 
   return (
     <BaseCardDialogWithState
+      onCloseAutoFocus={onCloseAutoFocus}
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       title={title}
