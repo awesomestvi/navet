@@ -40,13 +40,15 @@ export function SortableTable({
                       : 'none'
                   }
                 >
-                  <SortableTableHeader
-                    label={column.label}
-                    ariaLabel={column.sortLabel}
-                    disabled={column.disabled}
-                    direction={sort?.column === column.id ? sort.direction : undefined}
-                    onClick={() => onSort(column.id)}
-                  />
+                  <BodyText as="div">
+                    <SortableTableHeader
+                      label={column.label}
+                      ariaLabel={column.sortLabel}
+                      disabled={column.disabled}
+                      direction={sort?.column === column.id ? sort.direction : undefined}
+                      onClick={() => onSort(column.id)}
+                    />
+                  </BodyText>
                 </th>
               ))}
             </tr>
