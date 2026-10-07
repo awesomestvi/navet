@@ -4,7 +4,7 @@ The task store records execution and recovery observations in a private local di
 an integration building block; the existing queue remains the coordinator. The
 [queue state protocol](agent-queue-state-protocol.md) defines its integration. The
 [coordinated team entry point](agent-team-workflow.md) connects private proposal intake,
-specialist state and ticket conversations to this store. Authenticated live intake and Linear
+specialist state and ticket conversations to this store. Authenticated live intake and Project
 approval reconciliation need an integration pilot before operational exit gates pass.
 
 ## Use The Store
@@ -45,8 +45,8 @@ Pending worktree setup is distinct from a confirmed delivery handle.
 `preparePlanningDispatch` in `scripts/agent-planning-dispatch.mjs` connects this procedure to
 planning-bound records under an existing coordinator lease. Supply `store`, `owner`, `taskId`,
 complete fresh `readIssue` observations and the independently authenticated `readRequest` adapter.
-The proposal reader can use the connected Linear integration in an interactive session or the
-scoped read-only app in an installed runner. Both readers must preserve complete identity,
+The proposal reader can use the private GitHub Project reader in an interactive session or the
+an installed authenticated adapter after its live pilot. Readers must preserve complete identity,
 attachments, labels and lifecycle fields; neither can establish a human decision from a stage.
 
 For a first intent, the handoff verifies the exact stored human scope, reads and records current
@@ -166,369 +166,78 @@ history retains failures. Observations cannot move backwards. A failure takes pr
 pass at the same timestamp; other conflicting timestamp ties are rejected, while identical
 receipt retries remain idempotent. A changed head invalidates readiness until fresh evidence is recorded.
 
-### Linear result receipts
+## Private planning in GitHub Projects
 
-Planning-bound research and audits can record `brief.resultDestination: linear-planning` in the
-accepted request. Other tasks use the existing public GitHub result path; `public-github` is also
-an explicit destination value. Changing the destination requires a new authorized request.
+Use the organization-owned **Navet planning** Project with private visibility. Organization
+visibility and Project visibility are independent. Verify the exact owner, Project and private
+setting before reading or writing proposal material. A draft belongs to the Project and needs no
+repository. Linked repository issues retain their own visibility.
 
-1. At a verified worker checkpoint, call `planning-result-intent` with the exact worker `head`, expected `bodyHash`,
-   `writerAppUserId` and freshly rechecked authority. A confirmed delivery handle, current planning
-   scope and `verifying` or `awaiting-approval` state are required. Bounded tasks also need an unused
-   resource reservation for the `planning-result` operation.
-2. The initial `planningResultDecision.action: create` reserves one comment UUID before a service
-   write. Use that UUID as Linear's `CommentCreateInput.id`; retain the proposal ID, content hash,
-   writer identity, head and accepted revisions. Store result Markdown in private worker storage,
-   separately from the receipt. Verify destination access and publication channels before writing.
-   The writer's `beginWrite` callback records the fresh planning observation, then calls
-   `planning-result-attempt` with the comment ID and freshly checked authority under the current
-   coordinator lease. Only its initial `send` decision permits a mutation. The saved `attemptedAt`
-   survives restarts; another attempt returns `reconcile`. Paused checkpoints cannot receive a
-   first send permission. Inspect actual ownership before recovering an expired coordinator.
-3. An existing pending or unverified intent returns `reconcile`. Inspect the reserved comment
-   through the [Linear result reader](autonomous-builder-plan.md#private-result-readback), using its
-   `intentAt` as `notBefore`. An unavailable read cannot establish that creation failed or authorize
-   a replacement comment. A pending or unverified reserved intent with no `attemptedAt` can obtain
-   its first send permit using the same comment ID through the controlled writer after the current
-   source and ownership checks pass. This requires every writer to use the durable attempt protocol; an imported or unknown writer outcome requires
-   investigation. A confirmed intent returns `skip` for creation; completion still needs
-   fresh readback. Changed content or head requires a new scoped request.
-4. Record the owning-service result using `planning-result-observation`. The reader and store allow
-   at most 30 seconds of Linear/runner clock skew for service creation and update timestamps.
-   Local observations must remain fresh, and Linear update time cannot precede creation time.
-   Available observations must match the reserved comment, destination, writer and content, with a fresh service reference.
-   For an unavailable read, include the reserved `commentId`; the receipt becomes `unverified` and
-   blocks readiness even when earlier output evidence passed. History retains prior observations.
-   Conflicting observations cannot restore a pass at the same timestamp as an unavailable result.
-5. Verify result quality and the task's other required gates separately. Record `output` evidence
-   with the exact readback reference and observation time. Readiness and delivery require matching
-   current-head, current-scope evidence and a confirmed result read within the preceding minute.
-   Include human authority rechecked after that readback in the readiness or delivery transition.
+Create a draft from the [proposal template](templates/idea-proposal.md), using only sections the
+problem needs. A small, understood defect needs evidence, expected behavior, the smallest repair
+and an acceptance check. Research, options and prototypes support uncertain or material decisions.
+Check active and archived drafts for duplicates first. Use Proposal stage for the decision flow:
 
-These actions preserve local intent and observations; they do not write to Linear or authenticate
-caller-supplied evidence. The shared queue still requires public visibility approval at execution
-gates. The dedicated private worker, installed writer identity, coordinator integration and observed
-live pilot remain activation requirements for private research and audits.
+```text
+Captured -> Developing proposal -> Ready for prioritization -> Approved -> In delivery -> Validated
+```
 
-### Coordinator result handoff
+Needs evidence, Deferred, Rejected and Superseded are dispositions. Status tracks work progress;
+Priority ranks work. Neither field nor an agent-authored note authenticates approval. Imported
+history records previous authors and dates as quoted source evidence, not new GitHub approvals.
+Keep confidential screenshots, logs and prototypes in access-controlled durable storage. Verify
+artifact access separately; a cache is not a backup.
 
-[`deliverPlanningResult`](../../scripts/agent-planning-result-delivery.mjs) joins the result adapters
-to these store actions under a current coordinator lease. Supply the verified worker's exact `head`
-(`null` for research with no commit), private result Markdown, expected writer app identity and the
-trusted proposal, request and result readers. Supply a `createWriter` factory that constructs the
-bounded app writer with the helper's readers, cancellation signal and durable `beginWrite` callback.
-Caller-owned app sessions must close when the coordinator run ends.
+Drafts do not have issue comment threads. Retain concise research results, questions, verified
+answers and decision history in the draft body, preserving previous evidence. Ask the maintainer
+in the active Codex conversation when blocked and record the authenticated answer against the
+exact scope. Do not infer answers from elapsed time or agent-authored content.
 
-The helper checks the current owner and scope, refreshes the proposal and human request, reserves
-the result and records readback. A head changed while services are read cannot adopt the earlier
-worker output. Bounded tasks require the caller's resource reservation and fresh measured usage.
-Readback of an attempted or confirmed result can proceed without a new publication request;
-it uses the recorded content hash and does not need the worker Markdown or another writer session.
-An unavailable or malformed fresh probe invalidates the prior readback pass.
+For implementation, bind a direct maintainer instruction to the selected option, complete draft
+revision, permitted changes, acceptance criteria and explicit public visibility. Prepare a
+separate public issue containing only the approved delivery brief; keep private research and
+conversation history in the draft. Link the issue, PR, validation and outstanding questions back
+to the private draft. Keep In delivery during unfinished review. Validated requires the accepted
+criteria and maintainer acceptance of the delivered head.
 
-`verified` means the result artifact was observed, not that the task passed quality review or was
-accepted. The helper neither records output/quality evidence nor transitions the task to delivered.
-`pending` preserves uncertain write or readback receipts for investigation; `blocked` preserves a
-checkpoint whose scope or send permission could not be verified. Neither disposition authorizes a
-replacement task, comment or retry of an attempted send.
+### Project access and scope
 
-Remote operations share a run deadline of up to one minute. The coordinator and writer call the
-independently authenticated `readRequest(identity, { signal })` adapter with their operation's abort
-signal. The adapter must propagate that signal to its owning-service transport so cancellation and
-deadline expiry stop the pending authority read. Cancellation stops further operations;
-started local atomic transactions finish before the helper returns. A timeout does not establish
-that the owning worker stopped. Recovery still requires actual ownership observations. This helper
-is not connected to the paused queue automation; live credentials, the human-request source,
-destination policy and an observed private-worker pilot remain activation gates.
+GitHub CLI must be authenticated with Projects access (`project` for updates, `read:project` for
+reads). Keep the exact organization node ID/login, Project node ID, authenticated viewer node ID
+and `stageField: "Proposal stage"` in an owner-private JSON configuration outside Git. Configure
+these identities from trusted service discovery, not proposal content. Read privately with:
 
-### Authenticated result run
+```sh
+node scripts/agent-github-project.mjs /absolute/private/github.json list
+node scripts/agent-github-project.mjs /absolute/private/github.json read /absolute/private/item.json
+```
 
-If token transport or its body outlives cancellation, the run returns blocked with
-`linear-session-revocation-unverified` and a redacted `cleanup` promise. The same observation handle
-is returned by an authenticated refresh run. Keep the runner alive to observe late token revocation;
-do not treat a pending promise, process exit or never-settling transport as verified cleanup.
-An acknowledged late revocation neither resumes the canceled run nor changes its durable receipts.
+The read input is `{ "itemId": "<Project item node ID>" }`. Command output contains private
+proposal bodies; keep it out of public logs. The reader verifies owner, visibility and viewer,
+requires complete fields and two stable bounded reads, and normalizes draft content and lifecycle
+into the existing planning observation contract. `issueId` is the Project item node ID, `teamId`
+is the organization node ID, and `projectId` is the Project node ID. The SHA-256 binding covers
+complete title, body and references; mutable stage and priority are separate observations.
+Archived, Rejected and Superseded drafts withdraw execution scope. Missing fields, changed
+content, pagination uncertainty and lost access fail closed. Re-read before execution.
 
-[`runLinearPlanningResult`](../../scripts/agent-linear-result-run.mjs) assembles the installed
-app authentication, proposal/result readers, writer and coordinator handoff for one operation.
-Supply the same leased task, exact worker head, result Markdown and resource reservation described
-above. Supply the independently authenticated `readRequest` adapter and credential-manager
-callbacks `readReaderCredentials` and `readWriterCredentials`; the owner-private file fallback can
-implement those callbacks after credential setup is authorized.
+Private proposal intake uses `resultDestination: github-project-proposal` and an exact destination
+`{ kind: "github-project", issueId, teamId, projectId }`, with research mode and independently
+verified `maintainer-idea-request` authority. Captured/Developing proposal permit requested
+research only. Delivery intake requires a new independently authenticated human request naming
+`authority.planningRevision`; a Project field cannot supply that request.
 
-Configure `readerPolicy` with workspace, reader app, writer app, team and project IDs. Configure
-`writerPolicy` with the same workspace/team/project and its distinct writer app ID. The policies
-must agree on that writer identity. Tokens are acquired lazily: reads request only `read`, while
-an authorized first send requests exactly `read,comments:create` through the separate writer app.
-An attempted or confirmed receipt needs only a fresh reader session; reconciliation may omit
-`readWriterCredentials` and the worker Markdown. A reserved result with no attempt still requires
-the writer and current publication authority for its first send.
+Interactive skills can use authenticated GitHub UI/API to create and update drafts, then read back
+the exact content, fields and access. Reconcile uncertain writes by the existing item/request
+identity before retrying. GitHub draft edits have no atomic revision precondition: re-read before
+editing, preserve concurrent edits and verify afterward. The repository reader performs no writes.
 
-Authentication and delivery share a deadline of at most one minute and the caller's cancellation
-signal. Proposal reads, result reads and writes combine that signal with their request deadline.
-Transport waits race cancellation even when the transport ignores its signal. Cancellation does
-not prove that a remote mutation failed; an attempted send remains pending for receipt reconciliation.
-Every started app session closes in the run's `finally` path, including sessions acquired while a
-bounded reader was interrupted. Closing clears local access immediately and requests server
-revocation with a separate five-second deadline per token; acquired sessions close in parallel.
-Unacknowledged revocation returns `blocked` with reason `linear-session-revocation-unverified`,
-preserving the artifact-verification result in the nested `result` field and the durable receipt.
-Recovery must reconcile that receipt before attempting another write. Credentials, tokens and
-confidential Markdown are not part of the returned status. The helper grants neither quality
-acceptance nor a delivered transition.
-
-The request adapter remains an authentication boundary. Connecting this operation to live queue
-checkpoints requires installed app identities, authorized credential setup, a trusted human-request
-source, verified destination policy and an observed pilot. This helper does not activate the paused
-queue or remove the private-worker execution gate.
-
-Transitions follow `queued -> investigating -> building -> verifying -> awaiting-approval ->
-delivered`, with explicit waiting and failure states. Each transition requires a reason. Returning
-from `retryable-failure` requires `maxRetries`; the first retry fixes that limit and retries are
-counted. Terminal failure remains available when that budget is exhausted. Use `context` to
-preserve the worktree, branch, PR/proposal URL, next action and unresolved questions across runs.
-Confirmed output and passing
-current-revision gates are required before readiness or delivery. Implementation delivery also
-requires an acceptance observation matching its head and revision, with actor and reference.
-
-The store validates record consistency. It cannot verify remote actor permissions, approval
-withdrawal, merge state, artifact availability, or the truth of supplied observations. Verify these
-through the owning service immediately before dispatch and completion. The Linear connector can
-write as the maintainer account, so an account ID or Approved label alone is insufficient evidence
-of a human decision. Preserve the existing explicit maintainer request path during integration.
-
-## Planning Proposal Scope
-
-For a delivery selected from the planning hub, include `planningBinding` in the enqueue input.
-`createPlanningBinding(issue)` produces the issue/team/project identity and a SHA-256 revision
-from the full title, description and complete attachment references. Linear private-storage
-URLs in attachments and Markdown descriptions bind to the file address with temporary `signature` access parameters removed.
-Other query parameters, fragments, hosts and file paths remain part of scope. This normalization
-establishes neither file access nor human approval; verify artifact permissions separately. Linear
-explains signed links in
-[File storage authentication](https://linear.app/developers/file-storage-authentication). Use a
-complete fresh issue read; missing attachment data cannot be treated as an empty list. Priority and proposal-stage
-changes do not change the scope fingerprint. Record the selected option, acceptance criteria and
-visibility decision in the proposal before the maintainer accepts its revision.
-
-The trusted request's `authority.planningRevision` must name that exact fingerprint. Repeated
-intake cannot change or remove the binding. A revised proposal needs a new authorized request.
-The fingerprint and an Approved label verify neither human authorship nor implementation
-permission. The existing trusted maintainer request and permission checks remain required;
-connector-attributed account IDs cannot establish a human decision.
-
-After claiming the existing task, use the `planning-observation` mutation with `observation`:
-`status` (`available` or `unavailable`), `observedAt`, service `reference`, and, when available,
-the freshly fetched complete `issue`. The issue supplies its ID/UUID, team, project, title,
-description, attachments, complete label names and archival/cancellation state. Re-fetch through
-the owning service immediately before new execution. Record access or synchronization failure
-as unavailable, rather than retaining an earlier successful read as current evidence.
-
-A matching scope in exactly one Approved or In delivery stage supplies a planning-scope pass.
-Changes to content, references or identity, withdrawal, or archival revoke this request for new
-execution. A later Approved label cannot revive it; resumption requires a new trusted request.
-Ambiguous/missing stages and lost access are unverified. Observations expire after one minute
-and cannot move backwards. At equal timestamps, failures take precedence over unverified results,
-which take precedence over passes; other conflicting ties are rejected. These checks gate first dispatch, new follow-up sends, new resource
-allocations, execution transitions and readiness/completion. The first dispatch separately
-rechecks request authority and its accepted planning revision.
-
-An uncertain dispatch or follow-up remains reconcilable after withdrawal. Confirm receipts,
-record usage, preserve context and release ownership without starting new work. The record
-retains the binding and normalized observation across restart; it omits proposal text and
-attachment URLs. It does not cancel a running worker or mark a Linear proposal delivered.
-
-The coordinator must verify service responses and human decision provenance before supplying
-observations, stop an active worker when appropriate, and reconcile planning updates idempotently.
-Automatic Linear approval intake, verified human provenance, remote synchronization and active-worker
-withdrawal require integration pilots. Existing explicit requests without a planning binding retain
-their request-authority workflow; this optional guard does not claim coverage for them.
-
-## Signed Linear Event Observations
-
-`verifyLinearEvent` in `scripts/agent-linear-event.mjs` accepts the exact raw request bytes,
-Linear-Signature, a private signing secret and the configured organization/webhook IDs. It verifies
-HMAC-SHA256 before parsing, checks the signed transport timestamp within one minute, restricts
-body size and nesting, and rejects a different organization or webhook. Keep the secret and raw
-payload outside repository artifacts and public logs.
-
-The returned receipt retains event identity, actor attribution, timestamps and content hashes.
-It omits proposal/comment text, actor names and email addresses, and private artifact URLs. Its
-stable event ID derives from signed logical content, excluding retry-specific transport time;
-an unsigned Linear-Delivery header cannot supply deduplication identity. Persist accepted event
-IDs atomically in the receiving integration before acknowledging a new event. Identical logical
-retries can reconcile the prior receipt without starting another task.
-
-Issue and issue-comment events request a fresh complete planning read. They do not replace that
-read, supply an approval, enqueue work or stop a worker. A deletion or changed proposal must be
-reconciled through the existing planning-scope checks. Unsupported models supply no dispatch
-intent. Issue attachment changes need an additional supported event adapter or polling.
-
-Linear's default API authentication attributes writes to the authenticating user. Therefore a
-signed event with a user actor, an Approved label or an approval-like comment does not establish
-human provenance. The verifier always returns `authority: none`; the existing trusted maintainer
-request remains required. Dedicated app-actor authorization is appropriate for service writes,
-but configuring it alone does not prove who made a particular decision.
-
-The verifier opens no listener and changes no Linear or task-store state. Its receiving integration,
-fresh service reads, app-actor configuration and human-approval bridge require an integration pilot. Linear documents the transport and actor contracts in
-[Webhooks](https://linear.app/developers/webhooks) and
-[OAuth actor authorization](https://linear.app/developers/oauth-actor-authorization).
-
-## Durable Linear Receipt Inbox
-
-`AgentLinearInbox` in `scripts/agent-linear-inbox.mjs` persists normalized event receipts through
-the existing task store's SQLite lock and atomic state-file replacement. It adds a versioned
-`linearEventInbox` field while preserving task records and leases. Use a private receipt directory
-for a separate receiving process; recording a receipt creates no delivery task.
-
-`accept` verifies the raw event before entering the transaction. A new supported event returns
-`refresh`; an uncertain earlier refresh returns `reconcile`; a confirmed refresh returns `skip`.
-Unsupported signed models return `ignore`. Repeated receipt deliveries retain the original event
-and confirmation, increment a delivery count and preserve pending work across restarts. Corrupt
-inbox history fails closed. The state directory and files use the existing private permissions.
-
-Pending refresh receipts survive compaction. The inbox retains at most 1,000 confirmed or ignored
-receipts from the last 24 hours for retry deduplication. After eviction, a repeated supported
-event requests a fresh planning read, which still supplies no implementation authority. At
-1,000 pending refreshes, new supported events receive a retryable storage failure until the
-consumer reconciles work; existing pending events remain available. Constructor options
-`maxSettledReceipts`, `deduplicationMs`, and `maxPendingReceipts` configure these positive limits.
-
-`pending` returns refresh receipts that need reconciliation. The consumer fetches a complete,
-fresh issue snapshot, checks the proposal binding and trusted request authority, and updates any
-bound task through its normal owned mutations. After observing the required refresh reconciliation,
-call `confirm(eventId, { reference, observedAt })`. The reference is a SHA-256 identifier for the
-private service-read evidence; observation time must be fresh and at or after event receipt.
-Confirmation records refresh evidence. Task readiness and delivery keep their own gates.
-
-`startLinearEventReceiver` in `scripts/agent-linear-receiver.mjs` provides an opt-in local HTTP
-receiver at `127.0.0.1` and `/linear/webhook`. Supply an inbox, private signing secret, configured
-organization/webhook IDs and an optional port. Its returned handle has `url` and `stop`. The
-receiver accepts bounded JSON POST bodies, verifies the event, and sends HTTP 200 only after the
-receipt transaction is durable. Invalid events are rejected; storage failures return 503 for
-retry. Responses omit receipt contents and private error details.
-
-The local receiver has synthetic HTTP and process-restart pilots. It needs an authorized HTTPS
-endpoint and actual Linear delivery before production use. Its human approval bridge and task-worker
-interruption integration remain pending. The receiver grants no implementation authority and leaves automatic dispatch off. Keep signing configuration and
-raw payloads outside public artifacts.
-
-## Fresh Linear Planning Reconciliation
-
-`reconcileLinearRefresh` in `scripts/agent-linear-refresh.mjs` consumes one pending refresh receipt.
-Supply `inbox`, its `eventId`, the existing task `store`, the owning coordinator `owner`, and a
-`readIssue(issueId)` callback that performs a complete read through the owning Linear service.
-The inbox and task store must share the same private state directory so confirmation can inspect
-task progress atomically. The callback must enforce the service request timeout and return the issue UUID, team, project,
-full title and description, complete attachments and label names, and explicit archival/cancellation
-values (`null` or valid timestamp strings). For a definitive service-confirmed missing issue, throw `LinearIssueNotFoundError(issueId)`
-from the refresh module. The identity-bound observation withdraws the proposal, latches revocation,
-and confirms the receipt. Permission errors and ambiguous HTTP 404 responses remain unavailable.
-Cached issue bodies and webhook payloads cannot substitute for this read.
-
-The consumer checks the returned identity, complete fields and elapsed read freshness, then
-updates nonterminal tasks bound to that issue through normal `planning-observation` mutations.
-Each caller updates only records under its own live leases; the consumer neither claims ownership nor
-creates tasks. Event-scoped observations preserve progress across release, handoff and restart only
-while each record’s latest observation matches the same normalized proposal state. Other
-coordinators reconcile their records with fresh service reads, and the receipt remains pending
-until every applicable nonterminal record has been handled. Confirmation rechecks
-that condition atomically with receipt persistence. If a later owner reads a changed proposal,
-other owners must refresh their records before confirmation. Matching observations still expire
-normally as execution evidence. Terminal history and unbound tasks remain intact. Scope withdrawal
-latches through the existing guard. An Approved stage does not grant authority or revive a revoked request.
-
-A failed, slow, mismatched or incomplete read records unavailable planning evidence on owned
-bound tasks and returns `retry`, leaving the receipt pending. A successful read confirms the
-receipt only after every applicable nonterminal task has a matching durable event-scoped
-observation. Lease failures or interrupted confirmation leave pending work for reconciliation. Confirmation persists a hash of normalized
-service-read state with the confirming observation timestamp, omitting proposal contents and temporary credentials.
-
-Run this consumer from an existing coordinator with verified service access. It opens no listener,
-sends no message, changes no Linear issue and starts no worker. New execution still needs its own
-fresh planning observation and trusted maintainer request. Actual webhook-to-coordinator delivery,
-human-approval provenance and worker withdrawal require operational integration pilots.
-
-
-### Connected Linear reader
-
-`createLinearConnectorIssueReader` in `scripts/agent-linear-connector-reader.mjs` implements the
-proposal observation contract using connected read tools. Supply `getWorkspace`, `getUser` and
-`getIssue` callbacks from the coordinator's trusted tool environment, plus a pinned `policy` with
-`organizationId`, `readerUserId`, `teamId` and `projectId`. The reader accepts an exact issue UUID,
-checks the active account and workspace for each snapshot, and compares two complete issue reads.
-It validates explicit lifecycle fields, full attachment arrays, label names and source timestamps.
-Explicit pagination/truncation, oversized collections, malformed MCP JSON and service failures
-return unavailable evidence. A missing issue does not establish deletion.
-
-The callbacks receive their native tool arguments and a separate `{ signal }` option. Tool calls
-that ignore cancellation remain bounded by `maxReadMs`; parent cancellation propagates to all
-callbacks. Successful results use the existing `{ status, issue, reference, observedAt }` shape
-with a `linear-connector` service reference. The reader loads no credentials or tokens, changes no
-planning record and grants no implementation authority. Supply only the three read callbacks;
-proposal text cannot select tools or change pinned identities.
-
-Use this adapter for an interactive coordinator with a connected Linear integration. An installed
-coordinator must independently prove tool availability and account scope before adopting this
-transport. A dedicated scoped app remains available for runners without connector access. In
-either mode, independently verified human decisions, artifact access and private writer identity
-remain separate contracts. A live connector read proves its observed scope, not operational
-dispatch, complete private attachment contents or unattended recovery.
-
-### Authenticated intake run
-
-`runLinearPlanningIntake` in `scripts/agent-linear-intake-run.mjs` connects the scoped Linear
-proposal reader, a lazy read-only app session and `enqueuePlanningRequest`. Supply `store`, the
-exact request `identity`, `readerPolicy`, a credential-manager `readCredentials` callback and an
-independently authenticated `readRequest(identity, { signal })` adapter. The latter must verify
-the human decision through its owning source; proposal text, stages and agent-authored comments
-cannot establish approval. It returns the trusted observation defined in the
-[approval-to-queue contract](autonomous-builder-plan.md#approval-to-queue-handoff).
-
-The run validates policy before loading credentials or querying authority, reads the human
-request, fetches a complete stable proposal and rechecks the human request before enqueueing.
-`maxRunMs` bounds source reads to at most 60 seconds, including adapters that ignore cancellation.
-Proposal reads retain their own 20-second limit. Withdrawal, changed scope, mismatched app
-identity, incomplete reads or unavailable services return a redacted `blocked` result.
-
-A successful result contains `status: 'queued'` and `taskId`. Duplicate accepted requests retain
-the existing task ID. The task has no claim, dispatch or planning pass; execution requires fresh
-authority and proposal observations through the existing gates. An already-started atomic enqueue
-is awaited even after cancellation so its acknowledgement is preserved.
-
-The session closes before return using a separate bounded revocation deadline. Unverified cleanup
-returns `blocked` with reason `linear-session-revocation-unverified`, retaining the original result
-in `intake`, including any committed task ID. Late-grant cleanup exposes a redacted `cleanup`
-promise; keep the runner alive to observe it. Successful late cleanup cannot restore canceled
-authority. Reconcile retained task IDs before retrying or dispatching. Synthetic integration tests
-prove these local boundaries; installed human-request provenance, live app permissions and the
-authorized delivery pilot remain activation gates.
-
-### Authenticated refresh run
-
-`runLinearPlanningRefresh` in `scripts/agent-linear-refresh-run.mjs` connects the existing inbox
-and task store to the actual scoped Linear proposal reader and a per-run read-only app session.
-Supply the existing `inbox`, `eventId`, `store`, coordinator `owner`, `readerPolicy`, and a
-`readCredentials` callback owned by the installed runner. The policy fixes the organization,
-app actor, team and project. Credentials are loaded lazily after the existing receipt and store
-checks; invalid policy or pre-cancellation loads no credentials. The session requests exactly
-`read` and closes before the operation returns. Closing clears local token access immediately and
-awaits server revocation with a separate five-second cleanup deadline. Unacknowledged revocation
-returns `blocked` with reason `linear-session-revocation-unverified` and preserves the original
-outcome in `reconciliation`; the durable receipt remains available for recovery.
-
-`maxRunMs` bounds remote work to at most 60 seconds; proposal reads also retain their own
-20-second limit. Parent cancellation reaches OAuth and GraphQL, including a transport that
-ignores cancellation while awaiting its response. Failed authentication, revoked access or a
-canceled read records unavailable evidence through normal reconciliation, invalidating earlier
-passes on owned tasks and preserving the pending receipt. Already-started atomic store updates
-finish before return. A setup or store failure returns a redacted `blocked` result for recovery.
-
-Successful complete reads reconcile current scope or latch withdrawal. The run neither creates
-human authority nor claims tasks, dispatches a worker or writes to Linear. Synthetic transport
-integration tests verify the actual inbox, store, app session and reader together; live app setup,
-verified credentials and an observed signed-event pilot remain activation gates.
+The unattended queue remains paused. Automatic Project approval intake, draft question/answer
+publication, remote withdrawal, worker dispatch and completion need installed adapters and a live
+pilot proving human provenance, exact revisions, durable reconciliation and recovery. The Project
+reader and local tests establish scope checks, not an active autonomous integration. Persisted
+historical task records and their transport helpers retain their existing schemas and receipt
+meaning; do not rewrite their authority, request identity or revision during migration.
 
 ## Execution Budgets
 

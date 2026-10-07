@@ -49,7 +49,10 @@ New identity, templates and foundational product/design choices keep their exist
 
 ## Setup and recovery
 
-GitHub must be authenticated with Projects access to the private Navet planning Project. Drafts need no repository and have no comment threads. Retain research, questions and verified answers in the draft body. Use a separately authored public issue for the approved delivery brief.
+GitHub must be authenticated with Projects access to the private Navet planning Project. Drafts
+need no repository and have no comment threads. Retain research, questions and verified answers in
+the draft body; separately protected artifacts retain their own access permissions. Use a separately
+authored public issue for the approved delivery brief.
 The agent verifies destination privacy and owning-service readback before completing a proposal.
 Public delivery requires a separate selected-scope decision; prioritization does not grant it.
 

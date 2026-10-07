@@ -18,11 +18,11 @@ the proposal is visual. Reuse the closest component family, with Home as the das
 ## Research and develop
 
 Use authenticated GitHub CLI or browser access to the navet-app organization's private **Navet
-planning** Project. Read the owner-private binding at `/Users/vishal/.config/navet/planning/github.json`.
-Verify organization, Project identity and private visibility; inspect active and archived drafts
-and their history before creating proposals. Update a matching draft rather than duplicating it.
-Keep proposal content private and publish only a separately approved delivery brief in repository
-issues. If visibility is unverified, retain work privately and report the missing check.
+planning** Project. Verify organization, Project identity and private visibility; inspect active
+and archived drafts and their history before creating proposals. Update a matching draft rather
+than duplicating it. Keep proposal content private and publish only a separately approved delivery
+brief in repository issues. If visibility is unverified, retain work privately and report the
+missing check.
 
 Verify what Navet already supports. Choose the ticket detail level from
 `docs/engineering/templates/idea-proposal.md`. A small, understood bug needs the observed problem,
@@ -48,13 +48,13 @@ completed steps, unknowns, blockers and next action. Use durable private storage
 do not call a cache or ignored directory a backup. Never put secrets in proposal files.
 
 Create/update private Project drafts through authenticated GitHub UI/API within the verified destination.
-Use Captured/Developing proposal while working. Link only authorized artifacts in verified access-controlled storage; check their audience independently. Read back draft content and artifact references from GitHub and
-verify access before setting Ready for prioritization. Do not claim completion when an attachment
+Use Captured/Developing proposal while working. Link only authorized artifacts in verified access-controlled storage; verify their audience independently. Read back the complete draft body and artifact references from GitHub, then independently verify
+artifact content and access before setting Ready for prioritization. Do not claim completion when an attachment
 or ticket is missing. Mark inaccessible or unexercised prototype behavior explicitly.
 
-For a material question, retain one concise question in the originating draft and ask the maintainer in the active Codex conversation and retain the
-waiting state. Verify a human answer and resume the same task within scope; elapsed time and
-agent comments are not answers. Finish with draft links, recommendations and the decision needed.
+For a material question, retain one concise question in the originating draft and ask the maintainer
+in the active Codex conversation. Preserve the waiting state. Verify a human answer and resume the same task within scope; elapsed time and
+agent comments are not answers. Finish with ticket links, recommendations and the decision needed.
 Record observed duration, interventions, duplicates and review defects; unknowns stay unknown.
 
 Product delivery requires the maintainer's selected option, approved proposal revision, permitted
