@@ -178,12 +178,16 @@ export function generateCatalog({ root, entries, stories = [], compilerOptions =
   }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
-  const root = process.cwd();
+export function generateNavetCatalog(root = process.cwd()) {
   const entries = ['primitives', 'patterns'].map((name) => ({
     file: path.join(root, `packages/app/src/ui-kit/${name}.ts`), importFrom: `@navet/app/ui-kit/${name}`,
   }));
-  const catalog = generateCatalog({ root, entries, stories: storiesIn(path.join(root, 'packages/app/src')) });
+  return generateCatalog({ root, entries, stories: storiesIn(path.join(root, 'packages/app/src')) });
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
+  const root = process.cwd();
+  const catalog = generateNavetCatalog(root);
   const query = process.argv[2];
   if (query) {
     console.log(JSON.stringify({ sourceFingerprint: catalog.sourceFingerprint, entries: catalog.entries.flatMap((entry) => [entry, ...(entry.members ?? [])]).filter((entry) => `${entry.name} ${entry.source} ${entry.description}`.toLowerCase().includes(query.toLowerCase())) }, null, 2));

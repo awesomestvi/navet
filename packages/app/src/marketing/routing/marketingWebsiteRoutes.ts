@@ -1,11 +1,12 @@
-export type MarketingWebsiteRouteId = 'home' | 'roadmap';
+export type MarketingWebsiteRouteId = 'home' | 'roadmap' | 'cards';
 
 export interface MarketingWebsiteRoute {
   id: MarketingWebsiteRouteId;
-  pathname: '/' | '/roadmap/';
+  pathname: '/' | '/roadmap/' | '/cards/';
 }
 
 export const MARKETING_WEBSITE_ROUTES: Record<MarketingWebsiteRouteId, MarketingWebsiteRoute> = {
+  cards: { id: 'cards', pathname: '/cards/' },
   home: { id: 'home', pathname: '/' },
   roadmap: { id: 'roadmap', pathname: '/roadmap/' },
 };
@@ -38,6 +39,10 @@ export function resolveMarketingWebsiteRoute(
 
   if (normalizedPathname === MARKETING_WEBSITE_ROUTES.roadmap.pathname) {
     return MARKETING_WEBSITE_ROUTES.roadmap;
+  }
+
+  if (normalizedPathname === MARKETING_WEBSITE_ROUTES.cards.pathname) {
+    return MARKETING_WEBSITE_ROUTES.cards;
   }
 
   return MARKETING_WEBSITE_ROUTES.home;

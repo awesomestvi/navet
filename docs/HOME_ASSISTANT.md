@@ -4,7 +4,10 @@ description: Install Navet with HACS, as a Home Assistant App, or with Docker.
 editUrl: https://github.com/navet-app/navet/edit/main/docs/HOME_ASSISTANT.md
 ---
 
-This guide helps you install Navet for Home Assistant.
+This guide helps you install the complete Navet dashboard for Home Assistant.
+
+To add individual Navet cards to your existing Home Assistant dashboard, follow
+[the Navet Cards installation guide](/cards/installation/). Navet Cards runs independently.
 
 You only need to choose **one** installation method.
 

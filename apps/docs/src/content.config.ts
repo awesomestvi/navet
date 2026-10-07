@@ -4,6 +4,13 @@ import { docsSchema } from "@astrojs/starlight/schema";
 
 const routeIds = new Map([
   ["docs/index.md", "index"],
+  ["docs/cards/index.md", "cards/index"],
+  ["docs/cards/installation.md", "cards/installation"],
+  ["docs/cards/rooms.md", "cards/rooms"],
+  ["docs/cards/appearance.md", "cards/appearance"],
+  ["docs/cards/actions.md", "cards/actions"],
+  ["docs/cards/reference.md", "cards/reference"],
+  ["docs/cards/troubleshooting.md", "cards/troubleshooting"],
   ["docs/getting-started.md", "getting-started"],
   ["docs/installation.md", "install/index"],
   ["docs/HOME_ASSISTANT.md", "install/home-assistant"],

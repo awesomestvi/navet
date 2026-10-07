@@ -42,6 +42,16 @@ export function getMarketingWebsiteMetadata(
   const siteUrl = getMarketingPublicSiteUrl();
   const socialImageUrl = new URL(SOCIAL_IMAGE_PATH, siteUrl).toString();
 
+  if (route.id === 'cards') {
+    return {
+      title: 'Navet Cards — Home Assistant dashboard cards',
+      description:
+        'Bring Navet controls to your Home Assistant dashboard. Explore beta cards for lights, rooms, climate, media, and more, with visual editing and flexible layouts.',
+      canonicalUrl: new URL(route.pathname.slice(1), siteUrl).toString(),
+      socialImageUrl,
+    };
+  }
+
   if (route.id === 'roadmap') {
     return {
       title: 'Navet Roadmap — What is shipping now and next',

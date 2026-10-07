@@ -74,6 +74,7 @@ interface BaseCardDialogSharedProps {
 
 interface BaseCardDialogCardProps extends BaseCardDialogSharedProps {
   variant?: 'card';
+  onCloseAutoFocus?: (event: Event) => void;
   entityId?: string;
   entityType?: string;
   tabs: BaseCardDialogTab[];
@@ -545,6 +546,7 @@ function getWidgetRoomSelector(roomSelector: BaseCardDialogRoomSelector, theme: 
 function BaseCardDialogCardVariant({
   isOpen,
   onOpenChange,
+  onCloseAutoFocus,
   title,
   entityId,
   entityType,
@@ -807,6 +809,7 @@ function BaseCardDialogCardVariant({
     <BaseCardDialogRoot
       isOpen={isOpen}
       onOpenChange={onOpenChange}
+      onCloseAutoFocus={onCloseAutoFocus}
       disableOpenAutoFocus={disableOpenAutoFocus}
       overlayClassName={surface.dialogBackdrop}
       contentClassName={resolvedContentClassName}

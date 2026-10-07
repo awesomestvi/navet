@@ -25,6 +25,10 @@ export function getMarketingWebsitePath(pathname: string) {
 
 export const MARKETING_URLS = {
   website: getMarketingPublicSiteUrl(),
+  cardsDocs: joinUrl(DOCS_SITE_URL, 'cards/'),
+  cardsInstall: joinUrl(DOCS_SITE_URL, 'cards/installation/'),
+  cardsGithub: 'https://github.com/navet-app/navet-cards',
+  cardsReleases: 'https://github.com/navet-app/navet-cards/releases',
   demo: DEMO_SITE_URL,
   storybook: STORYBOOK_SITE_URL,
   github: GITHUB_REPO_URL,
