@@ -5,6 +5,7 @@ from __future__ import annotations
 import ipaddress
 from pathlib import Path
 from urllib.parse import urlsplit
+from .resource_paths import compatibility_resource_path
 
 from aiohttp import web
 import voluptuous as vol
@@ -179,10 +180,10 @@ class NavetHomeAssistantProxyCompatibilityView(HomeAssistantView):
         """Redirect proxied HA resource requests to their native same-origin path."""
         requested_path = request.match_info.get("requested_path", "")
 
-        if ".." in requested_path.split("/"):
+        target = compatibility_resource_path(requested_path)
+        if target is None:
             return _json_error(400, "Invalid Home Assistant resource path")
 
-        target = f"/{requested_path}"
         if request.query_string:
             target = f"{target}?{request.query_string}"
 

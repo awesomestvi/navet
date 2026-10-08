@@ -160,12 +160,14 @@ export function NavetOAuthRedirectPage() {
 
     if (!instance || !authorize) return;
     if (!isValidNavetCallbackUrl(instance) || !isValidSpotifyAuthorizeUrl(authorize)) return;
+    const spotifyAuthorize = new URL('https://accounts.spotify.com/authorize');
+    spotifyAuthorize.search = new URL(authorize).search;
     const state = getSpotifyAuthorizeState(authorize);
     if (!state) return;
     window.sessionStorage.setItem(INSTANCE_STORAGE_KEY, JSON.stringify({ callback: instance, state }));
     const navetHomeUrl = getNavetHomeUrlFromCallback(instance);
     if (navetHomeUrl) window.localStorage.setItem(HOME_STORAGE_KEY, navetHomeUrl);
-    window.location.replace(authorize);
+    window.location.replace(spotifyAuthorize.href);
   }, [authorize, instance]);
 
   const storedRequest = window.sessionStorage.getItem(INSTANCE_STORAGE_KEY);

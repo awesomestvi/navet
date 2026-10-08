@@ -47,7 +47,7 @@ function loadDotenv() {
     const key = line.slice(0, separatorIndex).trim();
     const value = stripQuotes(line.slice(separatorIndex + 1).trim());
 
-    if (!key || process.env[key]) {
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(key) || ['__proto__', 'constructor', 'prototype'].includes(key) || process.env[key]) {
       continue;
     }
 

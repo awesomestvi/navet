@@ -1,6 +1,8 @@
+import fileSystem from 'node:fs'
+import boundedFile from '../docker/shared/bounded-file.js'
 import choreDurableStorage from '../docker/njs/chore-durable-storage.js'
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto'
-import { mkdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
+import { mkdirSync, renameSync, unlinkSync, writeFileSync } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import path from 'node:path'
 import type {
@@ -185,10 +187,8 @@ function isMissingFile(error: unknown): boolean {
 
 function readJson<T>(filePath: string, fallback: T, maxBytes: number): T {
   try {
-    if (statSync(filePath).size > maxBytes) {
-      throw new Error('Chore storage exceeds its safe read limit')
-    }
-    return JSON.parse(readFileSync(filePath, 'utf8')) as T
+    return JSON.parse(boundedFile.readBoundedText(fileSystem, filePath, maxBytes, () =>
+      new Error('Chore storage exceeds its safe read limit'))) as T
   } catch (error) {
     if (isMissingFile(error)) {
       return fallback

@@ -1,7 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { inlineScriptHashes } from './inline-script-csp.mjs';
+import { inlineElementContents, inlineScriptHashes } from './inline-script-csp.mjs';
 
 const surface = process.argv[2];
 const supportedSurfaces = new Set(['demo', 'storybook']);
@@ -60,9 +60,7 @@ if (surface === 'storybook') {
 
 if (surface === 'demo') {
   const demoHtml = await readFile(path.join(repoRoot, 'apps/demo/dist/index.html'), 'utf8');
-  const inlineScripts = [...demoHtml.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)].filter(
-    ([, attributes, content]) => !/\bsrc\s*=/.test(attributes) && content.trim()
-  );
+  const inlineScripts = inlineElementContents(demoHtml);
   if (inlineScripts.length > 0) {
     throw new Error('Demo build contains an inline script; review its CSP before publishing');
   }

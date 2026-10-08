@@ -1,5 +1,6 @@
 import profileStore from '@docker/njs/profile-store.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { fileDescriptorFixture } from '../../../../../testing/file-descriptors';
 
 const PROFILE_PATH = '/data/navet-dashboard-profile.json';
 const WORKSPACE_PATH = '/data/navet-dashboard-workspace.json';
@@ -68,7 +69,14 @@ function createMockFs(files: Record<string, string> = {}) {
     return error;
   };
 
+  const descriptors = fileDescriptorFixture((path) => {
+    const content = fileMap.get(path);
+    if (content === undefined) throw createMissingError(path);
+    return content;
+  });
   return {
+    ...descriptors,
+    openSync: vi.fn(descriptors.openSync),
     statSync: vi.fn((path: string) => {
       const content = fileMap.get(path);
       if (content === undefined) {
@@ -1187,14 +1195,14 @@ describe('revisioned NJS dashboard profile store', () => {
     ];
 
     for (const testCase of cases) {
-      mockFs.readFileSync.mockClear();
+      mockFs.openSync.mockClear();
       profileStore.handle(testCase.request);
 
       expect(testCase.request.return.mock.calls.at(-1)?.[0], testCase.label).toBe(
         testCase.expectedStatus
       );
       expect(
-        mockFs.readFileSync.mock.calls.filter(([path]) => path === CLIENT_REGISTRY_PATH),
+        mockFs.openSync.mock.calls.filter(([path]) => path === CLIENT_REGISTRY_PATH),
         testCase.label
       ).toHaveLength(testCase.expectedRegistryReads);
       if (testCase.label === 'profile read') {

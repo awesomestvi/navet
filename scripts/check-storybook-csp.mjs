@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { repoRoot } from './repo-paths.mjs';
+import { inlineElementContents } from './inline-script-csp.mjs';
 
 const distDir = join(repoRoot, 'apps/storybook/dist');
 const headers = readFileSync(join(distDir, '_headers'), 'utf8');
@@ -20,11 +21,9 @@ for (const [route, htmlFile] of [
   }
 
   const html = readFileSync(join(distDir, htmlFile), 'utf8');
-  const inlineScripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)].filter(
-    ([, attributes, content]) => !/\bsrc\s*=/.test(attributes) && content.trim()
-  );
+  const inlineScripts = inlineElementContents(html);
   if (inlineScripts.length === 0) throw new Error(`No inline scripts were checked in ${htmlFile}`);
-  for (const [, , content] of inlineScripts) {
+  for (const content of inlineScripts) {
     const hash = `'sha256-${createHash('sha256').update(content, 'utf8').digest('base64')}'`;
     if (!scriptSources.includes(hash)) {
       throw new Error(`Storybook ${route} CSP does not allow an inline script`);

@@ -1,3 +1,5 @@
+import recordSafety from '../shared/record-safety.js';
+import boundedFile from '../shared/bounded-file.js';
 import hashCrypto from 'crypto';
 import fs from 'fs';
 import installationCookieScope from './installation-cookie-scope.js';
@@ -149,11 +151,7 @@ function constantTimeEquals(left, right) {
 
 function readJson(filePath) {
   try {
-    const stat = fs.statSync(filePath);
-    if (stat.size > 64 * 1024) {
-      return null;
-    }
-    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    return JSON.parse(boundedFile.readBoundedText(fs, filePath, 64 * 1024));
   } catch (error) {
     if (error && (error.code === 'ENOENT' || error instanceof SyntaxError)) {
       return null;
@@ -222,6 +220,7 @@ function providerCookieIdsFromDirectSession(r) {
   let index;
   for (index = 0; index < providerIds.length; index += 1) {
     const providerId = providerIds[index];
+    if (!Object.prototype.hasOwnProperty.call(PROVIDERS, providerId)) continue;
     const provider = PROVIDERS[providerId];
     const cookieId = getCookie(r, scopedCookieName(provider.cookieName));
     if (!SECRET_PATTERN.test(cookieId)) {
@@ -252,7 +251,7 @@ function validProviderCookieIds(candidateIds) {
       ? readJson(provider.directory + '/' + cookieId + '.json')
       : null;
     if (record && record.auth && record.updatedAt + DEVICE_SESSION_TTL_MS >= Date.now()) {
-      result[providerId] = cookieId;
+      recordSafety.setOwnRecordValue(result, providerId, cookieId);
     }
   }
   return result;
@@ -846,8 +845,8 @@ function invalidateProviderDevices(r) {
   });
   const presentedIds = getCookieIds(r, cookieNames.currentName)
     .concat(getCookieIds(r, cookieNames.legacyName));
-  const sessionIds = {};
-  sessionIds[primaryId] = true;
+  const sessionIds = Object.create(null);
+  recordSafety.setOwnRecordValue(sessionIds, primaryId, true);
   let presentedIndex;
   for (presentedIndex = 0; presentedIndex < presentedIds.length; presentedIndex += 1) {
     sessionIds[presentedIds[presentedIndex]] = true;

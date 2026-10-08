@@ -66,7 +66,7 @@ export function isDependabotPullRequest(base, head, event) {
 }
 
 export function parseReleaseFragment(content, file = 'release fragment') {
-  const fragment = {};
+  const fragment = Object.create(null);
   let listField = null;
   for (const rawLine of content.replace(/\r\n/g, '\n').split('\n')) {
     const trimmed = rawLine.trim();

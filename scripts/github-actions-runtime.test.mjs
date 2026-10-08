@@ -18,6 +18,16 @@ const minimumNode24Major = new Map([
   ['softprops/action-gh-release', 3],
 ]);
 
+// Verified upstream commits for actions pinned by the workflow security policy.
+const pinnedMajors = new Map([
+  ['docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc', 7],
+  ['docker/login-action@dbcb813823bdd20940b903addbd779551569679f', 4],
+  ['docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069', 4],
+  ['docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1', 4],
+  ['pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86', 6],
+  ['softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64', 3],
+]);
+
 describe('GitHub Actions JavaScript runtimes', () => {
   it('uses Node 24-compatible majors for every audited external action', () => {
     const workflowDirectory = resolve(process.cwd(), '.github/workflows');
@@ -26,13 +36,16 @@ describe('GitHub Actions JavaScript runtimes', () => {
 
     for (const file of readdirSync(workflowDirectory).filter((entry) => entry.endsWith('.yml'))) {
       const contents = readFileSync(resolve(workflowDirectory, file), 'utf8');
-      for (const match of contents.matchAll(/uses:\s+([^@\s]+)@v(\d+)/g)) {
-        const [, action, rawMajor] = match;
+      for (const match of contents.matchAll(/uses:\s+([^@\s]+)@([a-zA-Z0-9.-]+)/g)) {
+        const [, action, reference] = match;
         const minimum = minimumNode24Major.get(action);
         if (!minimum) continue;
         seen.add(action);
-        if (Number(rawMajor) < minimum) {
-          findings.push(`${file}: ${action}@v${rawMajor} must be v${minimum} or newer`);
+        const major = /^v\d+$/.test(reference)
+          ? Number(reference.slice(1))
+          : pinnedMajors.get(`${action}@${reference}`);
+        if (!major || major < minimum) {
+          findings.push(`${file}: ${action}@${reference} must resolve to v${minimum} or newer`);
         }
       }
     }

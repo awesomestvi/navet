@@ -1,3 +1,4 @@
+import boundedFile from '../shared/bounded-file.js';
 import hashCrypto from 'crypto';
 import fs from 'fs';
 
@@ -182,11 +183,9 @@ function createInstallationAuthority(options) {
 
   function readState() {
     try {
-      const stat = fs.statSync(statePath);
-      if (stat.size > MAX_AUTHORITY_BYTES) {
-        throw new Error('Installation authority state is too large');
-      }
-      const parsed = parseJson(fs.readFileSync(statePath, 'utf8'));
+      const parsed = parseJson(boundedFile.readBoundedText(fs, statePath, MAX_AUTHORITY_BYTES, function () {
+        return new Error('Installation authority state is too large');
+      }));
       if (!isValidState(parsed)) {
         throw new Error('Installation authority state is invalid');
       }

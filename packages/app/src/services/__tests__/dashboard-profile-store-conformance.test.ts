@@ -9,6 +9,7 @@ import {
   type ViteDashboardProfilePrincipal,
 } from '@scripts/vite-dashboard-profile-store';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { fileDescriptorFixture } from '../../../../../testing/file-descriptors';
 
 const HA_TENANT_ID = `hat_${'a'.repeat(64)}`;
 const CLIENT_BINDING_A = 'a'.repeat(64);
@@ -68,6 +69,11 @@ function createMockFs() {
   };
   return {
     files,
+    ...fileDescriptorFixture((path) => {
+      const content = files.get(path);
+      if (content === undefined) throw missing(path);
+      return content;
+    }),
     statSync: (filePath: string) => {
       const content = files.get(filePath);
       if (content === undefined) {
@@ -1380,13 +1386,13 @@ describe('dashboard profile backend conformance', () => {
         },
       })
     );
-    const originalNjsReadFile = njsFs.readFileSync;
+    const originalNjsOpenFile = njsFs.openSync;
     let normalPreferenceReads = 0;
-    njsFs.readFileSync = (filePath: string) => {
+    njsFs.openSync = (filePath: string) => {
       if (filePath === CLIENT_PREFERENCES_PATH) {
         normalPreferenceReads += 1;
       }
-      return originalNjsReadFile(filePath);
+      return originalNjsOpenFile(filePath);
     };
     const normalPreferenceRead = runNjs(
       'GET',

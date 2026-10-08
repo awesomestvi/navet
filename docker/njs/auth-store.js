@@ -1,3 +1,5 @@
+import recordSafety from '../shared/record-safety.js';
+import boundedFile from '../shared/bounded-file.js';
 import hashCrypto from 'crypto';
 import fs from 'fs';
 import installationAuthorityModule from './installation-authority.js';
@@ -536,12 +538,12 @@ function isValidStoredSession(value) {
 }
 
 function cloneSession(session, overrides) {
-  const next = {};
+  const next = Object.create(null);
   let key;
 
   for (key in session) {
     if (Object.prototype.hasOwnProperty.call(session, key)) {
-      next[key] = session[key];
+      recordSafety.setOwnRecordValue(next, key, session[key]);
     }
   }
   for (key in overrides) {
@@ -740,22 +742,9 @@ function createAuthSessionStore(options) {
     }
 
     const sessionPath = getSessionPath(cookieId);
-    let stat;
-    try {
-      stat = fs.statSync(sessionPath);
-    } catch (error) {
-      if (error && error.code === 'ENOENT') {
-        return null;
-      }
-      throw error;
-    }
-    if (stat.size > MAX_AUTH_RECORD_BYTES) {
-      throw createSessionUnavailableError();
-    }
-
     let serialized;
     try {
-      serialized = fs.readFileSync(sessionPath, 'utf8');
+      serialized = boundedFile.readBoundedText(fs, sessionPath, MAX_AUTH_RECORD_BYTES, createSessionUnavailableError);
     } catch (error) {
       if (error && error.code === 'ENOENT') {
         return null;

@@ -583,10 +583,8 @@ describe('production njs standalone OAuth sessions', () => {
     seedAuth(store, browser, AUTH_A);
     const cookieId = browser.cookie.split('=')[1] ?? '';
     const sessionPath = join(directory, 'sessions', `${cookieId}.json`);
-    const readFile = fs.readFileSync.bind(fs);
-    vi.spyOn(fs, 'readFileSync').mockImplementation(((
-      ...args: Parameters<typeof fs.readFileSync>
-    ) => {
+    const openFile = fs.openSync.bind(fs);
+    vi.spyOn(fs, 'openSync').mockImplementation(((...args: Parameters<typeof fs.openSync>) => {
       const [path] = args;
       if (String(path) === sessionPath) {
         const error = new Error('temporary I/O failure');
@@ -594,8 +592,8 @@ describe('production njs standalone OAuth sessions', () => {
         error.code = 'EIO';
         throw error;
       }
-      return readFile(...args);
-    }) as typeof fs.readFileSync);
+      return openFile(...args);
+    }) as typeof fs.openSync);
 
     expect(() => store.readSession(cookieId)).toThrow('temporary I/O failure');
     vi.restoreAllMocks();

@@ -1,4 +1,6 @@
+import recordSafety from '../shared/record-safety.js';
 import profilePolicy from '../shared/dashboard-profile-policy.js';
+import boundedFile from '../shared/bounded-file.js';
 import fs from 'fs';
 import hashCrypto from 'crypto';
 import authStore from './auth-store.js';
@@ -529,14 +531,9 @@ function createProfileStorageWriteError(path, cause) {
 function readJson(path, fallback, maxBytes) {
   path = storagePath(path);
   try {
-    if (
-      Number.isSafeInteger(maxBytes) &&
-      maxBytes > 0 &&
-      fsModule.statSync(path).size > maxBytes
-    ) {
-      throw createStorageReadError(path);
-    }
-    return JSON.parse(fsModule.readFileSync(path, 'utf8'));
+    return JSON.parse(boundedFile.readBoundedText(fsModule, path, maxBytes, function () {
+      return createStorageReadError(path);
+    }));
   } catch (error) {
     if (error && error.code === 'ENOENT') {
       return fallback;
@@ -679,11 +676,9 @@ function hashDashboardProfile(profile) {
 function readProfileFile() {
   try {
     const resolvedProfilePath = storagePath(PROFILE_PATH);
-    const stat = fsModule.statSync(resolvedProfilePath);
-    if (typeof stat.size === 'number' && stat.size > MAX_PROFILE_BYTES) {
-      throw createStorageReadError(PROFILE_PATH);
-    }
-    const profile = JSON.parse(fsModule.readFileSync(resolvedProfilePath, 'utf8'));
+    const profile = JSON.parse(boundedFile.readBoundedText(fsModule, resolvedProfilePath, MAX_PROFILE_BYTES, function () {
+      return createStorageReadError(PROFILE_PATH);
+    }));
     if (!isValidProfile(profile)) {
       return { status: 'invalid', profile: null, profileHash: null };
     }
@@ -979,7 +974,7 @@ function stageHistoryRevision(currentState, currentProfile, metadata, nextProfil
   });
   const newestByRevision = Object.create(null);
   for (let index = 0; index < retained.length; index += 1) {
-    newestByRevision[String(retained[index].metadata.revision)] = retained[index];
+    recordSafety.setOwnRecordValue(newestByRevision, String(retained[index].metadata.revision), retained[index]);
   }
   retained = Object.keys(newestByRevision).map(function (revision) {
     return newestByRevision[revision];
@@ -1397,7 +1392,7 @@ function readClient(r, required, principal) {
   const id = getHeader(r, HEADERS.clientId);
   if (
     typeof id !== 'string' ||
-    !/^[A-Za-z0-9_-]{8,128}$/.test(id) ||
+    !/^(?!(?:__proto__|constructor|prototype)$)[A-Za-z0-9_-]{8,128}$/.test(id) ||
     id.indexOf('..') !== -1
   ) {
     return required ? null : undefined;
@@ -1540,7 +1535,7 @@ function isValidRegistryClient(entry) {
     typeof entry === 'object' &&
     !Array.isArray(entry) &&
     typeof entry.id === 'string' &&
-    /^[A-Za-z0-9_-]{8,128}$/.test(entry.id) &&
+    /^(?!(?:__proto__|constructor|prototype)$)[A-Za-z0-9_-]{8,128}$/.test(entry.id) &&
     entry.id.indexOf('..') === -1 &&
     typeof entry.name === 'string' &&
     (entry.kind === 'desktop' ||
@@ -1618,7 +1613,7 @@ function normalizeRegistryClients(clients, now) {
     if (seenIds[entry.id] || (bindingId && seenBindings[bindingId])) {
       continue;
     }
-    seenIds[entry.id] = true;
+    recordSafety.setOwnRecordValue(seenIds, entry.id, true);
     if (bindingId) {
       seenBindings[bindingId] = true;
     }
@@ -1643,7 +1638,7 @@ function reconcileClientPreferences(
   ) {
     throw createStorageReadError(CLIENT_PREFERENCES_PATH);
   }
-  const records = {};
+  const records = Object.create(null);
   for (let index = 0; index < registry.clients.length; index += 1) {
     const client = registry.clients[index];
     const legacyKey = `client:${client.id}`;
@@ -2368,7 +2363,7 @@ function isValidPreferenceDocument(document, scope) {
   }
   return (
     typeof document.clientId === 'string' &&
-    /^[A-Za-z0-9_-]{8,128}$/.test(document.clientId) &&
+    /^(?!(?:__proto__|constructor|prototype)$)[A-Za-z0-9_-]{8,128}$/.test(document.clientId) &&
     document.clientId.indexOf('..') === -1
   );
 }
@@ -2394,7 +2389,7 @@ function normalizePreferenceCollection(path, collection) {
       if (key !== canonicalKey) {
         const canonical = collection.records[canonicalKey];
         if (!canonical || Number(document.revision) > Number(canonical.revision)) {
-          collection.records[canonicalKey] = document;
+          recordSafety.setOwnRecordValue(collection.records, canonicalKey, document);
         }
         delete collection.records[key];
         changed = true;
@@ -2755,12 +2750,12 @@ function remapDisplayProfileClient(previousClientId, nextClientId) {
     return;
   }
   const profileIdByClientId = Object.assign(
-    {},
+    Object.create(null),
     current.values.profileIdByClientId
   );
   delete profileIdByClientId[previousClientId];
   if (nextClientId) {
-    profileIdByClientId[nextClientId] = profileId;
+    recordSafety.setOwnRecordValue(profileIdByClientId, nextClientId, profileId);
   }
   current.revision += 1;
   current.updatedAt = nowIso();
@@ -2893,7 +2888,7 @@ function copyDisplaySettings(r, workspace, client) {
     };
     const updatedClientIds = [];
     const skippedClientIds = [];
-    const seenClientIds = {};
+    const seenClientIds = Object.create(null);
     const targetClientIds = input.targetClientIds.slice(0, CLIENT_REGISTRY_LIMIT);
     for (let index = 0; index < targetClientIds.length; index += 1) {
       const clientId = targetClientIds[index];
@@ -2980,7 +2975,7 @@ function listClients(r, workspace) {
 }
 
 function forgetClient(r, workspace, clientId, requestingClient) {
-  if (!/^[A-Za-z0-9_-]{8,128}$/.test(clientId)) {
+  if (!/^(?!(?:__proto__|constructor|prototype)$)[A-Za-z0-9_-]{8,128}$/.test(clientId)) {
     sendJson(r, 400, { error: 'Invalid dashboard client identity' });
     return;
   }

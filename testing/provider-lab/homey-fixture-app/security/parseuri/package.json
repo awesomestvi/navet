@@ -1,0 +1,7 @@
+{
+  "name": "@navet/homey-parseuri-compat",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.cjs",
+  "dependencies": { "parseuri-patched": "npm:parseuri@3.0.2" }
+}

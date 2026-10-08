@@ -1,6 +1,7 @@
 import { existsSync, lstatSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { repoRoot } from './repo-paths.mjs';
+import { inlineElementContents } from './inline-script-csp.mjs';
 
 const app = process.argv[2];
 if (!['website', 'demo', 'docs', 'storybook'].includes(app)) {
@@ -21,13 +22,12 @@ if (app === 'docs' || app === 'storybook') {
 }
 const assetPaths = new Set(assetNames.map((name) => join(dist, name)));
 const resourceAttributes = /\b(?:href|src|srcset|content)\s*=\s*(["'])(.*?)\1/gi;
-const inlineResources = /<(?:script|style)\b[^>]*>([\s\S]*?)<\/(?:script|style)>/gi;
 
 function referencedAsset(file, content) {
   if (file.endsWith('.html')) {
     const values = [
       ...[...content.matchAll(resourceAttributes)].map((match) => match[2]),
-      ...[...content.matchAll(inlineResources)].map((match) => match[1]),
+      ...inlineElementContents(content, ['script', 'style']),
     ];
     return assetNames.find((name) => values.some((value) => value.includes(name)));
   }

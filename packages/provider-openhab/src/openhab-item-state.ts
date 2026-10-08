@@ -1,7 +1,17 @@
 import type { OpenHABItem } from './openhab-types';
 
 export function openHABItemName(item: OpenHABItem): string {
-  return item.label?.replace(/\s*\[[^\]]*\]\s*$/, '').trim() || item.name;
+  const label = item.label?.trim() ?? '';
+  const previousClosing = label.slice(0, -1).lastIndexOf(']');
+  const opening = label.indexOf('[', previousClosing + 1);
+  const name = label.endsWith(']') && opening >= 0 ? label.slice(0, opening).trimEnd() : label;
+  return name || item.name;
+}
+
+export function stripOpenHABNameSuffix(name: string, suffix: string): string {
+  if (!name.toLowerCase().endsWith(suffix)) return name;
+  const prefix = name.slice(0, -suffix.length);
+  return /\s$/.test(prefix) ? prefix.trimEnd() : name;
 }
 
 export function openHABNumber(item: OpenHABItem): number | undefined {

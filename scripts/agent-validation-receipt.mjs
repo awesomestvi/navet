@@ -236,6 +236,9 @@ export async function verifyValidationReceipt({ receiptFile, expectedHead, repos
   const tier1 = validationOutput.slice(positions[1], positions[2]);
   const tier2 = validationOutput.slice(positions[2]);
   for (const [section, count] of [[tier1, receipt.tier1Tests], [tier2, receipt.tier2Tests]]) {
+    if (!Number.isSafeInteger(count) || count < 0) {
+      throw new Error('Native receipt test counts must be non-negative integers.');
+    }
     if (!new RegExp(`\\bTests\\s+${count} passed \\(${count}\\)`).test(section)) {
       throw new Error('Native receipt test counts are not a complete passing tier.');
     }

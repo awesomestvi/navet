@@ -1,3 +1,4 @@
+import recordSafety from '../shared/record-safety.js';
 import providerSessionModule from './provider-session-store.js';
 import installationAuthorityModule from './installation-authority.js';
 
@@ -403,12 +404,12 @@ function getHomeyBaseUrlCandidates(homey) {
 }
 
 function cloneWithOverrides(source, overrides) {
-  const next = {};
+  const next = Object.create(null);
   let key;
 
   for (key in source) {
     if (Object.prototype.hasOwnProperty.call(source, key)) {
-      next[key] = source[key];
+      recordSafety.setOwnRecordValue(next, key, source[key]);
     }
   }
 

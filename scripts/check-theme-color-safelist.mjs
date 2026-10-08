@@ -49,7 +49,7 @@ const missingDynamicClasses = [...new Set(requiredClasses)].filter(
   (className) => !safelistSet.has(className)
 );
 
-const colorPattern = new RegExp(`(${colors.join('|')})`, 'g');
+const colorPattern = new RegExp(`(${colors.map((color) => color.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'g');
 const asymmetricClasses = [];
 for (const className of safelistSet) {
   const match = colors.find((color) => className.includes(`-${color}-`));

@@ -10,6 +10,7 @@ import {
 } from './chore-calendar-policy.ts';
 import { applyChoreOccurrenceCommand } from './chore-occurrence-policy.ts';
 import { earnChoreProgressAwards } from './chore-progress-policy.ts';
+import { assertSafeRecord, setOwnRecordValue } from './record-safety.ts';
 
 export { applyChoreOccurrenceCommand } from './chore-occurrence-policy.ts';
 
@@ -1059,6 +1060,7 @@ export function isChoreWorkspaceData(value: unknown): value is ChoreWorkspaceDat
 }
 
 export function migrateChoreWorkspaceData(value: unknown): ChoreWorkspaceData {
+  assertSafeRecord(value);
   if (
     isRecord(value) &&
     value.schemaVersion === CHORE_WORKSPACE_SCHEMA_VERSION &&
@@ -1229,7 +1231,7 @@ export function materializeChoreOccurrences(
     throw new Error('Invalid chore occurrence range');
   }
 
-  const completionCountsByParticipant: Record<string, number> = {};
+  const completionCountsByParticipant: Record<string, number> = Object.create(null);
   if (definition.assignment.rotationStrategy === 'fair') {
     for (const occurrence of Object.values(existingOccurrences)) {
       if (
@@ -1733,6 +1735,8 @@ function requiredCapabilityForCommand(command: ChoreOccurrenceCommand): ChorePar
 export function applyChoreWorkspaceOccurrenceCommand(
   input: ApplyChoreWorkspaceOccurrenceCommandInput
 ): ApplyChoreWorkspaceOccurrenceCommandResult {
+  assertSafeRecord(input.command);
+  assertSafeRecord({ occurrenceId: input.occurrenceId });
   const occurrence = input.workspace.occurrencesById[input.occurrenceId];
   if (!occurrence) throw new Error('Chore occurrence is no longer available');
 
@@ -1900,6 +1904,7 @@ function isWorkspaceMissionComplete(workspace: ChoreWorkspaceData, mission: Chor
 export function applyChoreWorkspaceAction(
   input: ApplyChoreWorkspaceActionInput
 ): ApplyChoreWorkspaceActionResult {
+  assertSafeRecord(input.action);
   const result = applyChoreWorkspaceActionWithoutRecurrence(input);
   const { action, commandId, timestamp, workspace } = input;
   if (action.type !== 'occurrence_action') return result;
@@ -1981,7 +1986,7 @@ function applyChoreWorkspaceActionWithoutRecurrence(
       points && participantId ? (becameFinal ? points : stoppedBeingFinal ? -points : 0) : 0;
     if (points && participantId && (becameFinal || stoppedBeingFinal)) {
       const balances = getChoreExperiencePointBalances(workspace);
-      balances[participantId] = (balances[participantId] ?? 0) + pointsDelta;
+      setOwnRecordValue(balances, participantId, (balances[participantId] ?? 0) + pointsDelta);
       nextExperience = {
         ...nextExperience,
         earnedPointsByParticipant: balances,
@@ -2536,7 +2541,11 @@ function applyChoreWorkspaceActionWithoutRecurrence(
       throw new Error('Not enough points for this reward');
     }
     if (pointsDelta)
-      balances[request.participantId] = (balances[request.participantId] ?? 0) + pointsDelta;
+      setOwnRecordValue(
+        balances,
+        request.participantId,
+        (balances[request.participantId] ?? 0) + pointsDelta
+      );
     const pointTransactions = [
       ...experience.pointTransactions,
       {
@@ -2838,7 +2847,7 @@ function applyChoreWorkspaceActionWithoutRecurrence(
         ) {
           continue;
         }
-        occurrencesById[occurrence.id] = occurrence;
+        setOwnRecordValue(occurrencesById, occurrence.id, occurrence);
         occurrenceCreatedActivities.push({
           id: `activity:${commandId}:created:${occurrence.id}`,
           commandId,
@@ -2929,7 +2938,7 @@ export function getChoreExperiencePointBalances(
   const experience = workspace.experience ?? createChoreExperienceState();
   const persisted = experience.earnedPointsByParticipant;
   if (persisted) return { ...persisted };
-  const balances: Record<string, number> = {};
+  const balances: Record<string, number> = Object.create(null);
   for (const occurrence of Object.values(workspace.occurrencesById)) {
     if (occurrence.status !== 'done' || !occurrence.completedBy) continue;
     const points = experience.presentationByDefinitionId[occurrence.definitionId]?.points ?? 0;

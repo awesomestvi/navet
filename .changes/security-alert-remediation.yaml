@@ -1,0 +1,3 @@
+type: security
+audiences: [standalone, home-assistant]
+summary: Harden session storage, imported household data, media URLs and legacy resource redirects, and update vulnerable dependencies.

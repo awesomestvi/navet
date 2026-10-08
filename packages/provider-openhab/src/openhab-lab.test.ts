@@ -30,7 +30,7 @@ function labSnapshot(): OpenHABSnapshot {
       match[2].replace(/^"|"$/g, ''),
     ])
   );
-  const items: Record<string, OpenHABItem> = {};
+  const items: Record<string, OpenHABItem> = Object.create(null);
   for (const match of declarations.matchAll(
     /^(Group|Switch|Dimmer|Color|Contact|String|DateTime|Rollershutter|Number(?::\w+)?)\s+(\w+)\s+"([^"]+)"(?:\s+<([^>]+)>)?(?:\s+\(([^)]+)\))?(?:\s+\[([^\]]+)\])?/gm
   )) {

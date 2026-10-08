@@ -186,7 +186,7 @@ function extractWikidataEntityId(resourceUrl: string | undefined) {
   if (!resourceUrl) return null;
   try {
     const url = new URL(resourceUrl);
-    if (!url.hostname.endsWith('wikidata.org')) return null;
+    if (url.hostname !== 'wikidata.org' && !url.hostname.endsWith('.wikidata.org')) return null;
     return url.pathname.split('/').find((part) => /^Q\d+$/i.test(part)) ?? null;
   } catch {
     return null;
@@ -196,12 +196,13 @@ function extractWikidataEntityId(resourceUrl: string | undefined) {
 function extractSpotifyTrackIdFromValue(value: string | undefined) {
   const trimmed = value?.trim();
   if (!trimmed) return null;
-  const uriMatch = trimmed.match(/spotify(?::|\/)track(?::|\/)([a-zA-Z0-9]{22})/);
+  const uriMatch = trimmed.match(/^spotify(?::|\/)track(?::|\/)([a-zA-Z0-9]{22})$/);
   if (uriMatch?.[1]) return uriMatch[1];
   try {
     const url = new URL(trimmed);
     const trackId = url.pathname.split('/').find((part) => SPOTIFY_TRACK_ID_PATTERN.test(part));
-    if (url.hostname.endsWith('spotify.com') && trackId) return trackId;
+    if ((url.hostname === 'spotify.com' || url.hostname.endsWith('.spotify.com')) && trackId)
+      return trackId;
   } catch {
     // Provider media identifiers are commonly URIs rather than URLs.
   }

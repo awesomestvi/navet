@@ -1,3 +1,6 @@
+import { setOwnRecordValue } from '../packages/core/src/record-safety'
+import fileSystem from 'node:fs'
+import boundedFile from '../docker/shared/bounded-file.js'
 import profilePolicy from '../docker/shared/dashboard-profile-policy.js'
 import { createHash, randomBytes } from 'node:crypto'
 import {
@@ -5,7 +8,6 @@ import {
   readFileSync,
   renameSync,
   rmSync,
-  statSync,
   writeFileSync,
 } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
@@ -262,12 +264,8 @@ function isMissingFileError(error: unknown): boolean {
 
 function readJson<T>(filePath: string, fallback: T, maxBytes: number): T {
   try {
-    if (statSync(filePath).size > maxBytes) {
-      throw new DashboardProfileStorageReadError(
-        `Dashboard profile storage cannot be read safely: ${filePath}`
-      )
-    }
-    return JSON.parse(readFileSync(filePath, 'utf8')) as T
+    return JSON.parse(boundedFile.readBoundedText(fileSystem, filePath, maxBytes, () =>
+      new DashboardProfileStorageReadError(`Dashboard profile storage cannot be read safely: ${filePath}`))) as T
   } catch (error) {
     if (isMissingFileError(error)) {
       return fallback
@@ -534,12 +532,8 @@ export function createViteDashboardProfileStore(
 
   const readProfileFile = (): StoredProfileResult => {
     try {
-      if (statSync(paths.profile).size > MAX_PROFILE_BYTES) {
-        throw new DashboardProfileStorageReadError(
-          `Dashboard profile storage cannot be read safely: ${paths.profile}`
-        )
-      }
-      const serialized = readFileSync(paths.profile, 'utf8')
+      const serialized = boundedFile.readBoundedText(fileSystem, paths.profile, MAX_PROFILE_BYTES, () =>
+        new DashboardProfileStorageReadError(`Dashboard profile storage cannot be read safely: ${paths.profile}`))
       const parsed = JSON.parse(serialized)
       if (!isValidDashboardProfileData(parsed)) {
         return {
@@ -1101,7 +1095,7 @@ export function createViteDashboardProfileStore(
         : null
     if (
       typeof entry.id !== 'string' ||
-      !/^[A-Za-z0-9_-]{8,128}$/.test(entry.id) ||
+      !/^(?!(?:__proto__|constructor|prototype)$)[A-Za-z0-9_-]{8,128}$/.test(entry.id) ||
       entry.id.includes('..') ||
       typeof entry.name !== 'string' ||
       (entry.kind !== 'desktop' &&
@@ -1274,7 +1268,7 @@ export function createViteDashboardProfileStore(
       }
       return (
         typeof document.clientId === 'string' &&
-        /^[A-Za-z0-9_-]{8,128}$/.test(document.clientId) &&
+        /^(?!(?:__proto__|constructor|prototype)$)[A-Za-z0-9_-]{8,128}$/.test(document.clientId) &&
         !document.clientId.includes('..')
       )
     }
@@ -1315,7 +1309,7 @@ export function createViteDashboardProfileStore(
         if (key !== canonicalKey) {
           const canonical = collection.records[canonicalKey]
           if (!canonical || document.revision > canonical.revision) {
-            collection.records[canonicalKey] = document
+            setOwnRecordValue(collection.records, canonicalKey, document)
           }
           delete collection.records[key]
           changed = true
@@ -1436,7 +1430,7 @@ export function createViteDashboardProfileStore(
         `Dashboard profile storage cannot be reconciled safely: ${paths.clientPreferences}`
       )
     }
-    const records: Record<string, DashboardPreferenceDocument> = {}
+    const records: Record<string, DashboardPreferenceDocument> = Object.create(null)
     for (const client of registry.clients) {
       const legacyKey = `client:${client.id}`
       const canonicalKey =
@@ -1573,12 +1567,12 @@ export function createViteDashboardProfileStore(
     if (!current || typeof profileId !== 'string') {
       return
     }
-    const profileIdByClientId = {
-      ...current.values.profileIdByClientId,
-    }
+    const profileIdByClientId: Record<string, string> = Object.assign(
+      Object.create(null), current.values.profileIdByClientId
+    )
     delete profileIdByClientId[previousClientId]
     if (nextClientId) {
-      profileIdByClientId[nextClientId] = profileId
+      setOwnRecordValue(profileIdByClientId, nextClientId, profileId)
     }
     writeJson(paths.displayProfiles, {
       ...current,
@@ -2435,7 +2429,7 @@ function readClient(
   required: boolean
 ): BoundDashboardProfileClient | null {
   const id = getHeader(req, DASHBOARD_PROFILE_HEADERS.clientId)
-  if (!id || !/^[A-Za-z0-9_-]{8,128}$/.test(id) || id.includes('..')) {
+  if (!id || !/^(?!(?:__proto__|constructor|prototype)$)[A-Za-z0-9_-]{8,128}$/.test(id) || id.includes('..')) {
     return required ? null : null
   }
   const kindValue = getHeader(req, DASHBOARD_PROFILE_HEADERS.clientKind)
@@ -3320,7 +3314,7 @@ export function createViteDashboardProfileRequestHandler(options: {
         return
       }
       const clientId = decodeURIComponent(clientMatch[1])
-      if (!/^[A-Za-z0-9_-]{8,128}$/.test(clientId)) {
+      if (!/^(?!(?:__proto__|constructor|prototype)$)[A-Za-z0-9_-]{8,128}$/.test(clientId)) {
         sendJson(res, 400, { error: 'Invalid dashboard client identity' })
         return
       }

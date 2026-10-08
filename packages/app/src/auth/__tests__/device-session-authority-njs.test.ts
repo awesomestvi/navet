@@ -6,9 +6,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { files } = vi.hoisted(() => ({ files: new Map<string, string>() }));
 
-vi.mock('fs', () => {
+vi.mock('fs', async () => {
+  const { fileDescriptorFixture } = await import('../../../../../testing/file-descriptors');
   const missing = () => Object.assign(new Error('Missing file'), { code: 'ENOENT' });
   const fakeFs = {
+    ...fileDescriptorFixture((path) => {
+      const content = files.get(path);
+      if (content === undefined) throw missing();
+      return content;
+    }),
     mkdirSync: () => undefined,
     readFileSync(filePath: string) {
       const value = files.get(filePath);

@@ -10,9 +10,17 @@ allowBuilds:
   sharp: true
 
 overrides:
-  vite: 8.2.2
+  vite: 8.3.2
+  baseline-browser-mapping@<2.11.0: 2.11.27
+  brace-expansion@>=2.0.0 <2.1.7: 2.1.7
+  brace-expansion@>=4.0.0 <5.0.12: 5.0.12
+  browserslist@<4.28.7: 4.28.7
+  http-cache-semantics@<=4.2.0: 4.3.0
+  postcss-selector-parser@<7.1.6: 7.1.6
+  source-map-js@<1.2.2: 1.2.2
 
 minimumReleaseAgeExclude:
+  - http-cache-semantics@4.3.0
   - '@rolldown/binding-android-arm64@1.0.1'
   - '@rolldown/binding-darwin-arm64@1.0.1'
   - '@rolldown/binding-darwin-x64@1.0.1'

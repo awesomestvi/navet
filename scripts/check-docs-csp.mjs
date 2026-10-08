@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { repoRoot } from './repo-paths.mjs';
+import { inlineElementContents } from './inline-script-csp.mjs';
 
 const distDir = join(repoRoot, 'apps/docs/dist');
 const headers = readFileSync(join(distDir, '_headers'), 'utf8');
@@ -27,8 +28,7 @@ const scriptHashes = new Set();
 const htmlFiles = htmlFilesIn(distDir);
 for (const htmlPath of htmlFiles) {
   const html = readFileSync(htmlPath, 'utf8');
-  for (const [, attributes, content] of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)) {
-    if (/\bsrc\s*=/.test(attributes) || !content.trim()) continue;
+  for (const content of inlineElementContents(html)) {
     inlineScriptCount++;
     const hash = `'sha256-${createHash('sha256').update(content, 'utf8').digest('base64')}'`;
     scriptHashes.add(hash);
