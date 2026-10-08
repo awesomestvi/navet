@@ -157,7 +157,7 @@
     "husky": "^9.1.7",
     "jsdom": "^30.0.1",
     "playwright": "^1.62.1",
-    "sharp": "^0.35.3",
+    "sharp": "^0.35.5",
     "storybook": "^10.5.10",
     "tailwindcss": "4.3.3",
     "typescript": "^7.0.2",
