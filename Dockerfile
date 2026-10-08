@@ -1,18 +1,5 @@
 FROM --platform=$BUILDPLATFORM node:22-alpine AS build
 WORKDIR /app
-ARG NAVET_ENABLE_DEMO=false
-ARG NAVET_VERSION=0.0.0
-ARG NAVET_GIT_SHA=local
-ARG NAVET_BUILD_DATE=unknown
-ARG NAVET_RELEASE_CHANNEL=development
-ARG NAVET_BUILD_VERSION
-
-ENV NAVET_GIT_SHA=$NAVET_GIT_SHA
-ENV NAVET_BUILD_DATE=$NAVET_BUILD_DATE
-ENV NAVET_RELEASE_CHANNEL=$NAVET_RELEASE_CHANNEL
-ENV NAVET_BUILD_VERSION=${NAVET_BUILD_VERSION:-${NAVET_VERSION}}
-ENV NAVET_VERSION=$NAVET_VERSION
-
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/standalone/package.json apps/standalone/package.json
 COPY packages/app/package.json packages/app/package.json
@@ -30,6 +17,20 @@ COPY assets assets
 COPY scripts scripts
 COPY docker/shared docker/shared
 COPY docker/njs/chore-durable-storage.js docker/njs/chore-durable-storage.js
+# Apply release metadata after reusable dependency and source layers.
+ARG NAVET_ENABLE_DEMO=false
+ARG NAVET_VERSION=0.0.0
+ARG NAVET_GIT_SHA=local
+ARG NAVET_BUILD_DATE=unknown
+ARG NAVET_RELEASE_CHANNEL=development
+ARG NAVET_BUILD_VERSION
+
+ENV NAVET_GIT_SHA=$NAVET_GIT_SHA
+ENV NAVET_BUILD_DATE=$NAVET_BUILD_DATE
+ENV NAVET_RELEASE_CHANNEL=$NAVET_RELEASE_CHANNEL
+ENV NAVET_BUILD_VERSION=${NAVET_BUILD_VERSION:-${NAVET_VERSION}}
+ENV NAVET_VERSION=$NAVET_VERSION
+
 RUN NAVET_ENABLE_DEMO=$NAVET_ENABLE_DEMO pnpm build
 
 FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS rss-transport-build
