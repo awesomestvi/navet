@@ -57,7 +57,7 @@ export function buildCatalogItems(root, catalog, index, provenance) {
   // Use the executable index for exhaustive coverage, including story-local demos,
   // diagnostics and stories without an imported component or explicit static title.
   for (const source of [...new Set(stories.map(indexedSource))].sort()) {
-    const examples = links(source).sort((a, b) => Number(b.type === 'story') - Number(a.type === 'story')); 
+    const examples = links(source).sort((a, b) => Number(b.type === 'story') - Number(a.type === 'story'));
     const name = `example-${slug(path.posix.basename(source).replace(/\.stories\.tsx?$/, ''))}-${fingerprint(source).slice(0, 12)}`;
     const declared = catalog.storyFiles?.find((story) => story.source === source)?.contracts ?? [];
     const contracts = declared.flatMap((ref) => catalog.entries.filter((entry) => entry.name === ref.name && entry.importFrom === ref.importFrom));

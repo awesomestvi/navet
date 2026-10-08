@@ -18,34 +18,19 @@ export function MarketingCardsDetailsSection() {
           id="cards-everyday"
           className={cn('text-3xl font-semibold tracking-tight', surface.textPrimary)}
         >
-          Start with the room you use most.
+          Choose the controls you use most.
         </h2>
-        <div className="grid gap-8 lg:grid-cols-[1fr_0.7fr] lg:items-center">
-          <div className="space-y-6">
-            <p className={cn('max-w-2xl text-lg leading-8', surface.textSecondary)}>
-              Turn on a light, adjust the temperature, pause a speaker, or check who is home. Add a
-              room card for grouped controls, then bring in weather, battery readings, notes,
-              photos, and action buttons where they help.
-            </p>
-            <p className={cn('max-w-2xl leading-7', surface.textSecondary)}>
-              Use the visual editor for everyday settings and YAML for advanced actions and
-              conditions. Choose automatic, light, dark, black, or glass themes. Device controls
-              follow the capabilities available in Home Assistant.
-            </p>
-          </div>
-          <figure className="mx-auto max-w-sm space-y-3">
-            <img
-              src={`${import.meta.env.BASE_URL}cards-preview/room-controls.webp`}
-              width={460}
-              height={868}
-              loading="lazy"
-              alt="Kitchen room dialog with lighting, fan, cover, and speaker controls"
-              className="w-full rounded-3xl"
-            />
-            <figcaption className={cn('text-sm', surface.textSecondary)}>
-              Room controls with simulated devices.
-            </figcaption>
-          </figure>
+        <div className="grid gap-6 md:grid-cols-2">
+          <p className={cn('max-w-2xl text-lg leading-8', surface.textSecondary)}>
+            Turn on a light, adjust the temperature, pause a speaker, or check who is home. Add a
+            room card for grouped controls, then bring in weather, battery readings, notes, photos,
+            and action buttons where they help.
+          </p>
+          <p className={cn('max-w-2xl leading-7', surface.textSecondary)}>
+            Use the visual editor for everyday settings and YAML for advanced actions and
+            conditions. Choose automatic, light, dark, black, or glass themes. Device controls
+            follow the capabilities available in Home Assistant.
+          </p>
         </div>
       </section>
       <section className="space-y-6" aria-labelledby="choose-navet">

@@ -27,10 +27,6 @@ Area membership follows entity assignments, with device areas as a fallback.
 Hidden, disabled, and diagnostic entities are excluded. Select a member's name in the
 room dialog to open Home Assistant's entity details; use **Close** or Escape to dismiss it.
 
-![Kitchen room controls](/cards-preview/room-controls.webp)
-
-*Room dialog with simulated devices.*
-
 ## Choose room members yourself
 
 Use **Selected entities** in the visual editor to choose a specific set of devices and readings.
