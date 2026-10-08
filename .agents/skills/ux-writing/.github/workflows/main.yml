@@ -1,0 +1,29 @@
+name: Droid Review
+
+permissions:
+  pull-requests: write # Needed for leaving PR comments
+  contents: read
+  issues: write
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, edited]
+
+# Cancel previous runs for the same PR
+concurrency:
+  group: review-droid-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  code-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Skip draft PRs
+    if: github.event.pull_request.draft == false
+
+    steps:
+      - uses: Factory-AI/droid-code-review@latest
+        with:
+          factory-api-key: ${{ secrets.FACTORY_API_KEY }}
+          pr-number: ${{ github.event.pull_request.number }}
+          pr-head-sha: ${{ github.event.pull_request.head.sha }}

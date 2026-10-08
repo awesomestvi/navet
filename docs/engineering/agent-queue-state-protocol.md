@@ -52,7 +52,7 @@ if it is unavailable, report the missing owner privately before mutating state.
    is not merge, public research delivery, or acceptance. For implementation, verify the
    maintainer's merge and exact accepted head before recording `delivered`. For public research,
    verify the actual Nisse comment author and URL. Private planning results require the separate
-   [private Project readback](autonomous-builder-plan.md#project-access-and-scope) contract; its writer,
+   [private Project readback](github-project-planning.md#project-access-and-scope) contract; its writer,
    queue integration and live pilot remain activation gates. Preserve cleanup work independently.
 
 The default capacity is one unfinished claimed or dispatched task. Lease expiration does not

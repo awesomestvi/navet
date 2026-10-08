@@ -9,7 +9,7 @@ public delivery. Maintainer acceptance, merge and release remain separate decisi
 For UI tickets, design and implementation specialists use the
 [composition recipes](../design-system/AGENT-COMPOSITION-RECIPES.md) and
 `pnpm agent:components <name>` to inspect current shared contracts. Test and review specialists
-use the [ticket UX audit](../../.agents/skills/navet-ux-audit/SKILL.md) for reproducible rendered
+use the [UX evidence guidance](../../ai/skills/navet-ux.md) for reproducible rendered
 evidence and `pnpm check:ui-kit` for focused source guardrails. Attach findings and retest evidence
 to the existing ticket and approval package. Choose coverage from the changed surface, its direct
 consumers and acceptance criteria; these tools do not require an additional audit programme or
@@ -24,7 +24,7 @@ specialist for every task.
 | `agent-planning-intake.mjs` | Human approval bound to the selected delivery brief and proposal revision |
 | `agent-team-state.mjs` | Specialist plans, dependencies, file ownership, attempts, evidence and waiting states |
 | `agent-team-coordinator.mjs` | One specialist execution or observation per bounded invocation |
-| `agent-team-ticket.mjs` | Historical ticket transport, durable send permission and independent readback; Project adapter requires a pilot |
+| `agent-team-ticket.mjs` | Ticket transport, durable send permission and independent readback; Project adapter requires a pilot |
 | `agent-team-conversation.mjs` | Store-backed ticket publication and verified answer resumption |
 | `agent-team-delivery.mjs` | Artifact/acceptance contracts; Project publication adapter requires a pilot |
 | `agent-team-checkpoint.mjs` | Read-only, stable Git checkpoints for the exact worker run |
@@ -43,9 +43,8 @@ agent-authored stage changes grant no implementation authority. Approved deliver
 
 Project drafts have no comment threads. Interactive skills retain questions, verified answers and
 results in draft history and use the active Codex conversation for authenticated decisions. The
-coordinated ticket callbacks below are transport contracts; their existing historical transport
-helpers do not implement GitHub draft editing or human provenance. Install and pilot Project
-adapters before using those operations against this destination. The queue remains paused.
+coordinated ticket callbacks require Project adapters for draft editing and human provenance.
+Install and verify those adapters through an authorized pilot before using this destination.
 
 ## Run One Operation
 
@@ -161,9 +160,8 @@ Remaining live gates are:
 - An explicitly authorized real idea-to-proposal run, its separately approved delivery, actual
   ticket question/answer recovery and verified PR/preview/Project receipts.
 
-No scheduler is installed or activated by this command. Comparative experiments remain stopped.
-Broader rollout/pilot evidence in the autonomous builder plan and Navet 1.0 release acceptance
-remain separate ledgers and require their own evidence and authorization.
+The command executes one operation. [Autonomy rollout](autonomous-builder-plan.md) and Navet
+1.0 acceptance require separate scope, authorization and evidence.
 
 ## Infrastructure Acceptance Ledger
 
@@ -179,7 +177,5 @@ remain separate ledgers and require their own evidence and authorization.
 | Terminal acceptance and ownership release | Completion fixtures use real task storage and native session JSONL | Human merge and live completion receipts unverified |
 | Measured specialist usage within accepted caps | Accounting fixtures cover full inventory and allocation settlement | Dedicated sessions and accepted live policy unverified |
 
-These local contracts form the workflow infrastructure delivered in
-[PR #232](https://github.com/navet-app/navet/pull/232). Operational acceptance requires the live
-gates above. The broader rollout ledger in the autonomous builder plan and the product release
-ledger retain their separate requirements.
+Operational acceptance requires the live gates above. Autonomy rollout and product release
+acceptance use their own evidence and authorization.

@@ -1,0 +1,40 @@
+name: Build Skill Package
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build (leave empty for latest)'
+        required: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.release.tag_name || github.event.inputs.tag || github.ref }}
+
+    - name: Build skill package
+      run: |
+        chmod +x ./build-skill.sh
+        ./build-skill.sh
+
+    - name: Upload skill package as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ux-writing-skill
+        path: dist/ux-writing-skill.zip
+
+    - name: Upload to release
+      if: github.event_name == 'release'
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh release upload "${{ github.event.release.tag_name }}" dist/ux-writing-skill.zip --clobber

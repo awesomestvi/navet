@@ -1,6 +1,6 @@
 # Direct request workflows
 
-Use ordinary requests in the Navet Codex workspace. Repository skills carry each request through
+Use ordinary requests in the Navet Codex workspace. The routed guides carry each request through
 its checked deliverable. These workflows run interactively using available connected tools.
 
 | Request | Result | Authority |
@@ -10,18 +10,19 @@ its checked deliverable. These workflows run interactively using available conne
 | Scan Navet for UX bugs and improvements | Luna high code inspection with concise, deduplicated GitHub Project findings and explicit coverage | On demand; findings do not authorize implementation |
 | Implement this approved idea | One PR, previews, current-head checks and UX evidence linked to GitHub Project | Requires selected scope and public visibility; maintainer merges |
 
-## Use the matching skill
+## Follow the matching workflow
 
-- [Community communication](../../.agents/skills/navet-release-communication/SKILL.md) resolves the
+- Community communication resolves the
   requested topic or feature, applies Navet voice and design standards, and verifies all three
   publications. Release posts also read the full changelog and ask which news should lead.
-- [Idea proposals](../../.agents/skills/navet-idea-proposals/SKILL.md) uses the existing private **Navet planning** Project, checks duplicates and develops decision-ready proposals.
-- [Approved delivery](../../.agents/skills/navet-approved-delivery/SKILL.md) implements selected
+- Idea proposals uses the existing private **Navet planning** Project, checks duplicates and develops decision-ready proposals.
+- Approved delivery implements selected
   scope using the existing work brief, UX audit and approval package.
-- [UX discovery scan](../../.agents/skills/navet-ux-scan/SKILL.md) delegates close code and journey
+- UX discovery scan delegates close code and journey
   inspection to `gpt-6-luna` with high reasoning effort. It separates defects from improvements
   and reports source evidence and actual rendered coverage.
 
+Private destination, access and revision rules live in [Project planning](github-project-planning.md).
 Project draft detail follows the [proposal template](templates/idea-proposal.md). Small bugs use
 short reproduction, expected behavior, suggested repair and acceptance checks. Research, options
 and prototypes support decisions that need them. Detailed logs and execution records remain in
@@ -67,7 +68,7 @@ sets the reviewed name/avatar. Store its URL in `marketing/private/discord-webho
 permissions `600`; keep it outside copy, screenshots and publication receipts. Include its
 identity in the consolidated approval package. The sender verifies the server, channel, name, avatar,
 approved text and image before claiming one send, disables automatic mentions, and records API
-readback. No webhook publication occurs during setup or testing. See publication inputs for the
+readback. No webhook publication occurs during setup or testing. Use `node scripts/discord-webhook.mjs --help` for the
 sender command. An unavailable actual Discord preview remains explicitly unverified.
 
 Workflow tooling reads evidence from a separate clean checkout through `--source-root`. Release
@@ -77,9 +78,9 @@ untracked evidence from being presented as product proof.
 
 Each marketing task retains private progress, copy and review evidence in the ignored marketing
 workspace. `prepare` retains the reviewed publication intent; `attempt` claims one send before the
-browser click or webhook request; `record` validates observed post/message readback. See
-[publication inputs](../../.agents/skills/navet-release-communication/references/publication-inputs.md)
-for command arguments and record fields. Successful channels are skipped on restart. An uncertain
+browser click or webhook request; `record` validates observed post/message readback. Current command arguments and record fields are defined in the
+[content CLI](../../scripts/content-cli.mjs) and
+[publication protocol](../../scripts/content-publication.mjs). Successful channels are skipped on restart. An uncertain
 send requires inspection of the owning platform and cannot automatically send again.
 
 Version 2 agent records retain request authorization, final package approval, quality review, publication method and
@@ -95,11 +96,14 @@ valid finding or missing UX evidence stays visible in the approval package.
 
 ## Acceptance evidence
 
-| Milestone | Evidence required | Operational status |
-| --- | --- | --- |
-| Community post | Actual human request, verified source, one master approval, reviewed image/copy, identities/destinations and three permalinks | v0.17.7 published to all three; Reddit and forum visually verified, Discord verified through API readback |
-| Idea development | Requested ideas, verified private destination, readable proposals and attachment/prototype readback | Live proposal development unverified |
-| Approved delivery | Selected scope, one PR, current previews/checks, rendered UX review and GitHub Project readback | Live delivery through these skills unverified |
+| Milestone | Required evidence |
+| --- | --- |
+| Community post | Actual human request, verified source, approved master copy/image, identities/destinations and three actual publication readbacks |
+| Idea development | Requested scope, verified private destination, proposal and attachment/prototype readback |
+| Approved delivery | Selected scope, one PR, current previews/checks, rendered UX review and Project readback |
+
+Verify access and operational status for the current request from owning-service receipts.
+A prior publication or local evaluation does not establish present access or acceptance.
 
 Deterministic tests cover agent-authored content, clean tagged evidence, request scope, reviewed
 payloads, wrong destinations/readbacks, retained attempts and partial-channel recovery. Isolated

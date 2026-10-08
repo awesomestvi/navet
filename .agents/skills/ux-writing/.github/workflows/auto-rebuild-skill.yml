@@ -1,0 +1,61 @@
+name: Auto-rebuild Skill Package
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'SKILL.md'
+      - 'docs/**'
+      - 'examples/**'
+      - 'references/**'
+      - 'templates/**'
+      - 'build-skill.sh'
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+
+    # Grant write permissions to contents and pull-requests
+    permissions:
+      contents: write
+      pull-requests: write
+
+    # Skip if commit was made by the bot to prevent infinite loops
+    if: "!contains(github.event.head_commit.message, '[auto-rebuild]')"
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build skill package
+      run: ./build-skill.sh
+
+    - name: Check for changes
+      id: check_changes
+      run: |
+        if git diff --quiet dist/ux-writing-skill.zip; then
+          echo "changed=false" >> $GITHUB_OUTPUT
+        else
+          echo "changed=true" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Create Pull Request
+      if: steps.check_changes.outputs.changed == 'true'
+      run: |
+        BRANCH_NAME="auto-rebuild-$(date +%s)"
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git checkout -b "$BRANCH_NAME"
+        git add dist/ux-writing-skill.zip
+        git commit -m "Auto-rebuild skill package [auto-rebuild]"
+        git push -u origin "$BRANCH_NAME"
+
+        # Create PR using GitHub CLI
+        gh pr create \
+          --title "Auto-rebuild skill package" \
+          --body "Automated rebuild of skill package after changes to skill files." \
+          --base main \
+          --head "$BRANCH_NAME"
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

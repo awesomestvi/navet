@@ -158,6 +158,22 @@ export async function collectPromotionSources({
   return sources;
 }
 
+/** Verify candidate evidence against the documented package namespace and publication run. */
+export async function candidatePublicationSucceeded(release, sha, { readEvidence, readRun }) {
+  const asset = release.assets?.find((entry) => entry.name === 'navet-release-evidence.json');
+  if (!asset || !release.assets.some((entry) => entry.name === 'navet-release-notes.json'))
+    return false;
+  const evidence = await readEvidence(asset);
+  try {
+    // Repository ownership does not change the published container package namespace.
+    validateEvidence(evidence, { tag: release.tag_name, sha, owner: 'awesomestvi' });
+  } catch {
+    return false;
+  }
+  const run = await readRun(evidence.runId);
+  return run.conclusion === 'success' && run.path === '.github/workflows/release.yml';
+}
+
 /**
  * Read workflow inputs, discover eligible releases through Git and GitHub, and emit
  * the resolved plan to stdout and optional Actions output and summary files.
@@ -212,30 +228,17 @@ async function main() {
         (run) => run.head_branch === tag && run.head_sha === sha && run.conclusion === 'success',
       );
     },
-    candidateSucceeded(release, sha) {
-      const asset = release.assets?.find((entry) => entry.name === 'navet-release-evidence.json');
-      if (!asset || !release.assets.some((entry) => entry.name === 'navet-release-notes.json'))
-        return false;
-      const evidence = JSON.parse(
-        execFileSync(
-          'gh',
-          [
-            'api',
-            '-H',
-            'Accept: application/octet-stream',
-            `repos/${repo}/releases/assets/${asset.id}`,
-          ],
-          { encoding: 'utf8' },
-        ),
-      );
-      try {
-        validateEvidence(evidence, { tag: release.tag_name, sha, owner: repo.split('/')[0] });
-      } catch {
-        return false;
-      }
-      const run = api(`actions/runs/${evidence.runId}`);
-      return run.conclusion === 'success' && run.path === '.github/workflows/release.yml';
-    },
+    candidateSucceeded: (release, sha) =>
+      candidatePublicationSucceeded(release, sha, {
+        readEvidence: (asset) =>
+          JSON.parse(
+            execFileSync('gh', [
+              'api', '-H', 'Accept: application/octet-stream',
+              `repos/${repo}/releases/assets/${asset.id}`,
+            ], { encoding: 'utf8' }),
+          ),
+        readRun: (id) => api(`actions/runs/${id}`),
+      }),
   });
   const plan = resolvePromotion({
     channel,

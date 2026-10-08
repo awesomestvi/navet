@@ -4,183 +4,119 @@ Use this page as the map for the documentation set.
 
 ## Keep guidance matched to the product
 
-Before writing or reusing product instructions, tutorials, or marketing claims, cross-check the
-current implementation and supported provider/deployment behavior. Inspect the running product
-or the exact Storybook component when practical. Existing Markdown, screenshots, and plans are
-references to verify, not evidence that a feature still behaves as described.
-
-When a discrepancy is found, update the affected current guide and any working tutorial or plan
-that repeats it. Record the implementation reference and what was verified. Distinguish a
-component preview or preset demo from a complete workflow on a connected installation. Keep
-historical changelog entries as historical records.
+Follow [documentation policy and drift audit](agents/documentation.md). Verify product/tutorial/
+marketing claims against current owners and supported provider/deployment behavior; inspect the
+actual product or story where needed. A preset demo is not a connected-installation workflow.
 
 ## Document lifecycle
 
-Every maintained document must have one clear role:
-
-- **Current guidance** describes the product or architecture as it works today and belongs in the
-  user, contributor, maintainer, or AI maps below.
-- **Open roadmap** describes outcomes that have not shipped. Remove completed items as part of the
-  implementation that ships them.
-- **Historical record** belongs in changelog entries, issues, pull requests, and Git history—not in
-  required reading or beside current architecture guidance.
-
-Delete completed implementation plans after durable behavior has been captured in current guides
-or architecture documents. Do not keep an outdated plan merely to explain why current code exists;
-Git history and the linked issue retain that context without presenting it as a current interface.
+Current guides describe lasting behavior; open roadmaps describe unshipped scope. Remove shipped
+items and completed plans after capturing durable contracts. History belongs in changelogs,
+issues, PRs and Git. Existing Markdown, screenshots and plans are evidence to verify.
 
 ## Start Here
 
 - If you want to run Navet: start with the provider setup guides.
 - If you want to contribute code: start with [../CONTRIBUTING.md](../CONTRIBUTING.md).
 - If you need maintainer or release guidance: jump to the maintainer section below.
-- If you are updating AI guidance: use the `ai/` section after reading the contributor docs.
+- For AI tasks: start with [root AGENTS.md](../AGENTS.md) and its single routed guide.
 
 ## User Docs
 
-- [../README.md](../README.md)
-  Product overview, support status, repo layout, and quick development basics.
-- [HOME_ASSISTANT.md](HOME_ASSISTANT.md)
-  Home Assistant deployment guide for the custom panel via HACS, add-on, and standalone paths.
-- [NAVET_DEV.md](NAVET_DEV.md)
-  Install and update Navet Dev through the add-on, Docker, or an advanced manual custom-panel build.
-- [HOMEY.md](HOMEY.md)
-  Homey standalone setup.
-- [OPENHAB.md](OPENHAB.md)
-  openHAB standalone setup.
-- [WIDGETS.md](WIDGETS.md)
-  Widget reference: types, sizes, placement, and limits.
-- [integrations.md](integrations.md)
-  Public provider status, capability matrix, and multi-provider behavior.
-- [user-guide.md](user-guide.md)
-  Current dashboard sections, editing, profiles, kiosk behavior, and provider availability.
-- [ROADMAP.md](ROADMAP.md)
-  Public roadmap.
-- [../SECURITY.md](../SECURITY.md)
-  Security and public deployment guidance.
+| Guide | Purpose |
+| --- | --- |
+| [Product overview](../README.md) | Product, support and development overview. |
+| [Home assistant](HOME_ASSISTANT.md) | HACS panel, add-on and standalone setup. |
+| [Navet dev](NAVET_DEV.md) | Development builds: add-on, Docker or manual panel. |
+| [Homey](HOMEY.md) | Homey standalone setup. |
+| [Openhab](OPENHAB.md) | openHAB standalone setup. |
+| [Widgets](WIDGETS.md) | Widget reference: types, sizes, placement, and limits. |
+| [Integrations](integrations.md) | Provider status, capabilities and source selection. |
+| [User guide](user-guide.md) | Sections, profiles, editing and kiosk use. |
+| [Roadmap](ROADMAP.md) | Public roadmap. |
+| [Security](../SECURITY.md) | Security and public deployment guidance. |
 
 ## Contributor Docs
 
-- [product/vision.md](product/vision.md)
-  Durable product purpose, audience, and non-goals.
-- [product/design-principles.md](product/design-principles.md)
-  Product-level design decisions that outrank temporary UI conventions.
-- [product/dashboard-principles.md](product/dashboard-principles.md)
-  Dashboard hierarchy, density, responsiveness, and control principles.
-
-- [../CONTRIBUTING.md](../CONTRIBUTING.md)
-  Onboarding, local setup, and validation flow.
-- [agents/commands.md](agents/commands.md)
-  Repo command policy and commit-message rules.
-- [agents/architecture.md](agents/architecture.md)
-  Short architecture overview.
-- [architecture/package-boundaries.md](architecture/package-boundaries.md)
-  What belongs in `@navet/core`, `@navet/ui`, provider packages, and `@navet/app`.
-- [architecture/provider-contract.md](architecture/provider-contract.md)
-  Shared provider contract and responsibilities.
-- [architecture/provider-neutral-ui.md](architecture/provider-neutral-ui.md)
-  Shared UI boundary rules.
-- [architecture/dashboard-runtime.md](architecture/dashboard-runtime.md)
-  Dashboard composition, provider queries, synchronization, room editing, and media catalog ownership.
-- [architecture/household-chores.md](architecture/household-chores.md)
-  Provider-neutral household scheduling, workflow, storage, rewards, and optional provider projections.
-- [architecture/rss-transport.md](architecture/rss-transport.md)
-  Authenticated feed access and the public-resource network boundary.
-- [architecture/dashboard-profile-ownership.md](architecture/dashboard-profile-ownership.md)
-  Multi-dashboard settings ownership, revision sync, recovery, and credential-session boundaries.
-- [architecture/persisted-data-migrations.md](architecture/persisted-data-migrations.md)
-  Active compatibility reads, review releases, and evidence required before retirement.
-- [architecture/media-dashboard-provider-limitations.md](architecture/media-dashboard-provider-limitations.md)
-  Media dashboard contract, Home Assistant behavior, artwork handling, and current limits.
-- [architecture/marketing-website.md](architecture/marketing-website.md)
-  Website-specific structure and reuse rules.
-- [design-system/README.md](design-system/README.md)
-  Shared UI layers, import surfaces, and review model.
-- [design-system/UI-GUIDELINES.md](design-system/UI-GUIDELINES.md)
-  Visual and interaction rules.
-- [design-system/AI-DESIGN-CONTEXT.md](design-system/AI-DESIGN-CONTEXT.md)
-  Source-derived component and token discovery, references, and UI validation.
-- [design-system/AGENT-COMPOSITION-RECIPES.md](design-system/AGENT-COMPOSITION-RECIPES.md)
-  Shared card, sheet, form, summary, and state compositions.
-- [STORYBOOK_WORKFLOW.md](STORYBOOK_WORKFLOW.md)
-  Story placement and review workflow.
-- [testing/provider-testing-strategy.md](testing/provider-testing-strategy.md)
-  Testing layers and boundary expectations.
-- [testing/test-tier-inventory.md](testing/test-tier-inventory.md)
-  Current tier inventory by subsystem.
+| Guide | Purpose |
+| --- | --- |
+| [Vision](product/vision.md) | Purpose, audience and non-goals. |
+| [Design principles](product/design-principles.md) | Product design authority. |
+| [Dashboard principles](product/dashboard-principles.md) | Hierarchy, density, controls and responsiveness. |
+| [Contributing](../CONTRIBUTING.md) | Local setup and contribution checks. |
+| [Commands](agents/commands.md) | Focused validation and commit policy. |
+| [Architecture](agents/architecture.md) | Short architecture overview. |
+| [Package boundaries](architecture/package-boundaries.md) | Core/UI/provider/app ownership. |
+| [Provider contract](architecture/provider-contract.md) | Adapter state, commands and services. |
+| [Provider neutral UI](architecture/provider-neutral-ui.md) | Shared UI boundary rules. |
+| [Dashboard runtime](architecture/dashboard-runtime.md) | Composition, queries, sync, rooms and media. |
+| [Household chores](architecture/household-chores.md) | Scheduling, workflow, rewards, storage and projections. |
+| [RSS transport](architecture/rss-transport.md) | Feed authentication and public-network boundary. |
+| [Dashboard profile ownership](architecture/dashboard-profile-ownership.md) | Settings, revisions, sync and session boundaries. |
+| [Persisted data migrations](architecture/persisted-data-migrations.md) | Compatibility reads and retirement evidence. |
+| [Media dashboard provider limitations](architecture/media-dashboard-provider-limitations.md) | Media contracts, artwork and capability limits. |
+| [Marketing website](architecture/marketing-website.md) | Website structure and reuse. |
+| [Design system](design-system/README.md) | Shared UI layers, exports and review. |
+| [UI guidelines](design-system/UI-GUIDELINES.md) | Visual and interaction rules. |
+| [AI design context](design-system/AI-DESIGN-CONTEXT.md) | Source-derived components, tokens and story discovery. |
+| [Agent composition recipes](design-system/AGENT-COMPOSITION-RECIPES.md) | Cards, sheets, forms, summaries and states. |
+| [Storybook workflow](STORYBOOK_WORKFLOW.md) | Story placement and review workflow. |
+| [Provider testing strategy](testing/provider-testing-strategy.md) | Testing layers and boundary expectations. |
+| [Test tier inventory](testing/test-tier-inventory.md) | Current tier inventory by subsystem. |
 
 ## Maintainer Docs
 
-- [engineering/agentic-development.md](engineering/agentic-development.md)
-  Issue-to-preview workflow, agent roles, permissions, approval gates, and stewardship.
-- [engineering/agent-task-lifecycle.md](engineering/agent-task-lifecycle.md)
-  Private task records, ownership, authority, recovery, and execution evidence.
-- [engineering/agent-queue-state-protocol.md](engineering/agent-queue-state-protocol.md)
-  Queue reconciliation, dispatch receipts, follow-ups, and verified completion.
-- [engineering/autonomous-builder-plan.md](engineering/autonomous-builder-plan.md)
-  Open delivery, discovery, and maturity work with explicit operational exit gates.
-- [engineering/private-home-testing.md](engineering/private-home-testing.md)
-  Secure branch testing against a private Home Assistant installation.
+| Guide | Purpose |
+| --- | --- |
+| [Agent delivery](engineering/agentic-development.md) | Delivery, roles and acceptance. |
+| [Runner operations](engineering/agent-runner-operations.md) | Request authority, runner identities, review dispatch and repository setup. |
+| [Task lifecycle](engineering/agent-task-lifecycle.md) | Ownership, authority, recovery and evidence. |
+| [Queue protocol](engineering/agent-queue-state-protocol.md) | Dispatch, reconciliation and verified completion. |
+| [Private planning](engineering/github-project-planning.md) | Private access, revisions and visibility. |
+| [Coordinated team](engineering/agent-team-workflow.md) | Source owners and live acceptance gates. |
+| [Private home testing](engineering/private-home-testing.md) | Authorized private Home Assistant testing. |
+| [Release workflow](release-workflow.md) | Lanes, artifacts, versions and rollout. |
+| [Release and publishing](agents/release-and-publishing.md) | Release authority and notes. |
+| [Rollback](rollback.md) | Docker, add-on and panel rollback. |
+| [Versioning](VERSIONING.md) | Release-line and versioning policy. |
+| [Provider platform roadmap](roadmap/provider-platform-roadmap.md) | Internal provider-platform follow-up roadmap. |
 
-- [release-workflow.md](release-workflow.md)
-  Release lanes, artifact surfaces, and version alignment.
-- [agents/release-and-publishing.md](agents/release-and-publishing.md)
-  Maintainer and agent release policy.
-- [rollback.md](rollback.md)
-  Rollback guidance for Docker, add-on, and custom panel surfaces.
-- [VERSIONING.md](VERSIONING.md)
-  Release-line and versioning policy.
-- [roadmap/provider-platform-roadmap.md](roadmap/provider-platform-roadmap.md)
-  Internal provider-platform follow-up roadmap.
+## Open Roadmaps
+
+| Guide | Purpose |
+| --- | --- |
+| [Autonomy roadmap](engineering/autonomous-builder-plan.md) | Unapproved future autonomy and readiness outcomes. |
 
 ## AI And Agent Docs
 
-- [../AGENTS.md](../AGENTS.md)
-  Complete baseline rules, code-location shortcuts, and task router.
-- [../ai/agents.md](../ai/agents.md)
-  Optional navigation index for locating deeper area guidance.
-- [../ai/skills/home-assistant-integration.md](../ai/skills/home-assistant-integration.md)
-- [../ai/skills/auth-deployment.md](../ai/skills/auth-deployment.md)
-- [../ai/skills/testing-architecture.md](../ai/skills/testing-architecture.md)
-- [../ai/skills/entity-fixtures.md](../ai/skills/entity-fixtures.md)
-- [../ai/skills/external-resources.md](../ai/skills/external-resources.md)
-- [../ai/skills/navet-ux.md](../ai/skills/navet-ux.md)
-- [../ai/skills/performance.md](../ai/skills/performance.md)
+| Guide | Purpose |
+| --- | --- |
+| [Task router](../AGENTS.md) | Authority, ownership and task routing. |
+| [AI navigation](../ai/agents.md) | Optional deeper-context navigation. |
+| [Home assistant integration](../ai/skills/home-assistant-integration.md) | Reference |
+| [Auth deployment](../ai/skills/auth-deployment.md) | Reference |
+| [Testing architecture](../ai/skills/testing-architecture.md) | Reference |
+| [Entity fixtures](../ai/skills/entity-fixtures.md) | Reference |
+| [External resources](../ai/skills/external-resources.md) | Reference |
+| [Navet UX](../ai/skills/navet-ux.md) | Reference |
+| [Performance](../ai/skills/performance.md) | Reference |
 
 ## Repo Map
 
-Search `packages/` and `apps/` first. Do not assume a repo-root `src/` directory.
-
-- `packages/app/src`: app composition, dashboard behavior, runtime wiring, services, tests, and stories
-- `packages/core/src`: provider-neutral contracts, IDs, runtime semantics, and feature models
-- `packages/ui/src`: target provider-neutral shared UI package boundary
-- `packages/provider-homeassistant/src`: Home Assistant adapter behavior
-- `packages/provider-homey/src`: Homey adapter behavior
-- `packages/provider-openhab/src`: openHAB adapter behavior
-- `apps/standalone/src`: standalone runtime entrypoint
-- `apps/demo/src`: demo runtime entrypoint
-- `apps/website/src`: website runtime entrypoint
-- `apps/docs`: public documentation site; its content config explicitly selects publishable Markdown
-- `apps/ha-panel`: Home Assistant panel wrapper/build surface
-- `apps/storybook`: Storybook host app
-- `platform/home-assistant/`: add-on and custom-component release surfaces
-
-Shared UI reality check:
-
-- `@navet/ui` is the target provider-neutral shared UI boundary.
-- `packages/app/src/components/*` and `packages/app/src/ui-kit/*` are still current implementation
-  and stable import surfaces.
-- Docs should distinguish current implementation, stable imports, and target ownership.
+Use [root ownership routing](../AGENTS.md#product-and-ownership). Search the owner and direct
+callers; there is no root `src/`. `apps/docs/src/content.config.ts` selects public Markdown.
+[Shared UI layers](design-system/README.md#current-shared-ui-layers) distinguish current app-owned
+paths and stable imports from the incremental `@navet/ui` target.
 
 ## Design, Brand, Legal
 
-- [../CODE_OF_CONDUCT.md](../CODE_OF_CONDUCT.md)
-- [../SECURITY.md](../SECURITY.md)
-- [design-system/FEATURES.md](design-system/FEATURES.md)
-- [branding/README.md](branding/README.md)
-  Canonical brand foundations, voice, visual identity, product card grammar, assets, and governance.
-- [branding/BRANDING_ASSETS.md](branding/BRANDING_ASSETS.md)
-  Quick asset-path reference.
-- [branding/TRADEMARK_POLICY.md](branding/TRADEMARK_POLICY.md)
-- [TERMS_OF_USE.md](TERMS_OF_USE.md)
-- [ATTRIBUTIONS.md](ATTRIBUTIONS.md)
+| Guide | Purpose |
+| --- | --- |
+| [Code of conduct](../CODE_OF_CONDUCT.md) | Reference |
+| [Security](../SECURITY.md) | Reference |
+| [Features](design-system/FEATURES.md) | Reference |
+| [Brand system](branding/README.md) | Identity, voice, cards, assets and governance. |
+| [Branding assets](branding/BRANDING_ASSETS.md) | Quick asset-path reference. |
+| [Trademark policy](branding/TRADEMARK_POLICY.md) | Reference |
+| [Terms of use](TERMS_OF_USE.md) | Reference |
+| [Attributions](ATTRIBUTIONS.md) | Reference |

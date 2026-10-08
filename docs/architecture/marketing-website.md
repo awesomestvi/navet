@@ -5,9 +5,6 @@
 Navet's marketing website exists to attract users, especially Home Assistant users who want a
 cleaner and more polished smart-home dashboard.
 
-This site is user-focused. It is not a developer platform website and should not lead with SDKs,
-provider adapters, architecture, or Storybook.
-
 ## Audience And Positioning
 
 Primary audience:
@@ -28,13 +25,12 @@ Current positioning:
 > use.
 
 Homepage structure and copy should lead with the daily dashboard experience, then show Home
-Assistant, Homey, and openHAB as supported platforms. It must not frame Navet as a Home Assistant
-frontend or make one provider the product's architecture.
+Assistant, Homey, and openHAB as supported platforms.
 
 ## Boundaries And Reuse
 
 - `@navet/ui` is the target provider-neutral shared UI boundary.
-- The current website implementation still primarily reuses app-owned shared UI from
+- The website reuses app-owned shared UI from
   `packages/app/src/components/primitives/`, `packages/app/src/components/patterns/`, and
   `packages/app/src/ui-kit/`.
 - Shared primitives currently stay in `packages/app/src/components/primitives/` or `packages/app/src/components/patterns/` unless the work is explicitly extracting shared UI into `@navet/ui`.
@@ -81,7 +77,6 @@ Content rules:
 - Keep messaging user-focused.
 - Lead with the dashboard experience.
 - Mention Home Assistant clearly.
-- Do not lead with APIs, SDKs, provider adapters, architecture, or Storybook.
 - Do not overpromise future integrations.
 - Only list supported cards, widgets, entities, and providers that exist in current docs or code.
 - Future provider expansion belongs in the roadmap, not the hero.
@@ -89,9 +84,6 @@ Content rules:
 Data rules:
 
 - Use centralized static fixtures for all marketing previews.
-- No live Home Assistant dependency.
-- No user token dependency.
-- No external API dependency for initial render.
 - Demo data should be realistic, reusable, and non-sensitive.
 
 Routing and links:

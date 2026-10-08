@@ -91,7 +91,7 @@ transport together. See [RSS transport ownership](rss-transport.md).
 
 ## Runtime Flow
 
-1. `@navet/app` selects the runtime mode and active provider.
+1. `@navet/app` selects the runtime mode and bootstraps connected provider sessions.
 2. Each connected provider package exposes normalized provider state and command execution.
 3. `@navet/app` keeps provider-scoped collections and merges the selected provider collections for
    shared dashboard consumption.

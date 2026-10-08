@@ -19,16 +19,13 @@ login, onboarding, and your first Home card.
 When Navet has loaded provider entities and dashboard onboarding is incomplete, it asks
 **How should Navet start your dashboard?** Choose a starting point:
 
-- **Start with all entities** makes the loaded entities visible as the starting point. Available
-  room cards and controls still depend on what Navet supports for your provider and devices.
-  This does not automatically fill the separate Home layout: a new Home can still show
-  **Home is ready for a first-glance setup** until you add cards to it.
+- **Start with all entities** makes the connected entities visible in room views, with controls
+  supported by your provider and devices. Add cards to Home through **Customize → Add card**.
 - **Start with a blank dashboard** hides the loaded entities and clears the Home layout and
   custom cards. Add the controls you want afterward through **Customize → Add card**.
-- **Import a config file** opens a file chooser for a previously exported Navet `.yaml` or `.yml`
-  configuration. A valid file is applied immediately when selected.
-  This route restores the saved configuration directly rather than taking you through the language
-  and appearance steps. Back up any current configuration before importing over it.
+- **Import a config file** restores a Navet `.yaml` or `.yml` export. A valid file is applied
+  immediately and opens the dashboard with its saved preferences. Back up your current
+  configuration before importing over it.
 
 For **all entities** or **blank**, complete setup:
 
@@ -58,8 +55,8 @@ Open **Home** and look at the room navigation.
 - Choosing a room narrows the dashboard to that room.
 - Cards show the controls supported by each device.
 
-If rooms or devices are absent, do not rebuild them immediately. Follow
-[Rooms, devices, or entities are missing](/guide/troubleshooting/missing-entities/) first.
+For missing rooms or devices, follow
+[Rooms, devices, or entities are missing](/guide/troubleshooting/missing-entities/).
 
 ## 2. Learn the main sections
 
