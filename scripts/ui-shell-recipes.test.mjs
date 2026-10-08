@@ -1,8 +1,8 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { findLegacyModalRecipes } from './ui-shell-recipes.mjs';
+import { applyCompositionBaseline, findCompositionViolations, findLegacyModalRecipes } from './ui-shell-recipes.mjs';
 
 function hasLegacyModalRecipe(source) {
   const root = mkdtempSync(path.join(tmpdir(), 'navet-ui-shell-test-'));
@@ -55,4 +55,50 @@ describe('known legacy shell recipes', () => {
   ])('accepts layout or an incomplete signature: %s', (source) => {
     expect(hasLegacyModalRecipe(source)).toBe(false);
   });
+});
+
+// Keep the legacy signature cases; add structural and occurrence-baseline coverage.
+function inspect(source, file = 'example.tsx') {
+  const root = mkdtempSync(path.join(tmpdir(), 'navet-composition-test-'));
+  try {
+    const absolute = path.join(root, file);
+    mkdirSync(path.dirname(absolute), { recursive: true }); writeFileSync(absolute, source);
+    return findCompositionViolations(root, [file]);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+}
+const imports = "import { SheetSurface as Sheet, SheetSurfaceHeader as Header } from '@navet/app/ui-kit/primitives';";
+it('accepts a direct-child sheet header, including aliases and comments', () => {
+  expect(inspect(imports + '/* <div><Header /></div> */ <Sheet><Header /></Sheet>')).toEqual([]);
+  expect(inspect("import * as UI from '@navet/app/ui-kit/primitives'; <UI.SheetSurface><UI.SheetSurfaceHeader /></UI.SheetSurface>")).toEqual([]);
+});
+it.each([
+  '<Sheet><div><Header /></div></Sheet>',
+  '<Sheet><><Header /></></Sheet>',
+  'const Alias = Header; <Sheet><div><Alias /></div></Sheet>',
+])('detects a nested sheet header: %s', (source) => { expect(inspect(imports + source).map((entry) => entry.rule)).toEqual(['nested-sheet-header']); });
+it('does not confuse unrelated local names with canonical headers', () => {
+  expect(inspect('const SheetSurfaceHeader = () => null; <div><SheetSurfaceHeader /></div>')).toEqual([]);
+});
+it('requires explicit close autofocus in shell templates', () => {
+  const file = 'packages/app/src/composition-recipes/example.tsx';
+  expect(inspect(imports + '<Sheet><Header /></Sheet>', file).map((entry) => entry.rule)).toEqual(['missing-focus-return']);
+  expect(inspect(imports + '<Sheet onCloseAutoFocus={(event) => { event.preventDefault(); launcher.focus(); }}><Header /></Sheet>', file)).toEqual([]);
+});
+it('baselines one occurrence and rejects new violations in the same file and obsolete entries', () => {
+  const original = inspect(imports + '<Sheet><div><Header /></div></Sheet>');
+  const baseline = original.map(({ line, ...entry }) => ({ ...entry, reason: 'Existing feature outside this change' }));
+  expect(applyCompositionBaseline(original, baseline)).toEqual({ newViolations: [], obsolete: [] });
+  const expanded = inspect(imports + '<Sheet><div><Header /></div><div><Header /></div></Sheet>');
+  expect(applyCompositionBaseline(expanded, baseline).newViolations).toHaveLength(1);
+  expect(applyCompositionBaseline([], baseline).obsolete).toHaveLength(1);
+  expect(() => applyCompositionBaseline(original, [...baseline, ...baseline])).toThrow('duplicate');
+});
+it('detects multiple consumers of an aliased duplicated shell', () => {
+  const violations = inspect('const shell = "fixed left-1/2 top-1/2 z-50 shadow-2xl backdrop-blur-xl"; <div className={shell} /><section className={shell} />');
+  expect(violations.filter((entry) => entry.rule === 'duplicate-shell')).toHaveLength(2);
+});
+it('combines static builder arguments without merging mutually exclusive branches', () => {
+  expect(inspect('<div className={cn("fixed left-1/2 top-1/2", "z-50 shadow-2xl backdrop-blur-xl")} />').map((entry) => entry.rule)).toContain('duplicate-shell');
+  expect(inspect('import { clsx as join } from "clsx"; <div className={join("fixed left-1/2 top-1/2", "z-50 shadow-2xl", "backdrop-blur-xl")} />').map((entry) => entry.rule)).toContain('duplicate-shell');
+  expect(inspect('<div className={cn(flag ? "fixed left-1/2 top-1/2" : "z-50 shadow-2xl backdrop-blur-xl")} />')).toEqual([]);
 });

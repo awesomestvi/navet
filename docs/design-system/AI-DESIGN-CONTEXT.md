@@ -41,6 +41,8 @@ the component family it already establishes.
 
 ## Ticket support tools
 
+Discover recipes through shadcn MCP or **Concepts / UI Kit Recipes**, check catalog level, owner and review status, inspect current contracts and required context, then review the linked executable example and exact component reference before composing UI. Product compositions marked pending and draft building blocks require same-family rendered review; only maintainer-approved items establish accepted design guidance. Unsupported compositions follow the reference-first workflow and identify the coverage gap. See [registry workflow](REGISTRY.md).
+
 Use [composition recipes](AGENT-COMPOSITION-RECIPES.md) to select a shared composition, then
 inspect its current props, source and linked stories with `pnpm agent:components <name>`.
 Without a query, the command writes a generated catalog to `.cache/agent-design/components.json`.

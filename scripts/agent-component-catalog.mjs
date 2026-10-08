@@ -182,6 +182,10 @@ export function generateNavetCatalog(root = process.cwd()) {
   const entries = ['primitives', 'patterns'].map((name) => ({
     file: path.join(root, `packages/app/src/ui-kit/${name}.ts`), importFrom: `@navet/app/ui-kit/${name}`,
   }));
+  entries.push(
+    { file: path.join(root, 'packages/app/src/features/lighting/components/switch-card.tsx'), importFrom: '@navet/app/features/lighting/components/switch-card' },
+    { file: path.join(root, 'packages/app/src/features/weather/components/weather-card/weather-settings-dialog.tsx'), importFrom: '@navet/app/features/weather/components/weather-card/weather-settings-dialog' },
+  );
   return generateCatalog({ root, entries, stories: storiesIn(path.join(root, 'packages/app/src')) });
 }
 

@@ -23,6 +23,8 @@ export interface DashboardGroupingItem {
 }
 
 export interface DashboardGroupingNavigationProps {
+  /** Opt in to linked-panel roving keyboard navigation. */
+  keyboardNavigation?: boolean;
   ariaLabel: string;
   groupingLabel: string;
   idPrefix: string;
@@ -65,6 +67,7 @@ function getGroupingPillClassName(
 }
 
 export function DashboardGroupingNavigation({
+  keyboardNavigation = false,
   ariaLabel,
   groupingLabel,
   idPrefix,
@@ -130,6 +133,31 @@ export function DashboardGroupingNavigation({
               <InteractivePill
                 key={item.id}
                 role="tab"
+                tabIndex={keyboardNavigation ? (isActive ? 0 : -1) : undefined}
+                onKeyDown={(event) => {
+                  if (
+                    !keyboardNavigation ||
+                    !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)
+                  )
+                    return;
+                  const list = event.currentTarget.closest('[role="tablist"]');
+                  const tabs = Array.from(
+                    list?.querySelectorAll<HTMLButtonElement>('[role="tab"]') ?? []
+                  );
+                  const index = tabs.indexOf(event.currentTarget);
+                  if (index < 0 || !tabs.length) return;
+                  event.preventDefault();
+                  const rtl = list && getComputedStyle(list).direction === 'rtl';
+                  const step = (event.key === 'ArrowRight' ? 1 : -1) * (rtl ? -1 : 1);
+                  const next =
+                    event.key === 'Home'
+                      ? 0
+                      : event.key === 'End'
+                        ? tabs.length - 1
+                        : (index + step + tabs.length) % tabs.length;
+                  tabs[next].focus();
+                  onItemChange(items[next].id);
+                }}
                 aria-selected={isActive}
                 aria-controls={`${idPrefix}-panel-${item.id}`}
                 id={`${idPrefix}-tab-${item.id}`}

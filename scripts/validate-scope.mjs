@@ -21,10 +21,12 @@ const SCOPE_COMMANDS = {
     ['pnpm', ['test:tier1']],
   ],
   ui: [
+    ['pnpm', ['test:registry']],
     ['pnpm', ['check:ui-kit']],
     ['pnpm', ['check:stories']],
   ],
   workflow: [
+    ['pnpm', ['test:registry']],
     ['pnpm', ['check:stories']],
     ['pnpm', ['check:ui-kit']],
     ['pnpm', ['check:provider-boundaries']],
@@ -186,6 +188,7 @@ function inferScopes(files) {
       file.startsWith('packages/ui/') ||
       file.startsWith('packages/app/src/components/') ||
       file.startsWith('packages/app/src/ui-kit/') ||
+      file.startsWith('packages/app/src/composition-recipes/') ||
       file.startsWith('docs/design-system/')
     ) {
       scopes.add('ui');

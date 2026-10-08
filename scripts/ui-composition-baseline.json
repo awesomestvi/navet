@@ -1,0 +1,23 @@
+[
+  {
+    "file": "packages/app/src/components/shared/card-size-selector.tsx",
+    "rule": "nested-sheet-header",
+    "anchor": "a985ab5167f8bb5fd1a976fe4ce31adcbca434a1e7f8520faedf98f22807c5ea",
+    "occurrence": 1,
+    "reason": "Existing nested sheet header outside registry recipes and direct examples; preserve feature scope."
+  },
+  {
+    "file": "packages/app/src/features/media/components/media/media-dialog-content.tsx",
+    "rule": "nested-sheet-header",
+    "anchor": "b456f730067580dfc4115041c4748aef60faf9e0e35e451ea83f7dacb89df08f",
+    "occurrence": 1,
+    "reason": "Existing nested sheet header outside registry recipes and direct examples; preserve feature scope."
+  },
+  {
+    "file": "packages/app/src/features/security/components/camera-card/camera-live-viewer.tsx",
+    "rule": "nested-sheet-header",
+    "anchor": "456bd5b915257dc577c3ff0fb6d2ca6023371cfd1a9274a02285356e5fa9c25a",
+    "occurrence": 1,
+    "reason": "Existing nested sheet header outside registry recipes and direct examples; preserve feature scope."
+  }
+]
