@@ -1,6 +1,11 @@
 # Agent composition recipes
 
-Discover by family and intended behavior through shadcn MCP or **Concepts / UI Kit Recipes**.
+Start card work with the canonical foundations, primitives, patterns and same-family feature
+references in the source catalog. Name the real imports and executable Storybook reference before
+coding. Reuse existing slots, sizes, states and theme helpers. A new visual pattern needs explicit
+maintainer approval before implementation.
+
+Discover editable compositions by family and intended behavior through shadcn MCP or **Concepts / UI Kit Recipes**.
 Check catalog level, owner and review status. Building blocks explain controls and layout; product
 compositions reuse a specific feature. Inspect current contracts, context and states, then review
 the executable example and same-family reference. Only maintainer-approved product compositions

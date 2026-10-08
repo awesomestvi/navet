@@ -11,13 +11,16 @@ foundations.
 
 Before writing JSX or styles:
 
-1. Inspect the exact screen and the components that currently render it.
-2. Name one primary Navet reference and, when useful, one supporting reference.
-3. Inspect the nearest primitive or pattern and its Storybook story.
-4. Write a compact intent note: information priority, primary action, density, responsive change,
+1. Discover the closest same-family card or surface, primitives, patterns and foundation tokens
+   through the [design-system registry](../../docs/design-system/REGISTRY.md). Inspect canonical
+   imports and executable references.
+2. Inspect the exact screen and the components that currently render it.
+3. Name one primary Navet reference and, when useful, one supporting reference.
+4. Inspect the nearest primitive or pattern and its Storybook story.
+5. Write a compact intent note: information priority, primary action, density, responsive change,
    and the one visual detail that makes the surface recognizably part of Navet.
-5. Decide whether the work reuses, extends, or intentionally replaces an existing recipe. A new
-   recipe needs a concrete reason.
+6. Decide whether the work reuses, extends, or intentionally replaces an existing recipe. Record coverage gaps. A new visual pattern needs explicit maintainer approval before
+   implementation; new arrangements of existing primitives may reuse their established contracts.
 
 Reference order:
 

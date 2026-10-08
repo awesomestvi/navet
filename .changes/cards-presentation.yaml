@@ -1,0 +1,4 @@
+type: improved
+audiences:
+  - docs
+summary: Discover Navet Cards as a new Home Assistant companion with clearer product separation and card previews without a backdrop.

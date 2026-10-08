@@ -99,10 +99,22 @@ export function findCompositionViolations(root, files) {
         }
         return [''];
       }
+      const cardConsumer = /^(?:packages\/app\/src\/features\/.*(?:^|[/-])[^/]*card(?:[./-]|$)|packages\/app\/src\/composition-recipes\/card\/)/.test(file) && !file.endsWith('.stories.tsx');
+      function inspectCardClasses(value, node) {
+        if (!cardConsumer) return;
+        const classes = value.split(/\s+/).map((value) => value.split(':').at(-1));
+        for (const value of classes) {
+          if (/^(?:rounded(?:-[a-z]+)?|text|p[xytrblse]?|m[xytrblse]?|gap(?:-[xy])?|shadow)-\[(?:#|[0-9])/.test(value) || /^(?:bg|text|border|ring|shadow|from|via|to)-\[(?:#|rgba?\(|hsla?\()/.test(value)) record('card-hardcoded-foundation', node, value);
+        }
+        if (classes.some((value) => /^rounded-/.test(value)) && classes.some((value) => /^shadow-/.test(value)) && classes.some((value) => /^(?:bg|backdrop-blur)-/.test(value))) record('duplicate-card-surface', node);
+      }
       function inspectClasses(node, anchor = node, inspected = new Set()) {
         if (!node || inspected.has(node)) return;
         inspected.add(node);
-        for (const value of classAlternatives(node)) if (matchesRecipe(value)) record('duplicate-shell', anchor, value.split(/\s+/).sort().join(' '));
+        for (const value of classAlternatives(node)) {
+          if (matchesRecipe(value)) record('duplicate-shell', anchor, value.split(/\s+/).sort().join(' '));
+          inspectCardClasses(value, anchor);
+        }
         if (ast.isIdentifier(node)) {
           const declaration = project.checker.getSymbolAtLocation(node)?.valueDeclaration?.resolve();
           if (declaration && ast.isVariableDeclaration(declaration)) inspectClasses(declaration.initializer, anchor, inspected);
@@ -119,6 +131,13 @@ export function findCompositionViolations(root, files) {
           if (file.startsWith('packages/app/src/composition-recipes/') && !file.endsWith('.stories.tsx') && ['BaseCardDialog', 'SheetSurface', 'ModalSurface'].includes(name)) {
             const focus = node.attributes.properties.find((property) => ast.isJsxAttribute(property) && property.name.getText(source) === 'onCloseAutoFocus');
             if (!focus?.initializer || !ast.isJsxExpression(focus.initializer) || !focus.initializer.expression) record('missing-focus-return', node);
+          }
+        }
+        if (cardConsumer && ast.isJsxAttribute(node) && node.name.getText(source) === 'style' && node.initializer && ast.isJsxExpression(node.initializer) && node.initializer.expression && ast.isObjectLiteralExpression(node.initializer.expression)) {
+          for (const property of node.initializer.expression.properties) {
+            if (!ast.isPropertyAssignment(property) || !/^(?:background|backgroundColor|color|borderRadius|fontSize|padding|gap|boxShadow)$/.test(property.name.getText(source).replace(/^['"]|['"]$/g, ''))) continue;
+            const value = property.initializer;
+            if (ast.isNumericLiteral(value) && value.text !== '0' || ast.isStringLiteral(value) && /(?:#[0-9a-f]{3,8}\b|rgba?\(|hsla?\(|\d+(?:px|rem|em)\b)/i.test(value.text)) record('card-hardcoded-foundation', property);
           }
         }
         if (ast.isJsxAttribute(node) && /^(?:class|className|.*ClassName)$/.test(node.name.getText(source))) inspectClasses(node.initializer);

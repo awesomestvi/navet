@@ -107,7 +107,7 @@
     "storybook:only": "STORYBOOK=1 HOME=$PWD/.cache/storybook/home XDG_CONFIG_HOME=$PWD/.cache/storybook STORYBOOK_DISABLE_TELEMETRY=1 pnpm --filter @navet/storybook run storybook",
     "registry:dev": "node scripts/registry-dev.mjs",
     "registry:publish": "node scripts/ui-registry.mjs publish",
-    "test:registry": "vitest --config vitest.unit.config.ts --project unit --run scripts/ui-registry.test.mjs scripts/ui-shell-recipes.test.mjs scripts/registry-preview.test.mjs",
+    "test:registry": "vitest --config vitest.unit.config.ts --project unit --run scripts/ui-registry.test.mjs scripts/ui-shell-recipes.test.mjs scripts/registry-preview.test.mjs scripts/registry-catalog.test.mjs scripts/agent-component-catalog.test.mjs",
     "registry:preview": "node scripts/registry-preview.mjs"
   },
   "dependencies": {

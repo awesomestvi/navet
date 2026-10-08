@@ -26,24 +26,22 @@ export function MarketingCardsSection({
     <section className={cn('space-y-8', className)} aria-label="Navet Cards">
       <div className="grid items-end gap-8 lg:grid-cols-[1.2fr_1fr]">
         <div className="space-y-4">
-          <p className={cn('text-sm font-medium', surface.textSecondary)}>
-            Navet Cards · Home Assistant · Beta
-          </p>
           <MarketingHeadline
             as={landing ? 'h1' : 'h2'}
             className={cn('max-w-[16ch]', surface.textPrimary)}
           >
-            Your Home Assistant dashboard. Navet controls.
+            Introducing Navet Cards.
           </MarketingHeadline>
           <MarketingSupportText className={surface.textSecondary}>
-            Bring lights, rooms, heating, and music into the dashboard you already use. Navet Cards
-            runs independently inside Home Assistant, using your existing login and devices.
+            Navet Cards is a separate companion collection for your Home Assistant Lovelace
+            dashboard. Add lights, rooms, heating, and music while keeping Home Assistant’s layout
+            and navigation.
           </MarketingSupportText>
         </div>
         <div className="space-y-4">
           <p className={cn('max-w-lg text-base leading-7', surface.textSecondary)}>
-            Choose a card, select your entities, and make it yours with the visual editor. Home
-            Assistant owns the layout; each card shows the controls your device supports.
+            Use Navet Cards on its own with your Home Assistant login and devices. The Navet
+            dashboard app is optional. Choose a card and configure it with the visual editor.
           </p>
           <div className="flex flex-wrap gap-3">
             <MarketingActionLink
@@ -62,8 +60,8 @@ export function MarketingCardsSection({
           src={`${imageBase}cards-preview/composition.webp`}
           width={1126}
           height={556}
-          alt="Navet Cards room dashboard with lighting, climate, sensors, and media controls"
-          className="w-full rounded-3xl"
+          alt="Individual Navet Cards for Home Assistant: lights, switches, room, temperature, speaker, climate, and cover"
+          className="w-full"
           loading={landing ? 'eager' : 'lazy'}
         />
         <figcaption className={cn('text-sm', surface.textSecondary)}>

@@ -1,22 +1,67 @@
-# Navet composition registry
+# Navet design-system registry
 
-The registry distributes editable React compositions for the Navet app. Templates import canonical
-Navet components and use existing app authoring seams. Installation adds template files without
-copying primitives, changing themes, or installing runtime dependencies.
+The registry exposes Navet’s canonical foundations, primitives, patterns, feature components and
+all executable Storybook examples. It also distributes editable app composition templates.
+Storybook renders the same implementations that registry entries describe.
+
+## Source catalog
+
+The source catalog is generated from the tokens, primitives and patterns barrels and local exports
+imported by Storybook stories across `packages/`. Each contract records its import path, export,
+source location, TypeScript contract and direct imports. Every story and documentation entry in Storybook’s
+current index belongs to an example item, including story-local demonstrations, diagnostics and
+documentation-only foundation references.
+Example names are the available reference states; they are not promises of unsupported behavior.
+Inspect the feature’s capability and runtime contracts before using a control.
+
+Use **Concepts / UI Kit Recipes / Source catalog** to search canonical sources and open their
+payloads and rendered references. Search through shadcn uses the same items. Source items use
+stable `source-` names; example items use stable `example-` names, with a hash of their source
+identity to distinguish duplicate names. Item descriptions carry their catalog role and review
+status. The index is compact; individual item endpoints contain the exact source and full contracts.
+
+Source catalog items are `registry:item` references. Reuse their canonical imports in Navet.
+Their installation writes an inert text snapshot under `.cache/agent-design/references/` for
+inspection; editable composition recipes install React files under the existing app authoring seam.
+Dependency metadata describes source imports, including owning-provider and runtime requirements;
+it does not install packages. Navet supplies themes, translations, settings and feature runtime.
+External-project packaging is outside this workflow.
+
+Catalog discovery preserves authority: source entries are `unclassified`; recipe entries retain
+their recorded review status and acceptance evidence. Storybook presence or successful generation
+does not establish maintainer design acceptance. Marketing and diagnostic examples are discoverable
+for their own purpose; use same-family product references for dashboard work.
+
+## Build a card with existing Navet UI
+
+1. Discover the closest same-family feature card, relevant primitives and patterns, and foundation
+   tokens through the registry. Name the primary reference and its actual Storybook IDs before coding.
+2. Inspect the canonical source, imports, slots, sizes, states, theme helpers and feature ownership.
+3. Compose existing components: `BaseCard`, its existing slots, metric/layout primitives and action
+   patterns. Resolve typography, spacing, surfaces, controls and motion through shared tokens/helpers.
+4. Record any coverage gap. New arrangements of existing primitives are permitted; a new visual
+   pattern requires explicit maintainer approval before implementation.
+5. Compare rendered output with the reference at supported sizes, states and themes; exercise the
+   relevant keyboard and touch interactions. Structural checks support this review.
+
+Card-consumer guards in `pnpm check:ui-kit` reject detectable copied surfaces and literal foundation
+values in arbitrary Tailwind classes and inline styles. An occurrence-specific baseline records
+existing feature debt; it cannot authorize new occurrences or recipe violations. Static guards
+cannot prove dynamic CSS equivalence or visual fidelity. Maintainer review owns visual acceptance.
 
 ## Discover and inspect
 
 Before composing UI:
 
-1. Discover a recipe by family and intended behavior through shadcn MCP or **Concepts / UI Kit Recipes**.
+1. Discover a recipe by family and intended behavior through shadcn MCP or **Concepts / UI Kit Recipes**. Start with canonical source references for card work.
 2. Inspect the template, required context, supported states, and current source-generated contracts.
 3. Open its executable example and exact component reference. Review the interaction and responsive behavior.
 4. Adapt caller-owned translated labels, normalized data and callbacks. Keep provider routing,
    capability decisions, validation rules and persistence in the consuming feature.
 
-## Catalog structure and review
+## Editable compositions and review
 
-The [manifest](../../packages/app/src/composition-recipes/recipes.json) is the catalog index. Each
+The [manifest](../../packages/app/src/composition-recipes/recipes.json) indexes editable recipes. Each
 family/recipe folder contains `template.tsx`, `recipe.stories.tsx` and `README.md`. The manifest
 records their exact paths and exports, search terms, required context, supported states, owner,
 review status and primary reference. Story links resolve against Storybook's actual index.
@@ -136,7 +181,7 @@ view, dry-run and disposable installation compatibility have been exercised with
 ## Matching hosted Storybook
 
 Every Storybook build publishes `/r/registry.json` and `/r/<name>.json` alongside its rendered
-examples. Publication validates links against the built `index.json`. Metadata records commit,
+examples and generated source catalog. Publication validates links against the built `index.json`. Metadata records commit,
 dirty status, source/contract/template/story/composition fingerprints, and a fingerprint of the
 built Storybook index and iframe entry document (including its content-hashed asset references).
 Local dirty builds are explicitly identified. Hosted completion requires a clean exact PR revision.

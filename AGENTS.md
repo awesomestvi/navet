@@ -103,6 +103,13 @@ See [request workflows](docs/engineering/request-workflows.md) for setup and ope
 - `@navet/core` must not import React, provider SDKs, API clients, or provider-specific code.
 - `@navet/ui` must not import provider-specific code.
 - Before composing UI, discover a composition recipe through shadcn MCP or Storybook, check its catalog level, owner and review status, inspect its current source-derived contracts, and review its executable reference story. For unsupported compositions, use the reference-first workflow in `docs/design-system/AGENT-COMPOSITION-RECIPES.md` and record the coverage gap. Only maintainer-approved product compositions establish accepted design guidance. Draft building blocks and pending feature examples require same-family rendered review. Structural checks do not replace rendered acceptance.
+- Before building a card, discover its closest same-family feature reference, canonical primitives,
+  patterns and foundation tokens through the design-system registry. Name the reference and actual
+  Storybook IDs before coding. Inspect source imports, slots, sizes, states and theme helpers;
+  compose existing Navet components and tokens. Record coverage gaps. A new visual pattern requires
+  explicit maintainer approval before implementation. Compare the rendered result with its named
+  reference; passing structural checks alone does not establish design fidelity. Source-catalog
+  entries retain their review status and do not acquire approval through discovery.
 - Shared UI uses normalized Navet state and provider-neutral commands. Do not add raw
   `HassEntity`, Home Assistant service payloads, or backend conditionals to shared interfaces.
 - Provider auth, transport, mapping, realtime updates, and command translation belong in provider

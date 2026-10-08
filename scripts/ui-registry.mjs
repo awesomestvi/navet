@@ -7,6 +7,8 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { generateNavetCatalog } from './agent-component-catalog.mjs';
 import { exportedNames, inspectTemplate, safeSourcePath, withSources } from './registry-source.mjs';
+import { indexItem } from './registry-index.mjs';
+import { buildCatalogItems } from './registry-catalog.mjs';
 import { validateRegistry } from './registry-schema.mjs';
 export const RECIPE_DIRECTORY = 'packages/app/src/composition-recipes';
 function templateFiles(root, directory = RECIPE_DIRECTORY) {
@@ -97,7 +99,7 @@ export function buildRegistry(root = process.cwd(), catalog = generateNavetCatal
       docs: `Level: ${recipe.level}. Review: ${recipe.reviewStatus}. Owner: ${recipe.owner}. Acceptance: ${recipe.acceptance ?? 'Awaiting maintainer review'}.\n\nUse when: ${recipe.when}\n\nRequired context:\n${recipe.context.map((value) => `- ${value}`).join('\n')}\n\nStates: ${recipe.states.join(', ')}\n\nReview:\n${recipe.review.map((value) => `- ${value}`).join('\n')}\n\nExecutable example: ${story.href}\nReference: ${reference.href}\nInspect contracts in meta.contracts. Feature owns routing, capabilities, validation and persistence.`, meta,
     };
   }));
-  return validateRegistry({ $schema: 'https://ui.shadcn.com/schema/registry.json', name: 'navet', homepage: 'https://github.com/navet-app/navet', items });
+  return validateRegistry({ $schema: 'https://ui.shadcn.com/schema/registry.json', name: 'navet', homepage: 'https://github.com/navet-app/navet', items: [...items, ...buildCatalogItems(root, catalog, index, { sourceRevision: revision, renderedFingerprint: options.renderedFingerprint ?? null })] });
 }
 export function writeRegistry(root, registry, directory = '.cache/ui-registry/r') {
   validateRegistry(registry);
@@ -105,7 +107,7 @@ export function writeRegistry(root, registry, directory = '.cache/ui-registry/r'
   const staging = `${output}.next`;
   const previous = `${output}.previous`;
   rmSync(staging, { recursive: true, force: true }); mkdirSync(staging, { recursive: true });
-  writeFileSync(path.join(staging, 'registry.json'), `${JSON.stringify(registry, null, 2)}\n`);
+  writeFileSync(path.join(staging, 'registry.json'), `${JSON.stringify({ ...registry, items: registry.items.map(indexItem) }, null, 2)}\n`);
   for (const item of registry.items) {
     if (!/^[a-z][a-z0-9-]*$/.test(item.name)) throw new Error(`Unsafe payload name: ${item.name}`);
     writeFileSync(path.join(staging, `${item.name}.json`), `${JSON.stringify(item, null, 2)}\n`);
@@ -139,7 +141,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
   const renderedFingerprint = command === 'publish' ? fingerprint([index, readFileSync(path.join(destination, 'iframe.html'), 'utf8')]) : null;
   const registry = buildRegistry(root, undefined, { index, renderedFingerprint });
   const output = writeRegistry(root, registry, command === 'publish' ? path.join(destination, 'r') : undefined);
-  console.log(`Built ${registry.items.length} Navet recipes at ${path.relative(root, output)}.`);
+  console.log(`Built ${registry.items.length} Navet registry items at ${path.relative(root, output)}.`);
   if (command === 'serve') {
     const port = argument ?? '7331';
     if (!/^\d+$/.test(port) || Number(port) < 1 || Number(port) > 65535) throw new Error('Invalid port');
