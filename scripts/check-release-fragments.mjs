@@ -1,6 +1,8 @@
 import process from 'node:process';
+import { readFileSync } from 'node:fs';
 import {
   listAddedReleaseFragmentFiles,
+  isDependabotPullRequest,
   readReleaseFragments,
 } from './release-fragments.mjs';
 
@@ -15,9 +17,16 @@ try {
   if (!head) throw new Error('Missing --head Git ref.');
 
   const files = listAddedReleaseFragmentFiles(base, head);
+  const event = process.env.GITHUB_EVENT_PATH
+    ? JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'))
+    : null;
+  if (files.length === 0 && isDependabotPullRequest(base, head, event)) {
+    console.log('Validated dependency-only Dependabot update; no user-facing release note is required.');
+    process.exit(0);
+  }
   if (files.length === 0) {
     throw new Error(
-      'Every pull request must add a .changes/*.yaml fragment. Use type: internal with audiences: [] when no user-facing note is needed.'
+      'Pull requests other than dependency-only Dependabot updates must add a .changes/*.yaml fragment. Use type: internal with audiences: [] when no user-facing note is needed.'
     );
   }
 
