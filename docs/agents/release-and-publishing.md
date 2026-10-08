@@ -6,7 +6,8 @@ artifact model, recovery path and hosted rollout are in [Release Workflow](../re
 ## Authority And Inputs
 
 - Preparation may run non-publishing validation; tagging, pushing, and publication require explicit authority.
-- Every PR adds a validated `.changes/*.yaml` fragment, including `internal` for non-user-facing work.
+- Pull requests add a validated `.changes/*.yaml` fragment, including `internal` for non-user-facing work.
+  Dependency-only Dependabot updates are automatically classified as internal by CI.
 - Protected `main` is never advanced by a direct release commit or a bypass.
 - Keep root `repository.yaml` in the monorepo and Home Assistant sources under `platform/home-assistant`.
 - The annotated release tag identifies the source commit. GitHub Releases are the published changelog.
@@ -54,7 +55,7 @@ setup and verification.
 
 Source:
 
-1. Add one `.changes/<topic>.yaml` file in every pull request.
+1. Add one `.changes/<topic>.yaml` file in each pull request. CI recognizes dependency-only Dependabot updates automatically.
 2. Use `new`, `improved`, `fixed`, `security`, or `internal` as its type.
 3. Name affected audiences when the change is user-facing.
 4. CI validates the fragment; Dev notes use the merged PR fragment and beta/stable notes use the
@@ -95,6 +96,16 @@ Example:
 - Fixed docs navigation on mobile.
 ```
 
+
+## Dependency updates
+
+Dependabot groups npm security fixes across the workspace and Homey fixture app. Routine version
+updates remain maintainer-managed. Review and squash the grouped PR to record one dependency update
+on `main`. All quality, runtime and preview gates still apply.
+
+CI permits an omitted fragment only for PRs authored by Dependabot that change known lockfiles or
+package manifests limited to dependency fields. Source, scripts, package versions and automation
+changes require a fragment.
 
 ## Related Guidance
 

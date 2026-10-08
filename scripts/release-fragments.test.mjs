@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseReleaseFragment, renderReleaseNotes } from './release-fragments.mjs';
+import { isDependabotDependencyUpdate, parseReleaseFragment, renderReleaseNotes } from './release-fragments.mjs';
 
 describe('release fragments', () => {
   it('validates and renders user-facing fragments by category', () => {
@@ -52,5 +52,31 @@ describe('release fragments', () => {
         '.changes/unknown-field.yaml'
       )
     ).toThrow('unsupported fields');
+  });
+});
+
+// Keep the existing fragment validation and rendering regressions.
+describe('Dependabot fragment policy', () => {
+  const bot = { login: 'dependabot[bot]', type: 'Bot' };
+  const fixtureLock = 'testing/provider-lab/homey-fixture-app/package-lock.json';
+  it('accepts grouped dependency lockfiles and dependency-only manifests', () => {
+    const read = (revision) => JSON.stringify({ name: 'navet', scripts: { test: 'vitest' }, dependencies: { react: revision === 'base' ? '19.0.0' : '19.1.0' } });
+    expect(isDependabotDependencyUpdate(bot, [fixtureLock, 'pnpm-lock.yaml', 'package.json'], read)).toBe(true);
+    expect(isDependabotDependencyUpdate(bot, ['packages/app/package.json'], read)).toBe(true);
+  });
+  it('requires the actual bot author and a nonempty dependency-only diff', () => {
+    expect(isDependabotDependencyUpdate({ login: 'maintainer', type: 'User' }, [fixtureLock])).toBe(false);
+    expect(isDependabotDependencyUpdate({ login: 'dependabot[bot]', type: 'User' }, [fixtureLock])).toBe(false);
+    expect(isDependabotDependencyUpdate(bot, [])).toBe(false);
+    expect(isDependabotDependencyUpdate(bot, [fixtureLock, 'packages/app/src/app.tsx'])).toBe(false);
+    expect(isDependabotDependencyUpdate(bot, ['.github/workflows/ci.yml'])).toBe(false);
+    expect(isDependabotDependencyUpdate(bot, ['other/package-lock.json'])).toBe(false);
+  });
+  it('rejects script, version, malformed and added/deleted manifest changes', () => {
+    for (const after of [{ scripts: { test: 'new-command' } }, { version: '2.0.0' }]) {
+      expect(isDependabotDependencyUpdate(bot, ['package.json'], (revision) => JSON.stringify(revision === 'base' ? { version: '1.0.0', scripts: { test: 'vitest' } } : after))).toBe(false);
+    }
+    expect(isDependabotDependencyUpdate(bot, ['package.json'], () => '{')).toBe(false);
+    expect(isDependabotDependencyUpdate(bot, ['package.json'], () => { throw new Error('missing'); })).toBe(false);
   });
 });

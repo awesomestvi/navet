@@ -1,0 +1,3 @@
+type: internal
+audiences: []
+summary: Group dependency security updates and refresh Homey fixture tooling dependencies.

@@ -1,0 +1,18 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directories:
+      - /
+      - /testing/provider-lab/homey-fixture-app
+    schedule:
+      interval: weekly
+    # Keep security fixes enabled without opening routine version-update PRs.
+    open-pull-requests-limit: 0
+    groups:
+      npm-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+    commit-message:
+      prefix: chore
+      include: scope
