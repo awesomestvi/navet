@@ -75,7 +75,7 @@ Do not delete a long-lived `planning/` roadmap as part of routine WIP cleanup.
   and intended destinations. Default to r/navet, Navet Discord #announcements and the configured
   existing Home Assistant topic. Show one post and preview; one approval covers all three.
   Adapt only platform formatting and title placement. Changes to wording or assets require fresh
-  approval. Use the [community communication skill](../../.agents/skills/navet-release-communication/SKILL.md)
+  approval. Use the [community communication workflow](../../docs/engineering/request-workflows.md)
   for releases, features, tips and general Navet discussion.
 - Store the final public URL, public copy, timestamps, platform status, and media checksums beside
   the local deliverable when useful.

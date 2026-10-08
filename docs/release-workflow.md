@@ -21,8 +21,7 @@ Published images use `ghcr.io/awesomestvi/navet` and
 and Home Assistant installations. Repository ownership and package namespaces are independent.
 Publishing to the personal package namespace requires `NAVET_GHCR_TOKEN`, a classic personal
 access token owned by `awesomestvi` with `write:packages` access, stored as a GitHub Actions
-secret in `navet-app/navet`. The repository-scoped `GITHUB_TOKEN` cannot write those packages
-after the repository transfer. Runtime verification pulls the public images anonymously.
+secret in `navet-app/navet`. Runtime verification pulls the public images anonymously.
 
 ## Pull Requests And Public Sites
 
@@ -43,8 +42,8 @@ Runtime changes run Tier 1, Tier 2, Tier 3, Docker checks, and responsive visual
 lane excludes only the files already covered by its required Tier 1 and Tier 2 lanes; the local
 `pnpm test:tier3` command still runs the complete suite. Visual
 review downloads the demo built by the quality job rather than building it again. Storybook's
-complete browser interaction suite remains a local diagnostic until its baseline assertions
-are repaired; the production Storybook build remains required when affected.
+browser interaction suite supplies local interaction diagnostics; affected Storybook builds
+are required by CI. Verify baseline failures against the current `main` commit.
 
 Cloudflare Pages owns site deployment:
 

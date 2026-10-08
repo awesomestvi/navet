@@ -67,8 +67,8 @@ Default rule:
 
 ## Tier 3: Broad Regression
 
-These suites remain valuable for drift detection, but they should not block release or publish
-workflows by default.
+Broad unit regression blocks runtime-impacting PRs in `.github/workflows/ci.yml`; it is not
+rerun as a tagged-release publishing gate. Storybook browser coverage is a separate surface.
 
 | Group | Why it exists | Status |
 |---|---|---|
@@ -86,8 +86,8 @@ Default rule:
 
 ## Tier 4: Rewrite/Delete Candidates
 
-These suites are not trusted as-is. They stay visible so they can be rewritten or removed
-deliberately rather than silently decaying.
+These are test-quality review candidates. Recheck each current test against its contract before
+rewriting or deleting it; this classification changes neither executable membership nor CI.
 
 | Group | Why it is Tier 4 | Status |
 |---|---|---|
@@ -104,8 +104,8 @@ deliberately rather than silently decaying.
 
 Default rule:
 
-- tests already identified as rewrite candidates in `ai/testing-review.md` start here unless they
-  are intentionally promoted with stronger fixtures and a clear contract target
+- Reclassify candidates when current fixtures and contract-backed assertions justify it.
+- Tier 4 is a review label, not a runnable lane or permission to skip a required test.
 
 ## Admission Rules
 

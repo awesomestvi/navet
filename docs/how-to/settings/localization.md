@@ -26,7 +26,7 @@ Choose:
 
 ## Change temperature units
 
-Choose **Celsius** or **Fahrenheit**. Navet presents normalized temperature values in the selected
+Choose **Celsius** or **Fahrenheit**. Navet presents temperatures in the selected
 unit where conversion is supported.
 
 ## If some text does not change

@@ -1,0 +1,15 @@
+# Build output
+# Note: dist/ is committed to enable direct downloads from GitHub
+# The auto-rebuild workflow keeps it in sync when skill files change
+# dist/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

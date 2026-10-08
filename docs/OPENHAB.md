@@ -34,7 +34,7 @@ You need:
 
 ### 1. Prepare the openHAB URL
 
-Navet expects the server base URL, not a deeper path.
+Enter the server base URL, including its scheme and port where needed.
 
 Valid examples:
 
@@ -44,12 +44,6 @@ Valid examples:
 For local development, `http://localhost:8080` is supported when Navet and openHAB run on the
 same host. In Docker, `localhost` refers to the Navet container; use a hostname or LAN address
 that the container can reach instead.
-
-Do not enter paths such as:
-
-- `/rest`
-- `/basicui`
-- `/habpanel`
 
 Navet builds the REST and WebSocket endpoints from the base URL you provide.
 

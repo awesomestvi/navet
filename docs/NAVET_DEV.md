@@ -12,17 +12,11 @@ copy of important Navet dashboard configuration before switching to it.
 
 | Installation | Published Dev channel | Best for |
 |---|---|---|
-| HACS custom panel | No | Stable, Home Assistant-hosted Navet |
 | Home Assistant App | Reviewed metadata updates | Home Assistant development builds |
 | Standalone Docker | Yes: `dev`, `edge`, and exact branch versions | Independent app, testing, and rollback control |
 
-Navet Dev publishes update Docker images, including the image used by the Home Assistant App. They
-do not change protected App store metadata or publish HACS updates. If you need the current
-development build inside the Home Assistant custom panel, use the advanced manual build below.
-
-Every named clean branch can publish an immutable exact Dev version. Only a publish sourced from
-`main` advances the moving `dev` and `edge` image tags. App store metadata changes require normal
-review through `main`.
+Install published development builds through the Home Assistant App or Docker. For source testing
+inside the custom panel, follow the [manual build steps](#advanced-build-the-current-custom-panel-source).
 
 ## Home Assistant App
 
@@ -57,8 +51,8 @@ container-reachable URL and credentials.
 
 ### Update
 
-Home Assistant shows an update only when reviewed App metadata advances on `main`. Automatic Dev
-image publishes do not change that metadata, so the App store does not offer every merged-PR build.
+Home Assistant offers the reviewed Navet Dev versions listed in the App store. To test an exact
+GitHub prerelease, use its Docker image version.
 
 1. Open `Settings -> Apps -> Navet Dev`.
 2. Create a Home Assistant backup if the update is important to your setup.
@@ -68,8 +62,8 @@ If an update is not visible, reload the App store and check for updates again.
 
 ### Optional Home Assistant Chrome Hiding
 
-The App cannot install Home Assistant frontend modules by itself. To let Navet hide the native
-Home Assistant header and sidebar, also install the stable Navet HACS integration and add this to
+To let Navet hide the native Home Assistant header and sidebar, install the stable Navet HACS
+integration and add this to
 `configuration.yaml`:
 
 ```yaml
@@ -79,7 +73,7 @@ frontend:
 ```
 
 Restart Home Assistant after changing `configuration.yaml`. The shell module is supplied by the
-HACS integration; the dashboard itself can still come from the `Navet Dev` App.
+HACS integration and works with the `Navet Dev` App.
 
 ## Standalone Docker
 
@@ -126,8 +120,8 @@ discovery and sign-in. Without an explicit upstream, Navet uses the address ente
 for both authorization and token exchange. With an explicit upstream, browser addresses must reach
 that same Home Assistant installation. After authorization, Home Assistant API traffic, token
 renewal, and provider-managed HTTP camera resources use Navet's same-origin proxy. For Homey,
-register the exact callback URL described in the [Homey guide](/install/homey/). openHAB needs no
-container environment variable; choose it in Navet and enter its base URL and credentials.
+register the exact callback URL described in the [Homey guide](/install/homey/). For openHAB,
+choose it in Navet and enter its base URL and credentials.
 
 Start Navet Dev:
 
@@ -172,21 +166,7 @@ To return to stable Docker, change the image tag to `latest`.
 The GitHub prerelease identifies the source branch and commit. Confirm those values before using an
 exact branch build on a household dashboard.
 
-## HACS Custom Panel
-
-HACS installs the stable Navet custom-panel release from
-`https://github.com/navet-app/navet-home-assistant`. The Navet Dev publish workflow does not
-update that repository, so there is no supported `Navet Dev` HACS channel.
-
-For the supported stable installation:
-
-1. Add `https://github.com/navet-app/navet-home-assistant` to HACS as an `Integration` custom
-   repository.
-2. Install `Navet`.
-3. Restart Home Assistant.
-4. Add `Navet` from `Settings -> Devices & services`.
-
-### Advanced: Build The Current Custom Panel Source
+## Advanced: Build The Current Custom Panel Source
 
 This path is for contributors who specifically need current source inside the Home Assistant custom
 panel. It is a manual custom integration installation and will not be managed or updated by HACS.
@@ -224,11 +204,11 @@ this manual build with the latest stable release.
 
 - Home Assistant App: stop `Navet Dev`, install or start the stable `Navet` App, and verify its configuration.
 - Docker: change `ghcr.io/awesomestvi/navet:dev` to `ghcr.io/awesomestvi/navet:latest`.
-- Custom panel: install or redownload Navet from the `awesomestvi/navet-home-assistant` repository
+- Custom panel: install or redownload Navet from the `navet-app/navet-home-assistant` repository
   and restart Home Assistant.
 
-Development and stable installations may not share the same storage location. Export important
-dashboard configuration before switching rather than assuming it will appear in the other runtime.
+Export important dashboard configuration before switching channels; installations can use separate
+storage locations.
 
 ## Troubleshooting
 
@@ -243,7 +223,5 @@ dashboard configuration before switching rather than assuming it will appear in 
 - OAuth loops after changing hostnames, TLS, reverse proxies, or ports: sign in again so Navet can
   create a session for the current Home Assistant URL.
 - Custom panel still shows an older build: restart Home Assistant and hard-refresh the browser.
-- HACS offers only stable versions: this is expected; use the Home Assistant App or Docker for published Dev
-  builds.
 
 For stable Home Assistant setup and runtime details, see the [Home Assistant guide](/install/home-assistant/).

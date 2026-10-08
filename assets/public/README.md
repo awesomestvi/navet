@@ -80,8 +80,6 @@ The Navet logo represents **"the hub"** - a central node with 8 radiating connec
 
 **apple-touch-icon.svg**
 - Rounded compatibility preview and Home Assistant add-on icon source
-- Do not use it to regenerate the opaque Apple PNG; that output comes from the full-bleed source
-  declared in the brand asset manifest
 
 **apple-touch-icon.png**
 - iOS home screen icon
@@ -147,7 +145,3 @@ They are governed by Navet brand usage rules:
 - [../../docs/branding/README.md](../../docs/branding/README.md)
 - [../../docs/branding/ASSET_SYSTEM.md](../../docs/branding/ASSET_SYSTEM.md)
 - [../../docs/branding/TRADEMARK_POLICY.md](../../docs/branding/TRADEMARK_POLICY.md)
-
----
-
-**Last Updated:** July 22, 2026

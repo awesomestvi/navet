@@ -21,8 +21,9 @@ Classify existing tests before editing them:
 - `Rewrite`
 - `Delete`
 
-Use `ai/testing-review.md` as the audit baseline when it already covers the file.
-Use `docs/testing/test-tier-inventory.md` for the grouped tier map.
+Use `docs/testing/test-tier-inventory.md` for candidate rationale; inspect the current test and
+its contract before accepting that classification. Runnable membership lives in
+`scripts/test-tier-manifest.mjs`; Tier 4 is a review classification, not an executable lane.
 
 ## Fixture Rules
 
