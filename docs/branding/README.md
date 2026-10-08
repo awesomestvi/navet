@@ -111,7 +111,7 @@ Use the source that owns the question instead of choosing whichever wording is e
 
 | Question | Canonical source | Supporting evidence |
 |---|---|---|
-| What does Navet stand for? | [Brand foundations](https://docs.navet.app/brand/foundations/) | [Product marketing context](https://github.com/navet-app/navet/blob/main/.agents/product-marketing.md) |
+| What does Navet stand for? | [Brand foundations](https://docs.navet.app/brand/foundations/) | [Product vision](https://github.com/navet-app/navet/blob/main/docs/product/vision.md) |
 | How should Navet sound? | [Voice and messaging](https://docs.navet.app/brand/voice/) | Current product, website, and docs copy |
 | How should Navet look? | [Visual identity](https://docs.navet.app/brand/visual/) | [UI guidelines](https://github.com/navet-app/navet/blob/main/docs/design-system/UI-GUIDELINES.md) and current public surfaces |
 | How should a card communicate? | [Product card grammar](https://docs.navet.app/brand/cards/) | [demo.navet.app](https://demo.navet.app/), current app cards, and Storybook |
@@ -123,9 +123,9 @@ Use the source that owns the question instead of choosing whichever wording is e
 | How should shared UI be implemented? | [UI guidelines](https://github.com/navet-app/navet/blob/main/docs/design-system/UI-GUIDELINES.md) | [AI design context](https://github.com/navet-app/navet/blob/main/docs/design-system/AI-DESIGN-CONTEXT.md), Storybook, and product neighbors |
 | What may marketing claim? | [Claims discipline](https://docs.navet.app/brand/voice/#claims-discipline) | Current product truth and a dated primary source |
 
-`.agents/product-marketing.md` is a working context document for marketing tasks. It may summarize
-current product facts and known evidence gaps, but it does not replace this brand system or the
-capability matrix.
+Marketing tasks use the brand foundations and voice guide directly. Verify current product
+facts against the capability matrix and implementation instead of maintaining a parallel context
+document.
 
 ## Decision Rules
 

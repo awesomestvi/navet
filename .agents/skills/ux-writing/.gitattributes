@@ -1,0 +1,13 @@
+.github/**                        export-ignore
+.gitattributes                    export-ignore
+.gitignore                        export-ignore
+CHANGELOG.md                      export-ignore
+CONTRIBUTING.md                   export-ignore
+LICENSE                           export-ignore
+README.md                         export-ignore
+VERSIONING.md                     export-ignore
+build-skill.sh                    export-ignore
+claude-ux-writing-skill-demo.mp4  export-ignore
+codex-ux-writing-skill-demo.mp4   export-ignore
+dist/**                           export-ignore
+index.html                        export-ignore

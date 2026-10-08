@@ -38,7 +38,7 @@ Discover current IDs from source rather than deriving them from these navigation
 `pnpm check:ui-kit` checks shared feature imports, known duplicated modal shells, copied card
 surfaces and hardcoded foundations in supported static classes/inline styles. Existing occurrences
 are tracked separately; new violations fail. It does not prove layout, keyboard behavior, themes
-or fidelity. Use the [ticket UX audit](../../.agents/skills/navet-ux-audit/SKILL.md) for affected
+or fidelity. Use the [UX evidence guidance](../../ai/skills/navet-ux.md) for affected
 surfaces and direct consumers, and the [command guide](../agents/commands.md) for focused checks.
 
 Read the [brand system](../branding/README.md) and [card grammar](../branding/CARD_GRAMMAR.md)

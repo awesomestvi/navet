@@ -9,7 +9,7 @@ public delivery. Maintainer acceptance, merge and release remain separate decisi
 For UI tickets, design and implementation specialists use the
 [composition recipes](../design-system/AGENT-COMPOSITION-RECIPES.md) and
 `pnpm agent:components <name>` to inspect current shared contracts. Test and review specialists
-use the [ticket UX audit](../../.agents/skills/navet-ux-audit/SKILL.md) for reproducible rendered
+use the [UX evidence guidance](../../ai/skills/navet-ux.md) for reproducible rendered
 evidence and `pnpm check:ui-kit` for focused source guardrails. Attach findings and retest evidence
 to the existing ticket and approval package. Choose coverage from the changed surface, its direct
 consumers and acceptance criteria; these tools do not require an additional audit programme or

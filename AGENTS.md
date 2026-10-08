@@ -64,16 +64,29 @@ The maintainer owns product decisions, conversation resolution and merging.
 
 ## Direct requests
 
-Read only the matching `.agents/skills/<name>/SKILL.md`:
-- Community posts/features/releases: `navet-release-communication`.
-- Private GitHub Project ideas: `navet-idea-proposals`.
-- UX discovery: `navet-ux-scan`.
-- Approved implementation: `navet-approved-delivery`.
+Use `docs/engineering/request-workflows.md` for community posts, private proposals, UX
+discovery and approved implementation.
 
 Ideas permit private prototypes/POCs; production work requires explicit selected-scope approval.
 Community posts share one approved copy/screenshot across r/navet, Discord #announcements and
 the existing Home Assistant topic. Formatting may vary; wording/assets require fresh approval.
 Workflow: `docs/engineering/request-workflows.md`.
+
+## Writing skills
+
+After the routed guide, read only the matching `.agents/skills/<name>/SKILL.md`:
+- New marketing or website copy: `copywriting`.
+- Editing existing marketing copy: `copy-editing`.
+- Interface labels, help text, errors, empty states and onboarding: `ux-writing`.
+- Substantial new documents needing collaborative structure or reader testing: `doc-coauthoring`.
+  Routine documentation updates use `docs/agents/documentation.md` directly.
+
+Use `docs/branding/VOICE_AND_MESSAGING.md` as the shared writing context; do not create a
+parallel product-marketing or voice document. Navet's authority, factual claims, terminology
+and publication rules take precedence over upstream frameworks, examples and numerical targets.
+Keep the calm, direct voice; use conversion or emotion techniques only when they fit the task.
+Use existing context before asking questions and scale drafting/review to the request.
+Community work follows `docs/engineering/request-workflows.md`; writing skills supplement it.
 
 ## Non-negotiable rules
 
