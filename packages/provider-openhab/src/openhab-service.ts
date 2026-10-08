@@ -282,6 +282,7 @@ function subscribeToOpenHABSnapshot(
   }
 
   let closed = false;
+  let liveDisconnected = false;
   let socket: WebSocket | null = null;
   let heartbeatIntervalId: ReturnType<typeof globalThis.setInterval> | null = null;
   let reconnectTimeoutId: ReturnType<typeof globalThis.setTimeout> | null = null;
@@ -325,8 +326,15 @@ function subscribeToOpenHABSnapshot(
           try {
             const snapshot = await loadSnapshot();
             if (closed) return;
-            setLatestSnapshot(snapshot);
-            listener(snapshot);
+            const nextSnapshot = liveDisconnected
+              ? {
+                  ...snapshot,
+                  reconnecting: true,
+                  error: 'openHAB live updates disconnected. Cached UI is still available.',
+                }
+              : snapshot;
+            setLatestSnapshot(nextSnapshot);
+            listener(nextSnapshot);
           } catch (error) {
             emitDisconnected(getErrorMessage(error));
           }
@@ -362,6 +370,7 @@ function subscribeToOpenHABSnapshot(
     socket = new WebSocket(createOpenHABWebSocketUrl(baseUrl, session, isProxied));
 
     socket.onopen = () => {
+      liveDisconnected = false;
       if (!socket) {
         return;
       }
@@ -426,6 +435,7 @@ function subscribeToOpenHABSnapshot(
     };
 
     socket.onclose = () => {
+      liveDisconnected = true;
       clearHeartbeat();
       socket = null;
       if (!closed) {

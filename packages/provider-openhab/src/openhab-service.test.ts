@@ -313,6 +313,41 @@ describe('openhab service', () => {
     }
   });
 
+  it('keeps live updates marked as disconnected when a pending REST refresh succeeds', async () => {
+    vi.useFakeTimers();
+    const pending = Promise.withResolvers<Response>();
+    globalThis.fetch = vi
+      .fn()
+      .mockReturnValueOnce(pending.promise)
+      .mockImplementation(async () => new Response('[]')) as typeof fetch;
+    const listener = vi.fn();
+    const unsubscribe = createOpenHABSnapshotClient(session).subscribeSnapshot?.(listener);
+    try {
+      const socket = MockWebSocket.instances[0];
+      socket.emitOpen();
+      socket.emitClose();
+      pending.resolve(new Response('[]'));
+      await pending.promise;
+      await vi.advanceTimersByTimeAsync(0);
+      expect(listener).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          reconnecting: true,
+          error: 'openHAB live updates disconnected. Cached UI is still available.',
+        })
+      );
+      await vi.advanceTimersByTimeAsync(3_000);
+      MockWebSocket.instances[1].emitOpen();
+      await vi.waitFor(() =>
+        expect(listener).toHaveBeenLastCalledWith(
+          expect.objectContaining({ reconnecting: false, error: null })
+        )
+      );
+    } finally {
+      unsubscribe?.();
+      vi.useRealTimers();
+    }
+  });
+
   it('does not emit a snapshot after unsubscribing during a reload', async () => {
     const pending = Promise.withResolvers<Response>();
     globalThis.fetch = vi.fn().mockReturnValue(pending.promise) as typeof fetch;
