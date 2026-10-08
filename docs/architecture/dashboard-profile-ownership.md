@@ -154,8 +154,8 @@ Standalone Home Assistant OAuth does not include a user identity in its token re
 Assistant exposes the current user through its authenticated WebSocket protocol, but the standalone
 Nginx session runtime has no server-side WebSocket client. Navet therefore keeps standalone
 `userId` and `userName` unset instead of trusting a browser assertion. Account preference endpoints
-remain unavailable in standalone mode for now; account-classified settings stay local, while the
-shared household profile still syncs between authenticated standalone clients. Add-on Ingress may
+are unavailable in standalone mode; account-classified settings stay local, while the
+shared household profile syncs between authenticated standalone clients. Add-on Ingress may
 sync account preferences because Supervisor supplies the verified `X-Remote-User-*` identity.
 
 Credential-bearing URLs, raw camera stream URLs, usernames, email addresses, and provider tokens

@@ -49,15 +49,4 @@ layout: compact
 Find entity IDs in Home Assistant under **Settings → Devices & services → Entities**.
 If the picker is empty or the card does not appear, follow [troubleshooting](/cards/troubleshooting/).
 
-## HACS
-
-HACS is the Home Assistant Community Store. The Cards repository includes a Dashboard
-manifest, but clean HACS installation and upgrades are still under acceptance testing.
-Use the manual resource installation above for the documented setup path.
-
-For distribution testing, use [HACS Custom repositories](https://www.hacs.xyz/docs/faq/custom_repositories/)
-with `https://github.com/navet-app/navet-cards` and type **Dashboard**. Verify the selected release's
-installation, resource registration, upgrade, and rollback. Default catalog inclusion is a
-separate process.
-
 Next, [build a room dashboard](/cards/rooms/) or [choose a layout](/cards/appearance/).

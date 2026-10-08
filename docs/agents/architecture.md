@@ -28,17 +28,19 @@ Home Assistant is the reference adapter for Navet’s provider contracts.
 The app runtime is multi-provider: it can retain multiple implemented provider sessions, maintain
 provider-scoped state for each, and merge selected provider collections for shared dashboard use.
 Product features use selected entities and their owning providers, with availability drawn from
-connected providers. Do not introduce a global primary-provider setting. A current session remains
-an internal compatibility detail in legacy code; new feature routing must use explicit sources.
+connected providers. Sources are selected per feature and actions reach the owning adapter.
 
 ## Current Reality
 
-The package direction is established, but the shared UI extraction is still in flight.
+Shared UI authoring and stable imports currently live in
+`packages/app/src/components/*` and `packages/app/src/ui-kit/*`. Provider-neutral extractions
+target `@navet/ui` when the selected task calls for them.
 
-- much of the active shared UI authoring surface still lives in
-  `packages/app/src/components/*` and `packages/app/src/ui-kit/*`
-- those app-owned paths are current implementation and stable import surfaces
-- they should be treated as migration seams, not as final ownership
+## Contract vocabulary
+
+- Use `IntegrationProviderId`, `SmartHomeProviderAdapter`, `NavetEntity`, `NavetCommand`,
+  `CommandResult`, scoped/canonical IDs, runtime, contracts, capabilities, feature services and resource resolution.
+  `NavetDevice`, `NavetRoom`, `NavetRoomDescriptor`, `NavetProviderSnapshot` are app compatibility models.
 
 ## Practical Rules
 
@@ -73,29 +75,12 @@ architecture regression.
 - do not expose Home Assistant service payloads as the public UI command model
 - do not add new shared dependencies on `HassEntity` or similar raw backend types unless the code
   is explicitly adapter-internal
-- keep current Home Assistant users working while continuing to clean up boundaries
 
-## Provider Status
+## Provider capabilities
 
-- Home Assistant: implemented
-- Homey: implemented
-- openHAB: implemented
-- Hubitat: planned metadata only
-- SmartThings: planned metadata only
-
-Implemented does not mean feature-identical. Home Assistant registers Navet's climate, media,
-camera, energy, calendar, weather, notification, task, history, security, and administration
-services. Homey maps lock/unlock commands to its writable `locked` capability, registers
-cover controls for native position and movement capabilities, registers thermostat controls,
-and maps speaker playback, volume, mute, and track
-commands to writable device capabilities. It also exposes flows and moods as scenes, people,
-notifications, Insights history,
-and a normalized hub-resource service for browsing apps and managing favorites and device
-capabilities. openHAB maps rooms, realtime entities, lights, switches, fans, security sensors,
-batteries, and utility measurements. It registers climate setpoint, speaker playback and volume,
-lock, and cover controls. openHAB has no history, energy-statistics, alarm-panel, or media-browser
-services.
-Keep those capability differences visible in product and contributor documentation.
+Home Assistant is the reference adapter; Homey and openHAB expose their supported subsets.
+Hubitat and SmartThings are catalog-only. Use the [capability matrix](../integrations.md#capability-matrix)
+and each provider's runtime registration for specific coverage; implemented does not mean parity.
 
 ## Read Deeper Only When Needed
 

@@ -1,114 +1,56 @@
-# Navet Design System
+# Navet design system
 
-This folder documents Navet's shared UI layers, stable export surfaces, and Storybook review model.
-
-The design system consists of repository authoring layers and curated export surfaces.
+Map of shared UI authoring, stable exports and review surfaces. Root `AGENTS.md` owns authority;
+code and stories are implementation evidence.
 
 ## Guidance Ownership
 
-- [`UI-GUIDELINES.md`](UI-GUIDELINES.md) is the canonical visual and interaction standard.
-- [`AI-DESIGN-CONTEXT.md`](AI-DESIGN-CONTEXT.md) is the compact pre-implementation packet; it must
-  stay consistent with the full guidelines.
-- [`../../ai/skills/navet-ux.md`](../../ai/skills/navet-ux.md) is the operational workflow an agent
-  follows for a UI task.
-- Storybook and the current product are implementation evidence. A target screen's immediate
-  component family is the first visual reference; Home is the fallback reference for dashboard
-  spacing, section rhythm, density, and responsive behavior.
+| Need | Owner |
+| --- | --- |
+| UI task discovery and acceptance | [UX guide](../../ai/skills/navet-ux.md) |
+| Visual/interaction implementation rules | [UI guidelines](UI-GUIDELINES.md) |
+| Source exports, props and Storybook discovery | [AI design discovery](AI-DESIGN-CONTEXT.md) |
+| Composition behavior and templates | [Composition recipes](AGENT-COMPOSITION-RECIPES.md) |
+| Recipe metadata and publication | [Registry](REGISTRY.md) |
+| Feature ownership | [Feature map](FEATURES.md) |
+| Story authoring | [Storybook workflow](../STORYBOOK_WORKFLOW.md) |
 
-If these disagree, investigate whether the code is an intentional current pattern, a compatibility
-seam, or stale implementation. Do not create a fourth interpretation in feature-local code.
-
-Architecture note:
-
-- `@navet/ui` is the target provider-neutral shared UI package boundary.
-- The current shared UI authoring surface is still mostly app-owned under
-  `packages/app/src/components/*` and `packages/app/src/ui-kit/*`.
-- Treat those app-owned paths as current implementation locations and migration seams while the
-  extraction to `@navet/ui` remains in progress.
+Use the target screen's component family first; Home is the fallback for dashboard rhythm and
+density. Resolve conflicting guidance through the root authority order, checking whether current
+code is an intended pattern, a compatibility seam or drift.
 
 ## Current Shared UI Layers
 
-### `packages/app/src/components/primitives/`
+Paths below `packages/app/src` remain current authoring seams; `@navet/ui` is the incremental
+provider-neutral target. Move code only within an explicitly scoped extraction.
 
-Current low-level reusable UI building blocks with small APIs and narrow responsibilities.
+| Path | Responsibility |
+| --- | --- |
+| `packages/app/src/components/primitives/` | Generic low-level controls and surfaces |
+| `packages/app/src/components/patterns/` | Generic compositions of primitives |
+| `packages/app/src/components/shared/` | App/dashboard-specific or runtime-coupled shared UI |
+| `packages/app/src/components/system/` | Curated exports of mature shared pieces; author in primitives/patterns |
+| `packages/app/src/ui-kit/` | Stable docs/story imports: `@navet/app/ui-kit/*` |
+| `packages/ui/src/` | Target shared provider-neutral package; currently small |
 
-### `packages/app/src/components/patterns/`
-
-Current composed shared UI structures built from primitives.
-
-### `packages/app/src/components/shared/`
-
-App-specific shared UI and dashboard-specific helpers that are still too coupled or stateful to be
-honest primitives or generic patterns.
-
-### `packages/app/src/components/system/`
-
-Curated internal export surface for stable primitives, patterns, and token helpers.
-
-This is not the default authoring location for new shared UI.
-
-### `packages/app/src/ui-kit/`
-
-Stable docs and Storybook import surface for shared primitives, patterns, and tokens.
-
-When docs or stories need a stable shared import path, prefer `@navet/app/ui-kit/*`.
-
-### `packages/ui/src/`
-
-Target package boundary for provider-neutral shared UI exports.
-
-Today this package remains intentionally small, so many shared UI authoring decisions still happen
-in the app-owned layers above.
+Keep feature state and provider behavior out of generic UI. Distinguish current paths, stable
+imports and target ownership in changes and reviews.
 
 ## Card Dialog Navigation
 
-Card settings use `BaseCardDialog`, whose card variant defaults to overflow navigation. The first entry in `tabs`
-contains the everyday controls; remaining entries are destinations in **More actions**. Each
-secondary section includes **Back to controls**. Closing and reopening returns to the first section.
+`BaseCardDialog`'s card variant defaults to overflow navigation: first `tabs` entry holds daily
+controls; remaining entries appear in **More actions**, with **Back to controls**. Reopening
+returns to controls. `CardDialogOverflowMenu` owns menu placement and actions.
 
-The shared `CardDialogOverflowMenu` pattern owns the menu placement and actions. The dialog adds
-**Edit room** when an entity or editable widget room is available, **Edit card name** when the
-name can be saved, and the provider's native entity ID for device dialogs. A supplied
-`onRemoveCard` callback exposes a destructive action with an optional `removeCardLabel`.
-
-`BaseCardDialogWithState` uses this navigation for controls, customization, and additional
-sections. Feature dialogs provide their content and callbacks without building a second menu.
-Keep live state and common device actions in the first section; use secondary sections for
-configuration, optional details, and card management.
+Available callbacks/context add **Edit room**, **Edit card name**, the native entity ID for device
+dialogs and destructive removal through `onRemoveCard`/optional `removeCardLabel`.
+`BaseCardDialogWithState` shares this navigation for controls, customization and added sections.
+Features supply content/callbacks; use secondary sections for management and configuration.
+Inspect the [controls-first recipe](AGENT-COMPOSITION-RECIPES.md#controls-first-dialog).
 
 ## Storybook Role
 
-Storybook is the main review surface for:
-
-- shared primitives and patterns
-- stable feature card behavior
-- theme and token review
-- UI-kit discovery stories
-- layout and section composition examples
-
-## Recipe Registry
-
-The [Navet recipe registry](REGISTRY.md) provides five typed pilot compositions for the app.
-Its curated manifest also feeds Storybook's UI-kit recipe page, and executable stories exercise
-the same template files. Registry items carry current source-derived API metadata and import
-shared UI through the existing UI-kit. Use it to select a starting composition, then inspect
-and review the result in Storybook.
-
-## Rules
-
-- distinguish current implementation from target package ownership in docs and reviews
-- author current generic shared UI in `primitives/` or `patterns/` unless the work is explicitly
-  extracting shared UI into `@navet/ui`
-- use `shared/` only when the component is still app-specific, dashboard-specific, or
-  runtime-coupled
-- expose mature shared pieces through `components/system/` and `ui-kit/`
-- prefer `@navet/ui` as the long-term destination for provider-neutral shared UI
-- keep feature logic and provider-specific behavior out of generic shared UI
-- keep docs aligned with the current repo structure, not historical paths
-
-## Related Docs
-
-- [AI-DESIGN-CONTEXT.md](AI-DESIGN-CONTEXT.md)
-- [FEATURES.md](FEATURES.md)
-- [UI-GUIDELINES.md](UI-GUIDELINES.md)
-- [../STORYBOOK_WORKFLOW.md](../STORYBOOK_WORKFLOW.md)
+Review primitives, patterns, feature interactions, themes/tokens and section compositions in
+Storybook. The registry manifest feeds UI-kit recipe discovery and executable template stories;
+inspect source-derived APIs and review status before composing. Stories establish only their
+rendered cases, not a connected workflow or maintainer design acceptance.

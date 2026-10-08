@@ -21,7 +21,7 @@ Navet currently runs in:
   provider management when the Navet runtime can reach the server
 - Hubitat and SmartThings are planned provider metadata only; they have no auth flow or runtime adapter
 - standalone auth state can retain multiple implemented provider sessions; selected provider
-  collections may be aggregated while one provider remains active for single-provider operations
+  collections are aggregated and features route through each selected source’s owning provider.
 
 ## Rules
 
@@ -45,7 +45,7 @@ Navet currently runs in:
 
 ## Follow-Through
 
-Follow the documentation policy in `AGENTS.md`. When a change affects Navet's lasting auth,
+Follow [documentation policy](../../docs/agents/documentation.md). When a change affects Navet's lasting auth,
 deployment, setup, or supported workflows, update the relevant existing explanations in:
 
 - `README.md`

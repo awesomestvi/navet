@@ -1,193 +1,45 @@
-# Navet AI Design Context
+# AI design discovery
 
-Use this as the fast design packet before creating or changing dashboard UI. An agent should be
-able to name the product references it used before implementation begins.
+Role: discovery reference. Follow the [UX task guide](../../ai/skills/navet-ux.md) for ordinary
+UI work. Product principles and architecture have the authority defined in root `AGENTS.md`;
+[UI guidelines](UI-GUIDELINES.md) own implementation rules. Storybook and code supply evidence.
 
-The full source of truth remains:
+## Select and inspect
 
-- [UI-GUIDELINES.md](UI-GUIDELINES.md)
-- [README.md](README.md)
-- [Navet brand system](../branding/README.md) for durable identity and
-  [product card grammar](../branding/CARD_GRAMMAR.md) for how cards communicate
-- Storybook under `packages/app/src/ui-kit/`, `packages/app/src/components/primitives/`,
-  `packages/app/src/components/patterns/`, and feature card stories
+1. Find the closest same-family surface, canonical imports and actual Storybook IDs through the
+   [registry](REGISTRY.md). Inspect catalog level, owner, review status and executable example.
+2. Inspect current props, slots, sizes, states, theme helpers and required context with
+   `pnpm agent:components <name>`. Without a query it writes `.cache/agent-design/components.json`.
+3. Select the relevant [composition recipe](AGENT-COMPOSITION-RECIPES.md), then follow the UX
+   guide's intent note, rendered comparison and approval rules. Unsupported compositions record
+   a coverage gap. Draft/pending examples require same-family rendered review; only
+   maintainer-approved product compositions establish accepted guidance.
 
-## Product Feel
+The generated catalog covers foundations, primitive/pattern entrypoints and local exports imported
+by stories, including callable namespace members and object-union props. Regenerate after source
+changes; its fingerprint identifies inspected contracts. Export presence proves neither maturity,
+accessibility nor rendered quality.
 
-Navet should feel glanceable, compact but calm, direct, tactile, and recognizably Navet.
+## Source and story entrypoints
 
-Build operational smart-home surfaces first. Avoid marketing-page composition, decorative hero
-sections, generic SaaS cards, and oversized empty space in dashboard surfaces.
+Use `@navet/app/ui-kit/primitives`, `@navet/app/ui-kit/patterns` and `@navet/app/ui-kit/tokens`
+for stable docs/story imports. [Shared UI ownership](README.md#current-shared-ui-layers) distinguishes
+current app-owned authoring from the target `@navet/ui` boundary.
 
-"Premium" describes the quality of alignment, state clarity, restraint, and interaction. It is
-not a visual recipe.
+Discover current IDs from source rather than deriving them from these navigation titles:
 
-## Reference-First Workflow
+- `Concepts/UI Kit Start Here`, `Concepts/UI Kit Inventory`, `Concepts/UI Kit Recipes`
+- `Theme/Colors`, `Theme/Typography`, `Theme/Spacing`, `Theme/Motion`
+- `Components/Primitives/Cards/BaseCard`, `Components/Primitives/CardShell`, `Components/Patterns/*`
+- `Cards/Overview/Catalog`, `Cards/Overview/Core State Matrix`, `Cards/Overview/Extended State Matrix`
 
-Before writing JSX or styles:
+## Evidence limits
 
-1. Discover canonical foundations, primitives, patterns and the closest same-family feature
-   through the [design-system registry](REGISTRY.md). Name the real imports and actual Storybook IDs.
-2. Inspect the target screen and its immediate neighbors.
-3. Choose a primary reference: the same component family when it exists, otherwise Home for
-   dashboard rhythm and responsive density.
-4. Inspect the nearest primitive or pattern story and its token helpers.
-5. State the intended information priority, primary action, responsive behavior, and one
-   product-specific visual detail.
-6. Reuse or extend the reference recipe. Record a coverage gap when the existing system cannot
-   express the required behavior. A new visual pattern needs explicit maintainer approval before
-   implementation.
+`pnpm check:ui-kit` checks shared feature imports, known duplicated modal shells, copied card
+surfaces and hardcoded foundations in supported static classes/inline styles. Existing occurrences
+are tracked separately; new violations fail. It does not prove layout, keyboard behavior, themes
+or fidelity. Use the [UX evidence guidance](../../ai/skills/navet-ux.md) for affected
+surfaces and direct consumers, and the [command guide](../agents/commands.md) for focused checks.
 
-Home is the canonical dashboard reference for outer spacing, section rhythm, summary-bar spacing,
-card-grid density, and responsive behavior. A more specific neighboring feature surface wins for
-the component family it already establishes.
-
-## Ticket support tools
-
-Discover recipes through shadcn MCP or **Concepts / UI Kit Recipes**, check catalog level, owner and review status, inspect current contracts and required context, then review the linked executable example and exact component reference before composing UI. Product compositions marked pending and draft building blocks require same-family rendered review; only maintainer-approved items establish accepted design guidance. Unsupported compositions follow the reference-first workflow and identify the coverage gap. See [registry workflow](REGISTRY.md).
-
-Use [composition recipes](AGENT-COMPOSITION-RECIPES.md) to select a shared composition, then
-inspect its current props, source and linked stories with `pnpm agent:components <name>`.
-Without a query, the command writes a generated catalog to `.cache/agent-design/components.json`.
-It covers foundation tokens, primitive and pattern entrypoints and local exports imported by
-Storybook, including callable namespace members and object-union props.
-The source fingerprint identifies the inspected contracts; export presence does not establish
-maturity, accessibility or rendered quality. Regenerate it after source changes.
-
-`pnpm check:ui-kit` detects feature imports into shared UI and known duplicated modal shell
-recipes, including supported aliases and reordered class lists. Card-consumer checks also detect
-copied surfaces and hardcoded foundation values in static classes and inline styles. Existing
-feature occurrences are recorded separately; new occurrences fail. These focused source checks do
-not establish layout, keyboard or theme correctness. Use the
-[ticket UX audit](../../.agents/skills/navet-ux-audit/SKILL.md) for rendered evidence on the affected
-surface and direct consumers of changed shared components.
-
-## Theme Model
-
-Supported themes are:
-
-- `glass`
-- `dark`
-- `light`
-- `black`
-
-Rules:
-
-- Resolve surfaces through shared theme helpers before writing feature-local theme branches.
-- Keep `dark` and `black` as dark-surface card families.
-- Use frosted or translucent glass-like treatments only for `glass`.
-- Make accent-aware states by tinting the current surface with border, glow, overlay, or text.
-- Do not replace a lane's surface family with a one-off gradient or material treatment.
-
-## Shared Starting Points
-
-Prefer these stable imports in stories and docs:
-
-```ts
-import { ... } from '@navet/app/ui-kit/primitives';
-import { ... } from '@navet/app/ui-kit/patterns';
-import { ... } from '@navet/app/ui-kit/tokens';
-```
-
-Current authoring locations:
-
-- `packages/app/src/components/primitives/` for low-level reusable controls and surfaces.
-- `packages/app/src/components/patterns/` for reusable compositions.
-- `packages/app/src/components/shared/` for app-specific shared UI that is still coupled to the app.
-- `packages/app/src/components/system/` for curated exports, not default authoring.
-- `packages/ui/src/` for target provider-neutral shared UI extraction.
-
-## Composition Defaults
-
-Cards:
-
-- Communicate device or widget identity immediately.
-- Keep the main control path obvious.
-- Degrade cleanly across supported card sizes.
-- Do not duplicate the same action in multiple card regions.
-- Move overflow controls into dialogs instead of crowding compact cards.
-- Treat every supported card size as an intentional composition.
-
-Dashboard sections:
-
-- Preserve the shared dashboard shell and the active dashboard spacing mode.
-- Do not add feature-local page padding, max-width containers, or centered content shells.
-- Use section headings to organize live content, not as decorative heroes.
-- Avoid card-inside-panel-inside-section nesting.
-
-Settings and dialogs:
-
-- Use shared modal, sheet, field, and dialog-section patterns.
-- Use the shared 36 px compact minimum and 40 px standard control size; reserve 42 px for
-  exceptional touch-forward controls that genuinely need extra separation or emphasis.
-- Use progressive disclosure for configuration-heavy workflows.
-
-Typography:
-
-- Use sentence case for visible UI text.
-- Avoid uppercase labels, buttons, headings, and metadata by default.
-- Use weight, color, spacing, and layout hierarchy before letter spacing or uppercase.
-- Do not introduce a new font or base type scale for a feature.
-- Do not add filler copy to balance a layout.
-
-## Canonical Storybook Surfaces
-
-Start in these stories before inventing a new UI recipe:
-
-- `Concepts/UI Kit Start Here`
-- `Concepts/UI Kit Inventory`
-- `Concepts/UI Kit Recipes`
-- `Theme/Colors`
-- `Theme/Typography`
-- `Theme/Spacing`
-- `Theme/Motion`
-- `Components/Primitives/Cards/BaseCard`
-- `Components/Primitives/CardShell`
-- `Components/Patterns/*`
-- `Cards/Overview/Catalog`
-- `Cards/Overview/Core State Matrix`
-- `Cards/Overview/Extended State Matrix`
-
-## Anti-Patterns
-
-Avoid:
-
-- Feature-local card shells when a shared primitive or pattern exists.
-- Nested cards or over-contained section shells.
-- One-off gradients that replace the current theme surface family.
-- Heavy blur, layered effects, and always-running animation on frequently updating dashboard cards.
-- Hover-only affordances.
-- Provider-specific payload fields in shared UI.
-- Raw Home Assistant service payloads as UI command models.
-- Recreating a nearby Navet surface from memory instead of inspecting it.
-- Using "premium," "modern," or "glass" as sufficient design direction.
-- Feature-local page shells, max-widths, spacing systems, palettes, radii, or type scales.
-- Validating only the default theme, ideal data, or one viewport.
-
-## Handoff Checklist
-
-Name the reference used, then review:
-
-- supported states and realistic missing or long data
-- smallest and largest size or viewport
-- all four themes and accent readability
-- touch, keyboard focus, reduced motion, and no-hover use
-- reduced effects quality when effects are present
-- visual hierarchy, overflow, alignment, and surface consistency in a rendered review surface
-
-## Validation
-
-Use focused checks:
-
-```bash
-pnpm validate -- --scope ui
-pnpm validate -- --scope dashboard
-pnpm check:stories
-pnpm check:ui-kit
-```
-
-For broad visual regression, use Storybook validation:
-
-```bash
-pnpm test:storybook
-```
+Read the [brand system](../branding/README.md) and [card grammar](../branding/CARD_GRAMMAR.md)
+only when changing their foundations. New visual patterns require explicit maintainer approval.

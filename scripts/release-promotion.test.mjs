@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   collectPromotionSources,
+  candidatePublicationSucceeded,
   parsePromotionTag,
   resolvePromotion,
 } from './release-promotion.mjs';
@@ -187,5 +188,50 @@ describe('published source discovery', () => {
         },
       }),
     ).rejects.toThrow('API unavailable');
+  });
+});
+
+describe('candidate publication verification', () => {
+  const tag = 'v0.17.8-beta.1';
+  const version = '0.17.8-beta.1';
+  const digest = `sha256:${'b'.repeat(64)}`;
+  const release = {
+    tag_name: tag,
+    assets: [{ name: 'navet-release-evidence.json', id: 1 }, { name: 'navet-release-notes.json', id: 2 }],
+  };
+  const evidence = () => ({
+    schema: 1, tag, sha, version, channel: 'beta', runId: 123,
+    panelDigest: digest, notesDigest: digest,
+    images: ['navet', 'amd64-navet-addon', 'aarch64-navet-addon'].map((name) => ({
+      image: `ghcr.io/awesomestvi/${name}`, tag: name === 'navet' ? tag : version,
+      sha, version, channel: 'beta', digest,
+    })),
+  });
+  const verify = (record = evidence(), run = { conclusion: 'success', path: '.github/workflows/release.yml' }) =>
+    candidatePublicationSucceeded(release, sha, { readEvidence: () => record, readRun: () => run });
+
+  it('accepts the published beta namespace independently of repository ownership', async () => {
+    expect(await verify()).toBe(true);
+  });
+  it.each(['other', 'navet-app'])('rejects evidence for an unpublished namespace %s', async (owner) => {
+    const record = evidence();
+    record.images = record.images.map((image) => ({ ...image, image: image.image.replace('awesomestvi', owner) }));
+    expect(await verify(record)).toBe(false);
+  });
+  it('retains commit and artifact identity requirements', async () => {
+    expect(await verify({ ...evidence(), sha: 'c'.repeat(40) })).toBe(false);
+    expect(await verify({ ...evidence(), images: evidence().images.slice(1) })).toBe(false);
+    expect(await verify({ ...evidence(), notesDigest: undefined })).toBe(false);
+  });
+  it.each([
+    { conclusion: 'failure', path: '.github/workflows/release.yml' },
+    { conclusion: 'success', path: '.github/workflows/other.yml' },
+  ])('requires a successful publication workflow %j', async (run) => {
+    expect(await verify(evidence(), run)).toBe(false);
+  });
+  it('propagates API failure instead of excluding a potentially valid source', async () => {
+    await expect(candidatePublicationSucceeded(release, sha, {
+      readEvidence: () => { throw new Error('API unavailable'); }, readRun: () => ({}),
+    })).rejects.toThrow('API unavailable');
   });
 });

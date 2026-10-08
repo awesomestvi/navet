@@ -1,65 +1,25 @@
-# Testing
+# Test execution and tiers
 
-Use this file as the short workflow guide for test work. The deeper strategy lives in
-[../testing/provider-testing-strategy.md](../testing/provider-testing-strategy.md).
+For assertions, fixtures and Keep/Rewrite/Delete decisions, use the
+[testing guide](../../ai/skills/testing-architecture.md). For provider test layers, use the
+[provider strategy](../testing/provider-testing-strategy.md).
 
-## Core Rules
+| Tier | Purpose | Execution |
+| --- | --- | --- |
+| 1 | Release-critical provider/runtime/auth/resource/security contracts | Curated files in `scripts/test-tier-manifest.mjs` |
+| 2 | Blocking app store/service/platform contracts | Curated files in the same manifest |
+| 3 | Broad unit regression | Full unit suite locally; CI excludes files already run by tiers 1/2 |
+| 4 | Test-quality rewrite/delete candidates | Review classification, not a separate executable lane |
 
-- do not weaken valid tests to match implementation drift
-- do not rewrite tests only to make the suite pass
-- prefer behavior, contract, and regression coverage over implementation-shaped assertions
-- reuse shared fixtures instead of repeating inline mock builders
-- keep test tiers honest
-
-## Tier Model
-
-Navet uses four test tiers:
-
-- `Tier 1: Release-critical`
-  Provider contracts, auth/runtime flows, resource/security-runtime edges, provider-boundary
-  checks, and Docker validation.
-- `Tier 2: Blocking app contracts`
-  High-signal store, service, and adapter tests that protect stable app behavior.
-- `Tier 3: Broad regression`
-  Wider UI, hook, component, and feature coverage for drift detection.
-- `Tier 4: Rewrite/Delete candidates`
-  Weak, implementation-shaped, or already-audited rewrite/delete cases.
-
-Workflow expectations:
-
-- runtime-impacting PRs require Tier 1, Tier 2, Tier 3, and Docker validation
-- local `pnpm test:tier3` runs the complete unit suite; CI uses `--exclude-blocking` to run
-  only files not already covered by its required Tier 1 and Tier 2 lanes, without deleting tests
-- non-runtime PRs retain quality checks and all script tests plus affected site builds
-- Dev publication runs Tier 1 source checks and verifies published container digests; subsequent
-  release versions require successful source evidence and their own actual-image runtime checks
-
-## Source Of Truth
-
-Ground tests in one or more of:
-
-1. explicit product requirements
-2. provider-neutral contracts
-3. realistic provider payloads
-4. official provider documentation
-5. known regressions
-
-Navet's current implementation is not the source of truth for those assertions.
-
-## Fixture Rules
-
-- use provider-neutral fixtures for shared-layer tests
-- use realistic provider-specific fixtures for provider package tests
-- include `unknown`, `unavailable`, missing fields, malformed-but-plausible fields, and
-  resource-path differences when they matter
-
-## Review Rules
-
-Classify existing tests before editing them:
-
-- keep
-- rewrite
-- delete
-
-Use `ai/testing-review.md` when the file is already in the audit baseline.
-Use [../testing/test-tier-inventory.md](../testing/test-tier-inventory.md) for the grouped tier map.
+- Runtime-impacting PRs require tiers 1, 2, 3 and Docker validation. Non-runtime PRs retain
+  quality/script checks and affected site builds. Verify applicability in `.github/workflows/ci.yml`
+  and `scripts/pipeline-impact.mjs` rather than inferring it from a tier name.
+- Local `pnpm test:tier3` runs the full unit suite; CI uses `--exclude-blocking` without deleting
+  tests. Storybook interaction coverage is a separate browser surface.
+- Dev publication runs Tier 1 source checks and verifies published image digests. Later release
+  versions require successful source evidence and their own actual-image runtime verification.
+  See the [release workflow](../release-workflow.md).
+- Use the [command guide](commands.md) for focused local checks and the
+  [tier inventory](../testing/test-tier-inventory.md) for rationale. Inspect the current test
+  before applying a rewrite label; an inventory entry alone cannot justify deletion or weakening.
+- Changing a runnable tier requires updating its manifest, rationale and affected CI together.

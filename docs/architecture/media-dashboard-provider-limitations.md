@@ -63,7 +63,7 @@ payloads directly.
   stores completed projections in bounded LRU caches. Rendering modules consume catalog
   projections and do not call public metadata sources directly.
 - Provider thumbnails pass through Navet's resource normalization and image URL sanitization before
-  rendering. Relative, authenticated, or proxy-only URLs still depend on the active provider's
+  rendering. Relative, authenticated, or proxy-only URLs still depend on the owning provider's
   resource resolver.
 - Spotify track metadata first uses the standalone app's validated
   `/__navet_spotify_metadata__/track/:trackId` endpoint, then falls back to Spotify oEmbed when the

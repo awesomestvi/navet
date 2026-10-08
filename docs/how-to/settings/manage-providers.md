@@ -32,7 +32,7 @@ Use the card or feature's editing controls to choose from available sources. Wea
 any weather entity exposed by a connected provider. Calendars combine selected sources, and the
 Energy metric picker includes energy-related sensors from connected providers.
 
-Available choices depend on each adapter's capabilities. Home Assistant currently supplies weather
+Available choices depend on your connected providers’ capabilities. Home Assistant currently supplies weather
 forecasts, calendar events, and the detailed energy history dashboard. Homey supplies Insights
 history for individual entities. See the [capability matrix](/integrations/) for provider coverage.
 

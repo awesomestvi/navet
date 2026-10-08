@@ -22,7 +22,7 @@ These components share app-specific structure or behavior across features.
   Dashboard card failure containment for app-owned card surfaces.
 
 - `card-size-selector.tsx`
-  Dashboard card editing control, not a generic primitive.
+  Dashboard card editing control.
 
 - `card-size.ts`
   Dashboard card size registry, rendered footprint helpers, and shared card grid metrics.
@@ -46,24 +46,22 @@ These components share app-specific structure or behavior across features.
   Bound to app connectivity state and app-shell placement.
 
 - `app-release-badge.tsx`
-  Tied to release/version logic, not generic UI.
+  App release/version display.
 
 - `pwa-update-prompt.tsx`
   App-specific install/update behavior.
 
 - `render-profiler.tsx`
-  Development/performance utility, not shared product UI.
+  Development rendering/performance utility.
 
 - `tiny-card-watermark.tsx`
-  Card-specific visual helper that is still intentionally narrow.
+  Card watermark presentation.
 
 - `theme/`
-  Shared app surface-token and theme helper layer. These helpers are reused broadly but remain
-  coupled to Navet's app theme model rather than being generic primitives.
+  Shared surface tokens and helpers for Navet's app theme model.
 
 - `device-editor/`
-  Shared app composition layer for settings and editor flows. Reuses primitives internally, but
-  the module as a whole is still an app-level toolkit rather than a primitive or pattern family.
+  App settings/editor composition built from shared primitives.
 
 ## Rule of Thumb
 
