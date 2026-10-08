@@ -1,3 +1,4 @@
+import recordSafety from '../shared/record-safety.js';
 import boundedFile from '../shared/bounded-file.js';
 import fs from 'fs';
 import deviceSessionAuthority from './device-session-authority.js';
@@ -671,7 +672,7 @@ function createProviderSessionStore(options) {
     let key;
     for (key in context.session) {
       if (Object.prototype.hasOwnProperty.call(context.session, key)) {
-        next[key] = context.session[key];
+        recordSafety.setOwnRecordValue(next, key, context.session[key]);
       }
     }
     next.updatedAt = Date.now();
@@ -708,7 +709,7 @@ function createProviderSessionStore(options) {
       let key;
       for (key in context.session) {
         if (Object.prototype.hasOwnProperty.call(context.session, key)) {
-          next[key] = context.session[key];
+          recordSafety.setOwnRecordValue(next, key, context.session[key]);
         }
       }
       next.updatedAt = Date.now();

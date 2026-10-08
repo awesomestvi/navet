@@ -10,7 +10,7 @@ async function githubRequest({ token, path, init = {}, fetchImpl = fetch }) {
     Authorization: `Bearer ${token}`,
     'X-GitHub-Api-Version': '2022-11-28',
   };
-  const response = await fetchImpl(url.href, {
+  const response = await fetchImpl('https://api.github.com' + url.pathname + url.search, {
     ...init,
     redirect: 'error',
     headers: { ...headers, ...init.headers },

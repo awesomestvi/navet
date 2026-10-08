@@ -1,3 +1,4 @@
+import recordSafety from '../shared/record-safety.js';
 import boundedFile from '../shared/bounded-file.js';
 import hashCrypto from 'crypto';
 import fs from 'fs';
@@ -542,7 +543,7 @@ function cloneSession(session, overrides) {
 
   for (key in session) {
     if (Object.prototype.hasOwnProperty.call(session, key)) {
-      next[key] = session[key];
+      recordSafety.setOwnRecordValue(next, key, session[key]);
     }
   }
   for (key in overrides) {

@@ -1,6 +1,6 @@
 import njsRecordSafety from '../docker/shared/record-safety.js';
 import profilePolicy from '../docker/shared/dashboard-profile-policy.js';
-import { assertSafeRecord } from '../packages/core/src/record-safety';
+import { assertSafeRecord, setOwnRecordValue } from '../packages/core/src/record-safety';
 import {
   openHABItemName,
   stripOpenHABNameSuffix,
@@ -16,6 +16,23 @@ import boundedFile from '../docker/shared/bounded-file.js';
 import { getSpotifyTrackId } from '../packages/app/src/features/media/catalog/media-catalog';
 
 describe('security alert regressions', () => {
+  it.each([setOwnRecordValue, njsRecordSafety.setOwnRecordValue])(
+    'defines own properties without invoking inherited setters',
+    (setValue) => {
+      let inheritedSetterCalled = false;
+      const record = Object.create({
+        set household(_value: unknown) {
+          inheritedSetterCalled = true;
+        },
+      });
+      setValue(record, 'household', 42);
+      expect(inheritedSetterCalled).toBe(false);
+      expect(Object.getOwnPropertyDescriptor(record, 'household')?.value).toBe(42);
+      for (const key of ['__proto__', 'constructor', 'prototype']) {
+        expect(() => setValue(record, key, {})).toThrow('Unsafe record key');
+      }
+    }
+  );
   it('pins file reads to one descriptor and limits the actual bytes', () => {
     const directory = fs.mkdtempSync(join(tmpdir(), 'navet-security-file-'));
     const file = join(directory, 'record.json');

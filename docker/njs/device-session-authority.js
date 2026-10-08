@@ -1,3 +1,4 @@
+import recordSafety from '../shared/record-safety.js';
 import boundedFile from '../shared/bounded-file.js';
 import hashCrypto from 'crypto';
 import fs from 'fs';
@@ -250,7 +251,7 @@ function validProviderCookieIds(candidateIds) {
       ? readJson(provider.directory + '/' + cookieId + '.json')
       : null;
     if (record && record.auth && record.updatedAt + DEVICE_SESSION_TTL_MS >= Date.now()) {
-      result[providerId] = cookieId;
+      recordSafety.setOwnRecordValue(result, providerId, cookieId);
     }
   }
   return result;
@@ -845,7 +846,7 @@ function invalidateProviderDevices(r) {
   const presentedIds = getCookieIds(r, cookieNames.currentName)
     .concat(getCookieIds(r, cookieNames.legacyName));
   const sessionIds = Object.create(null);
-  sessionIds[primaryId] = true;
+  recordSafety.setOwnRecordValue(sessionIds, primaryId, true);
   let presentedIndex;
   for (presentedIndex = 0; presentedIndex < presentedIds.length; presentedIndex += 1) {
     sessionIds[presentedIds[presentedIndex]] = true;

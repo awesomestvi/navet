@@ -1,3 +1,4 @@
+import recordSafety from './record-safety.js';
 import credentialPolicy from './credential-policy.js';
 const isCredentialFieldName = credentialPolicy.isCredentialFieldName;
 const isCredentialBearingUrl = credentialPolicy.isCredentialBearingUrl;
@@ -119,7 +120,7 @@ function sanitizeCredentialBearingValue(value, depth) {
       }
       const sanitizedEntry = sanitizeCredentialBearingValue(value[key], depth + 1);
       if (sanitizedEntry !== undefined) {
-        sanitizedRecord[key] = sanitizedEntry;
+        recordSafety.setOwnRecordValue(sanitizedRecord, key, sanitizedEntry);
       }
     }
     return sanitizedRecord;
@@ -172,7 +173,7 @@ function normalizeDashboardCollections(profile) {
       if (entityId === '__proto__' || entityId === 'constructor' || entityId === 'prototype') continue;
       const zone = cardZonesSource[entityId];
       if (typeof zone === 'string' && zone.length > 0) {
-        cardZones[entityId] = zone;
+        recordSafety.setOwnRecordValue(cardZones, entityId, zone);
       }
     }
     if (Object.keys(cardZones).length > 0) {
@@ -297,7 +298,7 @@ function pickDisplayProfileSettings(value) {
     const candidate = candidates[key];
     if (BOOLEAN_DISPLAY_PROFILE_SETTING_KEYS[key]) {
       if (typeof candidate === 'boolean') {
-        settings[key] = candidate;
+        recordSafety.setOwnRecordValue(settings, key, candidate);
       }
     } else if (key === 'headerCustomText') {
       if (typeof candidate === 'string') {
@@ -308,7 +309,7 @@ function pickDisplayProfileSettings(value) {
       DISPLAY_PROFILE_SETTING_VALUES[key] &&
       DISPLAY_PROFILE_SETTING_VALUES[key][candidate]
     ) {
-      settings[key] = candidate;
+      recordSafety.setOwnRecordValue(settings, key, candidate);
     }
   }
   if (settings.effectsQualityUserOverride === false) {

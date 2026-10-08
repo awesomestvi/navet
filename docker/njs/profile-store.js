@@ -1,3 +1,4 @@
+import recordSafety from '../shared/record-safety.js';
 import profilePolicy from '../shared/dashboard-profile-policy.js';
 import boundedFile from '../shared/bounded-file.js';
 import fs from 'fs';
@@ -973,7 +974,7 @@ function stageHistoryRevision(currentState, currentProfile, metadata, nextProfil
   });
   const newestByRevision = Object.create(null);
   for (let index = 0; index < retained.length; index += 1) {
-    newestByRevision[String(retained[index].metadata.revision)] = retained[index];
+    recordSafety.setOwnRecordValue(newestByRevision, String(retained[index].metadata.revision), retained[index]);
   }
   retained = Object.keys(newestByRevision).map(function (revision) {
     return newestByRevision[revision];
@@ -1612,7 +1613,7 @@ function normalizeRegistryClients(clients, now) {
     if (seenIds[entry.id] || (bindingId && seenBindings[bindingId])) {
       continue;
     }
-    seenIds[entry.id] = true;
+    recordSafety.setOwnRecordValue(seenIds, entry.id, true);
     if (bindingId) {
       seenBindings[bindingId] = true;
     }
@@ -2388,7 +2389,7 @@ function normalizePreferenceCollection(path, collection) {
       if (key !== canonicalKey) {
         const canonical = collection.records[canonicalKey];
         if (!canonical || Number(document.revision) > Number(canonical.revision)) {
-          collection.records[canonicalKey] = document;
+          recordSafety.setOwnRecordValue(collection.records, canonicalKey, document);
         }
         delete collection.records[key];
         changed = true;
@@ -2754,7 +2755,7 @@ function remapDisplayProfileClient(previousClientId, nextClientId) {
   );
   delete profileIdByClientId[previousClientId];
   if (nextClientId) {
-    profileIdByClientId[nextClientId] = profileId;
+    recordSafety.setOwnRecordValue(profileIdByClientId, nextClientId, profileId);
   }
   current.revision += 1;
   current.updatedAt = nowIso();

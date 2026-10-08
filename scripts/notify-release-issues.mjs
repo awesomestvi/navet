@@ -16,7 +16,7 @@ function assertReleaseInput({ repository, tag, baseSha, releaseSha }) {
 async function github(path, token, { method = 'GET', body, fetchImpl = fetch } = {}) {
   const url = new URL(path, API);
   if (url.origin !== API || url.username || url.password) throw new Error('Invalid GitHub API path.');
-  const response = await fetchImpl(url.href, {
+  const response = await fetchImpl(API + url.pathname + url.search, {
     method,
     redirect: 'error',
     headers: {

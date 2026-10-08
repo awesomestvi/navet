@@ -104,7 +104,7 @@ for (const directive of ['img-src', 'connect-src']) {
   const directiveValue = rootContentSecurityPolicy
     .split(';')
     .find((value) => value.trimStart().startsWith(`${directive} `));
-  if (!directiveValue?.trim().split(/\s+/).includes('https://tiles.openfreemap.org')) {
+  if (!directiveValue?.trim().split(/\s+/).some((source) => source === 'https://tiles.openfreemap.org')) {
     fail(`${directive} must allow the OpenFreeMap production tile origin`);
   }
 }

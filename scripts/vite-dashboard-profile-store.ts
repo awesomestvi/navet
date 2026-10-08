@@ -1,3 +1,4 @@
+import { setOwnRecordValue } from '../packages/core/src/record-safety'
 import fileSystem from 'node:fs'
 import boundedFile from '../docker/shared/bounded-file.js'
 import profilePolicy from '../docker/shared/dashboard-profile-policy.js'
@@ -1308,7 +1309,7 @@ export function createViteDashboardProfileStore(
         if (key !== canonicalKey) {
           const canonical = collection.records[canonicalKey]
           if (!canonical || document.revision > canonical.revision) {
-            collection.records[canonicalKey] = document
+            setOwnRecordValue(collection.records, canonicalKey, document)
           }
           delete collection.records[key]
           changed = true
@@ -1571,7 +1572,7 @@ export function createViteDashboardProfileStore(
     )
     delete profileIdByClientId[previousClientId]
     if (nextClientId) {
-      profileIdByClientId[nextClientId] = profileId
+      setOwnRecordValue(profileIdByClientId, nextClientId, profileId)
     }
     writeJson(paths.displayProfiles, {
       ...current,

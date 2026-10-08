@@ -10,7 +10,7 @@ import {
 } from './chore-calendar-policy.ts';
 import { applyChoreOccurrenceCommand } from './chore-occurrence-policy.ts';
 import { earnChoreProgressAwards } from './chore-progress-policy.ts';
-import { assertSafeRecord } from './record-safety.ts';
+import { assertSafeRecord, setOwnRecordValue } from './record-safety.ts';
 
 export { applyChoreOccurrenceCommand } from './chore-occurrence-policy.ts';
 
@@ -1986,7 +1986,7 @@ function applyChoreWorkspaceActionWithoutRecurrence(
       points && participantId ? (becameFinal ? points : stoppedBeingFinal ? -points : 0) : 0;
     if (points && participantId && (becameFinal || stoppedBeingFinal)) {
       const balances = getChoreExperiencePointBalances(workspace);
-      balances[participantId] = (balances[participantId] ?? 0) + pointsDelta;
+      setOwnRecordValue(balances, participantId, (balances[participantId] ?? 0) + pointsDelta);
       nextExperience = {
         ...nextExperience,
         earnedPointsByParticipant: balances,
@@ -2541,7 +2541,11 @@ function applyChoreWorkspaceActionWithoutRecurrence(
       throw new Error('Not enough points for this reward');
     }
     if (pointsDelta)
-      balances[request.participantId] = (balances[request.participantId] ?? 0) + pointsDelta;
+      setOwnRecordValue(
+        balances,
+        request.participantId,
+        (balances[request.participantId] ?? 0) + pointsDelta
+      );
     const pointTransactions = [
       ...experience.pointTransactions,
       {
@@ -2843,7 +2847,7 @@ function applyChoreWorkspaceActionWithoutRecurrence(
         ) {
           continue;
         }
-        occurrencesById[occurrence.id] = occurrence;
+        setOwnRecordValue(occurrencesById, occurrence.id, occurrence);
         occurrenceCreatedActivities.push({
           id: `activity:${commandId}:created:${occurrence.id}`,
           commandId,

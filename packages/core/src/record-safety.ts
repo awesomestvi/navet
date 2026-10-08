@@ -1,4 +1,16 @@
 /** Reject property names and identifiers that can resolve inherited object properties. */
+export function setOwnRecordValue(record: object, key: string, value: unknown): void {
+  if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+    throw new Error('Unsafe record key');
+  }
+  Object.defineProperty(record, key, {
+    value,
+    enumerable: true,
+    writable: true,
+    configurable: true,
+  });
+}
+
 export function assertSafeRecord(value: unknown, depth?: number): void {
   if (!value || typeof value !== 'object') return;
   const currentDepth = depth || 0;
