@@ -10,6 +10,63 @@ describe('Homey normalized command execution', () => {
     homeyService.resetSnapshot();
   });
 
+  it.each(['resolve', 'reject'] as const)(
+    'ignores a stale snapshot %s after replacing the client',
+    async (outcome) => {
+      const pending = Promise.withResolvers<import('./homey-types').HomeySnapshot>();
+      homeyService.setClient({ setCapabilityValue: vi.fn(), loadSnapshot: () => pending.promise });
+      const settled = homeyService.loadSnapshot().catch(() => undefined);
+      homeyService.setClient({ setCapabilityValue: vi.fn() });
+      homeyService.replaceSnapshot({ connected: true, devices: {}, zones: {}, error: null });
+      const current = homeyService.getSnapshot();
+      if (outcome === 'resolve')
+        pending.resolve({
+          connected: true,
+          devices: { old: { id: 'old', name: 'Old lamp' } },
+          zones: {},
+        });
+      else pending.reject(new Error('Old connection failed'));
+      await settled;
+      expect(homeyService.getSnapshot()).toBe(current);
+    }
+  );
+
+  it('disconnects the transport and ignores pending snapshots on teardown', async () => {
+    const unsubscribe = vi.fn();
+    const pending = Promise.withResolvers<import('./homey-types').HomeySnapshot>();
+    homeyService.setClient({
+      setCapabilityValue: vi.fn(),
+      loadSnapshot: () => pending.promise,
+      subscribeSnapshot: () => unsubscribe,
+    });
+    const loading = homeyService.loadSnapshot();
+    homeyService.disconnect();
+    expect(unsubscribe).toHaveBeenCalledTimes(1);
+    expect(homeyService.isConfigured()).toBe(false);
+    pending.resolve({ connected: true, devices: {}, zones: {} });
+    await loading;
+    expect(homeyService.getSnapshot().connected).toBe(false);
+  });
+
+  it('does not send remaining capability commands to a replacement connection', async () => {
+    const pending = Promise.withResolvers<void>();
+    const oldSend = vi.fn().mockReturnValue(pending.promise);
+    homeyService.setClient({ setCapabilityValue: oldSend });
+    const action = homeyService.callService(
+      'light',
+      'turn_on',
+      { brightness_pct: 50 },
+      { entityId: 'lamp' }
+    );
+    const settled = expect(action).rejects.toThrow('connection changed');
+    const newSend = vi.fn();
+    homeyService.setClient({ setCapabilityValue: newSend });
+    pending.resolve();
+    await settled;
+    expect(oldSend).toHaveBeenCalledTimes(1);
+    expect(newSend).not.toHaveBeenCalled();
+  });
+
   it('uses identical capability values for normalized and compatibility brightness actions', () => {
     expect(
       translateHomeyCommand(entity, {

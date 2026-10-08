@@ -8,6 +8,48 @@ describe('createSnapshotBackedProviderAdapter', () => {
     vi.restoreAllMocks();
   });
 
+  it('rejects scoped lookups and commands belonging to another provider', async () => {
+    const entity = {
+      id: 'homey:lamp',
+      canonicalId: 'homey:lamp',
+      providerId: 'homey' as const,
+      externalId: 'lamp',
+      type: 'light' as const,
+      name: 'Lamp',
+      primaryState: 'on',
+      availability: 'available' as const,
+      capabilities: [],
+      attributes: {},
+    };
+    const executeCommand = vi.fn();
+    const adapter = createSnapshotBackedProviderAdapter({
+      providerId: 'homey',
+      executeCommand,
+      contract: {
+        providerId: 'homey',
+        getState: () => ({
+          providerId: 'homey',
+          connected: true,
+          connecting: false,
+          reconnecting: false,
+          entitiesHydrated: true,
+          registriesHydrated: true,
+          error: null,
+          entities: [entity],
+          rooms: [],
+        }),
+      },
+    });
+
+    await expect(adapter.getEntity('lamp')).resolves.toEqual(entity);
+    await expect(adapter.getEntity('homey:lamp')).resolves.toEqual(entity);
+    await expect(adapter.getEntity('openhab:lamp')).resolves.toBeNull();
+    await expect(adapter.execute({ type: 'turn_off', entityId: 'openhab:lamp' })).rejects.toThrow(
+      'Unknown provider entity'
+    );
+    expect(executeCommand).not.toHaveBeenCalled();
+  });
+
   it('emits update events only when entity data changes semantically', async () => {
     let state: NavetProviderState = {
       providerId: 'home_assistant' as const,
@@ -23,7 +65,7 @@ describe('createSnapshotBackedProviderAdapter', () => {
           canonicalId: 'home_assistant:light.kitchen',
           providerId: 'home_assistant' as const,
           externalId: 'light.kitchen',
-          type: 'light',
+          type: 'light' as const,
           name: 'Kitchen Light',
           room: 'Kitchen',
           primaryState: 'on',
@@ -85,6 +127,20 @@ describe('createSnapshotBackedProviderAdapter', () => {
         ...entity,
         primaryState: 'off',
       })),
+    };
+    emitSubscriber();
+
+    expect(events).toEqual([{ type: 'entity_updated', entityId: 'home_assistant:light.kitchen' }]);
+
+    state = {
+      ...state,
+      entities: state.entities.map((entity) => ({ ...entity, attributes: { options: [] } })),
+    };
+    emitSubscriber();
+    events.length = 0;
+    state = {
+      ...state,
+      entities: state.entities.map((entity) => ({ ...entity, attributes: { options: {} } })),
     };
     emitSubscriber();
 

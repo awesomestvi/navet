@@ -1,0 +1,3 @@
+type: fixed
+audiences: [standalone, home-assistant, hacs]
+summary: Fixed stale provider state after reconnecting and missed openHAB live updates.

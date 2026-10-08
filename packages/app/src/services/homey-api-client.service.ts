@@ -10,6 +10,7 @@ type HomeySnapshotListener = (snapshot: HomeySnapshot) => void;
 
 const snapshotListeners = new Set<HomeySnapshotListener>();
 let snapshotPollCleanup: (() => void) | null = null;
+let snapshotGeneration = 0;
 let snapshotRefreshInFlight: Promise<HomeySnapshot> | null = null;
 let latestSnapshot: HomeySnapshot = {
   connected: false,
@@ -57,7 +58,7 @@ async function fetchHomeySnapshot(): Promise<HomeySnapshot> {
     loadHomeyResources(fetchHomeyJson),
   ]);
 
-  latestSnapshot = {
+  return {
     ...resources,
     connected: true,
     error: null,
@@ -65,8 +66,6 @@ async function fetchHomeySnapshot(): Promise<HomeySnapshot> {
     devices,
     zones,
   };
-
-  return latestSnapshot;
 }
 
 function emitSnapshot(snapshot: HomeySnapshot) {
@@ -80,12 +79,16 @@ async function refreshHomeySnapshot() {
     return await snapshotRefreshInFlight;
   }
 
+  const generation = snapshotGeneration;
   snapshotRefreshInFlight = fetchHomeySnapshot()
     .then((snapshot) => {
+      if (generation !== snapshotGeneration) return snapshot;
+      latestSnapshot = snapshot;
       emitSnapshot(snapshot);
       return snapshot;
     })
     .catch((error) => {
+      if (generation !== snapshotGeneration) throw error;
       latestSnapshot = {
         ...latestSnapshot,
         connected: false,
@@ -96,7 +99,7 @@ async function refreshHomeySnapshot() {
       throw error;
     })
     .finally(() => {
-      snapshotRefreshInFlight = null;
+      if (generation === snapshotGeneration) snapshotRefreshInFlight = null;
     });
 
   return await snapshotRefreshInFlight;
@@ -111,6 +114,9 @@ function handleSnapshotRefreshEvent() {
 }
 
 function stopSnapshotPolling() {
+  snapshotGeneration += 1;
+  snapshotRefreshInFlight = null;
+  latestSnapshot = { connected: false, devices: {}, zones: {} };
   snapshotPollCleanup?.();
   snapshotPollCleanup = null;
 

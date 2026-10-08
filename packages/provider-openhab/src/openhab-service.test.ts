@@ -1,6 +1,6 @@
 import type { NavetProviderSessionInput } from '@navet/core/provider-contract';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createOpenHABSnapshotClient } from './openhab-service';
+import { createOpenHABSnapshotClient, openhabService } from './openhab-service';
 
 class MockWebSocket {
   static readonly OPEN = 1;
@@ -281,6 +281,61 @@ describe('openhab service', () => {
     unsubscribe?.();
   });
 
+  it('reloads again when an item event arrives during an in-flight snapshot', async () => {
+    const pending = Promise.withResolvers<Response>();
+    const fetchMock = vi
+      .fn()
+      .mockReturnValueOnce(pending.promise)
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify([{ name: 'Lamp', type: 'Switch', state: 'OFF' }]))
+      );
+    globalThis.fetch = fetchMock as typeof fetch;
+    const listener = vi.fn();
+    const unsubscribe = createOpenHABSnapshotClient(session).subscribeSnapshot?.(listener);
+    try {
+      const socket = MockWebSocket.instances[0];
+      socket.emitOpen();
+      socket.emitMessage({
+        type: 'ItemStateChangedEvent',
+        topic: 'openhab/items/Lamp/statechanged',
+      });
+      pending.resolve(
+        new Response(JSON.stringify([{ name: 'Lamp', type: 'Switch', state: 'ON' }]))
+      );
+      await vi.waitFor(() =>
+        expect(listener).toHaveBeenLastCalledWith(
+          expect.objectContaining({ items: { Lamp: expect.objectContaining({ state: 'OFF' }) } })
+        )
+      );
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    } finally {
+      unsubscribe?.();
+    }
+  });
+
+  it('does not emit a snapshot after unsubscribing during a reload', async () => {
+    const pending = Promise.withResolvers<Response>();
+    globalThis.fetch = vi.fn().mockReturnValue(pending.promise) as typeof fetch;
+    const listener = vi.fn();
+    const unsubscribe = createOpenHABSnapshotClient(session).subscribeSnapshot?.(listener);
+    MockWebSocket.instances[0].emitOpen();
+    unsubscribe?.();
+    pending.resolve(new Response('[]'));
+    await pending.promise;
+    // Let response parsing and the subscription continuation finish.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it.each([null, 1, 'unexpected', []])('ignores non-object WebSocket payloads: %j', (payload) => {
+    const unsubscribe = createOpenHABSnapshotClient(session).subscribeSnapshot?.(vi.fn());
+    try {
+      expect(() => MockWebSocket.instances[0].emitMessage(payload)).not.toThrow();
+    } finally {
+      unsubscribe?.();
+    }
+  });
+
   it('uses the same-origin proxy for websocket live updates when configured', async () => {
     vi.useFakeTimers();
     globalThis.fetch = vi.fn().mockResolvedValue(
@@ -315,4 +370,47 @@ describe('openhab service', () => {
 
     unsubscribe?.();
   });
+});
+
+describe('openHAB snapshot lifecycle', () => {
+  beforeEach(() => {
+    openhabService.setClient(null);
+    openhabService.resetSnapshot();
+  });
+  afterEach(() => {
+    openhabService.setClient(null);
+    openhabService.resetSnapshot();
+  });
+
+  it('clears the previous error after a successful snapshot reload', async () => {
+    openhabService.setError('Network disconnected');
+    openhabService.setClient({
+      sendItemCommand: vi.fn(),
+      loadSnapshot: async () => ({ connected: true, items: {}, error: null }),
+    });
+    await openhabService.loadSnapshot();
+    expect(openhabService.getSnapshot()).toMatchObject({ connected: true, error: null });
+  });
+
+  it.each(['resolve', 'reject'] as const)(
+    'ignores a stale %s after replacing the client',
+    async (outcome) => {
+      const pending = Promise.withResolvers<import('./openhab-types').OpenHABSnapshot>();
+      openhabService.setClient({ sendItemCommand: vi.fn(), loadSnapshot: () => pending.promise });
+      const loading = openhabService.loadSnapshot();
+      const settled = loading.catch(() => undefined);
+      openhabService.setClient({ sendItemCommand: vi.fn() });
+      openhabService.replaceSnapshot({
+        connected: true,
+        items: { NewLamp: { name: 'NewLamp' } },
+        error: null,
+      });
+      const current = openhabService.getSnapshot();
+      if (outcome === 'resolve')
+        pending.resolve({ connected: true, items: { OldLamp: { name: 'OldLamp' } } });
+      else pending.reject(new Error('Old connection failed'));
+      await settled;
+      expect(openhabService.getSnapshot()).toBe(current);
+    }
+  );
 });

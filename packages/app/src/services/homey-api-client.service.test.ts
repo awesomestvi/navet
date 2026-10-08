@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { homeyService } from './homey.service';
 import { homeyApiClient } from './homey-api-client.service';
+import { teardownIntegrationSession } from './integration-bootstrap.service';
 
 describe('Homey connection availability', () => {
   beforeEach(() => {
@@ -45,6 +46,51 @@ describe('Homey connection availability', () => {
       unreachable: false,
       error: null,
     });
+  });
+
+  it('starts a fresh request after reconnecting while an old refresh is pending', async () => {
+    const pending = Promise.withResolvers<void>();
+    const oldFetch = vi.fn().mockImplementation(async () => {
+      await pending.promise;
+      return new Response('{}');
+    });
+    vi.stubGlobal('fetch', oldFetch);
+    const oldLoad = homeyService.loadSnapshot();
+    homeyService.setClient(null);
+    homeyService.resetSnapshot();
+    homeyService.setClient(homeyApiClient);
+    const newFetch = vi.fn().mockImplementation(async () => new Response('{}'));
+    vi.stubGlobal('fetch', newFetch);
+    const newLoad = homeyService.loadSnapshot();
+    expect(newFetch).toHaveBeenCalled();
+    await newLoad;
+    const current = homeyService.getSnapshot();
+    pending.resolve();
+    await oldLoad;
+    expect(homeyService.getSnapshot()).toBe(current);
+  });
+
+  it('does not restore the previous account cache when reconnecting fails', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockImplementation(
+          async (url: string) =>
+            new Response(
+              JSON.stringify(
+                url.endsWith('/devices/device') ? { old: { id: 'old', name: 'Old lamp' } } : {}
+              )
+            )
+        )
+    );
+    await homeyService.loadSnapshot();
+    expect(homeyService.getSnapshot().devices.old).toBeDefined();
+    teardownIntegrationSession('homey');
+    homeyService.setClient(homeyApiClient);
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
+    await expect(homeyService.loadSnapshot()).rejects.toThrow('Failed to fetch');
+    expect(homeyService.getSnapshot().devices).toEqual({});
   });
 
   it('does not call a missing Homey OAuth session an offline hub', async () => {
