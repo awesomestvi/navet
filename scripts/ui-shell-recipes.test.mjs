@@ -102,3 +102,25 @@ it('combines static builder arguments without merging mutually exclusive branche
   expect(inspect('import { clsx as join } from "clsx"; <div className={join("fixed left-1/2 top-1/2", "z-50 shadow-2xl", "backdrop-blur-xl")} />').map((entry) => entry.rule)).toContain('duplicate-shell');
   expect(inspect('<div className={cn(flag ? "fixed left-1/2 top-1/2" : "z-50 shadow-2xl backdrop-blur-xl")} />')).toEqual([]);
 });
+
+// Keep existing shell/structure coverage. Card guards cover new consumer styling.
+it.each([
+  '<div className="rounded-[24px] bg-[#123456] p-[17px] text-[15px]" />',
+  '<div className={cn("rounded-2xl", "shadow-lg", "bg-white")} />',
+  '<div style={{ borderRadius: 24, backgroundColor: "#123456", fontSize: "15px" }} />',
+])('rejects hardcoded foundations or copied card surfaces in a feature card: %s', (source) => {
+  expect(inspect(source, 'packages/app/src/features/example/example-card.tsx').length).toBeGreaterThan(0);
+});
+it.each([
+  "import { BaseCard, CardMetric } from '@navet/app/ui-kit/primitives'; <BaseCard size='small'><CardMetric /></BaseCard>",
+  '<div className={cn(cardTokens.surface, spacing.compact)} style={{ color: "var(--navet-text)", gap: 0 }} />',
+  '// rounded-[24px]\nconst description = "bg-[#123456]"; <div aria-label={description} />',
+])('accepts canonical card composition, tokens and nonstyling text: %s', (source) => {
+  expect(inspect(source, 'packages/app/src/features/example/example-card.tsx')).toEqual([]);
+});
+it('keeps layout guards scoped to card consumers and detects new occurrences in a legacy card', () => {
+  expect(inspect('<div className="rounded-[24px]" />', 'packages/app/src/features/example/page.tsx')).toEqual([]);
+  const file = 'packages/app/src/features/example/example-card.tsx';
+  const baseline = inspect('<div className="rounded-[24px]" />', file).map(({ line, ...entry }) => ({ ...entry, reason: 'Existing styling' }));
+  expect(applyCompositionBaseline(inspect('<div className="rounded-[24px]" /><div className="rounded-[30px]" />', file), baseline).newViolations).toHaveLength(1);
+});

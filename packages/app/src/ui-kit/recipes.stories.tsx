@@ -1,3 +1,4 @@
+import { useTheme } from '@navet/app/hooks';
 import {
   WorkbenchCode,
   WorkbenchInset,
@@ -6,6 +7,7 @@ import {
   WorkbenchPanel,
 } from '@navet/app/storybook/workbench-docs';
 import { Button, Input } from '@navet/app/ui-kit/primitives';
+import { getThemeSurfaceTokens } from '@navet/app/ui-kit/tokens';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useEffect, useId, useState } from 'react';
 import { expect } from 'storybook/test';
@@ -13,16 +15,21 @@ import recipes from '../composition-recipes/recipes.json';
 
 interface RegistryItem {
   name: string;
+  title: string;
+  description: string;
   files: { content: string }[];
   meta: {
+    catalogKind?: string;
+    source?: string;
+    states?: string[];
     level: string;
     reviewStatus: string;
     sourceRevision: { commit: string | null; dirty: boolean };
     sourceFingerprint: string;
     compositionFingerprint: string;
     contracts: unknown[];
-    story: { href: string };
-    reference: { href: string };
+    story: { href: string } | null;
+    reference: { href: string } | null;
   };
 }
 function RecipesStory() {
@@ -52,7 +59,9 @@ function RecipesStory() {
         const payload = await response.json();
         if (
           !Array.isArray(payload.items) ||
-          payload.items.length !== recipes.length ||
+          payload.items.filter((item: RegistryItem) =>
+            ['product', 'building-block'].includes(item.meta.level)
+          ).length !== recipes.length ||
           recipes.some(
             (recipe) =>
               !payload.items.some(
@@ -215,10 +224,10 @@ function RecipesStory() {
                     {item ? (
                       <>
                         <div className="my-3 flex flex-wrap gap-3 text-sm underline">
-                          <a href={`./${item.meta.story.href}`} target="_top">
+                          <a href={`./${item.meta.story?.href}`} target="_top">
                             Executable example
                           </a>
-                          <a href={`./${item.meta.reference.href}`} target="_top">
+                          <a href={`./${item.meta.reference?.href}`} target="_top">
                             {recipe.level === 'product'
                               ? 'Existing feature reference'
                               : 'Usage reference'}
@@ -307,5 +316,136 @@ export const Recipes: Story = {
     await expect(canvas.getByText('No recipes match these filters.')).toBeVisible();
     await userEvent.selectOptions(canvas.getByRole('combobox', { name: 'Review status' }), 'all');
     await userEvent.selectOptions(canvas.getByRole('combobox', { name: 'Catalog level' }), 'all');
+  },
+};
+
+function SourceCatalogStory() {
+  const { theme } = useTheme();
+  const surface = getThemeSurfaceTokens(theme);
+  const [limit, setLimit] = useState(40);
+  const [items, setItems] = useState<RegistryItem[]>([]);
+  const [query, setQuery] = useState('');
+  const [error, setError] = useState<string>();
+  const id = useId();
+  const [retry, setRetry] = useState(0);
+  useEffect(() => {
+    let disposed = false;
+    let controller: AbortController | undefined;
+    const load = async () => {
+      controller?.abort();
+      const requestController = new AbortController();
+      controller = requestController;
+      try {
+        const response = await fetch('/r/registry.json', {
+          cache: 'no-store',
+          signal: requestController.signal,
+        });
+        if (!response.ok)
+          throw new Error(`Registry unavailable (${response.status}). Start pnpm registry:dev.`);
+        const payload = await response.json();
+        if (
+          !Array.isArray(payload.items) ||
+          !payload.items.some((item: RegistryItem) => item.meta.catalogKind)
+        )
+          throw new Error('Rebuild the registry for this Storybook revision.');
+        if (!disposed) {
+          setItems(payload.items.filter((item: RegistryItem) => item.meta.catalogKind));
+          setError(undefined);
+        }
+      } catch (cause) {
+        if (!disposed && !requestController.signal.aborted) {
+          setItems([]);
+          setError(cause instanceof Error ? cause.message : String(cause));
+        }
+      }
+    };
+    void load();
+    const interval = window.setInterval(() => {
+      void load();
+    }, 4000);
+    return () => {
+      disposed = true;
+      controller?.abort();
+      window.clearInterval(interval);
+    };
+  }, [retry]);
+  const matches = items.filter((item) =>
+    `${item.title} ${item.description} ${item.meta.level} ${item.meta.source}`
+      .toLowerCase()
+      .includes(query.toLowerCase())
+  );
+  return (
+    <WorkbenchPage>
+      <WorkbenchIntro eyebrow="Navet source catalog" title="Reuse the real design system">
+        <p>
+          Find foundations, primitives, patterns, feature components and every Storybook example.
+          Inspect canonical imports and source, then review the rendered reference. Review status
+          remains unclassified until acceptance is recorded.
+        </p>
+      </WorkbenchIntro>
+      <WorkbenchPanel title="Find a reference" className={surface.textSecondary}>
+        <label htmlFor={id}>Search canonical Navet sources</label>
+        <Input
+          id={id}
+          value={query}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setLimit(40);
+          }}
+          placeholder="For example: BaseCard, spacing, lighting, unavailable"
+        />
+        <p role="status">
+          {matches.length} references. Showing {Math.min(matches.length, limit)}.
+        </p>
+        {error ? (
+          <div role="alert">
+            <p>{error}</p>
+            <Button onClick={() => setRetry(retry + 1)}>Retry registry</Button>
+          </div>
+        ) : items.length === 0 ? (
+          <p>Loading source catalog…</p>
+        ) : null}
+      </WorkbenchPanel>
+      {matches.slice(0, limit).map((item) => (
+        <WorkbenchPanel
+          key={item.name}
+          title={item.title}
+          summary={`${item.meta.level} · ${item.meta.catalogKind} · ${item.meta.reviewStatus}`}
+          className={`${surface.textSecondary} break-words`}
+        >
+          <p>{item.meta.source}</p>
+          <div className="flex flex-wrap gap-3 underline">
+            <a href={`/r/${item.name}.json`}>View source and contracts</a>
+            {item.meta.reference ? (
+              <a href={`./${item.meta.reference.href}`} target="_top">
+                Rendered reference
+              </a>
+            ) : null}
+          </div>
+          <p>
+            Examples:{' '}
+            {item.meta.states?.slice(0, 8).join(', ') ||
+              'Inspect the nearest same-family reference.'}
+          </p>
+        </WorkbenchPanel>
+      ))}
+      {matches.length > limit ? (
+        <Button onClick={() => setLimit(limit + 40)}>Show more references</Button>
+      ) : null}
+    </WorkbenchPage>
+  );
+}
+export const SourceCatalog: Story = {
+  render: () => <SourceCatalogStory />,
+  play: async ({ canvas, userEvent }) => {
+    const input = canvas.getByRole('textbox', { name: 'Search canonical Navet sources' });
+    await userEvent.type(input, 'BaseCard');
+    await expect(await canvas.findByRole('heading', { name: 'BaseCard' })).toBeVisible();
+    await expect(
+      canvas.getAllByRole('link', { name: 'View source and contracts' }).length
+    ).toBeGreaterThan(0);
+    await expect(
+      canvas.getAllByRole('link', { name: 'Rendered reference' }).length
+    ).toBeGreaterThan(0);
   },
 };

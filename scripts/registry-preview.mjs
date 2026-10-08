@@ -3,6 +3,8 @@ import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { buildRegistry, fingerprint, resolveStory } from './ui-registry.mjs';
+import { resolveCatalogReference } from './registry-catalog.mjs';
+import { indexItem } from './registry-index.mjs';
 import { validateRegistry } from './registry-schema.mjs';
 export async function inspectPreview(base, revision, request = fetch) {
   const url = new URL(base);
@@ -22,14 +24,18 @@ export async function inspectPreview(base, revision, request = fetch) {
   const [registry, index, iframe] = await Promise.all([get('r/registry.json').then((r) => r.json()), get('index.json').then((r) => r.json()), get('iframe.html').then((r) => r.text())]);
   validateRegistry(registry);
   const renderedFingerprint = fingerprint([index, iframe]);
-  for (const item of registry.items) {
+  for (let position = 0; position < registry.items.length; position++) {
+    const summary = registry.items[position];
+    const item = await (await get(`r/${summary.name}.json`)).json();
+    if (JSON.stringify(indexItem(item)) !== JSON.stringify(summary)) throw new Error(`${summary.name}: item/index payload mismatch`);
+    registry.items[position] = item;
     if (item.meta.sourceRevision.commit !== revision || item.meta.sourceRevision.dirty) throw new Error(`${item.name}: preview revision mismatch or dirty source`);
     if (item.meta.renderedFingerprint !== renderedFingerprint) throw new Error(`${item.name}: rendered Storybook fingerprint mismatch`);
-    for (const story of [item.meta.story, item.meta.reference]) if (resolveStory(index, story.source, story.export).id !== story.id) throw new Error(`${item.name}: story link mismatch`);
+    for (const story of [item.meta.story, item.meta.reference, ...(item.meta.examples ?? [])].filter(Boolean)) if ((item.meta.catalogKind ? resolveCatalogReference(index, story).id : resolveStory(index, story.source, story.export).id) !== story.id) throw new Error(`${item.name}: story link mismatch`);
     if (fingerprint(item.files[0].content) !== item.meta.templateFingerprint || fingerprint(item.meta.contracts) !== item.meta.contractFingerprint) throw new Error(`${item.name}: payload fingerprint mismatch`);
-    const payload = await (await get(`r/${item.name}.json`)).json();
-    if (JSON.stringify(payload) !== JSON.stringify(item)) throw new Error(`${item.name}: item/index payload mismatch`);
+
   }
+  validateRegistry(registry);
   return { registry, index, renderedFingerprint, base: url.href.replace(/\/$/, '') };
 }
 export function matchLocalSource(preview, local) {

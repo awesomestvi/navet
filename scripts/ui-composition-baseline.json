@@ -19,5 +19,355 @@
     "anchor": "456bd5b915257dc577c3ff0fb6d2ca6023371cfd1a9274a02285356e5fa9c25a",
     "occurrence": 1,
     "reason": "Existing nested sheet header outside registry recipes and direct examples; preserve feature scope."
+  },
+  {
+    "file": "packages/app/src/features/climate/components/humidifier-card/index.tsx",
+    "rule": "card-hardcoded-foundation",
+    "anchor": "fec68d7d11381509f096752ca150c9ea6e4d4a9b76c8be3492e1f9030d66fc3d",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/climate/components/humidifier-card/index.tsx",
+    "rule": "duplicate-card-surface",
+    "anchor": "3c057e0835c13f8b44208ab26e51046b39a588321c26a47b5456d810bc7d4458",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/dashboard/components/dashboard-card-item.tsx",
+    "rule": "card-hardcoded-foundation",
+    "anchor": "83e0620256d356720d5694243a6ea70c1eef3a782f2625235f3ef87c48b55cae",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/dashboard/components/dashboard-card-item.tsx",
+    "rule": "duplicate-card-surface",
+    "anchor": "c0bdd22693d4cdb932357ef8e4b0f6e4f9ae4de878a289dbd6cd339079d44e32",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/dashboard/components/home-dashboard-overview-card-grid.tsx",
+    "rule": "card-hardcoded-foundation",
+    "anchor": "1590410e72ee327cab3843a7bfeec00fd290cb18fc75df97ac0644f14feba54c",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/dashboard/components/home-dashboard-overview-card-grid.tsx",
+    "rule": "card-hardcoded-foundation",
+    "anchor": "cd53cd3bf331e8b4bb9aae05d746535ed233cdbbab85c9245e597a687b9ce3e0",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/dashboard/components/home-dashboard-overview-card-grid.tsx",
+    "rule": "card-hardcoded-foundation",
+    "anchor": "a5bb262cd3ea43ab99eb8628661bf32b36fb0f7683c65c396391420513409622",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/dashboard/utils/card-renderer.tsx",
+    "rule": "card-hardcoded-foundation",
+    "anchor": "e0aaadf4ad81b485e7c50a57c02baf90aeda9e0ad26af06cea4ce5848adae10b",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/energy/components/dashboard/energy-card-arrangement.tsx",
+    "rule": "card-hardcoded-foundation",
+    "anchor": "65362e8c1760f1c1505bfbfe757bcc4e91384ed6800911033ee7d165ed0108e3",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/energy/components/dashboard/energy-card-arrangement.tsx",
+    "rule": "card-hardcoded-foundation",
+    "anchor": "f96c24cc279287f9fe2d171b60f9b635626efa79d1229ec24a34f08fabb3aa5b",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/energy/components/dashboard/energy-card-arrangement.tsx",
+    "rule": "card-hardcoded-foundation",
+    "anchor": "5ff93e24e70f4f16ea4f29a1dff593b898846224791ef09a379d95e7cfe48df8",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/energy/components/dashboard/energy-card-arrangement.tsx",
+    "rule": "card-hardcoded-foundation",
+    "anchor": "cf60098b877960928135db83dc7d7eb434d1d3610cd0d2be77f903eb346a2ae1",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/energy/components/dashboard/energy-card-arrangement.tsx",
+    "rule": "card-hardcoded-foundation",
+    "anchor": "435d0671b61d772b1891eecd3f8c95ca423a84172b068f8ac809086820a07076",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/lighting/components/fan-card/fan-settings-dialog.tsx",
+    "rule": "duplicate-card-surface",
+    "anchor": "f3b01bb8019cf2e201966e10b1fee3263e51a74c414c01f0fa0a48dba95e591b",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/lighting/components/fan-card/index.tsx",
+    "rule": "card-hardcoded-foundation",
+    "anchor": "b3a7c03e767c230266f8bdf0dcb5e921c791af7c35debbb3da4c9fa781fae199",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/lighting/components/light-card/kelvin-color-trigger.tsx",
+    "rule": "card-hardcoded-foundation",
+    "anchor": "3f65144df31f5a6666807ed28d2c6c6c11cb0fefeb3360a05f71322df02ddd26",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/lighting/components/light-card/kelvin-color-trigger.tsx",
+    "rule": "duplicate-card-surface",
+    "anchor": "5b2fda324ee2d0ecc5cbcc2f53a051a6551d22c346dab251dc8cc4fe5622c6ce",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/lighting/components/light-card/light-dialog-controls.tsx",
+    "rule": "card-hardcoded-foundation",
+    "anchor": "fbfa6d099c7bfc3b79321a99d9f326ee5020998047580bf76d1d2a0428158afb",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/lighting/components/light-card/light-dialog-controls.tsx",
+    "rule": "duplicate-card-surface",
+    "anchor": "81be6b846c823dd34fc033aba2dd099b3f684431c213f4dac3753d748c175be0",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/lighting/components/light-card/light-dialog-controls.tsx",
+    "rule": "card-hardcoded-foundation",
+    "anchor": "52ae797a5248c503b5e23dea4884c77287026220b430e569bb377963e38f6e90",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/lighting/components/light-card/light-dialog-controls.tsx",
+    "rule": "duplicate-card-surface",
+    "anchor": "1356444ac07bd9147af180c8cb1b8798967f5ab5a2a122e3b77ff4c245c5301e",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/lighting/components/switch-card.tsx",
+    "rule": "card-hardcoded-foundation",
+    "anchor": "6449821b6d41023e627ae1fe6da22c7674904aafb5be1dcf5f004e31bc7adeb5",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/lighting/components/switch-card.tsx",
+    "rule": "card-hardcoded-foundation",
+    "anchor": "e4a2241b0791e31c5175e007f0bce814fc425ee88aa3a349fc0c82afce446fbe",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/media/components/media-card/index.tsx",
+    "rule": "card-hardcoded-foundation",
+    "anchor": "77d21759c4d22917e5d22ceec863f9b918071b30409aaafa59e0fc61af45b806",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/media/components/media-card/index.tsx",
+    "rule": "card-hardcoded-foundation",
+    "anchor": "c1c9f74d5b7ca649e81f7030cfff83d150ed76444353a62d4a90ba5dbe256337",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/media/components/media-card/index.tsx",
+    "rule": "card-hardcoded-foundation",
+    "anchor": "4b964795804472328ffbc697d1a0eccca9cdf898b2cc704fc2bc96eda6b856a2",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/rss/components/rss-feed-card/rss-article-list.tsx",
+    "rule": "card-hardcoded-foundation",
+    "anchor": "f71708deccc3cea886291ace5a60e7e8b27234301db07b047e071fd325ad5523",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/security/components/alarm-panel-card.tsx",
+    "rule": "card-hardcoded-foundation",
+    "anchor": "1a387bb7e44b99f0862e58f0238945ebf50325fb6a0a264f33a915e40afb3e06",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/security/components/alarm-panel-card.tsx",
+    "rule": "card-hardcoded-foundation",
+    "anchor": "3b528203a12aaa63cd7df1306de3c573cbfbbd6973c31339e9b1346079d07cf0",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/security/components/alarm-panel-card.tsx",
+    "rule": "card-hardcoded-foundation",
+    "anchor": "c498f69890ac3fa04b348bd4b7b8e35f41126cd44016395845bfa8dcd039880a",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/security/components/camera-card/camera-live-viewer.tsx",
+    "rule": "duplicate-card-surface",
+    "anchor": "ccab7c17fa3932f3314cf39c27a1c24e2507af92aef29b4663b18ba02b312342",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/security/components/camera-card/camera-live-viewer.tsx",
+    "rule": "duplicate-card-surface",
+    "anchor": "1bb93d33c73347aa51842ed193694e49fbe455c38bdf68d43c8098adfd3269d8",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/security/components/camera-card/camera-live-viewer.tsx",
+    "rule": "card-hardcoded-foundation",
+    "anchor": "fa57c15b326d4f9d7b4f99289652e5c2cd9e34892ad454150523c913dba1bc35",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/security/components/camera-card/camera-settings-dialog.tsx",
+    "rule": "duplicate-card-surface",
+    "anchor": "ff957419d85cea03bb2de29c206a8960043d0bae785d0e9d9fce18ba787c9a3d",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/security/components/camera-card/camera-settings-dialog.tsx",
+    "rule": "duplicate-card-surface",
+    "anchor": "09bc342c45bce62d4ad8c6e11c9cd0463b268d0f36c256fca26ab8c497cb53b1",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/security/components/camera-card/camera-settings-dialog.tsx",
+    "rule": "duplicate-card-surface",
+    "anchor": "d55cb76742af6dbcc0228172f8a8228a91165610aec5657c74723611f71c31ca",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/security/components/camera-card/camera-settings-dialog.tsx",
+    "rule": "card-hardcoded-foundation",
+    "anchor": "2a6601c4cd9523553d64faa26516a219ffcd3a5ac34846b0f2deb07640d384f7",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/security/components/camera-card/view.tsx",
+    "rule": "card-hardcoded-foundation",
+    "anchor": "7c1c0b370ab3a533c30571c2ec36f20894338a4bb43c64fef6f070ac5eb4f5ad",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/security/components/cover-card/view.tsx",
+    "rule": "card-hardcoded-foundation",
+    "anchor": "a1895d4374589c1459873737181a4ac4446bfced528178bab2f05a759f8f4551",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/security/components/lock-card.tsx",
+    "rule": "card-hardcoded-foundation",
+    "anchor": "c0adf85b742568064e479fad20e1ba5d3d56a9c7e0eac10261bbee8ce2300351",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/vacuum/components/vacuum-card/vacuum-card.tsx",
+    "rule": "card-hardcoded-foundation",
+    "anchor": "277de45a39e77c7913dc30a8d24cc2a12c4a19db1e801dc75f32e9be72a1ed0f",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/weather/components/weather-card/index.tsx",
+    "rule": "card-hardcoded-foundation",
+    "anchor": "e3b716def6b850b291ab4eb54afc0563b6962fb91bbc9d8ee6d4802d70ffb1f7",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/weather/components/weather-card/index.tsx",
+    "rule": "card-hardcoded-foundation",
+    "anchor": "252d270b4baaf74a249329484451cd2e154652841cc8fda63595fa96991630b3",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/weather/components/weather-card/weather-card-overlays.tsx",
+    "rule": "card-hardcoded-foundation",
+    "anchor": "f669be6537603a234fccf35700d6a188f73cdbb3a802201ecc5a6eab60ba3cd5",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/weather/components/weather-card/weather-card-overlays.tsx",
+    "rule": "card-hardcoded-foundation",
+    "anchor": "5c5a7f7112f77a30af8f373c88344facbe98829c24bc301267a5aecc8a22d8b1",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/weather/components/weather-card/weather-card-overlays.tsx",
+    "rule": "card-hardcoded-foundation",
+    "anchor": "ba94373e463b968f959cd28604ac72e0a0a22fd77ac40c9e5f724e7c6110f559",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/weather/components/weather-card/weather-card-overlays.tsx",
+    "rule": "card-hardcoded-foundation",
+    "anchor": "680f8a18c8eee69b9ad2d08aefc81ccb17c6b3e62ceb173c88f397db74e202ab",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/weather/components/weather-card/weather-card-overlays.tsx",
+    "rule": "card-hardcoded-foundation",
+    "anchor": "c1967b54e97b17bf4461e5e9210f3f682fc1c6e79e2ca5a3d758e38faf23307a",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/weather/components/weather-card/weather-card-overlays.tsx",
+    "rule": "card-hardcoded-foundation",
+    "anchor": "731f2ca04730dd750b29bfbf4de591c3a3f9479c2b66442f307cf5d40a164472",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
+  },
+  {
+    "file": "packages/app/src/features/weather/components/weather-card/weather-card-overlays.tsx",
+    "rule": "card-hardcoded-foundation",
+    "anchor": "b25719f93964857aaee7f96301e46c7a1f3df7fce5488863b9975ff2ec9e72d8",
+    "occurrence": 1,
+    "reason": "Existing feature styling retained during source-catalog rollout; new occurrences must reuse Navet foundations."
   }
 ]

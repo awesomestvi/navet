@@ -1,0 +1,3 @@
+type: internal
+audiences: []
+summary: Expose canonical Navet design-system sources and all Storybook examples through the registry, with card reuse guidance and styling guards.

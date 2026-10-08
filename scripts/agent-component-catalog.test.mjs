@@ -141,7 +141,7 @@ it('discovers namespace-only callable contracts without inheriting parent storie
   try {
     writeFileSync(path.join(root, 'index.ts'), `
       function Scroll(props: { mode: 'fixed'; height: number } | { mode: 'auto'; label?: string }) { return props.mode; }
-      function Frame(props: { title: string }) { return props.title; }
+      function Frame(props: { title: string } & { active: boolean }) { return props.title; }
       export const Workspace = { ScrollArea: Scroll, Frame, spacing: 8 };
     `);
     writeFileSync(path.join(root, 'workspace.stories.tsx'), "import { Workspace } from './index'; export default { title: 'Workspace', component: Workspace.Frame }; export const Default = {};");
@@ -156,10 +156,22 @@ it('discovers namespace-only callable contracts without inheriting parent storie
       expect.objectContaining({ name: 'height', optional: false, type: 'number' }),
     ]));
     expect(workspace.members[1].stories).toHaveLength(1);
+    expect(workspace.members[1].properties).toEqual(expect.arrayContaining([expect.objectContaining({ name: 'active', optional: false, type: 'boolean' })]));
     writeFileSync(path.join(root, 'index.ts'), 'function Scroll(props: { disabled: boolean }) { return props.disabled; } export const Workspace = { ScrollArea: Scroll };');
     const next = generateCatalog(input);
     expect(next.sourceFingerprint).not.toBe(first.sourceFingerprint);
     expect(next.entries[0].members[0].properties.map((prop) => prop.name)).toEqual(['disabled']);
     expect(JSON.stringify(next)).not.toContain('symbolKey');
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+it('exposes declared interface and union contracts instead of treating type-only exports as values', () => {
+  const root = mkdtempSync(path.join(tmpdir(), 'navet-catalog-types-'));
+  try {
+    writeFileSync(path.join(root, 'index.ts'), 'export interface CardProps { title: string; disabled?: boolean } export type CardSize = "small" | "large"; export type Mode = { kind: "fixed"; height: number } | { kind: "auto" };');
+    const catalog = generateCatalog({ root, entries: [{ file: 'index.ts', importFrom: '@navet/ui' }] });
+    expect(catalog.entries.find((item) => item.name === 'CardProps').properties).toEqual(expect.arrayContaining([expect.objectContaining({ name: 'title', type: 'string', optional: false })]));
+    expect(catalog.entries.find((item) => item.name === 'CardSize').type).toBe('CardSize');
+    expect(catalog.entries.find((item) => item.name === 'Mode').variants).toHaveLength(2);
   } finally { rmSync(root, { recursive: true, force: true }); }
 });

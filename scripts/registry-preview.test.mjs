@@ -45,3 +45,17 @@ it.each(['https://different-revision.pages.dev/iframe', '/other', '/iframe?revis
   const request = (url, options) => new URL(url).pathname === '/iframe.html' ? new Response('', { status: 308, headers: { location } }) : f.request(url, options);
   await expect(inspectPreview('https://exact-preview.pages.dev', f.revision, request)).rejects.toThrow('unsafe redirect');
 });
+
+it('hydrates compact source items and verifies documentation-only references against the same rendered index', async () => {
+  const { indexItem } = await import('./registry-index.mjs');
+  const f = fixture();
+  f.index.entries.docs = { id: 'docs', type: 'docs', importPath: './example.stories.tsx' };
+  f.item.type = 'registry:item';
+  f.item.meta.catalogKind = 'contract';
+  f.item.meta.examples = [{ source: 'example.stories.tsx', type: 'docs', export: null, id: 'docs' }];
+  f.item.meta.renderedFingerprint = fingerprint([f.index, f.responses.get('/iframe.html')]);
+  f.responses.set('/r/registry.json', { ...f.registry, items: [indexItem(f.item)] });
+  expect((await inspectPreview('https://exact-preview.pages.dev', f.revision, f.request)).registry.items[0].files[0].content).toBe(f.item.files[0].content);
+  f.item.meta.examples[0].source = 'other.stories.tsx';
+  await expect(inspectPreview('https://exact-preview.pages.dev', f.revision, f.request)).rejects.toThrow('Catalog reference mismatch');
+});
