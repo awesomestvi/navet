@@ -1,3 +1,4 @@
+import boundedFile from '../shared/bounded-file.js';
 import fs from 'fs';
 import deviceSessionAuthority from './device-session-authority.js';
 import installationCookieScope from './installation-cookie-scope.js';
@@ -344,24 +345,15 @@ function createProviderSessionStore(options) {
     }
 
     const sessionPath = getSessionPath(cookieId);
-    let stat;
-    try {
-      stat = fs.statSync(sessionPath);
-    } catch (error) {
-      if (error && error.code === 'ENOENT') {
-        return null;
-      }
-      throw error;
-    }
-    if (stat.size > maxRecordBytes) {
-      deleteSessionPath(sessionPath);
-      return null;
-    }
-
     let serialized;
     try {
-      serialized = fs.readFileSync(sessionPath, 'utf8');
+      serialized = boundedFile.readBoundedText(fs, sessionPath, maxRecordBytes, function () {
+        const error = new Error('Provider session exceeds its safe read limit');
+        error.code = 'NAVET_FILE_TOO_LARGE';
+        return error;
+      });
     } catch (error) {
+      if (error && error.code === 'NAVET_FILE_TOO_LARGE') { deleteSessionPath(sessionPath); return null; }
       if (error && error.code === 'ENOENT') {
         return null;
       }
@@ -675,7 +667,7 @@ function createProviderSessionStore(options) {
   }
 
   function renewRequestSession(r, context) {
-    const next = {};
+    const next = Object.create(null);
     let key;
     for (key in context.session) {
       if (Object.prototype.hasOwnProperty.call(context.session, key)) {
@@ -712,7 +704,7 @@ function createProviderSessionStore(options) {
         ? minimumIntervalMs
         : 24 * 60 * 60 * 1000;
     if (context.session.updatedAt + interval < Date.now()) {
-      const next = {};
+      const next = Object.create(null);
       let key;
       for (key in context.session) {
         if (Object.prototype.hasOwnProperty.call(context.session, key)) {

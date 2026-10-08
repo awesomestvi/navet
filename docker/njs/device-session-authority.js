@@ -1,3 +1,4 @@
+import boundedFile from '../shared/bounded-file.js';
 import hashCrypto from 'crypto';
 import fs from 'fs';
 import installationCookieScope from './installation-cookie-scope.js';
@@ -149,11 +150,7 @@ function constantTimeEquals(left, right) {
 
 function readJson(filePath) {
   try {
-    const stat = fs.statSync(filePath);
-    if (stat.size > 64 * 1024) {
-      return null;
-    }
-    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    return JSON.parse(boundedFile.readBoundedText(fs, filePath, 64 * 1024));
   } catch (error) {
     if (error && (error.code === 'ENOENT' || error instanceof SyntaxError)) {
       return null;
@@ -222,6 +219,7 @@ function providerCookieIdsFromDirectSession(r) {
   let index;
   for (index = 0; index < providerIds.length; index += 1) {
     const providerId = providerIds[index];
+    if (!Object.prototype.hasOwnProperty.call(PROVIDERS, providerId)) continue;
     const provider = PROVIDERS[providerId];
     const cookieId = getCookie(r, scopedCookieName(provider.cookieName));
     if (!SECRET_PATTERN.test(cookieId)) {
@@ -846,7 +844,7 @@ function invalidateProviderDevices(r) {
   });
   const presentedIds = getCookieIds(r, cookieNames.currentName)
     .concat(getCookieIds(r, cookieNames.legacyName));
-  const sessionIds = {};
+  const sessionIds = Object.create(null);
   sessionIds[primaryId] = true;
   let presentedIndex;
   for (presentedIndex = 0; presentedIndex < presentedIds.length; presentedIndex += 1) {

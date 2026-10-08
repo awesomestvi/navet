@@ -15,10 +15,15 @@ export function webhookEndpoint(value) {
 }
 
 export function loadWebhookSecret(file) {
-  const stat = fs.lstatSync(file);
-  if (!stat.isFile() || stat.isSymbolicLink() || (stat.mode & 0o077))
-    throw new Error('Webhook secret must be a regular file with permissions 600.');
-  return webhookEndpoint(fs.readFileSync(file, 'utf8').trim());
+  const descriptor = fs.openSync(file, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW);
+  try {
+    const stat = fs.fstatSync(descriptor);
+    if (!stat.isFile() || (stat.mode & 0o077))
+      throw new Error('Webhook secret must be a regular file with permissions 600.');
+    return webhookEndpoint(fs.readFileSync(descriptor, 'utf8').trim());
+  } finally {
+    fs.closeSync(descriptor);
+  }
 }
 
 async function requestJson(fetchImpl, url, options = {}) {

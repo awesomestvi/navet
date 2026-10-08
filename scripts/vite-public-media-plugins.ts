@@ -69,19 +69,16 @@ export function rssProxyPlugin(
   };
 }
 
-function decodeHtmlEntities(value: string) {
-  return value
-    .replace(/&#x([0-9a-f]+);/gi, (_, codePoint: string) =>
-      String.fromCodePoint(Number.parseInt(codePoint, 16))
-    )
-    .replace(/&#(\d+);/g, (_, codePoint: string) =>
-      String.fromCodePoint(Number.parseInt(codePoint, 10))
-    )
-    .replace(/&amp;/g, '&')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>');
+export function decodeHtmlEntities(value: string) {
+  const named: Record<string, string> = { amp: '&', quot: '"', lt: '<', gt: '>' };
+  return value.replace(/&(?:#x([0-9a-f]+)|#(\d+)|(amp|quot|lt|gt));/gi,
+    (entity, hex: string | undefined, decimal: string | undefined, name: string | undefined) => {
+      if (name) return named[name.toLowerCase()];
+      const codePoint = Number.parseInt(hex ?? decimal ?? '', hex ? 16 : 10);
+      return codePoint > 0 && codePoint <= 0x10ffff && !(codePoint >= 0xd800 && codePoint <= 0xdfff)
+        ? String.fromCodePoint(codePoint)
+        : entity;
+    });
 }
 
 function readMetaContent(html: string, key: string) {

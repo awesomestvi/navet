@@ -1,8 +1,9 @@
+import fileSystem from 'node:fs'
+import boundedFile from '../docker/shared/bounded-file.js'
 import { createHash, createHmac, randomBytes } from 'node:crypto'
 import {
   mkdirSync,
   readdirSync,
-  readFileSync,
   renameSync,
   rmSync,
   statSync,
@@ -402,22 +403,9 @@ export function createViteAuthSessionStore(
     }
 
     const sessionPath = getSessionPath(cookieId)
-    let size: number
-    try {
-      size = statSync(sessionPath).size
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException)?.code === 'ENOENT') {
-        return null
-      }
-      throw error
-    }
-    if (size > AUTH_SESSION_RECORD_MAX_BYTES) {
-      throw new ViteAuthSessionUnavailableError()
-    }
-
     let serialized: string
     try {
-      serialized = readFileSync(sessionPath, 'utf8')
+      serialized = boundedFile.readBoundedText(fileSystem, sessionPath, AUTH_SESSION_RECORD_MAX_BYTES, () => new ViteAuthSessionUnavailableError())
     } catch (error) {
       if ((error as NodeJS.ErrnoException)?.code === 'ENOENT') {
         return null

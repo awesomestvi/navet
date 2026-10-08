@@ -1,3 +1,5 @@
+import fileSystem from 'node:fs'
+import boundedFile from '../docker/shared/bounded-file.js'
 import {
   createHash,
   createHmac,
@@ -10,7 +12,6 @@ import {
   readdirSync,
   renameSync,
   rmSync,
-  statSync,
   writeFileSync,
 } from 'node:fs'
 import type { IncomingMessage } from 'node:http'
@@ -233,10 +234,8 @@ export function createViteInstallationAuthority(
     .slice(0, 12)}`
   const readState = (): InstallationAuthorityState => {
     try {
-      if (statSync(statePath).size > MAX_AUTHORITY_BYTES) {
-        throw new Error('Installation authority state is too large')
-      }
-      const parsed: unknown = JSON.parse(readFileSync(statePath, 'utf8'))
+      const parsed: unknown = JSON.parse(boundedFile.readBoundedText(fileSystem, statePath, MAX_AUTHORITY_BYTES, () =>
+        new Error('Installation authority state is too large')))
       if (!isState(parsed)) {
         throw new Error('Installation authority state is invalid')
       }
@@ -288,10 +287,7 @@ export function createViteInstallationAuthority(
       }
       const filePath = path.join(directory, name)
       try {
-        if (statSync(filePath).size > MAX_AUTHORITY_BYTES) {
-          continue
-        }
-        const parsed: unknown = JSON.parse(readFileSync(filePath, 'utf8'))
+        const parsed: unknown = JSON.parse(boundedFile.readBoundedText(fileSystem, filePath, MAX_AUTHORITY_BYTES))
         if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
           continue
         }

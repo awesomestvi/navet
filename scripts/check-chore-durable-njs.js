@@ -79,7 +79,25 @@ function missing() {
   throw err;
 }
 let failChunk = false;
+const descriptors = {};
+let nextDescriptor = 1;
 choreStore.setChoreStoreFsForTests({
+  openSync: (path) => {
+    if (paths[path] === undefined) missing();
+    const descriptor = nextDescriptor++;
+    descriptors[descriptor] = { bytes: Buffer.from(paths[path]), offset: 0 };
+    return descriptor;
+  },
+  readSync: (descriptor, buffer, offset, length) => {
+    const entry = descriptors[descriptor];
+    const count = Math.min(length, entry.bytes.length - entry.offset);
+    entry.bytes.copy(buffer, offset, entry.offset, entry.offset + count);
+    entry.offset += count;
+    return count;
+  },
+  closeSync: (descriptor) => {
+    delete descriptors[descriptor];
+  },
   statSync: (path) =>
     paths[path] === undefined ? missing() : { size: Buffer.byteLength(paths[path]) },
   readFileSync: (path) => (paths[path] === undefined ? missing() : paths[path]),

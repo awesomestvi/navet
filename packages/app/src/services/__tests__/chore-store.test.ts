@@ -7,6 +7,7 @@ import conformanceVectors from '@navet/core/chore-conformance-vectors.json';
 import { createChoreExperienceState } from '@navet/core/chore-experience';
 import type { ApplyChoreCommandInput, ChoreOccurrence } from '@navet/core/chores';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { fileDescriptorFixture } from '../../../../../testing/file-descriptors';
 
 const WORKSPACE_PATH = '/data/navet-dashboard-workspace.json';
 const CHORE_PATH = '/data/navet-chore-workspace.json';
@@ -58,6 +59,11 @@ function createMockFs() {
     return error;
   };
   return {
+    ...fileDescriptorFixture((path) => {
+      const content = files.get(path);
+      if (content === undefined) throw missing(path);
+      return content;
+    }),
     statSync: vi.fn((path: string) => {
       const value = files.get(path);
       if (value === undefined) throw missing(path);

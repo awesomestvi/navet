@@ -391,7 +391,12 @@ function inferMediaContentType(item: PlatformMediaItem) {
 
 function isSpotifyMediaItem(item: PlatformMediaItem) {
   const mediaContentId = item.mediaContentId?.trim().toLowerCase() ?? '';
-  return mediaContentId.startsWith('spotify:') || mediaContentId.includes('open.spotify.com/');
+  if (mediaContentId.startsWith('spotify:')) return true;
+  try {
+    return new URL(mediaContentId).hostname === 'open.spotify.com';
+  } catch {
+    return false;
+  }
 }
 
 function getErrorMessage(error: unknown) {

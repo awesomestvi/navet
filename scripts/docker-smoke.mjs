@@ -5,6 +5,9 @@ import { spawnSync } from 'node:child_process';
 
 const image = process.env.NAVET_DOCKER_IMAGE?.trim() || 'navet:local';
 const hostPort = process.env.NAVET_DOCKER_SMOKE_PORT?.trim() || '38080';
+if (!/^\d+$/.test(hostPort) || Number(hostPort) < 1 || Number(hostPort) > 65535) {
+  throw new Error('Docker smoke port must be an integer between 1 and 65535.');
+}
 const containerName = `navet-smoke-${randomUUID().slice(0, 8)}`;
 
 function run(command, args, options = {}) {

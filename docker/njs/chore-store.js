@@ -1,4 +1,6 @@
 import choreDurableStorage from './chore-durable-storage.js';
+import recordSafety from '../shared/record-safety.js';
+import boundedFile from '../shared/bounded-file.js';
 import choreCalendarPolicy from './chore-calendar-policy.js';
 import choreOccurrencePolicy from './chore-occurrence-policy.js';
 import choreProgressPolicy from './chore-progress-policy.js';
@@ -142,7 +144,7 @@ function sendJson(r, statusCode, payload) {
 }
 
 function parseQueryArgs(value) {
-  const result = {};
+  const result = Object.create(null);
   if (typeof value !== 'string' || value.length === 0) return result;
   const pairs = value.split('&');
   for (let index = 0; index < pairs.length; index += 1) {
@@ -160,10 +162,9 @@ function parseQueryArgs(value) {
 
 function readJson(path, fallback, maxBytes) {
   try {
-    if (fsModule.statSync(path).size > maxBytes) {
-      throw new Error('Chore storage exceeds its safe read limit');
-    }
-    return JSON.parse(fsModule.readFileSync(path, 'utf8'));
+    return JSON.parse(boundedFile.readBoundedText(fsModule, path, maxBytes, function () {
+      return new Error('Chore storage exceeds its safe read limit');
+    }));
   } catch (error) {
     if (error && error.code === 'ENOENT') {
       return fallback;
@@ -333,6 +334,7 @@ function isValidChoreWorkspaceData(value) {
 }
 
 function migrateChoreWorkspaceData(value) {
+  recordSafety.assertSafeRecord(value);
   if (isRecord(value) && value.schemaVersion === SCHEMA_VERSION &&
       isRecord(value.experience) && value.experience.version === 1) {
     const oldExperience = value.experience;
@@ -561,7 +563,7 @@ function readEventHistory(fallbackEvents) {
 function appendEventHistory(events, policy) {
   if (!Array.isArray(events) || events.length === 0) return;
   const history = readEventHistory(events);
-  const existingIds = {};
+  const existingIds = Object.create(null);
   for (let index = 0; index < history.events.length; index += 1) {
     existingIds[history.events[index].id] = true;
   }
@@ -625,8 +627,8 @@ function nextImportedId(sourceId, occupied) {
 
 function mergeImportedWorkspace(current, currentEvents, imported, timestamp) {
   const participantsById = cloneValue(current.participantsById);
-  const participantMap = {};
-  const participantIds = {};
+  const participantMap = Object.create(null);
+  const participantIds = Object.create(null);
   Object.keys(participantsById).forEach(function (id) { participantIds[id] = true; });
   Object.values(imported.workspace.participantsById).forEach(function (participant) {
     if (
@@ -646,8 +648,8 @@ function mergeImportedWorkspace(current, currentEvents, imported, timestamp) {
   });
 
   const definitionsById = cloneValue(current.definitionsById);
-  const definitionMap = {};
-  const definitionIds = {};
+  const definitionMap = Object.create(null);
+  const definitionIds = Object.create(null);
   Object.keys(definitionsById).forEach(function (id) { definitionIds[id] = true; });
   Object.values(imported.workspace.definitionsById).forEach(function (definition) {
     const remapped = cloneValue(definition);
@@ -660,7 +662,7 @@ function mergeImportedWorkspace(current, currentEvents, imported, timestamp) {
       });
     }
     if (isRecord(remapped.assignment.participantScheduleOverrides)) {
-      const overrides = {};
+      const overrides = Object.create(null);
       Object.keys(remapped.assignment.participantScheduleOverrides).forEach(function (id) {
         overrides[participantMap[id] || id] = remapped.assignment.participantScheduleOverrides[id];
       });
@@ -685,8 +687,8 @@ function mergeImportedWorkspace(current, currentEvents, imported, timestamp) {
   });
 
   const occurrencesById = cloneValue(current.occurrencesById);
-  const occurrenceMap = {};
-  const occurrenceIds = {};
+  const occurrenceMap = Object.create(null);
+  const occurrenceIds = Object.create(null);
   Object.keys(occurrencesById).forEach(function (id) { occurrenceIds[id] = true; });
   Object.values(imported.workspace.occurrencesById).forEach(function (occurrence) {
     const targetId = nextImportedId(occurrence.id, occurrenceIds);
@@ -713,7 +715,7 @@ function mergeImportedWorkspace(current, currentEvents, imported, timestamp) {
   });
 
   const events = cloneValue(currentEvents);
-  const eventIds = {};
+  const eventIds = Object.create(null);
   events.forEach(function (event) { eventIds[event.id] = true; });
   imported.events.forEach(function (event) {
     const remapped = cloneValue(event);
@@ -795,8 +797,8 @@ function runWorkspaceScheduler(data, timestamp) {
   const occurrencesById = Object.assign({}, data.occurrencesById);
   const activities = [];
   const reminderItems = [];
-  const existingOutboxIds = {};
-  const existingEventIds = {};
+  const existingOutboxIds = Object.create(null);
+  const existingEventIds = Object.create(null);
   const history = readEventHistory();
   for (let historyIndex = 0; historyIndex < history.events.length; historyIndex += 1) {
     existingEventIds[history.events[historyIndex].id] = true;
@@ -944,7 +946,7 @@ function runWorkspaceScheduler(data, timestamp) {
     if (occurrence.status === 'available' || occurrence.status === 'claimed') {
       const dueAt = Date.parse(occurrence.dueAt);
       const beforeDue = Array.isArray(policy.beforeDueMinutes) ? policy.beforeDueMinutes : [];
-      const seenOffsets = {};
+      const seenOffsets = Object.create(null);
       for (let offsetIndex = 0; offsetIndex < beforeDue.length; offsetIndex += 1) {
         const offset = beforeDue[offsetIndex];
         if (seenOffsets[offset] || now < dueAt - offset * 60000 || now >= dueAt) continue;
@@ -1145,7 +1147,7 @@ function getTimeZoneParts(timestamp, timeZone) {
       second: '2-digit',
       hourCycle: 'h23',
     }).formatToParts(new Date(timestamp));
-    const result = {};
+    const result = Object.create(null);
     for (let index = 0; index < parts.length; index += 1) {
       result[parts[index].type] = parts[index].value;
     }
@@ -1193,7 +1195,7 @@ function materializeDefinition(definition, participantsById, rangeStart, rangeEn
   if (!definition.enabled || definition.archivedAt !== undefined) return [];
   const startTime = Date.parse(rangeStart);
   const endTime = Date.parse(rangeEnd);
-  const completionCountsByParticipant = {};
+  const completionCountsByParticipant = Object.create(null);
   if (definition.assignment.rotationStrategy === 'fair') {
     for (const occurrenceId in existing) {
       if (!Object.prototype.hasOwnProperty.call(existing, occurrenceId)) continue;
@@ -1439,7 +1441,7 @@ function getExperiencePointBalances(data, experience) {
   if (isRecord(persisted)) {
     return Object.assign({}, persisted);
   }
-  const balances = {};
+  const balances = Object.create(null);
   for (const occurrenceId in data.occurrencesById) {
     if (!Object.prototype.hasOwnProperty.call(data.occurrencesById, occurrenceId)) continue;
     const occurrence = data.occurrencesById[occurrenceId];
@@ -1454,7 +1456,7 @@ function getExperiencePointBalances(data, experience) {
 function isWorkspaceMissionComplete(data, mission) {
   const startsAt = Date.parse(mission.startsAt || mission.createdAt);
   const endsAt = mission.endsAt ? Date.parse(mission.endsAt) : Number.POSITIVE_INFINITY;
-  const completedDefinitionIds = {};
+  const completedDefinitionIds = Object.create(null);
   for (const occurrenceId in data.occurrencesById) {
     if (!Object.prototype.hasOwnProperty.call(data.occurrencesById, occurrenceId)) continue;
     const occurrence = data.occurrencesById[occurrenceId];
@@ -1651,7 +1653,7 @@ function applyOccurrenceAction(data, commandId, workspaceAction, timestamp) {
     const recipients = (activity.type === 'claimed' || activity.type === 'completed') &&
       definition.approval.approverIds.length > 0
       ? definition.approval.approverIds : nextOccurrence.assigneeIds;
-    const seen = {};
+    const seen = Object.create(null);
     for (let index = 0; index < recipients.length; index += 1) {
       const recipientId = recipients[index];
       if (seen[recipientId]) continue;
@@ -1851,6 +1853,7 @@ function appendWorkspaceActivities(data, activities) {
 }
 
 function applyWorkspaceAction(data, commandId, action, timestamp, recurrenceDefinitionId) {
+  recordSafety.assertSafeRecord(action);
   if (action.type === 'occurrence_action') {
     const next = applyOccurrenceAction(data, commandId, action, timestamp);
     const previous = data.occurrencesById[action.occurrenceId];
@@ -1912,7 +1915,7 @@ function applyWorkspaceAction(data, commandId, action, timestamp, recurrenceDefi
     const pauseChanged = currentParticipant.pausedAt !== participant.pausedAt ||
       currentParticipant.resumeAt !== participant.resumeAt;
     const occurrencesById = Object.assign({}, data.occurrencesById);
-    const removedIds = {};
+    const removedIds = Object.create(null);
     if (pauseChanged) {
       for (const id in occurrencesById) {
         if (!Object.prototype.hasOwnProperty.call(occurrencesById, id)) continue;
@@ -1966,8 +1969,8 @@ function applyWorkspaceAction(data, commandId, action, timestamp, recurrenceDefi
       JSON.stringify(currentDefinition.assignment) !== JSON.stringify(definition.assignment) ||
       currentDefinition.dueWindowMinutes !== definition.dueWindowMinutes
     )) {
-      occurrencesById = {};
-      const removedIds = {};
+      occurrencesById = Object.create(null);
+      const removedIds = Object.create(null);
       for (const id in data.occurrencesById) {
         if (!Object.prototype.hasOwnProperty.call(data.occurrencesById, id)) continue;
         const occurrence = data.occurrencesById[id];
@@ -2005,7 +2008,7 @@ function applyWorkspaceAction(data, commandId, action, timestamp, recurrenceDefi
     definitionsById[action.definitionId] = nextDefinition;
     let occurrencesById = data.occurrencesById;
     if (action.type === 'definition_archive') {
-      occurrencesById = {};
+      occurrencesById = Object.create(null);
       for (const occurrenceId in data.occurrencesById) {
         if (!Object.prototype.hasOwnProperty.call(data.occurrencesById, occurrenceId)) continue;
         const occurrence = data.occurrencesById[occurrenceId];
@@ -2036,8 +2039,8 @@ function applyWorkspaceAction(data, commandId, action, timestamp, recurrenceDefi
     }
     const definitionsById = Object.assign({}, data.definitionsById);
     delete definitionsById[action.definitionId];
-    const occurrencesById = {};
-    const removedOccurrenceIds = {};
+    const occurrencesById = Object.create(null);
+    const removedOccurrenceIds = Object.create(null);
     for (const occurrenceId in data.occurrencesById) {
       if (!Object.prototype.hasOwnProperty.call(data.occurrencesById, occurrenceId)) continue;
       const occurrence = data.occurrencesById[occurrenceId];
@@ -2047,7 +2050,7 @@ function applyWorkspaceAction(data, commandId, action, timestamp, recurrenceDefi
         occurrencesById[occurrenceId] = occurrence;
       }
     }
-    const removedActivityIds = {};
+    const removedActivityIds = Object.create(null);
     for (let activityIndex = 0; activityIndex < data.activity.length; activityIndex += 1) {
       const activity = data.activity[activityIndex];
       if (activity.occurrenceId && removedOccurrenceIds[activity.occurrenceId]) {
@@ -2059,7 +2062,7 @@ function applyWorkspaceAction(data, commandId, action, timestamp, recurrenceDefi
       data.experience.presentationByDefinitionId
     );
     delete presentationByDefinitionId[action.definitionId];
-    const missionsById = {};
+    const missionsById = Object.create(null);
     for (const missionId in data.experience.missionsById) {
       if (!Object.prototype.hasOwnProperty.call(data.experience.missionsById, missionId)) continue;
       const mission = data.experience.missionsById[missionId];
@@ -2416,7 +2419,7 @@ function applyWorkspaceAction(data, commandId, action, timestamp, recurrenceDefi
   }
   const occurrencesById = Object.assign({}, data.occurrencesById);
   const occurrenceCreatedActivities = [];
-  const recurrenceIds = {};
+  const recurrenceIds = Object.create(null);
   const definitionIds = Object.keys(data.definitionsById);
   for (let definitionIndex = 0; definitionIndex < definitionIds.length; definitionIndex += 1) {
     const definition = data.definitionsById[definitionIds[definitionIndex]];
@@ -2486,7 +2489,7 @@ function applyWorkspaceAction(data, commandId, action, timestamp, recurrenceDefi
       }
     }
   }
-  const removedRecurrenceIds = {};
+  const removedRecurrenceIds = Object.create(null);
   for (const id in occurrencesById) {
     const item = occurrencesById[id];
     if (item.definitionId === recurrenceDefinitionId && !recurrenceIds[id] &&
@@ -2811,7 +2814,7 @@ function readJournal(activity) {
     }
     return journal;
   } catch (_error) {
-    const seen = {};
+    const seen = Object.create(null);
     const commands = [];
     const source = Array.isArray(activity) ? activity : [];
     for (let index = 0; index < source.length; index += 1) {

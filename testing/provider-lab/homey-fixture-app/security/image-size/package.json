@@ -1,0 +1,7 @@
+{
+  "name": "@navet/homey-image-size-compat",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.cjs",
+  "dependencies": { "image-size-patched": "npm:image-size@2.0.3" }
+}

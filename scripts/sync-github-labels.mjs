@@ -3,13 +3,16 @@ import { readFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 
 async function githubRequest({ token, path, init = {}, fetchImpl = fetch }) {
+  const url = new URL(path, 'https://api.github.com');
+  if (url.origin !== 'https://api.github.com' || url.username || url.password) throw new Error('Invalid GitHub API path.');
   const headers = {
     Accept: 'application/vnd.github+json',
     Authorization: `Bearer ${token}`,
     'X-GitHub-Api-Version': '2022-11-28',
   };
-  const response = await fetchImpl(`https://api.github.com${path}`, {
+  const response = await fetchImpl(url.href, {
     ...init,
+    redirect: 'error',
     headers: { ...headers, ...init.headers },
   });
   if (!response.ok) {

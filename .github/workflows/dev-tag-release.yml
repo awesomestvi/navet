@@ -186,7 +186,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub prerelease
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3
         with:
           tag_name: ${{ needs.release-context.outputs.tag_name }}
           name: ${{ needs.release-context.outputs.tag_name }}
@@ -205,7 +205,7 @@ jobs:
 
     steps:
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
 
       - name: Verify immutable images and prerelease
         env:
@@ -236,8 +236,8 @@ jobs:
         with:
           node-version: 22
           package-manager-cache: false
-      - uses: docker/setup-buildx-action@v4
-      - uses: docker/login-action@v4
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
         with:
           registry: ghcr.io
           username: awesomestvi

@@ -1,8 +1,9 @@
+import fileSystem from 'node:fs'
+import boundedFile from '../docker/shared/bounded-file.js'
 import { randomBytes } from 'node:crypto'
 import {
   mkdirSync,
   readdirSync,
-  readFileSync,
   renameSync,
   rmSync,
   statSync,
@@ -278,24 +279,11 @@ export function createViteProviderSessionStore<T extends { updatedAt: number }>(
     }
 
     const sessionPath = getSessionPath(cookieId)
-    let size: number
-    try {
-      size = statSync(sessionPath).size
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException)?.code === 'ENOENT') {
-        return null
-      }
-      throw error
-    }
-    if (size > maxRecordBytes) {
-      rmSync(sessionPath, { force: true })
-      return null
-    }
-
     let serialized: string
     try {
-      serialized = readFileSync(sessionPath, 'utf8')
+      serialized = boundedFile.readBoundedText(fileSystem, sessionPath, maxRecordBytes, () => Object.assign(new Error('Provider session exceeds its safe read limit'), { code: 'NAVET_FILE_TOO_LARGE' }))
     } catch (error) {
+      if ((error as NodeJS.ErrnoException)?.code === 'NAVET_FILE_TOO_LARGE') { rmSync(sessionPath, { force: true }); return null }
       if ((error as NodeJS.ErrnoException)?.code === 'ENOENT') {
         return null
       }

@@ -1,11 +1,11 @@
+import fileSystem from 'node:fs'
+import boundedFile from '../docker/shared/bounded-file.js'
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import {
   mkdirSync,
   readdirSync,
-  readFileSync,
   renameSync,
   rmSync,
-  statSync,
   writeFileSync,
 } from 'node:fs';
 import type { IncomingMessage, ServerResponse } from 'node:http';
@@ -202,8 +202,7 @@ export function createViteDeviceSessionAuthority(
 
   const readJson = <T>(filePath: string): T | null => {
     try {
-      if (statSync(filePath).size > 64 * 1024) return null;
-      return JSON.parse(readFileSync(filePath, 'utf8')) as T;
+      return JSON.parse(boundedFile.readBoundedText(fileSystem, filePath, 64 * 1024)) as T;
     } catch {
       return null;
     }
@@ -251,6 +250,7 @@ export function createViteDeviceSessionAuthority(
   const validProviderCookieIds = (candidateIds: ProviderCookieIds) => {
     const result: ProviderCookieIds = {};
     for (const providerId of Object.keys(candidateIds) as ProviderId[]) {
+      if (!Object.hasOwn(providerRecords, providerId)) continue;
       const provider = providerRecords[providerId];
       const cookieId = candidateIds[providerId] ?? '';
       const record = SECRET_PATTERN.test(cookieId)

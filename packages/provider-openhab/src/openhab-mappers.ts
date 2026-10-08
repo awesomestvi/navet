@@ -8,6 +8,7 @@ import {
   openHABSourceId,
   openHABUnit,
   relatedOpenHABItem,
+  stripOpenHABNameSuffix,
 } from './openhab-item-state';
 import type { OpenHABItem, OpenHABSnapshot } from './openhab-types';
 
@@ -386,7 +387,7 @@ export function mapOpenHABSnapshotToNavetEntities(snapshot: OpenHABSnapshot): Na
         createNavetEntity(
           item.name,
           'climate',
-          name.replace(/\s+target temperature$/i, ''),
+          stripOpenHABNameSuffix(name, 'target temperature'),
           room.name,
           room.roomId,
           item.stateDescription?.readOnly ? [] : ['temperature_setpoint'],
@@ -433,7 +434,7 @@ export function mapOpenHABSnapshotToNavetEntities(snapshot: OpenHABSnapshot): Na
         createNavetEntity(
           item.name,
           'media_player',
-          name.replace(/\s+state$/i, ''),
+          stripOpenHABNameSuffix(name, 'state'),
           room.name,
           room.roomId,
           ['media_playback'],

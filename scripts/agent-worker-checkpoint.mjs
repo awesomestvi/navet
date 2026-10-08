@@ -1,7 +1,8 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { createHash } from 'node:crypto';
-import { lstat, readFile, readlink, realpath } from 'node:fs/promises';
+import { constants } from 'node:fs';
+import { lstat, open, readlink, realpath } from 'node:fs/promises';
 import path from 'node:path';
 
 const execute = promisify(execFile);
@@ -9,6 +10,27 @@ const hash = (value) => 'sha256:' + createHash('sha256').update(value).digest('h
 const identityKeys = ['taskId', 'dispatchToken', 'threadId', 'runId'];
 const text = (value) => typeof value === 'string' && value.trim() && value.length <= 4096;
 const matches = (left, right) => identityKeys.every((key) => left?.[key] === right?.[key]);
+
+async function readCheckpointFile(filename, signal) {
+  const file = await open(filename, constants.O_RDONLY | constants.O_NOFOLLOW);
+  try {
+    const stat = await file.stat();
+    if (!stat.isFile()) throw new Error('Unsupported checkpoint file.');
+    const chunks = [];
+    let total = 0;
+    while (total <= 8_388_608) {
+      signal?.throwIfAborted();
+      const buffer = Buffer.alloc(Math.min(65_536, 8_388_609 - total));
+      const { bytesRead } = await file.read(buffer, 0, buffer.length, null);
+      if (bytesRead === 0) return { stat, content: Buffer.concat(chunks, total) };
+      total += bytesRead;
+      if (total > 8_388_608) throw new Error('Checkpoint file limit exceeded.');
+      chunks.push(buffer.subarray(0, bytesRead));
+    }
+  } finally {
+    await file.close();
+  }
+}
 
 async function gitSnapshot(worktree, { signal, clock }) {
   if (!text(worktree) || !path.isAbsolute(worktree)) throw new Error('Absolute saved worktree required.');
@@ -60,7 +82,11 @@ async function gitSnapshot(worktree, { signal, clock }) {
     }
     if (!stat.isFile() && !stat.isSymbolicLink()) throw new Error('Unsupported checkpoint file.');
     if (stat.size > 8_388_608) throw new Error('Checkpoint file limit exceeded.');
-    const content = stat.isSymbolicLink() ? Buffer.from(await readlink(filename)) : await readFile(filename, { signal });
+    const captured = stat.isSymbolicLink()
+      ? { stat, content: Buffer.from(await readlink(filename)) }
+      : await readCheckpointFile(filename, signal);
+    const { content } = captured;
+    stat = captured.stat;
     bytes += content.length;
     if (bytes > 268_435_456) throw new Error('Checkpoint content limit exceeded.');
     clock(); add(Buffer.from(file)); add(Buffer.from(String(stat.mode))); add(content);

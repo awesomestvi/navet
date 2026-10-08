@@ -61,7 +61,7 @@ const DISPLAY_PROFILE_SETTING_KEYS = {
   effectsQualityUserOverride: true,
   ambientLightBleed: true,
 };
-const DISPLAY_PROFILE_ID_PATTERN = /^[A-Za-z0-9_-]{8,128}$/;
+const DISPLAY_PROFILE_ID_PATTERN = /^(?!(?:__proto__|constructor|prototype)$)[A-Za-z0-9_-]{8,128}$/;
 const DISPLAY_PROFILE_LIMIT = 20;
 const BOOLEAN_DISPLAY_PROFILE_SETTING_KEYS = {
   keepDeviceAwake: true,
@@ -112,7 +112,8 @@ function sanitizeCredentialBearingValue(value, depth) {
     for (const key in value) {
       if (
         !Object.prototype.hasOwnProperty.call(value, key) ||
-        isCredentialFieldName(key)
+        isCredentialFieldName(key) ||
+        key === '__proto__' || key === 'constructor' || key === 'prototype'
       ) {
         continue;
       }
@@ -168,6 +169,7 @@ function normalizeDashboardCollections(profile) {
     const entityIds = Object.keys(cardZonesSource);
     for (let index = 0; index < entityIds.length; index += 1) {
       const entityId = entityIds[index];
+      if (entityId === '__proto__' || entityId === 'constructor' || entityId === 'prototype') continue;
       const zone = cardZonesSource[entityId];
       if (typeof zone === 'string' && zone.length > 0) {
         cardZones[entityId] = zone;

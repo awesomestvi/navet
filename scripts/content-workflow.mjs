@@ -66,7 +66,7 @@ const INVENTED_METRIC_PATTERN =
   /\b(?:\d[\d,.]*|thousands?|millions?)\s+(?:users?|customers?|households?|installs?|downloads?)\b/i;
 
 export function parseCliArgs(argv) {
-  const options = {};
+  const options = Object.create(null);
 
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
@@ -809,6 +809,12 @@ function packReadme(pack) {
 }
 
 export function writePack(pack, outputRoot) {
+  for (const draft of pack.drafts) {
+    if (!/^[a-z][a-z0-9-]*$/.test(draft.channelId) ||
+        !pack.channels.some((channel) => channel.id === draft.channelId)) {
+      throw new Error('Draft channel must match a configured channel.');
+    }
+  }
   fs.mkdirSync(path.join(outputRoot, 'channels'), { recursive: true });
   fs.writeFileSync(path.join(outputRoot, 'pack.json'), `${JSON.stringify(pack, null, 2)}\n`);
   fs.writeFileSync(path.join(outputRoot, 'README.md'), packReadme(pack));

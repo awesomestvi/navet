@@ -403,7 +403,7 @@ function getHomeyBaseUrlCandidates(homey) {
 }
 
 function cloneWithOverrides(source, overrides) {
-  const next = {};
+  const next = Object.create(null);
   let key;
 
   for (key in source) {

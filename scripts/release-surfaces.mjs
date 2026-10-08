@@ -30,7 +30,7 @@ export function readJson(filePath) {
 
 export function readYaml(filePath) {
   const content = readText(filePath);
-  const result = {};
+  const result = Object.create(null);
 
   for (const rawLine of content.split(/\r?\n/)) {
     const line = rawLine.trim();
@@ -123,7 +123,7 @@ export function buildDevAddonVersion(packageVersion, date = new Date()) {
 
 export function isValidDevAddonVersion(version, packageVersion) {
   const basePattern = packageVersion
-    ? packageVersion.replace(/\./g, '\\.')
+    ? packageVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     : '\\d+\\.\\d+\\.\\d+';
   const pattern = new RegExp(`^${basePattern}-dev\\.\\d{14}$`);
   return pattern.test(version);

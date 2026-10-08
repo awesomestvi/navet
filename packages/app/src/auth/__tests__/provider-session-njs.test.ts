@@ -555,10 +555,8 @@ describe('production njs provider credential sessions', () => {
     seedProviderAuth(store, cookie, HOMEY_AUTH_A);
     const cookieId = cookie.split('=')[1] ?? '';
     const sessionPath = join(paths.sessionsDirectory, `${cookieId}.json`);
-    const readFile = fs.readFileSync.bind(fs);
-    vi.spyOn(fs, 'readFileSync').mockImplementation(((
-      ...args: Parameters<typeof fs.readFileSync>
-    ) => {
+    const openFile = fs.openSync.bind(fs);
+    vi.spyOn(fs, 'openSync').mockImplementation(((...args: Parameters<typeof fs.openSync>) => {
       const [path] = args;
       if (String(path) === sessionPath) {
         const error = new Error('temporary I/O failure');
@@ -566,8 +564,8 @@ describe('production njs provider credential sessions', () => {
         error.code = 'EIO';
         throw error;
       }
-      return readFile(...args);
-    }) as typeof fs.readFileSync);
+      return openFile(...args);
+    }) as typeof fs.openSync);
 
     expect(() => store.bindingStore.readSession(cookieId)).toThrow('temporary I/O failure');
     vi.restoreAllMocks();
@@ -819,17 +817,16 @@ describe('production njs provider credential sessions', () => {
       paths.sessionsDirectory,
       `${otherCookie.split('=')[1] ?? ''}.json`
     );
-    const readFile = fs.readFileSync.bind(fs);
+    const openFile = fs.openSync.bind(fs);
     let sessionReads = 0;
-    vi.spyOn(fs, 'readFileSync').mockImplementation(((
-      ...args: Parameters<typeof fs.readFileSync>
-    ) => {
+    vi.spyOn(fs, 'openSync').mockImplementation(((...args: Parameters<typeof fs.openSync>) => {
       const [path] = args;
+      const descriptor = openFile(...args);
       if (String(path) === sessionPath || String(path) === otherSessionPath) {
         sessionReads += 1;
       }
-      return readFile(...args);
-    }) as typeof fs.readFileSync);
+      return descriptor;
+    }) as typeof fs.openSync);
 
     const proxy = createHomeyProxy(store);
     const request = createRequest({
@@ -1798,17 +1795,16 @@ describe('production njs provider credential sessions', () => {
       paths.sessionsDirectory,
       `${otherCookie.split('=')[1] ?? ''}.json`
     );
-    const readFile = fs.readFileSync.bind(fs);
+    const openFile = fs.openSync.bind(fs);
     let sessionReads = 0;
-    vi.spyOn(fs, 'readFileSync').mockImplementation(((
-      ...args: Parameters<typeof fs.readFileSync>
-    ) => {
+    vi.spyOn(fs, 'openSync').mockImplementation(((...args: Parameters<typeof fs.openSync>) => {
       const [path] = args;
+      const descriptor = openFile(...args);
       if (String(path) === sessionPath || String(path) === otherSessionPath) {
         sessionReads += 1;
       }
-      return readFile(...args);
-    }) as typeof fs.readFileSync);
+      return descriptor;
+    }) as typeof fs.openSync);
 
     const proxy = createOpenHABProxy(store);
     const request = createRequest({

@@ -10,7 +10,19 @@
     "homey:install": "homey app install"
   },
   "devDependencies": {
-    "homey": "4.4.2"
+    "homey": "4.4.2",
+    "image-size": "file:security/image-size",
+    "parseuri": "file:security/parseuri"
+  },
+  "overrides": {
+    "image-size": "$image-size",
+    "parseuri": "$parseuri",
+    "package-json": "7.0.0",
+    "http-cache-semantics": "4.3.0",
+    "sharp": "0.35.5",
+    "tmp": "0.2.7",
+    "uuid": "11.1.1",
+    "qs": "6.16.0"
   },
   "engines": {
     "node": ">=24"

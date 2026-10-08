@@ -9,6 +9,7 @@ const entries = [
   ['chore-progress-policy', 'njs'],
   ['resource-host-policy', 'njs'],
   ['credential-policy', 'shared'],
+  ['record-safety', 'shared'],
 ];
 
 for (const [name, directory] of entries) {
