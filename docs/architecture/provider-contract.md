@@ -4,7 +4,7 @@ This document describes the shared contract that all providers plug into.
 
 ## The Goal
 
-Navet's shared UI should not care whether the active backend is Home Assistant, Homey, or openHAB.
+Navet's shared UI should not care which connected provider owns an entity or selected feature source.
 Providers normalize their state into Navet types and translate Navet commands back into native
 requests.
 
@@ -134,8 +134,7 @@ Current runtime feature scope:
 The app may keep multiple implemented sessions connected at once. Provider-scoped IDs and
 provider-owned state remain separate; selected provider collections are merged for dashboard use,
 and entity-scoped operations resolve to the selected source's owning provider. Feature availability
-considers connected providers. A current session remains a legacy compatibility detail, not a
-user-facing priority or a requirement for exposing another connected provider's capabilities.
+considers connected providers.
 
 openHAB associations use semantic equipment metadata first, with conventional related item names
 as a fallback. Its normalized measurements retain units, source identity, and security categories.

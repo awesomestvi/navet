@@ -86,12 +86,11 @@ Important repo policy:
 - keep provider-specific auth, transport, resource resolution, and action translation in
   provider-specific layers
 - `@navet/ui` is the target provider-neutral shared UI boundary
-- `packages/app/src/components/*` and `packages/app/src/ui-kit/*` are still current implementation
-  and stable import surfaces, not final ownership
-- do not use current implementation drift as the source of truth for Home Assistant behavior
+- Shared UI authoring and stable imports live in `packages/app/src/components/*` and
+  `packages/app/src/ui-kit/*`; provider-neutral extraction targets `@navet/ui`
 
 ## Testing Rules
 
 - prefer realistic fixtures and contract-focused assertions
 - do not update tests only to match the current implementation
-- use `ai/skills/testing-architecture.md` and `docs/agents/testing.md` for test work
+- use `ai/skills/testing-architecture.md` for test work; open `docs/agents/testing.md` when choosing commands or changing tiers

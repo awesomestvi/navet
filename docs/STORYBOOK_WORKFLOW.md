@@ -12,8 +12,7 @@ Architecture note:
 - Storybook documents the current shared UI implementation surface.
 - That current surface is mostly app-owned under `packages/app/src/components/*`,
   `packages/app/src/features/*`, and `packages/app/src/ui-kit/*`.
-- `@navet/ui` remains the target provider-neutral shared UI package boundary even where Storybook
-  is still reviewing app-owned migration seams.
+- Provider-neutral UI extracted into `@navet/ui` carries its colocated stories.
 
 ## Where Stories Go
 
@@ -47,8 +46,6 @@ Use colocated stories by default.
 - keep primary entity-card families covered with standalone stories before relying on aggregate matrix or catalog stories
 - when documenting story placement, distinguish current implementation locations from target
   package ownership
-- if a provider-neutral shared UI surface is extracted into `@navet/ui`, colocate its stories with
-  that package instead of forcing them to remain app-owned
 - when a story supports new or substantially reshaped UI, identify the canonical product or
   component reference in the story description or review notes
 - cover the component's meaningful states and sizes; do not present only the ideal default state

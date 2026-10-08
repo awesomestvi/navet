@@ -12,8 +12,9 @@ authorization governs those actions.
 
 ## Establish the reference
 
-Read the root and applicable scoped agent instructions, `ai/skills/navet-ux.md`, and
-`docs/design-system/AI-DESIGN-CONTEXT.md`. Inspect the nearest implementation and story.
+Read the root and applicable scoped agent instructions and `ai/skills/navet-ux.md`. Open
+`docs/design-system/AI-DESIGN-CONTEXT.md` when creating or replacing a recipe. Inspect the nearest
+implementation and story.
 Use the same component family as the reference; use Home for dashboard rhythm when there is no
 closer reference. Name the reference and intended reading order, primary action and state behavior.
 Use `pnpm agent:components <name>` and composition recipes when shared contracts need inspection.

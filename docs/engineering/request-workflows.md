@@ -22,6 +22,7 @@ its checked deliverable. These workflows run interactively using available conne
   inspection to `gpt-6-luna` with high reasoning effort. It separates defects from improvements
   and reports source evidence and actual rendered coverage.
 
+Private destination, access and revision rules live in [Project planning](github-project-planning.md).
 Project draft detail follows the [proposal template](templates/idea-proposal.md). Small bugs use
 short reproduction, expected behavior, suggested repair and acceptance checks. Research, options
 and prototypes support decisions that need them. Detailed logs and execution records remain in
@@ -95,11 +96,14 @@ valid finding or missing UX evidence stays visible in the approval package.
 
 ## Acceptance evidence
 
-| Milestone | Evidence required | Operational status |
-| --- | --- | --- |
-| Community post | Actual human request, verified source, one master approval, reviewed image/copy, identities/destinations and three permalinks | v0.17.7 published to all three; Reddit and forum visually verified, Discord verified through API readback |
-| Idea development | Requested ideas, verified private destination, readable proposals and attachment/prototype readback | Live proposal development unverified |
-| Approved delivery | Selected scope, one PR, current previews/checks, rendered UX review and GitHub Project readback | Live delivery through these skills unverified |
+| Milestone | Required evidence |
+| --- | --- |
+| Community post | Actual human request, verified source, approved master copy/image, identities/destinations and three actual publication readbacks |
+| Idea development | Requested scope, verified private destination, proposal and attachment/prototype readback |
+| Approved delivery | Selected scope, one PR, current previews/checks, rendered UX review and Project readback |
+
+Verify access and operational status for the current request from owning-service receipts.
+A prior publication or local evaluation does not establish present access or acceptance.
 
 Deterministic tests cover agent-authored content, clean tagged evidence, request scope, reviewed
 payloads, wrong destinations/readbacks, retained attempts and partial-channel recovery. Isolated

@@ -137,7 +137,7 @@ associated workspace.
 
 A camera **direct-stream URL** configured in Navet must be reachable from the browser's current
 network. Home Assistant-provided snapshots, HLS, and fallback paths use Navet's proxy.
-Native WebRTC can still negotiate a separate media path supplied by Home Assistant; when that path
+Native WebRTC can negotiate a separate media path supplied by Home Assistant; when that path
 is not usable across the current network, Navet falls back to another provider-supported transport.
 
 ### Optional: configure a Home Assistant upstream address

@@ -13,10 +13,14 @@ Before writing JSX or styles:
 
 1. Discover the closest same-family card or surface, primitives, patterns and foundation tokens
    through the [design-system registry](../../docs/design-system/REGISTRY.md). Inspect canonical
-   imports and executable references.
+   imports, actual Storybook IDs, catalog level, owner, review status and executable references.
+   Only maintainer-approved product compositions establish accepted guidance; draft/pending
+   examples need same-family rendered review. Unsupported compositions use the
+   [composition guide](../../docs/design-system/AGENT-COMPOSITION-RECIPES.md) and record gaps.
 2. Inspect the exact screen and the components that currently render it.
 3. Name one primary Navet reference and, when useful, one supporting reference.
-4. Inspect the nearest primitive or pattern and its Storybook story.
+4. Inspect the nearest primitive or pattern: imports, props, slots, sizes, states, tokens and
+   theme helpers, together with its Storybook story.
 5. Write a compact intent note: information priority, primary action, density, responsive change,
    and the one visual detail that makes the surface recognizably part of Navet.
 6. Decide whether the work reuses, extends, or intentionally replaces an existing recipe. Record coverage gaps. A new visual pattern needs explicit maintainer approval before
@@ -115,8 +119,10 @@ Review the result against the named reference, not only against the request:
 - realistic long names, translated copy, missing artwork, and missing optional data
 - high and reduced effects quality when visual effects are involved
 
-If a visual review surface is available, inspect it and correct visible hierarchy, overflow,
-alignment, and theme mismatches before calling the work complete.
+Compare rendered output with the named reference. Discovery preserves review status; structural
+checks establish neither rendered acceptance nor design fidelity. If a visual review surface is
+available, inspect it and correct visible hierarchy, overflow, alignment and theme mismatches
+before calling the work complete.
 
 For small UI-only tweaks, run the closest focused validation, usually a targeted Storybook test,
 `pnpm check:stories`, or `pnpm test <path>`, and inspect the rendered state. For broader or

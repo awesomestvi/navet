@@ -38,7 +38,7 @@ higher-fidelity prototypes when visual judgment needs them. Build a private POC 
 uncertainty. Keep it outside public branches, tracked product files, public previews and CI logs.
 Use synthetic/provider-free data. Explain the experiment, observed result, limitations and what
 production integration would still require. Local callbacks or simulated state are not provider
-routing, persistence or operational readiness. Do not restart stopped comparison experiments.
+routing, persistence or operational readiness.
 
 ## Store and verify
 

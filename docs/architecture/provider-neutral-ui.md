@@ -11,10 +11,10 @@ translation happens outside the shared components.
 
 Current implementation note:
 
-- much of today’s shared UI still lives in `packages/app/src/components/*` and
+- shared UI is authored in `packages/app/src/components/*` and
   `packages/app/src/ui-kit/*`
 - those paths are current implementation and stable import surfaces
-- the same boundary rules still apply there
+- these paths follow the same boundary rules
 
 ## Shared UI Inputs
 
@@ -27,22 +27,7 @@ Shared UI should work from:
 - generic command callbacks
 
 Those inputs may contain entities from multiple selected providers. Shared UI must preserve
-provider-scoped/canonical identity and route commands back to the entity's owning provider instead
-of assuming that every visible entity belongs to the active provider.
-
-Mental model:
-
-```tsx
-<NavetDashboard
-  entities={entities}
-  rooms={rooms}
-  layout={layout}
-  status={status}
-  onCommand={handleCommand}
-/>
-```
-
-The exact props may differ. The boundary is the important part.
+provider-scoped/canonical identity and route commands to the entity's owning provider.
 
 ## Do
 
@@ -60,7 +45,7 @@ The exact props may differ. The boundary is the important part.
 
 ## Provider-Aware Work
 
-Some features still need provider-aware services, for example:
+Features use provider-owned services for:
 
 - media
 - camera resources
@@ -68,9 +53,8 @@ Some features still need provider-aware services, for example:
 - energy
 - notifications
 
-That is acceptable. Provider-aware work should stay in provider packages, or temporarily in
-app-owned compatibility seams while extraction is in flight. Shared cards should still consume a
-stable view model.
+Provider packages own these services. App-owned compatibility seams are documented in the
+[package boundaries](package-boundaries.md); shared cards consume a stable view model.
 
 See [media-dashboard-provider-limitations.md](media-dashboard-provider-limitations.md) for the
 current media dashboard boundary, provider behavior, resource handling, and known limits.

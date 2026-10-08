@@ -18,13 +18,11 @@ Watch the [Add Card demonstration on YouTube](https://youtu.be/8xis2yjmul8?t=32)
 2. Enter edit mode.
 3. Choose **Add Card**.
 
-Home has its own layout. After choosing **Start with all entities** during onboarding, room
-dashboards can contain automatically generated cards while Home is still empty. Add the cards you
-want to Home through this library.
+Use this library to build Home’s overview layout and add cards to rooms.
 
 ## Find what you need
 
-- Use **All cards** for devices and other normalized provider entities.
+- Use **All cards** for devices and other provider entities.
 - Use **Custom cards** for Navet content such as notes, RSS, photos, actions, maps, battery summaries,
   UPS status, and energy summaries.
 - Search by the visible device or room name.
