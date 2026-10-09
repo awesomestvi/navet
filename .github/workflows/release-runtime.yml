@@ -20,11 +20,15 @@ permissions:
 jobs:
   runtime:
     name: Test published digests (${{ matrix.arch }})
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
-        arch: [amd64, aarch64]
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: aarch64
+            runner: ubuntu-24.04-arm
     steps:
       - uses: actions/checkout@v5
         with:
@@ -39,7 +43,6 @@ jobs:
         with:
           node-version: 22
           package-manager-cache: false
-      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4
       - uses: actions/download-artifact@v7
         with:
           pattern: release-image-*
