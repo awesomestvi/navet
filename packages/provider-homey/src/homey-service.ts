@@ -225,18 +225,20 @@ export function translateHomeyServiceAction(
 
 class HomeyService {
   private client: HomeySnapshotClient | null = null;
+  private clientGeneration = 0;
   private snapshot: HomeySnapshot = EMPTY_HOMEY_SNAPSHOT;
   private listeners = new Set<HomeySnapshotListener>();
   private clientSnapshotUnsubscribe: (() => void) | null = null;
 
   setClient(client: HomeySnapshotClient | null) {
+    const generation = ++this.clientGeneration;
     this.clientSnapshotUnsubscribe?.();
     this.clientSnapshotUnsubscribe = null;
     this.client = client;
 
     if (client?.subscribeSnapshot) {
       this.clientSnapshotUnsubscribe = client.subscribeSnapshot((snapshot) => {
-        this.replaceSnapshot(snapshot);
+        if (generation === this.clientGeneration) this.replaceSnapshot(snapshot);
       });
     }
   }
@@ -246,12 +248,15 @@ class HomeyService {
   }
 
   async loadSnapshot(): Promise<HomeySnapshot> {
-    if (!this.client?.loadSnapshot) {
+    const client = this.client;
+    const generation = this.clientGeneration;
+    if (!client?.loadSnapshot) {
       throw new Error('Homey snapshot loading is not configured yet');
     }
 
     try {
-      const snapshot = await this.client.loadSnapshot();
+      const snapshot = await client.loadSnapshot();
+      if (generation !== this.clientGeneration) return snapshot;
       this.replaceSnapshot({
         ...snapshot,
         error: snapshot.error ?? null,
@@ -259,6 +264,7 @@ class HomeyService {
       });
       return snapshot;
     } catch (error) {
+      if (generation !== this.clientGeneration) throw error;
       this.replaceSnapshot({
         connected: false,
         error: error instanceof Error ? error.message : String(error),
@@ -286,6 +292,11 @@ class HomeyService {
   async request<T>(path: string, init?: RequestInit): Promise<T> {
     if (!this.client?.request) throw new Error('Homey resource access is not configured');
     return this.client.request<T>(path, init);
+  }
+
+  disconnect() {
+    this.setClient(null);
+    this.resetSnapshot();
   }
 
   resetSnapshot() {
@@ -415,9 +426,13 @@ class HomeyService {
   }
 
   private async executeCapabilityCommands(commands: HomeyCapabilityCommand[]): Promise<void> {
-    if (!this.client) throw new Error('Homey integration is not configured yet');
+    const client = this.client;
+    const generation = this.clientGeneration;
+    if (!client) throw new Error('Homey integration is not configured yet');
     for (const command of commands) {
-      await this.client.setCapabilityValue(command);
+      await client.setCapabilityValue(command);
+      if (generation !== this.clientGeneration)
+        throw new Error('Homey connection changed during command execution');
     }
 
     const nextSnapshot = applyCapabilityCommands(this.snapshot, commands);

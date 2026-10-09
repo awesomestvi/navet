@@ -5,6 +5,8 @@ import type { IntegrationProviderId } from '@navet/app/types/provider';
 import { setOpenHABRuntimeError } from '@navet/provider-openhab';
 import type { HomeAssistantPanelHass } from './home-assistant-panel-adapter';
 
+const bootstrapGenerations: Partial<Record<IntegrationProviderId, number>> = {};
+
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error && error.message.trim().length > 0) {
     return error.message;
@@ -18,6 +20,8 @@ function getErrorMessage(error: unknown): string {
 }
 
 export async function bootstrapIntegrationSession(session: AuthSession): Promise<void> {
+  const generation = (bootstrapGenerations[session.providerId] ?? 0) + 1;
+  bootstrapGenerations[session.providerId] = generation;
   integrationStore.getState().setIntegrationUser(session.user ?? null);
   const contract = getRegisteredProviderContract(session.providerId);
   const providerSession = toAuthCompatibleSession(session);
@@ -25,7 +29,10 @@ export async function bootstrapIntegrationSession(session: AuthSession): Promise
     try {
       await contract.initializeSession?.(providerSession);
     } catch (error) {
-      if (session.providerId === 'openhab') {
+      if (
+        session.providerId === 'openhab' &&
+        bootstrapGenerations[session.providerId] === generation
+      ) {
         setOpenHABRuntimeError(getErrorMessage(error));
       }
       throw error;
@@ -42,6 +49,7 @@ export function attachIntegrationRuntimeBridge(
 
 export function teardownIntegrationSession(providerId: AuthSession['providerId'] | null): void {
   if (providerId) {
+    bootstrapGenerations[providerId] = (bootstrapGenerations[providerId] ?? 0) + 1;
     getRegisteredProviderContract(providerId).teardownSession?.();
   }
   integrationStore.getState().setIntegrationUser(null);

@@ -14,6 +14,7 @@ export interface HomeyProviderDependencies {
     loadSnapshot: HomeyBridge['loadSnapshot'];
     replaceSnapshot: HomeyBridge['replaceSnapshot'];
     resetSnapshot: HomeyBridge['resetSnapshot'];
+    disconnect?: () => void;
     subscribe: (listener: () => void) => () => void;
     callService: HomeyBridge['callService'];
     executeCommand: HomeyBridge['executeCommand'];
@@ -27,7 +28,10 @@ function createHomeyBridgeFromDependencies(dependencies: HomeyProviderDependenci
     getSnapshot: () => dependencies.homeyService.getSnapshot(),
     loadSnapshot: () => dependencies.homeyService.loadSnapshot(),
     replaceSnapshot: (snapshot) => dependencies.homeyService.replaceSnapshot(snapshot),
-    resetSnapshot: () => dependencies.homeyService.resetSnapshot(),
+    resetSnapshot: () => {
+      if (dependencies.homeyService.disconnect) dependencies.homeyService.disconnect();
+      else dependencies.homeyService.resetSnapshot();
+    },
     subscribe: (listener) => dependencies.homeyService.subscribe(() => listener()),
     callService: (domain, service, serviceData, target) =>
       dependencies.homeyService.callService(domain, service, serviceData, target),

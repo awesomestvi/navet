@@ -34,6 +34,8 @@ export function createSnapshotBackedProviderAdapter({
   const listEntities = async () => contract.getState().entities;
 
   const getEntity = async (id: string) => {
+    const scopedId = parseProviderScopedId(id);
+    if (scopedId && scopedId.providerId !== providerId) return null;
     const entities = await listEntities();
 
     return (
@@ -42,7 +44,7 @@ export function createSnapshotBackedProviderAdapter({
           entity.id === id ||
           entity.canonicalId === id ||
           entity.externalId === id ||
-          parseProviderScopedId(id)?.nativeId === entity.externalId
+          scopedId?.nativeId === entity.externalId
       ) ?? null
     );
   };

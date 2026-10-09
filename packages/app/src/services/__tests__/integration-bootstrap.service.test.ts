@@ -167,6 +167,41 @@ describe('integration-bootstrap.service', () => {
     expect(integrationStore.getState().currentUser).toEqual(session.user);
   });
 
+  it.each(['disconnect', 'reconnect'] as const)(
+    'ignores an old bootstrap failure after %s',
+    async (transition) => {
+      vi.stubGlobal('WebSocket', undefined);
+      const pending = Promise.withResolvers<Response>();
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          .mockReturnValueOnce(pending.promise)
+          .mockImplementation(async () => new Response('[]'))
+      );
+      const session: OpenHABAuthSession = {
+        providerId: 'openhab',
+        runtime: 'standalone-oauth',
+        authMode: 'oauth',
+        haBaseUrl: 'http://openhab.local:8080',
+        hassUrl: 'http://openhab.local:8080',
+        username: 'navet',
+        password: 'secret',
+      };
+      const loading = bootstrapIntegrationSession(session);
+      const settled = expect(loading).rejects.toThrow('Old connection failed');
+      if (transition === 'disconnect') teardownIntegrationSession('openhab');
+      else await bootstrapIntegrationSession(session);
+      pending.reject(new Error('Old connection failed'));
+      await settled;
+      expect(getOpenHABSnapshot()).toMatchObject({
+        connected: transition === 'reconnect',
+        error: null,
+      });
+      expect(integrationStore.getState().providerHealth.openhab.lastError).toBeNull();
+    }
+  );
+
   it('records openHAB bootstrap failures in provider health', async () => {
     vi.stubGlobal(
       'fetch',

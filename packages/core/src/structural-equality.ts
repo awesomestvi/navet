@@ -75,8 +75,8 @@ export function areDataEqual(left: unknown, right: unknown): boolean {
     return false;
   }
 
-  if (Array.isArray(left) && Array.isArray(right)) {
-    return areArraysEqual(left, right, areDataEqual);
+  if (Array.isArray(left) || Array.isArray(right)) {
+    return Array.isArray(left) && Array.isArray(right) && areArraysEqual(left, right, areDataEqual);
   }
 
   if (typeof left === 'object' && typeof right === 'object') {

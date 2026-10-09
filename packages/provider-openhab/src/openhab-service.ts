@@ -282,10 +282,12 @@ function subscribeToOpenHABSnapshot(
   }
 
   let closed = false;
+  let liveDisconnected = false;
   let socket: WebSocket | null = null;
   let heartbeatIntervalId: ReturnType<typeof globalThis.setInterval> | null = null;
   let reconnectTimeoutId: ReturnType<typeof globalThis.setTimeout> | null = null;
   let reloadInFlight: Promise<void> | null = null;
+  let reloadRequested = false;
 
   const clearHeartbeat = () => {
     if (heartbeatIntervalId !== null) {
@@ -302,6 +304,7 @@ function subscribeToOpenHABSnapshot(
   };
 
   const emitDisconnected = (error: string) => {
+    if (closed) return;
     const latestSnapshot = getLatestSnapshot();
     listener({
       connected: latestSnapshot.connected,
@@ -312,17 +315,30 @@ function subscribeToOpenHABSnapshot(
   };
 
   const reload = () => {
-    if (reloadInFlight) {
-      return reloadInFlight;
-    }
+    if (closed) return Promise.resolve();
+    reloadRequested = true;
+    if (reloadInFlight) return reloadInFlight;
 
     reloadInFlight = (async () => {
       try {
-        const snapshot = await loadSnapshot();
-        setLatestSnapshot(snapshot);
-        listener(snapshot);
-      } catch (error) {
-        emitDisconnected(getErrorMessage(error));
+        do {
+          reloadRequested = false;
+          try {
+            const snapshot = await loadSnapshot();
+            if (closed) return;
+            const nextSnapshot = liveDisconnected
+              ? {
+                  ...snapshot,
+                  reconnecting: true,
+                  error: 'openHAB live updates disconnected. Cached UI is still available.',
+                }
+              : snapshot;
+            setLatestSnapshot(nextSnapshot);
+            listener(nextSnapshot);
+          } catch (error) {
+            emitDisconnected(getErrorMessage(error));
+          }
+        } while (reloadRequested && !closed);
       } finally {
         reloadInFlight = null;
       }
@@ -354,6 +370,7 @@ function subscribeToOpenHABSnapshot(
     socket = new WebSocket(createOpenHABWebSocketUrl(baseUrl, session, isProxied));
 
     socket.onopen = () => {
+      liveDisconnected = false;
       if (!socket) {
         return;
       }
@@ -394,6 +411,8 @@ function subscribeToOpenHABSnapshot(
         return;
       }
 
+      if (!message || typeof message !== 'object' || Array.isArray(message)) return;
+
       if (
         message.type === 'WebSocketEvent' &&
         message.topic === 'openhab/websocket/response/failed'
@@ -416,6 +435,7 @@ function subscribeToOpenHABSnapshot(
     };
 
     socket.onclose = () => {
+      liveDisconnected = true;
       clearHeartbeat();
       socket = null;
       if (!closed) {
@@ -491,18 +511,20 @@ export function createOpenHABSnapshotClient(
 
 class OpenHABService {
   private client: OpenHABSnapshotClient | null = null;
+  private clientGeneration = 0;
   private snapshot: OpenHABSnapshot = EMPTY_OPENHAB_SNAPSHOT;
   private listeners = new Set<OpenHABSnapshotListener>();
   private clientSnapshotUnsubscribe: (() => void) | null = null;
 
   setClient(client: OpenHABSnapshotClient | null) {
+    const generation = ++this.clientGeneration;
     this.clientSnapshotUnsubscribe?.();
     this.clientSnapshotUnsubscribe = null;
     this.client = client;
 
     if (client?.subscribeSnapshot) {
       this.clientSnapshotUnsubscribe = client.subscribeSnapshot((snapshot) => {
-        this.replaceSnapshot(snapshot);
+        if (generation === this.clientGeneration) this.replaceSnapshot(snapshot);
       });
     }
   }
@@ -512,17 +534,21 @@ class OpenHABService {
   }
 
   async loadSnapshot(): Promise<OpenHABSnapshot> {
-    if (!this.client?.loadSnapshot) {
+    const client = this.client;
+    const generation = this.clientGeneration;
+    if (!client?.loadSnapshot) {
       const error = 'openHAB snapshot loading is not configured yet';
       this.setError(error);
       throw new Error(error);
     }
 
     try {
-      const snapshot = await this.client.loadSnapshot();
+      const snapshot = await client.loadSnapshot();
+      if (generation !== this.clientGeneration) return snapshot;
       this.replaceSnapshot(snapshot);
       return snapshot;
     } catch (error) {
+      if (generation !== this.clientGeneration) throw error;
       const message = getErrorMessage(error);
       this.replaceSnapshot({
         connected: false,
@@ -543,7 +569,7 @@ class OpenHABService {
       connected: snapshot.connected ?? this.snapshot.connected,
       items: snapshot.items ?? this.snapshot.items,
       reconnecting: snapshot.reconnecting ?? false,
-      error: snapshot.error ?? this.snapshot.error ?? null,
+      error: snapshot.error === undefined ? this.snapshot.error : snapshot.error,
     };
     this.emitSnapshot();
   }
