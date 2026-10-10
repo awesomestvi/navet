@@ -3,25 +3,26 @@ import type {
   IntegrationProviderRuntimeRegistration,
   ProviderContractRegistration,
 } from '@navet/core/provider-runtime-types';
-import { homeAssistantAdminFeatureService } from './homeassistant-admin-feature.service';
+import { lazyHomeAssistantAdminFeatureService } from './homeassistant-admin-feature.service.lazy';
 import { homeAssistantCalendarFeatureService } from './homeassistant-calendar-feature.service';
 import { homeAssistantCameraFeatureService } from './homeassistant-camera-feature.service';
-import { homeAssistantChoreProjectionFeatureService } from './homeassistant-chore-projection-feature.service';
+import { lazyHomeAssistantChoreProjectionFeatureService } from './homeassistant-chore-projection-feature.service.lazy';
 import { homeAssistantClimateFeatureService } from './homeassistant-climate-feature.service';
-import { homeAssistantConversationFeatureService } from './homeassistant-conversation-feature.service';
+import { lazyHomeAssistantConversationFeatureService } from './homeassistant-conversation-feature.service.lazy';
 import { homeAssistantEnergyFeatureService } from './homeassistant-energy-feature.service';
 import { homeAssistantEntityRuntimeService } from './homeassistant-entity-runtime.service';
-import { homeAssistantHistoryFeatureService } from './homeassistant-history-feature.service';
+import { lazyHomeAssistantHistoryFeatureService } from './homeassistant-history-feature.service.lazy';
 import { homeAssistantLightFeatureService } from './homeassistant-light-feature.service';
 import { homeAssistantMediaFeatureService } from './homeassistant-media-feature.service';
 import { homeAssistantNativeActionFeatureService } from './homeassistant-native-action-feature.service';
-import { homeAssistantNotificationFeatureService } from './homeassistant-notification-feature.service';
+import { lazyHomeAssistantNotificationFeatureService } from './homeassistant-notification-feature.service.lazy';
 import { homeAssistantSecurityFeatureService } from './homeassistant-security-feature.service';
 import {
   getHomeAssistantCameraStreamUrl,
   signHomeAssistantPath,
 } from './homeassistant-service-bridge';
 import { homeAssistantTaskFeatureService } from './homeassistant-task-feature.service';
+import { lazyHomeAssistantTodoListFeatureService } from './homeassistant-todo-feature.service.lazy';
 import { homeAssistantWeatherFeatureService } from './homeassistant-weather-feature.service';
 
 export const homeAssistantRoomManagementCapabilities = createProviderRoomManagementCapabilities(
@@ -76,21 +77,22 @@ export function createHomeAssistantRuntimeRegistration(
 
       return await getHomeAssistantCameraStreamUrl(entityId, format);
     },
-    adminFeatureService: homeAssistantAdminFeatureService,
+    adminFeatureService: lazyHomeAssistantAdminFeatureService,
     calendarFeatureService: homeAssistantCalendarFeatureService,
-    choreProjectionFeatureService: homeAssistantChoreProjectionFeatureService,
+    choreProjectionFeatureService: lazyHomeAssistantChoreProjectionFeatureService,
     cameraFeatureService: homeAssistantCameraFeatureService,
     climateFeatureService: homeAssistantClimateFeatureService,
-    conversationFeatureService: homeAssistantConversationFeatureService,
+    conversationFeatureService: lazyHomeAssistantConversationFeatureService,
     energyFeatureService: homeAssistantEnergyFeatureService,
     entityRuntimeService: homeAssistantEntityRuntimeService,
-    historyFeatureService: homeAssistantHistoryFeatureService,
+    historyFeatureService: lazyHomeAssistantHistoryFeatureService,
     lightFeatureService: homeAssistantLightFeatureService,
     mediaFeatureService: homeAssistantMediaFeatureService,
     nativeActionFeatureService: homeAssistantNativeActionFeatureService,
-    notificationFeatureService: homeAssistantNotificationFeatureService,
+    notificationFeatureService: lazyHomeAssistantNotificationFeatureService,
     securityFeatureService: homeAssistantSecurityFeatureService,
     taskFeatureService: homeAssistantTaskFeatureService,
+    todoListFeatureService: lazyHomeAssistantTodoListFeatureService,
     weatherFeatureService: homeAssistantWeatherFeatureService,
   };
 }

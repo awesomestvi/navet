@@ -1,0 +1,5 @@
+type: new
+audiences:
+  - standalone
+  - home-assistant
+summary: Control supported household helpers and refresh room and entity metadata after external Home Assistant edits.

@@ -9,6 +9,11 @@ import type {
 } from '@navet/core/provider-contract';
 import { createSnapshotBackedProviderAdapter } from '@navet/core/snapshot-backed-adapter';
 import type { NavetCommand, NavetEntity, NavetProviderState } from '@navet/core/types';
+import { getHomeAssistantClimateControlCommandRoute } from './homeassistant-climate-controls';
+import {
+  getHomeAssistantHelperCommandRoute,
+  HOME_ASSISTANT_VALUE_HELPER_DOMAINS,
+} from './homeassistant-helper';
 import { createHomeAssistantProviderStateMapper } from './homeassistant-mappers';
 import {
   callHomeAssistantService,
@@ -178,7 +183,25 @@ function getVacuumLikeCommandRoute(entity: NavetEntity, command: NavetCommand) {
 }
 
 async function executeHomeAssistantCommand(entity: NavetEntity, command: NavetCommand) {
+  if (
+    HOME_ASSISTANT_VALUE_HELPER_DOMAINS.has(getEntityCommandDomain(entity)) &&
+    !['set_number_value', 'select_option', 'set_text_value', 'set_datetime_value'].includes(
+      command.type
+    )
+  ) {
+    throw new UnsupportedProviderCommandError(command.type);
+  }
   switch (command.type) {
+    case 'set_number_value':
+    case 'select_option':
+    case 'set_text_value':
+    case 'set_datetime_value': {
+      const route = getHomeAssistantHelperCommandRoute(entity, command);
+      await callHomeAssistantService(route.domain, route.service, route.data, {
+        entityId: entity.externalId,
+      });
+      return;
+    }
     case 'turn_on':
       await callHomeAssistantService(
         getEntityCommandDomain(entity),
@@ -312,6 +335,17 @@ async function executeHomeAssistantCommand(entity: NavetEntity, command: NavetCo
         }
       );
       return;
+    case 'set_climate_preset':
+    case 'set_climate_fan_mode':
+    case 'set_climate_swing_mode':
+    case 'set_climate_swing_horizontal_mode':
+    case 'set_climate_humidity': {
+      const route = getHomeAssistantClimateControlCommandRoute(entity, command);
+      await callHomeAssistantService('climate', route.service, route.data, {
+        entityId: entity.externalId,
+      });
+      return;
+    }
     case 'set_climate_mode':
       await callHomeAssistantService(
         entity.externalId.startsWith('water_heater.') ? 'water_heater' : 'climate',

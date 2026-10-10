@@ -8,16 +8,20 @@ const {
   updateEntityAreaMock,
   updateEntityNameMock,
   deleteAreaMock,
+  standaloneConnection,
 } = vi.hoisted(() => ({
   createAreaMock: vi.fn(),
   updateAreaNameMock: vi.fn(),
   updateEntityAreaMock: vi.fn(),
   updateEntityNameMock: vi.fn(),
   deleteAreaMock: vi.fn(),
+  standaloneConnection: { sendMessagePromise: vi.fn() },
 }));
 
 vi.mock('../home-assistant.service', () => ({
   homeAssistantService: {
+    getPanelHass: () => null,
+    getConnection: () => standaloneConnection,
     createArea: createAreaMock,
     updateAreaName: updateAreaNameMock,
     updateEntityArea: updateEntityAreaMock,

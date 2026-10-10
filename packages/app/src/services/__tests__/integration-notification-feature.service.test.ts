@@ -1,12 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { callServiceMock, getConnectionMock } = vi.hoisted(() => ({
+const { callServiceMock, getConnectionMock, standaloneConnection } = vi.hoisted(() => ({
   callServiceMock: vi.fn(),
   getConnectionMock: vi.fn(),
+  standaloneConnection: { sendMessagePromise: vi.fn() },
 }));
 
 vi.mock('../home-assistant.service', () => ({
   homeAssistantService: {
+    getPanelHass: () => null,
     callService: callServiceMock,
     getConnection: getConnectionMock,
   },
@@ -18,6 +20,7 @@ describe('integrationNotificationFeatureService', () => {
   beforeEach(() => {
     callServiceMock.mockReset();
     getConnectionMock.mockReset();
+    getConnectionMock.mockReturnValue(standaloneConnection);
   });
 
   it('collects persistent notifications and repair issues through the HA adapter contract', async () => {

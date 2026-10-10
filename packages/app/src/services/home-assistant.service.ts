@@ -151,6 +151,107 @@ class HomeAssistantService {
   private registryService: HARegistryService;
   private entityService: HAEntityService;
   private panelAdapter: HomeAssistantPanelAdapter | null = null;
+  private registryTransport: Connection | HomeAssistantPanelHass['callWS'] | null = null;
+  private registrySubscriptionGeneration = 0;
+  private registryAuthenticationAttempt = 0;
+  private registryUnsubscribers: (() => void)[] = [];
+  private registryRefreshTimer: ReturnType<typeof setTimeout> | null = null;
+  private registryRefreshInProgress = false;
+  private registryRefreshPending = false;
+
+  private clearRegistrySubscriptions(): void {
+    this.registrySubscriptionGeneration += 1;
+    this.registryService.resetRegistriesForSession();
+    this.emitRegistries();
+    if (this.registryRefreshTimer !== null) clearTimeout(this.registryRefreshTimer);
+    this.registryRefreshTimer = null;
+    this.registryRefreshPending = false;
+    for (const unsubscribe of this.registryUnsubscribers) unsubscribe();
+    this.registryUnsubscribers = [];
+    this.registryTransport = null;
+  }
+
+  private scheduleRegistryRefresh(): void {
+    if (!this.registryTransport) return;
+    if (this.registryRefreshInProgress) {
+      this.registryRefreshPending = true;
+      return;
+    }
+    if (this.registryRefreshTimer !== null) return;
+    const generation = this.registrySubscriptionGeneration;
+    // A fixed window bounds sustained registry event traffic without postponing it forever.
+    this.registryRefreshTimer = setTimeout(() => {
+      this.registryRefreshTimer = null;
+      this.registryRefreshInProgress = true;
+      void this.loadRegistries()
+        .catch((error: unknown) =>
+          console.error('[HomeAssistantService] Registry refresh failed:', error)
+        )
+        .finally(() => {
+          this.registryRefreshInProgress = false;
+          if (generation !== this.registrySubscriptionGeneration) {
+            if (this.registryTransport) this.scheduleRegistryRefresh();
+            return;
+          }
+          if (this.registryRefreshPending) {
+            this.registryRefreshPending = false;
+            this.scheduleRegistryRefresh();
+          }
+        });
+    }, 100);
+  }
+
+  private subscribeToRegistryUpdates(
+    connection: Connection | null,
+    transport: Connection | HomeAssistantPanelHass['callWS'] | null = connection
+  ): void {
+    if (transport === this.registryTransport) return;
+    this.clearRegistrySubscriptions();
+    this.registryTransport = transport;
+    if (!transport) return;
+    // callWS-only panels can load registries, but have no native event subscription surface.
+    this.scheduleRegistryRefresh();
+    if (!connection) return;
+    const generation = this.registrySubscriptionGeneration;
+    for (const eventType of [
+      'entity_registry_updated',
+      'device_registry_updated',
+      'area_registry_updated',
+    ]) {
+      if (!connection.subscribeMessage) continue;
+      void connection
+        .subscribeMessage(
+          () => {
+            if (generation === this.registrySubscriptionGeneration) this.scheduleRegistryRefresh();
+          },
+          { type: 'subscribe_events', event_type: eventType }
+        )
+        .then((unsubscribe) => {
+          if (generation !== this.registrySubscriptionGeneration) {
+            void Promise.resolve(unsubscribe()).catch((error: unknown) =>
+              console.error('[HomeAssistantService] Registry unsubscribe failed:', error)
+            );
+          } else {
+            this.registryUnsubscribers.push(() => {
+              void Promise.resolve(unsubscribe()).catch((error: unknown) =>
+                console.error('[HomeAssistantService] Registry unsubscribe failed:', error)
+              );
+            });
+          }
+        })
+        .catch((error: unknown) => {
+          console.error('[HomeAssistantService] Registry subscription failed:', error);
+        });
+    }
+    // The frontend owns the panel socket; its ready event also covers missed offline changes.
+    if (connection.addEventListener && connection.removeEventListener) {
+      const ready = () => {
+        if (generation === this.registrySubscriptionGeneration) this.scheduleRegistryRefresh();
+      };
+      connection.addEventListener('ready', ready);
+      this.registryUnsubscribers.push(() => connection.removeEventListener('ready', ready));
+    }
+  }
   private registryListeners = new Set<(data: HAServiceEventMap['registries']) => void>();
   private connectionListeners = new Set<(data: HAServiceEventMap['connection']) => void>();
   private configListeners = new Set<(data: HAServiceEventMap['config']) => void>();
@@ -167,6 +268,10 @@ class HomeAssistantService {
     );
 
     this.connectionService.addListener('connection', (connection) => {
+      if (connection.connected) {
+        this.subscribeToRegistryUpdates(connection.connection);
+        this.scheduleRegistryRefresh();
+      }
       this.emitConnection(connection);
     });
     this.connectionService.addListener('config', (config) => {
@@ -184,23 +289,31 @@ class HomeAssistantService {
    * Authenticate and establish connection to Home Assistant
    */
   async authenticate(configuration: HomeAssistantConfiguration): Promise<void> {
+    const attempt = ++this.registryAuthenticationAttempt;
+    this.clearRegistrySubscriptions();
     this.panelAdapter = null;
     await this.connectionService.authenticate(configuration);
-    await this.registryService.loadRegistries();
+    if (attempt !== this.registryAuthenticationAttempt) return;
+    this.subscribeToRegistryUpdates(this.getConnection());
+    await this.loadRegistries();
   }
 
   /**
    * Attach the Home Assistant frontend-provided hass object when Navet runs as a native panel.
    */
   setPanelHass(hass: HomeAssistantPanelHass): void {
+    this.registryAuthenticationAttempt += 1;
     if (this.panelAdapter) {
       this.panelAdapter.update(hass);
+      this.subscribeToRegistryUpdates(hass.connection ?? null, hass.connection ?? hass.callWS);
       this.emitPanelRuntimeState();
       return;
     }
 
+    this.clearRegistrySubscriptions();
     this.connectionService.disconnect();
     this.panelAdapter = new HomeAssistantPanelAdapter(hass);
+    this.subscribeToRegistryUpdates(hass.connection ?? null, hass.connection ?? hass.callWS);
     this.emitPanelRuntimeState();
   }
 
@@ -252,15 +365,8 @@ class HomeAssistantService {
     if (event === 'registries') {
       const registriesCallback = callback as (data: HAServiceEventMap['registries']) => void;
       this.registryListeners.add(registriesCallback);
-      const unsubscribeConnection = this.connectionService.addListener('connection', () => {
-        // Trigger registry load on connection
-        void this.registryService.loadRegistries().then(() => {
-          this.emitRegistries();
-        });
-      });
       return () => {
         this.registryListeners.delete(registriesCallback);
-        unsubscribeConnection();
       };
     }
 
@@ -347,16 +453,9 @@ class HomeAssistantService {
   }
 
   async loadRegistries(): Promise<void> {
-    if (this.panelAdapter) {
-      const { areas, devices, entities, automationCategories } =
-        await this.panelAdapter.loadRegistries();
-      this.registryService.replaceRegistries(areas, devices, entities, automationCategories);
-      this.emitRegistries();
-      return;
-    }
-
+    const generation = this.registrySubscriptionGeneration;
     await this.registryService.loadRegistries();
-    this.emitRegistries();
+    if (generation === this.registrySubscriptionGeneration) this.emitRegistries();
   }
 
   /**
@@ -699,6 +798,8 @@ class HomeAssistantService {
    * Disconnect from Home Assistant
    */
   disconnect(): void {
+    this.registryAuthenticationAttempt += 1;
+    this.clearRegistrySubscriptions();
     const hadPanelAdapter = Boolean(this.panelAdapter);
     this.panelAdapter = null;
     this.connectionService.disconnect();

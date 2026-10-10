@@ -206,6 +206,7 @@ const allowedIdenticalValuesByLanguage = {
     'Streams', 'Album', 'Alarm', 'Feeds', 'Orange', 'Neutral', 'Solar', 'Gas', 'In Navet',
   ]),
   fr: new Set([
+    'Description',
     'Interaction', 'Auto', 'Standard', 'Celsius', 'Fahrenheit', 'Routine', 'Action',
     'Suggestions', 'Version', 'Photo', 'Widgets', 'Volume', 'Source', 'Mode', 'Zones',
     'Notifications', 'Important', 'Sections', 'Routines', 'Scripts', 'scripts', 'Total',
@@ -221,6 +222,7 @@ const allowedIdenticalValuesByLanguage = {
     'Eco', 'Album', 'Comfort', 'Relax', 'Gas', 'In Navet',
   ]),
   nl: new Set([
+    'Items',
     'week',
     'Week {week}', 'Dashboard', 'Project', 'Celsius', 'Fahrenheit', 'Status', 'Widgets',
     'Details', 'Wind', 'Volume', 'Media', 'Soundbar', 'Sensor', 'Water', 'Zones', 'Max',

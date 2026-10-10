@@ -3,6 +3,7 @@ import type {
   NavetAlarmCodeFormat,
   NavetAlarmState,
 } from '@navet/core/alarm-types';
+import type { NavetHelperState } from '@navet/core/helper-state';
 import type { CardSize } from '../components/shared/card-size-selector';
 import type { NavetMediaCapabilities } from '../core/navet-device-state';
 import type { SensorIconType } from '../features/sensors';
@@ -202,7 +203,7 @@ export type HelperDevice = Pick<
   | 'underlyingDeviceId'
   | 'securityKind'
   | 'securitySeverity'
->;
+> & { helper?: NavetHelperState };
 
 // Cover device
 export interface CoverDevice extends BaseDevice {

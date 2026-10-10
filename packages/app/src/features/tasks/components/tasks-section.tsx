@@ -10,10 +10,12 @@ import {
   SummaryBar,
   SummaryBarStack,
 } from '@navet/app/features/sensors/components/info-badge-strip';
-import { useI18n, useTheme } from '@navet/app/hooks';
+import { useI18n, useIntegrationStore, useTheme } from '@navet/app/hooks';
+import { getIntegrationProviderAdapter } from '@navet/app/services/integration-registry.service';
 import { roomNamesMatch } from '@navet/app/utils/room-name';
+import type { IntegrationProviderId } from '@navet/core/integration-providers';
 import { AlertTriangle, Bot, ClipboardList, Power, PowerOff, Sparkles } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { lazy, Suspense, useMemo, useState } from 'react';
 import { useAutomationDashboardController } from '../hooks/use-automation-dashboard-controller';
 import {
   type AutomationSortKey,
@@ -58,7 +60,7 @@ function TasksLoadingState() {
   );
 }
 
-export function TasksSection() {
+function RoutineTasksSection() {
   const { locale, t } = useI18n();
   const { theme, accentColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
@@ -419,5 +421,52 @@ export function TasksSection() {
         </section>
       </SummaryBarStack>
     </main>
+  );
+}
+
+const TodoListsSection = lazy(() => import('./todo-lists-section'));
+
+export function TasksSection() {
+  const { t } = useI18n();
+  const [workspace, setWorkspace] = useState<'routines' | 'lists'>('routines');
+  const providerKey = useIntegrationStore((state) => state.selectedProviderIds.join(','));
+  const listProviderIds = useMemo(
+    () =>
+      (providerKey.split(',').filter(Boolean) as IntegrationProviderId[]).filter((id) =>
+        Boolean(getIntegrationProviderAdapter(id).todoListFeatureService)
+      ),
+    [providerKey]
+  );
+  if (!listProviderIds.length) return <RoutineTasksSection />;
+  return (
+    <div className="h-full min-w-0 space-y-4 overflow-y-auto">
+      <nav className="flex gap-2" aria-label={t('todo.workspace')}>
+        <InteractivePill
+          active={workspace === 'routines'}
+          aria-pressed={workspace === 'routines'}
+          intent="navigation"
+          size="small"
+          onClick={() => setWorkspace('routines')}
+        >
+          {t('todo.routines')}
+        </InteractivePill>
+        <InteractivePill
+          active={workspace === 'lists'}
+          aria-pressed={workspace === 'lists'}
+          intent="navigation"
+          size="small"
+          onClick={() => setWorkspace('lists')}
+        >
+          {t('todo.lists')}
+        </InteractivePill>
+      </nav>
+      {workspace === 'routines' ? (
+        <RoutineTasksSection />
+      ) : (
+        <Suspense fallback={<TasksLoadingState />}>
+          <TodoListsSection providerIds={listProviderIds} />
+        </Suspense>
+      )}
+    </div>
   );
 }

@@ -3,6 +3,14 @@ import type { NavetEntity, NavetProviderRoom, NavetProviderState } from '@navet/
 import type { HassEntities, HassEntity } from 'home-assistant-js-websocket';
 import { mapHomeAssistantHassAlarmEntity } from './homeassistant-alarm';
 import {
+  getHomeAssistantClimateControlCapabilities,
+  mapHomeAssistantClimateControls,
+} from './homeassistant-climate-controls';
+import {
+  HOME_ASSISTANT_VALUE_HELPER_DOMAINS,
+  mapHomeAssistantHelper,
+} from './homeassistant-helper';
+import {
   type createRegistryMaps,
   getEntityCategory,
   getMediaPlayerCapabilities,
@@ -54,6 +62,7 @@ interface SwitchMetricCache {
 }
 
 const MAPPED_HOME_ASSISTANT_DOMAINS = new Set([
+  ...HOME_ASSISTANT_VALUE_HELPER_DOMAINS,
   'light',
   'fan',
   'switch',
@@ -1051,7 +1060,11 @@ function inferHomeAssistantCapabilities(
   }
 
   if (domain === 'climate' || domain === 'water_heater') {
-    return ['temperature_setpoint'];
+    const controls = mapHomeAssistantClimateControls(entity);
+    return [
+      'temperature_setpoint',
+      ...(controls ? getHomeAssistantClimateControlCapabilities(controls) : []),
+    ];
   }
 
   if (domain === 'media_player') {
@@ -1130,6 +1143,7 @@ function createHomeAssistantState(
         typeof entity.attributes?.hvac_action === 'string'
           ? entity.attributes.hvac_action
           : undefined,
+      climateControls: mapHomeAssistantClimateControls(entity),
       supportedHvacModes:
         readStringList(entity.attributes?.hvac_modes ?? entity.attributes?.operation_list) ?? [],
       serviceDomain: domain === 'water_heater' ? 'water_heater' : 'climate',
@@ -1655,8 +1669,22 @@ function mapHomeAssistantEntity(
   const room = resolveEntityRoom(entityId, entity, areaMap, entityRegistryMap, deviceRegistryMap);
   const roomId = resolveEntityRoomId(entityId, entityRegistryMap, deviceRegistryMap);
   const name = resolveSecurityEntityName(entity, entityEntry, deviceEntry, securityKind);
-  const capabilities = inferHomeAssistantCapabilities(entityId, entity);
+  const helper = mapHomeAssistantHelper(entity);
+  const capabilities: NavetEntity['capabilities'] = helper
+    ? helper.writable
+      ? [
+          helper.helperType === 'number'
+            ? 'number_value'
+            : helper.helperType === 'select'
+              ? 'select_option'
+              : helper.helperType === 'text'
+                ? 'text_value'
+                : 'datetime_value',
+        ]
+      : []
+    : inferHomeAssistantCapabilities(entityId, entity);
   const type =
+    HOME_ASSISTANT_VALUE_HELPER_DOMAINS.has(domain) ||
     domain === 'input_boolean' ||
     domain === 'script' ||
     domain === 'button' ||
@@ -1714,16 +1742,26 @@ function mapHomeAssistantEntity(
             } satisfies NavetEntity['resources'])
           : undefined;
 
-  return createNavetEntity(
+  const result = createNavetEntity(
     entityId,
     type,
     name,
     room || UNKNOWN_ROOM_LABEL,
     capabilities,
-    createHomeAssistantState(entityId, entity, entityEntry, areaMap, switchMetricsByDeviceId),
+    {
+      ...createHomeAssistantState(entityId, entity, entityEntry, areaMap, switchMetricsByDeviceId),
+      ...(helper ? { ...helper, size: 'small' } : {}),
+    },
     resources,
     roomId
   );
+  result.availability =
+    entity.state === 'unavailable'
+      ? 'unavailable'
+      : entity.state === 'unknown'
+        ? 'unknown'
+        : result.availability;
+  return result;
 }
 
 function hasSameRoomPlacement(previous: NavetEntity | undefined, next: NavetEntity) {
