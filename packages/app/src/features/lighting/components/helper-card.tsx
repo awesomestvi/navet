@@ -43,19 +43,30 @@ function helperCommand(id: string, helper: NavetHelperState, value: string): Nav
   }
 }
 
-export function HelperValueControl({
-  id,
-  name,
-  helper,
-  providerId,
-  unavailable = false,
-}: {
+type HelperValueControlProps = {
   id: string;
   name: string;
   helper: NavetHelperState;
   providerId?: IntegrationProviderId;
   unavailable?: boolean;
-}) {
+};
+
+export function HelperValueControl(props: HelperValueControlProps) {
+  return (
+    <HelperValueControlContent
+      key={`${props.providerId ?? ''}:${props.id}:${props.helper.helperType}`}
+      {...props}
+    />
+  );
+}
+
+function HelperValueControlContent({
+  id,
+  name,
+  helper,
+  providerId,
+  unavailable = false,
+}: HelperValueControlProps) {
   const { t } = useI18n();
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
@@ -64,10 +75,22 @@ export function HelperValueControl({
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState(false);
   const submitted = useRef(false);
+  const requestGeneration = useRef(0);
   const dirty = useRef(false);
   const current = inputValue(helper);
+  useEffect(
+    () => () => {
+      requestGeneration.current++;
+      submitted.current = false;
+    },
+    []
+  );
   useEffect(() => {
-    if (pending !== null && pending === comparableValue(helper, current)) setPending(null);
+    if (pending !== null && pending === comparableValue(helper, current)) {
+      requestGeneration.current++;
+      submitted.current = false;
+      setPending(null);
+    }
   }, [current, helper, pending]);
   useEffect(() => {
     if (!dirty.current) setDraft(current);
@@ -75,6 +98,7 @@ export function HelperValueControl({
   useEffect(() => {
     if (pending === null) return;
     const timeout = setTimeout(() => {
+      requestGeneration.current++;
       setPending(null);
       setError(true);
       dirty.current = true;
@@ -91,20 +115,23 @@ export function HelperValueControl({
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (disabled || optionMissing || textLengthInvalid || submitted.current) return;
+    const generation = ++requestGeneration.current;
     submitted.current = true;
     setError(false);
     dirty.current = false;
     setPending(comparableValue(helper, draft));
     try {
       const result = await dispatchEntityCommand(helperCommand(id, helper, draft), providerId);
+      if (generation !== requestGeneration.current) return;
       if (!result.accepted) throw new Error('Rejected');
       if (!result.requiresEventConfirmation) setPending(null);
     } catch {
+      if (generation !== requestGeneration.current) return;
       setPending(null);
       setError(true);
       dirty.current = true;
     } finally {
-      submitted.current = false;
+      if (generation === requestGeneration.current) submitted.current = false;
     }
   }
   const descriptionId = `${fieldId}-status`;

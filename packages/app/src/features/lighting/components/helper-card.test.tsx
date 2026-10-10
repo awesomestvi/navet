@@ -1,7 +1,7 @@
 import { renderWithProviders } from '@navet/app/test/render';
 import { resetAppStores } from '@navet/app/test/store-reset';
-import { fireEvent, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { HelperCard, HelperValueControl } from './helper-card';
 
 const { dispatch } = vi.hoisted(() => ({ dispatch: vi.fn() }));
@@ -11,6 +11,149 @@ describe('helper controls', () => {
   beforeEach(async () => {
     await resetAppStores();
     dispatch.mockReset().mockResolvedValue({ accepted: true, requiresEventConfirmation: true });
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it('retries a stalled write without letting its late failure overwrite the retry', async () => {
+    vi.useFakeTimers();
+    let rejectOld: (error: Error) => void = () => {};
+    dispatch.mockImplementationOnce(
+      () =>
+        new Promise((_resolve, reject) => {
+          rejectOld = reject;
+        })
+    );
+    const helper = {
+      helperType: 'number' as const,
+      value: 21,
+      writable: true,
+      min: 15,
+      max: 30,
+      step: 1,
+    };
+    const view = renderWithProviders(
+      <HelperValueControl
+        id="home_assistant:number.target"
+        name="Target"
+        helper={helper}
+        providerId="home_assistant"
+      />
+    );
+    fireEvent.change(screen.getByRole('spinbutton'), { target: { value: '23' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10000);
+    });
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(screen.getByRole('spinbutton')).toHaveValue(23);
+    fireEvent.change(screen.getByRole('spinbutton'), { target: { value: '24' } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    });
+    expect(dispatch).toHaveBeenCalledTimes(2);
+    expect(screen.getByText('Updating…')).toBeInTheDocument();
+    await act(async () => {
+      rejectOld(new Error('Old connection failed'));
+    });
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.getByRole('spinbutton')).toBeDisabled();
+    view.rerender(
+      <HelperValueControl
+        id="home_assistant:number.target"
+        name="Target"
+        helper={{ ...helper, value: 24 }}
+        providerId="home_assistant"
+      />
+    );
+    expect(screen.queryByText('Updating…')).not.toBeInTheDocument();
+    expect(screen.getByRole('spinbutton')).toBeEnabled();
+  });
+
+  it('allows another write after live confirmation before the prior transport settles', async () => {
+    let rejectOld: (error: Error) => void = () => {};
+    dispatch.mockImplementationOnce(
+      () =>
+        new Promise((_resolve, reject) => {
+          rejectOld = reject;
+        })
+    );
+    const helper = {
+      helperType: 'number' as const,
+      value: 21,
+      writable: true,
+      min: 15,
+      max: 30,
+      step: 1,
+    };
+    const view = renderWithProviders(
+      <HelperValueControl id="number.target" name="Target" helper={helper} />
+    );
+    fireEvent.change(screen.getByRole('spinbutton'), { target: { value: '23' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    view.rerender(
+      <HelperValueControl id="number.target" name="Target" helper={{ ...helper, value: 23 }} />
+    );
+    expect(screen.getByRole('spinbutton')).toBeEnabled();
+    fireEvent.change(screen.getByRole('spinbutton'), { target: { value: '24' } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    });
+    expect(dispatch).toHaveBeenCalledTimes(2);
+    await act(async () => {
+      rejectOld(new Error('Transport settled after live confirmation'));
+    });
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.getByText('Updating…')).toBeInTheDocument();
+  });
+
+  it('resets drafts and pending writes when the helper owner changes', async () => {
+    let rejectOld: (error: Error) => void = () => {};
+    dispatch.mockImplementationOnce(
+      () =>
+        new Promise((_resolve, reject) => {
+          rejectOld = reject;
+        })
+    );
+    const helper = {
+      helperType: 'number' as const,
+      value: 21,
+      writable: true,
+      min: 15,
+      max: 30,
+      step: 1,
+    };
+    const view = renderWithProviders(
+      <HelperValueControl
+        id="home_assistant:number.target"
+        name="Target"
+        helper={helper}
+        providerId="home_assistant"
+      />
+    );
+    fireEvent.change(screen.getByRole('spinbutton'), { target: { value: '23' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    view.rerender(
+      <HelperValueControl
+        id="homey:other-target"
+        name="Other target"
+        helper={{ ...helper, value: 18 }}
+        providerId="homey"
+      />
+    );
+    expect(screen.getByRole('spinbutton', { name: 'Other target' })).toHaveValue(18);
+    expect(screen.queryByText('Updating…')).not.toBeInTheDocument();
+    await act(async () => {
+      rejectOld(new Error('Old connection failed'));
+    });
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    fireEvent.change(screen.getByRole('spinbutton'), { target: { value: '19' } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    });
+    expect(dispatch).toHaveBeenLastCalledWith(
+      { type: 'set_number_value', entityId: 'homey:other-target', value: 19 },
+      'homey'
+    );
   });
   it('sends a bounded number to its owning adapter and keeps the live value while pending', async () => {
     renderWithProviders(
