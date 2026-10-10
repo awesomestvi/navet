@@ -3,7 +3,7 @@ import { beforeEach, expect, it, vi } from 'vitest';
 const { loaded, conversation, notifications, dispose, session } = vi.hoisted(() => ({
   loaded: vi.fn(),
   dispose: vi.fn(),
-  session: { callWS: vi.fn() },
+  session: { callWS: vi.fn(), bridgeUnavailable: false },
   conversation: {
     getPipelines: vi.fn(),
     startTextConversation: vi.fn(),
@@ -20,7 +20,10 @@ const { loaded, conversation, notifications, dispose, session } = vi.hoisted(() 
   },
 }));
 vi.mock('./homeassistant-service-bridge', () => ({
-  getHomeAssistantPanelHass: () => ({ callWS: session.callWS }),
+  getHomeAssistantPanelHass: () => {
+    if (session.bridgeUnavailable) throw new Error('No global Home Assistant bridge configured');
+    return { callWS: session.callWS };
+  },
   getHomeAssistantConnection: () => null,
 }));
 vi.mock('./homeassistant-conversation-feature.service', () => {
@@ -35,6 +38,7 @@ beforeEach(() => {
   vi.resetModules();
   vi.clearAllMocks();
   session.callWS = vi.fn();
+  session.bridgeUnavailable = false;
 });
 
 it('defers conversation implementation and preserves requests, listeners and run handles', async () => {
@@ -98,4 +102,25 @@ it('rejects delayed notification actions for a replacement household', async () 
   session.callWS = vi.fn();
   await expect(pending).rejects.toThrow('Home Assistant session changed');
   expect(notifications.restartSystem).not.toHaveBeenCalled();
+});
+
+it('uses an injected notification client without consulting a global Home Assistant bridge', async () => {
+  const { lazyHomeAssistantNotificationFeatureService: proxy } = await import(
+    './homeassistant-notification-feature.service.lazy'
+  );
+  session.bridgeUnavailable = true;
+  const client = { sendMessagePromise: vi.fn(), subscribeMessage: vi.fn() };
+  const options = { messageClient: client };
+  const snapshot = { persistentNotifications: [], repairIssues: [] };
+  notifications.getSnapshot.mockResolvedValueOnce(snapshot);
+  notifications.subscribePersistentNotifications.mockResolvedValueOnce(dispose);
+  const targets = [{ id: 'phone', label: 'Phone' }];
+  notifications.getDeliveryTargets.mockResolvedValueOnce(targets);
+  expect(await proxy.getSnapshot(options)).toBe(snapshot);
+  expect(notifications.getSnapshot).toHaveBeenCalledWith(options);
+  const listener = vi.fn();
+  expect(await proxy.subscribePersistentNotifications(listener, options)).toBe(dispose);
+  expect(notifications.subscribePersistentNotifications).toHaveBeenCalledWith(listener, options);
+  expect(await proxy.getDeliveryTargets?.(options)).toBe(targets);
+  expect(notifications.getDeliveryTargets).toHaveBeenCalledWith(options);
 });

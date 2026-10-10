@@ -7,15 +7,25 @@ const withService = createSessionBoundFeatureLoader(async () => {
 });
 
 export const lazyHomeAssistantNotificationFeatureService: ProviderNotificationFeatureService = {
-  getSnapshot: (options) => withService((service) => service.getSnapshot(options)),
+  getSnapshot: (options) =>
+    withService(
+      (service) => service.getSnapshot(options),
+      options?.messageClient ? () => options.messageClient : undefined
+    ),
   subscribePersistentNotifications: (listener, options) =>
-    withService((service) => service.subscribePersistentNotifications(listener, options)),
+    withService(
+      (service) => service.subscribePersistentNotifications(listener, options),
+      options?.messageClient ? () => options.messageClient : undefined
+    ),
   dismissPersistentNotification: (id) =>
     withService((service) => service.dismissPersistentNotification(id)),
   installUpdate: (id) => withService((service) => service.installUpdate(id)),
   restartSystem: () => withService((service) => service.restartSystem()),
   getDeliveryTargets: (options) =>
-    withService((service) => service.getDeliveryTargets?.(options) ?? Promise.resolve([])),
+    withService(
+      (service) => service.getDeliveryTargets?.(options) ?? Promise.resolve([]),
+      options?.messageClient ? () => options.messageClient : undefined
+    ),
   sendNotification: (request) =>
     withService((service) => {
       if (!service.sendNotification) throw new Error('Home Assistant cannot send notifications');
