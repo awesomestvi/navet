@@ -1,18 +1,53 @@
-import { getProviderNativeId } from '@navet/core/ids';
+import { getProviderNativeId, parseProviderScopedId } from '@navet/core/ids';
 import type { ProviderAdminFeatureService } from '@navet/core/provider-feature-services';
 import {
   createPlatformRoomReference,
   parsePlatformRoomReference,
 } from '@navet/core/provider-room-management';
 import {
+  callHomeAssistantService,
   createHomeAssistantArea,
   deleteHomeAssistantArea,
+  getHomeAssistantEntityRegistry,
+  getHomeAssistantStoreState,
   renameHomeAssistantArea,
   updateHomeAssistantEntityArea,
   updateHomeAssistantEntityName,
 } from './homeassistant-service-bridge';
 
-export const homeAssistantAdminFeatureService: ProviderAdminFeatureService = {
+function getReloadEntryId(entityId: string): string | null {
+  const scopedId = parseProviderScopedId(entityId);
+  if (scopedId && scopedId.providerId !== 'home_assistant') return null;
+  const state = getHomeAssistantStoreState();
+  if (!state.connected || state.user?.is_admin !== true) return null;
+  const entry = getHomeAssistantEntityRegistry().find(
+    (entry) => entry.entity_id === getProviderNativeId(entityId)
+  );
+  return entry?.config_entry_id || null;
+}
+
+const pendingReloads = new Map<string, Promise<void>>();
+
+export const homeAssistantAdminFeatureService: ProviderAdminFeatureService & {
+  canReloadEntityIntegration: (entityId: string) => boolean;
+  reloadEntityIntegration: (entityId: string) => Promise<void>;
+} = {
+  canReloadEntityIntegration: (entityId) => getReloadEntryId(entityId) !== null,
+  reloadEntityIntegration: async (entityId) => {
+    const entryId = getReloadEntryId(entityId);
+    if (!entryId) throw new Error('Integration reload is unavailable for this entity or session');
+    const pending = pendingReloads.get(entryId);
+    if (pending) return pending;
+    const request = callHomeAssistantService('homeassistant', 'reload_config_entry', {
+      entry_id: entryId,
+    });
+    pendingReloads.set(entryId, request);
+    try {
+      await request;
+    } finally {
+      pendingReloads.delete(entryId);
+    }
+  },
   createRoom: async (name) => {
     const area = await createHomeAssistantArea(name);
     return createPlatformRoomReference('home_assistant', area.area_id, area.name);
