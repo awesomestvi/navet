@@ -114,6 +114,11 @@ export type NavetCommand =
   | { type: 'set_repeat_mode'; entityId: string; repeatMode: 'off' | 'one' | 'all' }
   | { type: 'join_group'; entityId: string; members: string[] }
   | { type: 'leave_group'; entityId: string }
+  | { type: 'set_climate_preset'; entityId: string; preset: string }
+  | { type: 'set_climate_fan_mode'; entityId: string; mode: string }
+  | { type: 'set_climate_swing_mode'; entityId: string; mode: string }
+  | { type: 'set_climate_swing_horizontal_mode'; entityId: string; mode: string }
+  | { type: 'set_climate_humidity'; entityId: string; humidity: number }
   | { type: 'set_climate_mode'; entityId: string; mode: string }
   | { type: 'set_brightness'; entityId: string; brightness: number }
   | { type: 'set_color_temperature'; entityId: string; kelvin: number }

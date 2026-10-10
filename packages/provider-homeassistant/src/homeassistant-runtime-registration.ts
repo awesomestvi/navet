@@ -22,6 +22,7 @@ import {
   signHomeAssistantPath,
 } from './homeassistant-service-bridge';
 import { homeAssistantTaskFeatureService } from './homeassistant-task-feature.service';
+import { homeAssistantTodoListFeatureService } from './homeassistant-todo-feature.service';
 import { homeAssistantWeatherFeatureService } from './homeassistant-weather-feature.service';
 
 export const homeAssistantRoomManagementCapabilities = createProviderRoomManagementCapabilities(
@@ -91,6 +92,7 @@ export function createHomeAssistantRuntimeRegistration(
     notificationFeatureService: homeAssistantNotificationFeatureService,
     securityFeatureService: homeAssistantSecurityFeatureService,
     taskFeatureService: homeAssistantTaskFeatureService,
+    todoListFeatureService: homeAssistantTodoListFeatureService,
     weatherFeatureService: homeAssistantWeatherFeatureService,
   };
 }

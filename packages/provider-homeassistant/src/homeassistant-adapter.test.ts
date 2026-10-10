@@ -1,3 +1,4 @@
+import { advancedClimateEntityFactory } from '@navet/app/test/fixtures/home-assistant/entities/advanced-climate';
 import { writableHelperEntities } from '@navet/app/test/fixtures/home-assistant/entities/writable-helper';
 import { createProviderScopedId } from '@navet/core/ids';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -117,6 +118,7 @@ describe('homeassistant-adapter', () => {
       sendWebSocketBinary: vi.fn(),
       getEntities: vi.fn(() => ({
         ...writableHelperEntities,
+        'climate.living_room': advancedClimateEntityFactory(),
         'light.kitchen': lightEntityFactory(),
         'alarm_control_panel.home': alarmEntityFactory(),
         'vacuum.roborock': vacuumEntityFactory(),
@@ -168,6 +170,7 @@ describe('homeassistant-adapter', () => {
         error: null,
         entities: {
           ...writableHelperEntities,
+          'climate.living_room': advancedClimateEntityFactory(),
           'light.kitchen': lightEntityFactory(),
           'alarm_control_panel.home': alarmEntityFactory(),
           'vacuum.roborock': vacuumEntityFactory(),
@@ -185,6 +188,35 @@ describe('homeassistant-adapter', () => {
       })),
       subscribeStore: vi.fn(() => () => {}),
     });
+  });
+
+  it('routes advanced climate commands to the owning entity with event confirmation', async () => {
+    const adapter = createHomeAssistantContractAdapter();
+    await expect(
+      adapter.execute({
+        type: 'set_climate_fan_mode',
+        entityId: 'home_assistant:climate.living_room',
+        mode: 'quiet',
+      })
+    ).resolves.toMatchObject({ accepted: true, requiresEventConfirmation: true });
+    expect(callHomeAssistantServiceMock).toHaveBeenCalledWith(
+      'climate',
+      'set_fan_mode',
+      { fan_mode: 'quiet' },
+      { entityId: 'climate.living_room' }
+    );
+    callHomeAssistantServiceMock.mockClear();
+    await expect(
+      adapter.execute({
+        type: 'set_climate_humidity',
+        entityId: 'climate.living_room',
+        humidity: 101,
+      })
+    ).rejects.toThrow();
+    await expect(
+      adapter.execute({ type: 'set_climate_fan_mode', entityId: 'light.kitchen', mode: 'quiet' })
+    ).rejects.toThrow();
+    expect(callHomeAssistantServiceMock).not.toHaveBeenCalled();
   });
 
   it('executes helper commands against the owning entity and rejects incompatible toggles', async () => {

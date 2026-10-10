@@ -3,6 +3,10 @@ import type { NavetEntity, NavetProviderRoom, NavetProviderState } from '@navet/
 import type { HassEntities, HassEntity } from 'home-assistant-js-websocket';
 import { mapHomeAssistantHassAlarmEntity } from './homeassistant-alarm';
 import {
+  getHomeAssistantClimateControlCapabilities,
+  mapHomeAssistantClimateControls,
+} from './homeassistant-climate-controls';
+import {
   HOME_ASSISTANT_VALUE_HELPER_DOMAINS,
   mapHomeAssistantHelper,
 } from './homeassistant-helper';
@@ -1056,7 +1060,11 @@ function inferHomeAssistantCapabilities(
   }
 
   if (domain === 'climate' || domain === 'water_heater') {
-    return ['temperature_setpoint'];
+    const controls = mapHomeAssistantClimateControls(entity);
+    return [
+      'temperature_setpoint',
+      ...(controls ? getHomeAssistantClimateControlCapabilities(controls) : []),
+    ];
   }
 
   if (domain === 'media_player') {
@@ -1135,6 +1143,7 @@ function createHomeAssistantState(
         typeof entity.attributes?.hvac_action === 'string'
           ? entity.attributes.hvac_action
           : undefined,
+      climateControls: mapHomeAssistantClimateControls(entity),
       supportedHvacModes:
         readStringList(entity.attributes?.hvac_modes ?? entity.attributes?.operation_list) ?? [],
       serviceDomain: domain === 'water_heater' ? 'water_heater' : 'climate',

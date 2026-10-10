@@ -10,6 +10,11 @@ export type NavetCapabilityId =
   | 'lock'
   | 'position'
   | 'temperature_setpoint'
+  | 'climate_preset'
+  | 'climate_fan_mode'
+  | 'climate_swing_mode'
+  | 'climate_swing_horizontal_mode'
+  | 'climate_target_humidity'
   | 'media_playback'
   | 'camera_snapshot'
   | 'presence'
@@ -27,6 +32,11 @@ export const NAVET_CAPABILITY_IDS: readonly NavetCapabilityId[] = [
   'lock',
   'position',
   'temperature_setpoint',
+  'climate_preset',
+  'climate_fan_mode',
+  'climate_swing_mode',
+  'climate_swing_horizontal_mode',
+  'climate_target_humidity',
   'media_playback',
   'camera_snapshot',
   'presence',

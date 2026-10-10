@@ -1,0 +1,5 @@
+type: new
+audiences:
+  - standalone
+  - home-assistant
+summary: Use supported thermostat modes and humidity controls, and manage Home Assistant shopping and to-do lists separately from routines and chores.

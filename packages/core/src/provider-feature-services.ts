@@ -37,6 +37,12 @@ import type {
   PlatformWebRtcClientConfiguration,
   PlatformWebRtcOfferEvent,
 } from './provider-feature-models';
+import type {
+  NavetTodoItem,
+  NavetTodoItemInput,
+  NavetTodoItemUpdate,
+  NavetTodoList,
+} from './todo-types';
 
 export interface ProviderConversationFeatureService {
   getPipelines: () => Promise<PlatformConversationPipelineCollection>;
@@ -272,4 +278,21 @@ export interface ProviderChoreProjectionFeatureService {
   subscribeActionRequests?: (
     listener: (request: import('./chore-projection').ChoreProjectionActionRequest) => void
   ) => Promise<() => void>;
+}
+
+export interface ProviderTodoListFeatureService {
+  getLists: () => Promise<NavetTodoList[]>;
+  subscribeLists: (
+    listener: (lists: NavetTodoList[]) => void,
+    onError?: (error: unknown) => void
+  ) => Promise<() => void>;
+  getItems: (listId: string) => Promise<NavetTodoItem[]>;
+  subscribeItems: (
+    listId: string,
+    listener: (items: NavetTodoItem[]) => void,
+    onError?: (error: unknown) => void
+  ) => Promise<() => void>;
+  addItem: (listId: string, item: NavetTodoItemInput) => Promise<void>;
+  updateItem: (listId: string, uid: string, update: NavetTodoItemUpdate) => Promise<void>;
+  removeItem: (listId: string, uid: string) => Promise<void>;
 }

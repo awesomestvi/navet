@@ -6,6 +6,7 @@ export * from './chore-interchange';
 export * from './chore-projection';
 export * from './chore-workspace-directory';
 export * from './chores';
+export * from './climate-controls';
 export * from './dashboard-entity-view';
 export * from './energy-types';
 export * from './errors';

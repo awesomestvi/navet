@@ -40,6 +40,7 @@ on the capabilities of your devices.
 | Runnable scenes, Flows, and Moods | Yes | Yes | No |
 | Household presence | Yes | View people | No |
 | Automation/task details and triggering | Yes | No | No |
+| Shared to-do and shopping list items | Yes | No | No |
 | Assist text, microphone, and response audio | Yes | No | No |
 | Provider room and entity administration | Yes | No | No |
 
@@ -60,6 +61,17 @@ retain their existing metric presentation. Boolean and button helpers keep their
 Room names and entity assignments refresh after external Home Assistant registry edits and after
 reconnection. A failed metadata refresh retains the last loaded rooms and entities. These features
 use the existing authenticated connection in standalone, Ingress, and custom panel installations.
+
+Climate dialogs offer thermostat presets, climate fan modes, vertical and horizontal swing,
+and target humidity when the owning device advertises them. These controls use the climate
+device's options and limits; separate fans and humidifiers keep their existing controls.
+
+The Tasks workspace keeps Home Assistant lists separate from routines and Navet chores. Select
+**Lists** to view a connected source's shopping or to-do items. Supported lists allow adding,
+completing or reopening, editing, and removing items. Description and due-date fields appear only
+when that list supports them. Shared item updates refresh without relying on the incomplete-item
+count changing. See Home Assistant's [to-do list documentation](https://www.home-assistant.io/integrations/todo/)
+for the backend's list behavior.
 
 ### Homey
 

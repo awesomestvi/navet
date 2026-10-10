@@ -9,6 +9,7 @@ import type {
 } from '@navet/core/provider-contract';
 import { createSnapshotBackedProviderAdapter } from '@navet/core/snapshot-backed-adapter';
 import type { NavetCommand, NavetEntity, NavetProviderState } from '@navet/core/types';
+import { getHomeAssistantClimateControlCommandRoute } from './homeassistant-climate-controls';
 import {
   getHomeAssistantHelperCommandRoute,
   HOME_ASSISTANT_VALUE_HELPER_DOMAINS,
@@ -334,6 +335,17 @@ async function executeHomeAssistantCommand(entity: NavetEntity, command: NavetCo
         }
       );
       return;
+    case 'set_climate_preset':
+    case 'set_climate_fan_mode':
+    case 'set_climate_swing_mode':
+    case 'set_climate_swing_horizontal_mode':
+    case 'set_climate_humidity': {
+      const route = getHomeAssistantClimateControlCommandRoute(entity, command);
+      await callHomeAssistantService('climate', route.service, route.data, {
+        entityId: entity.externalId,
+      });
+      return;
+    }
     case 'set_climate_mode':
       await callHomeAssistantService(
         entity.externalId.startsWith('water_heater.') ? 'water_heater' : 'climate',

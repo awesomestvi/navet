@@ -20,6 +20,7 @@ import type {
   ProviderNotificationFeatureService,
   ProviderSecurityFeatureService,
   ProviderTaskFeatureService,
+  ProviderTodoListFeatureService,
   ProviderWeatherFeatureService,
 } from './provider-feature-services';
 import type { ProviderHubFeatureService } from './provider-hub';
@@ -90,5 +91,6 @@ export interface IntegrationProviderRuntimeRegistration {
   notificationFeatureService?: ProviderNotificationFeatureService;
   securityFeatureService?: ProviderSecurityFeatureService;
   taskFeatureService?: ProviderTaskFeatureService;
+  todoListFeatureService?: ProviderTodoListFeatureService;
   weatherFeatureService?: ProviderWeatherFeatureService;
 }
