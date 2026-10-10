@@ -89,6 +89,7 @@ function HelperValueControlContent({
     if (pending !== null && pending === comparableValue(helper, current)) {
       requestGeneration.current++;
       submitted.current = false;
+      dirty.current = false;
       setPending(null);
     }
   }, [current, helper, pending]);
@@ -118,13 +119,16 @@ function HelperValueControlContent({
     const generation = ++requestGeneration.current;
     submitted.current = true;
     setError(false);
-    dirty.current = false;
+    dirty.current = true;
     setPending(comparableValue(helper, draft));
     try {
       const result = await dispatchEntityCommand(helperCommand(id, helper, draft), providerId);
       if (generation !== requestGeneration.current) return;
       if (!result.accepted) throw new Error('Rejected');
-      if (!result.requiresEventConfirmation) setPending(null);
+      if (!result.requiresEventConfirmation) {
+        dirty.current = false;
+        setPending(null);
+      }
     } catch {
       if (generation !== requestGeneration.current) return;
       setPending(null);
@@ -142,7 +146,9 @@ function HelperValueControlContent({
       aria-busy={pending !== null}
     >
       <label htmlFor={fieldId} className="block text-sm font-medium">
-        {name}
+        {helper.helperType === 'datetime' && helper.timeZone
+          ? `${name} (${helper.timeZone})`
+          : name}
       </label>
       {helper.helperType === 'select' ? (
         <Select
@@ -273,7 +279,13 @@ export function HelperCard({
       >
         <CardMetric
           value={value}
-          label={helper.helperType === 'number' ? helper.unit : undefined}
+          label={
+            helper.helperType === 'number'
+              ? helper.unit
+              : helper.helperType === 'datetime'
+                ? helper.timeZone
+                : undefined
+          }
           theme={theme}
           isActive={false}
           accentClassName="text-current"

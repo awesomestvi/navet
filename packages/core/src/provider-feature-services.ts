@@ -292,7 +292,12 @@ export interface ProviderTodoListFeatureService {
     listener: (items: NavetTodoItem[]) => void,
     onError?: (error: unknown) => void
   ) => Promise<() => void>;
-  addItem: (listId: string, item: NavetTodoItemInput) => Promise<void>;
-  updateItem: (listId: string, uid: string, update: NavetTodoItemUpdate) => Promise<void>;
-  removeItem: (listId: string, uid: string) => Promise<void>;
+  addItem: (listId: string, item: NavetTodoItemInput, expectedSessionKey?: string) => Promise<void>;
+  updateItem: (
+    listId: string,
+    uid: string,
+    update: NavetTodoItemUpdate,
+    expectedSessionKey?: string
+  ) => Promise<void>;
+  removeItem: (listId: string, uid: string, expectedSessionKey?: string) => Promise<void>;
 }

@@ -69,6 +69,18 @@ export const DateTime: Story = {
     helper: { helperType: 'datetime', value: '2026-10-11 07:30:00', writable: true },
   },
 };
+export const NativeDateTime: Story = {
+  args: {
+    id: 'home_assistant:datetime.departure',
+    name: 'Departure',
+    helper: {
+      helperType: 'datetime',
+      value: '2026-10-25 00:30:00',
+      writable: true,
+      timeZone: 'UTC',
+    },
+  },
+};
 export const Unavailable: Story = { args: { unavailable: true } };
 export const ReadOnly: Story = {
   args: {

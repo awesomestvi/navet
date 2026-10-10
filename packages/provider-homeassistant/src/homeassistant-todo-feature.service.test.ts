@@ -15,7 +15,7 @@ const bridge = vi.hoisted(() => ({
   entities: {} as Record<string, unknown>,
   listeners: new Map<string, Set<() => void>>(),
   connected: true,
-  panel: null as { callWS: ReturnType<typeof vi.fn> } | null,
+  panel: null as { connection?: unknown; callWS: ReturnType<typeof vi.fn> } | null,
 }));
 vi.mock('./homeassistant-service-bridge', () => ({
   getHomeAssistantConnection: () =>
@@ -57,6 +57,7 @@ describe('Home Assistant shared lists', () => {
         id: 'home_assistant:todo.shopping_list',
         providerId: 'home_assistant',
         externalId: 'todo.shopping_list',
+        sessionKey: expect.any(String),
         name: 'Shopping list',
         available: true,
         capabilities: {
@@ -72,6 +73,55 @@ describe('Home Assistant shared lists', () => {
     bridge.connected = false;
     expect((await service.getLists())[0].available).toBe(false);
   });
+
+  it('keeps the session for state wrappers and rotates it for transport replacement and disconnect', async () => {
+    const callWS = vi.fn();
+    bridge.panel = { callWS };
+    const first = (await service.getLists())[0].sessionKey;
+    bridge.panel = { callWS };
+    expect((await service.getLists())[0].sessionKey).toBe(first);
+    bridge.panel = { callWS: vi.fn() };
+    const replaced = (await service.getLists())[0].sessionKey;
+    expect(replaced).not.toBe(first);
+    bridge.connected = false;
+    const disconnected = (await service.getLists())[0].sessionKey;
+    expect(disconnected).not.toBe(replaced);
+    bridge.connected = true;
+    expect((await service.getLists())[0].sessionKey).not.toBe(disconnected);
+  });
+
+  it('rotates the session when an injected panel changes its connection with the same callWS', async () => {
+    const callWS = vi.fn();
+    const connection = {};
+    bridge.panel = { callWS, connection };
+    const previous = (await service.getLists())[0].sessionKey;
+    bridge.panel = { callWS, connection };
+    expect((await service.getLists())[0].sessionKey).toBe(previous);
+    bridge.panel = { callWS, connection: {} };
+    expect((await service.getLists())[0].sessionKey).not.toBe(previous);
+  });
+
+  it.each(['add', 'update', 'remove'] as const)(
+    'rejects %s against a replaced session before sending and accepts the current session',
+    async (action) => {
+      const previousSession = (await service.getLists())[0].sessionKey;
+      bridge.client = {
+        sendMessagePromise: vi.fn(async () => ({})),
+        subscribeMessage: vi.fn(async () => vi.fn()),
+      };
+      const invoke = (key?: string) =>
+        action === 'add'
+          ? service.addItem('todo.shopping_list', { summary: 'Milk' }, key)
+          : action === 'update'
+            ? service.updateItem('todo.shopping_list', 'uid', { summary: 'Milk' }, key)
+            : service.removeItem('todo.shopping_list', 'uid', key);
+      await expect(invoke(previousSession)).rejects.toThrow('connection changed');
+      expect(bridge.client.sendMessagePromise).not.toHaveBeenCalled();
+      const currentSession = (await service.getLists())[0].sessionKey;
+      await invoke(currentSession);
+      expect(bridge.client.sendMessagePromise).toHaveBeenCalledTimes(1);
+    }
+  );
 
   it('reads both completed and incomplete items using authenticated service responses', async () => {
     expect(await service.getItems('todo.shopping_list')).toEqual(

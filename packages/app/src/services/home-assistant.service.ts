@@ -151,7 +151,7 @@ class HomeAssistantService {
   private registryService: HARegistryService;
   private entityService: HAEntityService;
   private panelAdapter: HomeAssistantPanelAdapter | null = null;
-  private registryConnection: Connection | null = null;
+  private registryTransport: Connection | HomeAssistantPanelHass['callWS'] | null = null;
   private registrySubscriptionGeneration = 0;
   private registryAuthenticationAttempt = 0;
   private registryUnsubscribers: (() => void)[] = [];
@@ -168,11 +168,11 @@ class HomeAssistantService {
     this.registryRefreshPending = false;
     for (const unsubscribe of this.registryUnsubscribers) unsubscribe();
     this.registryUnsubscribers = [];
-    this.registryConnection = null;
+    this.registryTransport = null;
   }
 
   private scheduleRegistryRefresh(): void {
-    if (!this.registryConnection) return;
+    if (!this.registryTransport) return;
     if (this.registryRefreshInProgress) {
       this.registryRefreshPending = true;
       return;
@@ -190,7 +190,7 @@ class HomeAssistantService {
         .finally(() => {
           this.registryRefreshInProgress = false;
           if (generation !== this.registrySubscriptionGeneration) {
-            if (this.registryConnection) this.scheduleRegistryRefresh();
+            if (this.registryTransport) this.scheduleRegistryRefresh();
             return;
           }
           if (this.registryRefreshPending) {
@@ -201,10 +201,16 @@ class HomeAssistantService {
     }, 100);
   }
 
-  private subscribeToRegistryUpdates(connection: Connection | null): void {
-    if (connection === this.registryConnection) return;
+  private subscribeToRegistryUpdates(
+    connection: Connection | null,
+    transport: Connection | HomeAssistantPanelHass['callWS'] | null = connection
+  ): void {
+    if (transport === this.registryTransport) return;
     this.clearRegistrySubscriptions();
-    this.registryConnection = connection;
+    this.registryTransport = transport;
+    if (!transport) return;
+    // callWS-only panels can load registries, but have no native event subscription surface.
+    this.scheduleRegistryRefresh();
     if (!connection) return;
     const generation = this.registrySubscriptionGeneration;
     for (const eventType of [
@@ -245,7 +251,6 @@ class HomeAssistantService {
       connection.addEventListener('ready', ready);
       this.registryUnsubscribers.push(() => connection.removeEventListener('ready', ready));
     }
-    this.scheduleRegistryRefresh();
   }
   private registryListeners = new Set<(data: HAServiceEventMap['registries']) => void>();
   private connectionListeners = new Set<(data: HAServiceEventMap['connection']) => void>();
@@ -300,7 +305,7 @@ class HomeAssistantService {
     this.registryAuthenticationAttempt += 1;
     if (this.panelAdapter) {
       this.panelAdapter.update(hass);
-      this.subscribeToRegistryUpdates(hass.connection ?? null);
+      this.subscribeToRegistryUpdates(hass.connection ?? null, hass.connection ?? hass.callWS);
       this.emitPanelRuntimeState();
       return;
     }
@@ -308,7 +313,7 @@ class HomeAssistantService {
     this.clearRegistrySubscriptions();
     this.connectionService.disconnect();
     this.panelAdapter = new HomeAssistantPanelAdapter(hass);
-    this.subscribeToRegistryUpdates(hass.connection ?? null);
+    this.subscribeToRegistryUpdates(hass.connection ?? null, hass.connection ?? hass.callWS);
     this.emitPanelRuntimeState();
   }
 

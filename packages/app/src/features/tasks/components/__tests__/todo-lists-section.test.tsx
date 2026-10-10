@@ -243,6 +243,45 @@ describe('shared list workflow', () => {
     );
   });
 
+  it.each(['success', 'failure'] as const)(
+    'resets same-ID household drafts and ignores late old-session %s',
+    async (outcome) => {
+      const householdA = { ...list, sessionKey: 'household-a' };
+      const householdB = { ...list, sessionKey: 'household-b' };
+      let resolve!: () => void;
+      let reject!: (error: Error) => void;
+      mocks.update.mockImplementationOnce(
+        () =>
+          new Promise<void>((done, fail) => {
+            resolve = done;
+            reject = fail;
+          })
+      );
+      const { rerender } = renderWithProviders(<TodoListItems list={householdA} />);
+      fireEvent.click(await screen.findByRole('button', { name: 'Edit item: Milk' }));
+      fireEvent.change(screen.getByLabelText('Item name'), { target: { value: 'A draft' } });
+      fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Save' }));
+      expect(mocks.update).toHaveBeenCalledWith(householdA, 'stable-1', { summary: 'A draft' });
+      items = [{ uid: 'b-uid', summary: 'B item', completed: false }];
+      rerender(<TodoListItems list={householdB} />);
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      fireEvent.click(await screen.findByRole('button', { name: 'Edit item: B item' }));
+      expect(screen.getByLabelText('Item name')).toHaveValue('B item');
+      fireEvent.change(screen.getByLabelText('Item name'), { target: { value: 'B draft' } });
+      await act(async () => {
+        if (outcome === 'success') resolve();
+        else reject(new Error('Old session failed'));
+      });
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      expect(screen.getByLabelText('Item name')).toHaveValue('B draft');
+      fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Save' }));
+      await waitFor(() =>
+        expect(mocks.update).toHaveBeenLastCalledWith(householdB, 'b-uid', { summary: 'B draft' })
+      );
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    }
+  );
+
   it('keeps the editor draft after a failure and retries the stable item', async () => {
     mocks.update.mockRejectedValueOnce(new Error('Disconnected'));
     renderWithProviders(<TodoListItems list={list} />);

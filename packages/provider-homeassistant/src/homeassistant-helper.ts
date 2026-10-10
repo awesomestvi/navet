@@ -12,6 +12,7 @@ export const HOME_ASSISTANT_VALUE_HELPER_DOMAINS = new Set([
   'input_datetime',
   'date',
   'time',
+  'datetime',
 ]);
 
 const finiteNumber = (value: unknown): value is number =>
@@ -76,6 +77,17 @@ export function mapHomeAssistantHelper(entity: HassEntity): NavetHelperState | u
   }
   if (domain === 'date' || domain === 'time')
     return { helperType: domain, writable: available, value };
+  if (domain === 'datetime') {
+    const instant = value === null ? NaN : Date.parse(value);
+    return {
+      helperType: 'datetime',
+      writable: available,
+      timeZone: 'UTC',
+      value: Number.isFinite(instant)
+        ? new Date(instant).toISOString().slice(0, 19).replace('T', ' ')
+        : null,
+    };
+  }
   if (domain === 'input_datetime') {
     const hasDate = attributes.has_date === true;
     const hasTime = attributes.has_time === true;
@@ -161,7 +173,12 @@ export function getHomeAssistantHelperCommandRoute(entity: NavetEntity, command:
       return {
         domain,
         service: domain === 'input_datetime' ? 'set_datetime' : 'set_value',
-        data: domain === 'input_datetime' ? { [helper.helperType]: value } : { [domain]: value },
+        data:
+          domain === 'datetime'
+            ? { datetime: `${value.replace(' ', 'T')}+00:00` }
+            : domain === 'input_datetime'
+              ? { [helper.helperType]: value }
+              : { [domain]: value },
       };
     }
     default:

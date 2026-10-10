@@ -20,6 +20,40 @@ function entity(id: string) {
 }
 
 describe('Home Assistant writable helper boundary', () => {
+  it('maps native datetime instants as explicitly UTC controls and writes UTC instants', () => {
+    const [helper] = mapped({
+      'datetime.departure': {
+        ...writableHelperEntities['input_datetime.reminder'],
+        entity_id: 'datetime.departure',
+        state: '2026-10-25T02:30:00+02:00',
+        attributes: { friendly_name: 'Departure' },
+      },
+    });
+    expect(readNavetHelperState(helper)).toMatchObject({
+      helperType: 'datetime',
+      value: '2026-10-25 00:30:00',
+      timeZone: 'UTC',
+      writable: true,
+    });
+    expect(
+      getHomeAssistantHelperCommandRoute(helper, {
+        type: 'set_datetime_value',
+        entityId: helper.id,
+        value: '2026-10-25T01:30:00',
+      })
+    ).toEqual({
+      domain: 'datetime',
+      service: 'set_value',
+      data: { datetime: '2026-10-25T01:30:00+00:00' },
+    });
+    expect(() =>
+      getHomeAssistantHelperCommandRoute(helper, {
+        type: 'set_datetime_value',
+        entityId: helper.id,
+        value: '2026-02-30T01:30:00',
+      })
+    ).toThrow();
+  });
   it('excludes config-category controls while preserving the device configuration metric', () => {
     const entities = {
       ...writableHelperEntities,

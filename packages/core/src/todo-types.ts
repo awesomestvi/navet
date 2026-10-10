@@ -4,6 +4,8 @@ export interface NavetTodoList {
   id: string;
   providerId: IntegrationProviderId;
   externalId: string;
+  /** Ephemeral authenticated-session identity; never persist with a list selection. */
+  sessionKey?: string;
   name: string;
   available: boolean;
   capabilities: {

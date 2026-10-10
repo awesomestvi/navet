@@ -14,6 +14,102 @@ describe('helper controls', () => {
   });
   afterEach(() => vi.useRealTimers());
 
+  it('labels a UTC datetime control and preserves its displayed clock on submission', async () => {
+    const view = renderWithProviders(
+      <HelperValueControl
+        id="home_assistant:datetime.departure"
+        name="Departure"
+        providerId="home_assistant"
+        helper={{
+          helperType: 'datetime',
+          value: '2026-10-25 00:30:00',
+          writable: true,
+          timeZone: 'UTC',
+        }}
+      />
+    );
+    const field = screen.getByLabelText('Departure (UTC)');
+    expect(field).toHaveValue('2026-10-25T00:30');
+    fireEvent.change(field, { target: { value: '2026-10-25T01:30:00' } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    });
+    expect(dispatch).toHaveBeenCalledWith(
+      {
+        type: 'set_datetime_value',
+        entityId: 'home_assistant:datetime.departure',
+        value: '2026-10-25 01:30:00',
+      },
+      'home_assistant'
+    );
+    view.rerender(
+      <HelperValueControl
+        id="home_assistant:datetime.departure"
+        name="Departure"
+        providerId="home_assistant"
+        helper={{
+          helperType: 'datetime',
+          value: '2026-10-25 01:30:00',
+          writable: true,
+          timeZone: 'UTC',
+        }}
+      />
+    );
+    expect(field).toBeEnabled();
+    expect(screen.queryByText('Updating…')).not.toBeInTheDocument();
+  });
+
+  it.each(['rejection', 'timeout'] as const)(
+    'preserves the submitted draft across an unrelated live update before %s',
+    async (outcome) => {
+      vi.useFakeTimers();
+      let rejectWrite: (error: Error) => void = () => {};
+      dispatch.mockImplementationOnce(
+        () =>
+          new Promise((_resolve, reject) => {
+            rejectWrite = reject;
+          })
+      );
+      const helper = {
+        helperType: 'number' as const,
+        value: 21,
+        writable: true,
+        min: 15,
+        max: 30,
+        step: 1,
+      };
+      const view = renderWithProviders(
+        <HelperValueControl id="number.target" name="Target" helper={helper} />
+      );
+      fireEvent.change(screen.getByRole('spinbutton'), { target: { value: '23' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+      view.rerender(
+        <HelperValueControl id="number.target" name="Target" helper={{ ...helper, value: 22 }} />
+      );
+      await act(async () => {
+        if (outcome === 'rejection') rejectWrite(new Error('Write rejected'));
+        else await vi.advanceTimersByTimeAsync(10000);
+      });
+      expect(screen.getByRole('alert')).toBeInTheDocument();
+      expect(screen.getByRole('spinbutton')).toHaveValue(23);
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+      });
+      expect(dispatch).toHaveBeenLastCalledWith(
+        { type: 'set_number_value', entityId: 'number.target', value: 23 },
+        undefined
+      );
+      view.rerender(
+        <HelperValueControl id="number.target" name="Target" helper={{ ...helper, value: 23 }} />
+      );
+      expect(screen.getByRole('spinbutton')).toBeEnabled();
+      view.rerender(
+        <HelperValueControl id="number.target" name="Target" helper={{ ...helper, value: 24 }} />
+      );
+      expect(screen.getByRole('spinbutton')).toHaveValue(24);
+    }
+  );
+
   it('retries a stalled write without letting its late failure overwrite the retry', async () => {
     vi.useFakeTimers();
     let rejectOld: (error: Error) => void = () => {};

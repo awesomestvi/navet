@@ -36,7 +36,16 @@ const DEFAULT_TODO_SERVICE = {
 };
 export type TodoItemService = typeof DEFAULT_TODO_SERVICE;
 
-export function TodoListItems({
+export function TodoListItems(props: { list: NavetTodoList; service?: TodoItemService }) {
+  return (
+    <TodoListItemsContent
+      key={JSON.stringify([props.list.providerId, props.list.id, props.list.sessionKey])}
+      {...props}
+    />
+  );
+}
+
+function TodoListItemsContent({
   list,
   service = DEFAULT_TODO_SERVICE,
 }: {

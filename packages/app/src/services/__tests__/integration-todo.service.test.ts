@@ -77,6 +77,30 @@ describe('shared list provider routing', () => {
     expect(providers.services.get('home_assistant')?.addItem).not.toHaveBeenCalled();
   });
 
+  it('rejects stale-session list writes while allowing the current session', async () => {
+    const old = { ...list, sessionKey: 'household-a' };
+    const current = { ...list, sessionKey: 'household-b' };
+    const service = providers.services.get('homey');
+    service?.getLists.mockResolvedValue([current]);
+    await expect(addIntegrationTodoItem(old, { summary: 'Old draft' })).rejects.toThrow(
+      'connection changed'
+    );
+    await expect(
+      updateIntegrationTodoItem(old, 'old-uid', { summary: 'Old draft' })
+    ).rejects.toThrow('connection changed');
+    await expect(removeIntegrationTodoItem(old, 'old-uid')).rejects.toThrow('connection changed');
+    expect(service?.addItem).not.toHaveBeenCalled();
+    expect(service?.updateItem).not.toHaveBeenCalled();
+    expect(service?.removeItem).not.toHaveBeenCalled();
+    await updateIntegrationTodoItem(current, 'new-uid', { summary: 'Fresh draft' });
+    expect(service?.updateItem).toHaveBeenCalledWith(
+      'groceries',
+      'new-uid',
+      { summary: 'Fresh draft' },
+      'household-b'
+    );
+  });
+
   it('merges live descriptors from selected provider services and releases them', async () => {
     const releases = [vi.fn(), vi.fn()];
     const callbacks: ((lists: NavetTodoList[]) => void)[] = [];

@@ -17,6 +17,17 @@ function sourceIdentity() {
   return panel ? (panel.connection ?? panel.callWS) : getHomeAssistantConnection();
 }
 
+let sessionSource: unknown;
+let sessionGeneration = 0;
+function sessionKey() {
+  const source = isHomeAssistantConnected() ? sourceIdentity() : null;
+  if (source !== sessionSource) {
+    sessionSource = source;
+    sessionGeneration++;
+  }
+  return `todo-session-${sessionGeneration}`;
+}
+
 function getList(listId: string): NavetTodoList {
   const entity = getHomeAssistantEntities()?.[listId];
   if (!listId.startsWith('todo.') || !entity) throw new Error('Shared list is no longer available');
@@ -29,6 +40,7 @@ function getList(listId: string): NavetTodoList {
     id: createProviderScopedId('home_assistant', listId),
     providerId: 'home_assistant',
     externalId: listId,
+    sessionKey: sessionKey(),
     name:
       registry?.name ||
       String(entity.attributes.friendly_name || registry?.original_name || listId.slice(5)),
@@ -76,8 +88,14 @@ function normalizeItems(result: unknown): NavetTodoItem[] {
   });
 }
 
-function clientFor(listId: string, capability?: 'add' | 'update' | 'remove') {
+function clientFor(
+  listId: string,
+  capability?: 'add' | 'update' | 'remove',
+  expectedSessionKey?: string
+) {
   const list = getList(listId);
+  if (expectedSessionKey !== undefined && expectedSessionKey !== list.sessionKey)
+    throw new Error('Shared list connection changed');
   const client = getHomeAssistantConnection();
   if (!client || !list.available) throw new Error('Shared list is unavailable');
   if (capability && !list.capabilities[capability])
@@ -125,6 +143,7 @@ async function call(
 
 export const homeAssistantTodoListFeatureService: ProviderTodoListFeatureService = {
   async getLists() {
+    sessionKey();
     return Object.keys(getHomeAssistantEntities() ?? {})
       .filter((id) => id.startsWith('todo.'))
       .map(getList);
@@ -281,15 +300,15 @@ export const homeAssistantTodoListFeatureService: ProviderTodoListFeatureService
       stop();
     };
   },
-  async addItem(listId, input) {
-    const { client, list } = clientFor(listId, 'add');
+  async addItem(listId, input, expectedSessionKey) {
+    const { client, list } = clientFor(listId, 'add', expectedSessionKey);
     await call(client, listId, 'add_item', {
       item: summary(input.summary),
       ...optionalFields(list, input),
     });
   },
-  async updateItem(listId, uid, input) {
-    const { client, list } = clientFor(listId, 'update');
+  async updateItem(listId, uid, input, expectedSessionKey) {
+    const { client, list } = clientFor(listId, 'update', expectedSessionKey);
     if (!uid) throw new Error('Item identifier is required');
     const data: Record<string, unknown> = { ...optionalFields(list, input) };
     if (input.summary !== undefined) data.rename = summary(input.summary);
@@ -297,8 +316,8 @@ export const homeAssistantTodoListFeatureService: ProviderTodoListFeatureService
     if (!Object.keys(data).length) throw new Error('An item change is required');
     await call(client, listId, 'update_item', { item: uid, ...data });
   },
-  async removeItem(listId, uid) {
-    const { client } = clientFor(listId, 'remove');
+  async removeItem(listId, uid, expectedSessionKey) {
+    const { client } = clientFor(listId, 'remove', expectedSessionKey);
     if (!uid) throw new Error('Item identifier is required');
     await call(client, listId, 'remove_item', { item: uid });
   },

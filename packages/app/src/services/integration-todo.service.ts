@@ -38,20 +38,45 @@ export function subscribeIntegrationTodoItems(
   return serviceFor(list).subscribeItems(list.externalId, listener, onError);
 }
 
-export function addIntegrationTodoItem(list: NavetTodoList, item: NavetTodoItemInput) {
-  return serviceFor(list).addItem(list.externalId, item);
+function sessionArgument(list: NavetTodoList): [] | [string] {
+  return list.sessionKey === undefined ? [] : [list.sessionKey];
 }
 
-export function updateIntegrationTodoItem(
+async function writeToList(
+  list: NavetTodoList,
+  action: (service: ProviderTodoListFeatureService) => Promise<void>
+) {
+  const service = serviceFor(list);
+  if (list.sessionKey !== undefined) {
+    const current = (await service.getLists()).find(
+      (candidate) => candidate.providerId === list.providerId && candidate.id === list.id
+    );
+    if (!current || current.sessionKey !== list.sessionKey)
+      throw new Error('Shared list connection changed');
+  }
+  return action(service);
+}
+
+export async function addIntegrationTodoItem(list: NavetTodoList, item: NavetTodoItemInput) {
+  return writeToList(list, (service) =>
+    service.addItem(list.externalId, item, ...sessionArgument(list))
+  );
+}
+
+export async function updateIntegrationTodoItem(
   list: NavetTodoList,
   uid: string,
   update: NavetTodoItemUpdate
 ) {
-  return serviceFor(list).updateItem(list.externalId, uid, update);
+  return writeToList(list, (service) =>
+    service.updateItem(list.externalId, uid, update, ...sessionArgument(list))
+  );
 }
 
-export function removeIntegrationTodoItem(list: NavetTodoList, uid: string) {
-  return serviceFor(list).removeItem(list.externalId, uid);
+export async function removeIntegrationTodoItem(list: NavetTodoList, uid: string) {
+  return writeToList(list, (service) =>
+    service.removeItem(list.externalId, uid, ...sessionArgument(list))
+  );
 }
 
 export async function subscribeIntegrationTodoLists(

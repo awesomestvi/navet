@@ -22,7 +22,12 @@ export type NavetHelperState =
       pattern?: string;
       mode: 'text' | 'password';
     })
-  | (HelperStateBase & { helperType: 'date' | 'time' | 'datetime'; value: string | null });
+  | (HelperStateBase & {
+      helperType: 'date' | 'time' | 'datetime';
+      value: string | null;
+      /** Explicit zone for the displayed wall-clock value, when the backend defines one. */
+      timeZone?: string;
+    });
 
 /** Reads the normalized helper contract; raw provider attributes are never accepted. */
 export function readNavetHelperState(
@@ -99,7 +104,12 @@ export function readNavetHelperState(
     case 'date':
     case 'time':
     case 'datetime':
-      return { helperType: state.helperType, writable, value: stringValue };
+      return {
+        helperType: state.helperType,
+        writable,
+        value: stringValue,
+        ...(typeof state.timeZone === 'string' ? { timeZone: state.timeZone } : {}),
+      };
     default:
       return undefined;
   }
