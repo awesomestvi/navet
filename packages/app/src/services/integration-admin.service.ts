@@ -88,7 +88,27 @@ function requireRoomReferenceProvider(
   return parsedRoom.providerId;
 }
 
-export const integrationAdminService: ProviderAdminFeatureService = {
+export const integrationAdminService: ProviderAdminFeatureService & {
+  canReloadEntityIntegration: (entityId: string) => boolean;
+  reloadEntityIntegration: (entityId: string) => Promise<void>;
+} = {
+  canReloadEntityIntegration: (entityId) => {
+    const service = getProviderRuntimeRegistration(
+      resolveEntityProviderId(entityId)
+    ).adminFeatureService;
+    return Boolean(
+      service?.reloadEntityIntegration && service.canReloadEntityIntegration?.(entityId)
+    );
+  },
+  reloadEntityIntegration: async (entityId) => {
+    const service = getProviderRuntimeRegistration(
+      resolveEntityProviderId(entityId)
+    ).adminFeatureService;
+    if (!service?.reloadEntityIntegration || !service.canReloadEntityIntegration?.(entityId)) {
+      throw new Error('Integration reload is unavailable for this entity or session');
+    }
+    await service.reloadEntityIntegration(entityId);
+  },
   createRoom: async (name) => {
     const providerId = getCurrentProviderId();
     const service = requireRoomAdminFeatureService(providerId, 'create');
