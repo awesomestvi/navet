@@ -53,6 +53,14 @@ media players, cameras, energy, calendars, weather, notifications, updates, Assi
 supported task or automation surfaces. Home Assistant also provides the advanced dashboard and administration
 services marked **Yes** in the matrix above.
 
+Supported household helpers include numeric values, dropdown options, text, and dates or times.
+Their controls follow the entity's available options and limits. Configuration-category entities
+retain their existing metric presentation. Boolean and button helpers keep their existing controls.
+
+Room names and entity assignments refresh after external Home Assistant registry edits and after
+reconnection. A failed metadata refresh retains the last loaded rooms and entities. These features
+use the existing authenticated connection in standalone, Ingress, and custom panel installations.
+
 ### Homey
 
 Navet maps Homey rooms, lights, switches, fans, sensors, locks, covers, thermostats, speakers, people, and

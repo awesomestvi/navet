@@ -95,6 +95,10 @@ export interface NavetProviderState extends NavetProviderRuntimeState {
 
 // Shared UI should emit only provider-neutral commands. Keep `service` as an adapter/app shim.
 export type NavetCommand =
+  | { type: 'set_number_value'; entityId: string; value: number }
+  | { type: 'select_option'; entityId: string; option: string }
+  | { type: 'set_text_value'; entityId: string; value: string }
+  | { type: 'set_datetime_value'; entityId: string; value: string }
   | { type: 'turn_on'; entityId: string }
   | { type: 'turn_off'; entityId: string }
   | { type: 'set_fan_speed'; entityId: string; percentage: number }

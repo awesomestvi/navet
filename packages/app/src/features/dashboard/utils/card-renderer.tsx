@@ -25,6 +25,7 @@ import { type IntegrationProviderId, isIntegrationProviderId } from '@navet/app/
 import { resolveEffectsQuality } from '@navet/app/utils/effects-quality';
 import { parseProviderScopedId } from '@navet/app/utils/provider-ids';
 import type { NavetAlarmEntity } from '@navet/core/alarm-types';
+import type { NavetHelperState } from '@navet/core/helper-state';
 import type { NavetEntity } from '@navet/core/types';
 import { lazy, type ReactElement, type ReactNode, Suspense, useCallback, useMemo } from 'react';
 
@@ -73,6 +74,11 @@ const LightCard = lazy(async () => {
 const FanCard = lazy(async () => {
   const module = await import('@navet/app/features/lighting');
   return { default: module.FanCard };
+});
+
+const HelperCard = lazy(async () => {
+  const module = await import('@navet/app/features/lighting/components/helper-card');
+  return { default: module.HelperCard };
 });
 
 const SwitchCard = lazy(async () => {
@@ -558,19 +564,29 @@ const cardRegistry: Partial<Record<string, CardRenderFn>> = {
       />
     ),
 
-  helpers: ({ device, size, isEditMode }) => (
-    <SwitchCard
-      id={device.id as string}
-      name={device.name as string}
-      size={size}
-      providerId={device.providerId as CardProviderId}
-      initialState={device.state as boolean | undefined}
-      entityType={device.entityType as string | undefined}
-      serviceDomain={device.serviceDomain as string | undefined}
-      serviceAction={device.serviceAction as string | undefined}
-      isEditMode={isEditMode}
-    />
-  ),
+  helpers: ({ device, size, isEditMode }) =>
+    device.helper ? (
+      <HelperCard
+        id={device.id as string}
+        name={device.name as string}
+        size={size}
+        helper={device.helper as NavetHelperState}
+        providerId={device.providerId as CardProviderId}
+        isEditMode={isEditMode}
+      />
+    ) : (
+      <SwitchCard
+        id={device.id as string}
+        name={device.name as string}
+        size={size}
+        providerId={device.providerId as CardProviderId}
+        initialState={device.state as boolean | undefined}
+        entityType={device.entityType as string | undefined}
+        serviceDomain={device.serviceDomain as string | undefined}
+        serviceAction={device.serviceAction as string | undefined}
+        isEditMode={isEditMode}
+      />
+    ),
 
   covers: ({ device, size, handleSizeChange, isEditMode }) => (
     <CoverCard

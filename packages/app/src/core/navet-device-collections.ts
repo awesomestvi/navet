@@ -1,4 +1,5 @@
 import type { DeviceCollection } from '@navet/app/types/device.types';
+import { readNavetHelperState } from '@navet/core/helper-state';
 import type { NavetEntity } from '@navet/core/types';
 import { getClimateSensorGroup } from './climate-sensor-group';
 
@@ -358,7 +359,17 @@ export function mapNavetEntitiesToDeviceCollection(entities: NavetEntity[]): Dev
           action: typeof state.action === 'string' ? state.action : undefined,
         });
         break;
-      case 'helper':
+      case 'helper': {
+        const helper = readNavetHelperState(entity);
+        if (helper) {
+          collection.helpers.push({
+            ...base,
+            state: false,
+            entityType: typeof state.entityType === 'string' ? state.entityType : undefined,
+            helper,
+          });
+          break;
+        }
         if (base.securityKind) {
           collection.helpers.push({
             ...base,
@@ -387,6 +398,7 @@ export function mapNavetEntitiesToDeviceCollection(entities: NavetEntity[]): Dev
           serviceAction: typeof state.serviceAction === 'string' ? state.serviceAction : undefined,
         });
         break;
+      }
       case 'sensor':
       case 'binary_sensor':
       case 'energy':

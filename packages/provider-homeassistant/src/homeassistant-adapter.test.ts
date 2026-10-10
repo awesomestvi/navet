@@ -1,3 +1,4 @@
+import { writableHelperEntities } from '@navet/app/test/fixtures/home-assistant/entities/writable-helper';
 import { createProviderScopedId } from '@navet/core/ids';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -115,6 +116,7 @@ describe('homeassistant-adapter', () => {
       getConnection: vi.fn(() => null),
       sendWebSocketBinary: vi.fn(),
       getEntities: vi.fn(() => ({
+        ...writableHelperEntities,
         'light.kitchen': lightEntityFactory(),
         'alarm_control_panel.home': alarmEntityFactory(),
         'vacuum.roborock': vacuumEntityFactory(),
@@ -165,6 +167,7 @@ describe('homeassistant-adapter', () => {
         reconnecting: false,
         error: null,
         entities: {
+          ...writableHelperEntities,
           'light.kitchen': lightEntityFactory(),
           'alarm_control_panel.home': alarmEntityFactory(),
           'vacuum.roborock': vacuumEntityFactory(),
@@ -182,6 +185,31 @@ describe('homeassistant-adapter', () => {
       })),
       subscribeStore: vi.fn(() => () => {}),
     });
+  });
+
+  it('executes helper commands against the owning entity and rejects incompatible toggles', async () => {
+    const adapter = createHomeAssistantContractAdapter();
+    await expect(
+      adapter.execute({
+        type: 'set_number_value',
+        entityId: 'home_assistant:input_number.target',
+        value: 22,
+      })
+    ).resolves.toMatchObject({ accepted: true, requiresEventConfirmation: true });
+    expect(callHomeAssistantServiceMock).toHaveBeenCalledWith(
+      'input_number',
+      'set_value',
+      { value: 22 },
+      { entityId: 'input_number.target' }
+    );
+    callHomeAssistantServiceMock.mockClear();
+    await expect(
+      adapter.execute({ type: 'set_number_value', entityId: 'input_number.target', value: 31 })
+    ).rejects.toThrow();
+    await expect(
+      adapter.execute({ type: 'turn_on', entityId: 'input_number.target' })
+    ).rejects.toThrow();
+    expect(callHomeAssistantServiceMock).not.toHaveBeenCalled();
   });
 
   it('maps provider-neutral color temperature commands to color_temp_kelvin', async () => {

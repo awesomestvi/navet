@@ -119,4 +119,17 @@ describe('HARegistryService', () => {
     await expect(service.updateAreaName('kitchen', '   ')).rejects.toThrow('Room name is required');
     expect(sendMessagePromise).not.toHaveBeenCalled();
   });
+  it('refreshes household registries when optional automation categories are unavailable', async () => {
+    sendMessagePromise.mockImplementation((message: { type: string }) => {
+      if (message.type === 'config/category_registry/list')
+        return Promise.reject(new Error('unknown_command'));
+      if (message.type === 'config/area_registry/list')
+        return Promise.resolve([{ area_id: 'kitchen', name: 'Kitchen' }]);
+      return Promise.resolve([]);
+    });
+    const service = new HARegistryService(() => ({ sendMessagePromise }) as never);
+    await service.loadRegistries();
+    expect(service.getAreas()).toEqual([{ area_id: 'kitchen', name: 'Kitchen' }]);
+    expect(service.getAutomationCategories()).toEqual([]);
+  });
 });

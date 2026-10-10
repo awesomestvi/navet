@@ -32,6 +32,41 @@ function createEntity({
 }
 
 describe('mapNavetEntitiesToDeviceCollection', () => {
+  it('retains a writable household helper alongside its physical device card', () => {
+    const switchEntity = createEntity({
+      canonicalId: 'home_assistant:switch.heater',
+      externalId: 'switch.heater',
+      type: 'switch',
+      name: 'Heater',
+      attributes: { value: 'on', deviceId: 'heater' },
+    });
+    const helperEntity = createEntity({
+      canonicalId: 'home_assistant:number.target',
+      externalId: 'number.target',
+      type: 'helper',
+      name: 'Target',
+      attributes: {
+        helperType: 'number',
+        value: 20,
+        writable: true,
+        min: 10,
+        max: 30,
+        step: 0.5,
+        deviceId: 'heater',
+      },
+    });
+    helperEntity.capabilities = ['number_value'];
+    const devices = mapNavetEntitiesToDeviceCollection([switchEntity, helperEntity]);
+    expect(devices.switches).toHaveLength(1);
+    expect(devices.helpers).toMatchObject([
+      {
+        id: 'home_assistant:number.target',
+        nativeId: 'number.target',
+        helper: { helperType: 'number', value: 20, writable: true },
+      },
+    ]);
+  });
+
   it.each(['home_assistant', 'homey', 'openhab'] as const)(
     'defaults climate and speaker cards to medium for %s',
     (providerId) => {
