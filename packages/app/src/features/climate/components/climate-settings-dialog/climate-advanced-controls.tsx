@@ -4,7 +4,7 @@ import { Input } from '@navet/app/components/primitives/input';
 import { Select } from '@navet/app/components/primitives/select';
 import { DialogSectionRow } from '@navet/app/components/shared/device-editor/dialog-section-row';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
-import { useI18n, useProviderEntityModel, useTheme } from '@navet/app/hooks';
+import { useI18n, useProviderEntityModel } from '@navet/app/hooks';
 import type { IntegrationProviderId } from '@navet/app/types/provider';
 import {
   type NavetClimateControlState,
@@ -13,6 +13,10 @@ import {
 } from '@navet/core/climate-controls';
 import type { NavetUiCommand } from '@navet/core/types';
 import { type FormEvent, useEffect, useId, useRef, useState } from 'react';
+
+// The existing climate dialog uses dark mode-colored surfaces in every app theme.
+// Fields resolve their own theme; surrounding copy follows the actual dialog surface.
+const CLIMATE_CONTROL_SURFACE = getThemeSurfaceTokens('dark');
 
 type OptionKey = 'preset' | 'fanMode' | 'swingMode' | 'swingHorizontalMode';
 
@@ -96,10 +100,8 @@ function ControlStatus({
   id: string;
 }) {
   const { t } = useI18n();
-  const { theme } = useTheme();
-  const surface = getThemeSurfaceTokens(theme);
   return (
-    <div id={id} aria-live="polite" className={`text-sm ${surface.textSecondary}`}>
+    <div id={id} aria-live="polite" className={`text-sm ${CLIMATE_CONTROL_SURFACE.textSecondary}`}>
       {!writable ? (
         t('common.unavailable')
       ) : failed ? (
@@ -131,7 +133,10 @@ function ClimateOptionControl({
   const action = useClimateControlAction(control.value ?? '', writable, providerId);
   const optionMissing = !control.options.includes(control.value ?? '');
   return (
-    <DialogSectionRow label={<label htmlFor={fieldId}>{label}</label>}>
+    <DialogSectionRow
+      label={<label htmlFor={fieldId}>{label}</label>}
+      labelClassName={CLIMATE_CONTROL_SURFACE.textPrimary}
+    >
       <Select
         id={fieldId}
         value={control.value ?? ''}
@@ -192,6 +197,7 @@ function ClimateHumidityControl({
   return (
     <DialogSectionRow
       label={<label htmlFor={fieldId}>{t('climate.advanced.targetHumidity')}</label>}
+      labelClassName={CLIMATE_CONTROL_SURFACE.textPrimary}
     >
       <form onSubmit={save} className="space-y-2" aria-busy={action.pending}>
         <Input
@@ -224,8 +230,6 @@ function ClimateHumidityControl({
 
 export function ClimateAdvancedControls({ entityId }: { entityId: string }) {
   const { t } = useI18n();
-  const { theme } = useTheme();
-  const surface = getThemeSurfaceTokens(theme);
   const entity = useProviderEntityModel(entityId);
   const controls = readNavetClimateControlState(entity ?? undefined);
   if (!entity || !controls) return null;
@@ -260,8 +264,13 @@ export function ClimateAdvancedControls({ entityId }: { entityId: string }) {
         />
       ) : null}
       {controls.currentHumidity !== undefined ? (
-        <DialogSectionRow label={t('climate.advanced.currentHumidity')}>
-          <span className={`text-sm ${surface.textPrimary}`}>{controls.currentHumidity}%</span>
+        <DialogSectionRow
+          label={t('climate.advanced.currentHumidity')}
+          labelClassName={CLIMATE_CONTROL_SURFACE.textPrimary}
+        >
+          <span className={`text-sm ${CLIMATE_CONTROL_SURFACE.textPrimary}`}>
+            {controls.currentHumidity}%
+          </span>
         </DialogSectionRow>
       ) : null}
     </>
